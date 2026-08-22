@@ -115,7 +115,8 @@ class FromDlpack(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         obj = args[0] if len(args) > 0 else None
         return getattr(obj, "shape", ())
@@ -134,7 +135,8 @@ class Frompyfunc(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -152,7 +154,8 @@ class Geomspace(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         start = args[0] if len(args) > 0 else None
         stop = args[1] if len(args) > 1 else None
@@ -183,7 +186,8 @@ class Geometric(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         p = args[0] if len(args) > 0 else None
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
@@ -200,7 +204,8 @@ def from_dlpack(obj: Any) -> Any:
     Args:
         obj (object): The obj parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -215,7 +220,8 @@ def frompyfunc(func: Any, nin: int, nout: int) -> Any:
         nin (int): The nin parameter.
         nout (int): The nout parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -233,7 +239,8 @@ def geomspace(start: Any, stop: Any, num: int = 50, endpoint: bool = True, dtype
         dtype (object): The dtype parameter.
         axis (int): The axis parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -247,7 +254,8 @@ def geometric(p: Any, size: Any = None) -> Any:
         p (object): The p parameter.
         size (object): The size parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

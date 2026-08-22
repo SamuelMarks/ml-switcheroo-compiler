@@ -21,7 +21,8 @@ class SobolSample(OpDef):
         skip (int): The skip parameter.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (num_results, dim)
 

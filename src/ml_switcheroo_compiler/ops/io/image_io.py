@@ -49,7 +49,8 @@ def decode_jpeg(contents: Any, channels: int = 0, ratio: int = 1) -> Any:
         channels (int): The channels parameter.
         ratio (int): The ratio parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -70,7 +71,8 @@ def decode_png(contents: Any, channels: int = 0, dtype: Any = None) -> Any:
         like (object): The like parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -90,7 +92,8 @@ def decode_gif(
     Args:
         contents (object): The contents parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -109,7 +112,8 @@ def decode_bmp(contents: Any, channels: int = 0) -> Any:
         contents (object): The contents parameter.
         channels (int): The channels parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -134,7 +138,8 @@ class DecodeImage(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

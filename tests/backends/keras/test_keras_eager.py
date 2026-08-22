@@ -19,11 +19,7 @@ def test_keras_eager():
 
 def test_keras_eager_extra():
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-    from ml_switcheroo_compiler.backends.keras.eager import _get_op_mapping, execute_op
-
-    # Call it to hit the cached branch
-    _get_op_mapping()
-    _get_op_mapping()
+    from ml_switcheroo_compiler.backends.keras.eager import execute_op
 
     # global_eager_registry
     @global_eager_registry.register("KerasGlobalDummy")
@@ -36,8 +32,8 @@ def test_keras_eager_extra():
 
     from ml_switcheroo_compiler.backends.keras.eager import execute_op
 
-    with patch("ml_switcheroo_compiler.backends.keras.eager._get_op_mapping") as mock_get_mapping:
-        mock_get_mapping.return_value = {"TestOp2": lambda *args, **kwargs: "mapped_res"}
+    mock_schema = type("Dummy", (), {"operations": {"TestOp2": type("DummyOp", (), {"target_api": "custom_op", "custom_code": "lambda *args, **kwargs: 'mapped_res'"})()}})()
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings", return_value=mock_schema):
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             res = execute_op(None, "TestOp2")
             assert res == "mapped_res"

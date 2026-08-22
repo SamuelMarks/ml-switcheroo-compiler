@@ -17,7 +17,8 @@ def _as_string(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return str(arr)
 
@@ -31,7 +32,8 @@ def _fromfile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.fromfile(*args, **kwargs)
 
@@ -45,7 +47,8 @@ def _fromstring(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromstring", None)
     if func:
@@ -63,7 +66,8 @@ def _np_decodeimage(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "decodeimage", getattr(backend_module, "decodeimage", None))
     if func is not None:
@@ -82,7 +86,8 @@ def _np_fromfile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromfile", getattr(backend_module, "fromfile", None))
     if func is not None:
@@ -101,7 +106,8 @@ def _np_fromstring(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromstring", getattr(backend_module, "fromstring", None))
     if func is not None:
@@ -120,7 +126,8 @@ def _np_parsetensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "parsetensor", getattr(backend_module, "parsetensor", None))
     if func is not None:
@@ -139,7 +146,8 @@ def _np_stringlower(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringlower", getattr(backend_module, "stringlower", None))
     if func is not None:
@@ -158,7 +166,8 @@ def _np_stringsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringsplit", getattr(backend_module, "stringsplit", None))
     if func is not None:
@@ -177,7 +186,8 @@ def _np_stringtohash(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringtohash", getattr(backend_module, "stringtohash", None))
     if func is not None:
@@ -196,7 +206,8 @@ def _np_stringtonumber(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringtonumber", getattr(backend_module, "stringtonumber", None))
     if func is not None:
@@ -215,7 +226,8 @@ def _np_stringupper(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringupper", getattr(backend_module, "stringupper", None))
     if func is not None:
@@ -234,7 +246,8 @@ def _np_textvectorization(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "textvectorization", getattr(backend_module, "textvectorization", None))
     if func is not None:
@@ -253,7 +266,8 @@ def _np_writefile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "writefile", getattr(backend_module, "writefile", None))
     if func is not None:

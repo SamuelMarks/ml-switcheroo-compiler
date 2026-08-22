@@ -17,7 +17,8 @@ def _np_not_equal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.not_equal(*args, **kwargs)
 
@@ -31,7 +32,8 @@ def _np_greater(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.greater(*args, **kwargs)
 
@@ -45,7 +47,8 @@ def _np_greater_equal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.greater_equal(*args, **kwargs)
 
@@ -59,7 +62,8 @@ def _np_less(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.less(*args, **kwargs)
 
@@ -73,7 +77,8 @@ def _np_less_equal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.less_equal(*args, **kwargs)
 
@@ -87,7 +92,8 @@ def _np_logical_and(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logical_and(*args, **kwargs)
 
@@ -101,7 +107,8 @@ def _np_logical_or(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logical_or(*args, **kwargs)
 
@@ -115,7 +122,8 @@ def _np_logical_not(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logical_not(*args, **kwargs)
 
@@ -129,7 +137,8 @@ def _np_logical_xor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logical_xor(*args, **kwargs)
 
@@ -143,7 +152,8 @@ def _np_where(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.where(*args, **kwargs)
 
@@ -157,7 +167,8 @@ def _np_assert(backend_module: Any, condition: Any, **kwargs: Any) -> Any:
         condition (object): The condition parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         AssertionError: An exception.

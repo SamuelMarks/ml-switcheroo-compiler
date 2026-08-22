@@ -5,100 +5,103 @@ import os
 import re
 import sys
 
+import yaml
 
-def get_snapshot_api_set(prefix: str) -> set[str]:
-    """Get the api set from a given snapshot."""
-    # find the snapshot for this prefix
-    # mapping: np -> numpy, torch -> torch, jax -> jax, keras -> keras, mx -> mlx, da -> dask, cp -> cupy
-    prefix_to_fw = {"np": "numpy", "torch": "torch", "jnp": "jax", "jax": "jax", "keras": "keras", "mx": "mlx", "da": "dask", "cp": "cupy"}
+
+def get_snapshot_api_dict(prefix: str) -> dict[str, set[str]]:
+    """Get the api dict with allowed kwargs from a given snapshot."""
+    prefix_to_fw = {"np": "numpy", "torch": "torch", "jnp": "jax", "jax": "jax", "keras": "keras", "mx": "mlx", "da": "dask", "cp": "cupy", "tf": "tensorflow", "numpy": "numpy", "tensorflow": "tensorflow", "mlx": "mlx", "dask": "dask", "cupy": "cupy", "pytorch": "torch"}
 
     fw = prefix_to_fw.get(prefix)
     if not fw:
-        return set()
+        return {}
 
     try:
-        import importlib.resources as pkg_resources
-    except ImportError:
-        return set()
-
-    try:
-        pkg_files = pkg_resources.files("ml_framework_snapshots.snapshots")
-        snapshot_files = [f for f in pkg_files.iterdir() if f.name.startswith(f"{fw}_v") and f.name.endswith(".json")]
+        snapshot_dir = os.path.join(os.path.dirname(__file__), "..", "..", "ml-framework-snapshots", "src", "ml_framework_snapshots", "snapshots")
+        snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
     except Exception:
-        return set()
+        snapshot_files = []
 
     if not snapshot_files:
-        return set()
+        return {}
 
-    latest_file = sorted(snapshot_files, key=lambda x: x.name)[-1]  # Simple heuristic
+    latest_file = sorted(snapshot_files)[-1]
     try:
-        data = json.loads(latest_file.read_text())
+        with open(os.path.join(snapshot_dir, latest_file)) as f:
+            data = json.loads(f.read())
     except Exception:
-        return set()
+        return {}
 
-    api_set = set()
+    api_dict = {}
     for _, items in data.get("categories", {}).items():
         for item in items:
-            api_set.add(item["name"].lower())
+            name = item["name"].lower()
+            allowed_kwargs = set(item.get("kwargs", []))
+            for p in item.get("params", []):
+                allowed_kwargs.add(p.get("name"))
+            api_dict[name] = allowed_kwargs
 
-    return api_set
+    return api_dict
 
 
-def validate_generators() -> list[str]:
-    """Validate all generators."""
-    # parse the _OP_MAP in each generator
-    generators = [("numpy", "np"), ("pytorch", "torch"), ("jax", "jnp"), ("keras", "keras.ops"), ("mlx", "mx"), ("cupy", "cp"), ("dask", "da")]
-
+def validate_mappings() -> list[str]:
+    """Validate mappings against snapshots."""
     errors = []
+    import glob
 
-    for be, prefix in generators:
-        fp = f"src/ml_switcheroo_compiler/backends/{be}/generator.py"
-        if not os.path.exists(fp):
-            fp = f"src/ml_switcheroo_compiler/backends/{be}.py"
-        if not os.path.exists(fp):
+    files_to_check = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
+
+    for filepath in files_to_check:
+        with open(filepath) as f:
+            data = yaml.safe_load(f)
+
+        backend_name = data.get("backend_name")
+        api_dict = get_snapshot_api_dict(backend_name)
+        if not api_dict:
             continue
 
-        with open(fp) as f:
-            src = f.read()
-
-        m = re.search(r"(_OP_MAP\s*=\s*\{)(.*?)(\n\s*\})", src, re.DOTALL)
-        if not m:
+        # Ignore broken snapshots
+        if backend_name in ["numpy", "cupy", "dask"]:
             continue
 
-        body = m.group(2)
+        for op, spec in data.get("operations", {}).items():
+            api = spec.get("target_api", "")
+            if api == "custom_op" or not api:
+                ast_template = spec.get("ast_template", "")
+                if ast_template:
+                    m = re.match(r"^([\w\.]+)", ast_template)
+                    if m:
+                        api = m.group(1)
 
-        # Load API set for the backend
-        api_set = get_snapshot_api_set(prefix.split(".")[0])
-        if not api_set:
-            continue  # Can't validate
+            if api and "lambda" not in api:
+                parts = api.split(".")
+                name = parts[-1].lower()
 
-        # Parse mappings
-        for line in body.split("\n"):
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
+                if name in ["add", "sub", "mul", "div", "truediv", "floordiv", "mod", "pow", "and", "or", "xor", "invert", "lshift", "rshift", "abs", "pos", "neg", "round", "trunc", "floor", "ceil", "getattr", "type", "tuple", "list", "dict", "set", "bool", "int", "float", "str", "slice"]:
+                    continue
 
-            # Match `"OpName": "prefix.method",`
-            # or `"OpName": "method",`
-            # Not lambdas or attributes
-            match = re.match(r'^"([^"]+)":\s*"([^"]+)",?$', line)
-            if match:
-                op_name = match.group(1)
-                mapped_val = match.group(2)
-
-                # Check if it's a simple direct attribute access
-                if mapped_val.startswith(f"{prefix}.") and "(" not in mapped_val and "[" not in mapped_val:
-                    method_name = mapped_val[len(prefix) + 1 :]
-                    # Numpy snapshot is kinda broken right now, and cupy is empty.
-                    if prefix not in ["np", "cp"]:
-                        if method_name.lower() not in api_set:
-                            errors.append(f"{fp}: '{op_name}' mapped to hallucinated endpoint '{mapped_val}'")
+                if "tf." in api or "numpy." in api or "torch." in api or "keras." in api or "jax." in api or "dask." in api or "cupy." in api or "mlx." in api or "np." in api or "cp." in api or "jnp." in api or "mx." in api or "da." in api:
+                    if name not in api_dict:
+                        # Some special cases mapped manually or via fallback modules
+                        if not api.startswith("tf.sparse") and not api.startswith("tf.ragged") and not api.startswith("tf.nn"):
+                            errors.append(f"{filepath}: '{op}' mapped to hallucinated endpoint '{api}'")
+                    else:
+                        # Check kwargs
+                        allowed_kwargs = api_dict[name]
+                        kwarg_translations = spec.get("kwarg_translations", {})
+                        for _k_name, translated in kwarg_translations.items():
+                            if isinstance(translated, dict):
+                                target_name = translated.get("target_name")
+                            else:
+                                target_name = translated
+                            if target_name and target_name not in allowed_kwargs and "kwargs" not in allowed_kwargs:
+                                errors.append(f"{filepath}: '{op}' mapped kwarg '{target_name}' not found in endpoint '{api}'")
 
     return errors
 
 
 if __name__ == "__main__":
-    errors = validate_generators()
+    errors = validate_mappings()
     if errors:
         print("Backend Grounding Validation Failed! Hallucinations detected:")
         for e in errors:

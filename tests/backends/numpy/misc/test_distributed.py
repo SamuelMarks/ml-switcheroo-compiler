@@ -35,47 +35,48 @@ def test_np_distributed_context() -> None:
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as MockListener:
         with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", return_value=mock_conn):
-            mock_listener_instance = MagicMock()
-            mock_listener_instance.accept.return_value = mock_conn
-            MockListener.return_value = mock_listener_instance
+            with patch("time.sleep"):
+                mock_listener_instance = MagicMock()
+                mock_listener_instance.accept.return_value = mock_conn
+                MockListener.return_value = mock_listener_instance
 
-            set_np_distributed_context(world_size=2, rank=0)
-            t = np.array([1, 2])
+                set_np_distributed_context(world_size=2, rank=0)
+                t = np.array([1, 2])
 
-            res1 = _np_all_reduce(np, t)
-            res2 = _np_all_gather(np, t)
-            res3 = _np_broadcast(np, t)
-            res4 = _np_reduce_scatter(np, t)
-            res5 = _np_reduce(np, t)
-            res6 = _np_shard_tensor(np, t)
+                res1 = _np_all_reduce(np, t)
+                res2 = _np_all_gather(np, t)
+                res3 = _np_broadcast(np, t)
+                res4 = _np_reduce_scatter(np, t)
+                res5 = _np_reduce(np, t)
+                res6 = _np_shard_tensor(np, t)
 
-            # test reduce scatter ops
-            _np_reduce_scatter(np, t, "prod")
-            _np_reduce_scatter(np, t, "max")
-            _np_reduce_scatter(np, t, "min")
-            _np_reduce_scatter(np, t, "unknown")
+                # test reduce scatter ops
+                _np_reduce_scatter(np, t, "prod")
+                _np_reduce_scatter(np, t, "max")
+                _np_reduce_scatter(np, t, "min")
+                _np_reduce_scatter(np, t, "unknown")
 
-            # test reduce ops
-            _np_reduce(np, t, 0, "prod")
-            _np_reduce(np, t, 0, "max")
-            _np_reduce(np, t, 0, "min")
-            _np_reduce(np, t, 0, "unknown")
+                # test reduce ops
+                _np_reduce(np, t, 0, "prod")
+                _np_reduce(np, t, 0, "max")
+                _np_reduce(np, t, 0, "min")
+                _np_reduce(np, t, 0, "unknown")
 
-            # test all reduce ops
-            _np_all_reduce(np, t, "prod")
-            _np_all_reduce(np, t, "max")
-            _np_all_reduce(np, t, "min")
-            _np_all_reduce(np, t, "unknown")
+                # test all reduce ops
+                _np_all_reduce(np, t, "prod")
+                _np_all_reduce(np, t, "max")
+                _np_all_reduce(np, t, "min")
+                _np_all_reduce(np, t, "unknown")
 
-            # test all to all
-            _np_all_to_all(np, t)
+                # test all to all
+                _np_all_to_all(np, t)
 
-            # also test the underlying ring
-            _tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
-            _tcp_dist_ctx.all_reduce_ring(t, op_type="max")
-            _tcp_dist_ctx.all_reduce_ring(t, op_type="min")
+                # also test the underlying ring
+                _tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
+                _tcp_dist_ctx.all_reduce_ring(t, op_type="max")
+                _tcp_dist_ctx.all_reduce_ring(t, op_type="min")
 
-            _tcp_dist_ctx.shutdown()
+                _tcp_dist_ctx.shutdown()
 
     # test world_size=1
     set_np_distributed_context(world_size=1, rank=0)
@@ -99,12 +100,13 @@ def test_distributed_initialize_timeout():
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client") as mock_client:
         with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as MockListener:
-            mock_listener_instance = MagicMock()
-            mock_listener_instance.accept.return_value = MagicMock()
-            MockListener.return_value = mock_listener_instance
+            with patch("time.sleep"):
+                mock_listener_instance = MagicMock()
+                mock_listener_instance.accept.return_value = MagicMock()
+                MockListener.return_value = mock_listener_instance
 
-            mock_client.side_effect = ConnectionRefusedError
-            set_np_distributed_context(world_size=2, rank=1, port=39501)
+                mock_client.side_effect = ConnectionRefusedError
+                set_np_distributed_context(world_size=2, rank=1, port=39501)
 
 
 def test_distributed_shutdown_no_conn():

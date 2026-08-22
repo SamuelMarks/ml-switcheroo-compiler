@@ -172,7 +172,8 @@ def ir_grad(fun: Callable[..., Any], options: Any = None) -> Callable[..., Any]:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         _, grads = _compute_grad_and_value(fun, options, args)
         return grads
@@ -199,7 +200,8 @@ def grad(fun: Callable[..., Any], options: Any = None) -> Callable[..., Any]:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:
@@ -228,7 +230,8 @@ def value_and_grad(fun: Callable[..., Any], options: Any = None) -> Callable[...
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:

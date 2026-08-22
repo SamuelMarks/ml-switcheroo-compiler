@@ -27,194 +27,6 @@ class NumpyTypeTranslator:
 class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
-    _OP_MAP = {
-        "BroadcastToRank": "np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0}, 'ndim') else {0}",
-        "Collapse": "np.reshape({0}, (-1,) + {0}.shape[{1}:])",
-        "ConvTransposeShapeTuple": "()",
-        "IndexInDim": "np.take({0}, {1}, axis={2})",
-        "RNNCellDeviceWrapper": "tf.nn.rnn_cell.DeviceWrapper",
-        "RNNCellDropoutWrapper": "tf.nn.rnn_cell.DropoutWrapper",
-        "RNNCellResidualWrapper": "tf.nn.rnn_cell.ResidualWrapper",
-        "SparseBincount": "tf.sparse.bincount",
-        "SparseCrossHashed": "tf.sparse.cross_hashed",
-        "SparseExpandDims": "tf.sparse.expand_dims",
-        "SparseEye": "tf.sparse.eye",
-        "SparseFillEmptyRows": "tf.sparse.fill_empty_rows",
-        "SparseMapValues": "tf.sparse.map_values",
-        "SparseMask": "tf.sparse.mask",
-        "SparseMaximum": "tf.sparse.maximum",
-        "SparseMinimum": "tf.sparse.minimum",
-        "SparseReduceMax": "tf.sparse.reduce_max",
-        "SparseReduceSum": "tf.sparse.reduce_sum",
-        "SparseReorder": "tf.sparse.reorder",
-        "SparseResetShape": "tf.sparse.reset_shape",
-        "SparseReshape": "tf.sparse.reshape",
-        "SparseRetain": "tf.sparse.retain",
-        "SparseSegmentMean": "tf.sparse.segment_mean",
-        "SparseSegmentSqrtN": "tf.sparse.segment_sqrt_n",
-        "SparseSegmentSum": "tf.sparse.segment_sum",
-        "SparseSlice": "tf.sparse.slice",
-        "SparseSoftmax": "tf.sparse.softmax",
-        "SparseToIndicator": "tf.sparse.to_indicator",
-        "SparseTranspose": "tf.sparse.transpose",
-        "RaggedConstant": "tf.ragged.constant",
-        "RaggedCrossHashed": "tf.ragged.cross_hashed",
-        "RaggedRange": "tf.ragged.range",
-        "RaggedRowSplitsToSegmentIds": "tf.ragged.row_splits_to_segment_ids",
-        "RaggedSegmentIdsToRowSplits": "tf.ragged.segment_ids_to_row_splits",
-        "RaggedStack": "tf.ragged.stack",
-        "RaggedStackDynamicPartitions": "tf.ragged.stack_dynamic_partitions",
-        "Trace": "np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})",
-        "Outer": "np.outer({0}, {1})",
-        "Svdvals": "np.linalg.svd({0}, compute_uv=False)",
-        "Tensordot": "np.tensordot({0}, {1}, axes={axes})",
-        "Tensorinv": "np.linalg.tensorinv({0}, ind={ind})",
-        "Tensorsolve": "np.linalg.tensorsolve({0}, {1}, axes={axes})",
-        "Vecdot": "np.sum({0} * {1}, axis={axis})",
-        "Adjoint": "tf.linalg.adjoint",
-        "LuMatrixInverse": "np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1], dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1}, axis=-1), -1), {0}.shape), axis=-2))",
-        "LuReconstruct": "np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1], dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1}, axis=-1), -1), {0}.shape), axis=-2)",
-        "BandPart": "tf.linalg.band_part",
-        "CholeskySolve": "np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})",
-        "Add": "np.add",
-        "Zeros": "np.zeros",
-        "Ones": "np.ones",
-        "Full": "np.full",
-        "Arange": "np.arange",
-        "Sort": "np.sort",
-        "ArgSort": "np.argsort",
-        "Allclose": "np.allclose",
-        "Fftnd": "np.fft.fftn({0})",
-        "Ifftnd": "np.fft.ifftn({0})",
-        "Rfftnd": "np.fft.rfftn({0})",
-        "Irfftnd": "np.fft.irfftn({0})",
-        "Fftshift": "np.fft.fftshift({0})",
-        "Ifftshift": "np.fft.ifftshift({0})",
-        "Fft": "np.fft.fft",
-        "Rfft": "np.fft.rfft",
-        "Fftn": "np.fft.fftn",
-        "Ifft": "np.fft.ifft",
-        "Ifftn": "np.fft.ifftn",
-        "Rfftn": "np.fft.rfftn",
-        "Irfftn": "np.fft.irfftn",
-        "Ifft2": "np.fft.ifft2",
-        "Rfft2": "np.fft.rfft2",
-        "Irfft2": "np.fft.irfft2",
-        "Hfft": "np.fft.hfft",
-        "Rfftfreq": "np.fft.rfftfreq({0}, d={d})",
-        "Sigmoid": "getattr(backend_module, 'expit', None)({0})",
-        "Softmax": "getattr(backend_module, 'softmax', None)({0}, axis={axis})",
-        "LogSoftmax": "getattr(backend_module, 'log_softmax', None)({0}, axis={axis})",
-        "OneHot": "np.eye({depth})[{0}]",
-        "Clip": "np.clip({0}, a_min={a_min}, a_max={a_max})",
-        "Erfinv": "getattr(backend_module, 'erfinv', None)",
-        "NanToNum": "np.nan_to_num",
-        "Subtract": "np.subtract",
-        "Multiply": "np.multiply",
-        "TrueDivide": "np.divide",
-        "Exp": "np.exp",
-        "Log": "np.log",
-        "Matmul": "np.matmul",
-        "Sin": "np.sin",
-        "Acos": "np.arccos",
-        "Acosh": "np.arccosh",
-        "Asin": "np.arcsin",
-        "Asinh": "np.arcsinh",
-        "IgammaGradA": "lambda a, x: a",
-        "RandomGammaGrad": "lambda a, x: a",
-        "Igamma": "getattr(backend_module, 'gammainc', None)",
-        "Igammac": "getattr(backend_module, 'gammaincc', None)",
-        "Polygamma": "getattr(backend_module, 'polygamma', None)",
-        "Zeta": "getattr(backend_module, 'zeta', None)",
-        "BesselI0e": "getattr(backend_module, 'i0e', None)",
-        "BesselI1e": "getattr(backend_module, 'i1e', None)",
-        "Betainc": "getattr(backend_module, 'betainc', None)",
-        "Atan": "np.arctan",
-        "Atan2": "np.arctan2",
-        "Atanh": "np.arctanh",
-        "Cos": "np.cos",
-        "Sum": "np.sum",
-        "Cummax": "np.maximum.accumulate",
-        "Cummin": "np.minimum.accumulate",
-        "Logcumsumexp": "getattr(backend_module, 'logsumexp', None)",
-        "Cumprod": "np.cumprod",
-        "Cumsum": "np.cumsum",
-        "Cumlogsumexp": "np.logaddexp.accumulate",
-        "Mean": "np.mean",
-        "Max": "np.max",
-        "Min": "np.min",
-        "BroadcastTo": "np.broadcast_to",
-        "Reshape": "np.reshape",
-        "Reverse": "np.flip",
-        "Transpose": "np.transpose",
-        "Equal": "np.equal",
-        "NotEqual": "np.not_equal",
-        "Greater": "np.greater",
-        "Less": "np.less",
-        "Negative": "np.negative",
-        "Cholesky": "np.linalg.cholesky",
-        "Svd": "np.linalg.svd",
-        "Qr": "np.linalg.qr",
-        "Inv": "np.linalg.inv",
-        "Pinv": "np.linalg.pinv",
-        "Det": "np.linalg.det",
-        "Slogdet": "np.linalg.slogdet",
-        "Eigh": "np.linalg.eigh",
-        "Eig": "np.linalg.eig",
-        "Eigvalsh": "np.linalg.eigvalsh",
-        "Cond": "np.linalg.cond",
-        "Lstsq": "np.linalg.lstsq({0}, {1}, rcond={rcond})[0]",
-        "MatrixNorm": "np.linalg.norm({0}, keepdims={keepdims})",
-        "VectorNorm": "np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})",
-        "MatrixRank": "np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})",
-        "MatrixTranspose": "np.swapaxes({0}, -1, -2)",
-        "MultiDot": "np.linalg.multi_dot({0})",
-        "Diagonal": "np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})",
-        "MatrixPower": "np.linalg.matrix_power",
-        "Solve": "np.linalg.solve",
-        "TridiagonalSolve": "getattr(backend_module.linalg, 'solve_banded', None)((1, 1), np.stack([{2}, {1}, {0}], axis=-2), {3})",
-        "TridiagonalMatmul": (
-            "np.expand_dims({1}, -1) * {3}"
-            " + np.expand_dims(np.concatenate([np.zeros_like({0}[..., :1]), {0}[..., 1:]], axis=-1), -1) * np.concatenate([np.zeros_like({3}[..., :1, :]), {3}[..., :-1, :]], axis=-2)"
-            " + np.expand_dims(np.concatenate([{2}[..., :-1], np.zeros_like({2}[..., -1:])], axis=-1), -1) * np.concatenate([{3}[..., 1:, :], np.zeros_like({3}[..., -1:, :])], axis=-2)"
-        ),
-        "TriangularSolve": "getattr(backend_module.linalg, 'solve_triangular', None)({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal}, trans=1 if {adjoint} else 0, check_finite=False)",
-        "Lu": "getattr(backend_module.linalg, 'lu', None)",
-        "LuFactor": "getattr(backend_module.linalg, 'lu_factor', None)",
-        "LuSolve": "getattr(backend_module.linalg, 'lu_solve', None)",
-        "Poly": "np.poly",
-        "Polyadd": "np.polyadd",
-        "Polyder": "np.polyder",
-        "Polydiv": "np.polydiv",
-        "Polyfit": "np.polyfit",
-        "Polyint": "np.polyint",
-        "Polymul": "np.polymul",
-        "Polysub": "np.polysub",
-        "Polyval": "np.polyval",
-        "Roots": "np.roots",
-        "BroadcastedIota": "np.broadcasted_iota",
-        "Bincount": "np.bincount",
-        "Histogram": "np.histogram",
-        "Histogram2d": "np.histogram2d",
-        "HistogramBinEdges": "np.histogram_bin_edges",
-        "Histogramdd": "np.histogramdd",
-        "Geomspace": "np.geomspace",
-        "Gradient": "np.gradient",
-        "I0": "np.i0",
-        "Mgrid": "np.mgrid",
-        "Ogrid": "np.ogrid",
-        "R_": "np.r_",
-        "C_": "np.c_",
-        "Fromfile": "np.fromfile",
-        "Fromfunction": "np.fromfunction",
-        "Fromiter": "np.fromiter",
-        "Frompyfunc": "np.frompyfunc",
-        "Fromstring": "np.fromstring",
-        "Norm": "np.linalg.norm",
-        "MatrixExponential": "getattr(backend_module.linalg, 'expm', None)",
-        "Cross": "np.cross",
-    }
-
     @classmethod
     def _format_kwargs(cls, kwargs: dict[str, Any]) -> str:
         """Evaluate _format_kwargs operation.
@@ -229,6 +41,20 @@ class NumpyASTVisitor:
         if "dimension" in kwargs:
             filtered_kwargs["axis"] = kwargs["dimension"]
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
+
+    @classmethod
+    def visit_Parameter(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Visit parameter."""
+        return f"{node.id} = None # Parameter"
+
+    @classmethod
+    def visit_Return(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Visit return."""
+        if not input_vars:
+            return "return None"
+        if len(input_vars) == 1:
+            return f"return {input_vars[0]}"
+        return "return " + ", ".join(input_vars)
 
     @classmethod
     def visit_TriInv(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -289,7 +115,7 @@ class NumpyASTVisitor:
         if "dimension" in kwargs:
             return f"np.{node.op_type.lower()}({input_vars[0]}, axis={kwargs['dimension']})"
         op_type = getattr(node, "op_type", "")
-        np_func = cls._OP_MAP.get(op_type, f"np.{op_type.lower()}")
+        np_func = (lambda: __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("numpy").operations.get(op_type, type("Dummy", (), {"ast_template": None})()).ast_template or f"np.{op_type.lower()}")()
         args_str = ", ".join(input_vars)
         kwargs_str = cls._format_kwargs(kwargs)
         if kwargs_str:
@@ -310,6 +136,10 @@ class NumpyGenerator(
             graph (object): The IR graph to generate code from.
         """
         super().__init__(graph)
+        from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
+
+        schema = load_backend_mappings("numpy")
+        self._import_header = "\n".join(schema.helpers or [])
         self.visitors.extend(
             [
                 *get_shared_ast_visitors(generator=self),
@@ -394,91 +224,13 @@ class NumpyGenerator(
     def get_helper_functions(self) -> list[str]:
         """Evaluate get_helper_functions operation.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
-        res = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return res
+        from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
-    _import_header = (
-        "import numpy as np",
-        "import dataclasses",
-        "",
-        "@dataclasses.dataclass",
-        "class PerspectiveConfig:",
-        "    interpolation: str",
-        "    fill_value: float",
-        "    data_format: Any",
-        "",
-        "def np_perspective_transform(images, start_points, end_points, config):",
-        "    interpolation = config.interpolation",
-        "    fill_value = config.fill_value",
-        "    data_format = config.data_format",
-        "    def get_h(src, dst):",
-        "        A = np.zeros((*dst.shape[:-2], 8, 8), dtype=np.float32)",
-        "        B = np.zeros((*dst.shape[:-2], 8), dtype=np.float32)",
-        "        for i in range(4):",
-        "            u, v = dst[..., i, 0], dst[..., i, 1]",
-        "            x, y = src[..., i, 0], src[..., i, 1]",
-        "            A[..., i*2, 0] = u",
-        "            A[..., i*2, 1] = v",
-        "            A[..., i*2, 2] = 1.0",
-        "            A[..., i*2, 6] = -x * u",
-        "            A[..., i*2, 7] = -x * v",
-        "            A[..., i*2+1, 3] = u",
-        "            A[..., i*2+1, 4] = v",
-        "            A[..., i*2+1, 5] = 1.0",
-        "            A[..., i*2+1, 6] = -y * u",
-        "            A[..., i*2+1, 7] = -y * v",
-        "            B[..., i*2] = x",
-        "            B[..., i*2+1] = y",
-        "        h = np.linalg.solve(A, B)",
-        "        return np.reshape(np.concatenate([h, np.ones((*dst.shape[:-2], 1), dtype=np.float32)], axis=-1), (*dst.shape[:-2], 3, 3))",
-        "    has_batch = images.ndim == MAGIC_VAL_4",
-        "    if not has_batch:",
-        "        images = np.expand_dims(images, 0)",
-        "        start_points = np.expand_dims(start_points, 0)",
-        "        end_points = np.expand_dims(end_points, 0)",
-        '    if data_format == "channels_first":',
-        "        images = np.transpose(images, (0, 2, 3, 1))",
-        "    H_mat = get_h(start_points, end_points)",
-        "    B_sz, H_dim, W_dim, C_dim = images.shape",
-        "    y_grid, x_grid = np.meshgrid(np.arange(H_dim), np.arange(W_dim), indexing='ij')",
-        "    y_grid = y_grid.astype(np.float32)",
-        "    x_grid = x_grid.astype(np.float32)",
-        "    coords = np.stack([x_grid, y_grid, np.ones_like(x_grid)], axis=-1)",
-        "    ",
-        "    out_list = []",
-        "    for b in range(B_sz):",
-        "        t_coords = np.matmul(coords, np.transpose(H_mat[b]))",
-        "        t_coords = t_coords / t_coords[..., 2:3]",
-        "        src_x = t_coords[..., 0]",
-        "        src_y = t_coords[..., 1]",
-        "        c_list = []",
-        "        for c in range(C_dim):",
-        '            order = 1 if interpolation == "bilinear" else 0',
-        "            c_res = map_coordinates(images[b, ..., c], [src_y, src_x], order=order, mode='constant', cval=fill_value)",
-        "            c_list.append(c_res)",
-        "        out_list.append(np.stack(c_list, axis=-1))",
-        "    out = np.stack(out_list, axis=0)",
-        "    ",
-        '    if data_format == "channels_first":',
-        "        out = np.transpose(out, (0, 3, 1, 2))",
-        "    if not has_batch:",
-        "        out = out[0]",
-        "    return out",
-        "",
-        "def np_power_iteration(w, num_iters, u=None):",
-        "    if u is None:",
-        "        u = np.ones(w.shape[:-2] + (w.shape[-2], 1), dtype=w.dtype)",
-        "    for _ in range(num_iters):",
-        "        w_t = np.swapaxes(w, -1, -2)",
-        "        v = np.matmul(w_t, u)",
-        "        v = v / (np.linalg.norm(v, axis=-2, keepdims=True) + 1e-12)",
-        "        u = np.matmul(w, v)",
-        "        u = u / (np.linalg.norm(u, axis=-2, keepdims=True) + 1e-12)",
-        "    sigma = np.matmul(np.swapaxes(u, -1, -2), np.matmul(w, v))",
-        "    return np.squeeze(v, -1), np.squeeze(u, -1), np.squeeze(np.squeeze(sigma, -1), -1)",
-    )
+        schema = load_backend_mappings("numpy")
+        return schema.helpers or []
 
     def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Generate Python code for executing power iteration on a matrix.

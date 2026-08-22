@@ -11,7 +11,8 @@ def _eval_constant(node: ast.AST) -> Any:
     Args:
         node (object): The node parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if getattr(node, "value", None) is Ellipsis:
         return Ellipsis
@@ -38,7 +39,8 @@ def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -67,7 +69,8 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
@@ -86,7 +89,8 @@ def _eval_name(node: ast.AST) -> Any:
     Args:
         node (object): The node parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     node_id = getattr(node, "id", "")
     if node_id == "Ellipsis":
@@ -103,7 +107,8 @@ def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(getattr(node, "op", None), ast.USub):
         val = _eval_fn(getattr(node, "operand", None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -134,7 +139,8 @@ def _safe_parse_key(key_str: str) -> Any:
     Args:
         key_str (str): The key_str parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tree = ast.parse(key_str, mode="eval").body
     evaluators = _get_node_evaluators()
@@ -145,7 +151,8 @@ def _safe_parse_key(key_str: str) -> Any:
         Args:
             node (object): The node parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         node_type = type(node)
         if node_type in evaluators:

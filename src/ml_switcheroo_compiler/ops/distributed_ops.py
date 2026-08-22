@@ -46,7 +46,8 @@ class ShardTensor(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -81,7 +82,8 @@ class NcclAllReduce(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -116,7 +118,8 @@ class HierarchicalCopyAllReduce(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -151,7 +154,8 @@ class Broadcast(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -186,7 +190,8 @@ class AllGather(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -227,7 +232,8 @@ class Reduce(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -262,7 +268,8 @@ class AllReduce(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -298,7 +305,8 @@ class ReduceScatter(OpDef):
             tensor (object): The tensor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(tensor, "shape", ())
 
@@ -316,7 +324,8 @@ class AllToAll(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -342,7 +351,8 @@ class BroadcastArrays(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -368,7 +378,8 @@ class BroadcastTo(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -396,7 +407,8 @@ class BroadcastToRank(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         rank = kwargs.get("rank", 1)
         if args and hasattr(args[0], "shape"):
@@ -418,7 +430,8 @@ class BroadcastedIota(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -444,7 +457,8 @@ class Pbroadcast(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -464,7 +478,8 @@ def all_to_all(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("AllToAll", *args, **kwargs)
@@ -478,7 +493,8 @@ def broadcast_arrays(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastArrays", *args, **kwargs)
@@ -492,7 +508,8 @@ def broadcast_to(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastTo", *args, **kwargs)
@@ -506,7 +523,8 @@ def broadcast_to_rank(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastToRank", *args, **kwargs)
@@ -520,7 +538,8 @@ def broadcasted_iota(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastedIota", *args, **kwargs)
@@ -534,7 +553,8 @@ def pbroadcast(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return get_active_backend().execute_op("Pbroadcast", *args, **kwargs)
@@ -554,7 +574,8 @@ class Pmax(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -573,7 +594,8 @@ class Pmin(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -592,7 +614,8 @@ class Outfeed(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -610,7 +633,8 @@ class Pshuffle(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -629,7 +653,8 @@ class Pswapaxes(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
@@ -652,7 +677,8 @@ class Ppermute(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -671,7 +697,8 @@ class PsumScatter(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         scatter_dimension = kwargs.get("scatter_dimension", 0)
@@ -688,7 +715,8 @@ def outfeed(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -702,7 +730,8 @@ def pmax(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -716,7 +745,8 @@ def pmin(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -730,7 +760,8 @@ def ppermute(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -744,7 +775,8 @@ def pshuffle(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -758,7 +790,8 @@ def psum_scatter(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -772,7 +805,8 @@ def pswapaxes(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

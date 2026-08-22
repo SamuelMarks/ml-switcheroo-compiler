@@ -45,11 +45,11 @@ class ExportArchive:
 
     def _get_tf_dtype(self, dtype_str: str) -> int:
         """Map IR dtype string to TF DT_* enum."""
-        return self.schema.get("types", {}).get(str(dtype_str).lower(), 1)  # Default DT_FLOAT
+        return int(self.schema.get("types", {}).get(str(dtype_str).lower(), 1))  # Default DT_FLOAT
 
     def _get_tf_op(self, op_type: str) -> str:
         """Map IR op_type to TF NodeDef op."""
-        return self.schema.get("operations", {}).get(op_type, self.schema.get("operations", {}).get("fallback", "Placeholder"))
+        return str(self.schema.get("operations", {}).get(op_type, self.schema.get("operations", {}).get("fallback", "Placeholder")))
 
     def _build_signature_def(self, name: str, graph: Any = None) -> ProtobufWriter:
         """Build a SignatureDef protobuf message.

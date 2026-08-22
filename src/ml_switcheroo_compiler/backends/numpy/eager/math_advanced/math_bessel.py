@@ -21,7 +21,8 @@ def _np_bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.special as sc
 
@@ -37,7 +38,8 @@ def _np_bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.special as sc
 
@@ -53,7 +55,8 @@ def _np_modified_bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -72,7 +75,8 @@ def _np_modified_bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)
@@ -98,7 +102,8 @@ def _np_modified_bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)
@@ -124,7 +129,8 @@ def _np_modified_bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)

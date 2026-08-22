@@ -17,7 +17,8 @@ def dispatch_op(op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.

@@ -18,7 +18,8 @@ def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "stack"):
         return backend_module.stack([tensor])
@@ -36,7 +37,8 @@ def _argwhere(backend_module: Any, a: Any, **kwargs: Any) -> Any:
         a (object): The a parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argwhere(a)
 
@@ -50,7 +52,8 @@ def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "extract", None)
     if func:
@@ -70,7 +73,8 @@ def _pswapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pswapaxes"):
         return backend_module.lax.pswapaxes(*args, **kwargs)
@@ -86,7 +90,8 @@ def _rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.rot90(*args, **kwargs)
 
@@ -100,7 +105,8 @@ def _nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.nonzero(*args, **kwargs)
 
@@ -114,7 +120,8 @@ def _repeat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.repeat(*args, **kwargs)
 
@@ -128,7 +135,8 @@ def _tile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.tile(*args, **kwargs)
 
@@ -142,7 +150,8 @@ def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -167,7 +176,8 @@ def _flatnonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "flatnonzero", None)
     if func:
@@ -184,7 +194,8 @@ def _fliplr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fliplr", None)
     if func:
@@ -201,7 +212,8 @@ def _flipud(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "flipud", None)
     if func:
@@ -218,7 +230,8 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
@@ -237,7 +250,8 @@ def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -259,7 +273,8 @@ def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
     if func is not None:
@@ -278,7 +293,8 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
@@ -297,7 +313,8 @@ def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
     if func is not None:
@@ -316,7 +333,8 @@ def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
     if func is not None:
@@ -335,14 +353,16 @@ def _np_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.split(args[0], args[0].shape[kwargs.get("axis", 0)], axis=kwargs.get("axis", 0))
+    axis = kwargs.get("axis", 0)
+    return np.split(args[0], args[0].shape[axis], axis=axis)
 
 
 @global_eager_registry.register("UpdateSlice")
@@ -354,7 +374,8 @@ def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -377,7 +398,8 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:

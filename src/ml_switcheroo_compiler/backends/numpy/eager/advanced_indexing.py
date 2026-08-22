@@ -18,7 +18,8 @@ def _gather_nd(x: Any, indices: Any, **kwargs: Any) -> Any:
         indices (object): The indices parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x[tuple(np.moveaxis(indices, -1, 0))]
 
@@ -32,7 +33,8 @@ def _scatter_nd(indices: Any, updates: Any, shape: Any, **kwargs: Any) -> Any:
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.zeros(shape, dtype=updates.dtype)
     res[tuple(np.moveaxis(indices, -1, 0))] = updates
@@ -49,7 +51,8 @@ def _scatter(x: Any, index: Any, src: Any, dim: int, **kwargs: Any) -> Any:
         dim (int): The dim parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     y = np.copy(x)
     np.put_along_axis(y, index, src, axis=dim)
@@ -66,7 +69,8 @@ def _scatter_add(x: Any, index: Any, src: Any, dim: int, **kwargs: Any) -> Any:
         dim (int): The dim parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     y = np.copy(x)
     it = np.nditer(index, flags=["multi_index"])
@@ -85,7 +89,8 @@ def _tensor_scatter_update(tensor: Any, indices: Any, updates: Any) -> Any:
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -103,7 +108,8 @@ def _tensor_scatter_add(tensor: Any, indices: Any, updates: Any) -> Any:
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -121,7 +127,8 @@ def _tensor_scatter_max(tensor: Any, indices: Any, updates: Any) -> Any:
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -139,7 +146,8 @@ def _tensor_scatter_min(tensor: Any, indices: Any, updates: Any) -> Any:
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
@@ -159,7 +167,8 @@ def _np_take_along_axis(backend_module: Any, x: Any, indices: Any, axis: Any) ->
         indices (object): The indices parameter.
         axis (object): The axis parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.take_along_axis(x, indices, axis=axis)
 
@@ -174,7 +183,8 @@ def _np_tensor_scatter_update(backend_module: Any, tensor: Any, indices: Any, up
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
@@ -189,7 +199,8 @@ def _np_tensor_scatter_add(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -207,7 +218,8 @@ def _np_tensor_scatter_max(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -225,7 +237,8 @@ def _np_tensor_scatter_min(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -242,7 +255,8 @@ def _np_gather_nd(backend_module: Any, params: Any, indices: Any) -> Any:
         params (object): The params parameter.
         indices (object): The indices parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return params[idx]
@@ -259,7 +273,8 @@ def _np_scatter_nd(backend_module: Any, indices: Any, updates: Any, shape: Any, 
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     out = np.zeros(shape, dtype=updates.dtype)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -276,7 +291,8 @@ def _np_scatter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     input_data = args[0]
     index = args[1]
@@ -296,7 +312,8 @@ def _np_scatter_add(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     input_data = np.copy(args[0])
     index = args[1]
@@ -316,7 +333,8 @@ def _np_scatter_apply(backend_module: Any, context: IndexingContext, *args: Any,
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -354,7 +372,8 @@ def _np_scatter_max(backend_module: Any, tensor: Any, indices: Any, updates: Any
         updates (object): The updates parameter.
         context (IndexingContext): The context parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = np.copy(np.asarray(tensor))
     np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
@@ -372,7 +391,8 @@ def _np_scatter_min(backend_module: Any, tensor: Any, indices: Any, updates: Any
         updates (object): The updates parameter.
         context (IndexingContext): The context parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = np.copy(np.asarray(tensor))
     np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
@@ -390,7 +410,8 @@ def _np_scatter_mul(backend_module: Any, tensor: Any, indices: Any, updates: Any
         updates (object): The updates parameter.
         context (IndexingContext): The context parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))

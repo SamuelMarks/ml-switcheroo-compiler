@@ -191,8 +191,8 @@ def test_tcp_distributed_context_none_connections_all_reduce():
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.listener = None
-    ctx.send_conn = None
-    ctx.recv_conn = DummyConn()
+    ctx.send_conns = [DummyConn()]
+    ctx.recv_conns = [DummyConn()]
     tensor = np.array([1, 2])
     ctx.all_reduce_ring(tensor)
 
@@ -256,7 +256,8 @@ def test_tcp_distributed_context_initialize_none_listener():
             pass
 
     with patch("threading.Thread", new=SyncThread):
-        with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener", side_effect=lambda *a, **kw: None):
-            with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
-                ctx = TCPDistributedContext(world_size=2, rank=0)
-                ctx.initialize()
+        with patch("time.sleep", return_value=None):
+            with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener", side_effect=lambda *a, **kw: None):
+                with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
+                    ctx = TCPDistributedContext(world_size=2, rank=0)
+                    ctx.initialize()

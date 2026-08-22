@@ -36,8 +36,8 @@ def test_keras_generator_full() -> object:
     """
     try:
         g = IRGraph()
-        n_in = IRNode(id="n_in", op_type="Parameter", inputs=[], attributes={}, shape_metadata=(2,))
-        n_out = IRNode(id="n_out", op_type="Return", inputs=["n_in"], attributes={}, shape_metadata=None)
+        n_in = IRNode(id="n_in", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
+        n_out = IRNode(id="n_out", op_type="Output", inputs=["n_in"], attributes={}, shape_metadata=None)
         g.nodes["n_in"] = n_in
         g.nodes["n_out"] = n_out
         gen = KerasCodeGenerator(g)

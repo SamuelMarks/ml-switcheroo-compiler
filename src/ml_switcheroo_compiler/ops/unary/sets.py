@@ -19,7 +19,8 @@ class Setdiff1d(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0] if args else ()
 

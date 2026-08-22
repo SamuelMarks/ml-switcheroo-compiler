@@ -19,7 +19,8 @@ def _np_constant_of_shape(backend_module: Any, shape: Any, value: Any = 0.0, *ar
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.full(shape, value)
 
@@ -33,7 +34,8 @@ def _np_reduce_window(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _reduce_window(*args, **kwargs)
 
@@ -47,7 +49,8 @@ def _np_test_eager_op(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.array([1, 2, 3], dtype=backend_module.float32)
 
@@ -61,7 +64,8 @@ def _np_unknown(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0.0
 
@@ -75,7 +79,8 @@ def _np_rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.get("dtype", getattr(backend_module, "float32", None))
     dtype_str = str(dtype).split(".")[-1]
@@ -97,7 +102,8 @@ def _np_is_non_decreasing(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
@@ -114,7 +120,8 @@ def _np_is_strictly_increasing(backend_module: Any, x: Any, **kwargs: Any) -> An
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
@@ -133,7 +140,8 @@ def _np_l2_normalize(backend_module: Any, x: Any, axis: Any = None, epsilon: Any
         epsilon (float): The epsilon parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     square_sum = backend_module.sum(backend_module.square(x), axis=axis, keepdims=True)
     x_inv_norm = backend_module.divide(1.0, backend_module.sqrt(backend_module.maximum(square_sum, epsilon)))
@@ -151,7 +159,8 @@ def _np_reduce_euclidean_norm(backend_module: Any, x: Any, axis: Any = None, kee
         keepdims (bool): The keepdims parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.sqrt(backend_module.sum(backend_module.square(x), axis=axis, keepdims=keepdims))
 
@@ -167,7 +176,8 @@ def _clamp(np: Any, min_val: Any, x: Any, max_val: Any, **kwargs: Any) -> Any:
         max_val (object): The max_val parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.clip(x, min_val, max_val)
 
@@ -183,7 +193,8 @@ def _logspace(np: Any, start: Any, stop: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if args and type(args[0]).__name__ == "SpaceConfig":
         c = args[0]
@@ -203,7 +214,8 @@ def _np_frombuffer(backend_module: Any, buffer: Any, dtype: str = "float32", cou
         offset (int): The offset parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.frombuffer(buffer, dtype=dtype, count=count, offset=offset)
 
@@ -218,7 +230,8 @@ def _np_dtype_op(backend_module: Any, value: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(value, str):
         return DType(value)
@@ -236,7 +249,8 @@ def _eager_Gradient(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return getattr(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs)
 
@@ -250,7 +264,8 @@ def _eager_I0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return getattr(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs)
 
@@ -264,6 +279,7 @@ def _eager_BroadcastedIota(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return getattr(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1])

@@ -15,7 +15,8 @@ def _np_average(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.average(*args, **kwargs)
 
@@ -141,7 +142,8 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -178,7 +180,8 @@ def _np_descriptive(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -204,7 +207,8 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -220,7 +224,8 @@ def _np_randomcategorical(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -251,7 +256,8 @@ def _np_randompermutation(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -276,7 +282,8 @@ def _np_randomtruncatednormal(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
@@ -291,7 +298,8 @@ def _np_randombernoulli(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
@@ -307,7 +315,8 @@ def _np_randomuniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     low = kwargs.get("minval", args[1] if len(args) > 1 else 0.0)
@@ -324,7 +333,8 @@ def _np_randomchoice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -350,7 +360,8 @@ def _np_randomshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -371,7 +382,8 @@ def _np_dirichlet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 

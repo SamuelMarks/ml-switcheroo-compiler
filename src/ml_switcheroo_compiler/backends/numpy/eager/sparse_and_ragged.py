@@ -17,7 +17,8 @@ def _np_sparse_bincount(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.bincount(np.asarray(x).astype(int).flatten())
 
@@ -31,7 +32,8 @@ def _np_sparse_reduce_max(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.max(np.asarray(x))
 
@@ -45,7 +47,8 @@ def _np_sparse_reduce_sum(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.sum(np.asarray(x))
 
@@ -61,7 +64,8 @@ def _np_sparse_segment_mean(backend_module: Any, data: Any, indices: Any, segmen
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.mean(np.asarray(data))
 
@@ -77,7 +81,8 @@ def _np_sparse_segment_sqrt_n(backend_module: Any, data: Any, indices: Any, segm
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.sum(np.asarray(data)) / np.sqrt(max(1, np.asarray(segment_ids).size))
 
@@ -93,7 +98,8 @@ def _np_sparse_segment_sum(backend_module: Any, data: Any, indices: Any, segment
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.sum(np.asarray(data))
 
@@ -108,6 +114,7 @@ def _np_ragged_dot(backend_module: Any, a: Any, b: Any, **kwargs: Any) -> Any:
         b (object): The b parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.dot(np.asarray(a), np.asarray(b))

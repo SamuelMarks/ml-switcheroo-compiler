@@ -44,7 +44,8 @@ class CreationOp(OpDef):
             shape (object): The shape parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return shape
 
@@ -294,7 +295,8 @@ class Blackman(OpDef):
             M (object): The M parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (M,) if isinstance(M, int) else (M.item(),)
 
@@ -310,7 +312,8 @@ class Bartlett(OpDef):
             M (object): The M parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (M,) if isinstance(M, int) else (M.item(),)
 
@@ -326,7 +329,8 @@ class Hamming(OpDef):
             M (object): The M parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (M,) if isinstance(M, int) else (M.item(),)
 
@@ -342,7 +346,8 @@ class Hanning(OpDef):
             M (object): The M parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (M,) if isinstance(M, int) else (M.item(),)
 
@@ -358,7 +363,8 @@ class Kaiser(OpDef):
             M (object): The M parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (M,) if isinstance(M, int) else (M.item(),)
 
@@ -533,7 +539,8 @@ class Logspace(CreationOp):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (kwargs.get("num", args[2] if len(args) > 2 and isinstance(args[2], int) else 50),)
 
@@ -566,7 +573,8 @@ class Frombuffer(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically 1D array of elements depending on dtype and buffer size
         if "count" in kwargs and kwargs["count"] != -1:

@@ -57,7 +57,8 @@ def jit(fun: Callable[..., Any], options: Any = None) -> Callable[..., Any]:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return fun(*args, **kwargs)
 
@@ -82,6 +83,7 @@ def eval_shape(fun: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return fun(*args, **kwargs)

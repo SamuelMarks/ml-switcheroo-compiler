@@ -50,6 +50,7 @@ class ScaledDotProductAttention(OpDef):
             scale_factor (object): The scale factor parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(q, "shape", ())

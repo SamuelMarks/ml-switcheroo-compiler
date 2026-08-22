@@ -26,7 +26,8 @@ def _ragged_op(op_name: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     op_cls = get_op(op_name)
     if config.eager_mode:
@@ -61,7 +62,8 @@ def ragged_constant(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedConstant", *args, **kwargs)
 
@@ -73,7 +75,8 @@ def ragged_cross(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)  # Alias
 
@@ -85,7 +88,8 @@ def ragged_cross_hashed(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)
 
@@ -97,7 +101,8 @@ def ragged_range(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedRange", *args, **kwargs)
 
@@ -109,7 +114,8 @@ def ragged_row_splits_to_segment_ids(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedRowSplitsToSegmentIds", *args, **kwargs)
 
@@ -121,7 +127,8 @@ def ragged_segment_ids_to_row_splits(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedSegmentIdsToRowSplits", *args, **kwargs)
 
@@ -133,7 +140,8 @@ def ragged_stack(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedStack", *args, **kwargs)
 
@@ -145,7 +153,8 @@ def ragged_stack_dynamic_partitions(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedStackDynamicPartitions", *args, **kwargs)
 
@@ -157,7 +166,8 @@ def ragged_dot(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("RaggedDot", *args, **kwargs)
 
@@ -169,7 +179,8 @@ def boolean_mask(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("BooleanMask", *args, **kwargs)
 
@@ -181,6 +192,7 @@ def map_flat_values(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _ragged_op("MapFlatValues", *args, **kwargs)

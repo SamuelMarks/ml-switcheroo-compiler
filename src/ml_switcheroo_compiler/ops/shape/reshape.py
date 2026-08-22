@@ -77,7 +77,8 @@ class Reshape(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         newshape = args[1] if len(args) > 1 else kwargs["newshape"]
@@ -137,7 +138,8 @@ class BroadcastTo(OpDef):
             shape (object): The shape parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.
@@ -228,7 +230,8 @@ class Atleast1d(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -252,7 +255,8 @@ class Atleast2d(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -278,7 +282,8 @@ class Atleast3d(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -306,7 +311,8 @@ class ExpandDims(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
@@ -334,7 +340,8 @@ class Block(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         arrays = args[0] if args else kwargs.get("arrays")
         if not isinstance(arrays, (list, tuple)):
@@ -355,7 +362,8 @@ class C(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -373,7 +381,8 @@ class Collapse(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -391,7 +400,8 @@ class Delete(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
@@ -412,7 +422,8 @@ class DiagIndices(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
@@ -432,7 +443,8 @@ class DiagIndicesFrom(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
@@ -453,7 +465,8 @@ class Diagflat(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         v = args[0] if args else kwargs.get("v")
         if not hasattr(v, "shape"):
@@ -479,7 +492,8 @@ class FillDiagonal(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if args else kwargs.get("a")
         if not hasattr(a, "shape"):
@@ -500,7 +514,8 @@ class Insert(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         arr = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
@@ -521,7 +536,8 @@ class Moveaxis(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -564,7 +580,8 @@ class Permute(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -589,7 +606,8 @@ class Roll(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -610,7 +628,8 @@ class Squeeze(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -649,7 +668,8 @@ class Swapaxes(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -676,7 +696,8 @@ class Flip(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -697,7 +718,8 @@ class Fliplr(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
@@ -718,7 +740,8 @@ class Flipud(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):

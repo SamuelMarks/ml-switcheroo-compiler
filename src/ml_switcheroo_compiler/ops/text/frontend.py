@@ -423,7 +423,8 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
     Args:
         conf (object): The conf parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     conf = conf if conf is not None else AsStringConfig()
     return {

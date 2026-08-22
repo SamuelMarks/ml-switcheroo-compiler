@@ -48,7 +48,8 @@ def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
         dt1 (Any): The dt1 parameter.
         dt2 (Any): The dt2 parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None

@@ -55,7 +55,7 @@ def stateless_random_uniform(
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
-    from ml_switcheroo_compiler.random import uniform
+    from ml_switcheroo_compiler.random.continuous.uniform import uniform
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
     res = uniform(seed, tuple(shape), dtype_enum)
@@ -85,7 +85,7 @@ def stateless_random_normal(
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
-    from ml_switcheroo_compiler.random import normal
+    from ml_switcheroo_compiler.random.continuous.normal import normal
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
     res = normal(seed, tuple(shape), dtype_enum)
@@ -141,7 +141,7 @@ def stateless_truncated_normal(
     """
     from ml_switcheroo_compiler.ops.binary import add, multiply
     from ml_switcheroo_compiler.ops.creation import full
-    from ml_switcheroo_compiler.random import (
+    from ml_switcheroo_compiler.random.continuous.truncated_normal import (
         truncated_normal,
     )
 
@@ -201,7 +201,7 @@ def stateless_gamma(
     Returns:
         Tensor: The generated tensor.
     """
-    from ml_switcheroo_compiler.random import gamma
+    from ml_switcheroo_compiler.random.continuous.gamma import gamma
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
     res = gamma(seed, alpha, tuple(shape), dtype_enum)
@@ -227,7 +227,7 @@ def stateless_beta(
     Returns:
         Tensor: The generated tensor.
     """
-    from ml_switcheroo_compiler.random.continuous import beta
+    from ml_switcheroo_compiler.random.continuous.beta import beta
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
     res = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
@@ -323,7 +323,8 @@ class Generator:
             seed (object): The seed parameter.
             alg (object): The alg parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return cls(state=seed, alg=alg)
 
@@ -383,7 +384,8 @@ def create_rng_state(seed: Any, alg: Any = None) -> Any:
         seed (object): The seed parameter.
         alg (object): The alg parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -444,7 +446,8 @@ def stateless_split(seed: Any, num: Any = 2) -> Any:
         seed (object): The seed parameter.
         num (object): The num parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 

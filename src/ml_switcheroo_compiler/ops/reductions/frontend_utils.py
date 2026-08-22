@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.ops.configs import WindowConfig
 class ReduceWindow:
     """ReduceWindow class."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[Any, ...]:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    def infer_shape(self, *args, **kwargs) -> Any:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         """infer_shape function.
 
         Args:
@@ -63,7 +63,7 @@ def _emit_reduction_node(
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
-        inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         attributes=attrs,
         shape_metadata=out_shape,
     )

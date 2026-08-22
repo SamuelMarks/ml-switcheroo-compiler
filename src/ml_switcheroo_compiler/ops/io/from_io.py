@@ -35,7 +35,8 @@ class Fromfile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -59,7 +60,8 @@ class Fromstring(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -83,7 +85,8 @@ class Fromiter(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -107,7 +110,8 @@ class Fromfunction(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
@@ -128,7 +132,8 @@ def fromfile(file: Any, dtype: Any = float, count: int = -1, sep: str = "", offs
         sep (str): The sep parameter.
         offset (int): The offset parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -149,7 +154,8 @@ def fromstring(string: str, dtype: Any = float, count: int = -1, sep: str = "", 
         count (int): The count parameter.
         sep (str): The sep parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -169,7 +175,8 @@ def fromiter(iterable: Any, dtype: Any, count: int = -1, *, like: Any = None) ->
     dtype (object): The dtype parameter.
         count (int): The count parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -188,7 +195,8 @@ def fromfunction(function: Any, shape: Any, *, dtype: Any = float, like: Any = N
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

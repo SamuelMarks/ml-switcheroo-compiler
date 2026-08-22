@@ -36,7 +36,8 @@ def _get_window(np_mod: Any, window: str, frame_length: int) -> Any:
         window (str): The window parameter.
         frame_length (int): The frame_length parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -66,7 +67,8 @@ def _apply_istft_batch(np_mod: Any, stft_np: Any, win: Any, config: STFTConfig, 
         config (STFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -80,7 +82,8 @@ def istft_eager(backend_module: Any, stft_tensor: Any, config: STFTConfig, cente
         config (STFTConfig): The config parameter.
         center (bool): The center parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -120,7 +123,8 @@ def _compute_filterbank_weights(np_mod: Any, num_spectrogram_bins: int, num_mel_
         bin_freqs (object): The bin_freqs parameter.
         hz_pts (object): The hz_pts parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -132,7 +136,8 @@ def _generate_mel_filterbank_matrix(np_mod: Any, config: MelFilterbankConfig) ->
         np_mod (object): The np_mod parameter.
         config (MelFilterbankConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -145,7 +150,8 @@ def mel_filterbank_eager(backend_module: Any, _: Any, config: MelFilterbankConfi
         _ (object): The _ parameter.
         config (MelFilterbankConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -157,7 +163,8 @@ def _apply_dct(log_mel_spec: Any, num_mfccs: int) -> Any:
         log_mel_spec (object): The log_mel_spec parameter.
         num_mfccs (int): The num_mfccs parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -169,7 +176,8 @@ def _power_to_db(np_mod: Any, mel_spec: Any) -> Any:
         np_mod (object): The np_mod parameter.
         mel_spec (object): The mel_spec parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -182,7 +190,8 @@ def _mfcc_eager_tf(backend_module: Any, spectrogram: Any, config: MFCCConfig) ->
         spectrogram (object): The spectrogram parameter.
         config (MFCCConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -196,7 +205,8 @@ def _convert_to_np(np_mod: Any, x: Any, is_torch: bool, is_mlx: bool) -> Any:
         is_torch (bool): The is_torch parameter.
         is_mlx (bool): The is_mlx parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -210,7 +220,8 @@ def _to_backend_tensor(name: str, mfccs: Any, spectrogram: Any, np_mod: Any) -> 
         spectrogram (object): The spectrogram parameter.
         np_mod (object): The np_mod parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -223,7 +234,8 @@ def mfcc_eager(backend_module: Any, spectrogram: Any, config: MFCCConfig) -> Any
         spectrogram (object): The spectrogram parameter.
         config (MFCCConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -237,7 +249,8 @@ def _apply_stft_batch(np_mod: Any, audio_np: Any, win: Any, config: STFTConfig) 
         win (object): The win parameter.
         config (STFTConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -252,7 +265,8 @@ def _to_backend_tensor_complex(name: str, out: Any, np_mod: Any, backend_module:
         backend_module (object): The backend_module parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -265,6 +279,7 @@ def stft_eager(backend_module: Any, input_tensor: Any, config: STFTConfig) -> An
         input_tensor (object): The input_tensor parameter.
         config (STFTConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0

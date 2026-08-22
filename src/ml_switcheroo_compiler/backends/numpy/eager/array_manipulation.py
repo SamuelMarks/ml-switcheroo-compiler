@@ -18,7 +18,8 @@ def _np_resize(backend_module: Any, x: Any, shape: Any, *args: Any, **kwargs: An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -37,7 +38,8 @@ def _np_band_part(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _band_part(*args, **kwargs)
 
@@ -51,7 +53,8 @@ def _np_diag(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs["k"] = kwargs.pop("diagonal", kwargs.pop("k", 0))
     return backend_module.diag(*args, **kwargs)
@@ -68,7 +71,8 @@ def _np_unstack(backend_module: Any, x: Any, axis: Any = 0, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)]
 
@@ -83,7 +87,8 @@ def _np_reshape(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape"))
     return backend_module.reshape(x, shape)
@@ -99,7 +104,8 @@ def _np_squeeze(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     axis = kwargs.get("dim", args[0] if len(args) > 0 else None)
     return backend_module.squeeze(x, axis=axis)
@@ -115,7 +121,8 @@ def _np_transpose(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     axes = kwargs.get("axes", kwargs.get("dims", args[0] if len(args) > 0 else None))
     return backend_module.transpose(x, axes=axes)
@@ -130,7 +137,8 @@ def _np_rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.rot90(*args, **kwargs)
 
@@ -144,7 +152,8 @@ def gather_eager(np_mod: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     t = args[0]
     dim = args[1] if len(args) > 1 else kwargs.get("dim")
@@ -165,7 +174,8 @@ def stack_eager(np_mod: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensors = args[0] if len(args) > 0 else kwargs.get("tensors")
     dim = args[1] if len(args) > 1 else kwargs.get("dim", 0)
@@ -186,7 +196,8 @@ def _np_tile(backend_module: Any, x: Any, reps: Any, *args: Any, **kwargs: Any) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.tile(x, reps)
 
@@ -201,7 +212,8 @@ def _np_permute(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dims = kwargs.get("dims", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=dims)
@@ -216,7 +228,8 @@ def _np_triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs["k"] = kwargs.pop("diagonal", 0)
     return backend_module.triu(*args, **kwargs)
@@ -231,7 +244,8 @@ def _np_tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs["k"] = kwargs.pop("diagonal", 0)
     return backend_module.tril(*args, **kwargs)
@@ -247,7 +261,8 @@ def _np_expand_dims(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     axis = args[0] if len(args) > 0 else kwargs.get("axis")
     return backend_module.expand_dims(x, axis=axis)
@@ -263,7 +278,8 @@ def _np_atleast_1d(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_1d(x)
 
@@ -278,7 +294,8 @@ def _np_atleast_2d(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_2d(x)
 
@@ -293,7 +310,8 @@ def _np_atleast_3d(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_3d(x)
 
@@ -307,7 +325,8 @@ def _np_append(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.append(*args, **kwargs)
 
@@ -321,7 +340,8 @@ def _np_column_stack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.column_stack(tup)
@@ -336,7 +356,8 @@ def _np_dsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.dsplit(*args, **kwargs)
 
@@ -350,7 +371,8 @@ def _np_dstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.dstack(tup)
@@ -365,7 +387,8 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.hsplit(*args, **kwargs)
 
@@ -379,7 +402,8 @@ def _np_hstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.hstack(tup)
@@ -394,7 +418,8 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.vsplit(*args, **kwargs)
 
@@ -408,7 +433,8 @@ def _np_vstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.vstack(tup)
@@ -423,7 +449,8 @@ def _np_moveaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.moveaxis(*args, **kwargs)
 
@@ -437,7 +464,8 @@ def _np_swapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.swapaxes(*args, **kwargs)
 
@@ -451,7 +479,8 @@ def _np_roll(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.roll(*args, **kwargs)
 
@@ -465,7 +494,8 @@ def _np_block(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.block(*args, **kwargs)
 
@@ -479,7 +509,8 @@ def _np_delete(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.delete(*args, **kwargs)
 
@@ -493,7 +524,8 @@ def _np_diag_indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.diag_indices(*args, **kwargs)
 
@@ -507,7 +539,8 @@ def _np_diag_indices_from(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.diag_indices_from(*args, **kwargs)
 
@@ -521,7 +554,8 @@ def _np_diagflat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.diagflat(*args, **kwargs)
 
@@ -535,7 +569,8 @@ def _np_fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0] if len(args) > 0 else kwargs.get("a")
     val = args[1] if len(args) > 1 else kwargs.get("val")
@@ -553,6 +588,7 @@ def _np_insert(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.insert(*args, **kwargs)

@@ -30,7 +30,8 @@ class EvaluationStrategy(abc.ABC):
         Args:
             ctx (EvaluationContext): The ctx parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return None
 
@@ -44,7 +45,8 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         Args:
             ctx (EvaluationContext): Context.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ctx.op_cls().eager_eval(*ctx.raw_args, **ctx.kwargs)
 
@@ -58,7 +60,8 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Args:
             ctx (EvaluationContext): Context.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ctx.backend.execute_op(ctx.op_type, *ctx.raw_args, **ctx.kwargs)
 
@@ -124,7 +127,8 @@ class EagerEvaluator:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.ops.registry import get_op

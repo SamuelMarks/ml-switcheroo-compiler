@@ -79,7 +79,8 @@ class Gru(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0] if args else ()
 
@@ -110,7 +111,8 @@ def _sigmoid(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 

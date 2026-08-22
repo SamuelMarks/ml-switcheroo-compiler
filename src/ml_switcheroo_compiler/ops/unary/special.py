@@ -23,7 +23,8 @@ class Cast(OpDef):
             dtype (object): The dtype parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return x
 
@@ -46,7 +47,8 @@ class CanCast(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # CanCast returns a boolean scalar
         return ()
@@ -64,7 +66,8 @@ class Frexp(OpDef):
             dtype (object): The dtype parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return x
 
@@ -183,7 +186,8 @@ class Lbeta(OpDef):
             x (object): The x parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = getattr(x, "shape", ())
         if len(shape) > 0:

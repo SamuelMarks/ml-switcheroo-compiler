@@ -24,7 +24,8 @@ class Psum(ReductionOp):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())
@@ -43,7 +44,8 @@ class Pmean(ReductionOp):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())

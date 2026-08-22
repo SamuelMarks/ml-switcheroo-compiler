@@ -19,7 +19,8 @@ def _gelu(x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     erf_vec = np.vectorize(math.erf)
     return 0.5 * x * (1 + erf_vec(x / np.sqrt(2.0)))
@@ -35,7 +36,8 @@ def _np_relu(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.maximum(x, 0.0)
 
@@ -49,7 +51,8 @@ def _np_alpha_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     rate = kwargs.get("rate", 0.5)
     training = kwargs.get("training", False)
@@ -77,7 +80,8 @@ def _np_activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> A
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x
 
@@ -91,7 +95,8 @@ def _np_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     rate = kwargs.get("rate", 0.5)
     training = kwargs.get("training", False)
@@ -114,7 +119,8 @@ def _np_time_distributed(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     wrapped_op_name = kwargs.pop("wrapped_op_name")
     shape = x.shape
@@ -162,7 +168,8 @@ def _np_rrelu(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     lower = kwargs.get("lower", 1.0 / 8.0)
     upper = kwargs.get("upper", 1.0 / 3.0)

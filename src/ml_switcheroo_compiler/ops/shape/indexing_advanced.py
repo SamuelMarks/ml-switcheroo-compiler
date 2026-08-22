@@ -17,7 +17,8 @@ def _normalize_k(k: Any) -> int | object:
     Args:
         k (object): The k parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
         k = k.__array__()
@@ -45,7 +46,8 @@ class TopK(OpDef):
             k (object): The k parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if k is None:
             k = kwargs.get("k", 1)
@@ -79,7 +81,8 @@ class Argsort(OpDef):
             is_stable (object): The is_stable parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if isinstance(x, tuple) and hasattr(x, "shape"):
             return x.shape
@@ -107,7 +110,8 @@ class Sort(OpDef):
             is_stable (object): The is_stable parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(x, "shape", ())
 
@@ -386,7 +390,8 @@ class Argpartition(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -407,7 +412,8 @@ class Partition(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -429,7 +435,8 @@ class Compress(OpDef):
             out (object): The out parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None,)
 
@@ -451,7 +458,8 @@ class Diagonal(OpDef):
             axis2 (int): The axis2 parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None,)
 
@@ -471,7 +479,8 @@ class Diagflat(OpDef):
             k (int): The k parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None, None)
 
@@ -491,7 +500,8 @@ class DiagIndices(OpDef):
             naxis (int): The naxis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None,)
 
@@ -530,7 +540,8 @@ class BooleanMask(OpDef):
             axis (object): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically dynamic size
         return (None,)

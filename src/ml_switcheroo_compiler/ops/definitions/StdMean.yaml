@@ -7,7 +7,7 @@ std_args:
     type: Tensor
   - is_variadic: false
     kind: positional_or_keyword
-    name: dim
+    name: axis
     type: Optional[Union[int, List[int]]]
   - default: 1
     is_variadic: false
@@ -17,7 +17,7 @@ std_args:
   - default: false
     is_variadic: false
     kind: positional_or_keyword
-    name: keepdim
+    name: keepdims
     type: bool
 variants:
   llvm_cpp:

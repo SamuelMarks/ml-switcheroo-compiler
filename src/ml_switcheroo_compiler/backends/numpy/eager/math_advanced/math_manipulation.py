@@ -231,7 +231,8 @@ def _np_extractpatchesoptions(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.vision.bbox import ExtractPatchesOptions
 
@@ -247,7 +248,8 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     handle = args[0]
     return backend_module.stack(handle)

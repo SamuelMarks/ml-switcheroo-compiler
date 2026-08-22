@@ -415,7 +415,8 @@ def diag_indices(n: int, ndim: int = 2) -> Any:
         n (int): The n parameter.
         ndim (int): The ndim parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
@@ -444,7 +445,8 @@ def diag_indices_from(arr: Any) -> Any:
     Args:
         arr (object): The arr parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 

@@ -21,7 +21,8 @@ def _np_truncate_div(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (x, y) = args
     return np.trunc(np.divide(x, y))
@@ -36,7 +37,8 @@ def _np_truncate_mod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (x, y) = args
     return np.fmod(x, y)
@@ -51,7 +53,8 @@ def _np_betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     try:
         import scipy.special
@@ -154,7 +157,8 @@ def _np_average(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.average(*args, **kwargs)
 
@@ -476,7 +480,8 @@ def _np_callable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if args:
         return callable(args[0])
@@ -492,7 +497,8 @@ def _np_debuginfs(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -512,7 +518,8 @@ def _np_debugnans(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -567,7 +574,8 @@ def _np_dotgeneral(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (lhs, rhs) = (np.asarray(args[0]), np.asarray(args[1]))
     dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ())))
@@ -584,7 +592,8 @@ def _np_raggeddot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.matmul(args[0], args[1])
 
@@ -598,7 +607,8 @@ def _np_tensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not args and (not kwargs):
         return backend_module.array([])
@@ -614,7 +624,8 @@ def _np_rem(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
@@ -632,7 +643,8 @@ def _np_serialize_tensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_serialize_tensor_camel(backend_module, *args, **kwargs)
 
@@ -646,7 +658,8 @@ def _np_descriptive(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -663,7 +676,8 @@ def _np_key(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if len(args) > 0:
         return np.array([args[0], 0], dtype=np.uint32)
@@ -677,7 +691,8 @@ def _get_np_arg(arg: Sequence[Any], i: int) -> np.ndarray | None:  # type: ignor
         arg (object): The arg parameter.
         i (int): The i parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.asarray(arg[i]) if len(arg) > i else None
 
@@ -705,7 +720,8 @@ def _np_clip(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -724,7 +740,8 @@ def _np_one_hot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     indices = _get_np_arg(args, 0)
     depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None)
@@ -752,7 +769,8 @@ def _np_serialize_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -778,7 +796,8 @@ def _np_rem_2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -806,7 +825,8 @@ def _np_descriptive_2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.

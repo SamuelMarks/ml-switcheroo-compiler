@@ -167,6 +167,15 @@ class MLXCodeGenerator(ClassBasedGenerator):
         if hasattr(mx, "metal") and hasattr(mx.metal, "set_wired_limit"):
             mx.metal.set_wired_limit(limit)
 
+    def generate(self) -> str:
+        """Generate code using strict AST construction (CST) from a base NumPy string."""
+        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
+        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+
+        gen = NumpyGenerator(self.graph)
+        base_code = gen.generate()
+        return transpile_source(base_code, target_framework="mlx")
+
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
 
@@ -214,7 +223,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         fix_imports (bool): The fix_imports parameter.
         encoding (str): The encoding parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import mlx.core as mx
 

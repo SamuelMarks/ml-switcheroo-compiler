@@ -28,7 +28,8 @@ def zeros(cls: type, shape: tuple[int, ...]) -> Any:
         cls (type): The class.
     shape (tuple): The shape parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return generic_zeros(mx, shape)
 
@@ -51,7 +52,8 @@ def array(cls: type, data: Any, dtype: Any = None) -> Any:
     data (object): The data parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return generic_array(mx, data, dtype)
 
@@ -71,7 +73,8 @@ def asarray(cls: type, data: Any) -> Any:
         cls (type): The class.
     data (object): The data parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(mx, "asarray"):
         return generic_asarray(mx, data)

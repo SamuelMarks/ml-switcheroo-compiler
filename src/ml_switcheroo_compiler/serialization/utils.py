@@ -36,7 +36,8 @@ def to_numpy(tensor: Any) -> Any:
     Args:
         tensor (object): The tensor parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(tensor, "numpy"):
         return tensor.numpy()
@@ -55,7 +56,8 @@ def concatenate_arrays(arrays: list[Any]) -> Any:
     Args:
         arrays (list): The arrays parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler import ops
 

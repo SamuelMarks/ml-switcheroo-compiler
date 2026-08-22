@@ -13,7 +13,8 @@ def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
         x (object): The x parameter.
         name (str): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(x, "numpy"):
         return x.numpy()
@@ -31,7 +32,8 @@ def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor:
         name (str): The name parameter.
         original_tensor (object): The original_tensor parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if name == "torch":
         return _torch_from_numpy(out, original_tensor)
@@ -51,7 +53,8 @@ def _torch_from_numpy(out: Any, original_tensor: Any = None) -> Any:
         out (object): The out parameter.
         original_tensor (object): The original_tensor parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return out
 
@@ -63,7 +66,8 @@ def _mlx_from_numpy(out: Any, original_tensor: Any = None) -> Any:
         out (object): The out parameter.
         original_tensor (object): The original_tensor parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return out
 
@@ -75,7 +79,8 @@ def _jax_from_numpy(out: Any, original_tensor: Any = None) -> Any:
         out (object): The out parameter.
         original_tensor (object): The original_tensor parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return out
 
@@ -88,7 +93,8 @@ def _to_channels_last(np_mod: Any, imgs: Any, data_format: typing.Optional[str])
         imgs (object): The imgs parameter.
         data_format (object): The data_format parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return imgs
 
@@ -101,6 +107,7 @@ def _from_channels_last(np_mod: Any, out: Any, data_format: typing.Optional[str]
         out (object): The out parameter.
         data_format (object): The data_format parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return out

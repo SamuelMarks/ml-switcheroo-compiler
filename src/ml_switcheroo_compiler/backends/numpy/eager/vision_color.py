@@ -19,7 +19,8 @@ def _np_adjust_brightness(backend_module: Any, images: Any, delta: float, **kwar
         delta (float): The delta parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.clip(images + delta, 0.0, 1.0)
 
@@ -34,7 +35,8 @@ def _np_adjust_contrast(backend_module: Any, images: Any, contrast_factor: float
         contrast_factor (float): The contrast_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     mean = np.mean(images, axis=(-3, -2), keepdims=True)
     return np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0)
@@ -50,7 +52,8 @@ def _np_adjust_hue(backend_module: Any, images: Any, delta: float, **kwargs: Any
         delta (float): The delta parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -65,7 +68,8 @@ def _np_adjust_saturation(backend_module: Any, images: Any, saturation_factor: f
         saturation_factor (float): The saturation_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     gray = _np_rgb_to_grayscale(backend_module, images)
     return np.clip(gray + (images - gray) * saturation_factor, 0.0, 1.0)
@@ -80,7 +84,8 @@ def _np_auto_contrast(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     value_range = kwargs.get("value_range", (0, 255))
     low = np.min(images, axis=(-3, -2), keepdims=True)
@@ -100,7 +105,8 @@ def _np_equalization(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     images_uint8 = np.clip(images * 255.0, 0, 255).astype(np.uint8)
     out = np.empty_like(images_uint8)
@@ -127,7 +133,8 @@ def _np_invert(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     value_range = kwargs.get("value_range", (0, 255))
     return value_range[1] - images + value_range[0]
@@ -142,7 +149,8 @@ def _np_posterize(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     bits = kwargs.get("bits", 4)
     shift = 8 - bits
@@ -160,7 +168,8 @@ def _np_rgb_to_grayscale(backend_module: Any, images: Any, **kwargs: Any) -> Any
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     np_mod = np
     data_format = kwargs.get("data_format", "channels_last")
@@ -180,7 +189,8 @@ def _np_solarize(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     threshold = kwargs.get("threshold", 0.5)
     value_range = kwargs.get("value_range", (0, 255))

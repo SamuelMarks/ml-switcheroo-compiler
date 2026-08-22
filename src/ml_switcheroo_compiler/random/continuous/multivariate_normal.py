@@ -31,7 +31,8 @@ def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNorm
         cov (object): The cov parameter.
         options (object): The options parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     options = options or MultivariateNormalOptions()
     shape = options.shape

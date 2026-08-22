@@ -18,7 +18,8 @@ def _np_hashing(backend_module: Any, inputs: Any, num_bins: int, **kwargs: Any) 
         num_bins (int): The num_bins parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return inputs
 
@@ -32,7 +33,8 @@ def _np_integer_lookup(backend_module: Any, inputs: Any, **kwargs: Any) -> Any:
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return inputs
 
@@ -47,7 +49,8 @@ def _np_lookup(backend_module: Any, inputs: Any, vocabulary: Any, **kwargs: Any)
         vocabulary (object): The vocabulary parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     inputs = np.asarray(inputs)
     vocab = np.asarray(vocabulary)
@@ -67,6 +70,7 @@ def _np_string_lookup(backend_module: Any, inputs: Any, **kwargs: Any) -> Any:
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return inputs

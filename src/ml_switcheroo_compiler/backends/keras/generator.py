@@ -209,6 +209,15 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
+    def generate(self) -> str:
+        """Generate code using strict AST construction (CST) from a base NumPy string."""
+        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
+        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+
+        gen = NumpyGenerator(self.graph)
+        base_code = gen.generate()
+        return transpile_source(base_code, target_framework="keras")
+
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
 
@@ -266,14 +275,16 @@ class KerasCodeGenerator(BaseGenerator):
     def _generate_file_header(self) -> list[str]:
         """Evaluate _generate_file_header operation.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Evaluate _resolve_imports operation.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import yaml
 

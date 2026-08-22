@@ -21,7 +21,8 @@ def uniform(key: Any, shape: Any = (), dtype: Any = None, minval: Any = 0.0, max
         minval (object): The minval parameter.
         maxval (object): The maxval parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomUniform", [key], shape, dtype, {"minval": minval, "maxval": maxval})

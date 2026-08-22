@@ -21,7 +21,8 @@ def _np_linearoperatorpermutation(backend_module: Any, *args: Any, **kwargs: Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorPermutation
 
@@ -40,7 +41,8 @@ def _np_sobolsample(backend_module: Any, dim: int, num_results: int, skip: int =
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -57,7 +59,8 @@ def _np_randomcategorical(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     logits = backend_module.asarray(args[0])
     num_samples = args[1] if len(args) > 1 else kwargs.get("num_samples", 1)
@@ -73,7 +76,8 @@ def _np_randompermutation(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -92,7 +96,8 @@ def _np_randomtruncatednormal(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
@@ -107,7 +112,8 @@ def _np_randombernoulli(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)

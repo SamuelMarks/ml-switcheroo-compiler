@@ -746,8 +746,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "Aminmax",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
-            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdim", "type": "bool"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
+            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdims", "type": "bool"},
         ],
         "variants": {"cupy": {}, "dask": {}, "edge_onnx": {"generator": "Aminmax"}, "edge_stablehlo": {"opcode": "stablehlo.aminmax"}, "jax": {}, "keras": {}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}, "mlx": {}, "numpy": {}, "pytorch": {}, "tensorflow": {}},
     },
@@ -3701,7 +3701,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "chunks", "type": "int"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -4180,7 +4180,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "x1", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "x2", "type": "Tensor"},
-            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"default": "1e-8", "is_variadic": False, "kind": "positional_or_keyword", "name": "eps", "type": "float"},
         ],
         "type": "class",
@@ -4189,7 +4189,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "CountNonzero": {
         "description": "The CountNonzero operation.",
         "operation": "CountNonzero",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "Union[int, Tuple[int]]"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "Union[int, Tuple[int]]"}],
         "variants": {
             "cupy": {"eager": "cp.count_nonzero"},
             "dask": {"eager": "da.count_nonzero"},
@@ -4329,7 +4329,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "y", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "x", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "dx", "type": "float"},
-            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -4463,8 +4463,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "offset", "type": "int"},
-            {"default": -2, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim1", "type": "int"},
-            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim2", "type": "int"},
+            {"default": -2, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis1", "type": "int"},
+            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis2", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -4486,8 +4486,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "offset", "type": "int"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim1", "type": "int"},
-            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim2", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis1", "type": "int"},
+            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis2", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -4498,8 +4498,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "src", "type": "Tensor"},
             {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "offset", "type": "int"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim1", "type": "int"},
-            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim2", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis1", "type": "int"},
+            {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis2", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -5448,8 +5448,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "FrobeniusNorm",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "List[int]"},
-            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdim", "type": "bool"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "List[int]"},
+            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdims", "type": "bool"},
         ],
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -5513,7 +5513,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "FullSoftmax": {
         "description": "Applies Softmax function to an n-dimensional input Tensor, optionally computing CrossEntropy.",
         "operation": "FullSoftmax",
-        "std_args": [{"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "FullTypeDescr": {"description": "Auto-generated mapping for FullTypeDescr.", "operation": "FullTypeDescr", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -6446,7 +6446,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "IndexAdd",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "source", "type": "Tensor"},
             {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "alpha", "type": "number"},
@@ -6458,7 +6458,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "IndexCopy",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "source", "type": "Tensor"},
         ],
@@ -6471,7 +6471,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "IndexFill",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "value", "type": "number"},
         ],
@@ -6522,7 +6522,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "IndexReduce",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "source", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "reduce", "type": "str"},
@@ -6532,7 +6532,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "IndexSelect": {
         "description": "Returns a new tensor which indexes the input tensor along dimension dim using the entries in index.",
         "operation": "IndexSelect",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "IndexTransform": {"description": "The class representing a Python module/class/instance attribute.", "operation": "IndexTransform", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -6964,8 +6964,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "k", "type": "int"},
-            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
-            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdim", "type": "bool"},
+            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
+            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdims", "type": "bool"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -7347,7 +7347,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "LocalSelfAttention": {
         "description": "Local Attention with given left and right context.",
         "operation": "LocalSelfAttention",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "num_heads", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "window_size", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "num_heads", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "window_size", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "LocalSelfAttentionAlibi": {"description": "Local version of non-trainable relative bias position encoding (ALiBi).", "operation": "LocalSelfAttentionAlibi", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -7380,7 +7380,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "LogCumSumExp": {
         "description": "The Logcumsumexp operation.",
         "operation": "LogCumSumExp",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {
             "cupy": {},
             "dask": {},
@@ -7399,7 +7399,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "LogSoftmax": {
         "description": "The LogSoftmax operation.",
         "operation": "LogSoftmax",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "type": "class",
         "variants": {
             "edge_wgsl": {"expr": "buf_in0_f32[idx]", "template": "unary"},
@@ -8391,7 +8391,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "Narrow",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "start", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "length", "type": "int"},
         ],
@@ -8402,7 +8402,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "NarrowCopy",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "start", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "length", "type": "int"},
         ],
@@ -8765,7 +8765,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "PerDimScale": {
         "description": "A layer to scale individual dims of the input.",
         "operation": "PerDimScale",
-        "std_args": [{"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "PerTensorAffine": {
@@ -8783,13 +8783,13 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "Permute": {
         "description": "Returns a view of the original tensor input with its dimensions permuted.",
         "operation": "Permute",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dims", "type": "List[int]"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axes", "type": "List[int]"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "PermuteCopy": {
         "description": "Performs the same operation as permute, but output is freshly created.",
         "operation": "PermuteCopy",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dims", "type": "List[int]"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axes", "type": "List[int]"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "PermuteDims": {
@@ -9361,7 +9361,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "RMSNorm": {
         "description": "Applies Root Mean Square Normalization.",
         "operation": "RMSNorm",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}, {"default": "1e-5", "is_variadic": False, "kind": "positional_or_keyword", "name": "eps", "type": "float"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}, {"default": "1e-5", "is_variadic": False, "kind": "positional_or_keyword", "name": "eps", "type": "float"}],
         "type": "class",
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -9863,7 +9863,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "RavelMultiIndex",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "multi_index", "type": "Tuple[Array]"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dims", "type": "Tuple[int]"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axes", "type": "Tuple[int]"},
             {"default": "raise", "is_variadic": False, "kind": "positional_or_keyword", "name": "mode", "options": ["raise", "wrap", "clip"], "type": "str"},
             {"default": "C", "is_variadic": False, "kind": "positional_or_keyword", "name": "order", "options": ["C", "F"], "type": "str"},
         ],
@@ -10139,7 +10139,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "p", "type": "float"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "maxnorm", "type": "float"},
         ],
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -10147,7 +10147,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "RepeatInterleave": {
         "description": "Repeat elements of a tensor.",
         "operation": "RepeatInterleave",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "repeats", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "repeats", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "RepeatVector": {"description": "Repeats the input n times.", "operation": "RepeatVector", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "n", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -10332,7 +10332,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "RmsNormNoScale": {
         "description": "RMS normalization without scale.",
         "operation": "RmsNormNoScale",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "RngBitGenerator": {
@@ -10421,7 +10421,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "RoPE": {"description": "Rotary Positional Embeddings.", "operation": "RoPE", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dims", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
+    "RoPE": {"description": "Rotary Positional Embeddings.", "operation": "RoPE", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axes", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "RooflineResult": {
         "description": "The class representing a Python class.",
         "operation": "RooflineResult",
@@ -10486,7 +10486,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "SMEM_BANKS": {"description": "The class representing a Python module/class/instance attribute.", "operation": "SMEM_BANKS", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "SMEM_BANK_BYTES": {"description": "The class representing a Python module/class/instance attribute.", "operation": "SMEM_BANK_BYTES", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "SRC_REGEX": {"description": "The class representing a Python module/class/instance attribute.", "operation": "SRC_REGEX", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "SSM": {"description": "State Space Model layer.", "operation": "SSM", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
+    "SSM": {"description": "State Space Model layer.", "operation": "SSM", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "SSMGated": {"description": "Gated State Space Model.", "operation": "SSMGated", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input_dims", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "SSMTransformer": {"description": "Transformer layer using SSM.", "operation": "SSMTransformer", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input_dims", "type": "int"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "STABLE_HLO": {"description": "The class representing a Python module/class/instance attribute.", "operation": "STABLE_HLO", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -10610,7 +10610,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "ScatterAdd",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "src", "type": "Tensor"},
         ],
@@ -10627,7 +10627,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "ScatterReduce",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "src", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "reduce", "type": "str"},
@@ -10722,7 +10722,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "SelectCopy": {
         "description": "Slices the tensor, returning a copy.",
         "operation": "SelectCopy",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "SelectScatter": {
@@ -10731,7 +10731,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "src", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "index", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -11002,7 +11002,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "SinusoidalPositionalEncoding": {
         "description": "Injects sinusoidal positional encodings.",
         "operation": "SinusoidalPositionalEncoding",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "dims", "type": "int"}, {"default": 0.0001, "is_variadic": False, "kind": "positional_or_keyword", "name": "min_freq", "type": "float"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "axes", "type": "int"}, {"default": 0.0001, "is_variadic": False, "kind": "positional_or_keyword", "name": "min_freq", "type": "float"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "SizeBytes": {"description": "Auto-generated mapping for SizeBytes.", "operation": "SizeBytes", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -11014,7 +11014,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "src", "type": "Tensor"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "start", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "end", "type": "int"},
             {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "step", "type": "int"},
@@ -11053,7 +11053,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "description": "The SobolSample operation.",
         "operation": "SobolSample",
         "std_args": [
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "num_results", "type": "int"},
             {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "skip", "type": "int"},
         ],
@@ -11714,7 +11714,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "tensor", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "split_size_or_sections", "type": "Union[int, List[int]]"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -11742,7 +11742,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "tensor", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "split_sizes", "type": "List[int]"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -11839,7 +11839,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "SqueezeCopy": {
         "description": "Squeeze variant ensuring copy.",
         "operation": "SqueezeCopy",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "Optional[Union[int, List[int]]]"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "Optional[Union[int, List[int]]]"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "Sspaddmm": {
@@ -11893,9 +11893,9 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "StdMean",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "Optional[Union[int, List[int]]]"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "Optional[Union[int, List[int]]]"},
             {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "correction", "type": "int"},
-            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdim", "type": "bool"},
+            {"default": False, "is_variadic": False, "kind": "positional_or_keyword", "name": "keepdims", "type": "bool"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -12078,7 +12078,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "Swapdims": {
         "description": "Interchange two dimensions of a tensor (Alias for Swapaxes).",
         "operation": "Swapdims",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim0", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim1", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis0", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis1", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "Swish": {"description": "Swish activation layer.", "operation": "Swish", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -12213,7 +12213,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "TakeAlongDim": {
         "description": "Selects values from input at indices along the given dim.",
         "operation": "TakeAlongDim",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "indices", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "indices", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "Tan_": {"description": "In-place version of Tan.", "operation": "Tan_", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -12307,7 +12307,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "indices_or_sections", "type": "Union[int, List[int]]"},
-            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -12387,7 +12387,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "k", "type": "int"},
-            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"default": True, "is_variadic": False, "kind": "positional_or_keyword", "name": "largest", "type": "bool"},
             {"default": True, "is_variadic": False, "kind": "positional_or_keyword", "name": "sorted", "type": "bool"},
         ],
@@ -12570,7 +12570,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "TransposeCopy": {
         "description": "Alias for Transpose. Returns a fresh copy of transposed tensor.",
         "operation": "TransposeCopy",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim0", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "dim1", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis0", "type": "int"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis1", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "TransposeTransform": {"description": "Transposes memref dimensions.", "operation": "TransposeTransform", "std_args": ["self", "permutation"], "type": "class", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -12581,7 +12581,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "y", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "x", "type": "Tensor"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "dx", "type": "float"},
-            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"},
+            {"default": -1, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -12859,13 +12859,13 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "Unbind": {
         "description": "Removes a tensor dimension. Returns a tuple of all slices along a given dimension.",
         "operation": "Unbind",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "UnbindCopy": {
         "description": "Alias for Unbind. Returns fresh copies.",
         "operation": "UnbindCopy",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "dim", "type": "int"}],
+        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}, {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "UnfoldCopy": {
@@ -12873,7 +12873,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "UnfoldCopy",
         "std_args": [
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "x", "type": "Tensor"},
-            {"is_variadic": False, "kind": "positional_or_keyword", "name": "dimension", "type": "int"},
+            {"is_variadic": False, "kind": "positional_or_keyword", "name": "axis", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "size", "type": "int"},
             {"is_variadic": False, "kind": "positional_or_keyword", "name": "step", "type": "int"},
         ],

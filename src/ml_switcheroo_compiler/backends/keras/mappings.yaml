@@ -1,0 +1,342 @@
+backend_name: keras
+operations:
+  Abs:
+    target_api: keras_ops.abs
+  Add:
+    target_api: keras_ops.add
+  All:
+    target_api: keras_ops.all
+  Angle:
+    target_api: keras_ops.angle
+  Any:
+    target_api: keras_ops.any
+  Append:
+    target_api: keras_ops.append
+  Argmax:
+    target_api: keras_ops.argmax
+  Argmin:
+    target_api: keras_ops.argmin
+  Argpartition:
+    target_api: keras_ops.argpartition
+  Argsort:
+    target_api: keras_ops.argsort
+  AssociativeScan:
+    target_api: keras_ops.associative_scan
+  Average:
+    target_api: keras_ops.average
+  Bincount:
+    target_api: keras_ops.bincount
+  BitwiseAnd:
+    target_api: keras_ops.bitwise_and
+  BitwiseNot:
+    target_api: keras_ops.bitwise_not
+  BitwiseOr:
+    target_api: keras_ops.bitwise_or
+  BitwiseXor:
+    target_api: keras_ops.bitwise_xor
+  BroadcastTo:
+    target_api: keras_ops.broadcast_to
+  CTCLoss:
+    target_api: keras_ops.ctc_loss
+  Cast:
+    target_api: keras_ops.cast
+  Ceil:
+    target_api: keras_ops.ceil
+  Cholesky:
+    target_api: keras_ops.cholesky
+  Clip:
+    target_api: keras_ops.clip
+  Concatenate:
+    target_api: keras_ops.concatenate
+  Cond:
+    target_api: keras_ops.cond
+  Conj:
+    target_api: keras_ops.conj
+  ConvTranspose:
+    target_api: keras_ops.conv_transpose
+  Correlate:
+    target_api: keras_ops.correlate
+  Cos:
+    target_api: keras_ops.cos
+  Cosh:
+    target_api: keras_ops.cosh
+  CountNonzero:
+    target_api: keras_ops.count_nonzero
+  Cross:
+    target_api: keras_ops.cross
+  CtcLoss:
+    target_api: keras_ops.ctc_loss
+  Cumprod:
+    target_api: keras_ops.cumprod
+  Cumsum:
+    target_api: keras_ops.cumsum
+  Det:
+    target_api: keras_ops.det
+  Diag:
+    target_api: keras_ops.diag
+  Diagflat:
+    target_api: keras_ops.diagflat
+  Diagonal:
+    target_api: keras_ops.diagonal
+  Diff:
+    target_api: keras_ops.diff
+  Digitize:
+    target_api: keras_ops.digitize
+  Divide:
+    target_api: keras_ops.divide
+  DivideNoNan:
+    target_api: keras_ops.divide_no_nan
+  Dot:
+    target_api: keras_ops.dot
+  Eig:
+    target_api: keras_ops.eig
+  Eigh:
+    target_api: keras_ops.eigh
+  Einsum:
+    target_api: keras_ops.einsum
+  Equal:
+    target_api: keras_ops.equal
+  Erf:
+    target_api: keras_ops.erf
+  Erfinv:
+    target_api: keras_ops.erfinv
+  Exp:
+    target_api: keras_ops.exp
+  Exp2:
+    target_api: keras_ops.exp2
+  ExpandDims:
+    target_api: keras_ops.expand_dims
+  Expm1:
+    target_api: keras_ops.expm1
+  Fft:
+    target_api: keras_ops.fft
+  Fft2:
+    target_api: keras_ops.fft2
+  Flip:
+    target_api: keras_ops.flip
+  Floor:
+    target_api: keras_ops.floor
+  FloorDivide:
+    target_api: keras_ops.floor_divide
+  GetItem:
+    target_api: keras_ops.get_item
+  Greater:
+    target_api: keras_ops.greater
+  GreaterEqual:
+    target_api: keras_ops.greater_equal
+  HardSilu:
+    target_api: keras_ops.hard_silu
+  HardSwish:
+    target_api: keras_ops.hard_swish
+  Hstack:
+    target_api: keras_ops.hstack
+  Ifft2:
+    target_api: keras_ops.ifft2
+  Imag:
+    target_api: keras_ops.imag
+  InTopK:
+    target_api: keras_ops.in_top_k
+  Inner:
+    target_api: keras_ops.inner
+  Inv:
+    target_api: keras_ops.inv
+  Irfft:
+    target_api: keras_ops.irfft
+  Isclose:
+    target_api: keras_ops.isclose
+  Isfinite:
+    target_api: keras_ops.isfinite
+  Isinf:
+    target_api: keras_ops.isinf
+  Isnan:
+    target_api: keras_ops.isnan
+  Istft:
+    target_api: keras_ops.istft
+  LeftShift:
+    target_api: keras_ops.left_shift
+  Less:
+    target_api: keras_ops.less
+  LessEqual:
+    target_api: keras_ops.less_equal
+  Log:
+    target_api: keras_ops.log
+  Log10:
+    target_api: keras_ops.log10
+  Log2:
+    target_api: keras_ops.log2
+  LogSigmoid:
+    target_api: keras_ops.log_sigmoid
+  LogSoftmax:
+    target_api: keras_ops.log_softmax
+  Logaddexp:
+    target_api: keras_ops.logaddexp
+  LogicalAnd:
+    target_api: keras_ops.logical_and
+  LogicalNot:
+    target_api: keras_ops.logical_not
+  LogicalOr:
+    target_api: keras_ops.logical_or
+  LogicalXor:
+    target_api: keras_ops.logical_xor
+  Logsumexp:
+    target_api: keras_ops.logsumexp
+  Lstsq:
+    target_api: keras_ops.lstsq
+  LuFactor:
+    target_api: keras_ops.lu_factor
+  Matmul:
+    target_api: keras_ops.matmul
+  Max:
+    target_api: keras_ops.max
+  Maximum:
+    target_api: keras_ops.maximum
+  Mean:
+    target_api: keras_ops.mean
+  Min:
+    target_api: keras_ops.min
+  Minimum:
+    target_api: keras_ops.minimum
+  Mod:
+    target_api: keras_ops.mod
+  Moveaxis:
+    target_api: keras_ops.moveaxis
+  Multiply:
+    target_api: keras_ops.multiply
+  NanToNum:
+    target_api: keras_ops.nan_to_num
+  Negative:
+    target_api: keras_ops.negative
+  Nonzero:
+    target_api: keras_ops.nonzero
+  Norm:
+    target_api: keras_ops.norm
+  NotEqual:
+    target_api: keras_ops.not_equal
+  OneHot:
+    target_api: keras_ops.one_hot
+  Outer:
+    target_api: keras_ops.outer
+  Pad:
+    target_api: keras_ops.pad
+  Polar:
+    target_api: keras_ops.polar
+  Power:
+    target_api: keras_ops.power
+  Prod:
+    target_api: keras_ops.prod
+  Qr:
+    target_api: keras_ops.qr
+  Quantile:
+    target_api: keras_ops.quantile
+  Real:
+    target_api: keras_ops.real
+  Reciprocal:
+    target_api: keras_ops.reciprocal
+  Repeat:
+    target_api: keras_ops.repeat
+  Reshape:
+    target_api: keras_ops.reshape
+  Rfft:
+    target_api: keras_ops.rfft
+  RightShift:
+    target_api: keras_ops.right_shift
+  Roll:
+    target_api: keras_ops.roll
+  Round:
+    target_api: keras_ops.round
+  Rsqrt:
+    target_api: keras_ops.rsqrt
+  Scan:
+    target_api: keras_ops.scan
+  Scatter:
+    target_api: keras_ops.scatter
+  Searchsorted:
+    target_api: keras_ops.searchsorted
+  Select:
+    target_api: keras_ops.select
+  Sigmoid:
+    target_api: keras_ops.sigmoid
+  Sign:
+    target_api: keras_ops.sign
+  Signbit:
+    target_api: keras_ops.signbit
+  Sin:
+    target_api: keras_ops.sin
+  Sinh:
+    target_api: keras_ops.sinh
+  Size:
+    target_api: keras_ops.size
+  Slice:
+    target_api: keras_ops.slice
+  Slogdet:
+    target_api: keras_ops.slogdet
+  Softmax:
+    target_api: keras_ops.softmax
+  Softsign:
+    target_api: keras_ops.softsign
+  Solve:
+    target_api: keras_ops.solve
+  Sort:
+    target_api: keras_ops.sort
+  SparsePlus:
+    target_api: keras_ops.sparse_plus
+  SparseSigmoid:
+    target_api: keras_ops.sparse_sigmoid
+  Split:
+    target_api: keras_ops.split
+  Sqrt:
+    target_api: keras_ops.sqrt
+  Square:
+    target_api: keras_ops.square
+  Squareplus:
+    target_api: keras_ops.squareplus
+  Squeeze:
+    target_api: keras_ops.squeeze
+  Stack:
+    target_api: keras_ops.stack
+  Std:
+    target_api: keras_ops.std
+  Stft:
+    target_api: keras_ops.stft
+  Subtract:
+    target_api: keras_ops.subtract
+  Sum:
+    target_api: keras_ops.sum
+  Svd:
+    target_api: keras_ops.svd
+  Swapaxes:
+    target_api: keras_ops.swapaxes
+  Switch:
+    target_api: keras_ops.switch
+  Take:
+    target_api: keras_ops.take
+  TakeAlongAxis:
+    target_api: keras_ops.take_along_axis
+  Tan:
+    target_api: keras_ops.tan
+  Tanh:
+    target_api: keras_ops.tanh
+  Tensordot:
+    target_api: keras_ops.tensordot
+  Tile:
+    target_api: keras_ops.tile
+  TopK:
+    target_api: keras_ops.top_k
+  Trace:
+    target_api: keras_ops.trace
+  Transpose:
+    target_api: keras_ops.transpose
+  TrueDivide:
+    target_api: keras_ops.true_divide
+  Trunc:
+    target_api: keras_ops.trunc
+  UnravelIndex:
+    target_api: keras_ops.unravel_index
+  Unstack:
+    target_api: keras_ops.unstack
+  Vdot:
+    target_api: keras_ops.vdot
+  Vstack:
+    target_api: keras_ops.vstack
+  Where:
+    target_api: keras_ops.where

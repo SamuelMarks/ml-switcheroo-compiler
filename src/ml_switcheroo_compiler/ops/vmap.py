@@ -39,7 +39,8 @@ def _eager_vmap(
         out_axes (object): The out_axes parameter.
         args (tuple): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     arg = args[0]
     in_axis = in_axes if isinstance(in_axes, int) else in_axes[0]
@@ -63,7 +64,8 @@ def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
         in_axes (object): The in_axes parameter.
         i (int): The i parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
@@ -90,7 +92,8 @@ def _create_vmap_symbolic_args(args: tuple[Any, ...], in_axes: int | tuple[int, 
         args (object): The args parameter.
         in_axes (object): The in_axes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     symbolic_args = []
     for i, a in enumerate(args):
@@ -118,7 +121,8 @@ def _trace_vmap(
         out_axes (object): The out_axes parameter.
         args (tuple): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
     body_graph = _trace_function(func, tuple(symbolic_args), "vmap_body")
@@ -158,7 +162,8 @@ def vmap(
         Args:
             *args (object): Positional args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if config.eager_mode:
             return _eager_vmap(func, in_axes, out_axes, args)

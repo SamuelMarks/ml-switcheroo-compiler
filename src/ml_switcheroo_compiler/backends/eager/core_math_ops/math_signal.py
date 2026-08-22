@@ -17,7 +17,8 @@ def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "correlate", None)
     if func:
@@ -36,7 +37,8 @@ def _np_windowhann(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
     if func is not None:

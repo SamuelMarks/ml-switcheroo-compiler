@@ -43,7 +43,8 @@ def load(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -164,7 +165,8 @@ class Load(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -190,7 +192,8 @@ class Save(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -216,7 +219,8 @@ class SaveGguf(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -242,7 +246,8 @@ class Savez(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -268,7 +273,8 @@ class SavezCompressed(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

@@ -102,7 +102,8 @@ def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
     Args:
         ctx (MapCoordsContext): The ctx parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -113,7 +114,8 @@ def _map_coords_bilinear(ctx: MapCoordsContext) -> Any:
     Args:
         ctx (MapCoordsContext): The ctx parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -128,7 +130,8 @@ def _np_map_coordinates(np_mod: Any, image: Any, coords: Any, order: int = 1, fi
         order (int): The order parameter.
         fill_value (float): The fill_value parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -141,7 +144,8 @@ def _compute_perspective_matrix(np_mod: Any, src: Any, dst: Any) -> Any:
         src (object): The src parameter.
         dst (object): The dst parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -154,7 +158,8 @@ def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
         h_batch (object): The h_batch parameter.
         coords (object): The coords parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -167,7 +172,8 @@ def _generate_perspective_grid(np_mod: Any, H: int, W: int) -> Any:
         H (int): The H parameter.
         W (int): The W parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -198,7 +204,8 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
     Args:
         pctx (PerspectiveChannelContext): The pctx parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -212,7 +219,8 @@ def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: Perspective
         h (object): The h parameter.
         config (PerspectiveConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 

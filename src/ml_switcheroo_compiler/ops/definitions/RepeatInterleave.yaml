@@ -11,7 +11,7 @@ std_args:
     type: int
   - is_variadic: false
     kind: positional_or_keyword
-    name: dim
+    name: axis
     type: int
 variants:
   llvm_cpp:

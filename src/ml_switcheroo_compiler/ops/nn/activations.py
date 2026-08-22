@@ -18,7 +18,8 @@ def crelu(features: Any, axis: Any = -1, name: Any = None) -> Any:
         axis (object): The axis parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     negative = get_op("Negative")()
 
@@ -36,7 +37,8 @@ def isotonic_regression(y: Any, sample_weights: Any = None, increasing: Any = Tr
         increasing (object): The increasing parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -60,7 +62,8 @@ def softplus(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.unary import exp, log1p
 
@@ -80,7 +83,8 @@ class Softmax(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -102,7 +106,8 @@ def softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -128,7 +133,8 @@ class LogSoftmax(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -150,7 +156,8 @@ def log_softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -176,7 +183,8 @@ class Sigmoid(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -197,7 +205,8 @@ def sigmoid(x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -223,7 +232,8 @@ class OneHot(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -245,7 +255,8 @@ def one_hot(indices: Any, depth: int, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -278,7 +289,8 @@ class Rrelu(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -299,7 +311,8 @@ def rrelu(x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -325,7 +338,8 @@ class HardSilu(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -344,7 +358,8 @@ class HardSwish(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -363,7 +378,8 @@ class Squareplus(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
@@ -376,7 +392,8 @@ def hard_silu(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -390,7 +407,8 @@ def hard_swish(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -404,7 +422,8 @@ def mish(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -418,7 +437,8 @@ def squareplus(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

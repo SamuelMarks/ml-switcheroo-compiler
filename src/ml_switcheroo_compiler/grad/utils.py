@@ -44,7 +44,8 @@ def value_and_grad_wrt_vars(
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         val = fun(*args, **kwargs)
         grads: dict[str, Any] = {}
@@ -296,7 +297,8 @@ def _get_fun_primal(fun: Callable[..., Any], has_aux: bool) -> Callable[..., Any
             Args:
             *args (object): Positional args.
 
-            Returns: Any: Result.
+            Returns:
+            tuple[int, ...]: Result.
             """
             out_val = fun(*args)
             return out_val[0] if isinstance(out_val, tuple) else out_val

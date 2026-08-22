@@ -30,7 +30,8 @@ class RaggedTensor:
     def shape(self) -> Sequence[Union[int, str]]:
         """Get the shape of the tensor.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # The true shape of a ragged tensor is typically (batch, None, ...)
         # We approximate it by taking the number of rows from row_splits

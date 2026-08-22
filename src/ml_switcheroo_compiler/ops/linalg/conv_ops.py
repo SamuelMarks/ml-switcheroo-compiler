@@ -22,7 +22,8 @@ class ConvGeneralDilated(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         """Infer shape.
 
@@ -63,7 +64,8 @@ class Convolve(OpDef):
             mode (str): The mode parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None,)
 
@@ -81,7 +83,8 @@ class ConvGeneralDilatedLocal(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args else ()
 
@@ -99,7 +102,8 @@ class ConvGeneralDilatedPatches(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args else ()
 
@@ -117,7 +121,8 @@ class ConvWithGeneralPadding(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args else ()
 
@@ -135,7 +140,8 @@ class ConvTransposeShapeTuple(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -154,7 +160,8 @@ class ConvTranspose(OpDef):
             rhs (object): The rhs parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Assuming NHWC and HWIO or NWC and WIO
         strides = kwargs.get("strides", 1)

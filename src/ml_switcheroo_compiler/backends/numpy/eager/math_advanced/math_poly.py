@@ -22,7 +22,8 @@ def _poly_recurrence(n: Any, x: Any, p0: float, p1_func: Any, p_next_func: Any) 
         p1_func (object): The p1_func parameter.
         p_next_func (object): The p_next_func parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -55,7 +56,8 @@ def _np_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -75,7 +77,8 @@ def _np_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -95,7 +98,8 @@ def _np_hermite_polynomial_h(backend_module: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -115,7 +119,8 @@ def _np_hermite_polynomial_he(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -135,7 +140,8 @@ def _np_laguerre_polynomial_l(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -155,7 +161,8 @@ def _np_legendre_polynomial_p(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -175,7 +182,8 @@ def _np_shifted_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
@@ -193,7 +201,8 @@ def _np_shifted_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
@@ -211,7 +220,8 @@ def _np_shifted_chebyshev_polynomial_v(backend_module: Any, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     # V_n(x) = U_n(x) - U_{n-1}(x) / 2
@@ -233,7 +243,8 @@ def _np_shifted_chebyshev_polynomial_w(backend_module: Any, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sc = _get_sc()
     # W_n(x) = U_n(x) + U_{n-1}(x) / 2

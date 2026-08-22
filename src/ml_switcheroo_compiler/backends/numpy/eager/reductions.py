@@ -88,7 +88,8 @@ def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[lis
         base_dilation (object): The base_dilation parameter.
         init_value (object): The init_value parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if base_dilation is None or not any(d > 1 for d in base_dilation):
         return operand
@@ -107,7 +108,8 @@ def _top_k(x: Any, k: Any, axis: Any = -1) -> Any:
         k (object): The k parameter.
         axis (object): The axis parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     idx = np.argsort(x, axis=axis)
     if axis < 0:
@@ -128,7 +130,8 @@ def _reduce_window(operand: Any, init_value: Any, computation: str, config: Wind
         computation (str): The computation parameter.
         config (WindowConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -154,7 +157,8 @@ def _logsumexp(x: Any, axis: Any = None, keepdims: Any = False) -> Any:
         axis (object): The axis parameter.
         keepdims (object): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     xmax = np.max(x, axis=axis, keepdims=True)
     return np.log(np.sum(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax)
@@ -168,7 +172,8 @@ def _segment_sum(data: Any, segment_ids: Any, num_segments: Any = None) -> Any:
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -189,7 +194,8 @@ def _np_nms(backend_module: Any, boxes: Any, scores: Any, max_output_size: Any, 
         max_output_size (object): The max_output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return nms_eager(backend_module, boxes, scores, max_output_size, **kwargs)
 
@@ -203,7 +209,8 @@ def _np_trapezoidal_integral(backend_module: Any, y: Any, **kwargs: Any) -> Any:
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
@@ -223,7 +230,8 @@ def _np_confusion_matrix(backend_module: Any, labels: Any, predictions: Any, **k
         predictions (object): The predictions parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
@@ -244,7 +252,8 @@ def _np_cummax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -264,7 +273,8 @@ def _np_cummin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -284,7 +294,8 @@ def _np_cumprod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
@@ -301,7 +312,8 @@ def _np_cumlogsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -320,7 +332,8 @@ def _np_approx_max_k(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -348,7 +361,8 @@ def _np_approx_min_k(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -388,7 +402,8 @@ def _np_top_k(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     k_arg = args[0] if len(args) > 0 else kwargs.get("k", 1)
     k = _get_k_val(k_arg)

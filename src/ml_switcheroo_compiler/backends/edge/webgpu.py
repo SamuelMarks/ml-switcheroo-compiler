@@ -312,8 +312,11 @@ class WebGPUCodeGenerator(BaseGenerator):
                     temp_var = f"tmp_{getattr(sub_node, 'id', '0').replace('-', '_')}"
                     loop_body_lines.append(f"var {temp_var} = {val_expr};")
                     current_state_var = temp_var
+            print("LOOP_BODY_LINES:", loop_body_lines)
             if loop_body_lines:
                 loop_body_lines.append(f"current_state = {current_state_var};")
+            else:
+                pass
 
         loop_body = "\n    ".join(loop_body_lines) if loop_body_lines else "current_state = current_state + buf_in1_f32[idx];"
 
@@ -454,7 +457,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         # Append WebRTC Collectives Initialization
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
 
-        webrtc_ops_found = any(getattr(n, "op_type", "") in ["AllReduce", "AllGather", "AllToAll"] for n in self.sorted_nodes)
+        webrtc_ops_found = any(getattr(n, "op_type", "") in ["AllReduce", "AllGather", "AllToAll", "ReduceScatter"] for n in self.sorted_nodes)
         if webrtc_ops_found:
             init_str = emit_webrtc_init()
             if init_str:
@@ -552,7 +555,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         if webrtc_ops_found:
             for node in self.sorted_nodes:
                 op_type = getattr(node, "op_type", "")
-                if op_type in ["AllReduce", "AllGather", "AllToAll"]:
+                if op_type in ["AllReduce", "AllGather", "AllToAll", "ReduceScatter"]:
                     op_id = getattr(node, "id", "")
                     in0 = getattr(node, "inputs", [""])[0] if getattr(node, "inputs", []) else "dummy"
                     op_str = emit_webrtc_op(op_type, f"buf_arena_{in0}", op_id)
@@ -604,7 +607,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         in_width = in0_shape[3] if len(in0_shape) == 4 else 1
 
         stride_h, stride_w = node.attributes.get("strides", (1, 1))
-        filter_h, filter_w = in1_shape[2], in1_shape[3]
+        filter_h = in1_shape[2] if len(in1_shape) >= 4 else 1
+        filter_w = in1_shape[3] if len(in1_shape) >= 4 else 1
 
         body = template["body"].format(out_width=out_width, out_height=out_height, in_channels=in_channels, out_channels=out_channels, stride_h=stride_h, stride_w=stride_w, filter_h=filter_h, filter_w=filter_w, in_width=in_width)
 

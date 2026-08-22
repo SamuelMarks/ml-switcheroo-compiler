@@ -17,6 +17,7 @@ def double_sided_maxwell(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dispatch_random("double_sided_maxwell", *args, **kwargs)

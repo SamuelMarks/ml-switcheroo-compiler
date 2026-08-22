@@ -39,7 +39,8 @@ def _get_tensordot_letters(len_a: int, len_b: int) -> tuple[list[str], list[str]
         len_a (int): The len_a parameter.
         len_b (int): The len_b parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     a_letters = [alphabet[i] for i in range(len_a)]
@@ -72,7 +73,8 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
         axes_a (object): The axes_a parameter.
         axes_b (object): The axes_b parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not shape_a and not shape_b:
         return "", "", ""
@@ -161,7 +163,8 @@ def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Seque
         contracting (object): The contracting parameter.
         batch (object): The batch parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     contract_set = set(contracting)
     batch_set = set(batch)
@@ -180,7 +183,8 @@ def _infer_dot_general_shape(
         rhs_shape (object): The rhs_shape parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     contracting, batch = dimension_numbers
     lhs_contracting, rhs_contracting = contracting

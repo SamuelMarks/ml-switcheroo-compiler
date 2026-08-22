@@ -22,7 +22,8 @@ class TimeDistributed(OpDef):
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Note: True shape inference depends on the wrapped op.
         # This is a placeholder since the IR maps it to an identity or reshapes.

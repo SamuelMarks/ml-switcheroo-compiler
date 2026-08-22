@@ -3,7 +3,7 @@ description: RMS normalization without scale.
 std_args:
 - is_variadic: false
   kind: positional_or_keyword
-  name: dim
+  name: axis
   type: int
 variants:
   edge_wasm_simd:

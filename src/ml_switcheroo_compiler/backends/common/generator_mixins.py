@@ -17,7 +17,8 @@ def get_shared_ast_visitors(generator: Any) -> list[Any]:
     Args:
         generator (object): The generator parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return [
         ImageASTVisitor(generator=generator),

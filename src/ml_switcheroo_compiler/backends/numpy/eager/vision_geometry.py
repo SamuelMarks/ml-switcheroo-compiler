@@ -21,7 +21,8 @@ def _np_affine_generator(backend_module: Any, batch_size: int, angles: Any, shea
         zooms (object): The zooms parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     out = np.zeros((batch_size, 8))
     out[:, 0] = 1.0
@@ -65,7 +66,8 @@ def _np_extract_bounding_boxes(backend_module: Any, images: Any, boxes: Any, box
         box_indices (object): The box_indices parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -80,7 +82,8 @@ def _np_iou(backend_module: Any, boxes1: Any, boxes2: Any, **kwargs: Any) -> Any
         boxes2 (object): The boxes2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return iou_eager(backend_module, boxes1, boxes2, **kwargs)
 
@@ -96,7 +99,8 @@ def _np_nms(backend_module: Any, boxes: Any, scores: Any, max_output_size: Any, 
         max_output_size (object): The max_output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return nms_eager(backend_module, boxes, scores, **kwargs)
 
@@ -113,7 +117,8 @@ def _np_perspective_transform(backend_module: Any, images: Any, start_points: An
         config (object): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -129,7 +134,8 @@ def _np_affine_grid(backend_module: Any, theta: Any, size: tuple[Any, ...], alig
         align_corners (bool): The align_corners parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(theta, np.ndarray):
         s = list(size)
@@ -150,7 +156,8 @@ def _np_affine_transform(backend_module: Any, images: Any, transforms: Any, inte
         interpolation (str): The interpolation parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 

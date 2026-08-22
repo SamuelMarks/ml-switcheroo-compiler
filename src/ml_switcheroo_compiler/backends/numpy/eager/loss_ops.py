@@ -77,7 +77,8 @@ def _np_ctc_loss(backend_module: Any, labels: Any, logits: Any, label_length: An
         logit_length (object): The logit_length parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     logits_arr = np.asarray(logits)
     labels_arr = np.asarray(labels)
@@ -125,7 +126,8 @@ def _np_circle_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if len(args) < 2:
         return backend_module.zeros(1)
@@ -171,7 +173,8 @@ def _np_categorical_generalized_cross_entropy(backend_module: Any, *args: Any, *
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if len(args) < 2:
         return backend_module.zeros(1)

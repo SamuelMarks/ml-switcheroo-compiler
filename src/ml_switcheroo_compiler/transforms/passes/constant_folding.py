@@ -38,7 +38,8 @@ def _evaluate_constant_node(node: Any, canonical_inputs: list[str], graph: IRGra
         graph (IRGraph): The graph parameter.
         backend (Any): The backend parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:

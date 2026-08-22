@@ -18,7 +18,8 @@ def _np_reduce_window(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _reduce_window(*args, **kwargs)
 
@@ -32,7 +33,8 @@ def _np_segment_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _segment_sum(*args, **kwargs)
 
@@ -47,7 +49,8 @@ def _np_segment_max(backend_module: Any, data: Any, segment_ids: Any, num_segmen
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -69,7 +72,8 @@ def _np_segment_min(backend_module: Any, data: Any, segment_ids: Any, num_segmen
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -91,7 +95,8 @@ def _np_segment_prod(backend_module: Any, data: Any, segment_ids: Any, num_segme
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -110,7 +115,8 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
         input_dim (int): The input_dim parameter.
         output_dim (int): The output_dim parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     indices = []
     for i in range(output_dim):
@@ -132,7 +138,8 @@ def _np_adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: tupl
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -163,7 +170,8 @@ def _np_adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: tupl
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -196,7 +204,8 @@ def _np_adaptive_max_pool3d(backend_module: Any, operand: Any, output_size: tupl
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -229,7 +238,8 @@ def _np_adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_si
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = _np_adaptive_max_pool3d(backend_module, operand, output_size, **kwargs)
     return (res, np.zeros_like(res, dtype=np.int64))
@@ -245,7 +255,8 @@ def _np_adaptive_max_pool2d(backend_module: Any, operand: Any, output_size: tupl
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -275,7 +286,8 @@ def _np_fractional_avg_pool(backend_module: Any, value: Any, **kwargs: Any) -> A
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.asarray(value)
 
@@ -289,6 +301,7 @@ def _np_fractional_max_pool(backend_module: Any, value: Any, **kwargs: Any) -> A
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.asarray(value)

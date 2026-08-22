@@ -226,7 +226,8 @@ def matvec(a: Any, b: Any, transpose_a: Any = False, adjoint_a: Any = False, **k
         adjoint_a (object): The adjoint_a parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return a
 
@@ -238,7 +239,8 @@ def multi_dot(arrays: Any, name: Any = None) -> Any:
         arrays (object): The arrays parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -256,7 +258,8 @@ def vecdot(x: Any, y: Any, axis: Any = -1, name: Any = None) -> Any:
         axis (object): The axis parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -314,7 +317,8 @@ class BlockMaskedMm(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             try:
@@ -396,7 +400,8 @@ class GatherMm(OpDef):
             rhs_indices (object): The rhs_indices parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if not (isinstance(a, tuple) and isinstance(b, tuple)):
             return getattr(a, "shape", ())
@@ -485,7 +490,8 @@ class SegmentedMm(OpDef):
             segments (object): The segments parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             if segments is not None and isinstance(segments, tuple):

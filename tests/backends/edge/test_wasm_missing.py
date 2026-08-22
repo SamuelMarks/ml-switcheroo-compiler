@@ -121,10 +121,12 @@ def test_wasm_simd_helpers_no_file(mock_exists):
     assert isinstance(helpers, list)
 
 
+@patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml")
 @patch("os.path.exists")
 @patch("builtins.open", new_callable=unittest.mock.mock_open, read_data="intrinsics:\n  op1:\n    macro_name: my_macro\n  op2:\n    simd_expr: my_expr\n  op3:\n    macro_name: valid\n    simd_expr: valid_expr")
-def test_wasm_simd_helpers_missing_keys(mock_open, mock_exists):
+def test_wasm_simd_helpers_missing_keys(mock_open, mock_exists, mock_load_yaml):
     mock_exists.return_value = True
+    mock_load_yaml.return_value = {"cpp_helpers": []}
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 
     gen = WasmCodeGenerator(DummyGraph())

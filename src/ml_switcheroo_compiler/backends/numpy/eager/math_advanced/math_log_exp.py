@@ -21,7 +21,8 @@ def _np_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _xlogy(*args, **kwargs)
 
@@ -37,7 +38,8 @@ def _np_logsumexp(backend_module: Any, a: Any, axis: Any = None, keepdims: bool 
         keepdims (bool): The keepdims parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -61,7 +63,8 @@ def _np_log1p2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.log1p(*args, **kwargs)
 
@@ -89,7 +92,8 @@ def _np_log_softmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:

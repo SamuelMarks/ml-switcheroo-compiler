@@ -88,7 +88,8 @@ class EagerExecutionMixin:
         Args:
         shape (object): The shape parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import numpy
 
@@ -104,7 +105,8 @@ class EagerExecutionMixin:
         data (object): The data parameter.
         dtype (object): The dtype parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import numpy
 
@@ -119,7 +121,8 @@ class EagerExecutionMixin:
         Args:
         data (object): The data parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import numpy
 

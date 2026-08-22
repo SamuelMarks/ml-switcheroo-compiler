@@ -133,7 +133,8 @@ def _np_asstringconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
 
@@ -149,7 +150,8 @@ def _np_linearoperatorblocklowertriangular(backend_module: Any, *args: Any, **kw
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockLowerTriangular
 
@@ -165,7 +167,8 @@ def _np_linearoperatorfullmatrix(backend_module: Any, *args: Any, **kwargs: Any)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorFullMatrix
 
@@ -181,7 +184,8 @@ def _np_linearoperatorlowertriangular(backend_module: Any, *args: Any, **kwargs:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorLowerTriangular
 
@@ -197,7 +201,8 @@ def _np_linearoperatortridiag(backend_module: Any, *args: Any, **kwargs: Any) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorTridiag
 
@@ -213,7 +218,8 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     y_true = _get_np_arg(args, 0)
     y_pred = _get_np_arg(args, 1)
@@ -234,7 +240,8 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -255,7 +262,8 @@ def _np_stridedslice(backend_module: Any, data: Any, start: Any, end: Any, strid
         strides (object): The strides parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     slices = tuple(slice(s, e, st) for s, e, st in zip(start, end, strides))
     return data[slices]

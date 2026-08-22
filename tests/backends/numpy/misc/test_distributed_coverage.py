@@ -15,8 +15,8 @@ def test_tcp_dist_ctx_coverage():
     ctx = TCPDistributedContext(world_size=2, rank=0)
     mock_conn = MagicMock()
     mock_conn.recv.return_value = "B"
-    ctx.recv_conn = mock_conn
-    ctx.send_conn = mock_conn
+    ctx.recv_conns = [mock_conn]
+    ctx.send_conns = [mock_conn]
     res = ctx.all_gather_tensors("A")
     assert res == ["A", "B"]
     mock_conn.send.assert_called_with("A")
@@ -37,6 +37,7 @@ def test_np_ops_coverage():
     dmod._tcp_dist_ctx.world_size = 2
     dmod._tcp_dist_ctx.rank = 0
     dmod._tcp_dist_ctx.all_reduce_ring = lambda t, op, bm: np.array([5.0]) if op == "sum" else np.array([3.0])
+    dmod._tcp_dist_ctx.all_gather_tensors = lambda t: [t, np.array([3.0])]
 
     t = np.array([2.0])
     # cover sum for all ops
@@ -80,4 +81,4 @@ def test_tcp_dist_ctx_connection_refused():
                 ctx.initialize()
 
                 assert mock_client.call_count == 2
-                assert ctx.send_conn is not None
+                assert len(ctx.send_conns) > 0

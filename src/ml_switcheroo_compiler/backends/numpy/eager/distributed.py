@@ -19,7 +19,8 @@ def _np_axis_index(backend_module: Any, **kwargs: Any) -> Any:
         backend_module (object): The backend_module parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.array(0)
 
@@ -103,7 +104,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            recv_data = self.recv_conns[0].recv() if self.recv_conns[0] else None
+            recv_data = self.recv_conns[0].recv() if self.recv_conns else None
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
@@ -121,7 +122,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns[0] else None
+            chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns else None
 
         return backend_module.concatenate(chunks)
 
@@ -139,7 +140,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(all_tensors[send_idx])
-            all_tensors[recv_idx] = self.recv_conns[0].recv() if self.recv_conns[0] else None
+            all_tensors[recv_idx] = self.recv_conns[0].recv() if self.recv_conns else None
 
         return all_tensors
 

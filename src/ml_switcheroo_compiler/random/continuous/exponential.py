@@ -17,6 +17,7 @@ def exponential(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dispatch_random("exponential", *args, **kwargs)

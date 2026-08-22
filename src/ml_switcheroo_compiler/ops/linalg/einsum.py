@@ -19,7 +19,8 @@ class EinsumLexer:
         Args:
         equation (str): The equation parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         equation = equation.replace(" ", "")
         if "->" in equation:
@@ -178,7 +179,8 @@ class EinsumPlanner:
         shape (object): The shape parameter.
         broadcast_shape (object): The broadcast_shape parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         EinsumPlanner._validate_ellipsis_count(part, shape)
         parts_str = part.split("...")
@@ -238,7 +240,8 @@ class EinsumPlanner:
         in_subs (str): The in_subs parameter.
         shapes (object): The shapes parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
@@ -289,7 +292,8 @@ class EinsumPlanner:
         out_sub (str): The out_sub parameter.
         axis_map (object): The axis_map parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         out_shape = []
         for char in out_sub:
@@ -402,7 +406,8 @@ class EinsumEquationParser:
         equation (str): The equation parameter.
         shapes (object): The shapes parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         in_subs, out_sub = EinsumLexer.parse_equation_sides(equation)
         EinsumValidator.validate_inputs(in_subs, shapes)
@@ -445,7 +450,8 @@ class Einsum(OpDef):
         Args:
         args (object): The args parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shapes: list[tuple[int, ...]] = []
         for arg in args:
@@ -469,7 +475,8 @@ class Einsum(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         equation, remaining_args = self._extract_equation(args, kwargs)
         shapes = self._extract_shapes(remaining_args)

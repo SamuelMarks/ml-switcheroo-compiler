@@ -41,7 +41,8 @@ def _infer_output_shape(node: Any, shapes: dict[str, Any]) -> tuple[Any, ...] | 
         node (Any): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if node.inputs:
         return shapes.get(node.inputs[0])
@@ -73,7 +74,8 @@ def _infer_op_shape(node: Any, shapes: dict[str, Any]) -> tuple[Any, ...] | None
         node (Any): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     op_cls = get_op(node.op_type)
     op = op_cls()
@@ -90,7 +92,8 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
         node (IRNode): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         CompilationError: An exception.

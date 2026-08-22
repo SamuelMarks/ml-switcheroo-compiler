@@ -393,7 +393,8 @@ def load_model(filepath: str, custom_objects: Any = None, compile: bool = True, 
         safe_mode (bool): The safe_mode parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     try:
         import json
@@ -667,7 +668,8 @@ class SavedModel:
         Args:
             path (str): The path parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return cls()
 

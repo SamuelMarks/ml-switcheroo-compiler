@@ -20,7 +20,8 @@ def _np_string_to_hash(backend_module: Any, input_tensor: Any, num_buckets: int,
         num_buckets (int): The num_buckets parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
 
     def hash_str(s: str) -> int:
@@ -48,7 +49,8 @@ def _np_text_vectorization(backend_module: Any, inputs: Any, **kwargs: Any) -> A
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     inputs = np.array(inputs)
     output_mode = kwargs.get("output_mode", "int")
@@ -69,7 +71,8 @@ def _np_as_string(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.array([str(x)]) if np.isscalar(x) else x.astype(str)
 
@@ -83,7 +86,8 @@ def _np_create_token(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if args and isinstance(args[0], str):
         text = args[0]

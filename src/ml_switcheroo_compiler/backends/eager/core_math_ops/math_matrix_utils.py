@@ -15,7 +15,8 @@ def _apply_causal_mask(backend_module: Any, scores: Any) -> Any:
         backend_module (object): The backend_module parameter.
         scores (object): The scores parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "triu") and hasattr(backend_module, "ones") and hasattr(backend_module, "where"):
         causal_mask = backend_module.triu(backend_module.ones(scores.shape[-2:]), 1)
@@ -32,7 +33,8 @@ def _geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return getattr(backend_module, "random", backend_module).geometric(*args, **kwargs)
 
@@ -46,7 +48,8 @@ def _indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.indices(*args, **kwargs)
 
@@ -60,7 +63,8 @@ def _maskindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.mask_indices(*args, **kwargs)
 
@@ -74,7 +78,8 @@ def _tri(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.tri(*args, **kwargs)
 
@@ -88,7 +93,8 @@ def _tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.tril(*args, **kwargs)
 
@@ -102,7 +108,8 @@ def _trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.trim_zeros(*args, **kwargs)
 
@@ -116,7 +123,8 @@ def _triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.triu(*args, **kwargs)
 
@@ -130,7 +138,8 @@ def _fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fill_diagonal", None)
     if func:
@@ -152,7 +161,8 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -174,7 +184,8 @@ def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
     if func is not None:
@@ -193,7 +204,8 @@ def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
     if func is not None:
@@ -212,7 +224,8 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
     if func is not None:
@@ -231,7 +244,8 @@ def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
     if func is not None:
@@ -250,7 +264,8 @@ def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
     if func is not None:
@@ -269,7 +284,8 @@ def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
     if func is not None:
@@ -288,7 +304,8 @@ def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
     if func is not None:
@@ -307,7 +324,8 @@ def _np_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
     if func is not None:

@@ -107,7 +107,8 @@ def _np_linearoperatorblockdiag(backend_module: Any, *args: Any, **kwargs: Any) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockDiag
 
@@ -123,7 +124,8 @@ def _np_linearoperatordiag(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorDiag
 
@@ -139,7 +141,8 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.

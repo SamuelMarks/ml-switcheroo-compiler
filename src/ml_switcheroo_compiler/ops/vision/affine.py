@@ -445,7 +445,8 @@ class AffineGenerator(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -464,7 +465,8 @@ class AffineGrid(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -483,7 +485,8 @@ class AffineTransform(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -502,6 +505,7 @@ class PerspectiveTransform(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())

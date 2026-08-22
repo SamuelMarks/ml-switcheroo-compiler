@@ -24,7 +24,8 @@ class TriangularSolve(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -140,7 +141,8 @@ class Polar(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape, args[0].shape
 
@@ -156,7 +158,8 @@ class TridiagonalSolve(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[3].shape
 
@@ -262,6 +265,7 @@ class TridiagonalMatmul(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return b.shape

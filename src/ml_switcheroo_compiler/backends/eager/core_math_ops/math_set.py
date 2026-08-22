@@ -17,7 +17,8 @@ def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.intersect1d(*args, **kwargs)
 
@@ -31,7 +32,8 @@ def _unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.unique(*args, **kwargs)
 
@@ -45,7 +47,8 @@ def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
@@ -64,7 +67,8 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
@@ -83,7 +87,8 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
@@ -102,7 +107,8 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
@@ -121,7 +127,8 @@ def _np_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:

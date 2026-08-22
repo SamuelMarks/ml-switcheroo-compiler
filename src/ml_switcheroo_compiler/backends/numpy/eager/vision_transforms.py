@@ -22,7 +22,8 @@ def _np_random_shear(backend_module: Any, images: Any, y_factor: Any, x_factor: 
         x_factor (object): The x_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_shear_eager(backend_module, images, y_factor, x_factor, **kwargs)
 
@@ -37,7 +38,8 @@ def _np_random_perspective(backend_module: Any, images: Any, factor: Any, **kwar
         factor (object): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_perspective_eager(backend_module, images, factor, **kwargs)
 
@@ -53,6 +55,7 @@ def _np_random_elastic_transform(backend_module: Any, images: Any, alpha: Any, s
         sigma (object): The sigma parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_elastic_transform_eager(backend_module, images, alpha, sigma, **kwargs)

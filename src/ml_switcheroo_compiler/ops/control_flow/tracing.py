@@ -29,7 +29,8 @@ def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[]
         true_fn (Callable): The true_fn parameter.
         false_fn (Callable): The false_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -58,7 +59,8 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
         body_fn (object): The body_fn parameter.
         init_val (object): The init_val parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -88,7 +90,8 @@ def _flatten_inputs(obj: Any) -> list[str]:
     Args:
         obj (object): The obj parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(obj, Tensor):
         return [obj.data.id]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -186,7 +189,8 @@ def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Call
         Args:
             *args (object): Positional args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.core.errors import TracingError
@@ -223,7 +227,8 @@ def stop_gradient_tracing(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not global_tracing_state.is_tracing:
         return x

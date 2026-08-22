@@ -14,7 +14,8 @@ def to_categorical(x: Any, num_classes: Optional[int] = None, dtype: str = "floa
         num_classes (object): The num_classes parameter.
         dtype (str): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if num_classes is None:
         num_classes = int(ops.max(x).item() if hasattr(ops.max(x), "item") else ops.max(x)) + 1
@@ -34,7 +35,8 @@ def normalize(x: Any, axis: int = -1, order: int = 2) -> Any:
         axis (int): The axis parameter.
         order (int): The order parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     l2 = ops.sum(ops.square(x), axis=axis, keepdims=True)
     l2 = ops.maximum(ops.sqrt(l2), 1e-12)

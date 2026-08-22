@@ -50,7 +50,8 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
         true_fn (Callable): The true_fn parameter.
         false_fn (Callable): The false_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return cond_eager(pred, true_fn, false_fn)
@@ -65,7 +66,8 @@ def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], 
         body_fn (object): The body_fn parameter.
         init_val (object): The init_val parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return while_loop_eager(cond_fn, body_fn, init_val)
@@ -81,7 +83,8 @@ def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: Any, xs: Any, length: i
         xs (object): The xs parameter.
         length (object): The length parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return scan_eager(f, init, xs, length)
@@ -125,7 +128,8 @@ def stop_gradient(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config.eager_mode:
         return stop_gradient_eager(x)
@@ -156,7 +160,8 @@ class AssertOp(OpDef):
             condition (object): The condition parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -170,7 +175,8 @@ def fori_loop(lower: Any, upper: Any, body_fun: Callable[[Any, Any], Any], init_
         body_fun (object): The body_fun parameter.
         init_val (object): The init_val parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
 
     def cond_fn(val: Any) -> Any:
@@ -179,7 +185,8 @@ def fori_loop(lower: Any, upper: Any, body_fun: Callable[[Any, Any], Any], init_
         Args:
         val (object): The val parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         i, _ = val
         return less(i, upper)
@@ -190,7 +197,8 @@ def fori_loop(lower: Any, upper: Any, body_fun: Callable[[Any, Any], Any], init_
         Args:
         val (object): The val parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         i, x = val
         return add(i, 1), body_fun(i, x)
@@ -233,7 +241,8 @@ def switch(index: Tensor, branches: list[Callable[..., Any]], *operands: Any) ->
         branches (list): The branches parameter.
         *operands (object): Positional args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -248,7 +257,8 @@ def switch(index: Tensor, branches: list[Callable[..., Any]], *operands: Any) ->
         start (int): The start parameter.
         end (int): The end parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if end - start == 1:
             return branches[start](*operands)
@@ -258,14 +268,16 @@ def switch(index: Tensor, branches: list[Callable[..., Any]], *operands: Any) ->
         def true_fn() -> Any:
             """Evaluate true_fn operation.
 
-            Returns: Any: Result.
+            Returns:
+            tuple[int, ...]: Result.
             """
             return build_tree(start, mid)
 
         def false_fn() -> Any:
             """Evaluate false_fn operation.
 
-            Returns: Any: Result.
+            Returns:
+            tuple[int, ...]: Result.
             """
             return build_tree(mid, end)
 
@@ -291,7 +303,8 @@ def custom_gradient(func: Callable[..., Any]) -> Callable[..., Any]:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         val, grad_fn = func(*args, **kwargs)
         if config.eager_mode:
@@ -318,7 +331,8 @@ def custom_gradient(func: Callable[..., Any]) -> Callable[..., Any]:
                     *args (object): Positional args.
                     **kwargs (object): Keyword args.
 
-                Returns: Any: Result.
+                Returns:
+                tuple[int, ...]: Result.
                 """
                 return getattr(val, "shape", ())
 
@@ -348,7 +362,8 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable[..., Any]]], default: Any = 
         pred_fn_pairs (list): The pred_fn_pairs parameter.
         default (Callable): The default parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -383,7 +398,8 @@ def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable[..., Any]],
         branch_fns (dict): The branch_fns parameter.
         default (Callable): The default parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -416,7 +432,8 @@ class DebugInfs(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0] if args else ()
 
@@ -434,7 +451,8 @@ class DebugNans(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0] if args else ()
 
@@ -458,7 +476,8 @@ class SwitchOp(OpDef):
             *operands (object): Operands.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -476,7 +495,8 @@ class ScanOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -494,7 +514,8 @@ class AssociativeScan(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0] if args else ()
 
@@ -506,7 +527,8 @@ def associative_scan(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -536,3 +558,31 @@ def scan_bind(f: Any, xs: Any, *args: Any, **kwargs: Any) -> Any:
     """
     # Partial bind implementation for scan_bind
     return f, xs
+
+
+__all__ = [
+    "cond",
+    "while_loop",
+    "scan",
+    "map_fn",
+    "pmap",
+    "stop_gradient",
+    "assert_value",
+    "AssertOp",
+    "fori_loop",
+    "map",
+    "vectorized_map",
+    "switch",
+    "custom_gradient",
+    "case",
+    "switch_case",
+    "DebugInfs",
+    "DebugNans",
+    "debug_infs",
+    "debug_nans",
+    "SwitchOp",
+    "ScanOp",
+    "AssociativeScan",
+    "associative_scan",
+    "scan_bind",
+]

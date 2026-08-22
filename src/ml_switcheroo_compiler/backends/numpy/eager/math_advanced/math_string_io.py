@@ -38,7 +38,8 @@ def _np_sparsedensematmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -67,7 +68,8 @@ def _np_sparsemapvalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     fn = args[0]
     sp_input = args[1]
@@ -83,7 +85,8 @@ def _np_sparsereshape(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.reshape(args[0], args[1])
 
@@ -97,7 +100,8 @@ def _np_sparsesampledadd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.add(args[0], args[1])
 
@@ -111,7 +115,8 @@ def _np_sparsetranspose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.transpose(args[0])
 
@@ -125,7 +130,8 @@ def _np_decode_csv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_decode_csv_camel(backend_module, *args, **kwargs)
 
@@ -139,7 +145,8 @@ def _np_decode_image(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_decode_image_camel(backend_module, *args, **kwargs)
 
@@ -153,7 +160,8 @@ def _np_parse_example(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_parse_example_camel(backend_module, *args, **kwargs)
 
@@ -167,7 +175,8 @@ def _np_parse_tensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_parse_tensor_camel(backend_module, *args, **kwargs)
 
@@ -181,7 +190,8 @@ def _np_read_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_read_file_camel(backend_module, *args, **kwargs)
 
@@ -195,7 +205,8 @@ def _np_write_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_write_file_camel(backend_module, *args, **kwargs)
 
@@ -266,7 +277,8 @@ def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -292,7 +304,7 @@ def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return tuple([np.stack([r[i] for r in out]) for i in range(len(record_defaults))])
 
 
-def _load_vision_formats() -> dict:
+def _load_vision_formats() -> dict[str, Any]:
     """Load vision formats from YAML.
 
     Returns:
@@ -305,7 +317,9 @@ def _load_vision_formats() -> dict:
     yaml_path = os.path.join(os.path.dirname(__file__), "..", "vision_formats.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return yaml.safe_load(f).get("formats", {})
+            from typing import cast
+
+            return cast(dict[str, Any], yaml.safe_load(f).get("formats", {}))
     return {}
 
 
@@ -320,7 +334,8 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -371,7 +386,8 @@ def _np_encode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -416,7 +432,8 @@ def _np_parse_example_camel(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -453,7 +470,8 @@ def _np_parse_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -481,7 +499,8 @@ def _np_read_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -507,7 +526,8 @@ def _np_write_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         OSError: An exception.

@@ -1,0 +1,256 @@
+backend_name: jax
+operations:
+  AccumulateN:
+    target_api: _execute_accumulate_n
+  ActivityRegularization:
+    custom_code: 'lambda x, **kwargs: x'
+    target_api: custom_op
+  AdaptiveAvgPool2D:
+    target_api: _execute_adaptive_avg_pool
+  AdaptiveAvgPool3D:
+    target_api: _execute_adaptive_avg_pool
+  AdaptiveLogSoftmaxWithLoss:
+    custom_code: 'lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((),
+      dtype=target.dtype))'
+    target_api: custom_op
+  AdaptiveMaxPool2D:
+    target_api: _execute_adaptive_max_pool
+  AdaptiveMaxPool3D:
+    target_api: _execute_adaptive_max_pool
+  AdaptiveMaxPool3D_Indices:
+    custom_code: 'lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs),
+      _execute_adaptive_max_pool(*args, **kwargs))'
+    target_api: custom_op
+  AddN:
+    target_api: _execute_accumulate_n
+  Adjoint:
+    custom_code: 'lambda x, **kwargs: jax.numpy.conj(jax.numpy.transpose(x))'
+    target_api: custom_op
+  AllGather:
+    custom_code: 'lambda tensor, *args, **kwargs: jax.lax.all_gather(tensor, axis_name=kwargs.get(''axis_name'',
+      ''i'')) if hasattr(jax.lax, ''all_gather'') else jax.numpy.stack([tensor])'
+    target_api: custom_op
+  AllReduce:
+    custom_code: 'lambda tensor, *args, **kwargs: jax.lax.psum(tensor, axis_name=kwargs.get(''axis_name'',
+      ''i'')) if kwargs.get(''op_type'', ''sum'').lower() == ''sum'' else jax.lax.pmax(tensor,
+      axis_name=kwargs.get(''axis_name'', ''i''))'
+    target_api: custom_op
+  AllToAll:
+    custom_code: 'lambda tensor, *args, **kwargs: jax.lax.all_to_all(tensor, kwargs.get(''axis_name'',
+      ''i''), kwargs.get(''split_axis'', 0), kwargs.get(''concat_axis'', 0)) if hasattr(jax.lax,
+      ''all_to_all'') else tensor'
+    target_api: custom_op
+  AlphaDropout:
+    custom_code: 'lambda x, **kwargs: jax.numpy.where(jax.random.bernoulli(jax.random.PRNGKey(0),
+      1.0 - kwargs.get(''p'', 0.5), x.shape), x, 0.0)'
+    target_api: custom_op
+  AsString:
+    custom_code: 'lambda arr, **kwargs: str(arr)'
+    target_api: custom_op
+  Assert:
+    custom_code: 'lambda condition, data, summarize=3, **kwargs: None'
+    target_api: custom_op
+  Assign:
+    custom_code: 'lambda ref, value, **kwargs: value'
+    target_api: custom_op
+  AssignAdd:
+    custom_code: 'lambda ref, value, **kwargs: ref + value'
+    target_api: custom_op
+  AssignSub:
+    custom_code: 'lambda ref, value, **kwargs: ref - value'
+    target_api: custom_op
+  AssignVariable:
+    custom_code: 'lambda ref, value, **kwargs: value'
+    target_api: custom_op
+  AssociativeScan:
+    custom_code: 'lambda *args, **kwargs: args[1] if len(args) > 1 and callable(args[0])
+      else args[0]'
+    target_api: custom_op
+  Atleast1d:
+    target_api: jax.numpy.atleast_1d
+  Atleast2d:
+    target_api: jax.numpy.atleast_2d
+  Atleast3d:
+    target_api: jax.numpy.atleast_3d
+  AxisIndex:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.array(0)'
+    target_api: custom_op
+  BesselI0:
+    target_api: jax.scipy.special.i0
+  BesselI0e:
+    target_api: jax.scipy.special.i0e
+  BesselI1:
+    target_api: jax.scipy.special.i1
+  BesselI1e:
+    target_api: jax.scipy.special.i1e
+  BesselJn:
+    target_api: _execute_bessel_jn
+  BetaCdf:
+    target_api: jax.scipy.stats.beta.cdf
+  BetaPdf:
+    target_api: jax.scipy.stats.beta.pdf
+  BinomCdf:
+    target_api: _execute_binom_cdf
+  BinomPmf:
+    target_api: jax.scipy.stats.binom.pmf
+  Cast:
+    target_api: _execute_cast
+  Convolve:
+    target_api: jax.scipy.signal.convolve
+  Convolve2d:
+    target_api: jax.scipy.signal.convolve2d
+  Cumprod:
+    custom_code: 'lambda *a, **k: jax.numpy.cumprod(*a, **k)'
+    target_api: custom_op
+  Digamma:
+    target_api: jax.scipy.special.digamma
+  Erf:
+    target_api: jax.scipy.special.erf
+  Fft2:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fft2(args[0], **kwargs)'
+    target_api: custom_op
+  Fftconvolve:
+    target_api: jax.scipy.signal.fftconvolve
+  Fftfreq:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fftfreq(*args, **kwargs)'
+    target_api: custom_op
+  Fftn:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fftn(args[0], **kwargs)'
+    target_api: custom_op
+  Fftnd:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fftn(args[0], **kwargs)'
+    target_api: custom_op
+  Fftshift:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fftshift(args[0], **kwargs)'
+    target_api: custom_op
+  Frombuffer:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.frombuffer(args[0], **kwargs)'
+    target_api: custom_op
+  GammaCdf:
+    target_api: jax.scipy.stats.gamma.cdf
+  GammaPdf:
+    target_api: jax.scipy.stats.gamma.pdf
+  HardSilu:
+    custom_code: 'lambda x: jax.nn.hard_silu(x)'
+    target_api: custom_op
+  HardSwish:
+    custom_code: 'lambda x: jax.nn.hard_swish(x)'
+    target_api: custom_op
+  Hfft:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.hfft(args[0], **kwargs)'
+    target_api: custom_op
+  Ifft:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifft(args[0], **kwargs)'
+    target_api: custom_op
+  Ifft2:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifft2(args[0], **kwargs)'
+    target_api: custom_op
+  Ifftn:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifftn(args[0], **kwargs)'
+    target_api: custom_op
+  Ifftnd:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifftn(args[0], **kwargs)'
+    target_api: custom_op
+  Ifftshift:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifftshift(args[0], **kwargs)'
+    target_api: custom_op
+  Ihfft:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ihfft(args[0], **kwargs)'
+    target_api: custom_op
+  Irfft:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.irfft(args[0], **kwargs)'
+    target_api: custom_op
+  Irfft2:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.irfft2(args[0], **kwargs)'
+    target_api: custom_op
+  Irfftn:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.irfftn(args[0], **kwargs)'
+    target_api: custom_op
+  Irfftnd:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.irfftn(args[0], **kwargs)'
+    target_api: custom_op
+  LogSoftmax:
+    custom_code: 'lambda *args, **kwargs: jax.nn.log_softmax(args[0], axis=kwargs.get(''axis'',
+      -1))'
+    target_api: custom_op
+  MatrixExponential:
+    target_api: jax.scipy.linalg.expm
+  Mish:
+    custom_code: 'lambda x: jax.nn.mish(x) if hasattr(jax.nn, ''mish'') else x * jax.numpy.tanh(jax.numpy.log1p(jax.numpy.exp(x)))'
+    target_api: custom_op
+  NormCdf:
+    target_api: jax.scipy.stats.norm.cdf
+  NormPdf:
+    target_api: jax.scipy.stats.norm.pdf
+  OneHot:
+    custom_code: 'lambda *args, **kwargs: jax.nn.one_hot(args[0], kwargs.get(''depth'',
+      args[1] if len(args) > 1 else 1))'
+    target_api: custom_op
+  PoissonCdf:
+    target_api: jax.scipy.stats.poisson.cdf
+  PoissonPmf:
+    target_api: jax.scipy.stats.poisson.pmf
+  Polar:
+    target_api: jax.scipy.linalg.polar
+  Polygamma:
+    target_api: jax.scipy.special.polygamma
+  RaggedTensorToDense:
+    target_api: _execute_ragged_tensor_to_dense
+  ReduceScatter:
+    custom_code: 'lambda tensor, *args, **kwargs: jax.lax.reduce_scatter(tensor, jax.lax.add
+      if kwargs.get(''op_type'', ''sum'').lower() == ''sum'' else jax.lax.max, scatter_dimension=kwargs.get(''axis'',
+      0), axis_name=kwargs.get(''axis_name'', ''i'')) if hasattr(jax.lax, ''reduce_scatter'')
+      else tensor'
+    target_api: custom_op
+  Rfft:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfft(args[0], **kwargs)'
+    target_api: custom_op
+  Rfft2:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfft2(args[0], **kwargs)'
+    target_api: custom_op
+  Rfftfreq:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfftfreq(*args, **kwargs)'
+    target_api: custom_op
+  Rfftn:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfftn(args[0], **kwargs)'
+    target_api: custom_op
+  Rfftnd:
+    custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfftn(args[0], **kwargs)'
+    target_api: custom_op
+  Schur:
+    target_api: jax.scipy.linalg.schur
+  SegmentMax:
+    target_api: jax.ops.segment_max
+  SegmentMin:
+    target_api: jax.ops.segment_min
+  SegmentProd:
+    target_api: jax.ops.segment_prod
+  SegmentSum:
+    target_api: jax.ops.segment_sum
+  Sigmoid:
+    custom_code: 'lambda *args, **kwargs: jax.nn.sigmoid(args[0])'
+    target_api: custom_op
+  Softmax:
+    custom_code: 'lambda *args, **kwargs: jax.nn.softmax(args[0], axis=kwargs.get(''axis'',
+      -1))'
+    target_api: custom_op
+  SpecialGamma:
+    target_api: jax.scipy.special.gamma
+  Squareplus:
+    custom_code: 'lambda x: jax.nn.squareplus(x) if hasattr(jax.nn, ''squareplus'')
+      else 0.5 * (x + jax.numpy.sqrt(x ** 2 + 4.0))'
+    target_api: custom_op
+  UnsortedSegmentMax:
+    target_api: _execute_unsorted_segment_max
+  UnsortedSegmentMin:
+    target_api: _execute_unsorted_segment_min
+  UnsortedSegmentProd:
+    target_api: _execute_unsorted_segment_prod
+  UnsortedSegmentSum:
+    target_api: _execute_unsorted_segment_sum
+  Variance:
+    target_api: _execute_variance
+  Welch:
+    target_api: jax.scipy.signal.welch
+  Zeta:
+    target_api: jax.scipy.special.zeta

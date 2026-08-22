@@ -142,7 +142,8 @@ def lu(input: Any, output_idx_type: Any = None, name: Any = None) -> Any:
         output_idx_type (object): The output_idx_type parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return input, input, input
 

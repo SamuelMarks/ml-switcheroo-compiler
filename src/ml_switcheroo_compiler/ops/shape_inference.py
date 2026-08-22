@@ -41,7 +41,8 @@ def infer_shape(op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if op_type in _SHAPE_INFERENCE_REGISTRY:
         return _SHAPE_INFERENCE_REGISTRY[op_type](*args, **kwargs)

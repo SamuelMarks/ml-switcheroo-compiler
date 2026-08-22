@@ -17,7 +17,8 @@ def _deg2rad(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "deg2rad", None)
     return func(*args, **kwargs) if func else None
@@ -32,7 +33,8 @@ def _degrees(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "degrees", getattr(backend_module, "rad2deg", None))
     return func(*args, **kwargs) if func else None
@@ -47,7 +49,8 @@ def _rad2deg(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "rad2deg", getattr(backend_module, "degrees", None))
     return func(*args, **kwargs) if func else None
@@ -62,7 +65,8 @@ def _radians(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "radians", getattr(backend_module, "deg2rad", None))
     return func(*args, **kwargs) if func else None
@@ -77,7 +81,8 @@ def _cbrt(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "cbrt", None)
     if func:
@@ -95,7 +100,8 @@ def _fix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fix", getattr(backend_module, "trunc", None))
     if func:
@@ -113,7 +119,8 @@ def _hypot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "hypot", None)
     if func:
@@ -131,7 +138,8 @@ def _i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "i0", None)
     return func(*args, **kwargs) if func else None
@@ -146,7 +154,8 @@ def _imag(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "imag", None)
     return func(*args, **kwargs) if func else None
@@ -161,7 +170,8 @@ def _lcm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "lcm", getattr(backend_module, "least_common_multiple", None))
     if func is not None:
@@ -180,7 +190,8 @@ def _nextafter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "nextafter", None)
     if func is not None:
@@ -199,7 +210,8 @@ def _real(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "real", None)
     if func is not None:
@@ -218,7 +230,8 @@ def _spacing(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "spacing", None)
     if func is not None:
@@ -237,7 +250,8 @@ def _unwrap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "unwrap", None)
     if func is not None:
@@ -256,7 +270,8 @@ def _beta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs.pop("shape", None)
     kwargs.pop("dtype", None)
@@ -279,7 +294,8 @@ def _betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "betainc", None)
     if func is not None:
@@ -299,7 +315,8 @@ def _all_to_all(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return tensor
 
@@ -313,7 +330,8 @@ def _apply_over_axes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return args[1] if len(args) > 1 else None
 
@@ -327,7 +345,8 @@ def _array_repr(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return repr(arr)
 
@@ -341,7 +360,8 @@ def _array_str(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return str(arr)
 
@@ -356,7 +376,8 @@ def _assign(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return value
 
@@ -371,7 +392,8 @@ def _assign_variable(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return value
 
@@ -385,7 +407,8 @@ def _associative_scan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     fn = args[0]
     elems = args[1]
@@ -412,7 +435,8 @@ def _atleast_1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_1d(*args) if hasattr(backend_module, "atleast_1d") else args[0]
 
@@ -426,7 +450,8 @@ def _atleast_2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_2d(*args) if hasattr(backend_module, "atleast_2d") else args[0]
 
@@ -440,7 +465,8 @@ def _atleast_3d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.atleast_3d(*args) if hasattr(backend_module, "atleast_3d") else args[0]
 
@@ -454,7 +480,8 @@ def _adjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "adjoint", None)
     if func:
@@ -477,7 +504,8 @@ def _bincount(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "bincount", None)
     if func:
@@ -497,7 +525,8 @@ def _cross(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "cross", None)
     if func:
@@ -514,7 +543,8 @@ def _inner(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "inner", None)
     if func:
@@ -532,7 +562,8 @@ def _ediff1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.ediff1d(*args, **kwargs)
 
@@ -546,7 +577,8 @@ def _gradient(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.gradient(*args, **kwargs)
 
@@ -560,7 +592,8 @@ def _hardsilu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = args[0]
     return x * backend_module.clip(x + 3, 0, 6) / 6
@@ -575,7 +608,8 @@ def _interp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.interp(*args, **kwargs)
 
@@ -589,7 +623,8 @@ def _iterable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.iterable(*args, **kwargs)
 
@@ -603,7 +638,8 @@ def _ix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.ix_(*args, **kwargs)
 
@@ -617,7 +653,8 @@ def _kron(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.kron(*args, **kwargs)
 
@@ -631,7 +668,8 @@ def _outfeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "outfeed"):
         return backend_module.lax.outfeed(*args, **kwargs)
@@ -647,7 +685,8 @@ def _r(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.r_(*args, **kwargs)
 
@@ -661,7 +700,8 @@ def _rademacher(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", ())
     return backend_module.random.choice([-1, 1], size=shape)
@@ -676,7 +716,8 @@ def _squareplus(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = args[0]
     b = kwargs.get("b", 4.0)
@@ -692,7 +733,8 @@ def _trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "trapezoid"):
         return backend_module.trapezoid(*args, **kwargs)
@@ -708,7 +750,8 @@ def _vectorize(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.vectorize(*args, **kwargs)
 
@@ -722,7 +765,8 @@ def _indexindim(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -750,7 +794,8 @@ def _ppermute(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "ppermute"):
         return backend_module.lax.ppermute(*args, **kwargs)
@@ -766,7 +811,8 @@ def _kronecker(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "kron", getattr(backend_module, "kronecker", None))
     if func:
@@ -783,7 +829,8 @@ def _outer(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "outer", None)
     if func:
@@ -800,7 +847,8 @@ def _fabs(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fabs", getattr(backend_module, "abs", None))
     return func(*args, **kwargs) if func else None
@@ -815,7 +863,8 @@ def _gcd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "greatest_common_divisor", None))
     if func:
@@ -834,7 +883,8 @@ def _np_ball(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "ball", getattr(backend_module, "ball", None))
     if func is not None:
@@ -853,7 +903,8 @@ def _np_betapdf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "betapdf", getattr(backend_module, "betapdf", None))
     if func is not None:
@@ -872,7 +923,8 @@ def _np_gcd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "gcd", None))
     if func is not None:
@@ -891,7 +943,8 @@ def _np_inner(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "inner", getattr(backend_module, "inner", None))
     if func is not None:
@@ -910,7 +963,8 @@ def _np_r(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "r", getattr(backend_module, "r", None))
     if func is not None:
@@ -929,7 +983,8 @@ def _np_switch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "switch", getattr(backend_module, "switch", None))
     if func is not None:
@@ -948,7 +1003,8 @@ def _np_t(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "t", getattr(backend_module, "t", None))
     if func is not None:
@@ -967,7 +1023,8 @@ def _np_trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapezoid", None))
     if func is not None:
@@ -986,7 +1043,8 @@ def _np_trapezoidalintegral(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoidalintegral", None))
     if func is not None:
@@ -1005,7 +1063,8 @@ def _np_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "variance", getattr(backend_module, "variance", None))
     if func is not None:
@@ -1024,7 +1083,8 @@ def _np_vectorize(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "vectorize", getattr(backend_module, "vectorize", None))
     if func is not None:
@@ -1043,7 +1103,8 @@ def _np_welch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "welch", getattr(backend_module, "welch", None))
     if func is not None:
@@ -1062,7 +1123,8 @@ def _np_wrapkeydata(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "wrapkeydata", getattr(backend_module, "wrapkeydata", None))
     if func is not None:
@@ -1081,7 +1143,8 @@ def _np_zerofraction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "zerofraction", getattr(backend_module, "zerofraction", None))
     if func is not None:
@@ -1100,7 +1163,8 @@ def _np_zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "zeta", getattr(backend_module, "zeta", None))
     if func is not None:

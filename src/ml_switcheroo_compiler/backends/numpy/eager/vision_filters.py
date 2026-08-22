@@ -18,7 +18,8 @@ def _np_random_gaussian_blur(backend_module: Any, images: Any, kernel_size: Any,
         sigma (object): The sigma parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs)
 
@@ -33,6 +34,7 @@ def _np_random_sharpness(backend_module: Any, images: Any, factor: Any, **kwargs
         factor (object): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _np_sharpen(backend_module, images, factor=factor, **kwargs)

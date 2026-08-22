@@ -19,7 +19,7 @@ def test_ops_registry_yaml_loads():
 
 
 def test_pass_config_yaml_loads():
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "src", "ml_switcheroo_compiler", "transforms", "pass_config.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "src", "ml_switcheroo_compiler", "transforms", "passes", "pass_config.yaml")
     assert os.path.exists(yaml_path), "Pass config YAML does not exist"
     with open(yaml_path) as f:
         data = yaml.safe_load(f)

@@ -46,7 +46,8 @@ def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> No
         contents (Tensor): The contents parameter.
         name (str): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -81,7 +82,8 @@ def gfile_glob(pattern: str) -> list[str]:
     Args:
         pattern (str): The pattern parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return glob.glob(pattern)
 
@@ -92,7 +94,8 @@ def gfile_stat(path: str) -> dict[str, int]:
     Args:
         path (str): The path parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     st = os.stat(path)
     return {"length": st.st_size, "mtime": int(st.st_mtime)}
@@ -120,7 +123,8 @@ class ReadFile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -146,7 +150,8 @@ class WriteFile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

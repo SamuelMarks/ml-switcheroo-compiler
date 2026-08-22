@@ -31,7 +31,8 @@ class RopeOp(OpDef):
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(input, "shape", ())
 
@@ -132,6 +133,7 @@ class ScaledDotProductAttention(OpDef):
             value (object): The value parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return query.shape

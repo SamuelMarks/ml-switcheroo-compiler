@@ -23,7 +23,8 @@ def _np_pmean(backend_module: Any, x: Any, axis_name: Any, *args: Any, **kwargs:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x
 
@@ -37,7 +38,8 @@ def _np_psum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
@@ -71,6 +73,7 @@ def _np_sparsereducemax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.max(args[0], axis=-1)

@@ -13,7 +13,8 @@ def _get_node_items(block: Any) -> Iterable[tuple[str, IRNode]]:
     Args:
         block (Any): The block parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not hasattr(block, "nodes"):
         return []

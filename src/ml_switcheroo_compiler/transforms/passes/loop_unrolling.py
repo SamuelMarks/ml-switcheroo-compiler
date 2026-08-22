@@ -65,7 +65,7 @@ def clone_subgraph(subgraph: IRBlock, id_suffix: str, input_remap: dict[str, str
     return cloned_nodes, out_ids
 
 
-def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state: dict[str, typing.Any], max_iters: int = 100) -> int | None:
+def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state: dict[str, Any], max_iters: int = 100) -> int | None:
     """Execute detect static bound using lightweight symbolic execution rather than host evaluator.
 
     Args:
@@ -74,7 +74,8 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
         initial_state (dict): The initial_state parameter.
         max_iters (int): The max_iters parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     # If the state involves dynamic tensors or symbolic variables, host eager evaluation will break.
     # We must implement pass-through for purely data-dependent conditions and use lightweight static solver.
@@ -165,7 +166,7 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
     return None
 
 
-def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any]:
+def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, Any]:
     """Evaluate _get_initial_constants operation.
 
     Args:
@@ -175,7 +176,7 @@ def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any
     Returns:
         dict: Result.
     """
-    state: dict[str, typing.Any] = {}
+    state: dict[str, Any] = {}
     cond_graph = node.attributes.get("cond")
     if not cond_graph:
         return state

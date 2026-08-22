@@ -15,7 +15,8 @@ def _np_add(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.add(*args, **kwargs)
 
@@ -29,7 +30,8 @@ def _np_subtract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.subtract(*args, **kwargs)
 
@@ -43,7 +45,8 @@ def _np_multiply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.multiply(*args, **kwargs)
 
@@ -57,7 +60,8 @@ def _np_true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.divide(*args, **kwargs)
 
@@ -71,7 +75,8 @@ def _np_maximum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.maximum(*args, **kwargs)
 
@@ -85,7 +90,8 @@ def _np_minimum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.minimum(*args, **kwargs)
 
@@ -99,7 +105,8 @@ def _np_bitwise_and(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.bitwise_and(*args, **kwargs)
 
@@ -113,7 +120,8 @@ def _np_bitwise_or(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.bitwise_or(*args, **kwargs)
 
@@ -127,7 +135,8 @@ def _np_bitwise_xor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.bitwise_xor(*args, **kwargs)
 
@@ -141,7 +150,8 @@ def _np_left_shift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.left_shift(*args, **kwargs)
 
@@ -155,7 +165,8 @@ def _np_right_shift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.right_shift(*args, **kwargs)
 
@@ -169,7 +180,8 @@ def _np_logaddexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logaddexp(*args, **kwargs)
 
@@ -183,7 +195,8 @@ def _np_logaddexp2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.logaddexp2(*args, **kwargs)
 
@@ -197,7 +210,8 @@ def _np_nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.nan_to_num(*args, **kwargs)
 
@@ -211,7 +225,8 @@ def _np_frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.frexp(*args, **kwargs)
 
@@ -225,7 +240,8 @@ def _np_clip(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.clip(*args, **kwargs)
 
@@ -239,7 +255,8 @@ def _np_amax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.amax(*args, **kwargs)
 
@@ -253,7 +270,8 @@ def _np_amin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.amin(*args, **kwargs)
 
@@ -269,9 +287,13 @@ def _np_logit(backend_module: Any, x: Any, eps: Any = None, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
-    return backend_module.log(x / (1.0 - x))
+    import numpy as np
+
+    with np.errstate(divide="ignore"):
+        return backend_module.log(x / (1.0 - x))
 
 
 @numpy_eager_registry.register("Polygamma")
@@ -283,7 +305,8 @@ def _np_polygamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.special as sc
 
@@ -306,7 +329,8 @@ def _np_zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.special as sc
 
@@ -329,6 +353,7 @@ def _eager_remainder(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.remainder(*args, **kwargs)

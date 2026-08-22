@@ -3,7 +3,7 @@ description: Local Attention with given left and right context.
 std_args:
   - is_variadic: false
     kind: positional_or_keyword
-    name: dim
+    name: axis
     type: int
   - is_variadic: false
     kind: positional_or_keyword

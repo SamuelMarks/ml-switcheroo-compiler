@@ -21,7 +21,8 @@ class SpaceToBatchND(OpDef):
             paddings (object): The paddings parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -41,7 +42,8 @@ class SpaceToBatch(OpDef):
             paddings (object): The paddings parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -55,7 +57,8 @@ def space_to_batch(input: Any, block_size: Any, paddings: Any, **kwargs: Any) ->
         paddings (object): The paddings parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config
@@ -80,7 +83,8 @@ def space_to_batch_nd(input: Any, block_shape: Any, paddings: Any, **kwargs: Any
         paddings (object): The paddings parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config

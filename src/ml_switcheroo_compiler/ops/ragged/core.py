@@ -19,7 +19,8 @@ class RaggedDot(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically returns the shape of the dense representation or similar.
         # For simplicity we

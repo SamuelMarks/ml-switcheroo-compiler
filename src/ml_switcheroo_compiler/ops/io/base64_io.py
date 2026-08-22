@@ -25,7 +25,8 @@ def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
         data (object): The data parameter.
         pad (bool): The pad parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import base64
 
@@ -107,7 +108,8 @@ class EncodeBase64(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -133,7 +135,8 @@ class DecodeBase64(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 

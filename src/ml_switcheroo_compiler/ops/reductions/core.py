@@ -27,7 +27,8 @@ class ReductionOp(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -40,7 +41,8 @@ class ReductionOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()  # Symbolic shape inference will handle axis reduction logic
 

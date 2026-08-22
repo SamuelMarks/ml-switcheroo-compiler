@@ -17,7 +17,8 @@ def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "signbit", None)
     if func:
@@ -35,7 +36,8 @@ def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
@@ -54,7 +56,8 @@ def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:

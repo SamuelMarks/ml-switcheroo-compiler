@@ -92,5 +92,6 @@ repos:
     name: Validate Backend Mappings
     entry: python scripts/validate_backend_mappings.py
     language: python
-    files: ^src/ml_switcheroo_compiler/backends/.*\.py$
+    additional_dependencies: [pyyaml]
+    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     pass_filenames: false

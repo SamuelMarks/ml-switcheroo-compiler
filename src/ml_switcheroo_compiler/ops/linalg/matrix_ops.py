@@ -407,7 +407,8 @@ class Svdvals(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x = args[0]
         shape = getattr(x, "shape", ())
@@ -469,7 +470,8 @@ class TridiagonalMatmul(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return b.shape
 
@@ -485,7 +487,8 @@ class Cond(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 

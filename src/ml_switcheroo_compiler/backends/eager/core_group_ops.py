@@ -28,7 +28,8 @@ def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: Any, reduc
         reshaped_x (object): The reshaped_x parameter.
         reduction_axes (tuple): The reduction_axes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -56,7 +57,8 @@ def _apply_grouped_reduction(backend_module: Any, op_name: str, x: Any, **kwargs
         x (object): The x parameter.
         **kwargs (int): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     groups = kwargs["groups"]
     axis = kwargs["axis"]
@@ -82,7 +84,8 @@ def _group_mean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
@@ -99,7 +102,8 @@ def _group_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
@@ -116,7 +120,8 @@ def _apply_affine_transform(backend_module: Any, out: Any, axis: int, **kwargs: 
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")
@@ -164,7 +169,8 @@ def _compute_group_norm(backend_module: Any, x: Any, shape: list[Any], group_par
         group_params (tuple): The group_params parameter.
         stats (tuple): The stats parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (axis, groups) = group_params
     (mean, var, epsilon) = stats
@@ -185,7 +191,8 @@ def _group_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (x, groups, weight, bias, axis, epsilon) = _parse_group_norm_args(args, kwargs)
     shape = list(x.shape)

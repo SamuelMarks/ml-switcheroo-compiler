@@ -17,7 +17,8 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     b = args[1]
@@ -31,7 +32,8 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         Args:
         x (object): The x parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(x_data.item):
@@ -57,7 +59,8 @@ def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
         a2 (object): The a2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.allclose(a1, a2) if hasattr(backend_module, "allclose") else True
 
@@ -73,7 +76,8 @@ def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, 
         summarize (int): The summarize parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return None
 
@@ -87,7 +91,8 @@ def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.promote_types(*args, **kwargs)
 
@@ -101,6 +106,7 @@ def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.result_type(*args, **kwargs)

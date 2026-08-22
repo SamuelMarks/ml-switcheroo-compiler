@@ -70,7 +70,8 @@ def permutation(key: Any, x: Any, axis: Any = 0, independent: Any = False) -> An
         axis (object): The axis parameter.
         independent (object): The independent parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = getattr(x, "shape", ())
     dtype = getattr(x, "dtype", None)
@@ -107,7 +108,8 @@ def binomial(key: Any, n: Any, p: Any, shape: Any = None, dtype: Any = None) -> 
         shape (object): The shape parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if shape is None:
         shape = ()
@@ -122,7 +124,8 @@ def geometric(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dispatch_random("geometric", *args, **kwargs)
 
@@ -136,7 +139,8 @@ def poisson(key: Any, lam: Any, shape: Any = None, dtype: Any = None) -> Any:
         shape (object): The shape parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if shape is None:
         shape = ()
@@ -151,7 +155,8 @@ def rademacher(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dispatch_random("rademacher", *args, **kwargs)
 

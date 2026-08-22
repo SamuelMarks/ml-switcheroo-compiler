@@ -48,7 +48,8 @@ def _dynamic_update_slice(x: Any, update: Any, start_indices: Any) -> Any:
         update (object): The update parameter.
         start_indices (object): The start_indices parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     out = np.copy(x)
 
@@ -81,7 +82,8 @@ def _np_dynamic_update_slice(backend_module: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dynamic_update_slice(*args, **kwargs)
 
@@ -97,7 +99,8 @@ def _np_unstack(backend_module: Any, x: Any, axis: Any = 0, *args: Any, **kwargs
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)]
 
@@ -112,7 +115,8 @@ def _np_dynamic_slice(backend_module: Any, x: Any, start_indices: Any, slice_siz
         start_indices (object): The start_indices parameter.
         slice_sizes (object): The slice_sizes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     slices = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
     return x[slices]
@@ -129,7 +133,8 @@ def _np_dynamic_slice_in_dim(backend_module: Any, operand: Any, context: Indexin
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     operand = np.asarray(operand)
     start_index = np.asarray(context.start_index).item()
@@ -150,7 +155,8 @@ def _np_dynamic_update_slice_in_dim(backend_module: Any, operand: Any, update: A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     operand = np.copy(np.asarray(operand))
     start_index = np.asarray(context.start_index).item()
@@ -173,7 +179,8 @@ def _np_dynamic_index_in_dim(backend_module: Any, operand: Any, index: Any, cont
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     operand = np.asarray(operand)
     idx = np.asarray(index).item()
@@ -198,7 +205,8 @@ def _np_dynamic_update_index_in_dim(backend_module: Any, target: IndexTarget, co
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     operand, update, index = target.operand, target.update, target.index
     operand = np.copy(np.asarray(operand))
@@ -220,7 +228,8 @@ def _np_slice_in_dim(backend_module: Any, operand: Any, context: IndexingContext
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     operand = np.asarray(operand)
     sl = [slice(None)] * operand.ndim
@@ -237,7 +246,8 @@ def _np_slice(backend_module: Any, x: Any, context: IndexingContext) -> Any:
         x (object): The x parameter.
         context (IndexingContext): The context parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     sl = [slice(None)] * x.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
@@ -253,7 +263,8 @@ def _np_getitem(backend_module: Any, x: Any, key: str) -> Any:
         x (object): The x parameter.
         key (str): The key parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     parsed_key = _safe_parse_key(key)
     return x[parsed_key]
@@ -269,7 +280,8 @@ def _np_setitem(backend_module: Any, x: Any, value: Any, key: str) -> Any:
         value (object): The value parameter.
         key (str): The key parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     parsed_key = _safe_parse_key(key)
     out = np.copy(np.asarray(x))
@@ -286,7 +298,8 @@ def _eager_indexindim(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -303,7 +316,8 @@ def gather_eager(np_mod: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     t = args[0]
     dim = args[1] if len(args) > 1 else kwargs.get("dim")
@@ -324,7 +338,8 @@ def stack_eager(np_mod: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensors = args[0] if len(args) > 0 else kwargs.get("tensors")
     dim = args[1] if len(args) > 1 else kwargs.get("dim", 0)

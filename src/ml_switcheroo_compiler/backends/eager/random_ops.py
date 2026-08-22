@@ -14,7 +14,8 @@ def prng_key(backend_module: Any, seed: int) -> Any:
         backend_module (object): The backend_module parameter.
         seed (int): The seed parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "array"):
         return backend_module.array([0, seed], dtype="uint32")
@@ -30,7 +31,8 @@ def random_split(backend_module: Any, key: Any, num: int = 2) -> Any:
         key (object): The key parameter.
         num (int): The num parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import random
 
@@ -49,7 +51,8 @@ def random_fold_in(backend_module: Any, key: Any, data: int) -> Any:
         key (object): The key parameter.
         data (int): The data parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     val0 = int(key[0]) if hasattr(key, "__getitem__") else 0
     val1 = int(key[1]) if hasattr(key, "__getitem__") else 0
@@ -68,7 +71,8 @@ def rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args if args else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
@@ -96,7 +100,8 @@ def randn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args if args else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
@@ -124,7 +129,8 @@ def randint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     low = kwargs.get("low", args[0] if len(args) > 0 else 0)
     high = kwargs.get("high", args[1] if len(args) > 1 else 10)

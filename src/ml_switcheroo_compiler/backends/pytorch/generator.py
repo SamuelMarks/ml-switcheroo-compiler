@@ -157,6 +157,15 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         eq = kwargs.get("equation", "")
         return f"torch.einsum('{eq}', {args_str})"
 
+    def generate(self) -> str:
+        """Generate code using strict AST construction (CST) from a base NumPy string."""
+        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
+        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+
+        gen = NumpyGenerator(self.graph)
+        base_code = gen.generate()
+        return transpile_source(base_code, target_framework="pytorch")
+
     def get_fallback_prefix(self) -> str:
         """Retrieve the fallback library prefix used for missing generic operations.
 
@@ -182,94 +191,16 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return "keepdim"
 
     def _get_math_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
-        """Provide a dictionary mapping math operations to their PyTorch code templates.
-
-        Args:
-            kwargs (dict): Parameters dictionary to evaluate operation templates.
-
-        Returns:
-            dict[str, str]: The dictionary of math operation templates.
-        """
-        return {
-            "TruncateDiv": "torch.trunc({0} / {1})",
-            "TruncateMod": "torch.fmod({0}, {1})",
-            "TrueDivide": "torch.true_divide({0}, {1})",
-            "Sum": "torch.sum({0}, dim={axis}, keepdim={keepdims})",
-            "Mean": "torch.mean({0}, dim={axis}, keepdim={keepdims})",
-            "Max": "torch.max({0}, dim={axis}, keepdim={keepdims})",
-            "Min": "torch.min({0}, dim={axis}, keepdim={keepdims})",
-            "Prod": "torch.prod({0}, dim={axis}, keepdim={keepdims})",
-            "All": "torch.all({0}, dim={axis}, keepdim={keepdims})",
-            "AnyOp": "torch.any({0}, dim={axis}, keepdim={keepdims})",
-            "Erfinv": "torch.erfinv({0})",
-            "NanToNum": "torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})",
-        }
+        """Get math ops."""
+        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
     def _get_creation_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
-        """Provide a dictionary mapping tensor creation operations to PyTorch templates.
-
-        Args:
-            kwargs (dict): Parameters dictionary used for evaluating creation logic.
-
-        Returns:
-            dict[str, str]: The dictionary of creation operation templates.
-        """
-        return {
-            "Arange": "torch.arange({0})",
-            "Zeros": "torch.zeros({shape})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
-            "Ones": "torch.ones({shape})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
-            "Full": "torch.full({shape}, {fill_value})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
-        }
+        """Get creation ops."""
+        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
     def _get_array_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
-        """Provide a dictionary mapping array operations to PyTorch code templates.
-
-        Args:
-            kwargs (dict): The parameters dictionary required for shaping the templates.
-
-        Returns:
-            dict[str, str]: The dictionary mapping operations to PyTorch strings.
-        """
-        return {
-            "BroadcastTo": "{0}.expand({shape})",
-            "Reshape": "torch.reshape({0}, {shape})",
-            "Sort": "torch.sort({0}, dim={dimension})",
-            "ArgSort": "torch.argsort({0}, dim={dimension})",
-            "Allclose": "torch.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})",
-            "AssignVariable": "{0}",
-            "StopGradient": "{0}.detach()",
-            "Resize": "torch.nn.functional.interpolate({0}, size={size}, mode={method}, antialias={antialias})",
-            "AffineGrid": "torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})",
-            "GridSample": "torch.nn.functional.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode}, align_corners={align_corners})",
-            "DrawBoundingBoxes": "torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors}, labels={texts})",
-            "RgbToYiq": "{0}",
-            "YiqToRgb": "{0}",
-            "RgbToYuv": "{0}",
-            "YuvToRgb": "{0}",
-            "Ifft": "torch.fft.ifft({0}, n={n}, dim={axis})",
-            "Fft2d": "torch.fft.fft2({0}, s={s}, dim={axes})",
-            "Ifft2d": "torch.fft.ifft2({0}, s={s}, dim={axes})",
-            "Fft3d": "torch.fft.fftn({0}, s={s}, dim={axes})",
-            "Ifft3d": "torch.fft.ifftn({0}, s={s}, dim={axes})",
-            "Rfft2d": "torch.fft.rfft2({0}, s={s}, dim={axes})",
-            "Rfft3d": "torch.fft.rfftn({0}, s={s}, dim={axes})",
-            "Irfft": "torch.fft.irfft({0}, n={n}, dim={axis})",
-            "Irfft2d": "torch.fft.irfft2({0}, s={s}, dim={axes})",
-            "Irfft3d": "torch.fft.irfftn({0}, s={s}, dim={axes})",
-            "Stft": "torch.stft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length}, window={window}, center={center}, normalized={normalized}, onesided={onesided}, return_complex={return_complex})",
-            "Istft": "torch.istft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length}, window={window}, center={center}, normalized={normalized}, onesided={onesided}, length={length}, return_complex={return_complex})",
-            "HannWindow": "torch.hann_window({window_length}, periodic={periodic})",
-            "HammingWindow": "torch.hamming_window({window_length}, periodic={periodic}, alpha={alpha}, beta={beta})",
-            "KaiserWindow": "torch.kaiser_window({window_length}, periodic={periodic}, beta={beta})",
-            "ReadVariable": "{0}",
-            "TensorScatterUpdate": "{0}.clone().index_put_(tuple({1}.unbind(-1)), {2})",
-            "TensorScatterAdd": "{0}.clone().index_put_(tuple({1}.unbind(-1)), {2}, accumulate=True)",
-            "Transpose": "torch.permute({0}, {axes})" if "axes" in kwargs else "{0}.t()",
-            "Argmax": "torch.argmax({0}, dim={axis}, keepdim={keepdims})",
-            "Argmin": "torch.argmin({0}, dim={axis}, keepdim={keepdims})",
-            "Cast": "getattr({0}, str('{dtype}'))()",
-            "Bitcast": "{0}.view(getattr(torch, str('{dtype}')))",
-        }
+        """Get array ops."""
+        return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
         """Emit the code to assign a constant parameter to a local variable.
@@ -316,7 +247,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         fix_imports (bool): The fix_imports parameter.
         encoding (str): The encoding parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import torch
 

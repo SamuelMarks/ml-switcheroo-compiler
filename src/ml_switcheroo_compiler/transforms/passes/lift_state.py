@@ -54,7 +54,8 @@ def _get_nodes(block: Any) -> Iterable[IRNode]:
     Args:
         block (Any): The block parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     nodes = getattr(block, "nodes", [])
     if isinstance(nodes, dict):

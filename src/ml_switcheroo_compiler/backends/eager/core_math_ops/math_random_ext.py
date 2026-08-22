@@ -17,7 +17,8 @@ def _pshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pshuffle"):
         return backend_module.lax.pshuffle(*args, **kwargs)
@@ -33,7 +34,8 @@ def _np_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
     if func is not None:
@@ -52,7 +54,8 @@ def _np_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
     if func is not None:
@@ -71,7 +74,8 @@ def _np_wald(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
     if func is not None:

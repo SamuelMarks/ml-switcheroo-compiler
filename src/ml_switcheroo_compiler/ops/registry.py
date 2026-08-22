@@ -111,6 +111,47 @@ def get_op(op_name: str) -> type:
                 """
                 return cls._yaml_data
 
+            def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+                """Infer shape precisely using heuristics.
+
+                Args:
+                    self (Any): The self parameter.
+                    *args (Any): Positional args.
+                    **kwargs (Any): Keyword args.
+
+                Returns:
+                    Any: Result shape tuple.
+                """
+                inputs = kwargs.get("inputs", [])
+
+                if not inputs:
+                    if len(args) > 0 and isinstance(args[0], (list, tuple)):
+                        inputs = args[0]
+                    else:
+                        inputs = list(args)
+
+                shapes = []
+                for inp in inputs:
+                    if hasattr(inp, "shape_metadata") and inp.shape_metadata is not None:
+                        shapes.append(tuple(inp.shape_metadata))
+                    elif hasattr(inp, "shape") and inp.shape is not None:
+                        shapes.append(tuple(inp.shape))
+                    elif isinstance(inp, (list, tuple)) and all(isinstance(x, int) for x in inp):
+                        shapes.append(tuple(inp))
+
+                if not shapes:
+                    return ()
+
+                if len(shapes) == 1:
+                    return shapes[0]
+
+                try:
+                    import numpy as np
+
+                    return np.broadcast_shapes(*shapes)
+                except Exception:
+                    return max(shapes, key=len)
+
         # Give it a nice name
         DynamicOpDef.__name__ = op_name
         DynamicOpDef.__qualname__ = op_name

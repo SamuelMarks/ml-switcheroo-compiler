@@ -23,7 +23,8 @@ class Atan2(OpDef):
         *shapes (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         """Infer the output shape of the operation.
 
@@ -50,7 +51,8 @@ class Divmod(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if config.eager_mode:
             return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
@@ -66,7 +68,8 @@ class Divmod(OpDef):
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         """Infer the output shape of the operation.
 
@@ -96,7 +99,8 @@ class Allclose(OpDef):
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -112,7 +116,8 @@ class Isclose(OpDef):
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         """Infer the output shape of the operation.
 

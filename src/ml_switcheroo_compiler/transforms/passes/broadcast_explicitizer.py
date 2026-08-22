@@ -48,7 +48,8 @@ def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[i
         shape1 (Any): The shape1 parameter.
         shape2 (Any): The shape2 parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None

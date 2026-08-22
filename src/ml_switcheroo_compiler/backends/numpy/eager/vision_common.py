@@ -18,7 +18,8 @@ def _np_mel_filterbank(backend_module: Any, _: Any, **kwargs: Any) -> Any:
         _ (object): The _ parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return mel_filterbank_eager(backend_module, None, kwargs.get("config", kwargs))
 
@@ -32,7 +33,8 @@ def _np_mfcc(backend_module: Any, spectrogram: Any, **kwargs: Any) -> Any:
         spectrogram (object): The spectrogram parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return mfcc_eager(backend_module, spectrogram, kwargs.get("config", kwargs))
 
@@ -47,7 +49,8 @@ def _np_power_iteration(backend_module: Any, w: Any, *args: Any, **kwargs: Any) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     num_iters = kwargs.get("num_iters", 1)
     u = kwargs.get("u", None)

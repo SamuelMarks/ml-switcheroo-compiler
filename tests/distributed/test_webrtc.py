@@ -14,14 +14,14 @@ def test_emit_webrtc_init():
 
 def test_emit_webrtc_op():
     res = emit_webrtc_op("AllReduce", "my_data", "op1")
-    assert "ALLREDUCE" in res
+    assert "AllReduce" in res
     assert "my_data" in res
 
     res2 = emit_webrtc_op("AllGather", "my_data", "op2")
-    assert "ALLGATHER" in res2
+    assert "AllGather" in res2
 
     res3 = emit_webrtc_op("AllToAll", "my_data", "op3")
-    assert "ALLTOALL" in res3
+    assert "AllToAll" in res3
 
     res4 = emit_webrtc_op("Unknown", "my_data", "op4")
     assert res4 == ""
@@ -50,6 +50,6 @@ def test_wasm_webrtc():
 
     gen = WasmCodeGenerator(graph)
     code = gen.generate()
-    assert "ALLGATHER" in code
-    assert "REDUCESCATTER" in code
+    assert "AllGather" in code
+    assert "ReduceScatter" in code
     assert "JS Orcherstrator:" in code

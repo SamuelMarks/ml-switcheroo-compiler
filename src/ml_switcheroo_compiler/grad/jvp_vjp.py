@@ -52,7 +52,8 @@ def jvp(
         tangents (object): The tangents parameter.
         has_aux (bool): The has_aux parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.interpreter import evaluate_graph
@@ -136,7 +137,8 @@ def vjp(
         Args:
         *flat_args (object): Positional args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         unflat_args = tree_unflatten(tree_def, list(flat_args))
         return fun(*unflat_args)
@@ -191,7 +193,8 @@ def vjp(
         Args:
         cotangent (object): The cotangent parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Run the evaluator on grad_graph
         inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
@@ -231,7 +234,8 @@ def hvp(
         tangents (object): The tangents parameter.
         has_aux (bool): The has_aux parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.interpreter import evaluate_graph
     from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
@@ -293,7 +297,8 @@ def jacfwd(fun: typing.Callable[..., Any], options: Any = None) -> typing.Callab
         fun (object): The fun parameter.
         options (GradOptions): The options parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     options = options or GradOptions()
 
@@ -304,7 +309,8 @@ def jacfwd(fun: typing.Callable[..., Any], options: Any = None) -> typing.Callab
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Evaluate fun to see input and output dimensions
         out = fun(*args, **kwargs)
@@ -348,7 +354,8 @@ def jacrev(fun: typing.Callable[..., Any], options: Any = None) -> typing.Callab
         fun (object): The fun parameter.
         options (GradOptions): The options parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     options = options or GradOptions()
 
@@ -359,7 +366,8 @@ def jacrev(fun: typing.Callable[..., Any], options: Any = None) -> typing.Callab
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
@@ -420,7 +428,8 @@ def hessian(fun: typing.Callable[..., Any], options: Any = None) -> typing.Calla
         fun (object): The fun parameter.
         options (GradOptions): The options parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     options = options or GradOptions()
 
@@ -431,7 +440,8 @@ def hessian(fun: typing.Callable[..., Any], options: Any = None) -> typing.Calla
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = arg0.flatten()

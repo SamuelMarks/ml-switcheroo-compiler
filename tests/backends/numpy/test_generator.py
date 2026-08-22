@@ -65,4 +65,4 @@ def test_numpy_generator_get_rng():
 
     gen = NumpyGenerator(IRGraph())
     assert gen._get_backend_prefix() == "np"
-    assert gen.get_helper_functions() == []
+    assert len(gen.get_helper_functions()) > 0

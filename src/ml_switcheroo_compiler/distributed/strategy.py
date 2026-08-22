@@ -15,7 +15,9 @@ def _load_strategy_config() -> dict[str, Any]:
     yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return yaml.safe_load(f).get("strategies", {})
+            from typing import cast
+
+            return cast(dict[str, Any], yaml.safe_load(f).get("strategies", {}))
     return {}
 
 
@@ -24,7 +26,9 @@ def _load_webrtc_topology() -> dict[str, Any]:
     yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return yaml.safe_load(f)
+            from typing import cast
+
+            return cast(dict[str, Any], yaml.safe_load(f))
     return {}
 
 
@@ -53,7 +57,9 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = self.config.get("registry_hooks", {}).get("pull")
         if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(graph, self.cluster_resolver)
+            from typing import cast
+
+            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -91,7 +97,9 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = self.config.get("registry_hooks", {}).get("push")
         if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(graph, self.cluster_resolver)
+            from typing import cast
+
+            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -144,7 +152,9 @@ class MultiWorkerMirroredStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = self.config.get("registry_hooks", {}).get("sync")
         if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(graph, self.cluster_resolver)
+            from typing import cast
+
+            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -592,7 +602,8 @@ class PipelineParallelismStrategy(Distribution):
         Args:
             graph (Any): The graph parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 

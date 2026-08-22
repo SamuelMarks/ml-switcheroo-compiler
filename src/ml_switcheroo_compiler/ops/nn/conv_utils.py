@@ -97,7 +97,8 @@ def _build_conv_config(kwargs: dict[str, Any], dimension_numbers: tuple[Any, ...
         kwargs (dict): The kwargs parameter.
         dimension_numbers (tuple): The dimension_numbers parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     strides = kwargs.get("strides", 1)
     if isinstance(strides, int):
@@ -179,7 +180,8 @@ def atrous_conv2d(value: Any, filters: Any, rate: Any, padding: Any, name: Any =
         padding (object): The padding parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     conv2d = get_op("Conv2d")()
 
@@ -202,7 +204,8 @@ def atrous_conv2d_transpose(
         config (object): The config parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     conf = config if config is not None else GenericConvConfig()
 
@@ -220,7 +223,8 @@ def bias_add(value: Any, bias: Any, data_format: Any = None, name: Any = None) -
         data_format (object): The data_format parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return add(value, bias)
 
@@ -233,7 +237,8 @@ def collapse_repeated(labels: Any, seq_length: Any, name: Any = None) -> Any:
         seq_length (object): The seq_length parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -256,7 +261,8 @@ def compute_average_loss(per_example_loss: Any, sample_weight: Any = None, globa
         sample_weight (object): The sample_weight parameter.
         global_batch_size (object): The global_batch_size parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if sample_weight is not None:
         per_example_loss = multiply(per_example_loss, sample_weight)
@@ -277,7 +283,8 @@ def depthwise_conv2d(
         config (object): The config parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     conf = config if config is not None else GenericConvConfig()
 
@@ -309,7 +316,8 @@ def depthwise_conv2d_backprop_filter(
         config (object): The config parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return Tensor(None, TensorConfig(filter_sizes, "float32", "cpu"))
 
@@ -330,7 +338,8 @@ def depthwise_conv2d_backprop_input(
         config (object): The config parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return Tensor(None, TensorConfig(input_sizes, "float32", "cpu"))
 
@@ -359,7 +368,8 @@ def dilation2d(
         filter (object): The filter parameter.
         args (object): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -384,7 +394,8 @@ def erosion2d(
         kernel (object): The kernel parameter.
         args (object): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -409,7 +420,8 @@ def convolution(
         filters (object): The filters parameter.
         args (object): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
@@ -440,7 +452,8 @@ def conv_transpose(
         output_shape (object): The output_shape parameter.
         args (object): The args parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 

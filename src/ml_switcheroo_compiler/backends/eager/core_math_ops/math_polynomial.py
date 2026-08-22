@@ -17,7 +17,8 @@ def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "polyval", None)
     return func(*args, **kwargs) if func else None
@@ -32,7 +33,8 @@ def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:

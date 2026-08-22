@@ -1,0 +1,366 @@
+backend_name: tensorflow
+operations:
+  Abs:
+    target_api: tf.abs
+  AccumulateN:
+    target_api: tf.math.accumulate_n
+  Acos:
+    target_api: tf.acos
+  Acosh:
+    target_api: tf.acosh
+  Add:
+    target_api: tf.add
+  AddN:
+    target_api: tf.add_n
+  Adjoint:
+    target_api: tf.linalg.adjoint
+  Angle:
+    target_api: tf.math.angle
+  Argmax:
+    target_api: tf.argmax
+  Argmin:
+    target_api: tf.argmin
+  Argsort:
+    target_api: tf.argsort
+  AsString:
+    target_api: tf.as_string
+  Asin:
+    target_api: tf.asin
+  Asinh:
+    target_api: tf.asinh
+  Atan:
+    target_api: tf.atan
+  Atan2:
+    target_api: tf.atan2
+  Atanh:
+    target_api: tf.atanh
+  BandPart:
+    target_api: tf.linalg.band_part
+  BandedTriangularSolve:
+    target_api: tf.linalg.banded_triangular_solve
+  BesselI0:
+    target_api: tf.math.bessel_i0
+  BesselI0e:
+    target_api: tf.math.bessel_i0e
+  BesselI1:
+    target_api: tf.math.bessel_i1
+  BesselI1e:
+    target_api: tf.math.bessel_i1e
+  Betainc:
+    target_api: tf.math.betainc
+  Bincount:
+    target_api: tf.math.bincount
+  Bitcast:
+    target_api: tf.bitcast
+  BooleanMask:
+    target_api: tf.boolean_mask
+  BroadcastTo:
+    target_api: tf.broadcast_to
+  CTCLoss:
+    target_api: tf.nn.ctc_loss
+  Cast:
+    target_api: tf.cast
+  Ceil:
+    target_api: tf.math.ceil
+  Cholesky:
+    target_api: tf.linalg.cholesky
+  CholeskySolve:
+    target_api: tf.linalg.cholesky_solve
+  Cond:
+    target_api: tf.cond
+  ConfusionMatrix:
+    target_api: tf.math.confusion_matrix
+  Conj:
+    target_api: tf.math.conj
+  ConvTranspose:
+    target_api: tf.nn.conv_transpose
+  Cos:
+    target_api: tf.cos
+  Cosh:
+    target_api: tf.cosh
+  CountNonzero:
+    target_api: tf.math.count_nonzero
+  Cross:
+    target_api: tf.linalg.cross
+  CtcLoss:
+    target_api: tf.nn.ctc_loss
+  Cumprod:
+    target_api: tf.math.cumprod
+  Cumsum:
+    target_api: tf.cumsum
+  CumulativeLogsumexp:
+    target_api: tf.math.cumulative_logsumexp
+  Det:
+    target_api: tf.linalg.det
+  Diag:
+    target_api: tf.linalg.diag
+  Digamma:
+    target_api: tf.math.digamma
+  Divide:
+    target_api: tf.divide
+  DivideNoNan:
+    target_api: tf.math.divide_no_nan
+  Dropout:
+    target_api: tf.nn.dropout
+  DynamicPartition:
+    target_api: tf.dynamic_partition
+  DynamicStitch:
+    target_api: tf.dynamic_stitch
+  EditDistance:
+    target_api: tf.edit_distance
+  Eig:
+    target_api: tf.eig
+  Eigh:
+    target_api: tf.linalg.eigh
+  EighTridiagonal:
+    target_api: tf.linalg.eigh_tridiagonal
+  Eigvals:
+    target_api: tf.eigvals
+  Eigvalsh:
+    target_api: tf.linalg.eigvalsh
+  Einsum:
+    target_api: tf.einsum
+  Equal:
+    target_api: tf.equal
+  Erf:
+    target_api: tf.math.erf
+  Erfc:
+    target_api: tf.math.erfc
+  Erfcinv:
+    target_api: tf.math.erfcinv
+  Erfinv:
+    target_api: tf.math.erfinv
+  Exp:
+    target_api: tf.exp
+  ExpandDims:
+    target_api: tf.expand_dims
+  Expm1:
+    target_api: tf.math.expm1
+  ExtractVolumePatches:
+    target_api: tf.extract_volume_patches
+  Fftnd:
+    target_api: tf.fftnd
+  Floor:
+    target_api: tf.floor
+  FractionalAvgPool:
+    target_api: tf.nn.fractional_avg_pool
+  FractionalMaxPool:
+    target_api: tf.nn.fractional_max_pool
+  Gather:
+    target_api: tf.gather
+  GatherNd:
+    target_api: tf.gather_nd
+  Greater:
+    target_api: tf.greater
+  GreaterEqual:
+    target_api: tf.greater_equal
+  Ifftnd:
+    target_api: tf.ifftnd
+  Igamma:
+    target_api: tf.math.igamma
+  Igammac:
+    target_api: tf.math.igammac
+  Imag:
+    target_api: tf.math.imag
+  InTopK:
+    target_api: tf.math.in_top_k
+  Inv:
+    target_api: tf.linalg.inv
+  InvertPermutation:
+    target_api: tf.math.invert_permutation
+  Irfftnd:
+    target_api: tf.irfftnd
+  IsNonDecreasing:
+    target_api: tf.math.is_non_decreasing
+  IsStrictlyIncreasing:
+    target_api: tf.math.is_strictly_increasing
+  L2Normalize:
+    target_api: tf.linalg.l2_normalize
+  Lbeta:
+    target_api: tf.math.lbeta
+  Less:
+    target_api: tf.less
+  LessEqual:
+    target_api: tf.less_equal
+  Lgamma:
+    target_api: tf.math.lgamma
+  Log:
+    target_api: tf.math.log
+  LogSigmoid:
+    target_api: tf.math.log_sigmoid
+  LogSoftmax:
+    target_api: tf.math.log_softmax
+  LogicalAnd:
+    target_api: tf.logical_and
+  LogicalNot:
+    target_api: tf.logical_not
+  LogicalOr:
+    target_api: tf.logical_or
+  LogicalXor:
+    target_api: tf.math.logical_xor
+  Lookup:
+    target_api: tf.lookup
+  Lstsq:
+    target_api: tf.linalg.lstsq
+  Lu:
+    target_api: tf.linalg.lu
+  LuMatrixInverse:
+    target_api: tf.linalg.lu_matrix_inverse
+  LuReconstruct:
+    target_api: tf.linalg.lu_reconstruct
+  LuSolve:
+    target_api: tf.linalg.lu_solve
+  Matmul:
+    target_api: tf.matmul
+  MatrixRank:
+    target_api: tf.linalg.matrix_rank
+  MatrixTranspose:
+    target_api: tf.linalg.matrix_transpose
+  Maximum:
+    target_api: tf.maximum
+  Minimum:
+    target_api: tf.minimum
+  Mod:
+    target_api: tf.math.mod
+  Multiply:
+    target_api: tf.multiply
+  MultiplyNoNan:
+    target_api: tf.math.multiply_no_nan
+  Ndtri:
+    target_api: tf.math.ndtri
+  Negative:
+    target_api: tf.negative
+  Nextafter:
+    target_api: tf.math.nextafter
+  Norm:
+    target_api: tf.norm
+  NotEqual:
+    target_api: tf.not_equal
+  OneHot:
+    target_api: tf.one_hot
+  Pad:
+    target_api: tf.pad
+  Pinv:
+    target_api: tf.linalg.pinv
+  Polygamma:
+    target_api: tf.math.polygamma
+  Polyval:
+    target_api: tf.math.polyval
+  Qr:
+    target_api: tf.linalg.qr
+  Rank:
+    target_api: tf.rank
+  Real:
+    target_api: tf.math.real
+  Reciprocal:
+    target_api: tf.math.reciprocal
+  ReciprocalNoNan:
+    target_api: tf.math.reciprocal_no_nan
+  ReduceEuclideanNorm:
+    target_api: tf.math.reduce_euclidean_norm
+  Repeat:
+    target_api: tf.repeat
+  Reshape:
+    target_api: tf.reshape
+  Rfftnd:
+    target_api: tf.rfftnd
+  Rint:
+    target_api: tf.math.rint
+  Roll:
+    target_api: tf.roll
+  Round:
+    target_api: tf.round
+  Rsqrt:
+    target_api: tf.math.rsqrt
+  Scan:
+    target_api: tf.scan
+  ScatterNd:
+    target_api: tf.scatter_nd
+  Searchsorted:
+    target_api: tf.searchsorted
+  Sigmoid:
+    target_api: tf.sigmoid
+  Sign:
+    target_api: tf.sign
+  Sin:
+    target_api: tf.sin
+  Sinh:
+    target_api: tf.sinh
+  Size:
+    target_api: tf.size
+  Slice:
+    target_api: tf.slice
+  Slogdet:
+    target_api: tf.linalg.slogdet
+  SobolSample:
+    target_api: tf.math.sobol_sample
+  Softmax:
+    target_api: tf.math.softmax
+  Softsign:
+    target_api: tf.math.softsign
+  Solve:
+    target_api: tf.linalg.solve
+  Sort:
+    target_api: tf.sort
+  SpaceToBatch:
+    target_api: tf.space_to_batch
+  SpaceToBatchND:
+    target_api: tf.space_to_batch_nd
+  Split:
+    target_api: tf.split
+  Sqrt:
+    target_api: tf.sqrt
+  Sqrtm:
+    target_api: tf.linalg.sqrtm
+  Square:
+    target_api: tf.square
+  SquaredDifference:
+    target_api: tf.math.squared_difference
+  Squeeze:
+    target_api: tf.squeeze
+  Stack:
+    target_api: tf.stack
+  StridedSlice:
+    target_api: tf.strided_slice
+  Subtract:
+    target_api: tf.subtract
+  Svd:
+    target_api: tf.linalg.svd
+  Tan:
+    target_api: tf.tan
+  Tanh:
+    target_api: tf.tanh
+  Tensordot:
+    target_api: tf.tensordot
+  Tile:
+    target_api: tf.tile
+  TopK:
+    target_api: tf.math.top_k
+  Trace:
+    target_api: tf.linalg.trace
+  Transpose:
+    target_api: tf.transpose
+  TriangularSolve:
+    target_api: tf.linalg.triangular_solve
+  TridiagonalMatmul:
+    target_api: tf.linalg.tridiagonal_matmul
+  TridiagonalSolve:
+    target_api: tf.linalg.tridiagonal_solve
+  Unique:
+    target_api: tf.unique
+  UnravelIndex:
+    target_api: tf.unravel_index
+  Unstack:
+    target_api: tf.unstack
+  Where:
+    target_api: tf.where
+  Xdivy:
+    target_api: tf.math.xdivy
+  Xlog1py:
+    target_api: tf.math.xlog1py
+  Xlogy:
+    target_api: tf.math.xlogy
+  ZeroFraction:
+    target_api: tf.math.zero_fraction
+  Zeta:
+    target_api: tf.math.zeta

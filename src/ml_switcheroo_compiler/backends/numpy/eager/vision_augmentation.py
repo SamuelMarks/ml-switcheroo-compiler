@@ -22,7 +22,8 @@ def _np_augmix(backend_module: Any, images: Any, factor: float, **kwargs: Any) -
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -37,7 +38,8 @@ def _np_cutmix(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -
         images2 (object): The images2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images1
 
@@ -52,7 +54,8 @@ def _np_mixup(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) ->
         images2 (object): The images2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images1
 
@@ -67,7 +70,8 @@ def _np_rand_augment(backend_module: Any, images: Any, factor: float, **kwargs: 
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -81,7 +85,8 @@ def _np_random_color_jitter(backend_module: Any, images: Any, **kwargs: Any) -> 
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -96,7 +101,8 @@ def _np_random_crop(backend_module: Any, images: Any, size: tuple[Any, ...], see
         size (tuple): The size parameter.
         seed (object): The seed parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_crop_eager(backend_module, images, size, seed)
 
@@ -111,7 +117,8 @@ def _np_random_erasing(backend_module: Any, images: Any, factor: float, **kwargs
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -172,7 +179,8 @@ def _np_random_flip(images: Any, mode: str, seed: Any = None) -> Any:
         mode (str): The mode parameter.
         seed (object): The seed parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import random
 
@@ -233,7 +241,8 @@ def _nearest_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape:
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     src_x, src_y = coords
     H, W = shape
@@ -308,7 +317,8 @@ def _bilinear_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     y0 = np.floor(coords[1]).astype(np.int32)
     y1 = y0 + 1
@@ -392,7 +402,8 @@ def _apply_rotation_batch(np: Any, cfg: BatchRotationConfig) -> Any:
         np (object): The np parameter.
         cfg (BatchRotationConfig): The cfg parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     B = cfg.images.shape[0]
     out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
@@ -441,7 +452,8 @@ def _np_random_rotation(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     np = backend_module
     images = np.asarray(images)
@@ -481,7 +493,8 @@ def _np_random_translation(backend_module: Any, images: Any, height_factor: Any,
         width_factor (object): The width_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_translation_eager(backend_module, images, height_factor, width_factor, **kwargs)
 
@@ -497,7 +510,8 @@ def _np_random_zoom(backend_module: Any, images: Any, height_factor: Any, width_
         width_factor (object): The width_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return random_zoom_eager(backend_module, images, height_factor, width_factor, **kwargs)
 

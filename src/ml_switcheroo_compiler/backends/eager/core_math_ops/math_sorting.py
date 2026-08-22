@@ -19,7 +19,8 @@ def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwarg
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argsort(a, axis=axis) if hasattr(backend_module, "argsort") else a
 
@@ -33,7 +34,8 @@ def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.median(*args, **kwargs)
 
@@ -47,7 +49,8 @@ def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.percentile(*args, **kwargs)
 
@@ -61,7 +64,8 @@ def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.quantile(*args, **kwargs)
 
@@ -75,7 +79,8 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:

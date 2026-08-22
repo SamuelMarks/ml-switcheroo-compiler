@@ -21,7 +21,8 @@ def _np_sort_key_val(backend_module: Any, keys: Any, values: Any, axis: int = -1
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     keys_arr = np.asarray(keys)
     values_arr = np.asarray(values)
@@ -40,7 +41,8 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.partition(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
@@ -54,7 +56,8 @@ def _np_percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.percentile(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
@@ -68,7 +71,8 @@ def _np_quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.quantile(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
@@ -82,7 +86,8 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.unique(np.asarray(args[0]), *args[1:], **kwargs)
 
@@ -96,7 +101,8 @@ def _np_argsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argsort(*args, **kwargs)
 
@@ -110,7 +116,8 @@ def _np_sort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     is_stable = kwargs.pop("is_stable", True)
     kwargs["kind"] = "stable" if is_stable else "quicksort"
@@ -126,7 +133,8 @@ def _np_top_k(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _top_k(*args, **kwargs)
 
@@ -141,7 +149,8 @@ def _np_search_sorted(backend_module: Any, x: Any, v: Any, side: str = "left") -
         v (object): The v parameter.
         side (str): The side parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.searchsorted(x, v, side=side)
 
@@ -155,7 +164,8 @@ def _np_setdiff1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.setdiff1d(*args, **kwargs)
 
@@ -169,7 +179,8 @@ def _np_setxor1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.setxor1d(*args, **kwargs)
 
@@ -183,6 +194,7 @@ def _np_sort_complex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)

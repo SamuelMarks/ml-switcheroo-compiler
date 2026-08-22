@@ -26,7 +26,7 @@ def _get_dtype_size(dtype_str: str) -> int:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
-            return data.get("memory_sizes", {}).get(dtype_str, 4)
+            return int(data.get("memory_sizes", {}).get(dtype_str, 4))
     return 4
 
 

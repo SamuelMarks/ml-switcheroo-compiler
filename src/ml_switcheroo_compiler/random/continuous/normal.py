@@ -19,7 +19,8 @@ def normal(key: Any, shape: Any = (), dtype: Any = None) -> Any:
         shape (object): The shape parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomNormal", [key], shape, dtype)

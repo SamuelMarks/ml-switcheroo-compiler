@@ -7,7 +7,7 @@ std_args:
     type: Tuple[Array]
   - is_variadic: false
     kind: positional_or_keyword
-    name: dims
+    name: axes
     type: Tuple[int]
   - default: raise
     is_variadic: false

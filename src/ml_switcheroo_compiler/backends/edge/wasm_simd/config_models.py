@@ -32,16 +32,16 @@ class WasmTemplatesConfig(BaseModel):
 class WasmIntrinsicConfig(BaseModel):
     """Configuration for a WASM intrinsic."""
 
-    macro_name: str
-    simd_expr: str
-    scalar_fallback: str
+    macro_name: Optional[str] = None
+    simd_expr: Optional[str] = None
+    scalar_fallback: Optional[str] = None
 
 
 class WasmIntrinsicsConfig(BaseModel):
     """Configuration for all WASM intrinsics."""
 
     intrinsics: dict[str, WasmIntrinsicConfig]
-    scalars: dict[str, str]
+    scalars: Optional[dict[str, str]] = None
 
     def model_dump(self, *args: Any, **kwargs: Any) -> Any:
         """Dump the model."""

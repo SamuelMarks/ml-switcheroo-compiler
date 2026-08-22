@@ -68,7 +68,8 @@ class TensorArray:
             index (Tensor): The index parameter.
             value (Tensor): The value parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend

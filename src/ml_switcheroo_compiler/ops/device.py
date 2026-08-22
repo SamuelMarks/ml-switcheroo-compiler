@@ -71,7 +71,8 @@ class DeviceContextOp(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(args[0], "shape", ())
 
@@ -87,7 +88,8 @@ class DeviceTransferOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(args[0], "shape", ())
 

@@ -17,7 +17,8 @@ def _np_normal(backend_module: Any, shape: Any, **kwargs: Any) -> Any:
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
@@ -35,7 +36,8 @@ def _np_uniform(backend_module: Any, shape: Any, **kwargs: Any) -> Any:
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
@@ -57,7 +59,8 @@ def _np_stateless_split(backend_module: Any, seed: Any, **kwargs: Any) -> Any:
         seed (object): The seed parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     num = kwargs.get("num", 2)
     s = np.asarray(seed).flatten()
@@ -86,7 +89,8 @@ def _np_lookup(backend_module: Any, table: Any, keys: Any, **kwargs: Any) -> Any
         keys (object): The keys parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     arr = np.asarray(keys)
     default_value = kwargs.get("default_value", 0)

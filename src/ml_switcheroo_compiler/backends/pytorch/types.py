@@ -21,7 +21,8 @@ def zeros(cls: type, shape: tuple[int, ...]) -> Any:
         cls (type): The class.
     shape (tuple): The shape parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return torch.zeros(shape)
 
@@ -44,7 +45,8 @@ def array(cls: type, data: Any, dtype: Any = None) -> Any:
     data (object): The data parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if dtype is not None:
         dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
@@ -68,7 +70,8 @@ def asarray(cls: type, data: Any) -> Any:
         cls (type): The class.
     data (object): The data parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return torch.as_tensor(data)
 

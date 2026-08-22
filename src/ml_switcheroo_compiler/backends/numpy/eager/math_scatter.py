@@ -20,7 +20,8 @@ def _np_tensor_scatter_update(backend_module: Any, tensor: Any, indices: Any, up
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
@@ -35,7 +36,8 @@ def _np_tensor_scatter_add(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -53,7 +55,8 @@ def _np_tensor_scatter_max(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -71,7 +74,8 @@ def _np_tensor_scatter_min(backend_module: Any, tensor: Any, indices: Any, updat
         indices (object): The indices parameter.
         updates (object): The updates parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -90,7 +94,8 @@ def _np_scatter_nd(backend_module: Any, indices: Any, updates: Any, shape: Any, 
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     out = np.zeros(shape, dtype=updates.dtype)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -107,7 +112,8 @@ def _np_scatter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     input_data = args[0]
     index = args[1]
@@ -126,7 +132,8 @@ def _band_part(input: Any, num_lower: Any, num_upper: Any) -> Any:
         num_lower (object): The num_lower parameter.
         num_upper (object): The num_upper parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     input = np.asarray(input)
     (m, n) = input.shape[-2:]
@@ -143,7 +150,8 @@ def _np_gather_nd(backend_module: Any, params: Any, indices: Any) -> Any:
         params (object): The params parameter.
         indices (object): The indices parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return params[idx]
@@ -159,7 +167,8 @@ def _np_take_along_axis(backend_module: Any, x: Any, indices: Any, axis: Any) ->
         indices (object): The indices parameter.
         axis (object): The axis parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.take_along_axis(x, indices, axis=axis)
 
@@ -174,7 +183,8 @@ def _np_dynamic_slice(backend_module: Any, x: Any, start_indices: Any, slice_siz
         start_indices (object): The start_indices parameter.
         slice_sizes (object): The slice_sizes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     slices = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
     return x[slices]
@@ -189,6 +199,7 @@ def _np_dynamic_update_slice(backend_module: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _dynamic_update_slice(*args, **kwargs)

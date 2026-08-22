@@ -17,7 +17,8 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
     Args:
         back_frames (int): The back_frames parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     try:
         frame = inspect.currentframe()

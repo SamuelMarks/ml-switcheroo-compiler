@@ -49,7 +49,8 @@ class H5WeightFormat(WeightLoader, WeightSaver):
             weights_np (dict): The weights_np parameter.
             filepath (str): The filepath parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 

@@ -58,7 +58,7 @@ def test_ast_branches() -> None:
     graph.nodes["in0"] = IRNode("in0", "Input", [])
     graph.nodes["unknown"] = IRNode("unknown", "UnknownOp", inputs=["in0"])
     ast_module = emit_ir_to_ast(graph, "jax")
-    assert len(ast_module.body) == 0
+    assert len(ast_module.body) == 1  # Only the input node gets emitted
 
 
 def test_ast_to_ir_edge_cases() -> None:

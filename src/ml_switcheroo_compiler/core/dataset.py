@@ -81,7 +81,8 @@ class Dataset:
         Args:
             *tensors (Tensor): Positional args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.
@@ -125,7 +126,8 @@ class Dataset:
             batch_size (int): The batch_size parameter.
             drop_remainder (bool): The drop_remainder parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.
@@ -163,7 +165,8 @@ class Dataset:
             batch_size (int): The batch_size parameter.
             drop_remainder (bool): The drop_remainder parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.
@@ -269,7 +272,8 @@ class Dataset:
             seed (int): The seed parameter.
             reshuffle_each_iteration (bool): The reshuffle_each_iteration parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.
@@ -288,7 +292,8 @@ class Dataset:
         Args:
             buffer_size (int): The buffer_size parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
 
         Raises:
             ValueError: An exception.

@@ -50,7 +50,8 @@ class SparseDenseMatMul(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape_a = getattr(sp_a, "shape", getattr(sp_a, "dense_shape", ()))
         shape_b = getattr(b, "shape", ())
@@ -73,7 +74,8 @@ class SparseAdd(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(a, "dense_shape", getattr(a, "shape", ()))
 
@@ -92,7 +94,8 @@ class SparseSampledAdd(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(a, "dense_shape", getattr(a, "shape", ()))
 
@@ -111,7 +114,8 @@ class Smm(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape_a = getattr(a, "shape", getattr(a, "dense_shape", ()))
         shape_b = getattr(b, "shape", ())
@@ -133,7 +137,8 @@ class SparseReduceSum(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -151,7 +156,8 @@ class SparseSoftmax(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -169,7 +175,8 @@ class SparseReduceMax(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -187,7 +194,8 @@ class SparseBincount(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -205,7 +213,8 @@ class SparseCrossHashed(OpDef):
             inputs (object): The inputs parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -223,7 +232,8 @@ class SparseExpandDims(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -241,7 +251,8 @@ class SparseEye(OpDef):
             num_rows (object): The num_rows parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -260,7 +271,8 @@ class SparseFillEmptyRows(OpDef):
             default_value (object): The default_value parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -278,7 +290,8 @@ class SparseMapValues(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -297,7 +310,8 @@ class SparseMask(OpDef):
             mask (object): The mask parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -316,7 +330,8 @@ class SparseMaximum(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -335,7 +350,8 @@ class SparseMinimum(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -353,7 +369,8 @@ class SparseReorder(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -371,7 +388,8 @@ class SparseResetShape(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -390,7 +408,8 @@ class SparseReshape(OpDef):
             shape (object): The shape parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -409,7 +428,8 @@ class SparseRetain(OpDef):
             to_retain (object): The to_retain parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -429,7 +449,8 @@ class SparseSegmentMean(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -449,7 +470,8 @@ class SparseSegmentSqrtN(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -469,7 +491,8 @@ class SparseSegmentSum(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -489,7 +512,8 @@ class SparseSlice(OpDef):
             size (object): The size parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -508,7 +532,8 @@ class SparseToIndicator(OpDef):
             vocab_size (object): The vocab_size parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -526,7 +551,8 @@ class SparseTranspose(OpDef):
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -568,7 +594,8 @@ class RaggedDot(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return a.shape
 
@@ -586,7 +613,8 @@ class SparseConcat(OpDef):
             sp_inputs (object): The sp_inputs parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -605,7 +633,8 @@ class SparseSplit(OpDef):
             num_split (object): The num_split parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -626,6 +655,7 @@ class SparseToDense(OpDef):
             default_value (object): The default_value parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()

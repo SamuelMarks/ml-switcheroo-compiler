@@ -85,6 +85,7 @@ pure_python_eager_registry = EagerOpRegistry()
 
 @global_eager_registry.register("CustomVJP")
 def _eager_custom_vjp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Custom vjp."""
     # Just return args because hook fwd is identity or simple.
     # Actually, for standard custom_vjp, we might need to run fwd_fn.
     # In JAX custom_vjp, you return (primal, residual). But custom_vjp here intercepts the python call.
@@ -97,11 +98,13 @@ def _eager_custom_vjp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 @global_eager_registry.register("ProcessCustomVJPCall")
 def _eager_process_custom_vjp_call(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Process custom vjp."""
     bwd_fn = kwargs["bwd_fn"]
     return bwd_fn(None, *args)
 
 
 @global_eager_registry.register("TupleGetItem")
 def _eager_tuple_get_item(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Tuple get item."""
     index = kwargs.get("index", 0)
     return args[0][index]

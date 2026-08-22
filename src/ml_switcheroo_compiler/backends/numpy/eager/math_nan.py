@@ -18,7 +18,8 @@ def _np_divide_no_nan(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.divide(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=y != 0)
 
@@ -33,7 +34,8 @@ def _np_multiply_no_nan(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> A
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.multiply(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=y != 0)
 
@@ -48,7 +50,8 @@ def _np_squared_difference(backend_module: Any, x: Any, y: Any, **kwargs: Any) -
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     diff = backend_module.subtract(x, y)
     return backend_module.square(diff)
@@ -64,7 +67,8 @@ def _np_xdivy(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.divide(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=x != 0)
 
@@ -79,7 +83,8 @@ def _np_xlog1py(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.multiply(
         x,
@@ -98,7 +103,8 @@ def _np_reciprocal_no_nan(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.divide(1.0, x, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, 1.0)), where=x != 0)
 
@@ -112,7 +118,8 @@ def _np_zero_fraction(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     num_zeros = backend_module.sum(backend_module.equal(x, 0))
     total_elements = backend_module.size(x)
@@ -128,7 +135,8 @@ def _xlogy(x: Any, y: Any) -> Any:
         x (object): The x parameter.
         y (object): The y parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     res = np.where(x == 0.0, 0.0, x * np.log(y))
     return res
@@ -146,7 +154,8 @@ def _np_nanmean(backend_module: Any, a: Any, axis: Any = None, keepdims: Any = F
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.nanmean(a, axis=axis, keepdims=keepdims)
 
@@ -163,6 +172,7 @@ def _np_nanmedian(backend_module: Any, a: Any, axis: Any = None, keepdims: Any =
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.nanmedian(a, axis=axis, keepdims=keepdims)

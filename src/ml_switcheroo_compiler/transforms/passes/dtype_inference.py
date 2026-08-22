@@ -15,7 +15,8 @@ def _get_value_dtype(val: Any) -> Optional[DType]:
     Args:
         val (Any): The val parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(val, "dtype"):
         return DType(str(val.dtype))
@@ -115,7 +116,8 @@ def _handle_cast_dtype(node: Any, valid_dtypes: list[str]) -> Optional[str]:
         node (Any): The node parameter.
         valid_dtypes (Any): The valid_dtypes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if "dtype" in node.attributes:
         val = node.attributes["dtype"]
@@ -164,7 +166,8 @@ def _get_node_valid_dtypes(node: Any, dtypes: dict[str, str]) -> list[str]:
         node (Any): The node parameter.
         dtypes (Any): The dtypes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     valid = []
     for inp in node.inputs:

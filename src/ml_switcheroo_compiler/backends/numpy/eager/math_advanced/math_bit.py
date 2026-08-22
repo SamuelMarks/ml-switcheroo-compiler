@@ -22,7 +22,8 @@ def _np_clz(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         TypeError: An exception.
@@ -39,7 +40,8 @@ def _np_clz(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         Args:
         val (object): The val parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         val = int(val)
         if val < 0:
@@ -104,7 +106,8 @@ def _np_bitwise_count(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 

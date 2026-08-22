@@ -17,7 +17,8 @@ def _np_assign(backend_module: Any, x: Any, y: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return y
 
@@ -33,7 +34,8 @@ def _np_cast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: Any)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dt = getattr(dtype, "value", dtype)
     if isinstance(dt, str):
@@ -55,7 +57,8 @@ def _np_bitcast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.asarray(x).view(getattr(dtype, "value", dtype))
 
@@ -69,7 +72,8 @@ def _np_read_variable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return args[0] if args else None
 
@@ -83,7 +87,8 @@ def _np_assign_variable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if len(args) > 1:
         return args[1]

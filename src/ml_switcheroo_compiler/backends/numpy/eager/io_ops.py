@@ -19,7 +19,8 @@ def _np_load(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -106,7 +107,8 @@ def _np_read_file(backend_module: Any, filename: Any, **kwargs: Any) -> Any:
         filename (object): The filename parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -143,7 +145,8 @@ def _np_decode_image(backend_module: Any, contents: Any, **kwargs: Any) -> Any:
         contents (object): The contents parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -196,7 +199,8 @@ def _np_serialize_tensor(backend_module: Any, tensor: Any, **kwargs: Any) -> Any
         tensor (object): The tensor parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -212,7 +216,8 @@ def _np_parse_tensor(backend_module: Any, serialized: Any, **kwargs: Any) -> Any
         serialized (object): The serialized parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -229,7 +234,8 @@ def _np_encode_base64(backend_module: Any, input: Any, **kwargs: Any) -> Any:
         input (object): The input parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import _eager_base64
@@ -251,7 +257,8 @@ def _np_decode_base64(backend_module: Any, input: Any, **kwargs: Any) -> Any:
         input (object): The input parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import _eager_base64

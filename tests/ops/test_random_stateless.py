@@ -30,16 +30,16 @@ def test_random_stateless():
     t = Tensor(np.array([1, 2]), TensorConfig((2,), "int32", "cpu"))
 
     with (
-        patch("ml_switcheroo_compiler.random.uniform") as mock_u,
+        patch("ml_switcheroo_compiler.random.continuous.uniform") as mock_u,
         patch("ml_switcheroo_compiler.ops.binary.add") as mock_add,
         patch("ml_switcheroo_compiler.ops.binary.multiply") as mock_mul,
         patch("ml_switcheroo_compiler.ops.creation.full") as mock_full,
-        patch("ml_switcheroo_compiler.random.normal") as mock_n,
+        patch("ml_switcheroo_compiler.random.continuous.normal") as mock_n,
         patch("ml_switcheroo_compiler.random.distributions_discrete.binomial") as mock_b,
-        patch("ml_switcheroo_compiler.random.truncated_normal") as mock_tn,
+        patch("ml_switcheroo_compiler.random.continuous.truncated_normal") as mock_tn,
         patch("ml_switcheroo_compiler.ops.cast") as mock_cast,
         patch("ml_switcheroo_compiler.random.distributions_discrete.categorical") as mock_cat,
-        patch("ml_switcheroo_compiler.random.gamma") as mock_g,
+        patch("ml_switcheroo_compiler.random.continuous.gamma") as mock_g,
         patch("ml_switcheroo_compiler.random.continuous.beta") as mock_beta,
         patch("ml_switcheroo_compiler.random.transformations.shuffle") as mock_shuf,
         patch("ml_switcheroo_compiler.random.distributions_discrete.poisson") as mock_poi,

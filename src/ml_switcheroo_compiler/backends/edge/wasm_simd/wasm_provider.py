@@ -31,7 +31,7 @@ def get_js_orchestration_template(name: str) -> str:
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml("wasm_templates.yaml")
-    return _WASM_TEMPLATES.get("js_orchestration", {}).get(name, "")
+    return str(_WASM_TEMPLATES.get("js_orchestration", {}).get(name, ""))
 
 
 def get_cpp_helpers() -> list[str]:
@@ -39,4 +39,6 @@ def get_cpp_helpers() -> list[str]:
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml("wasm_templates.yaml")
-    return _WASM_TEMPLATES.get("cpp_helpers", [])
+    from typing import cast
+
+    return cast(list[str], _WASM_TEMPLATES.get("cpp_helpers", []))

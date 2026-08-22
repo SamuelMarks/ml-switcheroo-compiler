@@ -46,7 +46,8 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         BackendNotSupportedError: An exception.
@@ -77,7 +78,8 @@ def _mlx_cast(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = args[0]
     dtype_val = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -110,7 +112,8 @@ def _mlx_take_along_axis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.take_along_axis(*args, **kwargs)
 
@@ -124,7 +127,8 @@ def _mlx_take(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.take(*args, **kwargs)
 
@@ -138,7 +142,8 @@ def _mlx_tensor_scatter_update(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
@@ -156,7 +161,8 @@ def _mlx_tensor_scatter_add(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
@@ -174,7 +180,8 @@ def _mlx_tensor_scatter_max(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import mlx.core as mx
 
@@ -194,7 +201,8 @@ def _mlx_tensor_scatter_min(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import mlx.core as mx
 
@@ -214,7 +222,8 @@ def _mlx_scatter_nd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     indices = args[0]
     updates = args[1]
@@ -241,7 +250,8 @@ def _mlx_reshape(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
     if hasattr(shape, "data"):
@@ -289,7 +299,8 @@ def _mlx_zeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -315,7 +326,8 @@ def _mlx_ones(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -341,7 +353,8 @@ def _mlx_full(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -384,7 +397,8 @@ def _mlx_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     k_raw = kwargs.get("k", args[1] if len(args) > 1 else 1)
@@ -411,7 +425,8 @@ def _mlx_nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     valid_kwargs = {}
     for key in ("nan", "posinf", "neginf"):
@@ -436,7 +451,8 @@ def _mlx_cummax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummax(*args, **kwargs)
@@ -454,7 +470,8 @@ def _mlx_cummin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummin(*args, **kwargs)
@@ -472,7 +489,8 @@ def _mlx_cumprod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cumprod(*args, **kwargs)
@@ -490,7 +508,8 @@ def _mlx_slice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     a = args[0]
     dim = kwargs.get("dim")
@@ -511,7 +530,8 @@ def _mlx_eye(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     n_arg = args[0]
     if hasattr(n_arg, "data"):
@@ -533,7 +553,8 @@ def _mlx_rope(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dim = kwargs.get("dim")
     base = kwargs.get("base", 10000.0)
@@ -552,7 +573,8 @@ def _mlx_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs.setdefault("ddof", 0)
     return backend_module.var(*args, **kwargs)

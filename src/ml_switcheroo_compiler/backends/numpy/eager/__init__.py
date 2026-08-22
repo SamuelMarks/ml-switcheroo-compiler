@@ -65,7 +65,8 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         UnimplementedMathError: An exception.
@@ -103,7 +104,8 @@ def repeat(np: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.repeat(*args, **kwargs)
 
@@ -117,7 +119,8 @@ def searchsorted(np: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.searchsorted(*args, **kwargs)
 

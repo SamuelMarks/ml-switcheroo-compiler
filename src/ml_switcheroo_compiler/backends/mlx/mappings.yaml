@@ -1,0 +1,320 @@
+backend_name: mlx
+operations:
+  Adjoint:
+    target_api: '''tf.linalg.adjoint'''
+  AffineGrid:
+    target_api: '''mx.image.affine_grid({0}, {size})'''
+  Allclose:
+    target_api: '''mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})'''
+  Arange:
+    target_api: '''mx.arange({0})'''
+  ArgSort:
+    target_api: '''mx.argsort({0}, axis={dimension})'''
+  AssignVariable:
+    target_api: '''{0}'''
+  BandPart:
+    target_api: '''tf.linalg.band_part'''
+  Bincount:
+    target_api: '''mx.bincount({0})'''
+  BroadcastInDim:
+    target_api: '''{0}.broadcast_in_dim({1}, {2})'''
+  BroadcastTo:
+    target_api: '''mx.broadcast_to({0}, {shape})'''
+  BroadcastedIota:
+    target_api: '''mx.broadcasted_iota({0})'''
+  C_:
+    target_api: '''mx.c_({0})'''
+  Cholesky:
+    target_api: '''mx.linalg.cholesky({0})'''
+  CholeskySolve:
+    target_api: '''mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)), {1})'''
+  Clip:
+    target_api: '''mx.clip({0}, a_min={a_min}, a_max={a_max})'''
+  Cond:
+    target_api: '''mx.linalg.cond({0}, p={p})'''
+  ConvGeneralDilated:
+    target_api: '''{0}.conv_general_dilated({1}, {2})'''
+  Cross:
+    target_api: '''mx.linalg.cross({0}, {1}, axis={axis})'''
+  Det:
+    target_api: '''mx.linalg.det({0})'''
+  Diagonal:
+    target_api: '''mx.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})'''
+  Dot:
+    target_api: '''mx.dot({0}, {1})'''
+  DotGeneral:
+    target_api: '''{0}.dot_general({1}, {2})'''
+  DrawBoundingBoxes:
+    target_api: '''{0}'''
+  DynamicSlice:
+    target_api: '''{0}.dynamic_slice({1}, {2})'''
+  DynamicUpdateSlice:
+    target_api: '''{0}.dynamic_update_slice({1}, {2})'''
+  Eig:
+    target_api: '''mx.linalg.eig({0})'''
+  Eigh:
+    target_api: '''mx.linalg.eigh({0})'''
+  Eigvalsh:
+    target_api: '''mx.linalg.eigvalsh({0})'''
+  Erfinv:
+    target_api: '''mx.erfinv({0})'''
+  Fft:
+    target_api: '''mx.fft.fft({0})'''
+  Fft2d:
+    target_api: '''mx.fft.fft2({0}, s={s}, axes={axes})'''
+  Fft3d:
+    target_api: '''mx.fft.fftn({0}, s={s}, axes={axes})'''
+  Fftn:
+    target_api: '''mx.fft.fftn({0})'''
+  Fftnd:
+    target_api: '''mx.fft.fftn({0})'''
+  Fftshift:
+    target_api: '''mx.fft.fftshift({0})'''
+  Frombuffer:
+    target_api: '''mx.frombuffer({0}, dtype={dtype}, count={count}, offset={offset})'''
+  Fromfile:
+    target_api: '''mx.fromfile({0})'''
+  Fromfunction:
+    target_api: '''mx.fromfunction({0})'''
+  Fromiter:
+    target_api: '''mx.fromiter({0})'''
+  Frompyfunc:
+    target_api: '''mx.frompyfunc({0})'''
+  Fromstring:
+    target_api: '''mx.fromstring({0})'''
+  Gather:
+    target_api: '''mx.take({0}, {1}, {dim})'''
+  GatherNd:
+    target_api: '''mx.gather_nd({0}, {1})'''
+  Geomspace:
+    target_api: '''mx.geomspace({0})'''
+  Gradient:
+    target_api: '''mx.gradient({0})'''
+  GridSample:
+    target_api: '''mx.image.grid_sample({0}, {1})'''
+  HannWindow:
+    target_api: '''mx.linalg.hann_window({window_length})'''
+  Hfft:
+    target_api: '''mx.fft.hfft({0})'''
+  Histogram:
+    target_api: '''mx.histogram({0})'''
+  Histogram2d:
+    target_api: '''mx.histogram2d({0})'''
+  HistogramBinEdges:
+    target_api: '''mx.histogram_bin_edges({0})'''
+  Histogramdd:
+    target_api: '''mx.histogramdd({0})'''
+  I0:
+    target_api: '''mx.i0({0})'''
+  Ifft:
+    target_api: '''mx.fft.ifft({0})'''
+  Ifft2:
+    target_api: '''mx.fft.ifft2({0})'''
+  Ifft2d:
+    target_api: '''mx.fft.ifft2({0}, s={s}, axes={axes})'''
+  Ifft3d:
+    target_api: '''mx.fft.ifftn({0}, s={s}, axes={axes})'''
+  Ifftn:
+    target_api: '''mx.fft.ifftn({0})'''
+  Ifftnd:
+    target_api: '''mx.fft.ifftn({0})'''
+  Ifftshift:
+    target_api: '''mx.fft.ifftshift({0})'''
+  Inv:
+    target_api: '''mx.linalg.inv({0})'''
+  Irfft:
+    target_api: '''mx.fft.irfft({0}, n={n}, axis={axis})'''
+  Irfft2:
+    target_api: '''mx.fft.irfft2({0})'''
+  Irfft2d:
+    target_api: '''mx.fft.irfft2({0}, s={s}, axes={axes})'''
+  Irfft3d:
+    target_api: '''mx.fft.irfftn({0}, s={s}, axes={axes})'''
+  Irfftn:
+    target_api: '''mx.fft.irfftn({0})'''
+  Irfftnd:
+    target_api: '''mx.fft.irfftn({0})'''
+  LogSoftmax:
+    target_api: '''mx.log_softmax({0}, axis={axis})'''
+  Lstsq:
+    target_api: '''mx.linalg.lstsq({0}, {1}, rcond={rcond})[0]'''
+  Lu:
+    target_api: '''mx.linalg.lu({0})'''
+  LuFactor:
+    target_api: '''mx.linalg.lu_factor({0})'''
+  LuMatrixInverse:
+    target_api: '''mx.linalg.inv(mx.take_along_axis(mx.matmul(mx.tril({0}, -1) + mx.eye({0}.shape[-1],
+      dtype={0}.dtype), mx.triu({0})), mx.broadcast_to(mx.expand_dims(mx.argsort({1},
+      axis=-1), -1), {0}.shape), axis=-2))'''
+  LuReconstruct:
+    target_api: '''mx.take_along_axis(mx.matmul(mx.tril({0}, -1) + mx.eye({0}.shape[-1],
+      dtype={0}.dtype), mx.triu({0})), mx.broadcast_to(mx.expand_dims(mx.argsort({1},
+      axis=-1), -1), {0}.shape), axis=-2)'''
+  LuSolve:
+    target_api: '''mx.linalg.lu_solve({0}, {1})'''
+  Matmul:
+    target_api: '''mx.matmul({0}, {1})'''
+  MatrixExponential:
+    target_api: '''mx.linalg.matrix_exp({0})'''
+  MatrixNorm:
+    target_api: '''mx.linalg.norm({0}, keepdims={keepdims})'''
+  MatrixPower:
+    target_api: '''mx.linalg.matrix_power({0}, {n})'''
+  MatrixRank:
+    target_api: '''mx.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})'''
+  MatrixTranspose:
+    target_api: '''mx.swapaxes({0}, -1, -2)'''
+  Mgrid:
+    target_api: '''mx.mgrid({0})'''
+  MultiDot:
+    target_api: '''mx.linalg.multi_dot({0})'''
+  NanToNum:
+    target_api: '''mx.where(mx.isnan({0}), {nan}, mx.where(mx.isposinf({0}), {posinf},
+      mx.where(mx.isneginf({0}), {neginf}, {0})))'''
+  Norm:
+    target_api: '''mx.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})'''
+  Ogrid:
+    target_api: '''mx.ogrid({0})'''
+  OneHot:
+    target_api: '''mx.eye({depth})[{0}]'''
+  Outer:
+    target_api: '''mx.outer({0}, {1})'''
+  PRNGKey:
+    target_api: '''mx.random.key({seed})'''
+  Pinv:
+    target_api: '''mx.linalg.pinv({0})'''
+  Pmean:
+    target_api: '''{0}.pmean({1})'''
+  Poly:
+    target_api: '''mx.poly({0})'''
+  Polyadd:
+    target_api: '''mx.polyadd({0})'''
+  Polyder:
+    target_api: '''mx.polyder({0})'''
+  Polydiv:
+    target_api: '''mx.polydiv({0})'''
+  Polyfit:
+    target_api: '''mx.polyfit({0})'''
+  Polyint:
+    target_api: '''mx.polyint({0})'''
+  Polymul:
+    target_api: '''mx.polymul({0})'''
+  Polysub:
+    target_api: '''mx.polysub({0})'''
+  Polyval:
+    target_api: '''mx.polyval({0})'''
+  Psum:
+    target_api: '''{0}.psum({1})'''
+  Qr:
+    target_api: '''mx.linalg.qr({0})'''
+  R_:
+    target_api: '''mx.r_({0})'''
+  RandomBernoulli:
+    target_api: '''mx.random.bernoulli(p={p}, shape={shape}, key={0})'''
+  RandomNormal:
+    target_api: '''mx.random.normal(shape={shape}, key={0})'''
+  RandomRandint:
+    target_api: '''mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})'''
+  RandomSplit:
+    target_api: '''mx.random.split({0}, {num})'''
+  RandomUniform:
+    target_api: '''mx.random.uniform(low={minval}, high={maxval}, shape={shape}, key={0})'''
+  ReadVariable:
+    target_api: '''{0}'''
+  Reshape:
+    target_api: '''mx.reshape({0}, {shape})'''
+  Resize:
+    target_api: '''mx.image.resize({0}, {size})'''
+  Rfft:
+    target_api: '''mx.fft.rfft({0})'''
+  Rfft2:
+    target_api: '''mx.fft.rfft2({0})'''
+  Rfft2d:
+    target_api: '''mx.fft.rfft2({0}, s={s}, axes={axes})'''
+  Rfft3d:
+    target_api: '''mx.fft.rfftn({0}, s={s}, axes={axes})'''
+  Rfftfreq:
+    target_api: '''mx.fft.rfftfreq({0}, d={d})'''
+  Rfftn:
+    target_api: '''mx.fft.rfftn({0})'''
+  Rfftnd:
+    target_api: '''mx.fft.rfftn({0})'''
+  RgbToYiq:
+    target_api: '''mx.image.rgb_to_yiq({0})'''
+  RgbToYuv:
+    target_api: '''mx.image.rgb_to_yuv({0})'''
+  Roots:
+    target_api: '''mx.roots({0})'''
+  Scatter:
+    target_api: '''mx.scatter({0}, {1}, {2}, {dim})'''
+  ScatterAdd:
+    target_api: '''mx.scatter_add({0}, {1}, {2}, {dim})'''
+  ScatterNd:
+    target_api: '''mx.scatter_nd({0}, {1}, {shape})'''
+  Sigmoid:
+    target_api: '''mx.sigmoid({0})'''
+  Slogdet:
+    target_api: '''mx.linalg.slogdet({0})'''
+  Softmax:
+    target_api: '''mx.softmax({0}, axis={axis})'''
+  Solve:
+    target_api: '''mx.linalg.solve({0}, {1})'''
+  Sort:
+    target_api: '''mx.sort({0}, axis={dimension})'''
+  StopGradient:
+    target_api: '''mx.stop_gradient({0})'''
+  Svd:
+    target_api: '''mx.linalg.svd({0})'''
+  Svdvals:
+    target_api: '''mx.linalg.svd({0}, compute_uv=False)'''
+  TensorScatterAdd:
+    target_api: '''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+      c[tuple(i[..., d] for d in range(i.shape[-1]))] + u), c][1])(mx.array({0}),
+      {1}, {2})'''
+  TensorScatterMax:
+    target_api: '''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+      mx.maximum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}),
+      {1}, {2})'''
+  TensorScatterMin:
+    target_api: '''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+      mx.minimum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}),
+      {1}, {2})'''
+  TensorScatterUpdate:
+    target_api: '''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+      u), c][1])(mx.array({0}), {1}, {2})'''
+  Tensordot:
+    target_api: '''mx.tensordot({0}, {1}, axes={axes})'''
+  Tensorinv:
+    target_api: '''mx.linalg.tensorinv({0}, ind={ind})'''
+  Tensorsolve:
+    target_api: '''mx.linalg.tensorsolve({0}, {1}, axes={axes})'''
+  Trace:
+    target_api: '''mx.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})'''
+  TriInv:
+    target_api: '''mx.linalg.inv({0})'''
+  TriangularSolve:
+    target_api: '''mx.linalg.solve_triangular({0}.swapaxes(-1, -2).conjugate() if
+      {adjoint} else {0}, {1}, upper=not {lower} if not {adjoint} else {lower})'''
+  TridiagonalMatmul:
+    target_api: '''mx.expand_dims({1}, -1) * {3} + mx.expand_dims(mx.concatenate([mx.zeros_like({0}[...,
+      :1]), {0}[..., 1:]], axis=-1), -1) * mx.concatenate([mx.zeros_like({3}[...,
+      :1, :]), {3}[..., :-1, :]], axis=-2) + mx.expand_dims(mx.concatenate([{2}[...,
+      :-1], mx.zeros_like({2}[..., -1:])], axis=-1), -1) * mx.concatenate([{3}[...,
+      1:, :], mx.zeros_like({3}[..., -1:, :])], axis=-2)'''
+  TridiagonalSolve:
+    target_api: '''mx.linalg.solve(mx.diag({1}) + mx.diag({0}[..., 1:], k=-1) + mx.diag({2}[...,
+      :-1], k=1), {3})'''
+  TrueDivide:
+    target_api: '''mx.divide({0}, {1})'''
+  TruncateDiv:
+    target_api: '''mx.trunc(mx.divide({0}, {1}))'''
+  TruncateMod:
+    target_api: '''mx.remainder({0}, {1})'''
+  Vecdot:
+    target_api: '''mx.sum({0} * {1}, axis={axis})'''
+  VectorNorm:
+    target_api: '''mx.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})'''
+  YiqToRgb:
+    target_api: '''mx.image.yiq_to_rgb({0})'''
+  YuvToRgb:
+    target_api: '''mx.image.yuv_to_rgb({0})'''

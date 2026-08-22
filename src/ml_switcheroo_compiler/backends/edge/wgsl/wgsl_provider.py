@@ -30,4 +30,4 @@ def get_wgsl_template(name: str) -> Any:
 def get_js_orchestration_template(name: str) -> str:
     """Get js orchestration template."""
     _load_templates()
-    return _WGSL_TEMPLATES.get("js_orchestration", {}).get(name, "")
+    return str(_WGSL_TEMPLATES.get("js_orchestration", {}).get(name, ""))

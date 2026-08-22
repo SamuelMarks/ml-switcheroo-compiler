@@ -18,7 +18,8 @@ def _get_sharding_axes(sharding: Any) -> list[str]:
     Args:
         sharding (Any): The sharding parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not sharding or not hasattr(sharding, "mesh_mapping"):
         return []
@@ -32,7 +33,8 @@ def _is_boundary_transition(inp_sharding: Any, node_sharding: Any) -> tuple[bool
         inp_sharding (Any): The inp_sharding parameter.
         node_sharding (Any): The node_sharding parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     inp_sharded = bool(_get_sharding_axes(inp_sharding))
     node_sharded = bool(_get_sharding_axes(node_sharding))
@@ -239,7 +241,8 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
         graph (IRGraph): The graph parameter.
         node_sharding (Any): The node_sharding parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if inp_id not in graph.nodes:
         return None

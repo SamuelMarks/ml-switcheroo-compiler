@@ -214,7 +214,8 @@ def divide_no_nan(x: Any, y: Any) -> Any:
         x (object): The x parameter.
         y (object): The y parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.creation import zeros_like
     from ml_switcheroo_compiler.ops.shape.indexing import where
@@ -229,7 +230,8 @@ def polar(abs: Any, angle: Any) -> Any:
         abs (object): The abs parameter.
         angle (object): The angle parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -243,7 +245,8 @@ def view_as_complex(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -257,7 +260,8 @@ def view_as_real(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 

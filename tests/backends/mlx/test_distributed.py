@@ -1,27 +1,37 @@
 """Tests for MLX distributed ops."""
 
-import pytest
-
-try:
-    import mlx.core as mx
-
-    has_mlx = True
-except ImportError:
-    has_mlx = False
+import sys
+from unittest.mock import MagicMock
 
 
-@pytest.mark.skipif(not has_mlx, reason="MLX is not installed")
 def test_mlx_eager_distributed_ops():
     """Test MLX eager distributed operations."""
+    # Mock mlx.core for testing
+    mock_mx = MagicMock()
+    mock_array = MagicMock()
+    mock_mx.array.return_value = mock_array
+
+    # Setup distributed mocks
+    mock_mx.distributed.all_sum.return_value = mock_array
+    mock_mx.distributed.all_gather.return_value = mock_array
+    mock_mx.distributed.all_to_all.return_value = mock_array
+    mock_mx.distributed.recv.return_value = mock_array
+
+    sys.modules["mlx"] = MagicMock()
+    sys.modules["mlx.core"] = mock_mx
+
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_gather, _mlx_all_reduce, _mlx_all_to_all, _mlx_reduce_scatter
 
-    t = mx.array([1.0, 2.0, 3.0])
+    t = mock_mx.array([1.0, 2.0, 3.0])
 
     # Should safely fallback or execute
-    _mlx_all_reduce(mx, t)
-    _mlx_all_gather(mx, t)
-    _mlx_all_to_all(mx, t)
-    _mlx_reduce_scatter(mx, t)
+    _mlx_all_reduce(mock_mx, t)
+    _mlx_all_gather(mock_mx, t)
+    _mlx_all_to_all(mock_mx, t)
+    _mlx_reduce_scatter(mock_mx, t)
+
+    del sys.modules["mlx.core"]
+    del sys.modules["mlx"]
 
 
 def test_mlx_generator_distributed_ops():

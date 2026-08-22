@@ -1,7 +1,6 @@
 """Test math_misc edge cases coverage."""
 
 import numpy as np
-import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
@@ -122,7 +121,6 @@ def test_fallback_snippets_mock(monkeypatch):
         assert res6.hit
 
 
-@pytest.mark.skip(reason="Failing and breaking suite")
 def test_fallback_snippets_importerror(monkeypatch):
     pass
 

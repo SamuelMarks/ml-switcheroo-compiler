@@ -22,7 +22,8 @@ class BandPart(OpDef):
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return input if isinstance(input, tuple) else None
 
@@ -41,7 +42,8 @@ class Diag(OpDef):
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if isinstance(input, tuple):
             if len(input) == 1:
@@ -103,7 +105,8 @@ class MatrixPower(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         """Infer shape.
 
@@ -137,7 +140,8 @@ class Trace(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(a.shape)
         axis1 = kwargs.get("axis1", 0)
@@ -161,7 +165,8 @@ class MatrixRank(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -183,7 +188,8 @@ class MatrixTranspose(OpDef):
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -204,7 +210,8 @@ class Adjoint(OpDef):
             matrix (object): The matrix parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(matrix.shape)
         if len(shape) >= 2:
@@ -225,7 +232,8 @@ class Diagonal(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -243,7 +251,8 @@ class EinsumPath(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically returns a tuple representing the path and a string representation.
         return ()
@@ -262,6 +271,7 @@ class MultiDot(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()

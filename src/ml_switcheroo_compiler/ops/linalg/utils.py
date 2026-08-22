@@ -31,7 +31,8 @@ def _build_linalg_output_tensors(
         out_dtypes (object): The out_dtypes parameter.
         device (object): The device parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensors = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
@@ -56,7 +57,8 @@ def _emit_linalg_node(
         out_shapes (Sequence): The out_shapes parameter.
         out_dtypes (Sequence): The out_dtypes parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         RuntimeError: An exception.

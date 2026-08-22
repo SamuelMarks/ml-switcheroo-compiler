@@ -17,7 +17,8 @@ def _fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.fromfunction(*args, **kwargs)
 
@@ -31,7 +32,8 @@ def _from_dlpack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.from_dlpack(*args, **kwargs)
 
@@ -45,7 +47,8 @@ def _frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.frompyfunc(*args, **kwargs)
 
@@ -59,7 +62,8 @@ def _geomspace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.geomspace(*args, **kwargs)
 
@@ -73,7 +77,8 @@ def _mgrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.mgrid(*args, **kwargs)
 
@@ -87,7 +92,8 @@ def _ogrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.ogrid(*args, **kwargs)
 
@@ -101,7 +107,8 @@ def _fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromiter", None)
     if "dtype" not in kwargs and len(args) < 2:
@@ -122,7 +129,8 @@ def _np_fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromfunction", getattr(backend_module, "fromfunction", None))
     if func is not None:
@@ -141,7 +149,8 @@ def _np_fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fromiter", getattr(backend_module, "fromiter", None))
     if func is not None:
@@ -160,7 +169,8 @@ def _np_frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "frompyfunc", getattr(backend_module, "frompyfunc", None))
     if func is not None:

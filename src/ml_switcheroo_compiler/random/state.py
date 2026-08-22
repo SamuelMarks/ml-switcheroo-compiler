@@ -69,7 +69,8 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     backend = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)
@@ -83,7 +84,8 @@ def _dispatch_random(func_name: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:

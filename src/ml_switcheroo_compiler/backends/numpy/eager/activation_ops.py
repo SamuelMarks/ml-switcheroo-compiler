@@ -16,7 +16,8 @@ def _np_relu(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.maximum(x, 0.0)
 
@@ -31,7 +32,8 @@ def _np_elu(backend_module: Any, x: Any, alpha: float = 1.0, **kwargs: Any) -> A
         alpha (float): The alpha parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0))
 
@@ -46,7 +48,8 @@ def _np_celu(backend_module: Any, x: Any, alpha: float = 1.0, **kwargs: Any) -> 
         alpha (float): The alpha parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.maximum(0.0, x) + backend_module.minimum(0.0, alpha * (backend_module.exp(x / alpha) - 1.0))
 
@@ -60,7 +63,8 @@ def _np_softplus(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
 
@@ -74,7 +78,8 @@ def _np_softsign(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x / (1.0 + backend_module.abs(x))
 
@@ -88,7 +93,8 @@ def _np_mish(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     softplus_x = backend_module.log1p(backend_module.exp(-backend_module.abs(x))) + backend_module.maximum(x, 0.0)
     return x * backend_module.tanh(softplus_x)
@@ -103,6 +109,7 @@ def _np_log_sigmoid(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return -backend_module.log1p(backend_module.exp(-x))

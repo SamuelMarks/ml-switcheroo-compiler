@@ -27,7 +27,8 @@ class Fftconvolve(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -71,7 +72,8 @@ class Fft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -105,7 +107,8 @@ class Rfft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -121,7 +124,8 @@ class Fft2(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -139,7 +143,8 @@ class Fftfreq(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (n,) if isinstance(n, int) else ()
 
@@ -155,7 +160,8 @@ class Irfft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -171,7 +177,8 @@ class Ihfft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape
 
@@ -187,7 +194,8 @@ class Ifft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -221,7 +229,8 @@ class Fftn(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -255,7 +264,8 @@ class Ifftn(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -289,7 +299,8 @@ class Rfftn(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -323,7 +334,8 @@ class Irfftn(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -357,7 +369,8 @@ class Ifft2(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -391,7 +404,8 @@ class Rfft2(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -425,7 +439,8 @@ class Irfft2(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -459,7 +474,8 @@ class Fftnd(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -493,7 +509,8 @@ class Ifftnd(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -527,7 +544,8 @@ class Rfftnd(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -561,7 +579,8 @@ class Irfftnd(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -595,7 +614,8 @@ class Fftshift(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -629,7 +649,8 @@ class Ifftshift(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -663,7 +684,8 @@ class Hfft(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
@@ -697,7 +719,8 @@ class Rfftfreq(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 

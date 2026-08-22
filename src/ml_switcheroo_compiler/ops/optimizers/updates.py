@@ -555,7 +555,8 @@ class ApplyAdam(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(param, "shape", ())
 
@@ -575,7 +576,8 @@ class ApplyAdagrad(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(param, "shape", ())
 
@@ -596,7 +598,8 @@ class ApplyFtrl(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(param, "shape", ())
 
@@ -617,7 +620,8 @@ class ApplyRMSProp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(param, "shape", ())
 
@@ -716,7 +720,8 @@ class LionConfigOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -735,6 +740,7 @@ class AdamaxHyperparamsOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())

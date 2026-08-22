@@ -31,7 +31,8 @@ def _wrap_proxy_inputs(args: tuple[Any, ...], subgraph: Any) -> tuple[list[str],
         args (object): The args parameter.
         subgraph (object): The subgraph parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     proxy_args = []
     input_ids = []
@@ -65,7 +66,8 @@ def _get_tensor_ids(obj: Any) -> list[str]:
     Args:
         obj (object): The obj parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         TypeError: An exception.

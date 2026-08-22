@@ -17,7 +17,8 @@ def _copysign(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "copysign", None)
     if func:
@@ -35,7 +36,8 @@ def _getprintoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.get_printoptions(*args, **kwargs)
 
@@ -49,7 +51,8 @@ def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorarrayread", getattr(backend_module, "tensorarrayread", None))
     if func is not None:
@@ -68,7 +71,8 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorarraywrite", getattr(backend_module, "tensorarraywrite", None))
     if func is not None:
@@ -88,7 +92,8 @@ def _np_topk(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "topk", getattr(backend_module, "topk", None))
     if func is not None:

@@ -21,7 +21,8 @@ def truncated_normal(key: Any, lower: Any, upper: Any, shape: Any = (), dtype: A
         shape (object): The shape parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomTruncatedNormal", [key], shape, dtype, {"lower": lower, "upper": upper})

@@ -19,7 +19,8 @@ class Rademacher(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
         s = shape if shape is not None else kwargs.get("size")
@@ -37,7 +38,8 @@ def rademacher(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

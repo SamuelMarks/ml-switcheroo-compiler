@@ -23,7 +23,8 @@ def perspective_transform_eager(backend_module: Any, images: Any, start_points: 
         end_points (object): The end_points parameter.
         config (PerspectiveConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -36,7 +37,8 @@ def _apply_elastic_batch(np_mod: Any, imgs: Any, config: TransformInterpolationC
         imgs (object): The imgs parameter.
         config (TransformInterpolationConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -73,7 +75,8 @@ def elastic_transform_eager(backend_module: Any, images: Any, displacement: Any,
         displacement (object): The displacement parameter.
         config (ElasticConfig): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -132,7 +135,8 @@ def _upsample_nearest_eager(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -148,7 +152,8 @@ def _upsample_linear_eager(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -162,7 +167,8 @@ def _upsample_bicubic_eager(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0
 
@@ -176,6 +182,7 @@ def resize_eager(backend_module: Any, images: Any, size: tuple[int, int], config
         size (tuple): The size parameter.
         config (ResizeOptions): The config parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return 0

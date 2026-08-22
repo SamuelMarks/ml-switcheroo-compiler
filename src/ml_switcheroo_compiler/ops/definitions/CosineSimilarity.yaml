@@ -12,7 +12,7 @@ std_args:
   - default: 1
     is_variadic: false
     kind: positional_or_keyword
-    name: dim
+    name: axis
     type: int
   - default: 1e-8
     is_variadic: false

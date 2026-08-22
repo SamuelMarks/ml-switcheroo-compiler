@@ -18,7 +18,9 @@ def _load_heuristics() -> dict[str, Any]:
     yaml_path = os.path.join(os.path.dirname(__file__), "../../backends/edge/optimization_heuristics.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return yaml.safe_load(f)
+            from typing import cast
+
+            return cast(dict[str, Any], yaml.safe_load(f))
     return {}
 
 
@@ -37,7 +39,9 @@ def _get_tiling_config() -> dict[str, Any]:
 
     profile_name = "default_wgsl" if ("wgsl" in backend_name or "webgpu" in backend_name) else "default_wasm"
     profiles = heuristics.get("profiles", {})
-    return profiles.get(profile_name, profiles.get("default_wasm", {})).get("tiling", {})
+    from typing import cast
+
+    return cast(dict[str, Any], profiles.get(profile_name, profiles.get("default_wasm", {})).get("tiling", {}))
 
 
 def _should_tile(op_type: str, shape: Any, op_config: dict[str, Any]) -> bool:
@@ -54,12 +58,12 @@ def _should_tile(op_type: str, shape: Any, op_config: dict[str, Any]) -> bool:
     if op_type == "matmul" and len(shape) >= 2:
         m = shape[-2] if isinstance(shape[-2], int) else 0
         n = shape[-1] if isinstance(shape[-1], int) else 0
-        return m >= op_config.get("threshold_M", 0) or n >= op_config.get("threshold_N", 0)
+        return bool(m >= op_config.get("threshold_M", 0) or n >= op_config.get("threshold_N", 0))
 
     if op_type == "conv2d" and len(shape) >= 4:
         h = shape[1] if isinstance(shape[1], int) else 0
         w = shape[2] if isinstance(shape[2], int) else 0
-        return (h * w) >= op_config.get("threshold_HW", 0)
+        return bool((h * w) >= op_config.get("threshold_HW", 0))
 
     return False
 

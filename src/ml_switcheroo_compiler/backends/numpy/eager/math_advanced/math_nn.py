@@ -35,7 +35,8 @@ def _np_convgeneraldilatedlocal(backend_module: Any, *args: Any, **kwargs: Any) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.signal
 
@@ -51,7 +52,8 @@ def _np_convgeneraldilatedpatches(backend_module: Any, *args: Any, **kwargs: Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.signal
 
@@ -67,7 +69,8 @@ def _np_convwithgeneralpadding(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.signal
 
@@ -83,7 +86,8 @@ def _np_rawconv2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.signal
 

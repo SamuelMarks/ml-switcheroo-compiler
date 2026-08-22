@@ -17,7 +17,8 @@ def _activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x
 
@@ -31,7 +32,8 @@ def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, *
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import math
 
@@ -107,7 +109,8 @@ def _adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: Any, **
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -122,7 +125,8 @@ def _adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: Any, **
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -136,7 +140,8 @@ def _alpha_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x
 
@@ -150,7 +155,8 @@ def _np_fractionalavgpool(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
     if func is not None:

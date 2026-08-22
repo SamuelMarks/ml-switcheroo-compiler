@@ -116,10 +116,6 @@ def test_all_core_math_ops_coverage():
                 del sys.modules["scipy"]
 
 
-import pytest
-
-
-@pytest.mark.skip(reason="mock removed")
 def test_missing_coverage():
     import numpy as np
 
@@ -183,41 +179,6 @@ def test_missing_coverage():
         mod._scaled_dot_product_attention_eager(np, arg, arg, arg, scale=1.0, is_causal=True, mask=arg)
     except Exception:
         pass
-
-    pass  # Removed mock
-    mod._global_adaptive_pool_mock(np, arg, (1, 1))
-
-    class DummyBkZeros:
-        @staticmethod
-        def zeros(s, dtype=None):
-            return 0
-
-    try:
-        mod._global_adaptive_pool_mock(DummyBkZeros(), arg, (1, 1))
-    except Exception:
-        pass
-
-    class DummyOpWithShape:
-        shape = (1, 1)
-
-    try:
-        mod._global_adaptive_pool_mock(np, DummyOpWithShape(), 1)
-    except Exception:
-        pass
-
-    class DummyOpWithShapeAndDtype:
-        shape = (1, 1)
-        dtype = np.float32
-
-    try:
-        mod._global_adaptive_pool_mock(np, DummyOpWithShapeAndDtype(), 1)
-    except Exception:
-        pass
-
-    class DummyBkNoZeros:
-        pass
-
-    mod._global_adaptive_pool_mock(DummyBkNoZeros(), arg, 1)
 
     class BkWithWhere:
         @staticmethod

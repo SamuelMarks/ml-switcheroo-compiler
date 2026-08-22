@@ -166,7 +166,8 @@ def batch_norm_with_global_normalization(
         gamma (object): The gamma parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = kwargs.get("config", BatchNormGlobalConfig())
     bn_config = BatchNormConfig(
@@ -191,7 +192,8 @@ def lrn(input: Any, config: Any = None, name: Any = None) -> Any:
         config (LRNConfig): The config parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or LRNConfig()
     depth_radius = config.depth_radius
@@ -214,7 +216,8 @@ def l2_normalize(x: Any, axis: Any = None, epsilon: Any = 1e-12, name: Any = Non
         name (object): The name parameter.
         axis (object): The axis parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     square_sum = sum(multiply(x, x), axis=axis, keepdims=True)
     x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
@@ -231,7 +234,8 @@ def moments(x: Any, axes: Any, shift: Any = None, keepdims: Any = False, name: A
         keepdims (object): The keepdims parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
@@ -246,7 +250,8 @@ def normalize_moments(counts: Any, mean_ss: Any, variance_ss: Any, shift: Any, n
         shift (object): The shift parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -293,7 +298,8 @@ def sufficient_statistics(x: Any, axes: Any, shift: Any = None, keepdims: Any = 
         keepdims (object): The keepdims parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -348,7 +354,8 @@ def weighted_moments(
         name (object): The name parameter.
         keepdims (object): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -392,7 +399,8 @@ def zero_fraction(value: Any, name: Any = None) -> Any:
         value (object): The value parameter.
         name (object): The name parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return Tensor(0.0, TensorConfig((), "float32", "cpu"))
 

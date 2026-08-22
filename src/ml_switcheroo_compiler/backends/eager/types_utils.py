@@ -11,7 +11,8 @@ def generic_zeros(mod: Any, shape: tuple[Any, ...]) -> Any:
         mod (object): The mod parameter.
         shape (tuple): The shape parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return mod.zeros(shape)
 
@@ -24,7 +25,8 @@ def generic_array(mod: Any, data: Any, dtype: Any = None) -> Any:
         data (object): The data parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if dtype is not None:
         return mod.array(data, dtype=dtype)
@@ -38,7 +40,8 @@ def generic_asarray(mod: Any, data: Any) -> Any:
         mod (object): The mod parameter.
         data (object): The data parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return mod.asarray(data)
 
@@ -50,6 +53,7 @@ def generic_item(mod: Any, data: Any) -> Any:
         mod (object): The mod parameter.
         data (object): The data parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return data.item()

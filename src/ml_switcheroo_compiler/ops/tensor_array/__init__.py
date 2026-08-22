@@ -20,7 +20,8 @@ class TensorArrayRead(OpDef):
             index (object): The index parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically returns the shape of the elements in the TensorArray
         return getattr(handle, "element_shape", ())
@@ -41,7 +42,8 @@ class TensorArrayWrite(OpDef):
             value (object): The value parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -59,7 +61,8 @@ class TensorArrayStack(OpDef):
             handle (object): The handle parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Adds a dimension
         elem_shape = getattr(handle, "element_shape", ())

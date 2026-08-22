@@ -42,7 +42,8 @@ def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None
         axis (object): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if axis is None:
         return tuple(1 for _ in x_shape) if keepdims else ()

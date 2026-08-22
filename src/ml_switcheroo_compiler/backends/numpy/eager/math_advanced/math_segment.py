@@ -23,7 +23,8 @@ def _np_segment_sum(backend_module: Any, data: Any, segment_ids: Any, num_segmen
         num_segments (object): The num_segments parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     num_segments = num_segments if num_segments is not None else np.max(segment_ids) + 1
     out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
@@ -40,7 +41,8 @@ def _np_sparsesegmentsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     data = backend_module.asarray(args[0])
     return backend_module.sum(data, axis=0, keepdims=True)

@@ -107,7 +107,7 @@ class WasmCodeGenerator(BaseGenerator):
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
 
                 # Load scalar helpers
-                scalars = data.get("scalars", {})
+                scalars = data.get("scalars") or {}
                 for name, body in scalars.items():
                     helpers.append(f"inline float _scalar_{name.lower()}(float a, float b) {{ {body} }}")
 
@@ -115,7 +115,7 @@ class WasmCodeGenerator(BaseGenerator):
 
                 intrinsics = data.get("intrinsics", {})
                 for _op, data in intrinsics.items():
-                    if "macro_name" in data and "simd_expr" in data:
+                    if data.get("macro_name") and data.get("simd_expr"):
                         helpers.append(f"inline v128_t {data['macro_name']}(v128_t x) {{")
                         for line in data["simd_expr"].split("\n"):
                             if line.strip():
@@ -153,8 +153,8 @@ class WasmCodeGenerator(BaseGenerator):
                 scale, bias, mean, var = [self.var_map.get(inp, inp) for inp in bn_inputs]
                 eps = attrs.get("epsilon", 1e-5)
                 # We emit scalar C++ for folding
-                self.body_lines.append(f"// Folded BatchNorm for {clean_id}")
-                self.body_lines.append(f"float mult_{clean_id} = {scale} / std::sqrt({var} + {eps});")
+                self.add_line(f"// Folded BatchNorm for {clean_id}")
+                self.add_line(f"float mult_{clean_id} = {scale} / std::sqrt({var} + {eps});")
                 # This assumes scalar inputs for simplicity in WASM mapping, or we'd map this as a loop over elements
 
         if attrs.get("tiling"):

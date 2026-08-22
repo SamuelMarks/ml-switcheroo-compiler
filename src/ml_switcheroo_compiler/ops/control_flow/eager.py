@@ -25,7 +25,8 @@ def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], 
         true_fn (Callable): The true_fn parameter.
         false_fn (Callable): The false_fn parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if bool(pred.data):
         return true_fn()
@@ -40,7 +41,8 @@ def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], 
         body_fn (object): The body_fn parameter.
         init_val (object): The init_val parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     val = init_val
     res = cond_fn(val)
@@ -188,7 +190,8 @@ def pmap_eager(func: Callable[..., Any], axis_name: str | None = None) -> Callab
         Args:
         *args (object): Positional args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return vmap(func)(*args)
 
@@ -201,7 +204,8 @@ def stop_gradient_eager(x: Any) -> Any:
     Args:
         x (object): The x parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return x
 

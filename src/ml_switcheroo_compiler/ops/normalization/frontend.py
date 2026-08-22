@@ -39,7 +39,8 @@ def group_mean(
         axis (object): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return get_op("GroupMean")()(x, groups=groups, axis=axis, keepdims=keepdims)
 
@@ -58,7 +59,8 @@ def group_variance(
         axis (object): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return get_op("GroupVariance")()(x, groups=groups, axis=axis, keepdims=keepdims)
 

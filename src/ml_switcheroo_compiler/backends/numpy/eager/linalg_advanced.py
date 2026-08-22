@@ -16,7 +16,8 @@ def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[
         batch (object): The batch parameter.
         contracting (object): The contracting parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     skip_set = set(batch) | set(contracting)
     return [dims[i] for i in range(len(dims)) if i not in skip_set]
@@ -45,7 +46,8 @@ def _dot_general(a: Any, b: Any, dimension_numbers: Any) -> Any:
         b (object): The b parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (a_dims, b_dims, out_dims) = _build_einsum_equation(a.ndim, b.ndim, dimension_numbers)
     return np.einsum(a, a_dims, b, b_dims, out_dims)
@@ -59,7 +61,8 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: Any) -> 
         b_ndim (int): The b_ndim parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(dimension_numbers)
     a_dims = list(range(a_ndim))
@@ -83,7 +86,8 @@ def _np_trace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.trace(args[0], **kwargs)
 
@@ -97,7 +101,8 @@ def _np_matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.linalg.matrix_rank(args[0], **kwargs)
 
@@ -111,7 +116,8 @@ def _np_matrix_transpose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.swapaxes(args[0], -1, -2)
 
@@ -123,7 +129,8 @@ def _np_sqrtm(a: Any) -> Any:
     Args:
         a (object): The a parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return a
 
@@ -137,7 +144,8 @@ def _np_adjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.conj(np.swapaxes(args[0], -1, -2))
 
@@ -151,7 +159,8 @@ def _np_cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -173,7 +182,8 @@ def _np_eigh_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -195,7 +205,8 @@ def _np_qr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.linalg.qr(args[0], mode=kwargs.get("mode", "reduced"))
 
@@ -209,7 +220,8 @@ def _np_cross(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     axes = kwargs.pop("axes", None)
     if axes:
@@ -228,7 +240,8 @@ def _np_slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -255,7 +268,8 @@ for op_name in [
         Args:
         name (str): The name parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
 
         def _wrapper(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
@@ -266,7 +280,8 @@ for op_name in [
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-            Returns: Any: Result.
+            Returns:
+            tuple[int, ...]: Result.
             """
             import numpy as np
 
@@ -287,7 +302,8 @@ def _np_lu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -303,7 +319,8 @@ def _np_lu_factor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -319,7 +336,8 @@ def _np_lu_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -335,7 +353,8 @@ def _np_lu_pivots(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -356,7 +375,8 @@ def _np_matrix_exponential(backend_module: Any, *args: Any, **kwargs: Any) -> An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -372,7 +392,8 @@ def _np_hessenberg(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -388,7 +409,8 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -408,7 +430,8 @@ def _np_tridiagonal_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -425,7 +448,8 @@ def _np_cholesky_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -444,7 +468,8 @@ def _np_inv_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -463,7 +488,8 @@ def _np_pinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -479,7 +505,8 @@ def _np_polar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -495,7 +522,8 @@ def _np_qdwh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
     import scipy.linalg
@@ -514,7 +542,8 @@ def _np_solve_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 
@@ -533,7 +562,8 @@ def _np_svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 

@@ -444,7 +444,8 @@ class ExtractBoundingBoxes(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -463,7 +464,8 @@ class Iou(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -482,6 +484,7 @@ class Nms(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(inputs, "shape", ())

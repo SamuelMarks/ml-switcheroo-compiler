@@ -44,47 +44,37 @@ class DummyDa:
 def test_dask_eager_execute_op():
     import pytest
 
-    with pytest.raises(Exception):
-        da_mock = DummyDa()
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        # Test registered func
-        def dummy_eager(module, *args, **kwargs):
-            return "dummy_eager_res"
+    da_mock = DummyDa()
 
-        global_eager_registry.register("TestOp")(dummy_eager)
+    # Test registered func
+    def dummy_eager(module, *args, **kwargs):
+        return "dummy_eager_res"
 
-        with patch("ml_switcheroo_compiler.backends.dask.eager.da", da_mock):
-            res = execute_op(None, "TestOp")
-            assert res == "dummy_eager_res"
+    global_eager_registry.register("TestOp")(dummy_eager)
 
-            # Test standard op name formatting
-            if "Add" in global_eager_registry._registry:
-                del global_eager_registry._registry["Add"]
+    with patch("ml_switcheroo_compiler.backends.dask.eager.da", da_mock):
+        res = execute_op(None, "TestOp")
+        assert res == "dummy_eager_res"
+
+        # Test standard op name formatting via resolve_target_api mock
+        if "Add" in global_eager_registry._registry:
+            del global_eager_registry._registry["Add"]
+
+        with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=da_mock.add):
             res2 = execute_op(None, "Add")
             assert res2 == "add_res"
 
-            # Test attribute error -> numpy
-            global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
-            res3 = execute_op(None, "NumpyFallbackOp")
-            assert res3 == "dummy_eager_res"
-
-            # Test attribute error -> numpy, no reg -> fallback zeros
-            if "UnknownOp" in global_eager_registry._registry:
-                del global_eager_registry._registry["UnknownOp"]
-            try:
-                execute_op(None, "UnknownOp")
-            except NotImplementedError:
-                pass
-
-            # Force a generic exception if possible to get None?
-            def exploding_zeros(*args):
-                raise Exception("Boom")
-
-            with patch("numpy.zeros", exploding_zeros):
-                try:
-                    res5 = execute_op(None, "UnknownOp")
-                except NotImplementedError:
-                    pass
+        # Test attribute error -> numpy, no reg -> fallback zeros
+        if "UnknownOp" in global_eager_registry._registry:
+            del global_eager_registry._registry["UnknownOp"]
+        with pytest.raises(BackendNotSupportedError):
+            execute_op(None, "UnknownOp")
+        # Test mapping resolve fails -> raise
+        with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
+            with pytest.raises(BackendNotSupportedError):
+                execute_op(None, "Add")
 
 
 def test_dask_eager_execute_op_exception():

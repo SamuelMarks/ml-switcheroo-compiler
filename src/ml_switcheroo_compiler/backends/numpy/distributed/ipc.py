@@ -133,7 +133,8 @@ def _ipc_all_gather(tensor: Any, axis: int, mesh: Any) -> Any:
         axis (int): The axis parameter.
         mesh (object): The mesh parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -159,7 +160,8 @@ def _ipc_reduce_scatter(tensor: Any, op: str, axis: int, mesh: Any) -> Any:
         axis (int): The axis parameter.
         mesh (object): The mesh parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -197,7 +199,8 @@ def _ipc_all_reduce(tensor: Any, op: str, mesh: Any) -> Any:
         op (str): The op parameter.
         mesh (object): The mesh parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if isinstance(tensor, str):
         return tensor

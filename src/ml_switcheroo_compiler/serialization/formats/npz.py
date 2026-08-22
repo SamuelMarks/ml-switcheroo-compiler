@@ -41,7 +41,8 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
             weights_np (dict): The weights_np parameter.
             filepath (str): The filepath parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import numpy as np
 

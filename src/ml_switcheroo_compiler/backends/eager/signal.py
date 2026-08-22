@@ -15,7 +15,8 @@ def _generate_gaussian_kernel(np_mod: Any, kernel_size: tuple[int, int], sigma: 
         kernel_size (object): The kernel_size parameter.
         sigma (object): The sigma parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kx, ky = kernel_size
     sx, sy = sigma
@@ -35,7 +36,8 @@ def _apply_conv2d_batch(np_mod: Any, imgs: Any, kernel: Any, mode: str) -> Any:
         kernel (object): The kernel parameter.
         mode (str): The mode parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -67,7 +69,8 @@ def _get_blur_config(kwargs: dict[str, Any], config_obj: typing.Optional[Any]) -
         kwargs (dict): The kwargs parameter.
         config_obj (object): The config_obj parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if config_obj is None:
         return BlurConfig(
@@ -87,7 +90,8 @@ def gaussian_blur_eager(backend_module: Any, images: Any, config_obj: typing.Opt
         config_obj (object): The config_obj parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = _get_blur_config(kwargs, config_obj)
     kernel = _generate_gaussian_kernel(backend_module, config.kernel_size, config.sigma)
@@ -103,7 +107,8 @@ def _apply_median_filter_batch(np_mod: Any, imgs: Any, kernel_size: tuple[int, i
         kernel_size (object): The kernel_size parameter.
         padding (str): The padding parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -141,6 +146,7 @@ def median_filter_eager(
         padding (str): The padding parameter.
         data_format (object): The data_format parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

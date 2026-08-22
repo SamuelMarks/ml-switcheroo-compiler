@@ -30,7 +30,8 @@ class BinaryMathOp(OpDef):
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if shapes and all(isinstance(s, tuple) for s in shapes):
             return _bs(*shapes) if len(shapes) > 1 else shapes[0]
@@ -374,7 +375,8 @@ class Diff(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically out_shape is similar to input, maybe -1 on one axis
         return ()
@@ -393,7 +395,8 @@ class Digitize(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Returns indices matching input shape
         if args and hasattr(args[0], "shape"):
@@ -414,7 +417,8 @@ class ArrayEquiv(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -476,7 +480,8 @@ class Betainc(OpDef):
             x (object): The x parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape_a = getattr(a, "shape", ())
         shape_b = getattr(b, "shape", ())
@@ -822,7 +827,8 @@ class Clip(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if args and hasattr(args[0], "shape"):
             return args[0].shape
@@ -838,7 +844,8 @@ def clip(x: Any, min_val: Any = None, max_val: Any = None, **kwargs: Any) -> Any
         max_val (object): The max_val parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -860,7 +867,8 @@ def rem(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
@@ -944,7 +952,8 @@ def igamma_grad_a(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -958,7 +967,8 @@ def random_gamma_grad(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -972,7 +982,8 @@ def sort_key_val(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

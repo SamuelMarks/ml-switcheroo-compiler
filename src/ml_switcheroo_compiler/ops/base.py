@@ -38,7 +38,8 @@ class OpDef:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
@@ -66,7 +67,8 @@ class OpDef:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         ...
 
@@ -77,7 +79,8 @@ class OpDef:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -149,7 +152,8 @@ def dispatch_eager(op_name: str) -> Callable[..., Any]:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-            Returns: Any: Result.
+            Returns:
+            tuple[int, ...]: Result.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

@@ -134,7 +134,8 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
         inputs (object): The inputs parameter.
         indexing (str): The indexing parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if not inputs:
         return ()
@@ -206,7 +207,7 @@ class Pad(OpDef):
 
     op_name = "Pad"
 
-    def infer_shape(self, array: Any, pad_width: Any, mode: str = "constant", **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, array: Any, pad_width: Any, mode: str = "constant", **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -246,7 +247,8 @@ def pad(
         mode (str): The mode parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     op = Pad()
     out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
@@ -374,7 +376,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 class DynamicShape(OpDef):
     """DynamicShape op."""
 
-    def infer_shape(self, x: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -400,7 +402,8 @@ class Rank(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         args[0] if len(args) > 0 else None
         return ()
@@ -420,7 +423,8 @@ class Size(OpDef):
             axis (object): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -495,7 +499,8 @@ class Flatnonzero(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         args[0] if len(args) > 0 else None
         return (None,)
@@ -514,7 +519,8 @@ class Lexsort(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         keys = args[0] if len(args) > 0 else None
         kwargs.get("axis", -1)
@@ -539,7 +545,8 @@ class Nonzero(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if len(args) > 0 else None
         in_shape = getattr(a, "shape", ())
@@ -591,7 +598,8 @@ class Percentile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
@@ -613,7 +621,8 @@ class Quantile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
@@ -635,7 +644,8 @@ class RavelMultiIndex(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         multi_index = args[0] if len(args) > 0 else None
         args[1] if len(args) > 1 else None
@@ -680,7 +690,8 @@ class Repeat(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if len(args) > 0 else None
         repeats = args[1] if len(args) > 1 else None
@@ -711,7 +722,8 @@ class Searchsorted(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
@@ -731,7 +743,8 @@ class SortComplex(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a = args[0] if len(args) > 0 else None
         return getattr(a, "shape", ())
@@ -769,7 +782,8 @@ class Tile(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         A = args[0] if len(args) > 0 else None
         reps = args[1] if len(args) > 1 else None
@@ -817,7 +831,8 @@ class Unique(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         ar = args[0] if len(args) > 0 else None
         return_index = kwargs.get("return_index", False)
@@ -850,7 +865,8 @@ def percentile(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -864,7 +880,8 @@ def quantile(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -878,7 +895,8 @@ def flatnonzero(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -892,7 +910,8 @@ def nonzero(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -906,7 +925,8 @@ def ravel_multi_index(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -920,7 +940,8 @@ def lexsort(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -934,7 +955,8 @@ def searchsorted(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -948,7 +970,8 @@ def sort_complex(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -962,7 +985,8 @@ def unique(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

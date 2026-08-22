@@ -135,7 +135,8 @@ class NaryMathOp(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         inputs = args[0] if len(args) > 0 else kwargs.get("inputs")
         # Assume all inputs have the same shape

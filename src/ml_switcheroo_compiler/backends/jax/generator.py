@@ -30,7 +30,8 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         fix_imports (bool): The fix_imports parameter.
         encoding (str): The encoding parameter.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         import jax.numpy as jnp
 
@@ -122,6 +123,15 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
+    def generate(self) -> str:
+        """Generate code using strict AST construction (CST) from a base NumPy string."""
+        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
+        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+
+        gen = NumpyGenerator(self.graph)
+        base_code = gen.generate()
+        return transpile_source(base_code, target_framework="jax")
+
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
 
@@ -157,14 +167,16 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
     def _generate_file_header(self) -> list[str]:
         """Generate file header with module docstrings.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Resolve and register required imports.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         tmpl_path = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
         with open(tmpl_path, encoding="utf-8") as f:

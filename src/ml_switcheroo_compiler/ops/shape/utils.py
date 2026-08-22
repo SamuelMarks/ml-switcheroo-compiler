@@ -70,7 +70,8 @@ def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], kee
         axes (object): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if keepdims:
         return tuple(1 if i in axes else s for i, s in enumerate(x_shape))

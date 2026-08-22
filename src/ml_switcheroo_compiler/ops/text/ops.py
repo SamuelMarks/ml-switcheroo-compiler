@@ -23,14 +23,15 @@ from ml_switcheroo_compiler.ops.base import (
 class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -39,7 +40,7 @@ class StringToHash(OpDef):
 class RegexReplace(OpDef):
     """Operation that replaces matches of a regular expression in a string tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the regular expression replacement.
 
         Args:
@@ -56,7 +57,7 @@ class RegexReplace(OpDef):
 class StringSplit(OpDef):
     """Operation that splits string elements based on a given delimiter."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after splitting strings in the input tensor.
 
         Args:
@@ -73,7 +74,7 @@ class StringSplit(OpDef):
 class Lookup(OpDef):
     """Operation that retrieves values from a table based on given keys."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the table lookup.
 
         Args:
@@ -93,7 +94,7 @@ class Lookup(OpDef):
 class Hashing(OpDef):
     """Operation that applies a hashing algorithm to map inputs to bins."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the hashing operation.
 
         Args:
@@ -110,7 +111,7 @@ class Hashing(OpDef):
 class StringLookup(OpDef):
     """Operation that translates strings into integer indices using a vocabulary."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the string lookup operation.
 
         Args:
@@ -127,7 +128,7 @@ class StringLookup(OpDef):
 class IntegerLookup(OpDef):
     """Operation that translates integer indices into other integers or strings using a vocabulary."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the integer lookup operation.
 
         Args:
@@ -144,7 +145,7 @@ class IntegerLookup(OpDef):
 class TextVectorization(OpDef):
     """Operation that maps text features to integer sequences or dense vectors."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the text vectorization operation.
 
         Args:
@@ -161,7 +162,7 @@ class TextVectorization(OpDef):
 class StringToNumber(OpDef):
     """Operation that converts strings to numeric values."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after converting strings to numbers.
 
         Args:
@@ -178,7 +179,7 @@ class StringToNumber(OpDef):
 class StringLower(OpDef):
     """Operation that converts string characters to lowercase."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the lowercase conversion.
 
         Args:
@@ -195,7 +196,7 @@ class StringLower(OpDef):
 class StringUpper(OpDef):
     """Operation that converts string characters to uppercase."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after applying the uppercase conversion.
 
         Args:
@@ -212,7 +213,7 @@ class StringUpper(OpDef):
 class StringJoin(OpDef):
     """Operation that joins an iterable of strings into a single string using a separator."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after joining the strings.
 
         Args:
@@ -229,7 +230,7 @@ class StringJoin(OpDef):
 class StringLength(OpDef):
     """Operation that computes the length of each string in the input tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after computing the string lengths.
 
         Args:
@@ -246,7 +247,7 @@ class StringLength(OpDef):
 class StringSubstr(OpDef):
     """Operation that extracts substrings from a tensor of strings."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after extracting substrings.
 
         Args:
@@ -263,7 +264,7 @@ class StringSubstr(OpDef):
 class RegexFullMatch(OpDef):
     """Operation that checks if the input strings fully match a given regular expression."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the resulting shape after checking for full regular expression matches.
 
         Args:
@@ -390,7 +391,8 @@ class ArrayRepr(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -408,6 +410,7 @@ class ArrayStr(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()

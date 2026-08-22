@@ -21,7 +21,8 @@ def _np_log_poisson_loss(backend_module: Any, targets: Any, log_input: Any, **kw
         log_input (object): The log_input parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     t = np.asarray(targets)
     log_inp = np.asarray(log_input)

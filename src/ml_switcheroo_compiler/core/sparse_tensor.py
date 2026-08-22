@@ -31,7 +31,8 @@ class SparseTensor:
     def shape(self) -> Sequence[Union[int, str]]:
         """Get the shape of the tensor.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return self.dense_shape
 

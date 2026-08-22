@@ -15,7 +15,8 @@ def _np_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.sum(*args, **kwargs)
 
@@ -29,7 +30,8 @@ def _np_mean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.mean(*args, **kwargs)
 
@@ -43,7 +45,8 @@ def _np_max(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.max(*args, **kwargs)
 
@@ -57,7 +60,8 @@ def _np_min(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.min(*args, **kwargs)
 
@@ -71,7 +75,8 @@ def _np_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs.setdefault("ddof", 0)
     return backend_module.var(*args, **kwargs)
@@ -86,7 +91,8 @@ def _np_std(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.std(*args, **kwargs)
 
@@ -100,7 +106,8 @@ def _np_argmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argmax(*args, **kwargs)
 
@@ -114,7 +121,8 @@ def _np_argmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argmin(*args, **kwargs)
 
@@ -128,7 +136,8 @@ def _np_prod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.prod(*args, **kwargs)
 
@@ -142,7 +151,8 @@ def _np_any_op(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.any(*args, **kwargs)
 
@@ -156,7 +166,8 @@ def _np_cumsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.cumsum(*args, **kwargs)
 
@@ -170,7 +181,8 @@ def _np_add_n(backend_module: Any, inputs: list[Any], **kwargs: Any) -> Any:
         inputs (list): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -192,7 +204,8 @@ def _np_accumulate_n(backend_module: Any, inputs: list[Any], **kwargs: Any) -> A
         inputs (list): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -215,7 +228,8 @@ def _np_cumulative_logsumexp(backend_module: Any, x: Any, axis: int = 0, **kwarg
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     exp_x = backend_module.exp(x)
     cumsum_exp = backend_module.cumsum(exp_x, axis=axis)

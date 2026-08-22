@@ -203,7 +203,8 @@ def _np_linearoperatoridentity(backend_module: Any, *args: Any, **kwargs: Any) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorIdentity
 
@@ -219,7 +220,8 @@ def _np_linearoperatorscaledidentity(backend_module: Any, *args: Any, **kwargs: 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorScaledIdentity
 
@@ -235,7 +237,8 @@ def _np_linearoperatorzeros(backend_module: Any, *args: Any, **kwargs: Any) -> A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorZeros
 
@@ -251,7 +254,8 @@ def _np_fromdlpack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "from_dlpack"):
         return backend_module.from_dlpack(*args, **kwargs)
@@ -267,7 +271,8 @@ def _np_frombuffer(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import numpy as np
 

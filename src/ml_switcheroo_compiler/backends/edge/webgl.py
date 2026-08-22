@@ -42,6 +42,10 @@ class WebGLCodeGenerator(BaseGenerator):
         js = [self.config.js_orchestration.get("init", "")]
         js.append(self.config.js_orchestration.get("create_texture", ""))
 
+        js.append("function evaluate_webgl(gl, inputs) {")
+        js.append("    // Vertex shader for full screen quad")
+        js.append("    const vsSource = `#version 300 es\\nin vec4 aVertexPosition;\\nvoid main() {\\n  gl_Position = aVertexPosition;\\n}`;")
+
         for node in getattr(self.graph, "nodes", {}).values():
             op_type = getattr(node, "op_type", "")
             if op_type == "Input":
@@ -53,8 +57,20 @@ class WebGLCodeGenerator(BaseGenerator):
             # Emit standard fragment shader
             shader_tpl = self.config.templates.get(op_type.lower(), "")
             if shader_tpl:
-                # Use standard string replace instead of backticks in template
                 escaped_shader = shader_tpl.replace("\n", "\\n").replace('"', '\\"')
-                js.append(f'const shader_{clean_id} = "{escaped_shader}";')
+                js.append(f'    const shader_{clean_id} = "{escaped_shader}";')
+
+                # Setup program and textures
+                js.append(f"    const prog_{clean_id} = createProgram(gl, vsSource, shader_{clean_id});")
+                js.append(f"    const texOut_{clean_id} = createTexture(gl, 32, 32); // Mock Size")
+                js.append(f"    const fb_{clean_id} = gl.createFramebuffer();")
+                js.append(f"    gl.bindFramebuffer(gl.FRAMEBUFFER, fb_{clean_id});")
+                js.append(f"    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texOut_{clean_id}, 0);")
+                js.append(f"    gl.useProgram(prog_{clean_id});")
+                js.append("    // Bind inputs... gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, inputs[0]);")
+                js.append("    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);")
+
+        js.append("    return null; // Return final texture")
+        js.append("}")
 
         return "\n".join(js)

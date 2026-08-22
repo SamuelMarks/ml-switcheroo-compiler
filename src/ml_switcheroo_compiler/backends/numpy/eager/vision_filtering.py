@@ -18,7 +18,8 @@ def _np_degeneration(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 
@@ -32,7 +33,8 @@ def _np_gaussian_blur(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
@@ -53,7 +55,8 @@ def _np_median_filter(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return median_filter_eager(backend_module, images, **kwargs)
 
@@ -67,7 +70,8 @@ def _np_sharpen(backend_module: Any, images: Any, **kwargs: Any) -> Any:
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return images
 

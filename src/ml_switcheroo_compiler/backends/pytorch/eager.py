@@ -13,7 +13,8 @@ def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -34,7 +35,8 @@ def _execute_tensor_scatter_max(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -54,7 +56,8 @@ def _execute_tensor_scatter_min(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -74,7 +77,8 @@ def _execute_tensor_scatter_update(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
 
@@ -86,7 +90,8 @@ def _execute_tensor_scatter_add(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
 
@@ -98,7 +103,8 @@ def _execute_power_iteration(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     w = args[0]
     num_iters = kwargs.get("num_iters", 1)
@@ -122,7 +128,8 @@ def _execute_broadcast_to(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return cast(Any, args[0]).expand(kwargs["shape"])
 
@@ -159,7 +166,8 @@ def _execute_cast(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = cast(Any, args[0])
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -186,7 +194,8 @@ def _execute_cummax(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return torch.cummax(*args, **kwargs)[0]
 
@@ -198,7 +207,8 @@ def _execute_cummin(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return torch.cummin(*args, **kwargs)[0]
 
@@ -210,7 +220,8 @@ def _execute_cumlogsumexp(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return torch.logcumsumexp(*args, **kwargs)
 
@@ -222,7 +233,8 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import torch
 
@@ -238,7 +250,7 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], torch.Tensor):
         from torch.nn.utils.rnn import pad_sequence
 
-        return pad_sequence(list(rt), batch_first=True, padding_value=float(default_value if default_value is not None else 0.0))  # type: ignore
+        return pad_sequence(list(rt), batch_first=True, padding_value=float(default_value if default_value is not None else 0.0))
 
     # 3. If it's a dictionary or namedtuple with 'values' and 'row_splits' (standard ragged encoding)
     values = None
@@ -257,7 +269,7 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
 
         # Calculate padding
         dense_shape = [num_rows, max_len] + list(values.shape[1:])
-        dense_tensor = torch.full(dense_shape, float(default_value if default_value is not None else 0.0), dtype=values.dtype, device=values.device)  # type: ignore
+        dense_tensor = torch.full(dense_shape, float(default_value if default_value is not None else 0.0), dtype=values.dtype, device=values.device)
 
         for i in range(num_rows):
             start = int(row_splits[i].item())
@@ -300,7 +312,8 @@ def _torch_variance(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
     return torch.var(*args, **kwargs)
@@ -313,7 +326,8 @@ def _torch_tensordot(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
@@ -438,13 +452,21 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         BackendNotSupportedError: An exception.
     """
-    if op_type in _TORCH_EAGER_OP_MAP:
-        return _TORCH_EAGER_OP_MAP[op_type](*args, **kwargs)
+    from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
+
+    schema = load_backend_mappings("pytorch")
+    if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
+        import sys
+
+        func = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
+        if func:
+            return func(*args, **kwargs)
     custom_op_map = _get_custom_torch_op_map()
     if op_type in custom_op_map:
         return custom_op_map[op_type](*args, **kwargs)
@@ -473,119 +495,3 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
         raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None
-
-
-_TORCH_EAGER_OP_MAP = {
-    "Add": torch.add,
-    "Subtract": torch.sub,
-    "Multiply": torch.mul,
-    "TrueDivide": torch.div,
-    "TruncateDiv": lambda x, y: torch.trunc(torch.div(x, y)),
-    "TruncateMod": torch.fmod,
-    "Exp": torch.exp,
-    "Log": torch.log,
-    "Matmul": torch.matmul,
-    "Tensordot": _torch_tensordot,
-    "StopGradient": lambda x: x.detach(),
-    "Sin": torch.sin,
-    "Acos": torch.acos,
-    "Acosh": torch.acosh,
-    "Asin": torch.asin,
-    "Asinh": torch.asinh,
-    "Atan": torch.atan,
-    "Atanh": torch.atanh,
-    "Atan2": torch.atan2,
-    "Cos": torch.cos,
-    "Sum": torch.sum,
-    "Cumsum": torch.cumsum,
-    "Cumprod": torch.cumprod,
-    "Mean": torch.mean,
-    "Variance": _torch_variance,
-    "Max": torch.max,
-    "Min": torch.min,
-    "Reshape": torch.reshape,
-    "Transpose": torch.transpose,
-    "Equal": torch.eq,
-    "NotEqual": torch.ne,
-    "Greater": torch.gt,
-    "Less": torch.lt,
-    "Negative": torch.neg,
-    "AccumulateN": _execute_accumulate_n,
-    "AddN": _execute_accumulate_n,
-    "ActivityRegularization": lambda x, **kwargs: x,
-    "AdaptiveAvgPool2D": torch.nn.functional.adaptive_avg_pool2d,
-    "AdaptiveAvgPool3D": torch.nn.functional.adaptive_avg_pool3d,
-    "AdaptiveMaxPool2D": torch.nn.functional.adaptive_max_pool2d,
-    "AdaptiveMaxPool3D": torch.nn.functional.adaptive_max_pool3d,
-    "AdaptiveMaxPool3D_Indices": lambda x, sz, **kwargs: torch.nn.functional.adaptive_max_pool3d(x, sz, return_indices=True),
-    "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, torch.zeros((), dtype=target.dtype, device=target.device)),
-    "AllGather": lambda tensor, *args, **kwargs: _torch_all_gather(tensor, **kwargs),
-    "AllReduce": lambda tensor, *args, **kwargs: _torch_all_reduce(tensor, **kwargs),
-    "ReduceScatter": lambda tensor, *args, **kwargs: _torch_reduce_scatter(tensor, **kwargs),
-    "AllToAll": lambda tensor, *args, **kwargs: _torch_all_to_all(tensor, **kwargs),
-    "Append": lambda arr, values, axis=None, **kwargs: torch.cat([arr, values], dim=axis) if axis is not None else torch.cat([arr.flatten(), values.flatten()]),
-    "ApplyOverAxes": lambda func, a, axes, **kwargs: a,
-    "Argpartition": lambda a, kth, axis=-1, **kwargs: torch.argsort(a, dim=axis),
-    "ArrayEquiv": lambda a1, a2, **kwargs: torch.equal(a1, a2) if hasattr(torch, "equal") else True,
-    "ArrayRepr": lambda arr, **kwargs: repr(arr),
-    "ArrayStr": lambda arr, **kwargs: str(arr),
-    "AsString": lambda arr, **kwargs: str(arr),
-    "Assert": lambda condition, data, summarize=3, **kwargs: None,
-    "Assign": lambda ref, value, **kwargs: value,
-    "AssignAdd": lambda ref, value, **kwargs: ref + value,
-    "AssignSub": lambda ref, value, **kwargs: ref - value,
-    "AssignVariable": lambda ref, value, **kwargs: value,
-    "AssociativeScan": lambda *args, **kwargs: args[1] if len(args) > 1 and callable(args[0]) else args[0],
-    "Atleast1d": lambda *args, **kwargs: torch.atleast_1d(*args),  # type: ignore
-    "Atleast2d": lambda *args, **kwargs: torch.atleast_2d(*args),  # type: ignore
-    "Atleast3d": lambda *args, **kwargs: torch.atleast_3d(*args),  # type: ignore
-    "Average": lambda a, *args, **kwargs: torch.mean(a),
-    "AxisIndex": lambda *args, **kwargs: torch.tensor(0),
-    "BesselI0": torch.special.i0,
-    "BesselI0e": torch.special.i0e,
-    "BesselI1": torch.special.i1,
-    "BesselI1e": torch.special.i1e,
-    "BesselJ0": torch.special.bessel_j0,
-    "BesselJ1": torch.special.bessel_j1,
-    "BesselK0": torch.special.modified_bessel_k0,
-    "BesselK0e": torch.special.scaled_modified_bessel_k0,
-    "BesselK1": torch.special.modified_bessel_k1,
-    "BesselK1e": torch.special.scaled_modified_bessel_k1,
-    "BesselY0": torch.special.bessel_y0,
-    "BesselY1": torch.special.bessel_y1,
-    "ChebyshevPolynomialT": torch.special.chebyshev_polynomial_t,
-    "ChebyshevPolynomialU": torch.special.chebyshev_polynomial_u,
-    "Fft": lambda *args, **kwargs: torch.fft.fft(args[0], **kwargs),
-    "Ifft": lambda *args, **kwargs: torch.fft.ifft(args[0], **kwargs),
-    "Fft2": lambda *args, **kwargs: torch.fft.fft2(args[0], **kwargs),
-    "Ifft2": lambda *args, **kwargs: torch.fft.ifft2(args[0], **kwargs),
-    "Rfft": lambda *args, **kwargs: torch.fft.rfft(args[0], **kwargs),
-    "Irfft": lambda *args, **kwargs: torch.fft.irfft(args[0], **kwargs),
-    "Rfft2": lambda *args, **kwargs: torch.fft.rfft2(args[0], **kwargs),
-    "Irfft2": lambda *args, **kwargs: torch.fft.irfft2(args[0], **kwargs),
-    "Fftn": lambda *args, **kwargs: torch.fft.fftn(args[0], **kwargs),
-    "Ifftn": lambda *args, **kwargs: torch.fft.ifftn(args[0], **kwargs),
-    "Rfftn": lambda *args, **kwargs: torch.fft.rfftn(args[0], **kwargs),
-    "Irfftn": lambda *args, **kwargs: torch.fft.irfftn(args[0], **kwargs),
-    "Fftshift": lambda *args, **kwargs: torch.fft.fftshift(args[0], **kwargs),
-    "Ifftshift": lambda *args, **kwargs: torch.fft.ifftshift(args[0], **kwargs),
-    "Hfft": lambda *args, **kwargs: torch.fft.hfft(args[0], **kwargs),
-    "Ihfft": lambda *args, **kwargs: torch.fft.ihfft(args[0], **kwargs),
-    "Fftfreq": lambda *args, **kwargs: torch.fft.fftfreq(*args, **kwargs),
-    "Rfftfreq": lambda *args, **kwargs: torch.fft.rfftfreq(*args, **kwargs),
-    "Fftnd": lambda *args, **kwargs: torch.fft.fftn(args[0], **kwargs),
-    "HardSilu": lambda x: torch.nn.functional.hardsilu(x) if hasattr(torch.nn.functional, "hardsilu") else torch.nn.functional.hardswish(x),
-    "HardSwish": lambda x: torch.nn.functional.hardswish(x),
-    "HermitePolynomialH": torch.special.hermite_polynomial_h,
-    "HermitePolynomialHe": torch.special.hermite_polynomial_he,
-    "Ifftnd": lambda *args, **kwargs: torch.fft.ifftn(args[0], **kwargs),
-    "Irfftnd": lambda *args, **kwargs: torch.fft.irfftn(args[0], **kwargs),
-    "LaguerrePolynomialL": torch.special.laguerre_polynomial_l,
-    "LegendrePolynomialP": torch.special.legendre_polynomial_p,
-    "Rfftnd": lambda *args, **kwargs: torch.fft.rfftn(args[0], **kwargs),
-    "ShiftedChebyshevPolynomialT": torch.special.shifted_chebyshev_polynomial_t,
-    "ShiftedChebyshevPolynomialU": torch.special.shifted_chebyshev_polynomial_u,
-    "ShiftedChebyshevPolynomialV": torch.special.shifted_chebyshev_polynomial_v,
-    "ShiftedChebyshevPolynomialW": torch.special.shifted_chebyshev_polynomial_w,
-    "Squareplus": lambda x: 0.5 * (x + torch.sqrt(x**2 + 4.0)),
-}

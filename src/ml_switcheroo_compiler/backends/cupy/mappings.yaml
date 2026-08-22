@@ -1,0 +1,386 @@
+backend_name: cupy
+operations:
+  Abs:
+    target_api: cp.abs
+  Add:
+    target_api: cp.add
+  All:
+    target_api: cp.all
+  Allclose:
+    target_api: cp.allclose
+  Angle:
+    target_api: cp.angle
+  Any:
+    target_api: cp.any
+  Append:
+    target_api: cp.append
+  ApplyOverAxes:
+    target_api: cp.apply_over_axes
+  Argmax:
+    target_api: cp.argmax
+  Argmin:
+    target_api: cp.argmin
+  Argwhere:
+    target_api: cp.argwhere
+  Average:
+    target_api: cp.average
+  Bincount:
+    target_api: cp.bincount
+  BitwiseAnd:
+    target_api: cp.bitwise_and
+  BitwiseNot:
+    target_api: cp.bitwise_not
+  BitwiseOr:
+    target_api: cp.bitwise_or
+  BitwiseXor:
+    target_api: cp.bitwise_xor
+  Block:
+    target_api: cp.block
+  BroadcastTo:
+    target_api: cp.broadcast_to
+  Cbrt:
+    target_api: cp.cbrt
+  Ceil:
+    target_api: cp.ceil
+  Cholesky:
+    target_api: cp.linalg.cholesky
+  Choose:
+    target_api: cp.choose
+  Clip:
+    target_api: cp.clip
+  Compress:
+    target_api: cp.compress
+  Concatenate:
+    target_api: cp.concatenate
+  Conj:
+    target_api: cp.conj
+  Copysign:
+    target_api: cp.copysign
+  Corrcoef:
+    target_api: cp.corrcoef
+  Cos:
+    target_api: cp.cos
+  Cosh:
+    target_api: cp.cosh
+  CountNonzero:
+    target_api: cp.count_nonzero
+  Cov:
+    target_api: cp.cov
+  Cumprod:
+    target_api: cp.cumprod
+  Cumsum:
+    target_api: cp.cumsum
+  Degrees:
+    target_api: cp.degrees
+  Delete:
+    target_api: cp.delete
+  Diag:
+    target_api: cp.diag
+  Diagonal:
+    target_api: cp.diagonal
+  Diff:
+    target_api: cp.diff
+  Digitize:
+    target_api: cp.digitize
+  Divide:
+    target_api: cp.divide
+  Divmod:
+    target_api: cp.divmod
+  Dot:
+    target_api: cp.dot
+  Dstack:
+    target_api: cp.dstack
+  Ediff1d:
+    target_api: cp.ediff1d
+  Einsum:
+    target_api: cp.einsum
+  Equal:
+    target_api: cp.equal
+  Exp:
+    target_api: cp.exp
+  Exp2:
+    target_api: cp.exp2
+  ExpandDims:
+    target_api: cp.expand_dims
+  Expm1:
+    target_api: cp.expm1
+  Extract:
+    target_api: cp.extract
+  Fabs:
+    target_api: cp.fabs
+  Fft:
+    target_api: cp.fft.fft
+  Fft2:
+    target_api: cp.fft.fft2
+  Fftfreq:
+    target_api: cp.fft.fftfreq
+  Fftn:
+    target_api: cp.fft.fftn
+  Fftshift:
+    target_api: cp.fft.fftshift
+  Fix:
+    target_api: cp.fix
+  Flatnonzero:
+    target_api: cp.flatnonzero
+  Flip:
+    target_api: cp.flip
+  Fliplr:
+    target_api: cp.fliplr
+  Flipud:
+    target_api: cp.flipud
+  FloatPower:
+    target_api: cp.float_power
+  Floor:
+    target_api: cp.floor
+  FloorDivide:
+    target_api: cp.floor_divide
+  Fmax:
+    target_api: cp.fmax
+  Fmin:
+    target_api: cp.fmin
+  Fmod:
+    target_api: cp.fmod
+  Frexp:
+    target_api: cp.frexp
+  Greater:
+    target_api: cp.greater
+  GreaterEqual:
+    target_api: cp.greater_equal
+  Hfft:
+    target_api: cp.fft.hfft
+  Hstack:
+    target_api: cp.hstack
+  Hypot:
+    target_api: cp.hypot
+  Ifft:
+    target_api: cp.fft.ifft
+  Ifft2:
+    target_api: cp.fft.ifft2
+  Ifftn:
+    target_api: cp.fft.ifftn
+  Ifftshift:
+    target_api: cp.fft.ifftshift
+  Ihfft:
+    target_api: cp.fft.ihfft
+  Imag:
+    target_api: cp.imag
+  Insert:
+    target_api: cp.insert
+  Inv:
+    target_api: cp.linalg.inv
+  Invert:
+    target_api: cp.invert
+  Irfft:
+    target_api: cp.fft.irfft
+  Irfft2:
+    target_api: cp.fft.irfft2
+  Irfftn:
+    target_api: cp.fft.irfftn
+  Isclose:
+    target_api: cp.isclose
+  Iscomplex:
+    target_api: cp.iscomplex
+  Isfinite:
+    target_api: cp.isfinite
+  Isin:
+    target_api: cp.isin
+  Isinf:
+    target_api: cp.isinf
+  Isnan:
+    target_api: cp.isnan
+  Isneginf:
+    target_api: cp.isneginf
+  Isposinf:
+    target_api: cp.isposinf
+  Isreal:
+    target_api: cp.isreal
+  Ldexp:
+    target_api: cp.ldexp
+  LeftShift:
+    target_api: cp.left_shift
+  Less:
+    target_api: cp.less
+  LessEqual:
+    target_api: cp.less_equal
+  Log:
+    target_api: cp.log
+  Log10:
+    target_api: cp.log10
+  Log2:
+    target_api: cp.log2
+  Logaddexp:
+    target_api: cp.logaddexp
+  Logaddexp2:
+    target_api: cp.logaddexp2
+  LogicalAnd:
+    target_api: cp.logical_and
+  LogicalNot:
+    target_api: cp.logical_not
+  LogicalOr:
+    target_api: cp.logical_or
+  LogicalXor:
+    target_api: cp.logical_xor
+  Lstsq:
+    target_api: cp.linalg.lstsq
+  Matmul:
+    target_api: cp.matmul
+  Max:
+    target_api: cp.max
+  Maximum:
+    target_api: cp.maximum
+  Mean:
+    target_api: cp.mean
+  Min:
+    target_api: cp.min
+  Minimum:
+    target_api: cp.minimum
+  Mod:
+    target_api: cp.mod
+  Moveaxis:
+    target_api: cp.moveaxis
+  Multiply:
+    target_api: cp.multiply
+  NanToNum:
+    target_api: cp.nan_to_num
+  Nanargmax:
+    target_api: cp.nanargmax
+  Nanargmin:
+    target_api: cp.nanargmin
+  Nancumprod:
+    target_api: cp.nancumprod
+  Nancumsum:
+    target_api: cp.nancumsum
+  Nanmax:
+    target_api: cp.nanmax
+  Nanmean:
+    target_api: cp.nanmean
+  Nanmedian:
+    target_api: cp.nanmedian
+  Nanmin:
+    target_api: cp.nanmin
+  Nanprod:
+    target_api: cp.nanprod
+  Nanstd:
+    target_api: cp.nanstd
+  Nansum:
+    target_api: cp.nansum
+  Nanvar:
+    target_api: cp.nanvar
+  Negative:
+    target_api: cp.negative
+  Nextafter:
+    target_api: cp.nextafter
+  Nonzero:
+    target_api: cp.nonzero
+  Norm:
+    target_api: cp.linalg.norm
+  NotEqual:
+    target_api: cp.not_equal
+  Outer:
+    target_api: cp.outer
+  Pad:
+    target_api: cp.pad
+  Percentile:
+    target_api: cp.percentile
+  Positive:
+    target_api: cp.positive
+  Power:
+    target_api: cp.power
+  Prod:
+    target_api: cp.prod
+  Qr:
+    target_api: cp.linalg.qr
+  Radians:
+    target_api: cp.radians
+  RavelMultiIndex:
+    target_api: cp.ravel_multi_index
+  Real:
+    target_api: cp.real
+  Reciprocal:
+    target_api: cp.reciprocal
+  Remainder:
+    target_api: cp.remainder
+  Repeat:
+    target_api: cp.repeat
+  Reshape:
+    target_api: cp.reshape
+  Rfft:
+    target_api: cp.fft.rfft
+  Rfft2:
+    target_api: cp.fft.rfft2
+  Rfftfreq:
+    target_api: cp.fft.rfftfreq
+  Rfftn:
+    target_api: cp.fft.rfftn
+  RightShift:
+    target_api: cp.right_shift
+  Rint:
+    target_api: cp.rint
+  Roll:
+    target_api: cp.roll
+  Round:
+    target_api: cp.round
+  Searchsorted:
+    target_api: cp.searchsorted
+  Select:
+    target_api: cp.select
+  Sign:
+    target_api: cp.sign
+  Signbit:
+    target_api: cp.signbit
+  Sin:
+    target_api: cp.sin
+  Sinc:
+    target_api: cp.sinc
+  Sinh:
+    target_api: cp.sinh
+  Solve:
+    target_api: cp.linalg.solve
+  Sqrt:
+    target_api: cp.sqrt
+  Square:
+    target_api: cp.square
+  Squeeze:
+    target_api: cp.squeeze
+  Stack:
+    target_api: cp.stack
+  Std:
+    target_api: cp.std
+  Subtract:
+    target_api: cp.subtract
+  Sum:
+    target_api: cp.sum
+  Svd:
+    target_api: cp.linalg.svd
+  Swapaxes:
+    target_api: cp.swapaxes
+  Take:
+    target_api: cp.take
+  Tan:
+    target_api: cp.tan
+  Tanh:
+    target_api: cp.tanh
+  Tensordot:
+    target_api: cp.tensordot
+  Tile:
+    target_api: cp.tile
+  Trace:
+    target_api: cp.trace
+  Transpose:
+    target_api: cp.transpose
+  TrueDivide:
+    target_api: cp.true_divide
+  Trunc:
+    target_api: cp.trunc
+  Union1d:
+    target_api: cp.union1d
+  Unique:
+    target_api: cp.unique
+  UnravelIndex:
+    target_api: cp.unravel_index
+  Vdot:
+    target_api: cp.vdot
+  Vstack:
+    target_api: cp.vstack
+  Where:
+    target_api: cp.where

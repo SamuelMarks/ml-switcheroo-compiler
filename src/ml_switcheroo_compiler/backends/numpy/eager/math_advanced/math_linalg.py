@@ -22,7 +22,8 @@ def _np_rsqrt(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     with np.errstate(divide="ignore", invalid="ignore"):
         return 1.0 / np.sqrt(x)
@@ -51,7 +52,8 @@ def _np_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return np.vander(np.asarray(args[0]), *args[1:], **kwargs)
 
@@ -135,7 +137,8 @@ def _np_customlinearsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if callable(args[0]):
         solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
@@ -154,7 +157,8 @@ def _np_linearoperatorinversion(backend_module: Any, *args: Any, **kwargs: Any) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorInversion
 
@@ -170,7 +174,8 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = args[0]
     y = args[1]

@@ -99,7 +99,8 @@ def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -120,7 +121,8 @@ def _execute_binom_cdf(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     k, n, p = args[0], args[1], args[2]
     loc = kwargs.get("loc", 0.0)
@@ -134,7 +136,8 @@ def _execute_bessel_jn(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return jax.scipy.special.bessel_jn(args[1], v=args[0])
 
@@ -146,7 +149,8 @@ def _execute_unsorted_segment_sum(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return jax.ops.segment_sum(*args, **kwargs)
 
@@ -158,7 +162,8 @@ def _execute_unsorted_segment_max(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return jax.ops.segment_max(*args, **kwargs)
 
@@ -170,7 +175,8 @@ def _execute_unsorted_segment_min(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return jax.ops.segment_min(*args, **kwargs)
 
@@ -182,7 +188,8 @@ def _execute_unsorted_segment_prod(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return jax.ops.segment_prod(*args, **kwargs)
 
@@ -194,7 +201,8 @@ def _execute_variance(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import jax.numpy as jnp
 
@@ -209,7 +217,8 @@ def _execute_cast(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     tensor = args[0]
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -236,7 +245,8 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import jax.numpy as jnp
 
@@ -334,7 +344,7 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "Irfft2": lambda *args, **kwargs: jax.numpy.fft.irfft2(args[0], **kwargs),
     "Irfftn": lambda *args, **kwargs: jax.numpy.fft.irfftn(args[0], **kwargs),
     "Irfftnd": lambda *args, **kwargs: jax.numpy.fft.irfftn(args[0], **kwargs),
-    "LogSoftmax": lambda *args, **kwargs: jax.nn.log_softmax(args[0], axis=kwargs.get("axis", -1)),
+    "LogSoftmax": lambda x, axis=-1, **kwargs: jax.nn.log_softmax(x, axis=axis),
     "Mish": lambda x: jax.nn.mish(x) if hasattr(jax.nn, "mish") else x * jax.numpy.tanh(jax.numpy.log1p(jax.numpy.exp(x))),
     "OneHot": lambda *args, **kwargs: jax.nn.one_hot(args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)),
     "Rfft": lambda *args, **kwargs: jax.numpy.fft.rfft(args[0], **kwargs),
@@ -343,7 +353,7 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "Rfftn": lambda *args, **kwargs: jax.numpy.fft.rfftn(args[0], **kwargs),
     "Rfftnd": lambda *args, **kwargs: jax.numpy.fft.rfftn(args[0], **kwargs),
     "Sigmoid": lambda *args, **kwargs: jax.nn.sigmoid(args[0]),
-    "Softmax": lambda *args, **kwargs: jax.nn.softmax(args[0], axis=kwargs.get("axis", -1)),
+    "Softmax": lambda x, axis=-1, **kwargs: jax.nn.softmax(x, axis=axis),
     "Squareplus": lambda x: jax.nn.squareplus(x) if hasattr(jax.nn, "squareplus") else 0.5 * (x + jax.numpy.sqrt(x**2 + 4.0)),
 }
 
@@ -357,13 +367,21 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         BackendNotSupportedError: An exception.
     """
-    if op_type in _OP_DISPATCH:
-        return _OP_DISPATCH[op_type](*args, **kwargs)
+    from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
+
+    schema = load_backend_mappings("jax")
+    if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
+        import sys
+
+        func = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
+        if func:
+            return func(*args, **kwargs)
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry

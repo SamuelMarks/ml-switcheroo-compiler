@@ -121,7 +121,8 @@ def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, s
         new_nodes (Any): The new_nodes parameter.
         scale (float): The scale parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     scale_node_id = "loss_scale_factor"
     inv_scale_node_id = "loss_scale_inv_factor"

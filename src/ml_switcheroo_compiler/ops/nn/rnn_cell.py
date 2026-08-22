@@ -34,11 +34,11 @@ def simple_rnn_cell(
     """
     h_prev = state[0]
 
-    matrix_x = matmul(inputs, kernel)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_x = matmul(inputs, kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     if bias is not None:
         matrix_x = add(matrix_x, bias)
 
-    matrix_inner = matmul(h_prev, recurrent_kernel)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_inner = matmul(h_prev, recurrent_kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     h_new = tanh(add(matrix_x, matrix_inner))
 

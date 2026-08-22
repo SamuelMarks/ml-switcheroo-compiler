@@ -17,7 +17,8 @@ def _true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
@@ -32,7 +33,8 @@ def _fmod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
@@ -47,7 +49,8 @@ def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -70,7 +73,8 @@ def _assign_add(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return ref + value
 
@@ -85,7 +89,8 @@ def _assign_sub(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return ref - value
 
@@ -99,7 +104,8 @@ def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -121,7 +127,8 @@ def _modf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.modf(*args, **kwargs)
 
@@ -135,7 +142,8 @@ def _ravelmultiindex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.ravel_multi_index(*args, **kwargs)
 
@@ -149,7 +157,8 @@ def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
     if func is not None:
@@ -168,7 +177,8 @@ def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
@@ -187,7 +197,8 @@ def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
     if func is not None:
@@ -206,7 +217,8 @@ def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
@@ -225,7 +237,8 @@ def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
@@ -244,7 +257,8 @@ def _np_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:

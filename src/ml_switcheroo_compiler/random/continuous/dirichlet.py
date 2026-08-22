@@ -20,7 +20,8 @@ def dirichlet(key: Any, alpha: Any, shape: Any = None, dtype: Any = None) -> Any
         shape (object): The shape parameter.
         dtype (object): The dtype parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     if shape is None:
         shape = ()

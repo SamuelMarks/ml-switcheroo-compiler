@@ -16,7 +16,8 @@ def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:  # type: 
         type (int): The type parameter.
         norm (str): The norm parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -68,7 +69,8 @@ def _np_dct(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = np.asarray(args[0])
     type = kwargs.get("type", 2)
@@ -90,7 +92,8 @@ def _idct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:  # type:
         type (int): The type parameter.
         norm (str): The norm parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -127,7 +130,8 @@ def _np_idct(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = np.asarray(args[0])
     type = kwargs.get("type", 2)
@@ -150,7 +154,8 @@ def _np_mdct(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -177,7 +182,8 @@ def _np_inverse_mdct(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = np.asarray(args[0])
     N = x.shape[-1]
@@ -198,7 +204,8 @@ def _np_frame(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = np.asarray(args[0])
     frame_length = kwargs.get("frame_length", 1)
@@ -220,7 +227,8 @@ def _np_overlap_and_add(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     x = np.asarray(args[0])
     frame_step = kwargs.get("frame_step", 1)

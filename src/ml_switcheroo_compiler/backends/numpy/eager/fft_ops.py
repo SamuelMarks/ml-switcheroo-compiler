@@ -26,7 +26,8 @@ def _np_fft3d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) ->
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -42,7 +43,8 @@ def _np_ifft3d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) -
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -58,7 +60,8 @@ def _np_rfft2d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) -
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -74,7 +77,8 @@ def _np_rfft3d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) -
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -90,7 +94,8 @@ def _np_irfft2d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) 
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -106,7 +111,8 @@ def _np_irfft3d(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) 
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -122,7 +128,8 @@ def _np_fftnd(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) ->
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -138,7 +145,8 @@ def _np_ifftnd(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) -
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -154,7 +162,8 @@ def _np_rfftnd(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) -
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -170,7 +179,8 @@ def _np_irfftnd(backend_module: Any, a: Any, config: Any = None, **kwargs: Any) 
         config (FFTConfig): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -186,7 +196,8 @@ def _np_window_hann(backend_module: Any, length: int, *args: Any, **kwargs: Any)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.hanning(length)
 
@@ -201,7 +212,8 @@ def _np_window_hamming(backend_module: Any, length: int, *args: Any, **kwargs: A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.hamming(length)
 
@@ -218,7 +230,8 @@ def _np_stft(backend_module: Any, x: Any, nfft: int, noverlap: int = 0, *args: A
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.
@@ -246,7 +259,8 @@ def _np_istft(backend_module: Any, x: Any, nfft: int, noverlap: int = 0, *args: 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
 
     Raises:
         ValueError: An exception.

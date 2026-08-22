@@ -36,7 +36,8 @@ class ApplyOverAxes(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically shape does not change for some functions or reduces, fallback to None
         return None
@@ -55,7 +56,8 @@ class Bincount(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically returns a 1D tensor whose size depends on max value, fallback to (None,)
         return (None,)
@@ -110,7 +112,8 @@ class Corrcoef(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None, None)
 
@@ -129,7 +132,8 @@ class Correlate(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None,)
 
@@ -148,7 +152,8 @@ class Cov(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return (None, None)
 
@@ -164,7 +169,8 @@ class TrapezoidalIntegral(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
         shape = list(y)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -202,7 +208,8 @@ class ConfusionMatrix(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         num_classes = kwargs.get("num_classes", 0)
         return (num_classes, num_classes)
@@ -232,7 +239,8 @@ def moments(x: Any, axes: Any = None, keepdims: bool = False) -> tuple[Any, Any]
         axes (object): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     mean_op = get_op("Mean")()
     variance_op = get_op("Variance")()
@@ -256,7 +264,8 @@ def descriptive(a: Any) -> Any:
     Args:
         a (object): The a parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return get_op("Descriptive")()(a)
 
@@ -275,6 +284,7 @@ def distributions(a: Any) -> Any:
     Args:
         a (object): The a parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return get_op("Distributions")()(a)

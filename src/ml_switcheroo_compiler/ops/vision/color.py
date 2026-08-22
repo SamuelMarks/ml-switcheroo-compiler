@@ -461,7 +461,8 @@ class AdjustBrightness(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -480,7 +481,8 @@ class AdjustContrast(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -499,7 +501,8 @@ class AdjustHue(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -518,7 +521,8 @@ class AdjustSaturation(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -537,7 +541,8 @@ class AugMix(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -556,7 +561,8 @@ class AutoContrast(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -575,7 +581,8 @@ class Equalization(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -594,7 +601,8 @@ class Invert(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -613,7 +621,8 @@ class Posterize(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())
 
@@ -632,7 +641,8 @@ class RgbToGrayscale(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         s = list(getattr(images, "shape", ()))
         if len(s) > 0:
@@ -658,6 +668,7 @@ class Solarize(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(images, "shape", ())

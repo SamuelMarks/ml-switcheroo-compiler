@@ -27,7 +27,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
 
 def test_stateless_random_uniform(mocker):
     # We mock uniform, multiply, add, full to avoid needing backends
-    mocker.patch("ml_switcheroo_compiler.random.uniform", return_value="unif")
+    mocker.patch("ml_switcheroo_compiler.random.continuous.uniform", return_value="unif")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
     mocker.patch("ml_switcheroo_compiler.ops.binary.add", return_value="add")
@@ -44,7 +44,7 @@ def test_stateless_random_uniform(mocker):
 
 
 def test_stateless_random_normal(mocker):
-    mocker.patch("ml_switcheroo_compiler.random.normal", return_value="norm")
+    mocker.patch("ml_switcheroo_compiler.random.continuous.normal", return_value="norm")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
     mocker.patch("ml_switcheroo_compiler.ops.binary.add", return_value="add")
@@ -67,7 +67,7 @@ def test_stateless_random_binomial(mocker):
 
 
 def test_stateless_truncated_normal(mocker):
-    mocker.patch("ml_switcheroo_compiler.random.truncated_normal", return_value="trunc")
+    mocker.patch("ml_switcheroo_compiler.random.continuous.truncated_normal", return_value="trunc")
     mocker.patch("ml_switcheroo_compiler.ops.creation.full", return_value="full")
     mocker.patch("ml_switcheroo_compiler.ops.binary.multiply", return_value="mult")
     mocker.patch("ml_switcheroo_compiler.ops.binary.add", return_value="add")
@@ -96,7 +96,7 @@ def test_stateless_categorical(mocker):
 
 
 def test_stateless_gamma(mocker):
-    mocker.patch("ml_switcheroo_compiler.random.gamma", return_value="gamma")
+    mocker.patch("ml_switcheroo_compiler.random.continuous.gamma", return_value="gamma")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     alpha = Tensor(2.0, TensorConfig((), "float32", "cpu"))
     res = stateless_gamma((2, 3), seed, alpha, "float32")

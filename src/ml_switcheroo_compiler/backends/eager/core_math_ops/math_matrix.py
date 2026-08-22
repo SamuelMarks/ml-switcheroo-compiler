@@ -20,7 +20,8 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     eq = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
@@ -43,7 +44,8 @@ def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: An
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import math
 
@@ -85,7 +87,8 @@ def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.linalg
 
@@ -109,7 +112,8 @@ def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
@@ -134,7 +138,8 @@ def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
@@ -155,7 +160,8 @@ def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
@@ -176,7 +182,8 @@ def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
@@ -197,7 +204,8 @@ def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
@@ -218,7 +226,8 @@ def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
@@ -237,7 +246,8 @@ def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
@@ -256,7 +266,8 @@ def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
@@ -275,7 +286,8 @@ def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
@@ -294,7 +306,8 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:

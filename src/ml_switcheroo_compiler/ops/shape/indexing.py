@@ -301,7 +301,8 @@ class Extract(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         # Typically returns a 1D tensor of elements satisfying a condition.
         return (None,)
@@ -424,7 +425,8 @@ class DynamicSliceInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -448,7 +450,8 @@ class DynamicUpdateSliceInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(operand, "shape", ())
 
@@ -469,7 +472,8 @@ class DynamicIndexInDim(OpDef):
             keepdims (bool): The keepdims parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -496,7 +500,8 @@ class DynamicUpdateIndexInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return getattr(operand, "shape", ())
 

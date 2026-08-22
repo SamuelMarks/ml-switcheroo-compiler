@@ -18,7 +18,8 @@ def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.argsort(a, axis=axis)
 
@@ -32,7 +33,8 @@ def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
@@ -46,7 +48,8 @@ def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.searchsorted(*args, **kwargs)
 
@@ -60,6 +63,7 @@ def _sortcomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)

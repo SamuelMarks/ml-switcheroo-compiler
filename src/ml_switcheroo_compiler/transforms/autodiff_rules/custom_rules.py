@@ -88,7 +88,8 @@ def _inline_grad_subgraph(graph: Any, sg_grad: Any, sg: Any, node: Any, cotangen
         node (Any): The node parameter.
         cotangent_mapping (Any): The cotangent_mapping parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import uuid
 
@@ -327,7 +328,7 @@ def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
 
     vjp_func = get_vjp(orig_op)
     res: tuple[Any, ...] = vjp_func(graph, dummy, cotangent)
-    return res  # type: ignore
+    return res
 
 
 @register_vjp("CustomVJP")

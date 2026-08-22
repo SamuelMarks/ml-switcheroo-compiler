@@ -66,7 +66,8 @@ def random_flip_eager(backend_module: Any, images: Any, mode: str, seed: Any = N
         mode (str): The mode parameter.
         seed (object): The seed parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -230,7 +231,8 @@ def random_crop_eager(backend_module: Any, images: Any, size: tuple[Any, ...], s
         size (tuple): The size parameter.
         seed (object): The seed parameter.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     return (0, 0)
 

@@ -113,7 +113,8 @@ class DynamicSlice(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)

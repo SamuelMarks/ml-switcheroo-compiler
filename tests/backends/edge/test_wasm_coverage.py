@@ -346,6 +346,7 @@ def test_wasm_matmul_and_conv_tiling_and_webrtc():
     n_allreduce = IRNode("allreduce", "AllReduce", inputs=["in1"])
     n_allgather = IRNode("allgather", "AllGather", inputs=["in1"])
     n_alltoall = IRNode("alltoall", "AllToAll", inputs=["in1"])
+    n_reducescatter = IRNode("reducescatter", "ReduceScatter", inputs=["in1"])
 
     in1 = IRNode("in1", "Input")
     in1.shape_metadata = (16, 16)
@@ -356,12 +357,104 @@ def test_wasm_matmul_and_conv_tiling_and_webrtc():
     in_w = IRNode("in_w", "Input")
     in_w.shape_metadata = (16, 3, 3, 3)
 
-    g.nodes = {"in1": in1, "in2": in2, "in_img": in_img, "in_w": in_w, "matmul_tiled": n_matmul_tiled, "conv_tiled": n_conv_tiled, "allreduce": n_allreduce, "allgather": n_allgather, "alltoall": n_alltoall}
+    g.nodes = {"in1": in1, "in2": in2, "in_img": in_img, "in_w": in_w, "matmul_tiled": n_matmul_tiled, "conv_tiled": n_conv_tiled, "allreduce": n_allreduce, "allgather": n_allgather, "alltoall": n_alltoall, "reducescatter": n_reducescatter}
     g.inputs = ["in1", "in2", "in_img", "in_w"]
     g.outputs = ["matmul_tiled", "conv_tiled", "allreduce", "allgather", "alltoall"]
 
     gen = WasmCodeGenerator(g)
-    gen.sorted_nodes = [in1, in2, in_img, in_w, n_matmul_tiled, n_conv_tiled, n_allreduce, n_allgather, n_alltoall]
+    gen.sorted_nodes = [in1, in2, in_img, in_w, n_matmul_tiled, n_conv_tiled, n_allreduce, n_allgather, n_alltoall, n_reducescatter]
 
     code = gen.generate()
     assert code is not None
+
+
+def test_wasm_folded_batch_norm_coverage():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_conv = IRNode("conv", "Conv2D", inputs=["in1", "in2"], attributes={"folded_batch_norm": True, "bn_inputs": ["w", "b", "rm", "rv"]})
+    n_conv.shape_metadata = (1, 16, 16, 16)
+
+    n_conv_bad_bn = IRNode("conv_bad_bn", "Conv2D", inputs=["in1", "in2"], attributes={"folded_batch_norm": True, "bn_inputs": ["w"]})
+    n_conv_bad_bn.shape_metadata = (1, 16, 16, 16)
+
+    in1 = IRNode("in1", "Input")
+    in2 = IRNode("in2", "Input")
+    w = IRNode("w", "Input")
+    b = IRNode("b", "Input")
+    rm = IRNode("rm", "Input")
+    rv = IRNode("rv", "Input")
+
+    g.nodes = {"in1": in1, "in2": in2, "conv": n_conv, "conv_bad_bn": n_conv_bad_bn, "w": w, "b": b, "rm": rm, "rv": rv}
+    g.inputs = ["in1", "in2", "w", "b", "rm", "rv"]
+    g.outputs = ["conv", "conv_bad_bn"]
+
+    gen = WasmCodeGenerator(g)
+    gen.sorted_nodes = [in1, in2, w, b, rm, rv, n_conv, n_conv_bad_bn]
+    code = gen.generate()
+    assert "Folded BatchNorm for conv" in code
+
+
+def test_wasm_while_loop_coverage():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    body_graph = IRGraph()
+    b_in = IRNode("b_in", "Input")
+    b_out = IRNode("b_out", "Add", inputs=["b_in", "b_in"])
+    body_graph.nodes = {"b_in": b_in, "b_out": b_out}
+    body_graph.inputs = ["b_in"]
+    body_graph.outputs = ["b_out"]
+
+    g = IRGraph()
+    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes={"body": body_graph})
+    n_while.shape_metadata = (1,)
+
+    in1 = IRNode("in1", "Input")
+
+    g.nodes = {"in1": in1, "while": n_while}
+    g.inputs = ["in1"]
+    g.outputs = ["while"]
+
+    gen = WasmCodeGenerator(g)
+    gen.sorted_nodes = [in1, n_while]
+    code = gen.generate()
+    assert "wasm_f32x4_add" in code
+
+
+def test_wasm_cond_coverage():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    then_graph = IRGraph()
+    t_in = IRNode("t_in", "Input")
+    t_out = IRNode("t_out", "Exp", inputs=["t_in"])
+    then_graph.nodes = {"t_in": t_in, "t_out": t_out}
+    then_graph.inputs = ["t_in"]
+    then_graph.outputs = ["t_out"]
+
+    else_graph = IRGraph()
+    e_in = IRNode("e_in", "Input")
+    e_out = IRNode("e_out", "Tanh", inputs=["e_in"])
+    else_graph.nodes = {"e_in": e_in, "e_out": e_out}
+    else_graph.inputs = ["e_in"]
+    else_graph.outputs = ["e_out"]
+
+    g = IRGraph()
+    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes={"then_branch": then_graph, "else_branch": else_graph})
+    n_cond.shape_metadata = (1,)
+
+    cond_in = IRNode("cond_in", "Input")
+    in2 = IRNode("t_in", "Input")
+    in3 = IRNode("e_in", "Input")
+
+    g.nodes = {"cond_in": cond_in, "t_in": in2, "e_in": in3, "cond": n_cond}
+    g.inputs = ["cond_in", "t_in", "e_in"]
+    g.outputs = ["cond"]
+
+    gen = WasmCodeGenerator(g)
+    gen.sorted_nodes = [cond_in, in2, in3, n_cond]
+    code = gen.generate()
+    assert "std::exp" in code
+    assert "std::tanh" in code

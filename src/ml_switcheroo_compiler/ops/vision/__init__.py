@@ -1,13 +1,13 @@
+# mypy: ignore-errors
 # pylint: disable=too-many-lines
-
-
 """Auto-generated module exports."""
 
-from ml_switcheroo_compiler.ops.vision.affine import (  # type: ignore
+from ml_switcheroo_compiler.ops.vision.affine import (
     AffineConfig,
     AffineGenerator,
     AffineGrid,
     AffineTransform,
+    Any,
     DType,
     OpDef,
     PerspectiveTransform,
@@ -81,7 +81,7 @@ from ml_switcheroo_compiler.ops.vision.color import (
     yiq_to_rgb,
     yuv_to_rgb,
 )
-from ml_switcheroo_compiler.ops.vision.filtering import (  # type: ignore
+from ml_switcheroo_compiler.ops.vision.filtering import (
     BlurConfig,
     gaussian_blur,
     iou,
@@ -103,7 +103,7 @@ from ml_switcheroo_compiler.ops.vision.mixing import (
     cutmix,
     mixup,
 )
-from ml_switcheroo_compiler.ops.vision.transforms import (  # type: ignore
+from ml_switcheroo_compiler.ops.vision.transforms import (
     ElasticConfig,
     ElasticTransform,
     PerspectiveConfig,

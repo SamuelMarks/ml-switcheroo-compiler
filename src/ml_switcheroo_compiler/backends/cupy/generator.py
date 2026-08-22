@@ -38,7 +38,8 @@ class CupyGenerator(PythonStringGenerator):
     def get_helper_functions(self) -> list[str]:
         """Get helper functions.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         res = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         return res

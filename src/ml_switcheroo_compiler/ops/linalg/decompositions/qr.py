@@ -24,7 +24,8 @@ class Qr(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         if not args:
             return ()
@@ -50,7 +51,8 @@ class Hessenberg(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape, args[0].shape
 
@@ -66,7 +68,8 @@ class HouseholderProduct(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -82,7 +85,8 @@ class Schur(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape, args[0].shape
 
@@ -98,7 +102,8 @@ class Tridiagonal(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         a_shape = args[0].shape
         diag_shape = a_shape[:-1]
@@ -236,7 +241,8 @@ class Qdwh(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 

@@ -90,14 +90,15 @@ def strided_slice(
 class Slice(OpDef):
     """Slice operator definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -106,7 +107,7 @@ class Slice(OpDef):
 class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for StridedSlice.
 
         Args:
@@ -136,7 +137,8 @@ class Choose(OpDef):
             mode (str): The mode parameter.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -154,7 +156,8 @@ class IndexInDim(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         operand = args[0] if len(args) > 0 else None
         index = args[1] if len(args) > 1 else None
@@ -190,7 +193,8 @@ class UpdateSlice(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         operand = args[0] if len(args) > 0 else None
         return getattr(operand, "shape", ())
@@ -203,7 +207,8 @@ def index_in_dim(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
@@ -217,7 +222,8 @@ def update_slice(*args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

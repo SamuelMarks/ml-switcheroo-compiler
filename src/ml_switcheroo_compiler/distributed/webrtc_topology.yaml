@@ -10,8 +10,19 @@ webrtc_config:
 
 templates:
   init_peer_connection: |
+    const peerId = Math.random().toString(36).substring(7);
+    const signalingUrl = "http://127.0.0.1:8080";
     const peerConnection = new RTCPeerConnection({config});
     const dataChannel = peerConnection.createDataChannel("ml_switcheroo_collective");
+
+    peerConnection.onicecandidate = async (event) => {{
+        if (event.candidate) {{
+            await fetch(`${{signalingUrl}}/candidate`, {{
+                method: 'POST',
+                body: JSON.stringify({{ peer_id: peerId, candidate: event.candidate }})
+            }});
+        }}
+    }};
 
     // Setup message handler for distributed ops
     dataChannel.onmessage = async (event) => {{
@@ -30,6 +41,14 @@ templates:
             {reducescatter_handler}
         }}
     }};
+
+    // Initiate signaling
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    await fetch(`${{signalingUrl}}/offer`, {{
+        method: 'POST',
+        body: JSON.stringify({{ peer_id: peerId, offer: offer }})
+    }});
 
   allreduce_emit: |
     // Trigger WebRTC AllReduce

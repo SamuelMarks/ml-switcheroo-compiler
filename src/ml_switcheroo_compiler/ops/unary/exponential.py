@@ -82,7 +82,8 @@ class NanToNum(UnaryMathOp):
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-        Returns: Any: Result.
+        Returns:
+            tuple[int, ...]: Result.
         """
         kwargs.pop("copy", None)
         return super().__call__(x, **kwargs)

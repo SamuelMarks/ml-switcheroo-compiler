@@ -17,7 +17,8 @@ def _fft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.fft(*args, **kwargs) if fft_mod else None
@@ -32,7 +33,8 @@ def _rfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.rfft(*args, **kwargs) if fft_mod else None
@@ -47,7 +49,8 @@ def _fftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
@@ -62,7 +65,8 @@ def _fft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fft2"):
@@ -81,7 +85,8 @@ def _fftfreq(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftfreq"):
@@ -101,7 +106,8 @@ def _fftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftn"):
@@ -120,7 +126,8 @@ def _fftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftshift"):
@@ -139,7 +146,8 @@ def _ifft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft"):
@@ -158,7 +166,8 @@ def _ifft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft2"):
@@ -177,7 +186,8 @@ def _ifftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftn"):
@@ -196,7 +206,8 @@ def _ifftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftshift"):
@@ -215,7 +226,8 @@ def _fftconvolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     import scipy.signal
 
@@ -236,7 +248,8 @@ def _np_hfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns: Any: Result.
+    Returns:
+            tuple[int, ...]: Result.
     """
     func = getattr(backend_module, "hfft", getattr(backend_module, "hfft", None))
     if func is not None:
