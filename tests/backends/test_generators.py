@@ -267,7 +267,7 @@ def test_generator_lifecycle_mixin():
     gen = DummyGenerator()
     code = gen.generate()
     assert "header" in code
-    assert "def apply_model(params, *args, **kwargs):" in code
+    assert "def apply_model(params, *args, **kwargs) -> object:" in code
     assert " body" in code
     assert gen._generate_return_block() is None
 
@@ -360,7 +360,7 @@ BACKENDS = [
         JAXCodeGenerator,
         {
             "import": "import jax.numpy as jnp",
-            "model_def": "def apply_model(params, *args, **kwargs):",
+            "model_def": "def apply_model(params, *args, **kwargs) -> object:",
             "input_0": "input_0 = args[0]",
             "input_1": "input_1 = args[1]",
             "const_2": "const_2 = jnp.array(42.0)",

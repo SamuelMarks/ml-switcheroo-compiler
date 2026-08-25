@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module rnn.py."""
 
-from typing import Any
-
 """RNN operations frontend."""
 
 from .conv_lstm import conv1d_lstm_cell, conv2d_lstm_cell, conv3d_lstm_cell, conv_lstm_cell
@@ -21,9 +19,9 @@ from .rnn_utils import (
     scan,
 )
 
-rnn_step = simple_rnn_cell
-lstm_step = lstm_cell
-gru_step = gru_cell
+rnn_step: object = simple_rnn_cell
+lstm_step: object = lstm_cell
+gru_step: object = gru_cell
 
 __all__ = [
     "BidirectionalConfig",

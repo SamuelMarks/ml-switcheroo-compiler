@@ -1,14 +1,12 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy vision filters."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gaussian_blur, _np_sharpen
 
 
 @numpy_eager_registry.register("RandomGaussianBlur")
-def _np_random_gaussian_blur(backend_module: Any, images: Any, kernel_size: Any, sigma: Any, **kwargs: Any) -> Any:
+def _np_random_gaussian_blur(backend_module: object, images: object, kernel_size: object, sigma: object, **kwargs: object) -> object:
     """Evaluate _np_random_gaussian_blur operation.
 
     Args:
@@ -25,7 +23,7 @@ def _np_random_gaussian_blur(backend_module: Any, images: Any, kernel_size: Any,
 
 
 @numpy_eager_registry.register("RandomSharpness")
-def _np_random_sharpness(backend_module: Any, images: Any, factor: Any, **kwargs: Any) -> Any:
+def _np_random_sharpness(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
     """Evaluate _np_random_sharpness operation.
 
     Args:

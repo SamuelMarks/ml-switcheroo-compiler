@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Expm1")
-def _expm1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _expm1(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _expm1 operation.
 
     Args:
@@ -20,14 +18,14 @@ def _expm1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    x = args[0]
+    x: object = args[0]
     if hasattr(backend_module, "expm1"):
         return backend_module.expm1(x)
     return backend_module.exp(x) - 1.0
 
 
 @global_eager_registry.register("FloatPower")
-def _float_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _float_power(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _float_power operation.
 
     Args:
@@ -38,12 +36,12 @@ def _float_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
+    func: object = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Frexp")
-def _frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _frexp(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _frexp operation.
 
     Args:
@@ -56,12 +54,12 @@ def _frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     import math
 
-    func = getattr(backend_module, "frexp", getattr(math, "frexp", None))
+    func: object = getattr(backend_module, "frexp", getattr(math, "frexp", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Ldexp")
-def _ldexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _ldexp(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _ldexp operation.
 
     Args:
@@ -74,12 +72,12 @@ def _ldexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     import math
 
-    func = getattr(backend_module, "ldexp", getattr(math, "ldexp", None))
+    func: object = getattr(backend_module, "ldexp", getattr(math, "ldexp", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Slogdet")
-def _slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _slogdet operation.
 
     Args:
@@ -90,18 +88,18 @@ def _slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: object = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "slogdet"):
         return func.slogdet(*args, **kwargs)
     if hasattr(backend_module, "slogdet"):
         return backend_module.slogdet(*args, **kwargs)
 
-    x = args[0]
+    x: object = args[0]
     return backend_module.linalg.slogdet(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Xlog1py")
-def _np_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_xlog1py(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_xlog1py operation.
 
     Args:
@@ -112,7 +110,7 @@ def _np_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
+    func: object = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -121,7 +119,7 @@ def _np_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Xlogy")
-def _np_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_xlogy operation.
 
     Args:
@@ -132,7 +130,7 @@ def _np_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
+    func: object = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

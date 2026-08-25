@@ -1,7 +1,5 @@
 """Module linear_ops.py."""
 
-from typing import Any
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Linear transformations."""
 
@@ -14,7 +12,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:  # type: ignore
+def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> object:
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -25,13 +23,13 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:
     Returns:
         The transformed tensor.
     """
-    out = matmul(input, swapaxes(weight, -1, -2))
+    out: object = matmul(input, swapaxes(weight, -1, -2))
     if bias is not None:
-        out = add(out, bias)
+        out: object = add(out, bias)
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:  # type: ignore
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> object:
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).
@@ -46,7 +44,7 @@ def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tens
         The transformed tensor. Shape `(..., out_features)`.
     """
     # Computes sum_i sum_k input1[..., i] * weight[j, i, k] * input2[..., k] -> out[..., j]
-    out = einsum("...i,jik,...k->...j", input1, weight, input2)
+    out: object = einsum("...i,jik,...k->...j", input1, weight, input2)
     if bias is not None:
-        out = add(out, bias)
+        out: object = add(out, bias)
     return out

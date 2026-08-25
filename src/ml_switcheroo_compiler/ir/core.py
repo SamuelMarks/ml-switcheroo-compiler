@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.dtype import DType
 
 
-def clone_logical_node(node: LogicalNode, **kwargs: Any) -> LogicalNode:
+def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
     """Clones a LogicalNode, allowing overrides via kwargs.
 
     Args:
@@ -26,10 +25,10 @@ def clone_logical_node(node: LogicalNode, **kwargs: Any) -> LogicalNode:
     Returns:
         LogicalNode: Result.
     """
-    attributes = dict(node.attributes)
-    inputs = list(node.inputs)
+    attributes: object = dict(node.attributes)
+    inputs: object = list(node.inputs)
 
-    clone_kwargs = {
+    clone_kwargs: object = {
         "id": node.id,
         "op_type": node.op_type,
         "domain": node.domain,
@@ -45,7 +44,7 @@ def clone_logical_node(node: LogicalNode, **kwargs: Any) -> LogicalNode:
 
 
 @dataclass
-class IRNode(LogicalNode):  # type: ignore
+class IRNode(LogicalNode):
     """Extended LogicalNode for ml_switcheroo_compiler compiler internal IR."""
 
     stream: str | None = None
@@ -75,10 +74,10 @@ class IRNode(LogicalNode):  # type: ignore
             ValueError: If the shape is dynamic or not available.
         """
         if self.shape_metadata is None or not isinstance(self.shape_metadata, (tuple, list)):
-            msg = "Shape metadata is not available or not a sequence."
+            msg: object = "Shape metadata is not available or not a sequence."
             raise ValueError(msg)
         if self.is_dynamic_shape:
-            msg = f"Cannot get static shape from dynamic node shape: {self.shape_metadata}"
+            msg: object = f"Cannot get static shape from dynamic node shape: {self.shape_metadata}"
             raise ValueError(msg)
         return tuple(int(dim) for dim in self.shape_metadata)
 
@@ -95,7 +94,7 @@ class IRNode(LogicalNode):  # type: ignore
 
 
 # Re-export base IR classes
-IRGraph = LogicalGraph
+IRGraph: object = LogicalGraph
 
 
 @dataclass
@@ -110,7 +109,7 @@ class TensorSpec:
 
     shape: Sequence[int | str]
     dtype: DType
-    sparsity: dict[str, Any] | None = None
+    sparsity: dict[str, object] | None = None
 
     @property
     def is_dynamic(self) -> bool:
@@ -132,7 +131,7 @@ class TensorSpec:
             ValueError: If the shape contains dynamic dimensions.
         """
         if self.is_dynamic:
-            msg = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
+            msg: object = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
             raise ValueError(msg)
         return tuple(int(dim) for dim in self.shape)
 
@@ -167,7 +166,7 @@ class IRBlock:
 class ZeroTangent(IRNode):
     """Represents a mathematically zero tangent (e.g. gradient wrt integer or unconnected)."""
 
-    def __init__(self, id: str, shape_metadata: Any = None, **kwargs: Any):
+    def __init__(self, id: str, shape_metadata: object = None, **kwargs: object):
         """__init__ function.
 
         Args:
@@ -182,14 +181,14 @@ class ZeroTangent(IRNode):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-        id (Any): The id parameter.
-        shape_metadata (Any): The shape_metadata parameter.
+            node (object): The node.
+            **kwargs (object): Keyword arguments.
+        self (object): The self parameter.
+        id (object): The id parameter.
+        shape_metadata (object): The shape_metadata parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         super().__init__(id=id, op_type="ZeroTangent", shape_metadata=shape_metadata, **kwargs)
 
@@ -198,14 +197,14 @@ class ZeroTangent(IRNode):
 class NoTangent(IRNode):
     """Represents a structurally missing or non-differentiable tangent path."""
 
-    def __init__(self, id: str, **kwargs: Any):
+    def __init__(self, id: str, **kwargs: object):
         """__init__ function.
 
         Args:
             id (str): The node id.
-            **kwargs (Any): Keyword arguments.
+            **kwargs (object): Keyword arguments.
 
         Returns:
-            Any: Result.
+            object: Result.
         """
         super().__init__(id=id, op_type="NoTangent", **kwargs)

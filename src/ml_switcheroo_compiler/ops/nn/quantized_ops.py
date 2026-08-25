@@ -2,7 +2,7 @@
 """Core abstractions and logic definitions for quantized_ops.py."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,14 +17,14 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class QuantizeOp(OpDef):
     """Operation definition for quantizing a floating-point weight tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the quantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -33,14 +33,14 @@ class QuantizeOp(OpDef):
 class QuantizedMatmulOp(OpDef):
     """Operation definition for performing a matrix multiplication with quantized weights."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the quantized matmul operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -49,14 +49,14 @@ class QuantizedMatmulOp(OpDef):
 class GatherQMMOp(OpDef):
     """Operation definition for combined gathering and quantized matrix multiplication."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the gather and quantized matmul operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -65,14 +65,14 @@ class GatherQMMOp(OpDef):
 class FakeQuantWithMinMaxVarsOp(OpDef):
     """Operation definition for simulating quantization using minimum and maximum variables."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the fake quantization operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -81,14 +81,14 @@ class FakeQuantWithMinMaxVarsOp(OpDef):
 class QuantizeAndDequantizeOp(OpDef):
     """Operation definition for sequentially quantizing and then dequantizing a tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the quantize and dequantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -97,14 +97,14 @@ class QuantizeAndDequantizeOp(OpDef):
 class AbsMaxQuantizeOp(OpDef):
     """Operation definition for performing absolute maximum-based quantization."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the absolute max quantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -113,14 +113,14 @@ class AbsMaxQuantizeOp(OpDef):
 class ComputeFloat8AmaxHistoryOp(OpDef):
     """Operation definition for computing the absolute maximum history for float8 quantization."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the float8 amax history computation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -129,25 +129,25 @@ class ComputeFloat8AmaxHistoryOp(OpDef):
 class ComputeFloat8ScaleOp(OpDef):
     """Operation definition for computing the scale factor for float8 quantization."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the shape of the output tensor for the float8 scale computation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
 
 def fake_quant_with_min_max_vars(
-    inputs: Tensor,  # type: ignore
-    min_val: Tensor,  # type: ignore
-    max_val: Tensor,  # type: ignore
+    inputs: Tensor,
+    min_val: Tensor,
+    max_val: Tensor,
     num_bits: int = 8,
     narrow_range: bool = False,
-) -> Any:
+) -> object:
     """Simulate quantization and dequantization of a tensor using min and max variables.
 
     This function is useful for quantization-aware training, simulating the precision loss
@@ -168,7 +168,7 @@ def fake_quant_with_min_max_vars(
 
         return zeros_like(inputs) + inputs
 
-    attrs = {"num_bits": num_bits, "narrow_range": narrow_range}
+    attrs: object = {"num_bits": num_bits, "narrow_range": narrow_range}
     return _emit_shape_node("FakeQuantWithMinMaxVars", [inputs, min_val, max_val], attrs, inputs.shape, inputs.dtype)
 
 
@@ -185,11 +185,11 @@ class QuantizationParams:
 
 
 def quantize_and_dequantize(
-    input: Tensor,  # type: ignore
-    input_min: Tensor,  # type: ignore
-    input_max: Tensor,  # type: ignore
+    input: Tensor,
+    input_min: Tensor,
+    input_max: Tensor,
     params: Optional[QuantizationParams] = None,
-) -> Any:
+) -> object:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
 
     This operation applies quantization based on the provided min/max bounds and parameters,
@@ -209,8 +209,8 @@ def quantize_and_dequantize(
 
         return zeros_like(input) + input
 
-    params = params or QuantizationParams()
-    attrs = {
+    params: object = params or QuantizationParams()
+    attrs: object = {
         "signed_input": params.signed_input,
         "num_bits": params.num_bits,
         "range_given": params.range_given,
@@ -222,9 +222,9 @@ def quantize_and_dequantize(
 
 
 def abs_max_quantize(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     axis: Optional[int] = None,
-) -> Any:
+) -> object:
     """Quantizes an input tensor using absolute maximum quantization scaling.
 
     This method calculates scaling factors based on the absolute maximum values along
@@ -242,16 +242,16 @@ def abs_max_quantize(
 
         return zeros_like(input), zeros_like(input)
 
-    attrs = {"axis": axis}
-    q_out = _emit_shape_node("AbsMaxQuantize", [input], {**attrs, "return_idx": 0}, input.shape, DType.Int8)
-    scale_out = _emit_shape_node("AbsMaxQuantize", [input], {**attrs, "return_idx": 1}, (), input.dtype)
+    attrs: object = {"axis": axis}
+    q_out: object = _emit_shape_node("AbsMaxQuantize", [input], {**attrs, "return_idx": 0}, input.shape, DType.Int8)
+    scale_out: object = _emit_shape_node("AbsMaxQuantize", [input], {**attrs, "return_idx": 1}, (), input.dtype)
     return q_out, scale_out
 
 
 def compute_float8_amax_history(
-    x: Tensor,  # type: ignore
-    amax_history: Tensor,  # type: ignore
-) -> Any:
+    x: Tensor,
+    amax_history: Tensor,
+) -> object:
     """Compute and updates the absolute maximum history for float8 quantization scaling.
 
     Args:
@@ -270,10 +270,10 @@ def compute_float8_amax_history(
 
 
 def compute_float8_scale(
-    amax_history: Tensor,  # type: ignore
-    scale: Tensor,  # type: ignore
+    amax_history: Tensor,
+    scale: Tensor,
     margin: float = 0.0,
-) -> Any:
+) -> object:
     """Compute the scaling factor for float8 quantization from absolute maximum history.
 
     Args:
@@ -289,15 +289,15 @@ def compute_float8_scale(
 
         return zeros_like(scale)
 
-    attrs = {"margin": margin}
+    attrs: object = {"margin": margin}
     return _emit_shape_node("ComputeFloat8Scale", [amax_history, scale], attrs, scale.shape, scale.dtype)
 
 
 def quantize(
-    w: Tensor,  # type: ignore
+    w: Tensor,
     group_size: int = 64,
     bits: int = 4,
-) -> Any:
+) -> object:
     """Quantizes a floating-point weight tensor into a lower-bit representation.
 
     Args:
@@ -317,11 +317,11 @@ def quantize(
             zeros_like(w),
         )
 
-    inputs = [w]
-    attrs = {"group_size": group_size, "bits": bits}
-    qw = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 0}, w.shape, DType.UInt32)
-    scales = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 1}, w.shape, w.dtype)
-    biases = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 2}, w.shape, w.dtype)
+    inputs: object = [w]
+    attrs: object = {"group_size": group_size, "bits": bits}
+    qw: object = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 0}, w.shape, DType.UInt32)
+    scales: object = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 1}, w.shape, w.dtype)
+    biases: object = _emit_shape_node("Quantize", inputs, {**attrs, "return_idx": 2}, w.shape, w.dtype)
     return qw, scales, biases
 
 
@@ -338,18 +338,18 @@ class QuantizationConfig:
 class QuantizedOpsConfig:
     """Grouped attributes for quantized operations."""
 
-    weight: Tensor  # type: ignore
-    scales: Tensor  # type: ignore
-    biases: Optional[Tensor] = None  # type: ignore
-    zeros: Optional[Tensor] = None  # type: ignore
-    indices: Optional[Tensor] = None  # type: ignore
+    weight: Tensor
+    scales: Tensor
+    biases: Optional[Tensor] = None
+    zeros: Optional[Tensor] = None
+    indices: Optional[Tensor] = None
     q_config: Optional[QuantizationConfig] = None
 
 
 def quantized_matmul(
-    x: Tensor,  # type: ignore
+    x: Tensor,
     config: QuantizedOpsConfig,
-) -> Any:
+) -> object:
     """Perform a matrix multiplication using a quantized weight matrix configuration.
 
     Args:
@@ -359,27 +359,27 @@ def quantized_matmul(
     Returns:
         Tensor: The resulting tensor from the quantized matrix multiplication.
     """
-    conf = config.q_config if config.q_config is not None else QuantizationConfig()
-    transpose = conf.transpose
-    group_size = conf.group_size
-    bits = conf.bits
+    conf: object = config.q_config if config.q_config is not None else QuantizationConfig()
+    transpose: object = conf.transpose
+    group_size: object = conf.group_size
+    bits: object = conf.bits
 
     if compiler_config.eager_mode:
         # Fallback to linear for structural compatibility
         return linear(x, config.weight)
 
-    inputs = [x, config.weight, config.scales]
+    inputs: object = [x, config.weight, config.scales]
     if config.biases is not None:
         inputs.append(config.biases)
-    attrs = {"transpose": transpose, "group_size": group_size, "bits": bits}
-    out_shape = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
+    attrs: object = {"transpose": transpose, "group_size": group_size, "bits": bits}
+    out_shape: object = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
     return _emit_shape_node("QuantizedMatmul", inputs, attrs, tuple(out_shape), x.dtype)
 
 
 def gather_qmm(
-    x: Tensor,  # type: ignore
+    x: Tensor,
     config: QuantizedOpsConfig,
-) -> Any:
+) -> object:
     """Gather elements and performs a matrix multiplication with quantized weights.
 
     Args:
@@ -389,28 +389,28 @@ def gather_qmm(
     Returns:
         Tensor: The resulting tensor after gathering and performing the quantized matmul.
     """
-    conf = config.q_config if config.q_config is not None else QuantizationConfig()
-    transpose = conf.transpose
-    group_size = conf.group_size
-    bits = conf.bits
+    conf: object = config.q_config if config.q_config is not None else QuantizationConfig()
+    transpose: object = conf.transpose
+    group_size: object = conf.group_size
+    bits: object = conf.bits
 
     if compiler_config.eager_mode:
         return linear(x, config.weight)
 
-    inputs = [x, config.weight, config.scales]
+    inputs: object = [x, config.weight, config.scales]
     if config.biases is not None:
         inputs.append(config.biases)
     if config.indices is not None:
         inputs.append(config.indices)
-    attrs = {"transpose": transpose, "group_size": group_size, "bits": bits}
-    out_shape = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
+    attrs: object = {"transpose": transpose, "group_size": group_size, "bits": bits}
+    out_shape: object = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
     return _emit_shape_node("GatherQMM", inputs, attrs, tuple(out_shape), x.dtype)
 
 
 def quantized_linear(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     config: QuantizedOpsConfig,
-) -> Any:
+) -> object:
     """Apply a linear transformation to incoming data using quantized parameters.
 
     The weight tensor within the configuration is expected to be quantized (e.g., int4 or int8).
@@ -427,22 +427,22 @@ def quantized_linear(
     if compiler_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
 
-        w_val = backend.asarray(config.weight.data)
-        scales_val = backend.asarray(config.scales.data)
+        w_val: object = backend.asarray(config.weight.data)
+        scales_val: object = backend.asarray(config.scales.data)
         if config.zeros is not None:
-            zeros_val = backend.asarray(config.zeros.data)
+            zeros_val: object = backend.asarray(config.zeros.data)
         elif config.biases is not None:
-            zeros_val = backend.asarray(config.biases.data)
+            zeros_val: object = backend.asarray(config.biases.data)
         else:
-            zeros_val = 0.0
+            zeros_val: object = 0.0
 
-        w_float_val = (w_val - zeros_val) * scales_val
+        w_float_val: object = (w_val - zeros_val) * scales_val
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
+        weight_float: object = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
 
         return linear(input, weight_float, bias=config.biases)
     else:
@@ -450,9 +450,9 @@ def quantized_linear(
 
 
 def quantized_embedding(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     config: QuantizedOpsConfig,
-) -> Any:
+) -> object:
     """Look up embeddings from a quantized embedding weight table.
 
     Args:
@@ -465,22 +465,22 @@ def quantized_embedding(
     if compiler_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
 
-        w_val = backend.asarray(config.weight.data)
-        scales_val = backend.asarray(config.scales.data)
+        w_val: object = backend.asarray(config.weight.data)
+        scales_val: object = backend.asarray(config.scales.data)
         if config.zeros is not None:
-            zeros_val = backend.asarray(config.zeros.data)
+            zeros_val: object = backend.asarray(config.zeros.data)
         elif config.biases is not None:
-            zeros_val = backend.asarray(config.biases.data)
+            zeros_val: object = backend.asarray(config.biases.data)
         else:
-            zeros_val = 0.0
+            zeros_val: object = 0.0
 
-        w_float_val = (w_val - zeros_val) * scales_val
+        w_float_val: object = (w_val - zeros_val) * scales_val
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
+        weight_float: object = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
 
         return gather(weight_float, axis=0, index=input)
     else:
@@ -488,12 +488,12 @@ def quantized_embedding(
 
 
 def dequantize(
-    input: Tensor,  # type: ignore
-    scales: Tensor,  # type: ignore
-    biases: Optional[Tensor] = None,  # type: ignore
+    input: Tensor,
+    scales: Tensor,
+    biases: Optional[Tensor] = None,
     group_size: int = 64,
     bits: int = 4,
-) -> Any:
+) -> object:
     """Dequantizes a tensor back to a floating point representation.
 
     Args:
@@ -509,35 +509,35 @@ def dequantize(
     if compiler_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        in_val = backend.asarray(input.data)
-        scales_val = backend.asarray(scales.data)
+        in_val: object = backend.asarray(input.data)
+        scales_val: object = backend.asarray(scales.data)
         if biases is not None:
-            biases_val = backend.asarray(biases.data)
+            biases_val: object = backend.asarray(biases.data)
         else:
-            biases_val = backend.execute_op("Zeros", 1, dtype="float32")
+            biases_val: object = backend.execute_op("Zeros", 1, dtype="float32")
 
-        res_val = (in_val - biases_val) * scales_val
+        res_val: object = (in_val - biases_val) * scales_val
         return Tensor(res_val, TensorConfig(res_val.shape, scales.dtype, input.device))
 
-    inputs = [input, scales]
+    inputs: object = [input, scales]
     if biases is not None:
         inputs.append(biases)
-    attrs = {"group_size": group_size, "bits": bits}
+    attrs: object = {"group_size": group_size, "bits": bits}
     return _emit_shape_node("Dequantize", inputs, attrs, input.shape, scales.dtype)
 
 
 def quantized_conv(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     config: QuantizedOpsConfig,
     stride: int = 1,
     padding: int = 0,
     dilation: int = 1,
     groups: int = 1,
-) -> Any:
+) -> object:
     """Perform a convolution using a quantized weight configuration.
 
     Args:
@@ -555,25 +555,25 @@ def quantized_conv(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
 
-        args = [input, config.weight, config.scales]
+        args: object = [input, config.weight, config.scales]
         if config.biases is not None:
             args.append(config.biases)
 
-        kwargs = {
+        kwargs: object = {
             "stride": stride,
             "padding": padding,
             "dilation": dilation,
             "groups": groups,
         }
-        res_val = backend.execute_op("QuantizedConv", *args, **kwargs)
+        res_val: object = backend.execute_op("QuantizedConv", *args, **kwargs)
         return Tensor(res_val, TensorConfig(res_val.shape, input.dtype, input.device))
 
-    inputs = [input, config.weight, config.scales]
+    inputs: object = [input, config.weight, config.scales]
     if config.biases is not None:
         inputs.append(config.biases)
-    attrs = {
+    attrs: object = {
         "stride": stride,
         "padding": padding,
         "dilation": dilation,

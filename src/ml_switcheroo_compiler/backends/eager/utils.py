@@ -2,10 +2,9 @@
 """Core abstractions and logic definitions for utils.py."""
 
 import typing
-from typing import Any
 
 
-def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
+def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
     """Convert tensor to numpy array.
 
     Args:
@@ -23,7 +22,7 @@ def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
     return np_mod.asarray(x)
 
 
-def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor: Any = None) -> Any:
+def _from_numpy_array(backend_module: object, out: object, name: str, original_tensor: object = None) -> object:
     """Convert numpy array back to backend tensor.
 
     Args:
@@ -46,7 +45,7 @@ def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor:
     return backend_module.array(out)
 
 
-def _torch_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _torch_from_numpy(out: object, original_tensor: object = None) -> object:
     """Convert to torch tensor.
 
     Args:
@@ -59,7 +58,7 @@ def _torch_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     return out
 
 
-def _mlx_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _mlx_from_numpy(out: object, original_tensor: object = None) -> object:
     """Convert to mlx tensor.
 
     Args:
@@ -72,7 +71,7 @@ def _mlx_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     return out
 
 
-def _jax_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _jax_from_numpy(out: object, original_tensor: object = None) -> object:
     """Convert to jax tensor.
 
     Args:
@@ -85,7 +84,7 @@ def _jax_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     return out
 
 
-def _to_channels_last(np_mod: Any, imgs: Any, data_format: typing.Optional[str]) -> Any:
+def _to_channels_last(np_mod: object, imgs: object, data_format: typing.Optional[str]) -> object:
     """Transpose images from channels_first to channels_last if needed.
 
     Args:
@@ -99,7 +98,7 @@ def _to_channels_last(np_mod: Any, imgs: Any, data_format: typing.Optional[str])
     return imgs
 
 
-def _from_channels_last(np_mod: Any, out: Any, data_format: typing.Optional[str]) -> Any:
+def _from_channels_last(np_mod: object, out: object, data_format: typing.Optional[str]) -> object:
     """Transpose images from channels_last to channels_first if needed.
 
     Args:

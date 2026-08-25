@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Signbit")
-def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _signbit(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _signbit operation.
 
     Args:
@@ -20,15 +18,15 @@ def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "signbit", None)
+    func: object = getattr(backend_module, "signbit", None)
     if func:
         return func(*args, **kwargs)
-    x = args[0]
+    x: object = args[0]
     return x < 0
 
 
 @global_eager_registry.register("Packbits")
-def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_packbits(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_packbits operation.
 
     Args:
@@ -39,7 +37,7 @@ def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
+    func: object = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -48,7 +46,7 @@ def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unpackbits(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_unpackbits operation.
 
     Args:
@@ -59,7 +57,7 @@ def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
+    func: object = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

@@ -4,8 +4,6 @@
 framework
 """
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -16,7 +14,7 @@ class ReadVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
@@ -36,7 +34,7 @@ class AssignVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:

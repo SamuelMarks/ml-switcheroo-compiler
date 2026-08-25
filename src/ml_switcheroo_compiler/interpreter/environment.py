@@ -8,7 +8,6 @@ from __future__ import annotations
 
 during evaluation
 """
-from typing import Any
 
 
 class Environment:
@@ -19,35 +18,35 @@ class Environment:
     or execution of a graph
 
     Attributes:
-    memory (dict[str, Any]): The internal storage mapping variable names to their
+    memory (dict[str, object]): The internal storage mapping variable names to their
     values
     """
 
-    def __init__(self, inputs: dict[str, Any] | None = None) -> None:
+    def __init__(self, inputs: dict[str, object] | None = None) -> None:
         """Initialize the object.
 
         Args:
-            inputs (dict[str, Any]): The inputs to process.
+            inputs (dict[str, object]): The inputs to process.
         """
-        self.memory: dict[str, Any] = inputs or {}
+        self.memory: dict[str, object] = inputs or {}
 
-    def get(self, name: str) -> Any:
+    def get(self, name: str) -> object:
         """Retrieve the value associated with the given node or variable name.
 
         Args:
             name (str): The unique identifier for the tensor or variable to retrieve.
 
-        Returns: Any: The concrete tensor, scalar, or value associated with the name.
+        Returns: object: The concrete tensor, scalar, or value associated with the name.
 
         Raises:
             ValueError: If the requested name does not exist in the environment's memory.
         """
         if name not in self.memory:
-            msg = f"Missing input value for node '{name}'"
+            msg: object = f"Missing input value for node '{name}'"
             raise ValueError(msg)
         return self.memory[name]
 
-    def set(self, name: str, value: Any) -> None:
+    def set(self, name: str, value: object) -> None:
         """Store or update a value in the environment for a specific node or variable.
 
         Args:

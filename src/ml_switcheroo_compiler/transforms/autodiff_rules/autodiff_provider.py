@@ -1,12 +1,12 @@
 """Autodiff Provider for Data-Driven Rules."""
 
 import re
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
 
-def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str] = None, tangents: Optional[list[str]] = None) -> str:  # noqa: C901, PLR0912
+def _parse_expression(graph: object, expr: str, node: object, cotangent: Optional[str] = None, tangents: Optional[list[str]] = None) -> str:  # noqa: C901, PLR0912
     """Parse a string expression into IR nodes."""
     if expr == "$cotangent":
         assert cotangent is not None
@@ -14,15 +14,15 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
 
     # Very basic recursive parser for expressions like OpName(arg1, arg2)
     # We find the outermost call
-    m = re.match(r"^([A-Za-z0-9_]+)\((.*)\)$", expr.strip())
+    m: object = re.match(r"^([A-Za-z0-9_]+)\((.*)\)$", expr.strip())
     if m:
-        op = m.group(1)
-        args_str = m.group(2)
+        op: object = m.group(1)
+        args_str: object = m.group(2)
 
         # Split by comma, respecting nested parens
-        args = []
-        depth = 0
-        current_arg = ""
+        args: object = []
+        depth: object = 0
+        current_arg: object = ""
         for char in args_str:
             if char == "(":
                 depth += 1
@@ -30,57 +30,57 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
                 depth -= 1
             elif char == "," and depth == 0:
                 args.append(current_arg.strip())
-                current_arg = ""
+                current_arg: object = ""
                 continue
             current_arg += char
         if current_arg:
             args.append(current_arg.strip())
 
-        evaluated_args = []
+        evaluated_args: object = []
         for arg in args:
             evaluated_args.append(_parse_expression(graph, arg, node, cotangent, tangents))
 
         if op == "Constant":
             # Evaluated args[0] is just a string like "1.0"
-            val = float(args[0])
-            node_id = f"cst_ad_{id(node)}_{val}".replace(".", "_")
+            val: object = float(args[0])
+            node_id: object = f"cst_ad_{id(node)}_{val}".replace(".", "_")
             if node_id not in graph.nodes:
-                from ml_switcheroo_compiler.ir.core import LogicalNode  # type: ignore
+                from ml_switcheroo_compiler.ir.core import LogicalNode
 
-                new_node = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=getattr(node, "shape_metadata", None))
+                new_node: object = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=getattr(node, "shape_metadata", None))
                 graph.nodes[node_id] = new_node
             return node_id
 
-        attrs = node.attributes if hasattr(node, "attributes") and op == getattr(node, "op_type", "") else None
+        attrs: object = node.attributes if hasattr(node, "attributes") and op == getattr(node, "op_type", "") else None
         if not attrs and op == "SetItem":
-            attrs = node.attributes
+            attrs: object = node.attributes
         return emit_ir_node(graph, op, evaluated_args, getattr(node, "shape_metadata", None), attributes=attrs)
 
     elif expr.startswith("$input["):
-        idx = int(re.match(r"\$input\[(\d+)\]", expr).group(1))  # type: ignore
-        return node.inputs[idx]  # type: ignore
+        idx: object = int(re.match(r"\$input\[(\d+)\]", expr).group(1))
+        return node.inputs[idx]
     elif expr.startswith("$tangent["):
         assert tangents is not None
-        idx = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))  # type: ignore
+        idx: object = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))
         return tangents[idx]
 
     # If it's just a raw variable name fallback
     return expr
 
 
-def _fallback_finite_difference_jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
+def _fallback_finite_difference_jvp(graph: object, node: object, tangents: tuple[object, ...]) -> str:
     """Implement a generic finite difference fallback for JVP."""
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    epsilon = emit_ir_node(graph, "Constant", [], None, attributes={"value": 1e-4})
-    two_eps = emit_ir_node(graph, "Constant", [], None, attributes={"value": 2e-4})
+    epsilon: object = emit_ir_node(graph, "Constant", [], None, attributes={"value": 1e-4})
+    two_eps: object = emit_ir_node(graph, "Constant", [], None, attributes={"value": 2e-4})
 
-    pos_inputs = []
-    neg_inputs = []
+    pos_inputs: object = []
+    neg_inputs: object = []
 
     for _idx, (inp, tang) in enumerate(zip(node.inputs, tangents)):
-        eps_t = emit_ir_node(graph, "Multiply", [epsilon, tang], getattr(graph.nodes.get(inp), "shape_metadata", None))
+        eps_t: object = emit_ir_node(graph, "Multiply", [epsilon, tang], getattr(graph.nodes.get(inp), "shape_metadata", None))
         pos_inputs.append(emit_ir_node(graph, "Add", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
         neg_inputs.append(emit_ir_node(graph, "Subtract", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
 
@@ -88,36 +88,36 @@ def _fallback_finite_difference_jvp(graph: Any, node: Any, tangents: tuple[Any, 
         pos_inputs.append(node.inputs[i])
         neg_inputs.append(node.inputs[i])
 
-    f_pos = emit_ir_node(graph, node.op_type, pos_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
-    f_neg = emit_ir_node(graph, node.op_type, neg_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
+    f_pos: object = emit_ir_node(graph, node.op_type, pos_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
+    f_neg: object = emit_ir_node(graph, node.op_type, neg_inputs, getattr(node, "shape_metadata", None), attributes=node.attributes)
 
-    diff = emit_ir_node(graph, "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
+    diff: object = emit_ir_node(graph, "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
     return emit_ir_node(graph, "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
-def get_vjp_from_data(op_type: str) -> Optional[Any]:
+def get_vjp_from_data(op_type: str) -> Optional[object]:
     """Get vjp."""
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    op_def = _YAML_REGISTRY.get(op_type, {})
-    ad_rules = op_def.get("autodiff", {})
+    op_def: object = _YAML_REGISTRY.get(op_type, {})
+    ad_rules: object = op_def.get("autodiff", {})
     if not ad_rules or "vjp" not in ad_rules:
         return None
 
-    vjp_exprs = ad_rules["vjp"]
+    vjp_exprs: object = ad_rules["vjp"]
 
-    def data_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
+    def data_vjp(graph: object, node: object, cotangent: str) -> tuple[object, ...]:
         """data_vjp function.
 
         Args:
-        graph (Any): The graph parameter.
-        node (Any): The node parameter.
-        cotangent (Any): The cotangent parameter.
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (object): The cotangent parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
-        adjs = []
+        adjs: object = []
         for expr in vjp_exprs:
             adjs.append(_parse_expression(graph, expr, node, cotangent=cotangent))
         return tuple(adjs)
@@ -125,29 +125,29 @@ def get_vjp_from_data(op_type: str) -> Optional[Any]:
     return data_vjp
 
 
-def get_jvp_from_data(op_type: str) -> Optional[Any]:
+def get_jvp_from_data(op_type: str) -> Optional[object]:
     """Get jvp."""
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    op_def = _YAML_REGISTRY.get(op_type, {})
-    ad_rules = op_def.get("autodiff", {})
+    op_def: object = _YAML_REGISTRY.get(op_type, {})
+    ad_rules: object = op_def.get("autodiff", {})
     if not ad_rules or "jvp" not in ad_rules:
         return _fallback_finite_difference_jvp
 
-    jvp_expr = ad_rules["jvp"]
+    jvp_expr: object = ad_rules["jvp"]
 
-    def data_jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
+    def data_jvp(graph: object, node: object, tangents: tuple[object, ...]) -> str:
         """data_jvp function.
 
         Args:
-        graph (Any): The graph parameter.
-        node (Any): The node parameter.
-        tangents (Any): The tangents parameter.
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (object): The tangents parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
-        tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+        tangents_list: object = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
         return _parse_expression(graph, jvp_expr, node, tangents=tangents_list)
 
     return data_jvp

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Constant Folding pass."""
 
-from typing import Any
-
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -29,19 +27,19 @@ def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> boo
     return True
 
 
-def _evaluate_constant_node(node: Any, canonical_inputs: list[str], graph: IRGraph, backend: Any) -> Any:
+def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IRGraph, backend: object) -> object:
     """Evaluate _evaluate_constant_node operation.
 
     Args:
-        node (Any): The node parameter.
+        node (object): The node parameter.
         canonical_inputs (list): The canonical_inputs parameter.
         graph (IRGraph): The graph parameter.
-        backend (Any): The backend parameter.
+        backend (object): The backend parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    subgraph = LogicalGraph(outputs=[node.id])
+    subgraph: object = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:
         subgraph.nodes[inp] = graph.nodes[inp]
     subgraph.nodes[node.id] = LogicalNode(
@@ -51,10 +49,10 @@ def _evaluate_constant_node(node: Any, canonical_inputs: list[str], graph: IRGra
         inputs=list(canonical_inputs),
         shape_metadata=node.shape_metadata,
     )
-    outputs = evaluate_graph(subgraph, {})
-    val = outputs[node.id]
+    outputs: object = evaluate_graph(subgraph, {})
+    val: object = outputs[node.id]
     if (hasattr(val, "size") and val.size == 1) or (hasattr(val, "numel") and val.numel() == 1):
-        val = backend.item(val)
+        val: object = backend.item(val)
     return val
 
 
@@ -70,20 +68,20 @@ def constant_folding_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
-    modified = False
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    modified: object = False
+    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
     id_map: dict[str, str] = {}
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     for node in sorted_nodes:
-        canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
+        canonical_inputs: object = [id_map.get(inp, inp) for inp in node.inputs]
         if _are_all_inputs_constant(canonical_inputs, graph):
             try:
-                val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
+                val: object = _evaluate_constant_node(node, canonical_inputs, graph, backend)
                 graph.nodes[node.id].op_type = "Constant"
                 graph.nodes[node.id].attributes = {"value": val}
                 graph.nodes[node.id].inputs = []
                 id_map[node.id] = node.id
-                modified = True
+                modified: object = True
                 continue
             except (ValueError, TypeError, RuntimeError) as e:
                 import logging

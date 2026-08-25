@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Frontend reductions ops."""
 
@@ -22,16 +21,16 @@ from .frontend_utils import _emit_reduction_node
 class UnpoolOptions:
     """Options for unpooling."""
 
-    kernel_size: int | tuple  # type: ignore
-    stride: int | tuple | None = None  # type: ignore
-    padding: int | tuple = 0  # type: ignore
-    output_size: tuple[Any, ...] | None = None
+    kernel_size: int | tuple
+    stride: int | tuple | None = None
+    padding: int | tuple = 0
+    output_size: tuple[object, ...] | None = None
 
 
 def fractional_max_pool2d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int],
-) -> Any:
+) -> object:
     """Fractional max pooling 2D.
 
     Args:
@@ -41,7 +40,7 @@ def fractional_max_pool2d(
     Returns:
         Tensor: The pooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= MAGIC_VAL_2:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
@@ -55,9 +54,9 @@ def fractional_max_pool2d(
 
 
 def adaptive_avg_pool2d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int],
-) -> Any:
+) -> object:
     """Adaptive average pooling 2D.
 
     Args:
@@ -67,14 +66,14 @@ def adaptive_avg_pool2d(
     Returns:
         Tensor: The pooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= MAGIC_VAL_2:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "AdaptiveAvgPool2D",
             operand.data,
             output_size=output_size,
@@ -91,9 +90,9 @@ def adaptive_avg_pool2d(
 
 
 def adaptive_max_pool2d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int],
-) -> Any:
+) -> object:
     """Adaptive max pooling 2D.
 
     Args:
@@ -103,14 +102,14 @@ def adaptive_max_pool2d(
     Returns:
         Tensor: The pooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= MAGIC_VAL_2:
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "AdaptiveMaxPool2D",
             operand.data,
             output_size=output_size,
@@ -127,9 +126,9 @@ def adaptive_max_pool2d(
 
 
 def unfold(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     kernel_size: tuple[int, int],
-) -> Any:
+) -> object:
     """Unfold (Im2Col) operator.
 
     Args:
@@ -143,10 +142,10 @@ def unfold(
 
 
 def fold(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int],
     kernel_size: tuple[int, int],
-) -> Any:
+) -> object:
     """Fold (Col2Im) operator.
 
     Args:
@@ -167,11 +166,11 @@ def fold(
 
 
 def fractional_max_pool3d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int, int],
-    output_ratio: Any = None,
-    random_samples: Any = None,
-) -> Any:
+    output_ratio: object = None,
+    random_samples: object = None,
+) -> object:
     """Fractional max pooling 3D.
 
     Args:
@@ -183,14 +182,14 @@ def fractional_max_pool3d(
     Returns:
         tuple: Result.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= 3:
         out_shape[-3] = output_size[0]
         out_shape[-2] = output_size[1]
         out_shape[-1] = output_size[2]
 
     if config.eager_mode:
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         data, indices = backend.execute_op(
             "FractionalMaxPool3D",
             operand.data,
@@ -200,27 +199,27 @@ def fractional_max_pool3d(
         )
         return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
 
-    pooled = _emit_reduction_node(
+    pooled: object = _emit_reduction_node(
         "FractionalMaxPool3D",
         [operand],
         {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples},
         tuple(out_shape),
         operand.dtype,
     )
-    indices_tensor = _emit_reduction_node(
+    indices_tensor: object = _emit_reduction_node(
         "FractionalMaxPool3D_Indices",
         [operand],
         {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples},
         tuple(out_shape),
-        "int64",  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        "int64",
     )
     return pooled, indices_tensor
 
 
 def adaptive_avg_pool3d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int, int],
-) -> Any:
+) -> object:
     """Adaptive average pooling 3D.
 
     Args:
@@ -230,15 +229,15 @@ def adaptive_avg_pool3d(
     Returns:
         Tensor: The pooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= 3:
         out_shape[-3] = output_size[0]
         out_shape[-2] = output_size[1]
         out_shape[-1] = output_size[2]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "AdaptiveAvgPool3D",
             operand.data,
             output_size=output_size,
@@ -255,10 +254,10 @@ def adaptive_avg_pool3d(
 
 
 def adaptive_max_pool3d(
-    operand: Tensor,  # type: ignore
+    operand: Tensor,
     output_size: tuple[int, int, int],
     return_indices: bool = False,
-) -> Tensor | tuple[Tensor, Tensor]:  # type: ignore
+) -> Tensor | tuple[Tensor, Tensor]:
     """Adaptive max pooling 3D.
 
     Args:
@@ -269,14 +268,14 @@ def adaptive_max_pool3d(
     Returns:
         Tensor | tuple[Tensor, Tensor]: The pooled tensor, or a tuple of (pooled, indices).
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if len(out_shape) >= 3:
         out_shape[-3] = output_size[0]
         out_shape[-2] = output_size[1]
         out_shape[-1] = output_size[2]
 
     if config.eager_mode:
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         if return_indices:
             data, indices = backend.execute_op(
                 "AdaptiveMaxPool3D",
@@ -286,7 +285,7 @@ def adaptive_max_pool3d(
             )
             return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
         else:
-            data = backend.execute_op(
+            data: object = backend.execute_op(
                 "AdaptiveMaxPool3D",
                 operand.data,
                 output_size=output_size,
@@ -294,7 +293,7 @@ def adaptive_max_pool3d(
             )
             return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device))
 
-    pooled = _emit_reduction_node(
+    pooled: object = _emit_reduction_node(
         "AdaptiveMaxPool3D",
         [operand],
         {"output_size": output_size, "return_indices": return_indices},
@@ -302,22 +301,22 @@ def adaptive_max_pool3d(
         operand.dtype,
     )
     if return_indices:
-        indices_tensor = _emit_reduction_node(
+        indices_tensor: object = _emit_reduction_node(
             "AdaptiveMaxPool3D_Indices",
             [operand],
             {"output_size": output_size, "return_indices": return_indices},
             tuple(out_shape),
-            "int64",  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            "int64",
         )
         return pooled, indices_tensor
-    return pooled  # type: ignore
+    return pooled
 
 
 def max_unpool1d(
-    operand: Tensor,  # type: ignore
-    indices: Tensor,  # type: ignore
+    operand: Tensor,
+    indices: Tensor,
     options: UnpoolOptions,
-) -> Any:
+) -> object:
     """Max unpooling 1D.
 
     Args:
@@ -328,13 +327,13 @@ def max_unpool1d(
     Returns:
         Tensor: Unpooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if options.output_size is not None:
         out_shape[-1] = options.output_size[0]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "MaxUnpool1D",
             operand.data,
             indices=indices.data,
@@ -360,10 +359,10 @@ def max_unpool1d(
 
 
 def max_unpool2d(
-    operand: Tensor,  # type: ignore
-    indices: Tensor,  # type: ignore
+    operand: Tensor,
+    indices: Tensor,
     options: UnpoolOptions,
-) -> Any:
+) -> object:
     """Max unpooling 2D.
 
     Args:
@@ -374,14 +373,14 @@ def max_unpool2d(
     Returns:
         Tensor: Unpooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if options.output_size is not None:
         out_shape[-2] = options.output_size[0]
         out_shape[-1] = options.output_size[1]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "MaxUnpool2D",
             operand.data,
             indices=indices.data,
@@ -407,10 +406,10 @@ def max_unpool2d(
 
 
 def max_unpool3d(
-    operand: Tensor,  # type: ignore
-    indices: Tensor,  # type: ignore
+    operand: Tensor,
+    indices: Tensor,
     options: UnpoolOptions,
-) -> Any:
+) -> object:
     """Max unpooling 3D.
 
     Args:
@@ -421,15 +420,15 @@ def max_unpool3d(
     Returns:
         Tensor: Unpooled tensor.
     """
-    out_shape = list(operand.shape)
+    out_shape: object = list(operand.shape)
     if options.output_size is not None:
         out_shape[-3] = options.output_size[0]
         out_shape[-2] = options.output_size[1]
         out_shape[-1] = options.output_size[2]
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "MaxUnpool3D",
             operand.data,
             indices=indices.data,

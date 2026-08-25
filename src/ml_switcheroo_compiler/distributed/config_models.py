@@ -1,7 +1,5 @@
 """Pydantic models for pipeline topologies."""
 
-from typing import Any
-
 from pydantic import BaseModel, RootModel
 
 
@@ -46,14 +44,14 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def dict(self, *args: Any, **kwargs: Any) -> Any:
+    def dict(self, *args: object, **kwargs: object) -> object:
         """Return dict representation."""
         return super().model_dump(*args, **kwargs)
 
-    def items(self) -> Any:
+    def items(self) -> object:
         """Return items from the underlying dictionary."""
         return self.root.items()
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: object = None) -> object:
         """Get topology config by key."""
         return self.root.get(key, default)

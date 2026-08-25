@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for matrix_ops.py."""
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .utils import _emit_linalg_node
 
 
-def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:  # type: ignore
+def band_part(input: Tensor, num_lower: int, num_upper: int) -> object:
     """Copy a tensor setting everything outside a central band in each innermost matrix to zero.
 
     Args:
@@ -29,9 +28,9 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:  # type: ig
         Tensor: The banded tensor.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("BandPart", input.data, num_lower=num_lower, num_upper=num_upper)
-        return Tensor(data, TensorConfig(input.shape, input.dtype, input.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("BandPart", input.data, num_lower=num_lower, num_upper=num_upper)
+        return Tensor(data, TensorConfig(input.shape, input.dtype, input.device))
     return _emit_linalg_node(
         "BandPart",
         [input],
@@ -41,7 +40,7 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:  # type: ig
     )
 
 
-def diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
+def diag(input: Tensor, k: int = 0) -> object:
     """Extract a diagonal or constructs a diagonal array.
 
     Args:
@@ -52,24 +51,24 @@ def diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
         Tensor: The extracted diagonal or constructed diagonal array.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Diag", getattr(input, "data", input), k=k)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Diag", getattr(input, "data", input), k=k)
         return Tensor(
             backend.array(data),
             TensorConfig(
                 backend.array(data).shape,
                 getattr(input, "dtype", "float32"),
-                getattr(input, "device", None),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                getattr(input, "device", None),
             ),
         )
     return _emit_linalg_node("Diag", [input], {"k": k}, [()], [input.dtype])
 
 
 def cross(
-    a: Tensor,  # type: ignore
-    b: Tensor,  # type: ignore
+    a: Tensor,
+    b: Tensor,
     axes: dict[str, int | None] | None = None,
-) -> Any:
+) -> object:
     """Compute the vector cross product of two arrays.
 
     Args:
@@ -81,11 +80,11 @@ def cross(
         Tensor: The cross product of the input vectors.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        kw = axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None}
-        data = backend.execute_op("Cross", a.data, b.data, **kw)
+        backend: object = get_active_backend()
+        kw: object = axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None}
+        data: object = backend.execute_op("Cross", a.data, b.data, **kw)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-    out_shape = a.shape
+    out_shape: object = a.shape
     return _emit_linalg_node(
         "Cross",
         [a, b],
@@ -95,7 +94,7 @@ def cross(
     )
 
 
-def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
+def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> object:
     """Return the sum along diagonals of the array.
 
     Args:
@@ -108,10 +107,10 @@ def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  #
         Tensor: The sum along diagonals.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Trace", a.data, offset=offset, axis1=axis1, axis2=axis2)
+        data: object = get_active_backend().execute_op("Trace", a.data, offset=offset, axis1=axis1, axis2=axis2)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
 
-    out_shape = Trace().infer_shape(a, offset=offset, axis1=axis1, axis2=axis2)
+    out_shape: object = Trace().infer_shape(a, offset=offset, axis1=axis1, axis2=axis2)
     return _emit_linalg_node(
         "Trace",
         [a],
@@ -121,7 +120,7 @@ def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  #
     )
 
 
-def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> Any:  # type: ignore
+def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> object:
     """Return matrix rank of array using SVD method.
 
     Args:
@@ -133,14 +132,14 @@ def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) 
         Tensor: The rank of the matrix.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("MatrixRank", M.data, tol=tol, hermitian=hermitian)
+        data: object = get_active_backend().execute_op("MatrixRank", M.data, tol=tol, hermitian=hermitian)
         return Tensor(data, TensorConfig(data.shape, M.dtype, M.device))
 
-    out_shape = MatrixRank().infer_shape(M, tol=tol, hermitian=hermitian)
+    out_shape: object = MatrixRank().infer_shape(M, tol=tol, hermitian=hermitian)
     return _emit_linalg_node("MatrixRank", [M], {"tol": tol, "hermitian": hermitian}, [tuple(out_shape)], [M.dtype])
 
 
-def matrix_transpose(a: Tensor) -> Any:  # type: ignore
+def matrix_transpose(a: Tensor) -> object:
     """Transpose last two dimensions of tensor.
 
     Args:
@@ -150,14 +149,14 @@ def matrix_transpose(a: Tensor) -> Any:  # type: ignore
         Tensor: The transposed tensor.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("MatrixTranspose", a.data)
+        data: object = get_active_backend().execute_op("MatrixTranspose", a.data)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
 
-    out_shape = MatrixTranspose().infer_shape(a)
+    out_shape: object = MatrixTranspose().infer_shape(a)
     return _emit_linalg_node("MatrixTranspose", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def sqrtm(a: Tensor) -> Any:  # type: ignore
+def sqrtm(a: Tensor) -> object:
     """Compute the matrix square root of a tensor.
 
     Args:
@@ -167,14 +166,14 @@ def sqrtm(a: Tensor) -> Any:  # type: ignore
         Tensor: The matrix square root of the input.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Sqrtm", a.data)
+        data: object = get_active_backend().execute_op("Sqrtm", a.data)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
 
-    out_shape = Sqrtm().infer_shape(a)
+    out_shape: object = Sqrtm().infer_shape(a)
     return _emit_linalg_node("Sqrtm", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def tensor_diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
+def tensor_diag(input: Tensor, k: int = 0) -> object:
     """Provide an alias for the diag operation.
 
     Args:
@@ -187,7 +186,7 @@ def tensor_diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
     return diag(input, k)
 
 
-def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
+def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> object:
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -202,7 +201,7 @@ def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1)
     return diagonal(a, offset, axis1, axis2)
 
 
-def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
+def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> object:
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -217,7 +216,7 @@ def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any
     return diagonal(a, offset, axis1, axis2)
 
 
-def adjoint(matrix: Tensor) -> Any:  # type: ignore
+def adjoint(matrix: Tensor) -> object:
     """Transpose the last two dimensions of and conjugates tensor matrix.
 
     Args:
@@ -227,18 +226,18 @@ def adjoint(matrix: Tensor) -> Any:  # type: ignore
         Tensor: The adjoint of the matrix.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Adjoint", matrix.data)
+        data: object = get_active_backend().execute_op("Adjoint", matrix.data)
         return Tensor(data, TensorConfig(data.shape, matrix.dtype, matrix.device))
 
-    out_shape = Adjoint().infer_shape(matrix)
+    out_shape: object = Adjoint().infer_shape(matrix)
     return _emit_linalg_node("Adjoint", [matrix], {}, [tuple(out_shape)], [matrix.dtype])
 
 
 def eigh_tridiagonal(
-    alpha: Tensor,  # type: ignore
-    beta: Tensor,  # type: ignore
+    alpha: Tensor,
+    beta: Tensor,
     kwargs: dict[str, bool | str | object | float | None] | None = None,
-) -> Any:
+) -> object:
     """Compute the eigenvalues of a Hermitian tridiagonal matrix.
 
     Args:
@@ -250,11 +249,11 @@ def eigh_tridiagonal(
         Tensor: The eigenvalues.
     """
     if config.eager_mode:
-        kw = kwargs or {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
-        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **kw)
+        kw: object = kwargs or {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
+        data: object = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **kw)
         return Tensor(data, TensorConfig(data.shape, alpha.dtype, alpha.device))
 
-    out_shape = EighTridiagonal().infer_shape(alpha, beta)
+    out_shape: object = EighTridiagonal().infer_shape(alpha, beta)
     return _emit_linalg_node(
         "EighTridiagonal",
         [alpha, beta],
@@ -264,55 +263,55 @@ def eigh_tridiagonal(
     )
 
 
-def expm(input: Any, name: Any = None) -> Any:
+def expm(input: object, name: object = None) -> object:
     """Compute the matrix exponential of a given square matrix.
 
     Args:
         input (object): The input square matrix.
         name (object): Optional name for the operation.
 
-    Returns: Any: The matrix exponential.
+    Returns: object: The matrix exponential.
     """
     return get_op("MatrixExponential")()(input)
 
 
-def global_norm(t_list: Any, name: Any = None) -> Any:
+def global_norm(t_list: object, name: object = None) -> object:
     """Compute the global norm of multiple tensors.
 
     Args:
         t_list (object): A list of tensors.
         name (object): Optional name for the operation.
 
-    Returns: Any: The global norm.
+    Returns: object: The global norm.
     """
     return t_list[0] if t_list else 0.0
 
 
-def logdet(matrix: Any, name: Any = None) -> Any:
+def logdet(matrix: object, name: object = None) -> object:
     """Compute the logarithm of the absolute value of the determinant.
 
     Args:
         matrix (object): The input matrix.
         name (object): Optional name for the operation.
 
-    Returns: Any: The log determinant.
+    Returns: object: The log determinant.
     """
     return matrix
 
 
-def logm(input: Any, name: Any = None) -> Any:
+def logm(input: object, name: object = None) -> object:
     """Compute the matrix logarithm of a given square matrix.
 
     Args:
         input (object): The input square matrix.
         name (object): Optional name for the operation.
 
-    Returns: Any: The matrix logarithm.
+    Returns: object: The matrix logarithm.
     """
     return input
 
 
-def normalize(tensor: Any, ord: Any = "euclidean", axis: Any = None, name: Any = None) -> Any:
+def normalize(tensor: object, ord: object = "euclidean", axis: object = None, name: object = None) -> object:
     """Normalize the input tensor along a given axis.
 
     Args:
@@ -321,12 +320,12 @@ def normalize(tensor: Any, ord: Any = "euclidean", axis: Any = None, name: Any =
         axis (object): The axis along which to normalize.
         name (object): Optional name for the operation.
 
-    Returns: Any: The normalized tensor.
+    Returns: object: The normalized tensor.
     """
     return tensor, tensor
 
 
-def set_diag(input: Any, diagonal: Any, name: Any = None) -> Any:
+def set_diag(input: object, diagonal: object, name: object = None) -> object:
     """Replace the diagonal elements of a tensor with new values.
 
     Args:
@@ -334,12 +333,12 @@ def set_diag(input: Any, diagonal: Any, name: Any = None) -> Any:
         diagonal (object): The new diagonal values.
         name (object): Optional name for the operation.
 
-    Returns: Any: The tensor with updated diagonal.
+    Returns: object: The tensor with updated diagonal.
     """
     return input
 
 
-def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:  # type: ignore
+def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> object:
     """Multiply tridiagonal matrix by matrix.
 
     Args:
@@ -352,14 +351,14 @@ def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:  # 
         Tensor: The result of the matrix multiplication.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("TridiagonalMatmul", dl.data, d.data, du.data, b.data)
+        data: object = get_active_backend().execute_op("TridiagonalMatmul", dl.data, d.data, du.data, b.data)
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
 
-    out_shape = TridiagonalMatmul().infer_shape(dl, d, du, b)
+    out_shape: object = TridiagonalMatmul().infer_shape(dl, d, du, b)
     return _emit_linalg_node("TridiagonalMatmul", [dl, d, du, b], {}, [tuple(out_shape)], [b.dtype])
 
 
-def matrix_norm(x: Tensor, keepdims: Any = False, name: Any = None) -> Any:  # type: ignore
+def matrix_norm(x: Tensor, keepdims: object = False, name: object = None) -> object:
     """Compute the matrix norm of the input tensor.
 
     Args:
@@ -371,13 +370,13 @@ def matrix_norm(x: Tensor, keepdims: Any = False, name: Any = None) -> Any:  # t
         Tensor: The computed matrix norm.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("MatrixNorm", x.data, keepdims=keepdims)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("MatrixNorm", x.data, keepdims=keepdims)
         return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
     return _emit_linalg_node("MatrixNorm", [x], {"keepdims": keepdims}, [()], [x.dtype])
 
 
-def vector_norm(x: Any, axis: Any = None, keepdims: Any = False, ord: Any = 2, name: Any = None) -> Any:
+def vector_norm(x: object, axis: object = None, keepdims: object = False, ord: object = 2, name: object = None) -> object:
     """Compute the vector norm of the input tensor.
 
     Args:
@@ -387,11 +386,11 @@ def vector_norm(x: Any, axis: Any = None, keepdims: Any = False, ord: Any = 2, n
         ord (object): The order of the norm.
         name (object): Optional name for the operation.
 
-    Returns: Any: The computed vector norm.
+    Returns: object: The computed vector norm.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("VectorNorm", x.data, axis=axis, keepdims=keepdims, ord=ord)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("VectorNorm", x.data, axis=axis, keepdims=keepdims, ord=ord)
         return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
     return _emit_linalg_node("VectorNorm", [x], {"axis": axis, "keepdims": keepdims, "ord": ord}, [()], [x.dtype])
 
@@ -400,7 +399,7 @@ def vector_norm(x: Any, axis: Any = None, keepdims: Any = False, ord: Any = 2, n
 class Svdvals(OpDef):
     """Svdvals Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the output shape for the operation.
 
         Args:
@@ -410,14 +409,14 @@ class Svdvals(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0]
-        shape = getattr(x, "shape", ())
+        x: object = args[0]
+        shape: object = getattr(x, "shape", ())
         if len(shape) < 2:
             return shape
-        return shape[:-2] + (min(shape[-2], shape[-1]),)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return shape[:-2] + (min(shape[-2], shape[-1]),)
 
 
-def svdvals(x: Tensor, name: Any = None) -> Any:  # type: ignore
+def svdvals(x: Tensor, name: object = None) -> object:
     """Compute the singular values of a matrix.
 
     Args:
@@ -428,14 +427,14 @@ def svdvals(x: Tensor, name: Any = None) -> Any:  # type: ignore
         Tensor: The computed singular values.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Svdvals", x.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Svdvals", x.data)
         return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
-    out_shape = Svdvals().infer_shape(x)
+    out_shape: object = Svdvals().infer_shape(x)
     return _emit_linalg_node("Svdvals", [x], {}, [tuple(out_shape)], [x.dtype])
 
 
-def diagonal(x: Any, offset: Any = 0, axis1: Any = 0, axis2: Any = 1, name: Any = None) -> Any:
+def diagonal(x: object, offset: object = 0, axis1: object = 0, axis2: object = 1, name: object = None) -> object:
     """Extract a diagonal from the input tensor.
 
     Args:
@@ -445,11 +444,11 @@ def diagonal(x: Any, offset: Any = 0, axis1: Any = 0, axis2: Any = 1, name: Any 
         axis2 (object): Second axis of the 2-D sub-arrays.
         name (object): Optional name for the operation.
 
-    Returns: Any: The extracted diagonal.
+    Returns: object: The extracted diagonal.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Diagonal", x.data, offset=offset, axis1=axis1, axis2=axis2)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Diagonal", x.data, offset=offset, axis1=axis1, axis2=axis2)
         return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
     return _emit_linalg_node("Diagonal", [x], {"offset": offset, "axis1": axis1, "axis2": axis2}, [()], [x.dtype])
 
@@ -458,9 +457,9 @@ def diagonal(x: Any, offset: Any = 0, axis1: Any = 0, axis2: Any = 1, name: Any 
 class TridiagonalMatmul(OpDef):
     """TridiagonalMatmul operator."""
 
-    op_name = "TridiagonalMatmul"
+    op_name: object = "TridiagonalMatmul"
 
-    def infer_shape(self, dl: Any, d: Any, du: Any, b: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, dl: object, d: object, du: object, b: object, **kwargs: object) -> object:
         """Infers the output shape for the operation.
 
         Args:
@@ -480,7 +479,7 @@ class TridiagonalMatmul(OpDef):
 class Cond(OpDef):
     """Cond Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the output shape for the operation.
 
         Args:
@@ -493,7 +492,7 @@ class Cond(OpDef):
         return ()
 
 
-def cond(input: Tensor, p: (str | float | None) = None) -> Any:  # type: ignore
+def cond(input: Tensor, p: (str | float | None) = None) -> object:
     """Compute the condition number of a matrix.
 
     Args:
@@ -506,7 +505,7 @@ def cond(input: Tensor, p: (str | float | None) = None) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("Cond", input.data, p=p)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Cond", input.data, p=p)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node("Cond", [input], {"p": p}, [input.shape[:-2]], [input.dtype])

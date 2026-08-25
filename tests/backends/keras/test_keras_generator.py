@@ -95,7 +95,7 @@ def test_keras_generator():
         assert "def dummy(): pass" in imports
     gen.code = []
     gen._generate_function_signature()
-    assert "def get_model():" in gen.code[-1]
+    assert "def get_model() -> object:" in gen.code[-1]
     assert gen.keras_input_vars == []
     gen.keras_input_vars = ["i"]
     gen.keras_output_vars = ["o"]

@@ -4,7 +4,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, ScaledDotProductAttention, alibi_mask, rope, sinusoidal_positional_encoding
+from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
+from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 
 
 def test_rope_infer_shape():
@@ -79,4 +80,4 @@ def test_scaled_dot():
     class DummyShape:
         shape = (1, 2)
 
-    assert ScaledDotProductAttention().infer_shape(DummyShape(), None, None) == (1, 2)
+    assert ScaledDotProductAttention().infer_shape(DummyShape(), None, None, None) == (1, 2)

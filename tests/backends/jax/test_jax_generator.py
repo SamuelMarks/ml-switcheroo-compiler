@@ -65,7 +65,7 @@ def test_jax_generate_function_signature():
     gen = JAXCodeGenerator(LogicalGraph())
     gen._generate_function_signature()
     assert len(gen.code) == 1
-    assert gen.code[0] == "def apply_model(params, *args, **kwargs):"
+    assert gen.code[0] == "def apply_model(params, *args, **kwargs) -> object:"
     assert gen.indent_level == 1
 
 

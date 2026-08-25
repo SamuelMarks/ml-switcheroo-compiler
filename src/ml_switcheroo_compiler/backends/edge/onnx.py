@@ -2,7 +2,7 @@
 """ONNX Target Emission and Real Binary Protobuf Serialization."""
 
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -16,7 +16,7 @@ class ONNXCodeGenerator(BaseGenerator):
         var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
     """
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[object]] = None) -> None:
         """Initialize ONNXCodeGenerator.
 
         Args:
@@ -29,11 +29,11 @@ class ONNXCodeGenerator(BaseGenerator):
 
         import yaml
 
-        yaml_path = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
+        yaml_path: object = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
         with open(yaml_path) as f:
             self.schema = yaml.safe_load(f)
 
-    def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Process a node and return its generated ONNX variable name.
 
         Args:
@@ -47,16 +47,16 @@ class ONNXCodeGenerator(BaseGenerator):
         if node is None:
             return "onnx_op"
 
-        nid = getattr(node, "id", str(uuid.uuid4()))
+        nid: object = getattr(node, "id", str(uuid.uuid4()))
         self.var_map[nid] = nid
         return nid
 
     # ruff: noqa: PLR0911, PLR0912
-    def _get_proto_type(self, dt: str, TensorProto: Any) -> int:
+    def _get_proto_type(self, dt: str, TensorProto: object) -> int:
         """Map data type string to ONNX TensorProto primitive integer code."""
-        dt = str(dt).lower()
-        dt_map = self.schema.get("types", {})
-        return dt_map.get(dt, 1)  # type: ignore
+        dt: object = str(dt).lower()
+        dt_map: object = self.schema.get("types", {})
+        return dt_map.get(dt, 1)
 
     def _generate_text_fallback(self) -> str:
         """Generate a text-proto fallback string representation in case ONNX is not available.
@@ -64,20 +64,20 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             str: Serialized ONNX text representation.
         """
-        lines = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph {"]
+        lines: object = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph {"]
 
         for node in self.sorted_nodes:
             if getattr(node, "op_type", "") == "Input":
-                nid = getattr(node, "id", "")
-                shape = "x".join(str(s) for s in (getattr(node, "shape_metadata", ()) or ()))
-                dtype = getattr(node, "dtype", "float32")
+                nid: object = getattr(node, "id", "")
+                shape: object = "x".join(str(s) for s in (getattr(node, "shape_metadata", ()) or ()))
+                dtype: object = getattr(node, "dtype", "float32")
                 lines.append(f'  input: "{nid}" [shape: {shape}, dtype: {dtype}]')
 
         for node in self.sorted_nodes:
-            op_type = getattr(node, "op_type", "")
+            op_type: object = getattr(node, "op_type", "")
             if op_type != "Input":
-                nid = getattr(node, "id", "")
-                inps = ", ".join(f'"{i}"' for i in getattr(node, "inputs", []))
+                nid: object = getattr(node, "id", "")
+                inps: object = ", ".join(f'"{i}"' for i in getattr(node, "inputs", []))
                 lines.append(f'  "{nid}" = {op_type}({inps})')
 
         for out_id in getattr(self.graph, "outputs", []) or []:
@@ -86,7 +86,7 @@ class ONNXCodeGenerator(BaseGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def _get_node_and_name(self, item: Any, is_output: bool) -> tuple[Optional[Any], str]:
+    def _get_node_and_name(self, item: object, is_output: bool) -> tuple[Optional[object], str]:
         """Retrieve a node object and its ID name.
 
         Args:
@@ -94,15 +94,15 @@ class ONNXCodeGenerator(BaseGenerator):
             is_output (bool): True if looking up an output node by ID.
 
         Returns:
-            tuple[Optional[Any], str]: A tuple containing the node and its name string.
+            tuple[Optional[object], str]: A tuple containing the node and its name string.
         """
         if is_output:
-            out_id = item
-            node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            out_id: object = item
+            node: object = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
             return node, out_id
         return item, getattr(item, "id", "")
 
-    def _build_single_value_info(self, item: Any, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool) -> Any:
+    def _build_single_value_info(self, item: object, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool) -> object:
         """Construct an ONNX TensorValueInfoProto for a single node.
 
         Args:
@@ -111,22 +111,22 @@ class ONNXCodeGenerator(BaseGenerator):
             TensorProto (object): The ONNX TensorProto namespace object.
             is_output (bool): True if building for an output.
 
-        Returns: Any: An ONNX ValueInfoProto object.
+        Returns: object: An ONNX ValueInfoProto object.
         """
         from onnx import helper
 
         node, name = self._get_node_and_name(item, is_output)
-        shape = getattr(node, "shape_metadata", ()) or () if node else ()
-        dt = getattr(node, "dtype", "float32") if node else "float32"
-        proto_type = self._get_proto_type(dt, TensorProto)
-        shape_list = list(shape)
+        shape: object = getattr(node, "shape_metadata", ()) or () if node else ()
+        dt: object = getattr(node, "dtype", "float32") if node else "float32"
+        proto_type: object = self._get_proto_type(dt, TensorProto)
+        shape_list: object = list(shape)
 
         if dynamic_axes and name in dynamic_axes:
             for axis_idx, axis_name in dynamic_axes[name].items():
                 shape_list[axis_idx] = axis_name
         return helper.make_tensor_value_info(name, proto_type, shape_list)
 
-    def _build_onnx_value_infos(self, nodes_or_ids: list[Any], dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool = False) -> list[Any]:
+    def _build_onnx_value_infos(self, nodes_or_ids: list[object], dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool = False) -> list[object]:
         """Construct a list of ONNX TensorValueInfoProtos.
 
         Args:
@@ -140,7 +140,7 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         return [self._build_single_value_info(item, dynamic_axes, TensorProto, is_output) for item in nodes_or_ids]
 
-    def _build_onnx_nodes(self, TensorProto: Any) -> list[Any]:
+    def _build_onnx_nodes(self, TensorProto: object) -> list[object]:
         """Construct all intermediate ONNX NodeProtos for the graph.
 
         Args:
@@ -153,7 +153,7 @@ class ONNXCodeGenerator(BaseGenerator):
 
         from onnx import helper
 
-        onnx_nodes = []
+        onnx_nodes: object = []
 
         # We now query ops definitions for edge_onnx mappings
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
@@ -162,34 +162,34 @@ class ONNXCodeGenerator(BaseGenerator):
             """get_onnx_op_name function.
 
             Args:
-            op_type (Any): The op_type parameter.
+            op_type (object): The op_type parameter.
 
             Returns:
-            Any: Result.
+            object: Result.
             """
-            op_def = OPS_REGISTRY.get(op_type, {})
-            variants = op_def.get("variants", {})
+            op_def: object = OPS_REGISTRY.get(op_type, {})
+            variants: object = op_def.get("variants", {})
             if "edge_onnx" in variants:
-                gen = variants["edge_onnx"].get("generator")
+                gen: object = variants["edge_onnx"].get("generator")
                 if gen:
-                    return gen  # type: ignore
-            return self.schema.get("operations", {}).get("fallback", op_type)  # type: ignore
+                    return gen
+            return self.schema.get("operations", {}).get("fallback", op_type)
 
         for node in self.sorted_nodes:
-            op_type = getattr(node, "op_type", "")
+            op_type: object = getattr(node, "op_type", "")
             if op_type == "Input":
                 continue
 
-            nid = getattr(node, "id", "")
-            inputs = getattr(node, "inputs", [])
+            nid: object = getattr(node, "id", "")
+            inputs: object = getattr(node, "inputs", [])
 
             if op_type == "Constant":
-                val = node.attributes.get("value", 0.0)
-                dt = getattr(node, "dtype", "float32")
-                shape = getattr(node, "shape_metadata", ()) or ()
-                proto_type = self._get_proto_type(dt, TensorProto)
-                num_elements = math.prod(shape) if shape else 1
-                tensor_proto = helper.make_tensor(
+                val: object = node.attributes.get("value", 0.0)
+                dt: object = getattr(node, "dtype", "float32")
+                shape: object = getattr(node, "shape_metadata", ()) or ()
+                proto_type: object = self._get_proto_type(dt, TensorProto)
+                num_elements: object = math.prod(shape) if shape else 1
+                tensor_proto: object = helper.make_tensor(
                     name=nid,
                     data_type=proto_type,
                     dims=list(shape),
@@ -197,44 +197,44 @@ class ONNXCodeGenerator(BaseGenerator):
                 )
                 onnx_nodes.append(helper.make_node("Constant", inputs=[], outputs=[nid], name=nid, value=tensor_proto))
             else:
-                onnx_op = get_onnx_op_name(op_type)
-                kwargs = {}
+                onnx_op: object = get_onnx_op_name(op_type)
+                kwargs: object = {}
                 if op_type == "If":
                     if "then_branch" in node.attributes:
-                        subgen = ONNXCodeGenerator(node.attributes["then_branch"])
+                        subgen: object = ONNXCodeGenerator(node.attributes["then_branch"])
                         kwargs["then_branch"] = subgen._build_onnx_graph(None)
                         # Fix graph name for ONNX validation
                         kwargs["then_branch"].name = f"{nid}_then"
                     if "else_branch" in node.attributes:
-                        subgen = ONNXCodeGenerator(node.attributes["else_branch"])
+                        subgen: object = ONNXCodeGenerator(node.attributes["else_branch"])
                         kwargs["else_branch"] = subgen._build_onnx_graph(None)
                         kwargs["else_branch"].name = f"{nid}_else"
                 elif op_type in ("Loop", "WhileLoop"):
                     if "body" in node.attributes:
-                        subgen = ONNXCodeGenerator(node.attributes["body"])
+                        subgen: object = ONNXCodeGenerator(node.attributes["body"])
                         kwargs["body"] = subgen._build_onnx_graph(None)
                         kwargs["body"].name = f"{nid}_body"
 
                 onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
         return onnx_nodes
 
-    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> Any:
+    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> object:
         """Construct the full ONNX GraphProto.
 
         Args:
             dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
 
-        Returns: Any: The ONNX GraphProto object.
+        Returns: object: The ONNX GraphProto object.
         """
         from onnx import TensorProto, helper
 
-        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        onnx_inputs = self._build_onnx_value_infos(input_nodes, dynamic_axes, TensorProto, is_output=False)
+        input_nodes: object = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        onnx_inputs: object = self._build_onnx_value_infos(input_nodes, dynamic_axes, TensorProto, is_output=False)
 
-        output_ids = getattr(self.graph, "outputs", []) or []
-        onnx_outputs = self._build_onnx_value_infos(output_ids, dynamic_axes, TensorProto, is_output=True)
+        output_ids: object = getattr(self.graph, "outputs", []) or []
+        onnx_outputs: object = self._build_onnx_value_infos(output_ids, dynamic_axes, TensorProto, is_output=True)
 
-        onnx_nodes = self._build_onnx_nodes(TensorProto)
+        onnx_nodes: object = self._build_onnx_nodes(TensorProto)
         return helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
 
     def generate(self, dynamic_axes: Optional[dict[str, dict[int, str]]] = None) -> str:
@@ -249,12 +249,12 @@ class ONNXCodeGenerator(BaseGenerator):
         try:
             from onnx import helper
 
-            graph_def = self._build_onnx_graph(dynamic_axes)
+            graph_def: object = self._build_onnx_graph(dynamic_axes)
             # Use to_text instead of printable_graph if available to avoid deprecation warning
             try:
                 from onnx import printer
 
-                res = printer.to_text(graph_def)
+                res: object = printer.to_text(graph_def)
                 if not isinstance(res, str):
                     return str(res)
                 return res
@@ -272,8 +272,8 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         from onnx import helper
 
-        graph_def = self._build_onnx_graph(dynamic_axes)
-        model_def = helper.make_model(graph_def, producer_name="ml-switcheroo-compiler")
+        graph_def: object = self._build_onnx_graph(dynamic_axes)
+        model_def: object = helper.make_model(graph_def, producer_name="ml-switcheroo-compiler")
 
         with open(file_path, "wb") as f:
             f.write(model_def.SerializeToString())

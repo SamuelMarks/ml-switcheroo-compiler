@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Polyval")
-def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _polyval(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _polyval operation.
 
     Args:
@@ -20,12 +18,12 @@ def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "polyval", None)
+    func: object = getattr(backend_module, "polyval", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Polyint")
-def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_polyint(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_polyint operation.
 
     Args:
@@ -36,7 +34,7 @@ def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
+    func: object = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

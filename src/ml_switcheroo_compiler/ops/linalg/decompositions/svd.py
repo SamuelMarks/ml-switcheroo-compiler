@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for svd.py."""
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Svd(OpDef):
     """Svd Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -29,27 +28,27 @@ class Svd(OpDef):
         """
         if not args:
             return ()
-        a_shape = args[0].shape
-        full_matrices = kwargs.get("full_matrices", True)
+        a_shape: object = args[0].shape
+        full_matrices: object = kwargs.get("full_matrices", True)
         m, n = a_shape[-2], a_shape[-1]
-        k = min(m, n)
-        s_shape = a_shape[:-2] + (k,)
+        k: object = min(m, n)
+        s_shape: object = a_shape[:-2] + (k,)
         if full_matrices:
-            u_shape = a_shape[:-2] + (m, m)
-            vh_shape = a_shape[:-2] + (n, n)
+            u_shape: object = a_shape[:-2] + (m, m)
+            vh_shape: object = a_shape[:-2] + (n, n)
         else:
-            u_shape = a_shape[:-2] + (m, k)
-            vh_shape = a_shape[:-2] + (k, n)
+            u_shape: object = a_shape[:-2] + (m, k)
+            vh_shape: object = a_shape[:-2] + (k, n)
         if kwargs.get("compute_uv", True):
             return u_shape, s_shape, vh_shape
         return (s_shape,)
 
 
 def svd(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     full_matrices: bool = True,
     compute_uv: bool = True,
-) -> Any:
+) -> object:
     """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:
@@ -63,8 +62,8 @@ def svd(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        res = backend.execute_op(
+        backend: object = get_active_backend()
+        res: object = backend.execute_op(
             "Svd",
             input.data,
             full_matrices=full_matrices,
@@ -79,14 +78,14 @@ def svd(
             Tensor(vh, TensorConfig(vh.shape, input.dtype, input.device)),
         )
     m, n = input.shape[-2], input.shape[-1]
-    k = min(m, n)
-    s_shape = input.shape[:-2] + (k,)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    k: object = min(m, n)
+    s_shape: object = input.shape[:-2] + (k,)
     if full_matrices:
-        u_shape = input.shape[:-2] + (m, m)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        vh_shape = input.shape[:-2] + (n, n)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        u_shape: object = input.shape[:-2] + (m, m)
+        vh_shape: object = input.shape[:-2] + (n, n)
     else:
-        u_shape = input.shape[:-2] + (m, k)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        vh_shape = input.shape[:-2] + (k, n)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        u_shape: object = input.shape[:-2] + (m, k)
+        vh_shape: object = input.shape[:-2] + (k, n)
     if not compute_uv:
         return _emit_linalg_node(
             "Svd",

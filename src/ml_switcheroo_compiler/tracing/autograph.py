@@ -2,9 +2,9 @@
 """Graph Compilation and AST Processing for AutoGraph capabilities."""
 
 import functools
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union
 
-F = TypeVar("F", bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., object])
 
 
 class LoopOptions:
@@ -15,7 +15,7 @@ class LoopOptions:
         parallel_iterations: Optional[int] = None,
         swap_memory: Optional[bool] = None,
         maximum_iterations: Optional[int] = None,
-        shape_invariants: Optional[Any] = None,
+        shape_invariants: Optional[object] = None,
     ) -> None:
         """Initialize the LoopOptions.
 
@@ -23,7 +23,7 @@ class LoopOptions:
             parallel_iterations (Optional[int]): The maximum number of iterations allowed to run in parallel.
             swap_memory (Optional[bool]): Whether to enable CPU-GPU memory swapping for large loops.
             maximum_iterations (Optional[int]): The maximum number of loop iterations to execute.
-            shape_invariants (Optional[Any]): Metadata describing the invariant shape constraints of loop variables.
+            shape_invariants (Optional[object]): Metadata describing the invariant shape constraints of loop variables.
         """
         self.parallel_iterations = parallel_iterations
         self.swap_memory = swap_memory
@@ -35,7 +35,7 @@ def set_loop_options(
     parallel_iterations: Optional[int] = None,
     swap_memory: Optional[bool] = None,
     maximum_iterations: Optional[int] = None,
-    shape_invariants: Optional[Any] = None,
+    shape_invariants: Optional[object] = None,
 ) -> None:
     """Set dynamic loop unrolling options for a loop in the active graph trace.
 
@@ -43,7 +43,7 @@ def set_loop_options(
         parallel_iterations (Optional[int]): The maximum number of parallel loop iterations.
         swap_memory (Optional[bool]): Enable or disable memory swapping.
         maximum_iterations (Optional[int]): Hard limit on the number of loop iterations.
-        shape_invariants (Optional[Any]): Tensor shape invariants to enforce during the loop execution.
+        shape_invariants (Optional[object]): Tensor shape invariants to enforce during the loop execution.
     """
     # In a full implementation, this might push a context onto the builder
     # No-op in eager trace
@@ -69,22 +69,22 @@ def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:
         Returns:
             F: The original function with the skip flag attached.
         """
-        f._autograph_do_not_convert = True  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        f._autograph_do_not_convert = True
 
         @functools.wraps(f)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: object, **kwargs: object) -> object:
             """Execute the uncoverted function directly.
 
             Args:
-                *args (Any): Positional arguments passed to the function.
-                **kwargs (Any): Keyword arguments passed to the function.
+                *args (object): Positional arguments passed to the function.
+                **kwargs (object): Keyword arguments passed to the function.
 
             Returns:
-                Any: The return value of the wrapped function.
+                object: The return value of the wrapped function.
             """
             return f(*args, **kwargs)
 
-        return wrapper  # type: ignore
+        return wrapper
 
     if func is not None:
         return decorator(func)

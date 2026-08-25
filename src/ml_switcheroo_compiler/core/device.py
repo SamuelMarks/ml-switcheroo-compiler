@@ -3,7 +3,6 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
 
 
 class DeviceType(Enum):
@@ -64,7 +63,7 @@ class StreamContext:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit context.
 
         Args:
@@ -72,7 +71,7 @@ class StreamContext:
             exc_val (object): exception value
             exc_tb (object): exception traceback
         """
-        self.stream = None  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self.stream = None
 
 
 def clear_cache() -> None:
@@ -81,7 +80,7 @@ def clear_cache() -> None:
 
     import ml_switcheroo_compiler.backends.registry as registry
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "clear_cache"):
         backend.clear_cache()
     else:
@@ -91,7 +90,7 @@ def clear_cache() -> None:
 class FunctionExporter:
     """Provide a context managing class for exporting multiple traces of the same function."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize FunctionExporter.
 
         Args:
@@ -109,7 +108,7 @@ class FunctionExporter:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit context.
 
         Args:
@@ -121,7 +120,7 @@ class FunctionExporter:
         self.kwargs = {}
 
 
-def export_function(*args: Any, **kwargs: Any) -> None:
+def export_function(*args: object, **kwargs: object) -> None:
     """Export an MLX function.
 
     Args:
@@ -134,14 +133,14 @@ def export_function(*args: Any, **kwargs: Any) -> None:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "export_function"):
         backend.export_function(*args, **kwargs)
     else:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
-def exporter(*args: Any, **kwargs: Any) -> FunctionExporter:
+def exporter(*args: object, **kwargs: object) -> FunctionExporter:
     """Make a callable object to export multiple traces of a function to a file.
 
     Args:
@@ -154,7 +153,7 @@ def exporter(*args: Any, **kwargs: Any) -> FunctionExporter:
     return FunctionExporter(*args, **kwargs)
 
 
-def get_logical_devices(device_type: Any = None) -> list[Device]:
+def get_logical_devices(device_type: object = None) -> list[Device]:
     """Get logical devices for the current backend.
 
     Args:
@@ -169,13 +168,13 @@ def get_logical_devices(device_type: Any = None) -> list[Device]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "get_logical_devices"):
-        return backend.get_logical_devices(device_type)  # type: ignore
+        return backend.get_logical_devices(device_type)
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
 
 
-def get_physical_devices(device_type: Any = None) -> list[Device]:
+def get_physical_devices(device_type: object = None) -> list[Device]:
     """Get physical devices for the current backend.
 
     Args:
@@ -190,13 +189,13 @@ def get_physical_devices(device_type: Any = None) -> list[Device]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "get_physical_devices"):
-        return backend.get_physical_devices(device_type)  # type: ignore
+        return backend.get_physical_devices(device_type)
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
 
 
-def get_memory_info(device: Any = None) -> dict[str, int]:
+def get_memory_info(device: object = None) -> dict[str, int]:
     """Get memory statistics tracking (allocation bytes, peak usage).
 
     Args:
@@ -211,7 +210,7 @@ def get_memory_info(device: Any = None) -> dict[str, int]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "get_memory_info"):
-        return backend.get_memory_info(device)  # type: ignore
+        return backend.get_memory_info(device)
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")

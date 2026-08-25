@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Rsqrt")
-def _np_rsqrt(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rsqrt(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rsqrt operation.
 
     Args:
@@ -30,7 +29,7 @@ def _np_rsqrt(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Trace")
-def _np_trace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object:
     """Return the sum along diagonals of the array.
 
     Args:
@@ -38,13 +37,13 @@ def _np_trace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return np.trace(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Vander")
-def _np_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_vander(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_vander operation.
 
     Args:
@@ -59,7 +58,7 @@ def _np_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Cholesky")
-def _np_linalg_cholesky_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linalg_cholesky_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Cholesky via linalg.cholesky.
 
     Args:
@@ -67,13 +66,13 @@ def _np_linalg_cholesky_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.linalg.cholesky(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Det")
-def _np_linalg_det_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linalg_det_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Det via linalg.det.
 
     Args:
@@ -81,13 +80,13 @@ def _np_linalg_det_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.linalg.det(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Svd")
-def _np_linalg_svd_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linalg_svd_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Svd via linalg.svd.
 
     Args:
@@ -95,13 +94,13 @@ def _np_linalg_svd_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.linalg.svd(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Inv")
-def _np_linalg_inv_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linalg_inv_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Inv via linalg.inv.
 
     Args:
@@ -109,13 +108,13 @@ def _np_linalg_inv_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.linalg.inv(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Pinv")
-def _np_linalg_pinv_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linalg_pinv_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Pinv via linalg.pinv.
 
     Args:
@@ -123,13 +122,13 @@ def _np_linalg_pinv_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.linalg.pinv(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CustomLinearSolve")
-def _np_customlinearsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_customlinearsolve(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement CustomLinearSolve.
 
     Args:
@@ -141,7 +140,7 @@ def _np_customlinearsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any
             tuple[int, ...]: Result.
     """
     if callable(args[0]):
-        solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
+        solve: object = kwargs.get("solve", args[2] if len(args) > 2 else None)
         if solve:
             return solve(args[0], args[1])
         return args[1]
@@ -149,7 +148,7 @@ def _np_customlinearsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any
 
 
 @numpy_eager_registry.register("LinearOperatorInversion")
-def _np_linearoperatorinversion(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorinversion(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorInversion.
 
     Args:
@@ -166,7 +165,7 @@ def _np_linearoperatorinversion(backend_module: Any, *args: Any, **kwargs: Any) 
 
 
 @numpy_eager_registry.register("Vecdot")
-def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_vecdot(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Vecdot.
 
     Args:
@@ -177,13 +176,13 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    x = args[0]
-    y = args[1]
-    axis = kwargs.get("axis", -1)
+    x: object = args[0]
+    y: object = args[1]
+    axis: object = kwargs.get("axis", -1)
     if hasattr(backend_module, "linalg") and hasattr(backend_module.linalg, "vecdot"):
         return backend_module.linalg.vecdot(x, y, axis=axis)
     if hasattr(backend_module, "vecdot"):
         return backend_module.vecdot(x, y, axis=axis)
     if backend_module.iscomplexobj(x):
-        x = backend_module.conj(x)
+        x: object = backend_module.conj(x)
     return backend_module.sum(x * y, axis=axis)

@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,13 +16,13 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _fallback_load(filepath: Any) -> Any:
+def _fallback_load(filepath: object) -> object:
     """Fallback mechanism to load weights based on file extension.
 
     Args:
         filepath (object): The file path.
 
-    Returns: Any: The loaded weights or None.
+    Returns: object: The loaded weights or None.
     """
     if not isinstance(filepath, str):
         return None
@@ -36,7 +35,7 @@ def _fallback_load(filepath: Any) -> Any:
     return None
 
 
-def load(*args: Any, **kwargs: Any) -> Any:
+def load(*args: object, **kwargs: object) -> object:
     """Load arrays or pickled objects from files.
 
     Args:
@@ -58,7 +57,7 @@ def load(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("Load", list(args), kwargs, getattr(_first, "shape", ()), getattr(_first, "dtype", "float32"))
 
 
-def save(*args: Any, **kwargs: Any) -> None:
+def save(*args: object, **kwargs: object) -> None:
     """Save.
 
     Args:
@@ -73,13 +72,13 @@ def save(*args: Any, **kwargs: Any) -> None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("Save", *args, **kwargs)  # type: ignore
+        return get_active_backend().execute_op("Save", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("Save", list(args), kwargs, (), "float32")  # type: ignore
+    return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args: Any, **kwargs: Any) -> None:
+def save_gguf(*args: object, **kwargs: object) -> None:
     """Save gguf.
 
     Args:
@@ -94,13 +93,13 @@ def save_gguf(*args: Any, **kwargs: Any) -> None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("SaveGguf", *args, **kwargs)  # type: ignore
+        return get_active_backend().execute_op("SaveGguf", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")  # type: ignore
+    return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
 
 
-def save_safetensors(file: str, arrays: dict[str, Any]) -> None:
+def save_safetensors(file: str, arrays: dict[str, object]) -> None:
     """Save a dictionary of arrays to Safetensors format.
 
     Args:
@@ -110,7 +109,7 @@ def save_safetensors(file: str, arrays: dict[str, Any]) -> None:
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args: Any, **kwargs: Any) -> None:
+def savez(*args: object, **kwargs: object) -> None:
     """Savez.
 
     Args:
@@ -125,13 +124,13 @@ def savez(*args: Any, **kwargs: Any) -> None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("Savez", *args, **kwargs)  # type: ignore
+        return get_active_backend().execute_op("Savez", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("Savez", list(args), kwargs, (), "float32")  # type: ignore
+    return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args: Any, **kwargs: Any) -> None:
+def savez_compressed(*args: object, **kwargs: object) -> None:
     """Savez compressed.
 
     Args:
@@ -146,19 +145,19 @@ def savez_compressed(*args: Any, **kwargs: Any) -> None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("SavezCompressed", *args, **kwargs)  # type: ignore
+        return get_active_backend().execute_op("SavezCompressed", *args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")  # type: ignore
+    return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")
 
 
 @register_op("Load")
 class Load(OpDef):
     """Load operation."""
 
-    op_name = "Load"
+    op_name: object = "Load"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -170,12 +169,12 @@ class Load(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -183,9 +182,9 @@ class Load(OpDef):
 class Save(OpDef):
     """Save operation."""
 
-    op_name = "Save"
+    op_name: object = "Save"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -197,12 +196,12 @@ class Save(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -210,9 +209,9 @@ class Save(OpDef):
 class SaveGguf(OpDef):
     """SaveGguf operation."""
 
-    op_name = "SaveGguf"
+    op_name: object = "SaveGguf"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -224,12 +223,12 @@ class SaveGguf(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -237,9 +236,9 @@ class SaveGguf(OpDef):
 class Savez(OpDef):
     """Savez operation."""
 
-    op_name = "Savez"
+    op_name: object = "Savez"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -251,12 +250,12 @@ class Savez(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -264,9 +263,9 @@ class Savez(OpDef):
 class SavezCompressed(OpDef):
     """SavezCompressed operation."""
 
-    op_name = "SavezCompressed"
+    op_name: object = "SavezCompressed"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -278,10 +277,10 @@ class SavezCompressed(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res

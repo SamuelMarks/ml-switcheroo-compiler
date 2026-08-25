@@ -2,7 +2,6 @@
 """JAX/Flax Target Emission."""
 
 import os
-from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -14,6 +13,7 @@ from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxVisionVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @register_backend("jax")
@@ -21,7 +21,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
     """JAX code generator."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load.
 
         Args:
@@ -38,7 +38,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
 
     @classmethod
-    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -52,7 +52,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         jnp.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
-    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez.
 
         Args:
@@ -65,7 +65,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         jnp.savez(file, *args, **kwds)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed.
 
         Args:
@@ -75,9 +75,9 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         """
         import jax.numpy as jnp
 
-        jnp.savez_compressed(file, *args, **kwds)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        jnp.savez_compressed(file, *args, **kwds)
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Init.
 
         Args:
@@ -94,7 +94,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
             ]
         )
 
-    def _format_zeros_like(self, op: str, kwargs: Any) -> str:
+    def _format_zeros_like(self, op: str, kwargs: object) -> str:
         """Evaluate _format_zeros_like operation.
 
         Args:
@@ -104,12 +104,12 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         Returns:
         str: Result.
         """
-        res = f"jnp.{op}({{shape}})"
+        res: object = f"jnp.{op}({{shape}})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: Any) -> str:
+    def _format_full(self, kwargs: object) -> str:
         """Evaluate _format_full operation.
 
         Args:
@@ -118,7 +118,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         Returns:
         str: Result.
         """
-        res = "jnp.full({shape}, {fill_value})"
+        res: object = "jnp.full({shape}, {fill_value})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
@@ -128,8 +128,8 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
+        gen: object = NumpyGenerator(self.graph)
+        base_code: object = gen.generate()
         return transpile_source(base_code, target_framework="jax")
 
     def get_fallback_prefix(self) -> str:
@@ -140,7 +140,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         """
         return "jnp"
 
-    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -149,7 +149,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         Returns:
             Dictionary mapping operation type to format string.
         """
-        ops = super().get_ops_map(kwargs)
+        ops: object = super().get_ops_map(kwargs)
         ops["Zeros"] = self._format_zeros_like("zeros", kwargs)
         ops["Ones"] = self._format_zeros_like("ones", kwargs)
         ops["Full"] = self._format_full(kwargs)
@@ -178,13 +178,13 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         Returns:
             tuple[int, ...]: Result.
         """
-        tmpl_path = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
+        tmpl_path: object = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
         with open(tmpl_path, encoding="utf-8") as f:
-            jax_prefix_template = f.read()
+            jax_prefix_template: object = f.read()
         return ["import jax", "import jax.numpy as jnp", "import jax.scipy.special", *jax_prefix_template.split("\n")]
 
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
         self.indent_level = 0
-        self.add_line("def apply_model(params, *args, **kwargs):")
+        self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level += 1

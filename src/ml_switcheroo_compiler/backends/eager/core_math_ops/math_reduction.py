@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -54,11 +54,11 @@ def _segment_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     if len(args) < 2:
         return backend_module.asarray(args[0]) if args else None
-    data = backend_module.asarray(args[0])
-    segment_ids = backend_module.asarray(args[1])
-    num_segments = kwargs.get("num_segments", args[2] if len(args) > 2 else backend_module.max(segment_ids) + 1)
+    data: Any = backend_module.asarray(args[0])
+    segment_ids: Any = backend_module.asarray(args[1])
+    num_segments: Any = kwargs.get("num_segments", args[2] if len(args) > 2 else backend_module.max(segment_ids) + 1)
 
-    out = backend_module.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+    out: Any = backend_module.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
     backend_module.add.at(out, segment_ids, data)
     return backend_module.asarray(out)
 
@@ -78,7 +78,7 @@ def _apply_softmax(backend_module: Any, scores: Any) -> Any:
     if hasattr(backend_module, "nn") and hasattr(backend_module.nn, "softmax"):
         return backend_module.nn.softmax(scores, axis=-1)
     if hasattr(backend_module, "exp") and hasattr(backend_module, "sum") and hasattr(backend_module, "max"):
-        exps = backend_module.exp(scores - backend_module.max(scores, axis=-1, keepdims=True))
+        exps: Any = backend_module.exp(scores - backend_module.max(scores, axis=-1, keepdims=True))
         return exps / backend_module.sum(exps, axis=-1, keepdims=True)
     return scores
 
@@ -95,7 +95,7 @@ def _fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fmax", getattr(backend_module, "maximum", None))
+    func: Any = getattr(backend_module, "fmax", getattr(backend_module, "maximum", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -111,7 +111,7 @@ def _fmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fmin", getattr(backend_module, "minimum", None))
+    func: Any = getattr(backend_module, "fmin", getattr(backend_module, "minimum", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -160,7 +160,7 @@ def _adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_size:
     Returns:
             tuple[int, ...]: Result.
     """
-    res = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
+    res: Any = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
     return (res, res)
 
 
@@ -178,7 +178,7 @@ def _adaptive_log_softmax_with_loss(backend_module: Any, input: Any, target: Any
     Returns:
             tuple[int, ...]: Result.
     """
-    loss = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
+    loss: Any = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
     return (target, loss)
 
 
@@ -194,7 +194,7 @@ def _householder_product(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "householder_product"):
         return func.householder_product(*args, **kwargs)
     if hasattr(backend_module, "householder_product"):
@@ -202,24 +202,24 @@ def _householder_product(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     v, tau = backend_module.asarray(args[0]), backend_module.asarray(args[1])
     m, n = v.shape[-2:]
-    k = tau.shape[-1]
+    k: Any = tau.shape[-1]
 
-    batch_shape = v.shape[:-2]
-    identity = backend_module.broadcast_to(backend_module.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
-    q = identity.copy()
+    batch_shape: Any = v.shape[:-2]
+    identity: Any = backend_module.broadcast_to(backend_module.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
+    q: Any = identity.copy()
 
     for i in range(k):
-        v_i = v[..., :, i].copy()
+        v_i: Any = v[..., :, i].copy()
         v_i[..., :i] = 0
         v_i[..., i] = 1
 
-        v_i_expanded = v_i[..., backend_module.newaxis]
-        v_i_h = backend_module.conjugate(v_i_expanded.swapaxes(-1, -2))
+        v_i_expanded: Any = v_i[..., backend_module.newaxis]
+        v_i_h: Any = backend_module.conjugate(v_i_expanded.swapaxes(-1, -2))
 
-        tau_i = tau[..., i, backend_module.newaxis, backend_module.newaxis]
+        tau_i: Any = tau[..., i, backend_module.newaxis, backend_module.newaxis]
 
-        h_i = identity - tau_i * (v_i_expanded @ v_i_h)
-        q = q @ h_i
+        h_i: Any = identity - tau_i * (v_i_expanded @ v_i_h)
+        q: Any = q @ h_i
 
     return q[..., :n]
 
@@ -236,7 +236,7 @@ def _cummax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "maximum", None)
+    func: Any = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
 
@@ -255,7 +255,7 @@ def _cummin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "minimum", None)
+    func: Any = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
 
@@ -274,12 +274,12 @@ def _cumlogsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "cumlogsumexp", None)
+    func: Any = getattr(backend_module, "cumlogsumexp", None)
     if func:
         return func(*args, **kwargs)
 
-    x = backend_module.asarray(args[0])
-    axis = kwargs.get("axis", 0)
+    x: Any = backend_module.asarray(args[0])
+    axis: Any = kwargs.get("axis", 0)
 
     return backend_module.ufunc.accumulate(backend_module.logaddexp, x, axis=axis)
 
@@ -328,7 +328,7 @@ def _np_fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
+    func: Any = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -348,7 +348,7 @@ def _np_scattermax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
+    func: Any = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -368,7 +368,7 @@ def _np_scattermin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
+    func: Any = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -388,7 +388,7 @@ def _np_weibullmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
+    func: Any = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -408,7 +408,7 @@ def _np_windowhamming(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
+    func: Any = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

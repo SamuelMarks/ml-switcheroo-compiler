@@ -2,7 +2,6 @@
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
-from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -26,7 +25,7 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string for the Keras Input tensor.
         """
-        shape_str = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
+        shape_str: object = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
         return f"{var_name} = keras.Input(shape={shape_str}, name='{node.id}')"
 
     @staticmethod
@@ -40,8 +39,8 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string that builds and returns the model.
         """
-        inputs_str = ", ".join(input_vars)
-        outputs_str = ", ".join(output_vars)
+        inputs_str: object = ", ".join(input_vars)
+        outputs_str: object = ", ".join(output_vars)
         return f"return keras.Model(inputs=[{inputs_str}], outputs=[{outputs_str}])"
 
 
@@ -49,7 +48,7 @@ class KerasTensorManipulator:
     """Help for tensor manipulations."""
 
     @staticmethod
-    def format_zeros_like(op: str, kwargs: Any) -> str:
+    def format_zeros_like(op: str, kwargs: object) -> str:
         """Evaluate format_zeros_like operation.
 
         Args:
@@ -59,13 +58,13 @@ class KerasTensorManipulator:
         Returns:
         str: Result.
         """
-        res = f"keras.ops.{op}({{shape}})"
+        res: object = f"keras.ops.{op}({{shape}})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
     @staticmethod
-    def format_full(kwargs: Any) -> str:
+    def format_full(kwargs: object) -> str:
         """Evaluate format_full operation.
 
         Args:
@@ -74,13 +73,13 @@ class KerasTensorManipulator:
         Returns:
         str: Result.
         """
-        res = "keras.ops.full({shape}, {fill_value})"
+        res: object = "keras.ops.full({shape}, {fill_value})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
     @staticmethod
-    def format_transpose(kwargs: Any) -> str:
+    def format_transpose(kwargs: object) -> str:
         """Evaluate format_transpose operation.
 
         Args:
@@ -99,7 +98,7 @@ class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load a serialized object.
 
         Args:
@@ -108,7 +107,7 @@ class KerasCodeGenerator(BaseGenerator):
             fix_imports (bool): Fix imports.
             encoding (str): The encoding.
 
-        Returns: Any: The loaded object.
+        Returns: object: The loaded object.
         """
         import pickle
 
@@ -116,7 +115,7 @@ class KerasCodeGenerator(BaseGenerator):
             return pickle.load(f)
 
     @classmethod
-    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save an array to a file.
 
         Args:
@@ -131,7 +130,7 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Save multiple arrays into a single file.
 
         Args:
@@ -141,13 +140,13 @@ class KerasCodeGenerator(BaseGenerator):
         """
         import pickle
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with open(file, "wb") as f:
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Save multiple arrays into a single compressed file.
 
         Args:
@@ -158,7 +157,7 @@ class KerasCodeGenerator(BaseGenerator):
         import gzip
         import pickle
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
@@ -171,7 +170,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize the generator.
 
         Args:
@@ -183,7 +182,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
-    def visit_ConvTranspose(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit a ConvTranspose node.
 
         Args:
@@ -196,7 +195,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
-    def visit_RaggedDot(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit a RaggedDot node.
 
         Args:
@@ -214,8 +213,8 @@ class KerasCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
+        gen: object = NumpyGenerator(self.graph)
+        base_code: object = gen.generate()
         return transpile_source(base_code, target_framework="keras")
 
     def get_fallback_prefix(self) -> str:
@@ -226,7 +225,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -235,7 +234,7 @@ class KerasCodeGenerator(BaseGenerator):
         Returns:
             dict[str, str]: The ops map.
         """
-        ops = super().get_ops_map(kwargs)
+        ops: object = super().get_ops_map(kwargs)
         ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kwargs)
         ops["Ones"] = KerasTensorManipulator.format_zeros_like("ones", kwargs)
         ops["Full"] = KerasTensorManipulator.format_full(kwargs)
@@ -288,11 +287,11 @@ class KerasCodeGenerator(BaseGenerator):
         """
         import yaml
 
-        tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
+        tmpl_path: object = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
         with open(tmpl_path) as f:
-            data = yaml.safe_load(f)
+            data: object = yaml.safe_load(f)
 
-        lines = ["import keras\n"]
+        lines: object = ["import keras\n"]
         if "imports" in data and data["imports"]:
             lines.extend(data["imports"].split("\n"))
         if "functions" in data and data["functions"]:
@@ -303,7 +302,7 @@ class KerasCodeGenerator(BaseGenerator):
     def _generate_function_signature(self) -> None:
         """Generate the model function signature."""
         self.indent_level = 0
-        self.add_line("def get_model():")
+        self.add_line("def get_model() -> object:")
         self.keras_input_vars = []
         self.keras_output_vars = []
         self.indent_level += 1

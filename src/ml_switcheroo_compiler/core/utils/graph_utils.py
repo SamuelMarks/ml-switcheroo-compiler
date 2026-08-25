@@ -1,15 +1,14 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Graph utilities."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 class _TopologicalSorter:
     """Help class for topological sorting."""
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Initialize the sorter.
 
         Args:
@@ -18,7 +17,7 @@ class _TopologicalSorter:
         self.graph = graph
         self.visited: set[str] = set()
         self.temp_mark: set[str] = set()
-        self.sorted_nodes: list[Any] = []
+        self.sorted_nodes: list[object] = []
 
     def visit(self, node_id: str) -> None:
         """Visit a node during sorting.
@@ -30,20 +29,20 @@ class _TopologicalSorter:
             CompilationError: If a cycle is detected.
         """
         if node_id in self.temp_mark:
-            msg = "Cycle detected in graph."
+            msg: object = "Cycle detected in graph."
             raise CompilationError(msg)
 
         if node_id in self.visited:
             return
 
         self.temp_mark.add(node_id)
-        node = None
+        node: object = None
         if isinstance(self.graph.nodes, dict):
-            node = self.graph.nodes.get(node_id)
+            node: object = self.graph.nodes.get(node_id)
         elif isinstance(self.graph.nodes, list):
             for n in self.graph.nodes:
                 if getattr(n, "id", "") == node_id:
-                    node = n
+                    node: object = n
                     break
 
         if node is not None:
@@ -56,23 +55,23 @@ class _TopologicalSorter:
             self.temp_mark.remove(node_id)
             self.visited.add(node_id)
 
-    def sort(self) -> list[Any]:
+    def sort(self) -> list[object]:
         """Perform the topological sort.
 
         Returns:
-            list[Any]: The sorted nodes.
+            list[object]: The sorted nodes.
         """
-        nodes_iterable = self.graph.nodes
+        nodes_iterable: object = self.graph.nodes
         if isinstance(nodes_iterable, dict):
-            nodes_iterable = list(nodes_iterable.keys())
+            nodes_iterable: object = list(nodes_iterable.keys())
         for n in nodes_iterable:
-            node_id = getattr(n, "id", n) if not isinstance(n, str) else n
+            node_id: object = getattr(n, "id", n) if not isinstance(n, str) else n
             if node_id not in self.visited:
                 self.visit(node_id)
         return self.sorted_nodes
 
 
-def topological_sort(graph: Any) -> list[Any]:
+def topological_sort(graph: IRGraph) -> list[object]:
     """Perform topological sort on a graph.
 
     Args:

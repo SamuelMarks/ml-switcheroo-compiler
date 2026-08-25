@@ -2,7 +2,7 @@
 """Math Ops."""
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Clz")
-def _np_clz(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_clz(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
     """Count the number of leading zero bits in the integer representation of the input.
 
     Args:
@@ -28,13 +28,13 @@ def _np_clz(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
     Raises:
         TypeError: An exception.
     """
-    x_arr = np.asarray(x)
+    x_arr: object = np.asarray(x)
     if not np.issubdtype(x_arr.dtype, np.integer):
         raise TypeError("Clz requires integer inputs.")
-    bit_width = x_arr.itemsize * 8
+    bit_width: object = x_arr.itemsize * 8
 
     @np.vectorize
-    def _clz_scalar(val: Any) -> Any:
+    def _clz_scalar(val: object) -> object:
         """Evaluate _clz_scalar operation.
 
         Args:
@@ -43,17 +43,17 @@ def _np_clz(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
         Returns:
             tuple[int, ...]: Result.
         """
-        val = int(val)
+        val: object = int(val)
         if val < 0:
-            val = val & (1 << bit_width) - 1
+            val: object = val & (1 << bit_width) - 1
         return bit_width - val.bit_length()
 
-    res = _clz_scalar(x_arr)
+    res: object = _clz_scalar(x_arr)
     return res.astype(x_arr.dtype)
 
 
 @numpy_eager_registry.register("BitcastConvertType")
-def _np_bitcast_convert_type(backend_module: Any, x: Any, new_dtype: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bitcast_convert_type(backend_module: object, x: object, new_dtype: object, *args: object, **kwargs: object) -> object:
     """Bitcast a tensor from one type to another without changing its underlying memory.
 
     Args:
@@ -63,14 +63,14 @@ def _np_bitcast_convert_type(backend_module: Any, x: Any, new_dtype: Any, *args:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
-    dt = getattr(np, str(new_dtype).split(".")[-1], np.float32)
+    dt: object = getattr(np, str(new_dtype).split(".")[-1], np.float32)
     return np.asarray(x).view(dt)
 
 
 @numpy_eager_registry.register("Packbits")
-def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_packbits(backend_module: object, *args: object, **kwargs: object) -> object:
     """Pack the elements of a binary-valued array into bits in a uint8 array.
 
     Args:
@@ -78,13 +78,13 @@ def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return np.packbits(np.asarray(args[0]), **kwargs)
 
 
 @numpy_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unpackbits(backend_module: object, *args: object, **kwargs: object) -> object:
     """Unpack elements of a uint8 array into a binary-valued output array.
 
     Args:
@@ -92,13 +92,13 @@ def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return np.unpackbits(np.asarray(args[0]), **kwargs)
 
 
 @numpy_eager_registry.register("BitwiseCount")
-def _np_bitwise_count(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bitwise_count(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_bitwise_count operation.
 
     Args:
@@ -111,5 +111,5 @@ def _np_bitwise_count(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     import numpy as np
 
-    x = np.asarray(args[0])
+    x: object = np.asarray(args[0])
     return np.array([bin(n).count("1") for n in x.flat]).reshape(x.shape)

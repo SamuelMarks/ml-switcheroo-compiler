@@ -1,13 +1,11 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Extracted math functions for numpy eager."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Fft")
-def _np_fft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fft operation.
 
     Args:
@@ -22,7 +20,7 @@ def _np_fft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rfft")
-def _np_rfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rfft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rfft operation.
 
     Args:
@@ -37,7 +35,7 @@ def _np_rfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ifft")
-def _np_ifft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ifft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ifft operation.
 
     Args:
@@ -52,7 +50,7 @@ def _np_ifft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Irfft")
-def _np_irfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_irfft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_irfft operation.
 
     Args:
@@ -67,7 +65,7 @@ def _np_irfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Fftn")
-def _np_fftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fftn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fftn operation.
 
     Args:
@@ -82,7 +80,7 @@ def _np_fftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ifftn")
-def _np_ifftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ifftn operation.
 
     Args:
@@ -97,7 +95,7 @@ def _np_ifftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rfftn")
-def _np_rfftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rfftn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rfftn operation.
 
     Args:
@@ -112,7 +110,7 @@ def _np_rfftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Irfftn")
-def _np_irfftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_irfftn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_irfftn operation.
 
     Args:
@@ -127,7 +125,7 @@ def _np_irfftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Fft2")
-def _np_fft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fft2(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fft2 operation.
 
     Args:
@@ -142,7 +140,7 @@ def _np_fft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ifft2")
-def _np_ifft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ifft2 operation.
 
     Args:
@@ -157,7 +155,7 @@ def _np_ifft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rfft2")
-def _np_rfft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rfft2(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rfft2 operation.
 
     Args:
@@ -172,7 +170,7 @@ def _np_rfft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Irfft2")
-def _np_irfft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_irfft2(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_irfft2 operation.
 
     Args:
@@ -187,7 +185,7 @@ def _np_irfft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Fftnd")
-def _np_fftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fftnd operation.
 
     Args:
@@ -202,7 +200,7 @@ def _np_fftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ifftnd")
-def _np_ifftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ifftnd(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ifftnd operation.
 
     Args:
@@ -217,7 +215,7 @@ def _np_ifftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rfftnd")
-def _np_rfftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rfftnd operation.
 
     Args:
@@ -232,7 +230,7 @@ def _np_rfftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Irfftnd")
-def _np_irfftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_irfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_irfftnd operation.
 
     Args:
@@ -247,7 +245,7 @@ def _np_irfftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Fftshift")
-def _np_fftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fftshift operation.
 
     Args:
@@ -262,7 +260,7 @@ def _np_fftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ifftshift")
-def _np_ifftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ifftshift operation.
 
     Args:
@@ -277,7 +275,7 @@ def _np_ifftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Fftfreq")
-def _np_fftfreq(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_fftfreq operation.
 
     Args:
@@ -292,7 +290,7 @@ def _np_fftfreq(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Hfft")
-def _np_hfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_hfft operation.
 
     Args:
@@ -307,7 +305,7 @@ def _np_hfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Ihfft")
-def _np_ihfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_ihfft(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_ihfft operation.
 
     Args:
@@ -322,7 +320,7 @@ def _np_ihfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rfftfreq")
-def _np_rfftfreq(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rfftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rfftfreq operation.
 
     Args:

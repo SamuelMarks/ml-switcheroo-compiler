@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Constants & Creation Operations."""
 
@@ -25,7 +24,7 @@ def arange(
     step: float = 1,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Any:
+) -> object:
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
@@ -38,17 +37,17 @@ def arange(
     Returns:
         Tensor: Result.
     """
-    dtype = dtype or config.default_float_dtype
-    device = device or config.default_device
+    dtype: object = dtype or config.default_float_dtype
+    device: object = device or config.default_device
     if stop is None:
-        stop = start
-        start = 0
+        stop: object = start
+        start: object = 0
 
-    size = max(math.ceil((stop - start) / step), 0)
-    shape = (size,)
+    size: object = max(math.ceil((stop - start) / step), 0)
+    shape: object = (size,)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op(
+        data: object = get_active_backend().execute_op(
             "Arange",
             start,
             stop,
@@ -70,7 +69,7 @@ def linspace(
     steps: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Any:
+) -> object:
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:
@@ -83,12 +82,12 @@ def linspace(
     Returns:
         Tensor: Result.
     """
-    dtype = dtype or config.default_float_dtype
-    device = device or config.default_device
-    shape = (steps,)
+    dtype: object = dtype or config.default_float_dtype
+    device: object = device or config.default_device
+    shape: object = (steps,)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op(
+        data: object = get_active_backend().execute_op(
             "Linspace",
             start,
             stop,

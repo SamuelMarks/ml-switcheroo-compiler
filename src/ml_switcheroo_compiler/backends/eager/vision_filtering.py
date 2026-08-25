@@ -1,8 +1,11 @@
+"""vision_filtering.py module."""
+
+from typing import Any, Callable, Optional
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for vision_filtering.py."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
@@ -25,30 +28,30 @@ def _extract_volume_patches(backend_module: Any, *args: Any, **kwargs: Any) -> A
     if not args:
         return backend_module.asarray([]) if hasattr(backend_module, "asarray") else np.array([])
 
-    input_tensor = np.asarray(args[0])
-    ksizes = kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
-    strides = kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
+    input_tensor: Any = np.asarray(args[0])
+    ksizes: Any = kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
+    strides: Any = kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
 
     if input_tensor.ndim != 5:
         return backend_module.asarray(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
 
-    window_shape = tuple(ksizes)
+    window_shape: Any = tuple(ksizes)
     from numpy.lib.stride_tricks import sliding_window_view
 
     try:
-        view = sliding_window_view(input_tensor, window_shape)
+        view: Any = sliding_window_view(input_tensor, window_shape)
     except ValueError:
         return backend_module.asarray(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
 
-    step_view = view[
+    step_view: Any = view[
         :: strides[0],
         :: strides[1],
         :: strides[2],
         :: strides[3],
         :: strides[4],
     ]
-    out_shape = step_view.shape[:5] + (-1,)
-    res = step_view.reshape(out_shape)
+    out_shape: Any = step_view.shape[:5] + (-1,)
+    res: Any = step_view.reshape(out_shape)
 
     return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
@@ -74,10 +77,10 @@ def _get_box_coords(np_mod: Any, box_ctx: tuple[int, int, int, int], box: Any) -
         tuple: ((y1, x1), (y2, x2)).
     """
     h, w = box_ctx[0], box_ctx[1]
-    y1 = int(box[0] * (h - 1))
-    x1 = int(box[1] * (w - 1))
-    y2 = int(box[2] * (h - 1))
-    x2 = int(box[3] * (w - 1))
+    y1: Any = int(box[0] * (h - 1))
+    x1: Any = int(box[1] * (w - 1))
+    y2: Any = int(box[2] * (h - 1))
+    x2: Any = int(box[3] * (w - 1))
     return ((y1, x1), (y2, x2))
 
 
@@ -95,19 +98,19 @@ def _extract_box_channels(np_mod: Any, img: Any, out: Any, coords_and_i: tuple[t
             tuple[int, ...]: Result.
     """
     (y1_i, x1_i), (y2_i, x2_i) = coords_and_i[0]
-    i = coords_and_i[1]
+    i: Any = coords_and_i[1]
     crop_h, crop_w = config.crop_size
 
     if y2_i <= y1_i or x2_i <= x1_i:
         return
 
-    cropped = img[y1_i : y2_i + 1, x1_i : x2_i + 1]
+    cropped: Any = img[y1_i : y2_i + 1, x1_i : x2_i + 1]
     if cropped.size == 0:
         return
 
-    y_indices = np_mod.linspace(0, cropped.shape[0] - 1, crop_h).astype(int)
-    x_indices = np_mod.linspace(0, cropped.shape[1] - 1, crop_w).astype(int)
-    resized = cropped[y_indices][:, x_indices]
+    y_indices: Any = np_mod.linspace(0, cropped.shape[0] - 1, crop_h).astype(int)
+    x_indices: Any = np_mod.linspace(0, cropped.shape[1] - 1, crop_w).astype(int)
+    resized: Any = cropped[y_indices][:, x_indices]
     out[i] = resized
 
 
@@ -124,16 +127,16 @@ def _extract_single_box(np_mod: Any, batch_ctx: tuple[Any, Any, Any, Any], i: in
             tuple[int, ...]: Result.
     """
     imgs, bxs, bxs_idx, out = batch_ctx
-    img_idx = int(bxs_idx[i])
+    img_idx: Any = int(bxs_idx[i])
     if img_idx >= len(imgs):
         return
-    img = imgs[img_idx]
-    box = bxs[i]
+    img: Any = imgs[img_idx]
+    box: Any = bxs[i]
     if img.ndim < 2:
         return
     h, w = img.shape[0], img.shape[1]
-    box_ctx = (h, w, config.crop_size[0], config.crop_size[1])
-    coords = _get_box_coords(np_mod, box_ctx, box)
+    box_ctx: Any = (h, w, config.crop_size[0], config.crop_size[1])
+    coords: Any = _get_box_coords(np_mod, box_ctx, box)
     _extract_box_channels(np_mod, img, out, (coords, i), config)
 
 
@@ -149,14 +152,14 @@ def _extract_boxes_batch(np_mod: Any, imgs: Any, bxs: Any, bxs_idx: Any, config:
 
     Returns: Any: Extracted boxes.
     """
-    num_boxes = len(bxs)
+    num_boxes: Any = len(bxs)
     if imgs.ndim == 0:
         return np_mod.zeros((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs.dtype)
 
-    channels = imgs.shape[-1] if imgs.ndim > 2 else 1
-    out_shape = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
-    out = np_mod.zeros(out_shape, dtype=imgs.dtype)
-    batch_ctx = (imgs, bxs, bxs_idx, out)
+    channels: Any = imgs.shape[-1] if imgs.ndim > 2 else 1
+    out_shape: Any = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
+    out: Any = np_mod.zeros(out_shape, dtype=imgs.dtype)
+    batch_ctx: Any = (imgs, bxs, bxs_idx, out)
     for i in range(num_boxes):
         _extract_single_box(np_mod, batch_ctx, i, config)
     return out
@@ -177,10 +180,10 @@ def _extract_boxes_tf(backend_module: Any, images: Any, boxes: Any, box_indices:
     """
     import numpy as np
 
-    images_np = np.asarray(images)
-    boxes_np = np.asarray(boxes)
-    box_indices_np = np.asarray(box_indices)
-    res = _extract_boxes_batch(np, images_np, boxes_np, box_indices_np, config)
+    images_np: Any = np.asarray(images)
+    boxes_np: Any = np.asarray(boxes)
+    box_indices_np: Any = np.asarray(box_indices)
+    res: Any = _extract_boxes_batch(np, images_np, boxes_np, box_indices_np, config)
     return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
 
@@ -214,7 +217,7 @@ def _to_xyxy_format(np_mod: Any, boxes: Any, format: str) -> Any:
     Raises:
         ValueError: An exception.
     """
-    boxes = np_mod.asarray(boxes)
+    boxes: Any = np_mod.asarray(boxes)
     if format == "xyxy":
         return boxes
     elif format == "xyWH":
@@ -224,7 +227,7 @@ def _to_xyxy_format(np_mod: Any, boxes: Any, format: str) -> Any:
         cx, cy, w, h = boxes[..., 0], boxes[..., 1], boxes[..., 2], boxes[..., 3]
         return np_mod.stack([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1)
     else:
-        msg = f"Unknown format {format}"
+        msg: Any = f"Unknown format {format}"
         raise ValueError(msg)
 
 
@@ -239,8 +242,8 @@ def _compute_iou(np_mod: Any, b1: Any, b2: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    b1 = np_mod.asarray(b1)
-    b2 = np_mod.asarray(b2)
+    b1: Any = np_mod.asarray(b1)
+    b2: Any = np_mod.asarray(b2)
 
     if b1.size == 0 or b2.size == 0:
         return np_mod.zeros(b1.shape[:-1], dtype=b1.dtype)
@@ -248,16 +251,16 @@ def _compute_iou(np_mod: Any, b1: Any, b2: Any) -> Any:
     x11, y11, x12, y12 = np_mod.split(b1, 4, axis=-1)
     x21, y21, x22, y22 = np_mod.split(b2, 4, axis=-1)
 
-    xA = np_mod.maximum(x11, x21)
-    yA = np_mod.maximum(y11, y21)
-    xB = np_mod.minimum(x12, x22)
-    yB = np_mod.minimum(y12, y22)
+    xA: Any = np_mod.maximum(x11, x21)
+    yA: Any = np_mod.maximum(y11, y21)
+    xB: Any = np_mod.minimum(x12, x22)
+    yB: Any = np_mod.minimum(y12, y22)
 
-    interArea = np_mod.maximum(0, xB - xA) * np_mod.maximum(0, yB - yA)
-    box1Area = (x12 - x11) * (y12 - y11)
-    box2Area = (x22 - x21) * (y22 - y21)
+    interArea: Any = np_mod.maximum(0, xB - xA) * np_mod.maximum(0, yB - yA)
+    box1Area: Any = (x12 - x11) * (y12 - y11)
+    box2Area: Any = (x22 - x21) * (y22 - y21)
 
-    iou = interArea / (box1Area + box2Area - interArea + 1e-9)
+    iou: Any = interArea / (box1Area + box2Area - interArea + 1e-9)
     return iou.reshape(iou.shape[:-1])
 
 
@@ -275,9 +278,9 @@ def iou_eager(backend_module: Any, boxes1: Any, boxes2: Any, bounding_box_format
     """
     import numpy as np
 
-    b1 = _to_xyxy_format(np, boxes1, bounding_box_format)
-    b2 = _to_xyxy_format(np, boxes2, bounding_box_format)
-    res = _compute_iou(np, b1, b2)
+    b1: Any = _to_xyxy_format(np, boxes1, bounding_box_format)
+    b2: Any = _to_xyxy_format(np, boxes2, bounding_box_format)
+    res: Any = _compute_iou(np, b1, b2)
     return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
 
@@ -293,18 +296,18 @@ def _sort_boxes_by_score(np_mod: Any, boxes: Any, scores: Any, score_threshold: 
     Returns:
             tuple[int, ...]: Result.
     """
-    boxes = np_mod.asarray(boxes)
-    scores = np_mod.asarray(scores)
+    boxes: Any = np_mod.asarray(boxes)
+    scores: Any = np_mod.asarray(scores)
 
     if scores.size == 0:
         return boxes, scores, np_mod.array([], dtype=int), np_mod.array([], dtype=int)
 
-    mask = scores >= score_threshold
-    filtered_boxes = boxes[mask]
-    filtered_scores = scores[mask]
-    indices = np_mod.where(mask)[0]
+    mask: Any = scores >= score_threshold
+    filtered_boxes: Any = boxes[mask]
+    filtered_scores: Any = scores[mask]
+    indices: Any = np_mod.where(mask)[0]
 
-    order = filtered_scores.argsort()[::-1]
+    order: Any = filtered_scores.argsort()[::-1]
     return filtered_boxes, filtered_scores, indices, order
 
 
@@ -320,8 +323,8 @@ def _compute_overlap(np_mod: Any, bxs: Any, i: int, order: list[int]) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    b1 = bxs[order[i]]
-    b2 = bxs[order[1:]]
+    b1: Any = bxs[order[i]]
+    b2: Any = bxs[order[1:]]
     return _compute_iou(np_mod, b1, b2)
 
 
@@ -338,21 +341,21 @@ def _apply_suppression_threshold(np_mod: Any, bxs: Any, order: Any, max_output_s
     Returns:
             tuple[int, ...]: Result.
     """
-    keep = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    order_list = list(order)
+    keep: Any = []
+    order_list: Any = list(order)
     while len(order_list) > 0 and len(keep) < max_output_size:
-        i = order_list.pop(0)
+        i: Any = order_list.pop(0)
         keep.append(i)
         if len(order_list) == 0:
             break
         # Compute IoU of the kept box with the remaining boxes
-        b1 = bxs[i]
-        b2 = bxs[order_list]
-        iou = _compute_iou(np_mod, b1, b2)
+        b1: Any = bxs[i]
+        b2: Any = bxs[order_list]
+        iou: Any = _compute_iou(np_mod, b1, b2)
 
         # Keep those with IoU <= threshold
-        to_keep = iou <= iou_threshold
-        order_list = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
+        to_keep: Any = iou <= iou_threshold
+        order_list: Any = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
 
     return np_mod.array(keep, dtype=np_mod.int64)
 
@@ -370,8 +373,8 @@ def _nms_tf(backend_module: Any, boxes: Any, scores: Any, config: Optional[NMSCo
             tuple[int, ...]: Result.
     """
     if config is None:
-        config = NMSConfig(max_output_size=boxes.shape[0] if hasattr(boxes, "shape") else 100)
-    res = _nms_torch(boxes, scores, config)
+        config: Any = NMSConfig(max_output_size=boxes.shape[0] if hasattr(boxes, "shape") else 100)
+    res: Any = _nms_torch(boxes, scores, config)
     return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
 
@@ -388,12 +391,12 @@ def _nms_torch(boxes: Any, scores: Any, config: NMSConfig) -> Any:
     """
     import numpy as np
 
-    boxes = np.asarray(boxes)
-    scores = np.asarray(scores)
+    boxes: Any = np.asarray(boxes)
+    scores: Any = np.asarray(scores)
     bxs, scs, idxs, order = _sort_boxes_by_score(np, boxes, scores, config.score_threshold)
     if len(bxs) == 0:
         return np.array([], dtype=np.int64)
-    kept_local = _apply_suppression_threshold(np, bxs, order, config.max_output_size, config.iou_threshold)
+    kept_local: Any = _apply_suppression_threshold(np, bxs, order, config.max_output_size, config.iou_threshold)
     return idxs[kept_local]
 
 

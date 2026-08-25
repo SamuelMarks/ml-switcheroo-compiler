@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
-from typing import Any
-
 import mlx.core as mx
 
 from ml_switcheroo_compiler.backends.eager import (
@@ -13,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> Any:
+def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Evaluate zeros operation.
 
     Args:
@@ -34,7 +32,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> Any:
     return generic_zeros(mx, shape)
 
 
-def array(cls: type, data: Any, dtype: Any = None) -> Any:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Evaluate array operation.
 
     Args:
@@ -58,7 +56,7 @@ def array(cls: type, data: Any, dtype: Any = None) -> Any:
     return generic_array(mx, data, dtype)
 
 
-def asarray(cls: type, data: Any) -> Any:
+def asarray(cls: type, data: object) -> object:
     """Evaluate asarray operation.
 
     Args:
@@ -81,7 +79,7 @@ def asarray(cls: type, data: Any) -> Any:
     return generic_array(mx, data)
 
 
-def item(cls: type, data: Any) -> float:
+def item(cls: type, data: object) -> float:
     """Evaluate item operation.
 
     Args:
@@ -99,4 +97,4 @@ def item(cls: type, data: Any) -> float:
     Returns:
         float: Result.
     """
-    return generic_item(mx, data)  # type: ignore
+    return generic_item(mx, data)

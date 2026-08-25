@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module sparse_tensor.py."""
 
-from typing import Any
-
 """Sparse tensor representations."""
 
 from collections.abc import Sequence
@@ -16,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 class SparseTensor:
     """Define base class for sparse tensors."""
 
-    def __init__(self, values: Tensor, dense_shape: tuple[int, ...]) -> None:  # type: ignore
+    def __init__(self, values: Tensor, dense_shape: tuple[int, ...]) -> None:
         """Init COO.
 
         Args:
@@ -67,7 +65,7 @@ class SparseTensor:
 class SparseTensorCOO(SparseTensor):
     """Represents a sparse tensor in COO format."""
 
-    def __init__(self, indices: Tensor, values: Tensor, dense_shape: tuple[int, ...]) -> None:  # type: ignore
+    def __init__(self, indices: Tensor, values: Tensor, dense_shape: tuple[int, ...]) -> None:
         """Init COO.
 
         Args:
@@ -85,9 +83,9 @@ class SparseTensorCSR(SparseTensor):
 
     def __init__(
         self,
-        row_pointers: Tensor,  # type: ignore
-        column_indices: Tensor,  # type: ignore
-        values: Tensor,  # type: ignore
+        row_pointers: Tensor,
+        column_indices: Tensor,
+        values: Tensor,
         dense_shape: tuple[int, ...],
     ) -> None:
         """Init CSR.

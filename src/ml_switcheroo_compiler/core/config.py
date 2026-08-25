@@ -14,7 +14,6 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import Any
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -39,7 +38,7 @@ class EnvironmentConfig:
     default_int_dtype: DType = DType.Int64
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
-    layout_map: Any = None
+    layout_map: object = None
     interactive_logging: bool = True
 
 
@@ -89,7 +88,7 @@ class Config:
         Returns:
             int: The random seed.
         """
-        return self._state.env.seed  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return self._state.env.seed
 
     @seed.setter
     def seed(self, value: typing.Optional[int]) -> None:
@@ -98,7 +97,7 @@ class Config:
         Args:
             value (int, optional): The random seed value.
         """
-        self._state.env.seed = value  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self._state.env.seed = value
 
     @property
     def _state(self) -> ConfigState:
@@ -200,15 +199,15 @@ class Config:
         self._state.execution.current_stream = value
 
     @property
-    def layout_map(self) -> Any:
+    def layout_map(self) -> object:
         """Get the layout map.
 
-        Returns: Any: The layout map.
+        Returns: object: The layout map.
         """
         return self._state.env.layout_map
 
     @layout_map.setter
-    def layout_map(self, value: Any) -> None:
+    def layout_map(self, value: object) -> None:
         """Set the layout map.
 
         Args:
@@ -284,7 +283,7 @@ class Config:
             bool: True if eager mode is active.
         """
         if "ml_switcheroo_compiler.tracing.state" in sys.modules:
-            global_tracing_state = sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state
+            global_tracing_state: object = sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state
             if global_tracing_state.is_tracing:
                 return False
         if os.environ.get("SWITCHEROO_EAGER_MODE") == "1":
@@ -310,11 +309,11 @@ class Config:
 
 
 # Singleton instance proxy
-config = Config()
+config: object = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs: Any) -> Iterator[None]:
+def ConfigContext(**kwargs: object) -> Iterator[None]:
     """Provide context manager for temporarily overriding global configuration values.
 
     Args:
@@ -326,8 +325,8 @@ def ConfigContext(**kwargs: Any) -> Iterator[None]:
     Raises:
         ValueError: If any of the provided keys do not exist in the configuration.
     """
-    old_state = _config_state_var.get()
-    new_state = old_state.clone()
+    old_state: object = _config_state_var.get()
+    new_state: object = old_state.clone()
 
     for k, v in kwargs.items():
         if hasattr(new_state.execution, k):
@@ -335,17 +334,17 @@ def ConfigContext(**kwargs: Any) -> Iterator[None]:
         elif hasattr(new_state.env, k):
             setattr(new_state.env, k, v)
         else:
-            msg = f"Unknown config key: {k}"
+            msg: object = f"Unknown config key: {k}"
             raise ValueError(msg)
 
-    token = _config_state_var.set(new_state)
+    token: object = _config_state_var.set(new_state)
     try:
         yield
     finally:
         _config_state_var.reset(token)
 
 
-def EagerMode() -> Any:
+def EagerMode() -> object:
     """Provide context manager to temporarily enable eager execution mode.
 
     Returns:
@@ -354,7 +353,7 @@ def EagerMode() -> Any:
     return ConfigContext(eager_mode=True)
 
 
-def StreamContext(stream_name: str) -> Any:
+def StreamContext(stream_name: str) -> object:
     """Provide context manager to temporarily switch the current execution stream.
 
     Args:

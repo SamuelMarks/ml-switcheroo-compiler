@@ -7,7 +7,6 @@ from __future__ import annotations
 """Core abstractions and logic definitions for utils.py."""
 import uuid
 from collections.abc import Sequence
-from typing import Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -21,8 +20,8 @@ def _build_linalg_output_tensors(
     out_ids: list[str],
     out_shapes: Sequence[Sequence[int]],
     out_dtypes: Sequence[DType],
-    device: Any,
-) -> list[Tensor]:  # type: ignore
+    device: object,
+) -> list[Tensor]:
     """Evaluate _build_linalg_output_tensors operation.
 
     Args:
@@ -34,20 +33,20 @@ def _build_linalg_output_tensors(
     Returns:
             tuple[int, ...]: Result.
     """
-    tensors = []
+    tensors: object = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
-        proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value if hasattr(dtype, "value") else dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        proxy: object = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value if hasattr(dtype, "value") else dtype)
         tensors.append(Tensor(proxy, TensorConfig(tuple(shape), dtype, device)))
     return tensors
 
 
 def _emit_linalg_node(
     op_type: str,
-    inputs: Sequence[Tensor],  # type: ignore
-    attrs: dict[str, Any],
+    inputs: Sequence[Tensor],
+    attrs: dict[str, object],
     out_shapes: Sequence[Sequence[int]],
     out_dtypes: Sequence[DType],
-) -> Tensor | tuple[Tensor, ...]:  # type: ignore
+) -> Tensor | tuple[Tensor, ...]:
     """Emit a linear algebra operation node to the tracing IR graph.
 
     Args:
@@ -64,12 +63,12 @@ def _emit_linalg_node(
         RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
-        msg = f"Cannot emit {op_type} node outside of a tracing context."
+        msg: object = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
-    out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    shape_meta = tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    out_ids: object = [str(uuid.uuid4()) for _ in out_shapes]
+    shape_meta: object = tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
-    node = LogicalNode(
+    node: object = LogicalNode(
         id=out_ids[0],
         op_type=op_type,
         inputs=input_ids,
@@ -77,6 +76,6 @@ def _emit_linalg_node(
         shape_metadata=shape_meta,
     )
     global_tracing_state.add_node(node)
-    device = inputs[0].device if inputs else "cpu"
-    tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
+    device: object = inputs[0].device if inputs else "cpu"
+    tensors: object = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
     return tensors[0] if len(tensors) == 1 else tuple(tensors)

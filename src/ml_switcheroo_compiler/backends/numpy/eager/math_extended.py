@@ -1,15 +1,13 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy extra math operations."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
 from ml_switcheroo_compiler.core.dtype import DType
 
 
 @numpy_eager_registry.register("ConstantOfShape")
-def _np_constant_of_shape(backend_module: Any, shape: Any, value: Any = 0.0, *args: Any, **kwargs: Any) -> Any:
+def _np_constant_of_shape(backend_module: object, shape: object, value: object = 0.0, *args: object, **kwargs: object) -> object:
     """Evaluate _np_constant_of_shape operation.
 
     Args:
@@ -26,7 +24,7 @@ def _np_constant_of_shape(backend_module: Any, shape: Any, value: Any = 0.0, *ar
 
 
 @numpy_eager_registry.register("ReduceWindow")
-def _np_reduce_window(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_reduce_window operation.
 
     Args:
@@ -41,7 +39,7 @@ def _np_reduce_window(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("TestEagerOp")
-def _np_test_eager_op(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_test_eager_op(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_test_eager_op operation.
 
     Args:
@@ -56,7 +54,7 @@ def _np_test_eager_op(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Unknown")
-def _np_unknown(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unknown(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_unknown operation.
 
     Args:
@@ -71,7 +69,7 @@ def _np_unknown(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rand")
-def _np_rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rand(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rand operation.
 
     Args:
@@ -82,19 +80,19 @@ def _np_rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype_str = str(dtype).split(".")[-1]
-    dt = getattr(backend_module, dtype_str, dtype)
+    dtype: object = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype_str: object = str(dtype).split(".")[-1]
+    dt: object = getattr(backend_module, dtype_str, dtype)
     if isinstance(dt, str):
         if "bfloat" in dt or "float8" in dt:
-            dt = "float32"
+            dt: object = "float32"
         elif "int4" in dt:
-            dt = "int8"
+            dt: object = "int8"
     return backend_module.array(backend_module.random.rand(*args)).astype(dt)
 
 
 @numpy_eager_registry.register("IsNonDecreasing")
-def _np_is_non_decreasing(backend_module: Any, x: Any, **kwargs: Any) -> Any:
+def _np_is_non_decreasing(backend_module: object, x: object, **kwargs: object) -> object:
     """IsNonDecreasing.
 
     Args:
@@ -107,12 +105,12 @@ def _np_is_non_decreasing(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
-    diffs = backend_module.diff(x)
+    diffs: object = backend_module.diff(x)
     return backend_module.all(diffs >= 0)
 
 
 @numpy_eager_registry.register("IsStrictlyIncreasing")
-def _np_is_strictly_increasing(backend_module: Any, x: Any, **kwargs: Any) -> Any:
+def _np_is_strictly_increasing(backend_module: object, x: object, **kwargs: object) -> object:
     """IsStrictlyIncreasing.
 
     Args:
@@ -125,12 +123,12 @@ def _np_is_strictly_increasing(backend_module: Any, x: Any, **kwargs: Any) -> An
     """
     if backend_module.size(x) <= 1:
         return backend_module.array(True)
-    diffs = backend_module.diff(x)
+    diffs: object = backend_module.diff(x)
     return backend_module.all(diffs > 0)
 
 
 @numpy_eager_registry.register("L2Normalize")
-def _np_l2_normalize(backend_module: Any, x: Any, axis: Any = None, epsilon: Any = 1e-12, **kwargs: Any) -> Any:
+def _np_l2_normalize(backend_module: object, x: object, axis: object = None, epsilon: object = 1e-12, **kwargs: object) -> object:
     """L2Normalize.
 
     Args:
@@ -143,13 +141,13 @@ def _np_l2_normalize(backend_module: Any, x: Any, axis: Any = None, epsilon: Any
     Returns:
             tuple[int, ...]: Result.
     """
-    square_sum = backend_module.sum(backend_module.square(x), axis=axis, keepdims=True)
-    x_inv_norm = backend_module.divide(1.0, backend_module.sqrt(backend_module.maximum(square_sum, epsilon)))
+    square_sum: object = backend_module.sum(backend_module.square(x), axis=axis, keepdims=True)
+    x_inv_norm: object = backend_module.divide(1.0, backend_module.sqrt(backend_module.maximum(square_sum, epsilon)))
     return backend_module.multiply(x, x_inv_norm)
 
 
 @numpy_eager_registry.register("ReduceEuclideanNorm")
-def _np_reduce_euclidean_norm(backend_module: Any, x: Any, axis: Any = None, keepdims: bool = False, **kwargs: Any) -> Any:
+def _np_reduce_euclidean_norm(backend_module: object, x: object, axis: object = None, keepdims: bool = False, **kwargs: object) -> object:
     """ReduceEuclideanNorm.
 
     Args:
@@ -166,7 +164,7 @@ def _np_reduce_euclidean_norm(backend_module: Any, x: Any, axis: Any = None, kee
 
 
 @numpy_eager_registry.register("Clamp")
-def _clamp(np: Any, min_val: Any, x: Any, max_val: Any, **kwargs: Any) -> Any:
+def _clamp(np: object, min_val: object, x: object, max_val: object, **kwargs: object) -> object:
     """Clamp wrapper.
 
     Args:
@@ -183,7 +181,7 @@ def _clamp(np: Any, min_val: Any, x: Any, max_val: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Logspace")
-def _logspace(np: Any, start: Any, stop: Any, *args: Any, **kwargs: Any) -> Any:
+def _logspace(np: object, start: object, stop: object, *args: object, **kwargs: object) -> object:
     """Logspace wrapper.
 
     Args:
@@ -197,13 +195,13 @@ def _logspace(np: Any, start: Any, stop: Any, *args: Any, **kwargs: Any) -> Any:
             tuple[int, ...]: Result.
     """
     if args and type(args[0]).__name__ == "SpaceConfig":
-        c = args[0]
+        c: object = args[0]
         return np.logspace(start, stop, num=c.num, endpoint=c.endpoint, base=c.base, dtype=c.dtype, axis=c.axis)
     return np.logspace(start, stop, *args, **kwargs)
 
 
 @numpy_eager_registry.register("FromBuffer")
-def _np_frombuffer(backend_module: Any, buffer: Any, dtype: str = "float32", count: int = -1, offset: int = 0, **kwargs: Any) -> Any:
+def _np_frombuffer(backend_module: object, buffer: object, dtype: str = "float32", count: int = -1, offset: int = 0, **kwargs: object) -> object:
     """Evaluate _np_frombuffer operation.
 
     Args:
@@ -221,7 +219,7 @@ def _np_frombuffer(backend_module: Any, buffer: Any, dtype: str = "float32", cou
 
 
 @numpy_eager_registry.register("DType")
-def _np_dtype_op(backend_module: Any, value: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_dtype_op(backend_module: object, value: object, *args: object, **kwargs: object) -> object:
     """DType.
 
     Args:
@@ -241,7 +239,7 @@ def _np_dtype_op(backend_module: Any, value: Any, *args: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("Gradient")
-def _eager_Gradient(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_Gradient(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _eager_Gradient operation.
 
     Args:
@@ -256,7 +254,7 @@ def _eager_Gradient(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("I0")
-def _eager_I0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_I0(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _eager_I0 operation.
 
     Args:
@@ -271,7 +269,7 @@ def _eager_I0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("BroadcastedIota")
-def _eager_BroadcastedIota(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_BroadcastedIota(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _eager_BroadcastedIota operation.
 
     Args:

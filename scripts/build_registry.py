@@ -2,24 +2,25 @@
 
 import os
 import pprint
+from typing import Any
 
 import yaml
 
 
 def build() -> None:
     """Build the python registry from YAML definitions."""
-    definitions_dir = "src/ml_switcheroo_compiler/ops/definitions"
-    out_file = "src/ml_switcheroo_compiler/ops/generated_registry.py"
+    definitions_dir: str = "src/ml_switcheroo_compiler/ops/definitions"
+    out_file: str = "src/ml_switcheroo_compiler/ops/generated_registry.py"
 
-    ops_data = {}
+    ops_data: dict[str, dict[str, Any]] = {}
 
     # Load all yaml files
     for filename in sorted(os.listdir(definitions_dir)):
         if filename.endswith(".yaml"):
             with open(os.path.join(definitions_dir, filename)) as f:
-                data = yaml.safe_load(f)
+                data: dict[str, Any] = yaml.safe_load(f)
                 if "operation" in data:
-                    op_name = data["operation"]
+                    op_name: str = data["operation"]
                     ops_data[op_name] = data
                 else:
                     for op_name, op_info in data.items():
@@ -33,11 +34,11 @@ def build() -> None:
 
         # __all__ definition
         f.write("from typing import Any\n\n")
-        all_list_str = ',\n    "OPS_REGISTRY"'
+        all_list_str: str = ',\n    "OPS_REGISTRY"'
         f.write(f"__all__ = [\n    {all_list_str.strip(', ')}\n]\n\n")
 
         # Format the dictionary directly into python source
-        formatted_dict = pprint.pformat(ops_data, indent=4, sort_dicts=True)
+        formatted_dict: str = pprint.pformat(ops_data, indent=4, sort_dicts=True)
         f.write(f"OPS_REGISTRY: dict[str, dict[str, Any]] = {formatted_dict}\n")
 
 

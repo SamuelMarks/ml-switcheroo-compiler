@@ -14,7 +14,7 @@ intermediate representation (IR) graph for compilation
 
 
 import uuid
-from typing import Any, Callable
+from typing import Callable
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 
-def _wrap_proxy_inputs(args: tuple[Any, ...], subgraph: Any) -> tuple[list[str], list[Any]]:
+def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list[str], list[object]]:
     """Evaluate _wrap_proxy_inputs operation.
 
     Args:
@@ -34,16 +34,16 @@ def _wrap_proxy_inputs(args: tuple[Any, ...], subgraph: Any) -> tuple[list[str],
     Returns:
             tuple[int, ...]: Result.
     """
-    proxy_args = []
-    input_ids = []
+    proxy_args: object = []
+    input_ids: object = []
     for _i, arg in enumerate(args):
         if isinstance(arg, tuple):
             sub_ids, sub_args = _wrap_proxy_inputs(arg, subgraph)
             input_ids.extend(sub_ids)
             proxy_args.append(tuple(sub_args))
         elif isinstance(arg, Tensor):
-            in_id = str(uuid.uuid4())
-            node = LogicalNode(
+            in_id: object = str(uuid.uuid4())
+            node: object = LogicalNode(
                 id=in_id,
                 op_type="Input",
                 inputs=[],
@@ -51,16 +51,16 @@ def _wrap_proxy_inputs(args: tuple[Any, ...], subgraph: Any) -> tuple[list[str],
             )
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
-            proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            proxy.concrete_value = arg.data  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            proxy_tensor = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            proxy_args.append(proxy_tensor)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            proxy: object = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
+            proxy.concrete_value = arg.data
+            proxy_tensor: object = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
+            proxy_args.append(proxy_tensor)
         else:
             proxy_args.append(arg)
     return input_ids, proxy_args
 
 
-def _get_tensor_ids(obj: Any) -> list[str]:
+def _get_tensor_ids(obj: object) -> list[str]:
     """Evaluate _get_tensor_ids operation.
 
     Args:
@@ -73,18 +73,18 @@ def _get_tensor_ids(obj: Any) -> list[str]:
         TypeError: An exception.
     """
     if isinstance(obj, Tensor):
-        return [obj.data.id]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return [obj.data.id]
     if isinstance(obj, (tuple, list)):
-        ids = []
+        ids: object = []
         for o in obj:
             ids.extend(_get_tensor_ids(o))
         return ids
 
-    msg = "Control flow functions must return a Tensor or a tuple of Tensors."
+    msg: object = "Control flow functions must return a Tensor or a tuple of Tensors."
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out: Any, subgraph: IRBlock) -> str:
+def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
     """Evaluate _process_trace_outputs operation.
 
     Args:
@@ -94,19 +94,19 @@ def _process_trace_outputs(out: Any, subgraph: IRBlock) -> str:
     Returns:
         str: Result.
     """
-    out_ids = _get_tensor_ids(out)
+    out_ids: object = _get_tensor_ids(out)
 
-    out_node = LogicalNode(
+    out_node: object = LogicalNode(
         id=str(uuid.uuid4()),
         op_type="Output",
         inputs=out_ids,
         shape_metadata=(),
     )
     subgraph.nodes[out_node.id] = out_node
-    return out_node.id  # type: ignore
+    return out_node.id
 
 
-def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: str) -> IRBlock:  # type: ignore
+def _trace_function(func: Callable[..., object], args: tuple[Tensor, ...], name: str) -> IRBlock:
     """Trace a Python function's execution into an IRBlock.
 
     Args:
@@ -119,19 +119,19 @@ def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: st
     """
     from ml_switcheroo_compiler.core.config import config as compiler_config
 
-    prev_graph = global_tracing_state.active_graph
-    is_tracing = global_tracing_state.is_tracing
-    prev_eager = compiler_config.eager_mode
+    prev_graph: object = global_tracing_state.active_graph
+    is_tracing: object = global_tracing_state.is_tracing
+    prev_eager: object = compiler_config.eager_mode
 
     compiler_config.eager_mode = False
     increment_trace_count(func)
 
-    subgraph = global_tracing_state.start_tracing(name=name)
+    subgraph: object = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
 
     try:
-        out = func(*proxy_args)
-        out_node_id = _process_trace_outputs(out, subgraph)
+        out: object = func(*proxy_args)
+        out_node_id: object = _process_trace_outputs(out, subgraph)
     finally:
         global_tracing_state.stop_tracing()
         global_tracing_state.active_graph = prev_graph

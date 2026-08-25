@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Reductions."""
 
@@ -20,8 +19,8 @@ class All(ReductionOp):
     tensor
     """
 
-    op_name = "All"
-    np_op_name = "all"
+    op_name: object = "All"
+    np_op_name: object = "all"
 
 
 @register_op("Any")
@@ -32,5 +31,5 @@ class AnyOp(ReductionOp):
     tensor
     """
 
-    op_name = "Any"
-    np_op_name = "any"
+    op_name: object = "Any"
+    np_op_name: object = "any"

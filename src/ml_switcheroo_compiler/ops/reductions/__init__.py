@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module __init__.py."""
 
-from typing import Any
-
 """Reductions operations package."""
 
 import ml_switcheroo_compiler.ops.reductions.aggregations as _aggregations
@@ -42,172 +40,172 @@ from .frontend import unsorted_segment_sqrt_n as unsorted_segment_sqrt_n
 from .frontend import unsorted_segment_sum as unsorted_segment_sum
 
 _ = _nan
-_ = _pooling  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-_ = _aggregations  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-_ = _boolean  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-_ = _core  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-_ = _distributed  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-_ = _statistical  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+_ = _pooling
+_ = _aggregations
+_ = _boolean
+_ = _core
+_ = _distributed
+_ = _statistical
 
 
 try:
-    sum: Any = get_op("Sum")()
+    sum: object = get_op("Sum")()
 except KeyError:
-    sum = None
+    sum: object = None
 try:
-    prod: Any = get_op("Prod")()
+    prod: object = get_op("Prod")()
 except KeyError:
-    prod = None
+    prod: object = None
 try:
-    mean: Any = get_op("Mean")()
+    mean: object = get_op("Mean")()
 except KeyError:
-    mean = None
+    mean: object = None
 try:
-    variance: Any = get_op("Variance")()
+    variance: object = get_op("Variance")()
 except KeyError:
-    variance = None
+    variance: object = None
 try:
-    std: Any = get_op("Std")()
+    std: object = get_op("Std")()
 except KeyError:
-    std = None
+    std: object = None
 try:
-    max: Any = get_op("Max")()
+    max: object = get_op("Max")()
 except KeyError:
-    max = None
+    max: object = None
 try:
-    min: Any = get_op("Min")()
+    min: object = get_op("Min")()
 except KeyError:
-    min = None
+    min: object = None
 try:
-    argmax: Any = get_op("Argmax")()
+    argmax: object = get_op("Argmax")()
 except KeyError:
-    argmax = None
+    argmax: object = None
 try:
-    argmin: Any = get_op("Argmin")()
+    argmin: object = get_op("Argmin")()
 except KeyError:
-    argmin = None
+    argmin: object = None
 try:
-    all: Any = get_op("All")()
+    all: object = get_op("All")()
 except KeyError:
-    all = None
+    all: object = None
 try:
-    any: Any = get_op("Any")()
+    any: object = get_op("Any")()
 except KeyError:
-    any = None
+    any: object = None
 
 try:
-    logsumexp: Any = get_op("Logsumexp")()
+    logsumexp: object = get_op("Logsumexp")()
 except KeyError:
-    logsumexp = None
+    logsumexp: object = None
 try:
-    nanargmax: Any = get_op("Nanargmax")()
+    nanargmax: object = get_op("Nanargmax")()
 except KeyError:
-    nanargmax = None
+    nanargmax: object = None
 try:
-    nanargmin: Any = get_op("Nanargmin")()
+    nanargmin: object = get_op("Nanargmin")()
 except KeyError:
-    nanargmin = None
+    nanargmin: object = None
 try:
-    nancumprod: Any = get_op("Nancumprod")()
+    nancumprod: object = get_op("Nancumprod")()
 except KeyError:
-    nancumprod = None
+    nancumprod: object = None
 try:
-    nancumsum: Any = get_op("Nancumsum")()
+    nancumsum: object = get_op("Nancumsum")()
 except KeyError:
-    nancumsum = None
+    nancumsum: object = None
 try:
-    nanmax: Any = get_op("Nanmax")()
+    nanmax: object = get_op("Nanmax")()
 except KeyError:
-    nanmax = None
+    nanmax: object = None
 try:
-    nanmean: Any = get_op("Nanmean")()
+    nanmean: object = get_op("Nanmean")()
 except KeyError:
-    nanmean = None
+    nanmean: object = None
 try:
-    nanmedian: Any = get_op("Nanmedian")()
+    nanmedian: object = get_op("Nanmedian")()
 except KeyError:
-    nanmedian = None
+    nanmedian: object = None
 try:
-    nanmin: Any = get_op("Nanmin")()
+    nanmin: object = get_op("Nanmin")()
 except KeyError:
-    nanmin = None
+    nanmin: object = None
 try:
-    nanpercentile: Any = get_op("Nanpercentile")()
+    nanpercentile: object = get_op("Nanpercentile")()
 except KeyError:
-    nanpercentile = None
+    nanpercentile: object = None
 try:
-    nanprod: Any = get_op("Nanprod")()
+    nanprod: object = get_op("Nanprod")()
 except KeyError:
-    nanprod = None
+    nanprod: object = None
 try:
-    nanquantile: Any = get_op("Nanquantile")()
+    nanquantile: object = get_op("Nanquantile")()
 except KeyError:
-    nanquantile = None
+    nanquantile: object = None
 try:
-    nanstd: Any = get_op("Nanstd")()
+    nanstd: object = get_op("Nanstd")()
 except KeyError:
-    nanstd = None
+    nanstd: object = None
 try:
-    nansum: Any = get_op("Nansum")()
+    nansum: object = get_op("Nansum")()
 except KeyError:
-    nansum = None
+    nansum: object = None
 try:
-    nanvar: Any = get_op("Nanvar")()
+    nanvar: object = get_op("Nanvar")()
 except KeyError:
-    nanvar = None
-
-
-try:
-    count_nonzero: Any = get_op("CountNonzero")()
-except KeyError:
-    count_nonzero = None
-try:
-    norm: Any = get_op("Norm")()
-except KeyError:
-    norm = None
-try:
-    cumsum: Any = get_op("Cumsum")()
-except KeyError:
-    cumsum = None
-
-try:
-    cummax: Any = get_op("Cummax")()
-except KeyError:
-    cummax = None
-try:
-    cummin: Any = get_op("Cummin")()
-except KeyError:
-    cummin = None
-
-try:
-    cumprod: Any = get_op("Cumprod")()
-except KeyError:
-    cumprod = None
+    nanvar: object = None
 
 
 try:
-    logcumsumexp: Any = get_op("Logcumsumexp")()
+    count_nonzero: object = get_op("CountNonzero")()
 except KeyError:
-    logcumsumexp = None
+    count_nonzero: object = None
+try:
+    norm: object = get_op("Norm")()
+except KeyError:
+    norm: object = None
+try:
+    cumsum: object = get_op("Cumsum")()
+except KeyError:
+    cumsum: object = None
+
+try:
+    cummax: object = get_op("Cummax")()
+except KeyError:
+    cummax: object = None
+try:
+    cummin: object = get_op("Cummin")()
+except KeyError:
+    cummin: object = None
+
+try:
+    cumprod: object = get_op("Cumprod")()
+except KeyError:
+    cumprod: object = None
 
 
 try:
-    accumulate_n: Any = get_op("AccumulateN")()
+    logcumsumexp: object = get_op("Logcumsumexp")()
 except KeyError:
-    accumulate_n = None
+    logcumsumexp: object = None
+
+
 try:
-    add_n: Any = get_op("AddN")()
+    accumulate_n: object = get_op("AccumulateN")()
 except KeyError:
-    add_n = None
+    accumulate_n: object = None
 try:
-    cumulative_logsumexp: Any = get_op("CumulativeLogsumexp")()
+    add_n: object = get_op("AddN")()
 except KeyError:
-    cumulative_logsumexp = None
+    add_n: object = None
 try:
-    reduce_euclidean_norm: Any = get_op("ReduceEuclideanNorm")()
+    cumulative_logsumexp: object = get_op("CumulativeLogsumexp")()
 except KeyError:
-    reduce_euclidean_norm = None
+    cumulative_logsumexp: object = None
 try:
-    reduce_logsumexp: Any = get_op("Logsumexp")()
+    reduce_euclidean_norm: object = get_op("ReduceEuclideanNorm")()
 except KeyError:
-    reduce_logsumexp = None
+    reduce_euclidean_norm: object = None
+try:
+    reduce_logsumexp: object = get_op("Logsumexp")()
+except KeyError:
+    reduce_logsumexp: object = None

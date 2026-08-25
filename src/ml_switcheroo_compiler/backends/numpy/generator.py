@@ -1,12 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for generator.py."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .numpy_mixins import NumpyAudioVisitor, NumpyScatterVisitor, NumpyVisionVisitor
 
@@ -28,7 +26,7 @@ class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     @classmethod
-    def _format_kwargs(cls, kwargs: dict[str, Any]) -> str:
+    def _format_kwargs(cls, kwargs: dict[str, object]) -> str:
         """Evaluate _format_kwargs operation.
 
         Args:
@@ -37,18 +35,18 @@ class NumpyASTVisitor:
         Returns:
         str: Result.
         """
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
+        filtered_kwargs: object = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
         if "dimension" in kwargs:
             filtered_kwargs["axis"] = kwargs["dimension"]
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
 
     @classmethod
-    def visit_Parameter(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Parameter(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit parameter."""
         return f"{node.id} = None # Parameter"
 
     @classmethod
-    def visit_Return(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Return(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit return."""
         if not input_vars:
             return "return None"
@@ -57,7 +55,7 @@ class NumpyASTVisitor:
         return "return " + ", ".join(input_vars)
 
     @classmethod
-    def visit_TriInv(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_TriInv(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate Python code for a triangular matrix inverse operation.
 
         Args:
@@ -71,7 +69,7 @@ class NumpyASTVisitor:
         return f"np.linalg.inv({input_vars[0]})"
 
     @classmethod
-    def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate Python code for a truncated division operation.
 
         Args:
@@ -86,7 +84,7 @@ class NumpyASTVisitor:
         return f"np.trunc(np.divide({x}, {y}))"
 
     @classmethod
-    def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate Python code for a truncated modulo operation.
 
         Args:
@@ -101,7 +99,7 @@ class NumpyASTVisitor:
         return f"np.fmod({x}, {y})"
 
     @classmethod
-    def generic_visit(cls, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate default NumPy code.
 
         Args:
@@ -114,12 +112,12 @@ class NumpyASTVisitor:
         """
         if "dimension" in kwargs:
             return f"np.{node.op_type.lower()}({input_vars[0]}, axis={kwargs['dimension']})"
-        op_type = getattr(node, "op_type", "")
-        np_func = (lambda: __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("numpy").operations.get(op_type, type("Dummy", (), {"ast_template": None})()).ast_template or f"np.{op_type.lower()}")()
-        args_str = ", ".join(input_vars)
-        kwargs_str = cls._format_kwargs(kwargs)
+        op_type: object = getattr(node, "op_type", "")
+        np_func: object = (lambda: __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("numpy").operations.get(op_type, type("Dummy", (), {"ast_template": None})()).ast_template or f"np.{op_type.lower()}")()
+        args_str: object = ", ".join(input_vars)
+        kwargs_str: object = cls._format_kwargs(kwargs)
         if kwargs_str:
-            args_str = f"{args_str}, {kwargs_str}" if args_str else kwargs_str
+            args_str: object = f"{args_str}, {kwargs_str}" if args_str else kwargs_str
         return f"{np_func}({args_str})"
 
 
@@ -129,7 +127,7 @@ class NumpyGenerator(
 ):
     """Generate NumPy python code from IR."""
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Initialize the NumPy generator with an IR graph.
 
         Args:
@@ -138,7 +136,7 @@ class NumpyGenerator(
         super().__init__(graph)
         from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
-        schema = load_backend_mappings("numpy")
+        schema: object = load_backend_mappings("numpy")
         self._import_header = "\n".join(schema.helpers or [])
         self.visitors.extend(
             [
@@ -150,35 +148,35 @@ class NumpyGenerator(
         )
 
     @classmethod
-    def get_numpy_rng(cls, *args: Any, **kwargs: Any) -> Any:
+    def get_numpy_rng(cls, *args: object, **kwargs: object) -> object:
         """Get a numpy random generator.
 
         Args:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: The rng.
+        Returns: object: The rng.
         """
         import numpy as np
 
         return np.random.default_rng(*args, **kwargs)
 
     @classmethod
-    def load(cls, *args: Any, **kwargs: Any) -> Any:
+    def load(cls, *args: object, **kwargs: object) -> object:
         """Load data using NumPy's load function.
 
         Args:
             *args (object): Positional arguments for np.load.
             **kwargs (object): Keyword arguments for np.load.
 
-        Returns: Any: The loaded NumPy data.
+        Returns: object: The loaded NumPy data.
         """
         import numpy as np
 
         return np.load(*args, **kwargs)
 
     @classmethod
-    def save(cls, *args: Any, **kwargs: Any) -> None:
+    def save(cls, *args: object, **kwargs: object) -> None:
         """Save data using NumPy's save function.
 
         Args:
@@ -190,7 +188,7 @@ class NumpyGenerator(
         np.save(*args, **kwargs)
 
     @classmethod
-    def savez(cls, *args: Any, **kwargs: Any) -> None:
+    def savez(cls, *args: object, **kwargs: object) -> None:
         """Save multiple arrays into a single file in uncompressed .npz format.
 
         Args:
@@ -202,7 +200,7 @@ class NumpyGenerator(
         np.savez(*args, **kwargs)
 
     @classmethod
-    def savez_compressed(cls, *args: Any, **kwargs: Any) -> None:
+    def savez_compressed(cls, *args: object, **kwargs: object) -> None:
         """Save multiple arrays into a single file in compressed .npz format.
 
         Args:
@@ -229,10 +227,10 @@ class NumpyGenerator(
         """
         from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 
-        schema = load_backend_mappings("numpy")
+        schema: object = load_backend_mappings("numpy")
         return schema.helpers or []
 
-    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate Python code for executing power iteration on a matrix.
 
         Args:
@@ -243,8 +241,8 @@ class NumpyGenerator(
         Returns:
             str: The generated NumPy code string for power iteration.
         """
-        num_iters = node.attributes.get("num_iters", 1)
-        u_var = input_vars[1] if len(input_vars) > 1 else "None"
+        num_iters: object = node.attributes.get("num_iters", 1)
+        u_var: object = input_vars[1] if len(input_vars) > 1 else "None"
         return f"np_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
     def get_fallback_prefix(self) -> str:

@@ -1,11 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module tracer_mixins.py."""
 
-from typing import Any
-
 """Mixins for Tracer."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -19,7 +17,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 class ProxyMathOverloadsMixin:
     """Math Overloads Mixin."""
 
-    def _binary_op(self, other: Any, op_type: str) -> "ProxyTensor":  # type: ignore
+    def _binary_op(self, other: object, op_type: str) -> "ProxyTensor":
         """Trace a binary mathematical operation and append it to the computation graph.
 
         Args:
@@ -33,29 +31,29 @@ class ProxyMathOverloadsMixin:
             TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
-            msg = f"Cannot perform {op_type} outside of a tracing context."
+            msg: object = f"Cannot perform {op_type} outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError(
                 msg,
             )
 
-        other_id = getattr(other, "id", None)
-        other_shape = getattr(other, "shape", ())
+        other_id: object = getattr(other, "id", None)
+        other_shape: object = getattr(other, "shape", ())
 
         # Broadcast shapes
         from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
 
-        out_shape = broadcast_shapes(self.shape, other_shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        out_dtype = self.dtype  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shape: object = broadcast_shapes(self.shape, other_shape)
+        out_dtype: object = self.dtype
 
         if other_id is None:
             # Constant scalar logic would wrap 'other' in a Constant node
-            other_id = str(uuid.uuid4())
+            other_id: object = str(uuid.uuid4())
 
             from ml_switcheroo_compiler.ir.core import IRNode
 
-            const_node = IRNode(
+            const_node: object = IRNode(
                 id=other_id,
                 op_type="Constant",
                 attributes={"value": other},
@@ -63,14 +61,14 @@ class ProxyMathOverloadsMixin:
             )
             global_tracing_state.add_node(const_node)
 
-        out_id = str(uuid.uuid4())
+        out_id: object = str(uuid.uuid4())
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        node = IRNode(
+        node: object = IRNode(
             id=out_id,
             op_type=op_type,
-            inputs=[self.id, other_id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            inputs=[self.id, other_id],
             shape_metadata=out_shape,
         )
         global_tracing_state.add_node(node)
@@ -79,7 +77,7 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
-    def _unary_op(self, op_type: str) -> "ProxyTensor":  # type: ignore
+    def _unary_op(self, op_type: str) -> "ProxyTensor":
         """Trace a unary mathematical operation and append it to the computation graph.
 
         Args:
@@ -92,29 +90,29 @@ class ProxyMathOverloadsMixin:
             TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
-            msg = f"Cannot perform {op_type} outside of a tracing context."
+            msg: object = f"Cannot perform {op_type} outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError(
                 msg,
             )
 
-        out_id = str(uuid.uuid4())
+        out_id: object = str(uuid.uuid4())
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        node = IRNode(
+        node: object = IRNode(
             id=out_id,
             op_type=op_type,
-            inputs=[self.id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            shape_metadata=self.shape,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            inputs=[self.id],
+            shape_metadata=self.shape,
         )
         global_tracing_state.add_node(node)
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __getitem__(self, key: Any) -> "ProxyTensor":  # type: ignore
+    def __getitem__(self, key: object) -> "ProxyTensor":
         """Trace a tensor slicing or indexing operation.
 
         Args:
@@ -127,30 +125,30 @@ class ProxyMathOverloadsMixin:
             TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
-            msg = "Cannot perform Slice outside of a tracing context."
+            msg: object = "Cannot perform Slice outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError(msg)
 
-        out_id = str(uuid.uuid4())
+        out_id: object = str(uuid.uuid4())
         # Note: True shape tracking for slices is complex and often deferred to
         # shape inference passes in the pass manager. We approximate it here
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        node = IRNode(
+        node: object = IRNode(
             id=out_id,
             op_type="Slice",
-            inputs=[self.id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            inputs=[self.id],
             attributes={"slices": str(key)},
-            shape_metadata=self.shape,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            shape_metadata=self.shape,
         )
         global_tracing_state.add_node(node)
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __matmul__(self, other: Any) -> "ProxyTensor":  # type: ignore
+    def __matmul__(self, other: object) -> "ProxyTensor":
         """Trace a matrix multiplication operation.
 
         Args:
@@ -164,31 +162,31 @@ class ProxyMathOverloadsMixin:
             ValueError: If the right-hand side is not a valid ProxyTensor.
         """
         if not global_tracing_state.is_tracing:
-            msg = "Cannot perform MatMul outside of a tracing context."
+            msg: object = "Cannot perform MatMul outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError(msg)
 
-        other_id = getattr(other, "id", None)
+        other_id: object = getattr(other, "id", None)
         if other_id is None:
-            msg = "MatMul right hand side must be a ProxyTensor."
+            msg: object = "MatMul right hand side must be a ProxyTensor."
             raise ValueError(msg)
 
-        other_shape = getattr(other, "shape", ())
+        other_shape: object = getattr(other, "shape", ())
 
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
-        out_shape = matmul_shape(self.shape, other_shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        out_dtype = self.dtype  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shape: object = matmul_shape(self.shape, other_shape)
+        out_dtype: object = self.dtype
 
-        out_id = str(uuid.uuid4())
+        out_id: object = str(uuid.uuid4())
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        node = IRNode(
+        node: object = IRNode(
             id=out_id,
             op_type="MatMul",
-            inputs=[self.id, other_id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            inputs=[self.id, other_id],
             shape_metadata=out_shape,
         )
         global_tracing_state.add_node(node)
@@ -197,7 +195,7 @@ class ProxyMathOverloadsMixin:
 
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
-    def assign(self, value: "ProxyTensor") -> "ProxyTensor":  # type: ignore
+    def assign(self, value: "ProxyTensor") -> "ProxyTensor":
         """Trace an assignment operation, updating a variable's state.
 
         Args:
@@ -211,29 +209,29 @@ class ProxyMathOverloadsMixin:
             ValueError: If the current proxy is not bound to a variable.
         """
         if not global_tracing_state.is_tracing:
-            msg = "Cannot perform assign outside of a tracing context."
+            msg: object = "Cannot perform assign outside of a tracing context."
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError(msg)
 
-        node = global_tracing_state.active_graph.nodes.get(self.id)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        node: object = global_tracing_state.active_graph.nodes.get(self.id)
         if node is None or node.op_type not in ("ReadVariable", "AssignVariable"):
-            msg = "assign() can only be called on a variable proxy."
+            msg: object = "assign() can only be called on a variable proxy."
             raise ValueError(msg)
 
-        var_name = node.attributes.get("variable_name")
+        var_name: object = node.attributes.get("variable_name")
 
         # Constant wrapping if not a proxy tensor
-        value_id = getattr(value, "id", None)
-        value_shape = getattr(value, "shape", ())
-        value_dtype = getattr(value, "dtype", self.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        value_id: object = getattr(value, "id", None)
+        value_shape: object = getattr(value, "shape", ())
+        value_dtype: object = getattr(value, "dtype", self.dtype)
 
         if value_id is None:
-            value_id = str(uuid.uuid4())
+            value_id: object = str(uuid.uuid4())
 
             from ml_switcheroo_compiler.ir.core import IRNode
 
-            const_node = IRNode(
+            const_node: object = IRNode(
                 id=value_id,
                 op_type="Constant",
                 attributes={"value": value},
@@ -241,11 +239,11 @@ class ProxyMathOverloadsMixin:
             )
             global_tracing_state.add_node(const_node)
 
-        out_id = str(uuid.uuid4())
+        out_id: object = str(uuid.uuid4())
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        assign_node = IRNode(
+        assign_node: object = IRNode(
             id=out_id,
             op_type="AssignVariable",
             inputs=[value_id],
@@ -256,9 +254,9 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)
 
-    def assign_add(self, value: "ProxyTensor") -> "ProxyTensor":  # type: ignore
+    def assign_add(self, value: "ProxyTensor") -> "ProxyTensor":
         """Add value to variable proxy and return updated proxy.
 
         Args:
@@ -267,9 +265,9 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return self.assign(self + value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return self.assign(self + value)
 
-    def assign_sub(self, value: "ProxyTensor") -> "ProxyTensor":  # type: ignore
+    def assign_sub(self, value: "ProxyTensor") -> "ProxyTensor":
         """Subtract value from variable proxy and return updated proxy.
 
         Args:
@@ -278,4 +276,4 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return self.assign(self - value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return self.assign(self - value)

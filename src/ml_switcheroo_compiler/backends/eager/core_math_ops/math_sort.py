@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argsort")
-def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
+def _argsort(backend_module: object, a: object, axis: int = -1, **kwargs: object) -> object:
     """Evaluate _argsort operation.
 
     Args:
@@ -25,7 +23,7 @@ def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Lexsort")
-def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _lexsort(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _lexsort operation.
 
     Args:
@@ -40,7 +38,7 @@ def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Searchsorted")
-def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _searchsorted(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _searchsorted operation.
 
     Args:
@@ -55,7 +53,7 @@ def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("SortComplex")
-def _sortcomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _sortcomplex(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _sortcomplex operation.
 
     Args:

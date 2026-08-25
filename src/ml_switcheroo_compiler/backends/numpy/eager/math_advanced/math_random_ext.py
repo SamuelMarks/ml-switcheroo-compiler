@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("LinearOperatorPermutation")
-def _np_linearoperatorpermutation(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorpermutation(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorPermutation.
 
     Args:
@@ -30,7 +29,7 @@ def _np_linearoperatorpermutation(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("SobolSample")
-def _np_sobolsample(backend_module: Any, dim: int, num_results: int, skip: int = 0, *args: Any, **kwargs: Any) -> Any:
+def _np_sobolsample(backend_module: object, dim: int, num_results: int, skip: int = 0, *args: object, **kwargs: object) -> object:
     """Implement SobolSample eagerly.
 
     Args:
@@ -51,7 +50,7 @@ def _np_sobolsample(backend_module: Any, dim: int, num_results: int, skip: int =
 
 
 @numpy_eager_registry.register("RandomCategorical")
-def _np_randomcategorical(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_randomcategorical(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_randomcategorical operation.
 
     Args:
@@ -62,13 +61,13 @@ def _np_randomcategorical(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     Returns:
             tuple[int, ...]: Result.
     """
-    logits = backend_module.asarray(args[0])
-    num_samples = args[1] if len(args) > 1 else kwargs.get("num_samples", 1)
+    logits: object = backend_module.asarray(args[0])
+    num_samples: object = args[1] if len(args) > 1 else kwargs.get("num_samples", 1)
     return backend_module.zeros(list(logits.shape[:-1]) + [num_samples], dtype=np.int64)
 
 
 @numpy_eager_registry.register("RandomPermutation")
-def _np_randompermutation(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_randompermutation(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_randompermutation operation.
 
     Args:
@@ -81,14 +80,14 @@ def _np_randompermutation(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """
     import numpy as np
 
-    x = backend_module.asarray(args[0])
+    x: object = backend_module.asarray(args[0])
     if x.ndim == 0:
         return backend_module.array(np.random.permutation(int(x)))
     return backend_module.array(np.random.permutation(x))
 
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
-def _np_randomtruncatednormal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_randomtruncatednormal(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_randomtruncatednormal operation.
 
     Args:
@@ -99,12 +98,12 @@ def _np_randomtruncatednormal(backend_module: Any, *args: Any, **kwargs: Any) ->
     Returns:
             tuple[int, ...]: Result.
     """
-    shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
+    shape: object = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
 
 
 @numpy_eager_registry.register("RandomBernoulli")
-def _np_randombernoulli(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_randombernoulli(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_randombernoulli operation.
 
     Args:
@@ -115,6 +114,6 @@ def _np_randombernoulli(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
-    p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
+    shape: object = kwargs.get("shape", args[0] if len(args) > 0 else None)
+    p: object = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
     return backend_module.random.binomial(1, p, size=shape)

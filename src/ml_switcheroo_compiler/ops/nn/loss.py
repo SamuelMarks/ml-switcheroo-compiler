@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Calculate loss functions."""
 
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from ml_switcheroo_compiler import ops
 
@@ -37,11 +37,11 @@ from ml_switcheroo_compiler.ops.unary import abs, exp, log, negative
 
 
 def dice_loss(
-    y_true: Tensor,  # type: ignore
-    y_pred: Tensor,  # type: ignore
+    y_true: Tensor,
+    y_pred: Tensor,
     axis: Optional[Union[tuple[int, ...], int]] = None,
     smooth: float = 1e-5,
-) -> Any:
+) -> object:
     """Compute the Dice loss.
 
     Args:
@@ -53,18 +53,18 @@ def dice_loss(
     Returns:
         Tensor: The calculated dice loss.
     """
-    intersection = op_sum(multiply(y_true, y_pred), axis=axis)
-    y_true_sum = op_sum(y_true, axis=axis)
-    y_pred_sum = op_sum(y_pred, axis=axis)
+    intersection: object = op_sum(multiply(y_true, y_pred), axis=axis)
+    y_true_sum: object = op_sum(y_true, axis=axis)
+    y_pred_sum: object = op_sum(y_pred, axis=axis)
 
-    numerator = add(multiply(2.0, intersection), smooth)
-    denominator = add(add(y_true_sum, y_pred_sum), smooth)
+    numerator: object = add(multiply(2.0, intersection), smooth)
+    denominator: object = add(add(y_true_sum, y_pred_sum), smooth)
 
-    dice_coeff = true_divide(numerator, denominator)
+    dice_coeff: object = true_divide(numerator, denominator)
     return subtract(1.0, dice_coeff)
 
 
-def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> Any:  # type: ignore
+def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> object:
     """Evaluate categorical_generalized_cross_entropy operation.
 
     Args:
@@ -77,15 +77,15 @@ def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: flo
         Tensor: Result.
     """
     # Clip predictions to prevent NaNs
-    epsilon = 1e-7
-    y_pred = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
+    epsilon: object = 1e-7
+    y_pred: object = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
 
     # Extract probability of the true class
     # y_true is one-hot, so sum(y_true * y_pred) gives p_y
-    p_y = op_sum(multiply(y_true, y_pred), axis=axis)
+    p_y: object = op_sum(multiply(y_true, y_pred), axis=axis)
 
     # Calculate GCE: (1 - p_y^q) / q
-    loss = true_divide(subtract(1.0, op_pow(p_y, q)), q)
+    loss: object = true_divide(subtract(1.0, op_pow(p_y, q)), q)
     return loss
 
 
@@ -101,7 +101,7 @@ def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
     return 1.0 + margin, -margin, 1.0 - margin, margin
 
 
-def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> Any:  # type: ignore
+def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> object:
     """Compute the scaled logits for the positive and negative classes in circle loss.
 
     Args:
@@ -113,15 +113,15 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> Any: 
         tuple[Tensor, Tensor]: The computed positive and negative logits.
     """
     O_p, O_n, Delta_p, Delta_n = _compute_circle_margins(margin)
-    alpha_p = maximum(0.0, subtract(O_p, y_pred))
-    alpha_n = maximum(0.0, subtract(y_pred, O_n))
+    alpha_p: object = maximum(0.0, subtract(O_p, y_pred))
+    alpha_n: object = maximum(0.0, subtract(y_pred, O_n))
 
-    logit_p = multiply(multiply(alpha_p, subtract(y_pred, Delta_p)), gamma)
-    logit_n = multiply(multiply(alpha_n, subtract(y_pred, Delta_n)), gamma)
+    logit_p: object = multiply(multiply(alpha_p, subtract(y_pred, Delta_p)), gamma)
+    logit_n: object = multiply(multiply(alpha_n, subtract(y_pred, Delta_n)), gamma)
     return logit_p, logit_n
 
 
-def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> Any:  # type: ignore
+def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> object:
     """Reduce the circle loss logits into the final scalar or per-sample loss.
 
     Args:
@@ -134,16 +134,16 @@ def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Ten
         Tensor: The computed reduced loss values.
     """
     INF = 1e9
-    neg_inf_p = ops.multiply(ops.subtract(1.0, mask_p), -INF)
-    neg_inf_n = ops.multiply(ops.subtract(1.0, mask_n), -INF)
+    neg_inf_p: object = ops.multiply(ops.subtract(1.0, mask_p), -INF)
+    neg_inf_n: object = ops.multiply(ops.subtract(1.0, mask_n), -INF)
 
-    lse_p = ops.log(ops.sum(ops.exp(ops.add(ops.multiply(logit_p, -1.0), neg_inf_p)), axis=-1))
-    lse_n = ops.log(ops.sum(ops.exp(ops.add(logit_n, neg_inf_n)), axis=-1))
-    loss = ops.add(lse_p, lse_n)
+    lse_p: object = ops.log(ops.sum(ops.exp(ops.add(ops.multiply(logit_p, -1.0), neg_inf_p)), axis=-1))
+    lse_n: object = ops.log(ops.sum(ops.exp(ops.add(logit_n, neg_inf_n)), axis=-1))
+    loss: object = ops.add(lse_p, lse_n)
     return ops.log(ops.add(1.0, ops.exp(loss)))
 
 
-def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> Any:  # type: ignore
+def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> object:
     """Evaluate circle_loss operation.
 
     Args:
@@ -155,13 +155,13 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
     Returns:
         Tensor: Result.
     """
-    mask_p = y_true
-    mask_n = subtract(1.0, y_true)
+    mask_p: object = y_true
+    mask_n: object = subtract(1.0, y_true)
     logit_p, logit_n = _compute_circle_logits(y_pred, margin, gamma)
     return _compute_circle_loss_reduction(logit_p, logit_n, mask_p, mask_n)
 
 
-def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> Any:  # type: ignore
+def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> object:
     """Compute the Tversky loss, a generalization of the Dice loss.
 
     Args:
@@ -173,15 +173,15 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
     Returns:
         Tensor: The calculated Tversky loss.
     """
-    intersection = op_sum(multiply(y_true, y_pred), axis=-1)
-    fps = op_sum(multiply(subtract(1.0, y_true), y_pred), axis=-1)
-    fns = op_sum(multiply(y_true, subtract(1.0, y_pred)), axis=-1)
+    intersection: object = op_sum(multiply(y_true, y_pred), axis=-1)
+    fps: object = op_sum(multiply(subtract(1.0, y_true), y_pred), axis=-1)
+    fns: object = op_sum(multiply(y_true, subtract(1.0, y_pred)), axis=-1)
 
-    denom = add(add(intersection, multiply(alpha, fps)), add(multiply(beta, fns), 1e-7))
+    denom: object = add(add(intersection, multiply(alpha, fps)), add(multiply(beta, fns), 1e-7))
     return subtract(1.0, true_divide(intersection, denom))
 
 
-def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Any:  # type: ignore
+def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> object:
     """Clip probabilities if from_logits is False.
 
     Args:
@@ -196,7 +196,7 @@ def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Any:  # type:
     return y_pred
 
 
-def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Any:  # type: ignore
+def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> object:
     """Apply mathematical computation for BCE loss.
 
     Args:
@@ -207,28 +207,28 @@ def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Any:
     Returns:
         Tensor: The computed binary crossentropy loss.
     """
-    negative = get_op("Negative")()
+    negative: object = get_op("Negative")()
     if from_logits:
-        max_x_0 = maximum(y_pred, 0.0)
-        x_z = multiply(y_pred, y_true)
-        abs_x = abs(y_pred)
-        neg_abs_x = negative(abs_x)
-        exp_neg_abs_x = exp(neg_abs_x)
-        log_term = log(add(1.0, exp_neg_abs_x))
+        max_x_0: object = maximum(y_pred, 0.0)
+        x_z: object = multiply(y_pred, y_true)
+        abs_x: object = abs(y_pred)
+        neg_abs_x: object = negative(abs_x)
+        exp_neg_abs_x: object = exp(neg_abs_x)
+        log_term: object = log(add(1.0, exp_neg_abs_x))
         return add(subtract(max_x_0, x_z), log_term)
 
-    term1 = multiply(y_true, log(y_pred))
-    term2 = multiply(subtract(1.0, y_true), log(subtract(1.0, y_pred)))
+    term1: object = multiply(y_true, log(y_pred))
+    term2: object = multiply(subtract(1.0, y_true), log(subtract(1.0, y_pred)))
     return negative(add(term1, term2))
 
 
 def binary_crossentropy(
-    y_true: Tensor,  # type: ignore
-    y_pred: Tensor,  # type: ignore
+    y_true: Tensor,
+    y_pred: Tensor,
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-) -> Any:
+) -> object:
     """Compute the binary crossentropy loss.
 
     Args:
@@ -242,21 +242,21 @@ def binary_crossentropy(
         Tensor: The calculated binary crossentropy loss.
     """
     if label_smoothing > 0.0:
-        y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
+        y_true: object = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
 
-    y_pred = _clip_and_convert_logits(y_pred, from_logits)
-    bce = _compute_bce_loss(y_true, y_pred, from_logits)
+    y_pred: object = _clip_and_convert_logits(y_pred, from_logits)
+    bce: object = _compute_bce_loss(y_true, y_pred, from_logits)
 
     return op_mean(bce, axis=axis)
 
 
 def categorical_crossentropy(
-    y_true: Tensor,  # type: ignore
-    y_pred: Tensor,  # type: ignore
+    y_true: Tensor,
+    y_pred: Tensor,
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
-) -> Any:
+) -> object:
     """Compute the categorical crossentropy loss.
 
     Args:
@@ -269,28 +269,28 @@ def categorical_crossentropy(
     Returns:
         Tensor: The calculated categorical crossentropy loss.
     """
-    epsilon = 1e-7
+    epsilon: object = 1e-7
 
     if label_smoothing > 0.0:
-        num_classes = y_pred.shape[axis]
-        smooth_val = label_smoothing / float(num_classes)
-        y_true = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
+        num_classes: object = y_pred.shape[axis]
+        smooth_val: object = label_smoothing / float(num_classes)
+        y_true: object = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
 
     if from_logits:
-        y_pred = log_softmax(y_pred, axis=axis)
+        y_pred: object = log_softmax(y_pred, axis=axis)
         return negative(op_sum(multiply(y_true, y_pred), axis=axis))
     else:
-        y_pred = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
+        y_pred: object = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
         return negative(op_sum(multiply(y_true, log(y_pred)), axis=axis))
 
 
 def sparse_categorical_crossentropy(
-    y_true: Tensor,  # type: ignore
-    y_pred: Tensor,  # type: ignore
+    y_true: Tensor,
+    y_pred: Tensor,
     from_logits: bool = False,
     ignore_class: Optional[int] = None,
     axis: int = -1,
-) -> Any:
+) -> object:
     """Compute the sparse categorical crossentropy loss.
 
     Args:
@@ -303,24 +303,24 @@ def sparse_categorical_crossentropy(
     Returns:
         Tensor: The calculated sparse categorical crossentropy loss.
     """
-    num_classes = y_pred.shape[axis]
-    y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
-    loss = categorical_crossentropy(y_true_one_hot, y_pred, from_logits=from_logits, axis=axis)
+    num_classes: object = y_pred.shape[axis]
+    y_true_one_hot: object = one_hot(y_true, num_classes, axis=axis)
+    loss: object = categorical_crossentropy(y_true_one_hot, y_pred, from_logits=from_logits, axis=axis)
 
     if ignore_class is not None:
-        valid_mask = not_equal(y_true, ignore_class)
-        loss = where(valid_mask, loss, None)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        valid_mask: object = not_equal(y_true, ignore_class)
+        loss: object = where(valid_mask, loss, None)
 
     return loss
 
 
 def ctc_decode(
-    inputs: Tensor,  # type: ignore
-    sequence_lengths: Tensor,  # type: ignore
+    inputs: Tensor,
+    sequence_lengths: Tensor,
     greedy: bool = True,
     beam_width: int = 100,
     top_paths: int = 1,
-) -> tuple[list[Tensor], Tensor]:  # type: ignore
+) -> tuple[list[Tensor], Tensor]:
     """Decode CTC predictions.
 
     Args:
@@ -335,9 +335,9 @@ def ctc_decode(
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import zeros
 
-    paths = argmax(inputs, axis=-1)
-    batch_size = inputs.shape[0] if len(inputs.shape) >= 2 else 1
-    log_probs = zeros((batch_size, top_paths), dtype=inputs.dtype)
+    paths: object = argmax(inputs, axis=-1)
+    batch_size: object = inputs.shape[0] if len(inputs.shape) >= 2 else 1
+    log_probs: object = zeros((batch_size, top_paths), dtype=inputs.dtype)
 
     return [paths] * top_paths, log_probs
 
@@ -346,22 +346,22 @@ def ctc_decode(
 class AdaptiveLogSoftmaxWithLoss(OpDef):
     """AdaptiveLogSoftmaxWithLoss operation definition."""
 
-    op_name = "AdaptiveLogSoftmaxWithLoss"
+    op_name: object = "AdaptiveLogSoftmaxWithLoss"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the output shape of the AdaptiveLogSoftmaxWithLoss operation.
 
         Args:
             *args (object): The arguments passed to the operation.
             **kwargs (object): The keyword arguments passed to the operation.
 
-        Returns: Any: A tuple containing the inferred shape for output and loss.
+        Returns: object: A tuple containing the inferred shape for output and loss.
         """
         # Returns output (same shape as input target) and loss (scalar)
         return (args[1].shape, ())
 
 
-def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: Any, add_cluster_prob: bool) -> Any:  # type: ignore
+def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: object, add_cluster_prob: bool) -> object:
     """Emit a logical node representing the adaptive log softmax with loss computation during tracing.
 
     Args:
@@ -386,33 +386,33 @@ def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cut
     if not global_tracing_state.is_tracing:
         raise RuntimeError("Must be tracing")
 
-    out_id = str(uuid.uuid4())
-    loss_id = f"{out_id}:loss"
+    out_id: object = str(uuid.uuid4())
+    loss_id: object = f"{out_id}:loss"
 
-    node = LogicalNode(
+    node: object = LogicalNode(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
-        inputs=[input.data.id, target.data.id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[input.data.id, target.data.id],
         shape_metadata=[target.shape, ()],
         attributes={"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob},
     )
     global_tracing_state.add_node(node)
 
-    proxy_out = ProxyTensor(id=out_id, shape=target.shape, dtype=input.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    proxy_loss = ProxyTensor(id=loss_id, shape=(), dtype=input.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    proxy_out: object = ProxyTensor(id=out_id, shape=target.shape, dtype=input.dtype)
+    proxy_loss: object = ProxyTensor(id=loss_id, shape=(), dtype=input.dtype)
 
     return (
-        Tensor(proxy_out, TensorConfig(target.shape, input.dtype, input.device)),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        Tensor(proxy_out, TensorConfig(target.shape, input.dtype, input.device)),
         Tensor(proxy_loss, TensorConfig((), input.dtype, input.device)),
     )
 
 
 def adaptive_log_softmax_with_loss(
-    input: Tensor,  # type: ignore
-    target: Tensor,  # type: ignore
-    cutoffs: Any,
+    input: Tensor,
+    target: Tensor,
+    cutoffs: object,
     add_cluster_prob: bool = True,
-) -> Any:
+) -> object:
     """Compute the adaptive log softmax and its corresponding loss.
 
     Args:
@@ -429,7 +429,7 @@ def adaptive_log_softmax_with_loss(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         out, loss = backend.execute_op(
             "AdaptiveLogSoftmaxWithLoss",
             input.data,
@@ -438,13 +438,13 @@ def adaptive_log_softmax_with_loss(
             add_cluster_prob=add_cluster_prob,
         )
         return (
-            Tensor(out, TensorConfig(target.shape, input.dtype, input.device)),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            Tensor(out, TensorConfig(target.shape, input.dtype, input.device)),
             Tensor(loss, TensorConfig((), input.dtype, input.device)),
         )
     return _emit_adaptive_log_softmax_with_loss_node(input, target, cutoffs, add_cluster_prob)
 
 
-def log_poisson_loss(targets: Any, log_input: Any, compute_full_loss: Any = False, name: Any = None) -> Any:
+def log_poisson_loss(targets: object, log_input: object, compute_full_loss: object = False, name: object = None) -> object:
     """Compute log Poisson loss.
 
     Args:
@@ -453,12 +453,12 @@ def log_poisson_loss(targets: Any, log_input: Any, compute_full_loss: Any = Fals
         compute_full_loss (object): Whether to compute the full loss.
         name (object): An optional name for the operation.
 
-    Returns: Any: The computed log Poisson loss.
+    Returns: object: The computed log Poisson loss.
     """
     return Tensor(None, TensorConfig(targets.shape, "float32", "cpu"))
 
 
-def in_top_k(targets: Any, predictions: Any, k: Any, name: Any = None) -> Any:
+def in_top_k(targets: object, predictions: object, k: object, name: object = None) -> object:
     """Says whether the targets are in the top K predictions.
 
     Args:
@@ -467,31 +467,31 @@ def in_top_k(targets: Any, predictions: Any, k: Any, name: Any = None) -> Any:
         k (object): The number of top elements to consider.
         name (object): An optional name for the operation.
 
-    Returns: Any: A boolean tensor indicating if the targets are in the top K predictions.
+    Returns: object: A boolean tensor indicating if the targets are in the top K predictions.
     """
     return Tensor(None, TensorConfig(targets.shape, "bool", "cpu"))
 
 
-def l2_loss(t: Any, name: Any = None) -> Any:
+def l2_loss(t: object, name: object = None) -> object:
     """Compute half the L2 norm of a tensor without the sqrt.
 
     Args:
         t (object): The input tensor.
         name (object): An optional name for the operation.
 
-    Returns: Any: The computed L2 loss.
+    Returns: object: The computed L2 loss.
     """
     return multiply(sum(multiply(t, t)), 0.5)
 
 
-def scale_regularization_loss(regularization_loss: Any, name: Any = None) -> Any:
+def scale_regularization_loss(regularization_loss: object, name: object = None) -> object:
     """Scales the sum of the given regularization losses by number of replicas.
 
     Args:
         regularization_loss (object): The regularization loss to scale.
         name (object): An optional name for the operation.
 
-    Returns: Any: The scaled regularization loss.
+    Returns: object: The scaled regularization loss.
     """
     return regularization_loss
 
@@ -509,15 +509,15 @@ __all__ = [
 class InTopK(OpDef):
     """InTopK operation."""
 
-    op_name = "InTopK"
+    op_name: object = "InTopK"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infers the output shape of the InTopK operation.
 
         Args:
             *args (object): The arguments passed to the operation.
             **kwargs (object): The keyword arguments passed to the operation.
 
-        Returns: Any: The inferred shape.
+        Returns: object: The inferred shape.
         """
         return getattr(args[0], "shape", ()) if args else ()

@@ -92,3 +92,98 @@ def test_cpp_generator_while_with_body():
     gen._visit_node(node, graph)
     lines = "".join(gen.lines)
     assert "Fallback Unimplemented Equal" in lines
+
+
+def test_cpp_generator_arena_buffer():
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    node = LogicalNode(id="n1", op_type="Input")
+    node.attributes = {"buffer_offset": 10, "buffer_size": 15}
+    graph.nodes = {"n1": node}
+
+    gen = CppGenerator(graph)
+    code = gen.generate(graph)
+    assert "Allocate global arena buffer of size 25 bytes" in code
+
+
+def test_cpp_generator_conv2d_low_rank():
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    in1 = LogicalNode(id="in1", op_type="Input")
+    in1.shape_metadata = [2]
+    in2 = LogicalNode(id="in2", op_type="Input")
+    in2.shape_metadata = [2, 3]
+    graph.nodes = {"in1": in1, "in2": in2}
+
+    node = LogicalNode(id="n1", op_type="Conv2D", inputs=["in1", "in2"])
+    node.shape_metadata = [1]
+
+    gen = CppGenerator(graph)
+    gen._visit_node(node, graph)
+
+
+def test_cpp_generator_compile_subprocess_error():
+    import subprocess
+    from unittest.mock import patch
+
+    import pytest
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = CppGenerator(graph=IRGraph())
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = subprocess.CalledProcessError(1, ["clang++"], stderr=b"clang++ error")
+        with pytest.raises(RuntimeError, match="Compilation failed: clang"):
+            gen.compile("int main() {}")
+
+
+def test_cpp_generator_compile_cdll_error():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = CppGenerator(graph=IRGraph())
+
+    with patch("subprocess.run"):
+        with patch("ctypes.CDLL", side_effect=Exception("CDLL failed")):
+            executable = gen.compile("int main() {}")
+            assert executable() == "Execution simulated (compiled)"
+
+
+def test_cpp_generator_compile_compute_func_error():
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = CppGenerator(graph=IRGraph())
+
+    with patch("subprocess.run"):
+        mock_lib = MagicMock()
+        mock_lib.compute_graph.side_effect = Exception("compute_graph failed")
+        with patch("ctypes.CDLL", return_value=mock_lib):
+            executable = gen.compile("int main() {}")
+            assert executable() == "Execution simulated (compiled)"
+
+
+def test_cpp_generator_compile_execution_successful():
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = CppGenerator(graph=IRGraph())
+
+    with patch("subprocess.run"):
+        mock_lib = MagicMock()
+        mock_lib.compute_graph.return_value = 0  # non-string
+        with patch("ctypes.CDLL", return_value=mock_lib):
+            executable = gen.compile("int main() {}")
+            assert executable() == "Execution successful"

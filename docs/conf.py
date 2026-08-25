@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from ml_playground_directive import setup as setup_directive
 
 # All target directories relative to the current conf.py
-projects = [
+projects: object = [
     "../ml-switcheroo-compiler",
     "../ml-switcheroo-ir",
     "../zero-chex",
@@ -30,29 +30,29 @@ projects = [
     "../zero-tensorflow",
 ]
 
-fast_build = os.environ.get("FAST_BUILD", "0") == "1"
+fast_build: object = os.environ.get("FAST_BUILD", "0") == "1"
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 if not fast_build:
     for p in projects:
-        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p))
+        project_root: object = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p))
         sys.path.insert(0, project_root)
-        src_dir = os.path.join(project_root, "src")
+        src_dir: object = os.path.join(project_root, "src")
         if os.path.exists(src_dir):
             sys.path.insert(0, src_dir)
 
 # -- Project information -----------------------------------------------------
 
-project = "ML Switcheroo"
-copyright = "2026, ML Switcheroo Authors"
-author = "ML Switcheroo Authors"
-version = "0.1"
-release = "0.1"
+project: object = "ML Switcheroo"
+copyright: object = "2026, ML Switcheroo Authors"
+author: object = "ML Switcheroo Authors"
+version: object = "0.1"
+release: object = "0.1"
 
 # -- General configuration ---------------------------------------------------
 
-extensions = [
+extensions: object = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx_copybutton",
@@ -61,15 +61,15 @@ extensions = [
 ]
 
 if not fast_build:
-    autosummary_generate = True
+    autosummary_generate: object = True
 
-templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+templates_path: object = ["_templates"]
+exclude_patterns: object = ["_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
 
-html_theme = "furo"
-html_static_path = ["_static"]
+html_theme: object = "furo"
+html_static_path: object = ["_static"]
 
 
 def setup(app: object) -> object:

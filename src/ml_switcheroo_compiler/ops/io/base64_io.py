@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
+def _eager_base64(op: str, data: object, pad: bool = False) -> object:
     """Evaluate _eager_base64 operation.
 
     Args:
@@ -30,7 +29,7 @@ def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
     """
     import base64
 
-    def _proc(d: Any) -> bytes:
+    def _proc(d: object) -> bytes:
         """Process a single element for base64 operation.
 
         Args:
@@ -41,10 +40,10 @@ def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
         """
         if d is None:
             return b""
-        b = d.encode("utf-8") if isinstance(d, str) else d
-        res = base64.b64encode(b) if op == "encode" else base64.b64decode(b)
+        b: object = d.encode("utf-8") if isinstance(d, str) else d
+        res: object = base64.b64encode(b) if op == "encode" else base64.b64decode(b)
         if op == "encode" and not pad:
-            res = res.rstrip(b"=")
+            res: object = res.rstrip(b"=")
         return res
 
     if isinstance(data, (list, tuple)):
@@ -52,7 +51,7 @@ def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:  # type: ignore
+def encode_base64(input: Tensor, pad: object = False, name: object = None) -> object:
     """Encode base64.
 
     Args:
@@ -74,7 +73,7 @@ def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:  # 
     return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def decode_base64(input: Tensor, name: Any = None) -> Any:  # type: ignore
+def decode_base64(input: Tensor, name: object = None) -> object:
     """Decode base64.
 
     Args:
@@ -99,9 +98,9 @@ def decode_base64(input: Tensor, name: Any = None) -> Any:  # type: ignore
 class EncodeBase64(OpDef):
     """EncodeBase64 operation."""
 
-    op_name = "EncodeBase64"
+    op_name: object = "EncodeBase64"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -113,12 +112,12 @@ class EncodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -126,9 +125,9 @@ class EncodeBase64(OpDef):
 class DecodeBase64(OpDef):
     """DecodeBase64 operation."""
 
-    op_name = "DecodeBase64"
+    op_name: object = "DecodeBase64"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -140,10 +139,10 @@ class DecodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res

@@ -2,7 +2,6 @@
 """Shared vision utilities and ops."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_crop_eager,
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AugMix")
-def _np_augmix(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
+def _np_augmix(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
     """Evaluate _np_augmix operation.
 
     Args:
@@ -29,7 +28,7 @@ def _np_augmix(backend_module: Any, images: Any, factor: float, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("Cutmix")
-def _np_cutmix(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -> Any:
+def _np_cutmix(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
     """Evaluate _np_cutmix operation.
 
     Args:
@@ -45,7 +44,7 @@ def _np_cutmix(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("Mixup")
-def _np_mixup(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -> Any:
+def _np_mixup(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
     """Evaluate _np_mixup operation.
 
     Args:
@@ -61,7 +60,7 @@ def _np_mixup(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("RandAugment")
-def _np_rand_augment(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
+def _np_rand_augment(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
     """Evaluate _np_rand_augment operation.
 
     Args:
@@ -77,7 +76,7 @@ def _np_rand_augment(backend_module: Any, images: Any, factor: float, **kwargs: 
 
 
 @numpy_eager_registry.register("RandomColorJitter")
-def _np_random_color_jitter(backend_module: Any, images: Any, **kwargs: Any) -> Any:
+def _np_random_color_jitter(backend_module: object, images: object, **kwargs: object) -> object:
     """Evaluate _np_random_color_jitter operation.
 
     Args:
@@ -92,7 +91,7 @@ def _np_random_color_jitter(backend_module: Any, images: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(backend_module: Any, images: Any, size: tuple[Any, ...], seed: Any = None) -> Any:
+def _np_random_crop(backend_module: object, images: object, size: tuple[object, ...], seed: object = None) -> object:
     """Evaluate _np_random_crop operation.
 
     Args:
@@ -108,7 +107,7 @@ def _np_random_crop(backend_module: Any, images: Any, size: tuple[Any, ...], see
 
 
 @numpy_eager_registry.register("RandomErasing")
-def _np_random_erasing(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
+def _np_random_erasing(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
     """Evaluate _np_random_erasing operation.
 
     Args:
@@ -124,7 +123,7 @@ def _np_random_erasing(backend_module: Any, images: Any, factor: float, **kwargs
 
 
 # @numpy_eager_registry.register("RandomFlip")
-def _np_flip_horizontal(img: Any, rng: Any) -> Any:
+def _np_flip_horizontal(img: object, rng: object) -> object:
     """Flip an image horizontally with 50% probability.
 
     Args:
@@ -137,7 +136,7 @@ def _np_flip_horizontal(img: Any, rng: Any) -> Any:
     return img[:, :, ::-1] if rng.random() > 0.5 else img
 
 
-def _np_flip_vertical(img: Any, rng: Any) -> Any:
+def _np_flip_vertical(img: object, rng: object) -> object:
     """Flip an image vertically with 50% probability.
 
     Args:
@@ -150,7 +149,7 @@ def _np_flip_vertical(img: Any, rng: Any) -> Any:
     return img[:, ::-1, :] if rng.random() > 0.5 else img
 
 
-def _np_flip_both(img: Any, rng: Any) -> Any:
+def _np_flip_both(img: object, rng: object) -> object:
     """Flip an image both horizontally and vertically with 50% probability each.
 
     Args:
@@ -160,7 +159,7 @@ def _np_flip_both(img: Any, rng: Any) -> Any:
     Returns:
         The flipped or unchanged image array.
     """
-    img = _np_flip_horizontal(img, rng)
+    img: object = _np_flip_horizontal(img, rng)
     return _np_flip_vertical(img, rng)
 
 
@@ -171,7 +170,7 @@ _NP_FLIP_STRATEGIES = {
 }
 
 
-def _np_random_flip(images: Any, mode: str, seed: Any = None) -> Any:
+def _np_random_flip(images: object, mode: str, seed: object = None) -> object:
     """Evaluate _np_random_flip operation.
 
     Args:
@@ -186,15 +185,15 @@ def _np_random_flip(images: Any, mode: str, seed: Any = None) -> Any:
 
     import numpy as np
 
-    rng = random.Random(seed)
+    rng: object = random.Random(seed)
 
     # Check if a single image
     if len(images.shape) == 3:
-        strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
+        strategy: object = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
         return strategy(images, rng)
 
-    out = np.copy(images)
-    strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    out: object = np.copy(images)
+    strategy: object = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
 
     for i in range(out.shape[0]):
         out[i] = strategy(out[i], rng)
@@ -209,11 +208,11 @@ class RotationConfig:
     theta: float
     H: int
     W: int
-    x: Any
-    y: Any
+    x: object
+    y: object
 
 
-def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple[Any, ...]:
+def _calculate_rotation_matrix(np: object, cfg: RotationConfig) -> tuple[object, ...]:
     """Calculate rotation matrix coordinates.
 
     Args:
@@ -223,15 +222,15 @@ def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple[Any, ...]:
     Returns:
         tuple: src_x, src_y.
     """
-    cos_t = np.cos(cfg.theta)
-    sin_t = np.sin(cfg.theta)
+    cos_t: object = np.cos(cfg.theta)
+    sin_t: object = np.sin(cfg.theta)
 
-    src_x = cos_t * cfg.x - sin_t * cfg.y + cfg.W / 2.0
-    src_y = sin_t * cfg.x + cos_t * cfg.y + cfg.H / 2.0
+    src_x: object = cos_t * cfg.x - sin_t * cfg.y + cfg.W / 2.0
+    src_y: object = sin_t * cfg.x + cos_t * cfg.y + cfg.H / 2.0
     return src_x, src_y
 
 
-def _nearest_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape: tuple[Any, ...], b_c: tuple[Any, ...]) -> Any:
+def _nearest_interpolation(np: object, images: object, coords: tuple[object, ...], shape: tuple[object, ...], b_c: tuple[object, ...]) -> object:
     """Nearest neighbor interpolation.
 
     Args:
@@ -247,8 +246,8 @@ def _nearest_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape:
     src_x, src_y = coords
     H, W = shape
     b, c = b_c
-    src_y_round = np.clip(np.round(src_y).astype(np.int32), 0, H - 1)
-    src_x_round = np.clip(np.round(src_x).astype(np.int32), 0, W - 1)
+    src_y_round: object = np.clip(np.round(src_y).astype(np.int32), 0, H - 1)
+    src_x_round: object = np.clip(np.round(src_x).astype(np.int32), 0, W - 1)
     return images[b, src_y_round, src_x_round, c]
 
 
@@ -256,17 +255,17 @@ def _nearest_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape:
 class InterpPixelsConfig:
     """InterpPixelsConfig class."""
 
-    images: Any
-    y0: Any
-    y1: Any
-    x0: Any
-    x1: Any
+    images: object
+    y0: object
+    y1: object
+    x0: object
+    x1: object
     H: int
     W: int
-    b_c: tuple[Any, ...]
+    b_c: tuple[object, ...]
 
 
-def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple[Any, ...]:
+def _get_interp_pixels(np: object, cfg: InterpPixelsConfig) -> tuple[object, ...]:
     """Gather pixels.
 
     Args:
@@ -277,18 +276,18 @@ def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple[Any, ...]:
         tuple: Result.
     """
     b, c = cfg.b_c
-    y0_c = np.clip(cfg.y0, 0, cfg.H - 1)
-    y1_c = np.clip(cfg.y1, 0, cfg.H - 1)
-    x0_c = np.clip(cfg.x0, 0, cfg.W - 1)
-    x1_c = np.clip(cfg.x1, 0, cfg.W - 1)
-    Ia = cfg.images[b, y0_c, x0_c, c]
-    Ib = cfg.images[b, y1_c, x0_c, c]
-    Ic = cfg.images[b, y0_c, x1_c, c]
-    Id = cfg.images[b, y1_c, x1_c, c]
+    y0_c: object = np.clip(cfg.y0, 0, cfg.H - 1)
+    y1_c: object = np.clip(cfg.y1, 0, cfg.H - 1)
+    x0_c: object = np.clip(cfg.x0, 0, cfg.W - 1)
+    x1_c: object = np.clip(cfg.x1, 0, cfg.W - 1)
+    Ia: object = cfg.images[b, y0_c, x0_c, c]
+    Ib: object = cfg.images[b, y1_c, x0_c, c]
+    Ic: object = cfg.images[b, y0_c, x1_c, c]
+    Id: object = cfg.images[b, y1_c, x1_c, c]
     return Ia, Ib, Ic, Id
 
 
-def _get_interp_weights(src_coords: tuple[Any, ...], bounds: tuple[Any, ...]) -> tuple[Any, ...]:
+def _get_interp_weights(src_coords: tuple[object, ...], bounds: tuple[object, ...]) -> tuple[object, ...]:
     """Evaluate _get_interp_weights operation.
 
     Args:
@@ -300,14 +299,14 @@ def _get_interp_weights(src_coords: tuple[Any, ...], bounds: tuple[Any, ...]) ->
     """
     src_y, src_x = src_coords
     y0, y1, x0, x1 = bounds
-    wa = (y1 - src_y) * (x1 - src_x)
-    wb = (src_y - y0) * (x1 - src_x)
-    wc = (y1 - src_y) * (src_x - x0)
-    wd = (src_y - y0) * (src_x - x0)
+    wa: object = (y1 - src_y) * (x1 - src_x)
+    wb: object = (src_y - y0) * (x1 - src_x)
+    wc: object = (y1 - src_y) * (src_x - x0)
+    wd: object = (src_y - y0) * (src_x - x0)
     return wa, wb, wc, wd
 
 
-def _bilinear_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape: tuple[Any, ...], b_c: tuple[Any, ...]) -> Any:
+def _bilinear_interpolation(np: object, images: object, coords: tuple[object, ...], shape: tuple[object, ...], b_c: tuple[object, ...]) -> object:
     """Bilinear interpolation.
 
     Args:
@@ -320,14 +319,14 @@ def _bilinear_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape
     Returns:
             tuple[int, ...]: Result.
     """
-    y0 = np.floor(coords[1]).astype(np.int32)
-    y1 = y0 + 1
-    x0 = np.floor(coords[0]).astype(np.int32)
-    x1 = x0 + 1
+    y0: object = np.floor(coords[1]).astype(np.int32)
+    y1: object = y0 + 1
+    x0: object = np.floor(coords[0]).astype(np.int32)
+    x1: object = x0 + 1
 
-    pixel_cfg = InterpPixelsConfig(images=images, y0=y0, y1=y1, x0=x0, x1=x1, H=shape[0], W=shape[1], b_c=b_c)
-    pixels = _get_interp_pixels(np, pixel_cfg)
-    weights = _get_interp_weights((coords[1], coords[0]), (y0, y1, x0, x1))
+    pixel_cfg: object = InterpPixelsConfig(images=images, y0=y0, y1=y1, x0=x0, x1=x1, H=shape[0], W=shape[1], b_c=b_c)
+    pixels: object = _get_interp_pixels(np, pixel_cfg)
+    weights: object = _get_interp_weights((coords[1], coords[0]), (y0, y1, x0, x1))
 
     return pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]
 
@@ -336,13 +335,13 @@ def _bilinear_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape
 class AffineConfig:
     """Affine configuration."""
 
-    coords: tuple[Any, ...]
-    shape: tuple[Any, ...]
-    b_c: tuple[Any, ...]
-    options: tuple[Any, ...]
+    coords: tuple[object, ...]
+    shape: tuple[object, ...]
+    b_c: tuple[object, ...]
+    options: tuple[object, ...]
 
 
-def _apply_affine_grid(np: Any, images: Any, cfg: AffineConfig) -> Any:
+def _apply_affine_grid(np: object, images: object, cfg: AffineConfig) -> object:
     """Apply affine grid sampling.
 
     Args:
@@ -350,16 +349,16 @@ def _apply_affine_grid(np: Any, images: Any, cfg: AffineConfig) -> Any:
         images: Input images.
         cfg: Affine configuration.
 
-    Returns: Any: Sampled values.
+    Returns: object: Sampled values.
     """
     interpolation, fill_mode, fill_value, mask = cfg.options
     if interpolation == "nearest":
-        val = _nearest_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val: object = _nearest_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
     else:
-        val = _bilinear_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val: object = _bilinear_interpolation(np, images, cfg.coords, cfg.shape, cfg.b_c)
 
     if fill_mode == "constant":
-        val = np.where(mask, val, fill_value)
+        val: object = np.where(mask, val, fill_value)
 
     return val.astype(images.dtype)
 
@@ -368,16 +367,16 @@ def _apply_affine_grid(np: Any, images: Any, cfg: AffineConfig) -> Any:
 class BatchRotationConfig:
     """Batch rotation configuration."""
 
-    images: Any
-    angles: Any
+    images: object
+    angles: object
     H: int
     W: int
-    x: Any
-    y: Any
-    options: tuple[Any, ...]
+    x: object
+    y: object
+    options: tuple[object, ...]
 
 
-def _process_batch_item(np: Any, cfg: BatchRotationConfig, b: int, out: Any) -> None:
+def _process_batch_item(np: object, cfg: BatchRotationConfig, b: int, out: object) -> None:
     """Process a single item in the batch.
 
     Args:
@@ -386,16 +385,16 @@ def _process_batch_item(np: Any, cfg: BatchRotationConfig, b: int, out: Any) -> 
         b (int): The b parameter.
         out (object): The out parameter.
     """
-    rot_cfg = RotationConfig(theta=cfg.angles[b], H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
+    rot_cfg: object = RotationConfig(theta=cfg.angles[b], H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
     src_x, src_y = _calculate_rotation_matrix(np, rot_cfg)
-    mask = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
+    mask: object = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
     C = cfg.images.shape[3]
     for c in range(C):
-        aff_cfg = AffineConfig(coords=(src_x, src_y), shape=(cfg.H, cfg.W), b_c=(b, c), options=cfg.options + (mask,))
+        aff_cfg: object = AffineConfig(coords=(src_x, src_y), shape=(cfg.H, cfg.W), b_c=(b, c), options=cfg.options + (mask,))
         out[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
 
 
-def _apply_rotation_batch(np: Any, cfg: BatchRotationConfig) -> Any:
+def _apply_rotation_batch(np: object, cfg: BatchRotationConfig) -> object:
     """Apply rotation to a batch of images.
 
     Args:
@@ -406,13 +405,13 @@ def _apply_rotation_batch(np: Any, cfg: BatchRotationConfig) -> Any:
             tuple[int, ...]: Result.
     """
     B = cfg.images.shape[0]
-    out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
+    out: object = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
     for b in range(B):
         _process_batch_item(np, cfg, b, out)
     return out
 
 
-def _resolve_rotation_factor(factor: Any) -> tuple[Any, ...]:
+def _resolve_rotation_factor(factor: object) -> tuple[object, ...]:
     """Resolve rotation bounds.
 
     Args:
@@ -426,7 +425,7 @@ def _resolve_rotation_factor(factor: Any) -> tuple[Any, ...]:
     return -factor, factor
 
 
-def _create_rotation_mesh(np: Any, H: int, W: int) -> tuple[Any, ...]:
+def _create_rotation_mesh(np: object, H: int, W: int) -> tuple[object, ...]:
     """Create mesh grid for rotation.
 
     Args:
@@ -438,13 +437,13 @@ def _create_rotation_mesh(np: Any, H: int, W: int) -> tuple[Any, ...]:
         tuple: Result.
     """
     y, x = np.meshgrid(np.arange(H), np.arange(W), indexing="ij")
-    y = y.astype(np.float32) - H / 2.0
-    x = x.astype(np.float32) - W / 2.0
+    y: object = y.astype(np.float32) - H / 2.0
+    x: object = x.astype(np.float32) - W / 2.0
     return y, x
 
 
 @numpy_eager_registry.register("RandomRotation")
-def _np_random_rotation(backend_module: Any, images: Any, **kwargs: Any) -> Any:
+def _np_random_rotation(backend_module: object, images: object, **kwargs: object) -> object:
     """Evaluate _np_random_rotation operation.
 
     Args:
@@ -455,35 +454,35 @@ def _np_random_rotation(backend_module: Any, images: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    np = backend_module
-    images = np.asarray(images)
-    rank = len(images.shape)
+    np: object = backend_module
+    images: object = np.asarray(images)
+    rank: object = len(images.shape)
     if rank == 3:
-        images = np.expand_dims(images, 0)
+        images: object = np.expand_dims(images, 0)
     elif rank != 4:
         return images
 
     B, H, W, _ = images.shape
 
-    rng = np.random.default_rng(kwargs.get("seed", None))
-    angles = rng.uniform(*_resolve_rotation_factor(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
+    rng: object = np.random.default_rng(kwargs.get("seed", None))
+    angles: object = rng.uniform(*_resolve_rotation_factor(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
     y, x = _create_rotation_mesh(np, H, W)
 
-    options = (
+    options: object = (
         kwargs.get("interpolation", "bilinear"),
         kwargs.get("fill_mode", "reflect"),
         kwargs.get("fill_value", 0.0),
     )
 
-    batch_cfg = BatchRotationConfig(images=images, angles=angles, H=H, W=W, x=x, y=y, options=options)
-    out = _apply_rotation_batch(np, batch_cfg)
+    batch_cfg: object = BatchRotationConfig(images=images, angles=angles, H=H, W=W, x=x, y=y, options=options)
+    out: object = _apply_rotation_batch(np, batch_cfg)
 
     return out[0] if rank == 3 else out
 
 
 @numpy_eager_registry.register("RandomTranslation")
-def _np_random_translation(backend_module: Any, images: Any, height_factor: Any, width_factor: Any, **kwargs: Any) -> Any:
+def _np_random_translation(backend_module: object, images: object, height_factor: object, width_factor: object, **kwargs: object) -> object:
     """Evaluate _np_random_translation operation.
 
     Args:
@@ -500,7 +499,7 @@ def _np_random_translation(backend_module: Any, images: Any, height_factor: Any,
 
 
 @numpy_eager_registry.register("RandomZoom")
-def _np_random_zoom(backend_module: Any, images: Any, height_factor: Any, width_factor: Any = None, **kwargs: Any) -> Any:
+def _np_random_zoom(backend_module: object, images: object, height_factor: object, width_factor: object = None, **kwargs: object) -> object:
     """Evaluate _np_random_zoom operation.
 
     Args:
@@ -515,6 +514,28 @@ def _np_random_zoom(backend_module: Any, images: Any, height_factor: Any, width_
     """
     return random_zoom_eager(backend_module, images, height_factor, width_factor, **kwargs)
 
+
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_augmix",
+    "_np_cutmix",
+    "_np_mixup",
+    "_np_rand_augment",
+    "_np_random_color_jitter",
+    "_np_random_crop",
+    "_np_random_erasing",
+    "_np_random_flip",
+    "_np_random_rotation",
+    "_np_random_translation",
+    "_np_random_zoom",
+    "numpy_eager_registry",
+]
 
 __all__ = [
     "__cached__",

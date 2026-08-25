@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed operations."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -10,26 +8,26 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def shard_tensor(tensor: Tensor, device_mesh: Any, layout: Any) -> Any:  # type: ignore
+def shard_tensor(tensor: Tensor, device_mesh: object, layout: object) -> object:
     """Shard a tensor across devices.
 
     Args:
         tensor (Tensor): The tensor parameter.
-        device_mesh (Any): The device_mesh parameter.
-        layout (Any): The layout parameter.
+        device_mesh (object): The device_mesh parameter.
+        layout (object): The layout parameter.
 
     Returns:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "ShardTensor",
             (tensor.data if type(tensor).__name__ == "Tensor" else tensor),
             device_mesh=device_mesh,
             layout=layout,
         )
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("ShardTensor", [tensor], {"device_mesh": device_mesh, "layout": layout}, tensor.shape, tensor.dtype)
 
 
@@ -37,9 +35,9 @@ def shard_tensor(tensor: Tensor, device_mesh: Any, layout: Any) -> Any:  # type:
 class ShardTensor(OpDef):
     """Shard tensor op."""
 
-    op_name = "ShardTensor"
+    op_name: object = "ShardTensor"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -52,7 +50,7 @@ class ShardTensor(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
+def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> object:
     """NCCL all-reduce.
 
     Args:
@@ -63,9 +61,9 @@ def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignor
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("NcclAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -73,9 +71,9 @@ def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignor
 class NcclAllReduce(OpDef):
     """NCCL all-reduce op."""
 
-    op_name = "NcclAllReduce"
+    op_name: object = "NcclAllReduce"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -88,7 +86,7 @@ class NcclAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
+def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> object:
     """Hierarchical copy all-reduce.
 
     Args:
@@ -99,9 +97,9 @@ def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("HierarchicalCopyAllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -109,9 +107,9 @@ def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  
 class HierarchicalCopyAllReduce(OpDef):
     """Hierarchical copy all-reduce op."""
 
-    op_name = "HierarchicalCopyAllReduce"
+    op_name: object = "HierarchicalCopyAllReduce"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -124,7 +122,7 @@ class HierarchicalCopyAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def broadcast(tensor: Tensor, root_rank: int = 0) -> Any:  # type: ignore
+def broadcast(tensor: Tensor, root_rank: int = 0) -> object:
     """Broadcast.
 
     Args:
@@ -135,9 +133,9 @@ def broadcast(tensor: Tensor, root_rank: int = 0) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Broadcast", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), root_rank=root_rank)
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Broadcast", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), root_rank=root_rank)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("Broadcast", [tensor], {"root_rank": root_rank}, tensor.shape, tensor.dtype)
 
 
@@ -145,9 +143,9 @@ def broadcast(tensor: Tensor, root_rank: int = 0) -> Any:  # type: ignore
 class Broadcast(OpDef):
     """Broadcast op."""
 
-    op_name = "Broadcast"
+    op_name: object = "Broadcast"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -160,7 +158,7 @@ class Broadcast(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_gather(tensor: Tensor, axis: int = 0) -> Any:  # type: ignore
+def all_gather(tensor: Tensor, axis: int = 0) -> object:
     """All-gather.
 
     Args:
@@ -171,9 +169,9 @@ def all_gather(tensor: Tensor, axis: int = 0) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AllGather", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), axis=axis)
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AllGather", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), axis=axis)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("AllGather", [tensor], {"axis": axis}, tensor.shape, tensor.dtype)  # simplified shape
 
 
@@ -181,9 +179,9 @@ def all_gather(tensor: Tensor, axis: int = 0) -> Any:  # type: ignore
 class AllGather(OpDef):
     """All-gather op."""
 
-    op_name = "AllGather"
+    op_name: object = "AllGather"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -196,7 +194,7 @@ class AllGather(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Any:  # type: ignore
+def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> object:
     """Reduce.
 
     Args:
@@ -208,14 +206,14 @@ def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Any:  # 
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "Reduce",
             (tensor.data if type(tensor).__name__ == "Tensor" else tensor),
             root_rank=root_rank,
             op_type=op_type,
         )
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("Reduce", [tensor], {"root_rank": root_rank, "op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -223,9 +221,9 @@ def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Any:  # 
 class Reduce(OpDef):
     """Reduce op."""
 
-    op_name = "Reduce"
+    op_name: object = "Reduce"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -238,7 +236,7 @@ class Reduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
+def all_reduce(tensor: Tensor, op_type: str = "sum") -> object:
     """Provide generic SPMD AllReduce.
 
     Args:
@@ -249,9 +247,9 @@ def all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("AllReduce", [tensor], {"op_type": op_type}, tensor.shape, tensor.dtype)
 
 
@@ -259,9 +257,9 @@ def all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
 class AllReduce(OpDef):
     """AllReduce op."""
 
-    op_name = "AllReduce"
+    op_name: object = "AllReduce"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -274,7 +272,7 @@ class AllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Any:  # type: ignore
+def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> object:
     """Provide generic SPMD ReduceScatter.
 
     Args:
@@ -286,9 +284,9 @@ def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Any: 
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)
+        return Tensor(data, TensorConfig(getattr(data, "shape", tensor.shape), tensor.dtype, tensor.device))
     return _emit_shape_node("ReduceScatter", [tensor], {"op_type": op_type, "axis": axis}, tensor.shape, tensor.dtype)
 
 
@@ -296,9 +294,9 @@ def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Any: 
 class ReduceScatter(OpDef):
     """ReduceScatter op."""
 
-    op_name = "ReduceScatter"
+    op_name: object = "ReduceScatter"
 
-    def infer_shape(self, tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, tensor: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -315,9 +313,9 @@ class ReduceScatter(OpDef):
 class AllToAll(OpDef):
     """AllToAll operation."""
 
-    op_name = "AllToAll"
+    op_name: object = "AllToAll"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -329,12 +327,12 @@ class AllToAll(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -342,9 +340,9 @@ class AllToAll(OpDef):
 class BroadcastArrays(OpDef):
     """BroadcastArrays operation."""
 
-    op_name = "BroadcastArrays"
+    op_name: object = "BroadcastArrays"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -356,12 +354,12 @@ class BroadcastArrays(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -369,9 +367,9 @@ class BroadcastArrays(OpDef):
 class BroadcastTo(OpDef):
     """BroadcastTo operation."""
 
-    op_name = "BroadcastTo"
+    op_name: object = "BroadcastTo"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -385,12 +383,12 @@ class BroadcastTo(OpDef):
 
         if "shape" in kwargs:
             return kwargs["shape"]
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -398,9 +396,9 @@ class BroadcastTo(OpDef):
 class BroadcastToRank(OpDef):
     """BroadcastToRank operation."""
 
-    op_name = "BroadcastToRank"
+    op_name: object = "BroadcastToRank"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -410,9 +408,9 @@ class BroadcastToRank(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        rank = kwargs.get("rank", 1)
+        rank: object = kwargs.get("rank", 1)
         if args and hasattr(args[0], "shape"):
-            shape = args[0].shape
+            shape: object = args[0].shape
             return (1,) * (rank - len(shape)) + shape if len(shape) < rank else shape
         return ()
 
@@ -421,9 +419,9 @@ class BroadcastToRank(OpDef):
 class BroadcastedIota(OpDef):
     """BroadcastedIota operation."""
 
-    op_name = "BroadcastedIota"
+    op_name: object = "BroadcastedIota"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -435,12 +433,12 @@ class BroadcastedIota(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -448,9 +446,9 @@ class BroadcastedIota(OpDef):
 class Pbroadcast(OpDef):
     """Pbroadcast operation."""
 
-    op_name = "Pbroadcast"
+    op_name: object = "Pbroadcast"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -462,16 +460,16 @@ class Pbroadcast(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def all_to_all(*args: Any, **kwargs: Any) -> Any:
+def all_to_all(*args: object, **kwargs: object) -> object:
     """AllToAll frontend.
 
     Args:
@@ -486,7 +484,7 @@ def all_to_all(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("AllToAll", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_arrays(*args: Any, **kwargs: Any) -> Any:
+def broadcast_arrays(*args: object, **kwargs: object) -> object:
     """BroadcastArrays frontend.
 
     Args:
@@ -501,7 +499,7 @@ def broadcast_arrays(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("BroadcastArrays", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to(*args: Any, **kwargs: Any) -> Any:
+def broadcast_to(*args: object, **kwargs: object) -> object:
     """BroadcastTo frontend.
 
     Args:
@@ -516,7 +514,7 @@ def broadcast_to(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("BroadcastTo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcast_to_rank(*args: Any, **kwargs: Any) -> Any:
+def broadcast_to_rank(*args: object, **kwargs: object) -> object:
     """BroadcastToRank frontend.
 
     Args:
@@ -531,7 +529,7 @@ def broadcast_to_rank(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("BroadcastToRank", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def broadcasted_iota(*args: Any, **kwargs: Any) -> Any:
+def broadcasted_iota(*args: object, **kwargs: object) -> object:
     """BroadcastedIota frontend.
 
     Args:
@@ -546,7 +544,7 @@ def broadcasted_iota(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("BroadcastedIota", list(args), kwargs, (), "int32")
 
 
-def pbroadcast(*args: Any, **kwargs: Any) -> Any:
+def pbroadcast(*args: object, **kwargs: object) -> object:
     """Pbroadcast frontend.
 
     Args:
@@ -565,9 +563,9 @@ def pbroadcast(*args: Any, **kwargs: Any) -> Any:
 class Pmax(OpDef):
     """Parallel maximum operator."""
 
-    op_name = "Pmax"
+    op_name: object = "Pmax"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -577,7 +575,7 @@ class Pmax(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -585,9 +583,9 @@ class Pmax(OpDef):
 class Pmin(OpDef):
     """Parallel minimum operator."""
 
-    op_name = "Pmin"
+    op_name: object = "Pmin"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -597,7 +595,7 @@ class Pmin(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -605,9 +603,9 @@ class Pmin(OpDef):
 class Outfeed(OpDef):
     """Write to the outfeed queue."""
 
-    op_name = "Outfeed"
+    op_name: object = "Outfeed"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -624,9 +622,9 @@ class Outfeed(OpDef):
 class Pshuffle(OpDef):
     """Parallel shuffle operator."""
 
-    op_name = "Pshuffle"
+    op_name: object = "Pshuffle"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -636,7 +634,7 @@ class Pshuffle(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -644,9 +642,9 @@ class Pshuffle(OpDef):
 class Pswapaxes(OpDef):
     """Parallel swapaxes operator."""
 
-    op_name = "Pswapaxes"
+    op_name: object = "Pswapaxes"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -656,9 +654,9 @@ class Pswapaxes(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
-        axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
-        shape = list(getattr(x, "shape", ()))
+        x: object = args[0] if len(args) > 0 else None
+        axis: object = kwargs.get("axis", args[2] if len(args) > 2 else 0)
+        shape: object = list(getattr(x, "shape", ()))
         if shape and axis < len(shape):
             shape[axis] = None
         return tuple(shape)
@@ -668,9 +666,9 @@ class Pswapaxes(OpDef):
 class Ppermute(OpDef):
     """Parallel permute operator."""
 
-    op_name = "Ppermute"
+    op_name: object = "Ppermute"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -680,7 +678,7 @@ class Ppermute(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -688,9 +686,9 @@ class Ppermute(OpDef):
 class PsumScatter(OpDef):
     """Parallel sum scatter operator."""
 
-    op_name = "PsumScatter"
+    op_name: object = "PsumScatter"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -700,15 +698,15 @@ class PsumScatter(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
-        scatter_dimension = kwargs.get("scatter_dimension", 0)
-        shape = list(getattr(x, "shape", ()))
+        x: object = args[0] if len(args) > 0 else None
+        scatter_dimension: object = kwargs.get("scatter_dimension", 0)
+        shape: object = list(getattr(x, "shape", ()))
         if shape and scatter_dimension < len(shape):
             shape[scatter_dimension] = None
         return tuple(shape)
 
 
-def outfeed(*args: Any, **kwargs: Any) -> Any:
+def outfeed(*args: object, **kwargs: object) -> object:
     """Write to the outfeed queue.
 
     Args:
@@ -723,7 +721,7 @@ def outfeed(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Outfeed", *args, **kwargs)
 
 
-def pmax(*args: Any, **kwargs: Any) -> Any:
+def pmax(*args: object, **kwargs: object) -> object:
     """Evaluate pmax operation.
 
     Args:
@@ -738,7 +736,7 @@ def pmax(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Pmax", *args, **kwargs)
 
 
-def pmin(*args: Any, **kwargs: Any) -> Any:
+def pmin(*args: object, **kwargs: object) -> object:
     """Evaluate pmin operation.
 
     Args:
@@ -753,7 +751,7 @@ def pmin(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Pmin", *args, **kwargs)
 
 
-def ppermute(*args: Any, **kwargs: Any) -> Any:
+def ppermute(*args: object, **kwargs: object) -> object:
     """Permute data across the mapped axis.
 
     Args:
@@ -768,7 +766,7 @@ def ppermute(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Ppermute", *args, **kwargs)
 
 
-def pshuffle(*args: Any, **kwargs: Any) -> Any:
+def pshuffle(*args: object, **kwargs: object) -> object:
     """Shuffle data across the mapped axis.
 
     Args:
@@ -783,7 +781,7 @@ def pshuffle(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Pshuffle", *args, **kwargs)
 
 
-def psum_scatter(*args: Any, **kwargs: Any) -> Any:
+def psum_scatter(*args: object, **kwargs: object) -> object:
     """Scatter sum across a mapped axis.
 
     Args:
@@ -798,7 +796,7 @@ def psum_scatter(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("PsumScatter", *args, **kwargs)
 
 
-def pswapaxes(*args: Any, **kwargs: Any) -> Any:
+def pswapaxes(*args: object, **kwargs: object) -> object:
     """Swap axes of the data.
 
     Args:
@@ -817,16 +815,16 @@ def pswapaxes(*args: Any, **kwargs: Any) -> Any:
 class Send(OpDef):
     """Point-to-Point Send operation for Pipeline Parallelism."""
 
-    op_name = "Send"
+    op_name: object = "Send"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Empty tuple as Send does not return tensor data.
+        Returns: object: Empty tuple as Send does not return tensor data.
         """
         return ()
 
@@ -835,28 +833,28 @@ class Send(OpDef):
 class Recv(OpDef):
     """Point-to-Point Recv operation for Pipeline Parallelism."""
 
-    op_name = "Recv"
+    op_name: object = "Recv"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape based on expected kwargs.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: Expected received tensor shape.
+        Returns: object: Expected received tensor shape.
         """
         return kwargs.get("shape", ())
 
 
-def send(tensor: Any, dst_rank: int, tag: int = 0) -> Any:
+def send(tensor: object, dst_rank: int, tag: int = 0) -> object:
     """Send tensor to destination rank."""
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
     return TracingNodeBuilder.emit_tracing_node("Send", tensor, dst_rank=dst_rank, tag=tag)
 
 
-def recv(shape: Any, dtype: str, src_rank: int, tag: int = 0) -> Any:
+def recv(shape: object, dtype: str, src_rank: int, tag: int = 0) -> object:
     """Receive tensor from source rank."""
     from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 

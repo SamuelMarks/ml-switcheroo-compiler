@@ -1,12 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
-from typing import Any
-
 import torch
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> Any:
+def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Evaluate zeros operation.
 
     Args:
@@ -27,7 +25,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> Any:
     return torch.zeros(shape)
 
 
-def array(cls: type, data: Any, dtype: Any = None) -> Any:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Evaluate array operation.
 
     Args:
@@ -49,13 +47,13 @@ def array(cls: type, data: Any, dtype: Any = None) -> Any:
             tuple[int, ...]: Result.
     """
     if dtype is not None:
-        dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
-        dt = getattr(torch, dtype_str, None)
+        dtype_str: object = str(getattr(dtype, "value", dtype)).split(".")[-1]
+        dt: object = getattr(torch, dtype_str, None)
         return torch.tensor(data, dtype=dt)
     return torch.tensor(data)
 
 
-def asarray(cls: type, data: Any) -> Any:
+def asarray(cls: type, data: object) -> object:
     """Evaluate asarray operation.
 
     Args:
@@ -76,7 +74,7 @@ def asarray(cls: type, data: Any) -> Any:
     return torch.as_tensor(data)
 
 
-def item(cls: type, data: Any) -> float:
+def item(cls: type, data: object) -> float:
     """Evaluate item operation.
 
     Args:

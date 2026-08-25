@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module broadcast_explicitizer.py."""
 
-from typing import Any
-
 """Broadcast Explicitizer Pass."""
 
 import uuid
@@ -29,8 +27,8 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     Returns:
         str: Result.
     """
-    new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
-    new_node = LogicalNode(
+    new_id: object = f"broadcast_{uuid.uuid4().hex[:6]}"
+    new_node: object = LogicalNode(
         id=new_id,
         op_type="BroadcastTo",
         inputs=[input_id],
@@ -45,8 +43,8 @@ def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[i
     """Evaluate _needs_broadcast operation.
 
     Args:
-        shape1 (Any): The shape1 parameter.
-        shape2 (Any): The shape2 parameter.
+        shape1 (object): The shape1 parameter.
+        shape2 (object): The shape2 parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -78,21 +76,21 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
         return False
 
     in1, in2 = node.inputs
-    shape1 = graph.nodes[in1].shape_metadata
-    shape2 = graph.nodes[in2].shape_metadata
+    shape1: object = graph.nodes[in1].shape_metadata
+    shape2: object = graph.nodes[in2].shape_metadata
 
-    target_shape = _needs_broadcast(shape1, shape2)
+    target_shape: object = _needs_broadcast(shape1, shape2)
     if target_shape is None:
         return False
 
-    modified = False
+    modified: object = False
     if shape1 != target_shape:
         node.inputs[0] = _inject_broadcast_node(graph, in1, target_shape)
-        modified = True
+        modified: object = True
 
     if shape2 != target_shape:
         node.inputs[1] = _inject_broadcast_node(graph, in2, target_shape)
-        modified = True
+        modified: object = True
 
     return modified
 
@@ -106,13 +104,13 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     Returns:
         bool: A boolean indicating the result of the check.
     """
-    modified = False
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    modified: object = False
+    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
 
     shape_inference_pass(graph)
 
     for node in sorted_nodes:
         if _process_broadcast_node(graph, node):
-            modified = True
+            modified: object = True
 
     return modified

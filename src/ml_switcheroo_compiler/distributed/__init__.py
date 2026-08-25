@@ -4,7 +4,7 @@
 import contextlib
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.ops import distributed_ops
@@ -16,7 +16,7 @@ from .layout_map import LayoutMap, ShardingSpec
 class Distribution:
     """Base class for distributed strategies."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize Distribution.
 
         Args:
@@ -53,7 +53,7 @@ class Distribution:
 class DataParallel(Distribution):
     """DataParallel strategy for distributed execution."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize the DataParallel distribution.
 
         Args:
@@ -71,8 +71,8 @@ class ModelParallel(Distribution):
         device_mesh: Optional[DeviceMesh] = None,
         layout_map: Optional[LayoutMap] = None,
         batch_dim_name: Optional[str] = None,
-        *args: Any,
-        **kwargs: Any,
+        *args: object,
+        **kwargs: object,
     ) -> None:
         """Initialize the ModelParallel distribution.
 
@@ -89,7 +89,7 @@ class ModelParallel(Distribution):
 class TensorLayoutClass:
     """Class representing TensorLayout."""
 
-    def __init__(self, axes: tuple[Any, ...]) -> None:
+    def __init__(self, axes: tuple[object, ...]) -> None:
         """Initialize TensorLayoutClass.
 
         Args:
@@ -98,7 +98,7 @@ class TensorLayoutClass:
         self.axes = axes
 
 
-def TensorLayout(*args: Any, **kwargs: Any) -> Any:
+def TensorLayout(*args: object, **kwargs: object) -> object:
     """Create a TensorLayout.
 
     Args:
@@ -108,11 +108,11 @@ def TensorLayout(*args: Any, **kwargs: Any) -> Any:
     Returns:
         TensorLayoutClass instance.
     """
-    axes = kwargs.get("axes", args[0] if args else ())
+    axes: object = kwargs.get("axes", args[0] if args else ())
     return TensorLayoutClass(axes)
 
 
-def initialize(*args: Any, **kwargs: Any) -> None:
+def initialize(*args: object, **kwargs: object) -> None:
     """Initialize the distributed environment.
 
     Args:
@@ -122,14 +122,14 @@ def initialize(*args: Any, **kwargs: Any) -> None:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
+    backend: object = registry.get_active_backend()
     if hasattr(backend, "initialize_distributed"):
         backend.initialize_distributed(*args, **kwargs)
     else:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
 
 
-def list_devices(*args: Any, **kwargs: Any) -> list[Any]:
+def list_devices(*args: object, **kwargs: object) -> list[object]:
     """List available devices.
 
     Args:
@@ -145,10 +145,10 @@ def list_devices(*args: Any, **kwargs: Any) -> list[Any]:
 
 
 _dist = None
-_DIST_STATE: dict[str, Any] = {"dist": None}
+_DIST_STATE: dict[str, object] = {"dist": None}
 
 
-def distribution(*args: Any, **kwargs: Any) -> Optional[Distribution]:
+def distribution(*args: object, **kwargs: object) -> Optional[Distribution]:
     """Get the current distribution.
 
     Args:
@@ -158,10 +158,10 @@ def distribution(*args: Any, **kwargs: Any) -> Optional[Distribution]:
     Returns:
         Optional[Distribution]: current active distribution.
     """
-    return _DIST_STATE["dist"]  # type: ignore
+    return _DIST_STATE["dist"]
 
 
-def set_distribution(dist: Distribution, *args: Any, **kwargs: Any) -> None:
+def set_distribution(dist: Distribution, *args: object, **kwargs: object) -> None:
     """Set the current distribution.
 
     Args:
@@ -172,14 +172,14 @@ def set_distribution(dist: Distribution, *args: Any, **kwargs: Any) -> None:
     _DIST_STATE["dist"] = dist
 
 
-def distribute_tensor(*args: Any, **kwargs: Any) -> Any:
+def distribute_tensor(*args: object, **kwargs: object) -> object:
     """Distribute a tensor across the active distribution.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
-    Returns: Any: distributed tensor.
+    Returns: object: distributed tensor.
     """
     if _DIST_STATE["dist"] is None:
         return args[0] if args else kwargs.get("tensor")

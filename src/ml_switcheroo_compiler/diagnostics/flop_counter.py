@@ -2,12 +2,11 @@
 """FLOP estimation module."""
 
 import math
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph
 
 
-def _estimate_node_flops(node: Any) -> int:
+def _estimate_node_flops(node: object) -> int:
     """Estimate flops for a single node.
 
     Args:
@@ -42,7 +41,7 @@ def estimate_flops(graph: LogicalGraph) -> int:
     Returns:
         int: Result.
     """
-    total_flops = 0
+    total_flops: object = 0
     for node in graph.nodes.values():
         total_flops += _estimate_node_flops(node)
     return total_flops

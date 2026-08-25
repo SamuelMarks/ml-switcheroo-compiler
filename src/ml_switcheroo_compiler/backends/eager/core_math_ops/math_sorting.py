@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
+def _argpartition(backend_module: object, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
     """Evaluate _argpartition operation.
 
     Args:
@@ -26,7 +24,7 @@ def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwarg
 
 
 @global_eager_registry.register("Median")
-def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _median(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _median operation.
 
     Args:
@@ -41,7 +39,7 @@ def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Percentile")
-def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _percentile(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _percentile operation.
 
     Args:
@@ -56,7 +54,7 @@ def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Quantile")
-def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _quantile(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _quantile operation.
 
     Args:
@@ -71,7 +69,7 @@ def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Partition")
-def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_partition(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_partition operation.
 
     Args:
@@ -82,7 +80,7 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
+    func: object = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

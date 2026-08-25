@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Utility functions for shape ops."""
 
@@ -22,14 +21,14 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 
-@register_util("_emit_shape_node")  # type: ignore
+@register_util("_emit_shape_node")
 def _emit_shape_node(
     op_type: str,
-    inputs: Sequence[Tensor],  # type: ignore
-    attrs: dict[str, Any],
-    out_shape: tuple[Any, ...],
+    inputs: Sequence[Tensor],
+    attrs: dict[str, object],
+    out_shape: tuple[object, ...],
     out_dtype: DType,
-) -> Any:
+) -> object:
     """Emit a logical shape node to the tracer and returns a new Tensor.
 
     Args:
@@ -42,11 +41,11 @@ def _emit_shape_node(
     Returns:
         Tensor: Result.
     """
-    out_id = str(uuid.uuid4())
+    out_id: object = str(uuid.uuid4())
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
-    node = LogicalNode(
+    node: object = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=input_ids,
@@ -55,10 +54,10 @@ def _emit_shape_node(
     )
     global_tracing_state.add_node(node)
 
-    dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
+    dtype_val: object = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
 
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    device = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
+    proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+    device: object = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
 
 

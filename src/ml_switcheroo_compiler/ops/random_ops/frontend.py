@@ -1,7 +1,5 @@
 """Module frontend.py."""
 
-from typing import Any
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Generate random ops frontend."""
 
@@ -16,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Any:
+def sobol_sample(dim: int, num_results: int, skip: int = 0) -> object:
     """Sobol sequence generator.
 
     Args:
@@ -30,21 +28,21 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Any:
     Raises:
         RuntimeError: An exception.
     """
-    dtype = DType("float32")
-    out_shape = (num_results, dim)
-    device = config.default_device
+    dtype: object = DType("float32")
+    out_shape: object = (num_results, dim)
+    device: object = config.default_device
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("SobolSample", dim, num_results, skip)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("SobolSample", dim, num_results, skip)
         return Tensor(data, TensorConfig(out_shape, dtype, device))
 
     if not global_tracing_state.is_tracing:
-        msg = "Cannot emit node outside tracing context."
+        msg: object = "Cannot emit node outside tracing context."
         raise RuntimeError(msg)
 
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="SobolSample",
         inputs=[],
@@ -53,5 +51,5 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Any:
     )
     global_tracing_state.add_node(node)
 
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype.value)  # type: ignore
+    proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype.value)
     return Tensor(proxy, TensorConfig(out_shape, dtype, device))

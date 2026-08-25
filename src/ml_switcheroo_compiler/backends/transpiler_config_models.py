@@ -34,5 +34,5 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
     import yaml
 
     with open(yaml_path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+        data: object = yaml.safe_load(f)
     return TranspilerConfig(**data)

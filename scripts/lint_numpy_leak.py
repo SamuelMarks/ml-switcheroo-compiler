@@ -7,9 +7,9 @@ import sys
 
 def check_for_numpy_leaks(directory: str) -> list:
     """Check for numpy leaks in backends (excluding numpy backend and eager execution)."""
-    violations = []
+    violations: object = []
 
-    files_to_check = glob.glob(directory + "/backends/**/*.py", recursive=True)
+    files_to_check: object = glob.glob(directory + "/backends/**/*.py", recursive=True)
 
     # Explicitly check root level core tracing files
     files_to_check.extend(glob.glob(f"{directory}/grad/**/*.py", recursive=True))
@@ -29,10 +29,10 @@ def check_for_numpy_leaks(directory: str) -> list:
                     continue
 
                 # Strip inline comments to prevent false positives
-                code_line = line.split("#")[0].strip()
+                code_line: object = line.split("#")[0].strip()
 
-                has_import = "import numpy" in code_line or "from numpy" in code_line
-                has_np = re.search(r"\bnp\.", code_line)
+                has_import: object = "import numpy" in code_line or "from numpy" in code_line
+                has_np: object = re.search(r"\bnp\.", code_line)
 
                 if has_import or has_np:
                     # Ignore .numpy() attribute calls, common in PyTorch/TF tests
@@ -50,9 +50,9 @@ def check_for_numpy_leaks(directory: str) -> list:
 
 def check_for_architectural_imports(directory: str) -> list:
     """Check that core/, ir/, and ops/ never import from backends/ except registry."""
-    violations = []
+    violations: object = []
 
-    files_to_check = []
+    files_to_check: object = []
     for d in ["core", "ir", "ops", "transforms"]:
         files_to_check.extend(glob.glob(directory + f"/{d}/**/*.py", recursive=True))
 
@@ -61,7 +61,7 @@ def check_for_architectural_imports(directory: str) -> list:
             for i, line in enumerate(f):
                 if line.strip().startswith("#"):
                     continue
-                code_line = line.split("#")[0].strip()
+                code_line: object = line.split("#")[0].strip()
 
                 # Check if it imports from ml_switcheroo_compiler.backends
                 if "ml_switcheroo_compiler.backends" in code_line:
@@ -77,10 +77,11 @@ def check_for_architectural_imports(directory: str) -> list:
     return violations
 
 
-if __name__ == "__main__":
-    directory = "src/ml_switcheroo_compiler"
-    numpy_violations = check_for_numpy_leaks(directory)
-    arch_violations = check_for_architectural_imports(directory)
+def main() -> int:
+    """Run linting."""
+    directory_to_check: object = "src/ml_switcheroo_compiler"
+    numpy_violations: object = check_for_numpy_leaks(directory_to_check)
+    arch_violations: object = check_for_architectural_imports(directory_to_check)
 
     if numpy_violations or arch_violations:
         if numpy_violations:
@@ -91,7 +92,11 @@ if __name__ == "__main__":
             print("Architectural Boundaries failed. Found restricted imports from backends:")
             for v in arch_violations:
                 print(v)
-        sys.exit(1)
-    else:
-        print("NumPy Leak and Architectural Boundaries Linting passed.")
-        sys.exit(0)
+        return 1
+
+    print("NumPy Leak and Architectural Boundaries Linting passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

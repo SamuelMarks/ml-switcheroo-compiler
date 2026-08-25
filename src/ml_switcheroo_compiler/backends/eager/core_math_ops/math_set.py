@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Intersect1d")
-def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _intersect1d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _intersect1d operation.
 
     Args:
@@ -24,7 +22,7 @@ def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Unique")
-def _unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _unique(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _unique operation.
 
     Args:
@@ -39,7 +37,7 @@ def _unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Union1d")
-def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_union1d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_union1d operation.
 
     Args:
@@ -50,7 +48,7 @@ def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
+    func: object = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -59,7 +57,7 @@ def _np_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Unique")
-def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unique(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_unique operation.
 
     Args:
@@ -70,7 +68,7 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
+    func: object = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -79,7 +77,7 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UniqueAll")
-def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniqueall(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_uniqueall operation.
 
     Args:
@@ -90,7 +88,7 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
+    func: object = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -99,7 +97,7 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UniqueCounts")
-def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniquecounts(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_uniquecounts operation.
 
     Args:
@@ -110,7 +108,7 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
+    func: object = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -119,7 +117,7 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UniqueValues")
-def _np_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_uniquevalues(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_uniquevalues operation.
 
     Args:
@@ -130,7 +128,7 @@ def _np_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
+    func: object = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

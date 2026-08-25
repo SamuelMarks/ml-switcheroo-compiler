@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4, MAGIC_VAL_5
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -18,11 +18,11 @@ from .rnn_utils import ConvLSTMConfig, RNNWeights
 
 
 def conv_lstm_cell(
-    inputs: Tensor,  # type: ignore
-    state: tuple[Tensor, Tensor],  # type: ignore
+    inputs: Tensor,
+    state: tuple[Tensor, Tensor],
     weights: RNNWeights,
     config: Optional[ConvLSTMConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, Tensor]]:  # type: ignore
+) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """Provide generic Convolutional LSTM cell.
 
     Args:
@@ -37,7 +37,7 @@ def conv_lstm_cell(
     Raises:
         ValueError: An exception.
     """
-    naxis = len(inputs.shape)
+    naxis: object = len(inputs.shape)
     if naxis == MAGIC_VAL_3:
         return conv1d_lstm_cell(inputs, state, weights, config)
     elif naxis == MAGIC_VAL_4:
@@ -49,12 +49,12 @@ def conv_lstm_cell(
 
 
 def _apply_conv_lstm_gates(
-    x_conv: Tensor,  # type: ignore
-    h_conv: Tensor,  # type: ignore
-    state: tuple[Tensor, Tensor],  # type: ignore
+    x_conv: Tensor,
+    h_conv: Tensor,
+    state: tuple[Tensor, Tensor],
     weights: RNNWeights,
     data_format: str,
-) -> tuple[Tensor, tuple[Tensor, Tensor]]:  # type: ignore
+) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """Apply LSTM gates.
 
     Args:
@@ -68,30 +68,30 @@ def _apply_conv_lstm_gates(
         tuple: Result.
     """
     h_prev, c_prev = state
-    gates = add(x_conv, h_conv)
+    gates: object = add(x_conv, h_conv)
     if weights.bias is not None:
-        gates = add(gates, weights.bias)
+        gates: object = add(gates, weights.bias)
 
-    axis_val = -1 if data_format == "channels_last" else 1
+    axis_val: object = -1 if data_format == "channels_last" else 1
     i, f, c, o = split(gates, 4, axis=axis_val)
 
-    i = _sigmoid(i)
-    f = _sigmoid(f)
-    c = tanh(c)
-    o = _sigmoid(o)
+    i: object = _sigmoid(i)
+    f: object = _sigmoid(f)
+    c: object = tanh(c)
+    o: object = _sigmoid(o)
 
-    new_c = add(multiply(f, c_prev), multiply(i, c))
-    new_h = multiply(o, tanh(new_c))
+    new_c: object = add(multiply(f, c_prev), multiply(i, c))
+    new_h: object = multiply(o, tanh(new_c))
 
     return new_h, (new_h, new_c)
 
 
 def conv1d_lstm_cell(
-    inputs: Tensor,  # type: ignore
-    state: tuple[Tensor, Tensor],  # type: ignore
+    inputs: Tensor,
+    state: tuple[Tensor, Tensor],
     weights: RNNWeights,
     config: Optional[ConvLSTMConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, Tensor]]:  # type: ignore
+) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """1D Convolutional LSTM cell.
 
     Args:
@@ -105,15 +105,15 @@ def conv1d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()
-    x_conv = conv1d(
+    conf: object = config if config is not None else ConvLSTMConfig()
+    x_conv: object = conv1d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv = conv1d(
+    h_conv: object = conv1d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -125,11 +125,11 @@ def conv1d_lstm_cell(
 
 
 def conv2d_lstm_cell(
-    inputs: Tensor,  # type: ignore
-    state: tuple[Tensor, Tensor],  # type: ignore
+    inputs: Tensor,
+    state: tuple[Tensor, Tensor],
     weights: RNNWeights,
     config: Optional[ConvLSTMConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, Tensor]]:  # type: ignore
+) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """2D Convolutional LSTM cell.
 
     Args:
@@ -143,15 +143,15 @@ def conv2d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()
-    x_conv = conv2d(
+    conf: object = config if config is not None else ConvLSTMConfig()
+    x_conv: object = conv2d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv = conv2d(
+    h_conv: object = conv2d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -163,11 +163,11 @@ def conv2d_lstm_cell(
 
 
 def conv3d_lstm_cell(
-    inputs: Tensor,  # type: ignore
-    state: tuple[Tensor, Tensor],  # type: ignore
+    inputs: Tensor,
+    state: tuple[Tensor, Tensor],
     weights: RNNWeights,
     config: Optional[ConvLSTMConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, Tensor]]:  # type: ignore
+) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """3D Convolutional LSTM cell.
 
     Args:
@@ -181,15 +181,15 @@ def conv3d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()
-    x_conv = conv3d(
+    conf: object = config if config is not None else ConvLSTMConfig()
+    x_conv: object = conv3d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv = conv3d(
+    h_conv: object = conv3d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -200,7 +200,7 @@ def conv3d_lstm_cell(
     return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
 
 
-def _sigmoid(x: Any) -> Any:
+def _sigmoid(x: object) -> object:
     """Sigmoid.
 
     Args:

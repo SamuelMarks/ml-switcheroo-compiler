@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module type_promotion_explicitizer.py."""
 
-from typing import Any
-
 """Type Promotion Explicitizer Pass."""
 
 import uuid
@@ -29,8 +27,8 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
     Returns:
         str: Result.
     """
-    new_id = f"cast_{uuid.uuid4().hex[:6]}"
-    new_node = LogicalNode(
+    new_id: object = f"cast_{uuid.uuid4().hex[:6]}"
+    new_node: object = LogicalNode(
         id=new_id,
         op_type="Cast",
         inputs=[input_id],
@@ -45,8 +43,8 @@ def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
     """Evaluate _needs_cast operation.
 
     Args:
-        dt1 (Any): The dt1 parameter.
-        dt2 (Any): The dt2 parameter.
+        dt1 (object): The dt1 parameter.
+        dt2 (object): The dt2 parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -68,8 +66,8 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
     Returns:
         bool: A boolean indicating the result of the check.
     """
-    modified = False
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    modified: object = False
+    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
 
     dtype_inference_pass(graph)
 
@@ -78,19 +76,19 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
             continue
 
         in1, in2 = node.inputs
-        dt1 = graph.nodes[in1].attributes.get("dtype")
-        dt2 = graph.nodes[in2].attributes.get("dtype")
+        dt1: object = graph.nodes[in1].attributes.get("dtype")
+        dt2: object = graph.nodes[in2].attributes.get("dtype")
 
-        target_dt = _needs_cast(dt1, dt2)
+        target_dt: object = _needs_cast(dt1, dt2)
         if target_dt is None:
             continue
 
         if dt1 != target_dt:
             node.inputs[0] = _inject_cast_node(graph, in1, target_dt)
-            modified = True
+            modified: object = True
 
         if dt2 != target_dt:
             node.inputs[1] = _inject_cast_node(graph, in2, target_dt)
-            modified = True
+            modified: object = True
 
     return modified

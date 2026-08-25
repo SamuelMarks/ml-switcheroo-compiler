@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import functools
 import uuid
-from typing import Any, Callable, TypeVar
+from typing import Callable, TypeVar
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -31,7 +31,7 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: object, **kwargs: object) -> object:
         """Universal dispatcher for the operation.
 
         Args:
@@ -43,7 +43,7 @@ class OpDef:
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """infer_shape function.
 
         Args:
@@ -53,12 +53,12 @@ class OpDef:
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            node (object): The node.
+            **kwargs (object): Keyword arguments.
+        self (object): The self parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         return tuple()
         """Infer the output shape(s) and dtype(s) of the operation.
@@ -72,7 +72,7 @@ class OpDef:
         """
         ...
 
-    def eager_eval(self, *args: Any, **kwargs: Any) -> Any:
+    def eager_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate eager_eval operation.
 
         Args:
@@ -84,16 +84,16 @@ class OpDef:
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         return backend.execute_op(self.op_type, *args, **kwargs)
 
 
 def emit_ir_node(
-    graph: Any,
+    graph: object,
     op_type: str,
     inputs: list[str],
-    shape_metadata: Any = None,
-    attributes: dict[str, Any] | None = None,
+    shape_metadata: object = None,
+    attributes: dict[str, object] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 
@@ -107,8 +107,8 @@ def emit_ir_node(
     Returns:
         str: Result.
     """
-    nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
-    node = LogicalNode(
+    nid: object = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
+    node: object = LogicalNode(
         id=nid,
         op_type=op_type,
         inputs=inputs,
@@ -124,7 +124,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str) -> Callable[..., Any]:
+def dispatch_eager(op_name: str) -> Callable[..., object]:
     """Evaluate dispatch_eager operation.
 
     Args:
@@ -134,7 +134,7 @@ def dispatch_eager(op_name: str) -> Callable[..., Any]:
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(func: Callable[..., object]) -> Callable[..., object]:
         """Evaluate decorator operation.
 
         Args:
@@ -145,7 +145,7 @@ def dispatch_eager(op_name: str) -> Callable[..., Any]:
         """
 
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: object, **kwargs: object) -> object:
             """Evaluate wrapper operation.
 
             Args:
@@ -158,21 +158,21 @@ def dispatch_eager(op_name: str) -> Callable[..., Any]:
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-                backend = get_active_backend()
-                raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
-                data = backend.execute_op(op_name, *raw_args, **kwargs)
-                first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
-                device = first_tensor.device if first_tensor is not None else None
-                dtype = first_tensor.dtype if first_tensor is not None else None
+                backend: object = get_active_backend()
+                raw_args: object = [a.data if isinstance(a, Tensor) else a for a in args]
+                data: object = backend.execute_op(op_name, *raw_args, **kwargs)
+                first_tensor: object = next((a for a in args if isinstance(a, Tensor)), None)
+                device: object = first_tensor.device if first_tensor is not None else None
+                dtype: object = first_tensor.dtype if first_tensor is not None else None
                 if isinstance(data, tuple):
                     return tuple(
                         Tensor(
                             backend.array(d),
-                            TensorConfig(backend.array(d).shape, getattr(d, "dtype", dtype), device),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                            TensorConfig(backend.array(d).shape, getattr(d, "dtype", dtype), device),
                         )
                         for d in data
                     )
-                return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, dtype, device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, dtype, device))
             return func(*args, **kwargs)
 
         return wrapper

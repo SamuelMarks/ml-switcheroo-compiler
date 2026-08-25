@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for inv.py."""
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Inv(OpDef):
     """Inv Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -34,7 +33,7 @@ class Inv(OpDef):
 class InvEx(OpDef):
     """InvEx Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -51,19 +50,19 @@ class InvEx(OpDef):
 class TriInv(OpDef):
     """TriInv Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: Any: The shape.
+        Returns: object: The shape.
         """
         return ()
 
 
-def inv(input: Tensor) -> Any:  # type: ignore
+def inv(input: Tensor) -> object:
     """Compute the multiplicative inverse of a square matrix.
 
     Args:
@@ -75,13 +74,13 @@ def inv(input: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("Inv", input.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Inv", input.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     return _emit_linalg_node("Inv", [input], {}, [input.shape], [input.dtype])
 
 
-def inv_ex(input: Tensor, check_errors: bool = False) -> Any:  # type: ignore
+def inv_ex(input: Tensor, check_errors: bool = False) -> object:
     """Compute the multiplicative inverse of a square matrix with info tensor.
 
     Args:
@@ -94,16 +93,16 @@ def inv_ex(input: Tensor, check_errors: bool = False) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         inv_out, info = backend.execute_op("InvEx", input.data, check_errors=check_errors)
         return (
             Tensor(inv_out, TensorConfig(inv_out.shape, input.dtype, input.device)),
             Tensor(info, TensorConfig(info.shape, "int32", input.device)),
         )
-    return _emit_linalg_node("InvEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_linalg_node("InvEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])
 
 
-def pinv(input: Tensor, rcond: float = 1e-15) -> Any:  # type: ignore
+def pinv(input: Tensor, rcond: float = 1e-15) -> object:
     """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
@@ -116,13 +115,13 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("Pinv", input.data, rcond=rcond)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Pinv", input.data, rcond=rcond)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [input.shape], [input.dtype])
 
 
-def tri_inv(a: Tensor, lower: bool = False) -> Any:  # type: ignore
+def tri_inv(a: Tensor, lower: bool = False) -> object:
     """Compute the inverse of a triangular matrix.
 
     Args:
@@ -135,9 +134,9 @@ def tri_inv(a: Tensor, lower: bool = False) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("TriInv", a.data, lower=lower)
-        return Tensor(data, TensorConfig(a.shape, a.dtype, a.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("TriInv", a.data, lower=lower)
+        return Tensor(data, TensorConfig(a.shape, a.dtype, a.device))
     return _emit_linalg_node(
         "TriInv",
         [a],

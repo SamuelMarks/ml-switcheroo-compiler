@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Vision operations."""
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -26,12 +25,12 @@ class ExtractPatchesOptions:
 
 
 def crop_and_resize(
-    images: Tensor,  # type: ignore
-    boxes: Tensor,  # type: ignore
-    box_indices: Tensor,  # type: ignore
+    images: Tensor,
+    boxes: Tensor,
+    box_indices: Tensor,
     crop_size: tuple[int, int],
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -44,14 +43,14 @@ def crop_and_resize(
     Returns:
         Tensor: Result.
     """
-    method = kwargs.get("method", "bilinear")
-    extrapolation_value = kwargs.get("extrapolation_value", 0.0)
+    method: object = kwargs.get("method", "bilinear")
+    extrapolation_value: object = kwargs.get("extrapolation_value", 0.0)
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "CropAndResize",
             images.data,
             boxes.data,
@@ -71,11 +70,11 @@ def crop_and_resize(
 
 
 def _extract_bounding_boxes_eager(
-    images: Tensor,  # type: ignore
-    boxes: Tensor,  # type: ignore
-    box_indices: Tensor,  # type: ignore
-    config_obj: Any,
-) -> Any:
+    images: Tensor,
+    boxes: Tensor,
+    box_indices: Tensor,
+    config_obj: object,
+) -> object:
     """Evaluate _extract_bounding_boxes_eager operation.
 
     Args:
@@ -89,8 +88,8 @@ def _extract_bounding_boxes_eager(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
-    data = backend.execute_op(
+    backend: object = get_active_backend()
+    data: object = backend.execute_op(
         "ExtractBoundingBoxes",
         images.data,
         boxes.data,
@@ -101,12 +100,12 @@ def _extract_bounding_boxes_eager(
 
 
 def extract_bounding_boxes(
-    images: Tensor,  # type: ignore
-    boxes: Tensor,  # type: ignore
-    box_indices: Tensor,  # type: ignore
-    config_obj: Any | None = None,
-    **kwargs: Any,
-) -> Any:
+    images: Tensor,
+    boxes: Tensor,
+    box_indices: Tensor,
+    config_obj: object | None = None,
+    **kwargs: object,
+) -> object:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -122,10 +121,10 @@ def extract_bounding_boxes(
     if config_obj is None:
         from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
-        crop_size = kwargs.get("crop_size", (0, 0))
+        crop_size: object = kwargs.get("crop_size", (0, 0))
         if isinstance(crop_size, int):
-            crop_size = (crop_size, crop_size)
-        config_obj = BBoxConfig(
+            crop_size: object = (crop_size, crop_size)
+        config_obj: object = BBoxConfig(
             crop_size=crop_size,
             interpolation=kwargs.get("interpolation", "bilinear"),
             extrapolation_value=kwargs.get("extrapolation_value", 0.0),
@@ -147,12 +146,12 @@ def extract_bounding_boxes(
 
 
 def crop(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     offset_height: int,
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> Any:
+) -> object:
     """Crops an image to a specified bounding box.
 
     Args:
@@ -168,8 +167,8 @@ def crop(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "Crop",
             images.data,
             offset_height=offset_height,
@@ -196,12 +195,12 @@ def crop(
 
 
 def pad_to_bounding_box(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     offset_height: int,
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> Any:
+) -> object:
     """Pad an image with zeros to the specified height and width.
 
     Args:
@@ -217,8 +216,8 @@ def pad_to_bounding_box(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "PadToBoundingBox",
             images.data,
             offset_height=offset_height,
@@ -245,11 +244,11 @@ def pad_to_bounding_box(
 
 
 def draw_bounding_boxes(
-    images: Tensor,  # type: ignore
-    boxes: Tensor,  # type: ignore
-    colors: Tensor | None = None,  # type: ignore
+    images: Tensor,
+    boxes: Tensor,
+    colors: Tensor | None = None,
     texts: list[str] | None = None,
-) -> Any:
+) -> object:
     """Draw bounding boxes on a batch of images.
 
     Args:
@@ -264,9 +263,9 @@ def draw_bounding_boxes(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        colors_data = colors.data if colors is not None else None
-        data = backend.execute_op("DrawBoundingBoxes", images.data, boxes.data, colors=colors_data, texts=texts)
+        backend: object = get_active_backend()
+        colors_data: object = colors.data if colors is not None else None
+        data: object = backend.execute_op("DrawBoundingBoxes", images.data, boxes.data, colors=colors_data, texts=texts)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -281,10 +280,10 @@ def draw_bounding_boxes(
 
 
 def crop_images(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
-) -> Any:
+) -> object:
     """Crops images.
 
     Args:
@@ -298,8 +297,8 @@ def crop_images(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "CropImages",
             images.data,
             top_cropping=cropping[0],
@@ -328,11 +327,11 @@ def crop_images(
 
 
 def extract_patches(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Extract patches from images.
 
     Args:
@@ -344,12 +343,12 @@ def extract_patches(
     Returns:
         Tensor: Patches.
     """
-    options = options or ExtractPatchesOptions()
+    options: object = options or ExtractPatchesOptions()
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "ExtractPatches",
             images.data,
             size=size,
@@ -378,11 +377,11 @@ def extract_patches(
 
 
 def pad_images(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
-) -> Any:
+) -> object:
     """Pad images.
 
     Args:
@@ -397,8 +396,8 @@ def pad_images(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "PadImages",
             images.data,
             top_padding=padding[0],
@@ -434,9 +433,9 @@ def pad_images(
 class ExtractBoundingBoxes(OpDef):
     """ExtractBoundingBoxes operation."""
 
-    op_name = "ExtractBoundingBoxes"
+    op_name: object = "ExtractBoundingBoxes"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -454,9 +453,9 @@ class ExtractBoundingBoxes(OpDef):
 class Iou(OpDef):
     """Iou operation."""
 
-    op_name = "Iou"
+    op_name: object = "Iou"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -474,9 +473,9 @@ class Iou(OpDef):
 class Nms(OpDef):
     """Nms operation."""
 
-    op_name = "Nms"
+    op_name: object = "Nms"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:

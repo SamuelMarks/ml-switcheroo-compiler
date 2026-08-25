@@ -3,13 +3,13 @@
 
 import re
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh: Any, mesh_mapping: Sequence[Optional[str]]) -> None:
+    def __init__(self, mesh: object, mesh_mapping: Sequence[Optional[str]]) -> None:
         """Initialize ShardingSpec.
 
         Args:
@@ -27,7 +27,7 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Equality check.
 
         Args:
@@ -44,7 +44,7 @@ class ShardingSpec:
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self, device_mesh: Optional[Any] = None) -> None:
+    def __init__(self, device_mesh: Optional[object] = None) -> None:
         """Initialize LayoutMap.
 
         Args:

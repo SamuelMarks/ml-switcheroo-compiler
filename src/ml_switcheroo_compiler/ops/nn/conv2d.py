@@ -4,7 +4,7 @@
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -21,7 +21,7 @@ class ConvHyperparams:
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID"
 
 
-def conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:  # type: ignore
+def conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
     """2D Convolution.
 
     Args:
@@ -34,17 +34,17 @@ def conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj = _build_conv_config(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)))
+        config_obj: object = _build_conv_config(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 
 
 def conv2d_transpose(
-    lhs: Tensor,  # type: ignore
-    rhs: Tensor,  # type: ignore
+    lhs: Tensor,
+    rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> Any:
+) -> object:
     """2D convolution transpose.
 
     Args:
@@ -56,12 +56,12 @@ def conv2d_transpose(
     Returns:
         Tensor: Result.
     """
-    conv_transpose = get_op("ConvTranspose")()
+    conv_transpose: object = get_op("ConvTranspose")()
 
     return conv_transpose(lhs, rhs, strides, padding)
 
 
-def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:  # type: ignore
+def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
     """2D Depthwise Convolution.
 
     Args:
@@ -73,18 +73,18 @@ def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] 
     Returns:
         Tensor: Result.
     """
-    dimension_numbers = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
+    dimension_numbers: object = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
     rhs_reshaped, config_obj = _prepare_depthwise_conv(lhs, rhs, 2, dimension_numbers, config_obj, **kwargs)
     return conv_general_dilated(lhs, rhs_reshaped, config_obj)
 
 
 def separable_conv2d(
-    lhs: Tensor,  # type: ignore
-    depthwise_filter: Tensor,  # type: ignore
-    pointwise_filter: Tensor,  # type: ignore
-    config: Any = None,
-    **kwargs: Any,
-) -> Any:
+    lhs: Tensor,
+    depthwise_filter: Tensor,
+    pointwise_filter: Tensor,
+    config: object = None,
+    **kwargs: object,
+) -> object:
     """2D Separable Convolution.
 
     Args:
@@ -97,9 +97,9 @@ def separable_conv2d(
     Returns:
         Tensor: Result.
     """
-    config = config or ConvHyperparams()
+    config: object = config or ConvHyperparams()
     strides, padding = config.strides, config.padding
     kwargs["strides"] = strides
     kwargs["padding"] = padding
-    depthwise_out = depthwise_conv2d(lhs, depthwise_filter, None, **kwargs)
+    depthwise_out: object = depthwise_conv2d(lhs, depthwise_filter, None, **kwargs)
     return conv2d(depthwise_out, pointwise_filter, None, strides=1, padding="VALID")

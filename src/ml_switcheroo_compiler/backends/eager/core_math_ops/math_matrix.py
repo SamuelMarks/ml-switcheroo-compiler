@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -12,7 +12,7 @@ from .math_reduction import _apply_softmax
 
 
 @global_eager_registry.register("Einsum")
-def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _einsum(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _einsum operation.
 
     Args:
@@ -23,8 +23,8 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    eq = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
-    op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
+    eq: typing.Any = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
+    op_args: typing.Any = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
     if hasattr(backend_module, "einsum"):
         return backend_module.einsum(eq, *op_args, **kwargs)
     import numpy as np
@@ -33,7 +33,7 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
-def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: Any, value: Any, *args: Any, **kwargs: Any) -> Any:
+def _scaled_dot_product_attention_eager(backend_module: typing.Any, query: typing.Any, key: typing.Any, value: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Fallback eager execution for ScaledDotProductAttention.
 
     Args:
@@ -49,37 +49,37 @@ def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: An
     """
     import math
 
-    scale = kwargs.get("scale")
-    is_causal = kwargs.get("is_causal", False)
-    mask = kwargs.get("mask", None)
+    scale: typing.Any = kwargs.get("scale")
+    is_causal: typing.Any = kwargs.get("is_causal", False)
+    mask: typing.Any = kwargs.get("mask", None)
 
     if scale is None:
-        scale = 1.0 / math.sqrt(query.shape[-1])
+        scale: typing.Any = 1.0 / math.sqrt(query.shape[-1])
 
     # key transpose
-    key_t_axes = list(range(len(key.shape)))
+    key_t_axes: typing.Any = list(range(len(key.shape)))
     key_t_axes[-1], key_t_axes[-2] = key_t_axes[-2], key_t_axes[-1]
 
     if hasattr(backend_module, "transpose"):
-        key_t = backend_module.transpose(key, axes=key_t_axes)
+        key_t: typing.Any = backend_module.transpose(key, axes=key_t_axes)
     else:
-        key_t = key
+        key_t: typing.Any = key
 
-    scores = backend_module.matmul(query, key_t) * scale
+    scores: typing.Any = backend_module.matmul(query, key_t) * scale
 
     if is_causal:
-        scores = _apply_causal_mask(backend_module, scores)
+        scores: typing.Any = _apply_causal_mask(backend_module, scores)
 
     if mask is not None:
-        scores = scores + mask
+        scores: typing.Any = scores + mask
 
-    attn = _apply_softmax(backend_module, scores)
+    attn: typing.Any = _apply_softmax(backend_module, scores)
 
     return backend_module.matmul(attn, value)
 
 
 @global_eager_registry.register("CholeskySolve")
-def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _cholesky_solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _cholesky_solve operation.
 
     Args:
@@ -92,7 +92,7 @@ def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     import scipy.linalg
 
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cho_solve"):
         return func.cho_solve(*args, **kwargs)
     if hasattr(backend_module, "cho_solve"):
@@ -104,7 +104,7 @@ def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("BandedTriangularSolve")
-def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _banded_triangular_solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _banded_triangular_solve operation.
 
     Args:
@@ -115,7 +115,7 @@ def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
         return func.solve_banded(*args, **kwargs)
     if hasattr(backend_module, "solve_banded"):
@@ -130,7 +130,7 @@ def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> 
 @global_eager_registry.register("Igammac")
 @global_eager_registry.register("Polygamma")
 @global_eager_registry.register("MatrixPower")
-def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _matrix_power(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _matrix_power operation.
 
     Args:
@@ -141,7 +141,7 @@ def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
         return func.matrix_power(*args, **kwargs)
     if hasattr(backend_module, "matrix_power"):
@@ -152,7 +152,7 @@ def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("MatrixRank")
-def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _matrix_rank(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _matrix_rank operation.
 
     Args:
@@ -163,18 +163,18 @@ def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
         return func.matrix_rank(*args, **kwargs)
     if hasattr(backend_module, "matrix_rank"):
         return backend_module.matrix_rank(*args, **kwargs)
 
-    x = args[0]
+    x: typing.Any = args[0]
     return backend_module.linalg.matrix_rank(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Solve")
-def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _solve operation.
 
     Args:
@@ -185,7 +185,7 @@ def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
         return func.solve(*args, **kwargs)
     if hasattr(backend_module, "solve"):
@@ -196,7 +196,7 @@ def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tensorsolve")
-def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _tensorsolve operation.
 
     Args:
@@ -207,7 +207,7 @@ def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "linalg", None)
+    func: typing.Any = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
         return func.tensorsolve(*args, **kwargs)
     if hasattr(backend_module, "tensorsolve"):
@@ -218,7 +218,7 @@ def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tensorsolve")
-def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tensorsolve operation.
 
     Args:
@@ -229,7 +229,7 @@ def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
+    func: typing.Any = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -238,7 +238,7 @@ def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TriangularSolve")
-def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_triangularsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_triangularsolve operation.
 
     Args:
@@ -249,7 +249,7 @@ def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
+    func: typing.Any = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -258,7 +258,7 @@ def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TridiagonalMatmul")
-def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tridiagonalmatmul(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tridiagonalmatmul operation.
 
     Args:
@@ -269,7 +269,7 @@ def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
+    func: typing.Any = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -278,7 +278,7 @@ def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
 
 
 @global_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tridiagonalsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tridiagonalsolve operation.
 
     Args:
@@ -289,7 +289,7 @@ def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
+    func: typing.Any = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -298,7 +298,7 @@ def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Vecdot")
-def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_vecdot(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_vecdot operation.
 
     Args:
@@ -309,7 +309,7 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
+    func: typing.Any = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

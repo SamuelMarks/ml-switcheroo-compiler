@@ -3,8 +3,6 @@
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -15,7 +13,7 @@ class Concatenate(OpDef):
     This operator concatenates a sequence of arrays along an existing axis.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -35,11 +33,11 @@ class Concatenate(OpDef):
             tuple[int, ...]: The inferred shape of the concatenated output tensor.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = args[0]
-            axis = kwargs.get("axis", 0)
+            shapes: object = args[0]
+            axis: object = kwargs.get("axis", 0)
             if not shapes:
                 return ()
-            res = list(shapes[0])
+            res: object = list(shapes[0])
             res[axis] = sum(s[axis] if len(s) > axis else 1 for s in shapes)
             return tuple(res)
         return ()
@@ -52,7 +50,7 @@ class Stack(OpDef):
     This operator joins a sequence of arrays along a new axis.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -81,7 +79,7 @@ class Split(OpDef):
     This operator splits an array into multiple sub-arrays.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -112,7 +110,7 @@ class Hsplit(OpDef):
     This operator splits an array into multiple sub-arrays horizontally (column-wise).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -143,7 +141,7 @@ class Vsplit(OpDef):
     This operator splits an array into multiple sub-arrays vertically (row-wise).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -174,7 +172,7 @@ class Dsplit(OpDef):
     This operator splits an array into multiple sub-arrays along the 3rd axis (depth).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -205,7 +203,7 @@ class Hstack(OpDef):
     This operator stacks arrays in sequence horizontally (column wise).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -216,13 +214,13 @@ class Hstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes: object = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Hstack: if 1D, sum sizes. if >1D, sum along axis 1.
             if len(shapes[0]) == 1:
                 return (sum(s[0] for s in shapes),)
-            res = list(shapes[0])
+            res: object = list(shapes[0])
             res[1] = sum(s[1] for s in shapes)
             return tuple(res)
         return ()
@@ -235,7 +233,7 @@ class Vstack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -246,13 +244,13 @@ class Vstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes: object = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Vstack: if 1D, stack as rows => (N, M). if >1D, sum along axis 0.
             if len(shapes[0]) == 1:
                 return (len(shapes), shapes[0][0])
-            res = list(shapes[0])
+            res: object = list(shapes[0])
             res[0] = sum(s[0] for s in shapes)
             return tuple(res)
         return ()
@@ -265,7 +263,7 @@ class Dstack(OpDef):
     This operator stacks arrays in sequence depth wise (along third axis).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -276,7 +274,7 @@ class Dstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes: object = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Dstack: if 1D => (1, M, N). if 2D => (N, M, P). if 3D, sum along axis 2.
@@ -284,7 +282,7 @@ class Dstack(OpDef):
                 return (1, shapes[0][0], len(shapes))
             if len(shapes[0]) == 2:
                 return (shapes[0][0], shapes[0][1], len(shapes))
-            res = list(shapes[0])
+            res: object = list(shapes[0])
             res[2] = sum(s[2] for s in shapes)
             return tuple(res)
         return ()
@@ -297,7 +295,7 @@ class ColumnStack(OpDef):
     This operator stacks 1-D arrays as columns into a 2-D array.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -308,13 +306,13 @@ class ColumnStack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes: object = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # ColumnStack: 1D arrays are treated as 2D columns (N, 1) and stacked horizontally.
             if len(shapes[0]) == 1:
                 return (shapes[0][0], len(shapes))
-            res = list(shapes[0])
+            res: object = list(shapes[0])
             res[1] = sum(s[1] for s in shapes)
             return tuple(res)
         return ()
@@ -327,7 +325,7 @@ class RowStack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -353,17 +351,17 @@ class RowStack(OpDef):
 class Argwhere(OpDef):
     """Find the indices of array elements that are non-zero, grouped by element."""
 
-    op_name = "Argwhere"
-    np_op_name = "argwhere"
+    op_name: object = "Argwhere"
+    np_op_name: object = "argwhere"
 
-    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, **kwargs: object) -> object:
         """Infer the output shape for the Argwhere operation.
 
         Args:
             a: The input array or shape whose non-zero elements are to be found.
             **kwargs: Keyword arguments containing configuration for the operation.
 
-        Returns: Any: The inferred shape of the output indices tensor.
+        Returns: object: The inferred shape of the output indices tensor.
         """
         return (None, len(a) if isinstance(a, tuple) else None)
 
@@ -375,7 +373,7 @@ class Append(OpDef):
     This operator appends values to the end of an array.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -387,13 +385,13 @@ class Append(OpDef):
         """
         if not args or not hasattr(args[0], "shape"):
             return ()
-        axis = kwargs.get("axis")
+        axis: object = kwargs.get("axis")
         if axis is not None:
-            res = list(args[0].shape)
+            res: object = list(args[0].shape)
             res[axis] += args[1].shape[axis] if len(args) > 1 and hasattr(args[1], "shape") else 1
             return tuple(res)
         import math
 
-        s1 = math.prod(args[0].shape)
-        s2 = math.prod(args[1].shape) if len(args) > 1 and hasattr(args[1], "shape") else 1
+        s1: object = math.prod(args[0].shape)
+        s2: object = math.prod(args[1].shape) if len(args) > 1 and hasattr(args[1], "shape") else 1
         return (s1 + s2,)

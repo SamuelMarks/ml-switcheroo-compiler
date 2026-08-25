@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module ragged_tensor.py."""
 
-from typing import Any
-
 """Ragged tensor."""
 
 from collections.abc import Sequence
@@ -16,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 class RaggedTensor:
     """Represents a ragged tensor."""
 
-    def __init__(self, values: Tensor, row_splits: Tensor) -> None:  # type: ignore
+    def __init__(self, values: Tensor, row_splits: Tensor) -> None:
         """Init.
 
         Args:
@@ -37,8 +35,8 @@ class RaggedTensor:
         # We approximate it by taking the number of rows from row_splits
         # and marking the next dimension as 'None' (symbolic) if possible,
         # or just delegating to values. For uniformity, returning a tuple
-        batch_size = max(0, len(self.row_splits) - 1)
-        val_shape = list(self.values.shape)
+        batch_size: object = max(0, len(self.row_splits) - 1)
+        val_shape: object = list(self.values.shape)
         if val_shape:
             val_shape[0] = -1
         return tuple([batch_size] + val_shape)

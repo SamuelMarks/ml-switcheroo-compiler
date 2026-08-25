@@ -20,12 +20,12 @@ class MLPlaygroundDirective(Directive):
         allowed. Defaults to True.
     """
 
-    has_content = True
+    has_content: object = True
 
     def run(self) -> object:
         """Execute standard operation."""
         # We output a section with an id that our JS will hydrate
-        html = """
+        html: object = """
 <section id="ml-playground-container" aria-label="ML Switcheroo Playground">
     <header class="pg-header">
         <label class="theme-switch" aria-label="Toggle Dark Mode">

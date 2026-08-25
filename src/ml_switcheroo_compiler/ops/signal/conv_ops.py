@@ -6,7 +6,7 @@ from .common_ops import _calculate_padding, _emit_signal_node
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class Convolve2d(OpDef):
     """Convolve2d."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Convolve2d(OpDef):
         return args[0].shape
 
 
-def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:  # type: ignore
+def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     """Validate arguments for convolve2d.
 
     Args:
@@ -48,12 +48,12 @@ def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:  # type: ignore
 
 
 def convolve2d(
-    in1: Tensor,  # type: ignore
-    in2: Tensor,  # type: ignore
+    in1: Tensor,
+    in2: Tensor,
     mode: str = "full",
     boundary: str = "fill",
     fillvalue: float = 0.0,
-) -> Any:
+) -> object:
     """Evaluate convolve2d operation.
 
     Args:
@@ -67,17 +67,17 @@ def convolve2d(
         Tensor: Result.
     """
     _validate_conv2d_args(in1, in2)
-    kwargs = _calculate_padding(mode, boundary, fillvalue)
+    kwargs: object = _calculate_padding(mode, boundary, fillvalue)
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
         return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
 
     return _emit_signal_node(
         "Convolve2d",
         [in1, in2],
         kwargs,
-        in1.shape,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        in1.dtype,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        in1.shape,
+        in1.dtype,
     )

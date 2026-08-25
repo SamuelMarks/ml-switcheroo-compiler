@@ -2,7 +2,7 @@
 """Apply logical hardware topology abstraction."""
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 
 class DeviceMesh:
@@ -12,7 +12,7 @@ class DeviceMesh:
         self,
         shape: Sequence[int],
         axis_names: Sequence[str],
-        devices: Optional[Sequence[Any]] = None,
+        devices: Optional[Sequence[object]] = None,
     ) -> None:
         """Initialize DeviceMesh.
 
@@ -25,19 +25,19 @@ class DeviceMesh:
             ValueError: An exception.
         """
         if len(shape) != len(axis_names):
-            msg = "Length of shape and axis_names must match."
+            msg: object = "Length of shape and axis_names must match."
             raise ValueError(msg)
 
         self.shape = tuple(shape)
         self.axis_names = tuple(axis_names)
 
-        expected_devices = 1
+        expected_devices: object = 1
         for dim in shape:
             expected_devices *= dim
 
         if devices is not None:
             if len(devices) != expected_devices:
-                msg = f"Expected {expected_devices} devices, got {len(devices)}."
+                msg: object = f"Expected {expected_devices} devices, got {len(devices)}."
                 raise ValueError(msg)
             self.devices = tuple(devices)
         else:
@@ -51,7 +51,7 @@ class DeviceMesh:
         """
         return f"DeviceMesh(shape={self.shape}, axis_names={self.axis_names})"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Equality check.
 
         Args:

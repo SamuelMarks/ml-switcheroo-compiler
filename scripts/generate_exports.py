@@ -23,7 +23,7 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
         list[str]: A sorted list of the module's exported symbol names.
     """
     try:
-        mod = importlib.import_module(modname)
+        mod: object = importlib.import_module(modname)
     except Exception as e:
         print(f"Failed to import {modname}: {e}")
         return []
@@ -52,7 +52,7 @@ def _append_import_lines(
     Returns:
         None
     """
-    unique_exports = [e for e in sorted(set(exports)) if e not in imported_symbols]
+    unique_exports: object = [e for e in sorted(set(exports)) if e not in imported_symbols]
     if unique_exports:
         import_lines.append(f"from {modname} import (")
         for e in unique_exports:
@@ -84,28 +84,28 @@ def generate_init(
     imported_symbols: set[str] = set()
 
     for submod in submodules:
-        modname = f"{module_name}.{submod}"
-        exports = _get_exports_from_submodule(modname)
+        modname: object = f"{module_name}.{submod}"
+        exports: object = _get_exports_from_submodule(modname)
         _append_import_lines(modname, exports, imported_symbols, import_lines, all_exports)
 
     if extra_imports:
         for modname, exports in extra_imports:
             _append_import_lines(modname, exports, imported_symbols, import_lines, all_exports)
 
-    all_exports = sorted(list(set(all_exports)))
+    all_exports: object = sorted(list(set(all_exports)))
 
     with open(filepath) as f:
-        old_source = f.read()
+        old_source: object = f.read()
 
     try:
-        tree = ast.parse(old_source)
+        tree: object = ast.parse(old_source)
         existing_all: Optional[list[str]] = None
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name) and target.id == "__all__":
                         if isinstance(node.value, (ast.List, ast.Tuple)):
-                            existing_all = []
+                            existing_all: object = []
                             for elt in node.value.elts:
                                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                     existing_all.append(str(elt.value))
@@ -115,7 +115,7 @@ def generate_init(
     except SyntaxError:
         pass
 
-    new_source = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
+    new_source: object = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
     new_source += "# pylint: disable=duplicate-code\n"
     new_source += "__all__ = [\n"
     for e in all_exports:
@@ -124,13 +124,13 @@ def generate_init(
 
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
         tmp.write(new_source)
-        tmp_name = tmp.name
+        tmp_name: object = tmp.name
 
     try:
         subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
         subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
         with open(tmp_name) as f:
-            new_source_formatted = f.read()
+            new_source_formatted: object = f.read()
     finally:
         os.remove(tmp_name)
 
@@ -149,58 +149,58 @@ def process_file(filepath: str) -> None:
     Returns:
         None
     """
-    abs_path = os.path.abspath(filepath)
-    src_dir = os.path.abspath("src")
+    abs_path: object = os.path.abspath(filepath)
+    src_dir: object = os.path.abspath("src")
     if not abs_path.startswith(src_dir):
         return
 
-    rel_path = os.path.relpath(abs_path, src_dir)
-    modname = rel_path.replace(os.path.sep, ".")
+    rel_path: object = os.path.relpath(abs_path, src_dir)
+    modname: object = rel_path.replace(os.path.sep, ".")
     if modname.endswith(".py"):
-        modname = modname[:-3]
+        modname: object = modname[:-3]
     if modname.endswith(".__init__"):
-        modname = modname[:-9]
+        modname: object = modname[:-9]
 
     try:
-        mod = importlib.import_module(modname)
+        mod: object = importlib.import_module(modname)
     except Exception as e:
         print(f"Skipping {filepath} due to import error: {e}")
         return
 
     with open(filepath) as f:
-        source_for_magic = f.read()
+        source_for_magic: object = f.read()
 
-    magic_from = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
-    magic_auto = re.search(r"#\s*auto-generate-all", source_for_magic)
+    magic_from: object = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
+    magic_auto: object = re.search(r"#\s*auto-generate-all", source_for_magic)
 
-    magic_exclude = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
-    exclude_set = set()
+    magic_exclude: object = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
+    exclude_set: object = set()
     if magic_exclude:
-        exclude_set = {m.strip() for m in magic_exclude.group(1).split(",")}
+        exclude_set: object = {m.strip() for m in magic_exclude.group(1).split(",")}
 
     if magic_from:
-        source_mods = [m.strip() for m in magic_from.group(1).split(",")]
-        exports = []
+        source_mods: object = [m.strip() for m in magic_from.group(1).split(",")]
+        exports: object = []
         for sm in source_mods:
             exports.extend(_get_exports_from_submodule(sm))
-        exports = [e for e in set(exports) if e not in exclude_set]
+        exports: object = [e for e in set(exports) if e not in exclude_set]
     elif magic_auto:
-        exports = [n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set]
+        exports: object = [n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set]
 
     else:
-        exports_attr = getattr(mod, "__all__", None)
+        exports_attr: object = getattr(mod, "__all__", None)
         if exports_attr is None:
-            exports = [n for n in dir(mod) if not n.startswith("_")]
+            exports: object = [n for n in dir(mod) if not n.startswith("_")]
         else:
-            exports = list(exports_attr)
+            exports: object = list(exports_attr)
 
-    exports = sorted(list(set(exports)))
+    exports: object = sorted(list(set(exports)))
 
     with open(filepath) as f:
-        source = f.read()
+        source: object = f.read()
 
     try:
-        tree = ast.parse(source)
+        tree: object = ast.parse(source)
     except SyntaxError:
         return
 
@@ -210,7 +210,7 @@ def process_file(filepath: str) -> None:
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "__all__":
                     if isinstance(node.value, (ast.List, ast.Tuple)):
-                        existing_all = []
+                        existing_all: object = []
                         for elt in node.value.elts:
                             if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 existing_all.append(str(elt.value))
@@ -222,17 +222,17 @@ def process_file(filepath: str) -> None:
     lines_to_remove: set[int] = set()
 
     for node in ast.walk(tree):
-        is_target = False
+        is_target: object = False
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "__all__":
-                    is_target = True
+                    is_target: object = True
         elif isinstance(node, ast.Expr):
             if isinstance(node.value, ast.Call):
-                func = node.value.func
+                func: object = node.value.func
                 if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == "__all__":
                     if func.attr in ("extend", "append"):
-                        is_target = True
+                        is_target: object = True
 
         if is_target:
             if hasattr(node, "lineno") and hasattr(node, "end_lineno") and node.end_lineno is not None:
@@ -242,8 +242,8 @@ def process_file(filepath: str) -> None:
     if not lines_to_remove and not getattr(mod, "__all__", None):
         return
 
-    old_lines = source.split("\n")
-    new_lines = []
+    old_lines: object = source.split("\n")
+    new_lines: object = []
     for i, line in enumerate(old_lines, 1):
         if i not in lines_to_remove:
             new_lines.append(line)
@@ -251,20 +251,20 @@ def process_file(filepath: str) -> None:
     while new_lines and new_lines[-1].strip() == "":
         new_lines.pop()
 
-    new_source = "\n".join(new_lines) + "\n\n__all__ = [\n"
+    new_source: object = "\n".join(new_lines) + "\n\n__all__ = [\n"
     for e_exp in exports:
         new_source += f'    "{e_exp}",\n'
     new_source += "]\n"
 
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
         tmp.write(new_source)
-        tmp_name = tmp.name
+        tmp_name: object = tmp.name
 
     try:
         subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
         subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
         with open(tmp_name) as f:
-            new_source_formatted = f.read()
+            new_source_formatted: object = f.read()
     finally:
         os.remove(tmp_name)
 
@@ -275,7 +275,7 @@ def process_file(filepath: str) -> None:
 
 
 if __name__ == "__main__":
-    vision_subs = [
+    vision_subs: object = [
         "affine",
         "bbox",
         "color",
@@ -293,23 +293,23 @@ if __name__ == "__main__":
     )
 
     # Then process all files to convert __all__ to literal strings
-    files_to_check = []
+    files_to_check: object = []
     for root, _, files in os.walk("src/ml_switcheroo_compiler"):
         for file in files:
             if file.endswith(".py"):
-                fpath = os.path.join(root, file)
+                fpath: object = os.path.join(root, file)
                 if fpath != "src/ml_switcheroo_compiler/ops/vision/__init__.py":
                     files_to_check.append(fpath)
 
     for f in files_to_check:
         with open(f) as file_obj:
-            content = file_obj.read()
+            content: object = file_obj.read()
         if "__all__" in content:
             process_file(f)
 
     print("Successfully normalized __all__ exports across the codebase.")
 
-    ops_subs = [
+    ops_subs: object = [
         "audio",
         "base",
         "control_flow",

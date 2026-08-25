@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Tracing engine for constructing LogicalGraphs via operator overloading."""
 
 
 import threading
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
-T_Payload = TypeVar("T_Payload")
+T_Payload: object = TypeVar("T_Payload")
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -26,13 +25,13 @@ if TYPE_CHECKING:
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
-T = TypeVar("T", bound="ProxyTensor[Any]")
+T = TypeVar("T", bound="ProxyTensor[object]")
 
 
 _TRACE_COUNTS: dict[int, int] = {}
 
 
-def get_trace_count(func: Any) -> int:
+def get_trace_count(func: object) -> int:
     """Return the number of times the function has been traced.
 
     Args:
@@ -44,7 +43,7 @@ def get_trace_count(func: Any) -> int:
     return _TRACE_COUNTS.get(id(func), 0)
 
 
-def increment_trace_count(func: Any) -> None:
+def increment_trace_count(func: object) -> None:
     """Increment the trace count for the given function.
 
     Args:
@@ -53,7 +52,7 @@ def increment_trace_count(func: Any) -> None:
     _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
 
 
-def reset_trace_count(func: Any) -> None:
+def reset_trace_count(func: object) -> None:
     """Reset the trace count for the given function.
 
     Args:
@@ -109,7 +108,7 @@ class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticM
         id (str): The ID of the IRNode producing this tensor
         shape (Tuple[Union[int, str], ...]): The shape of the tensor
         dtype (str): The data type of the tensor
-        sparsity (dict[str, Any] | None): Optional sparsity pattern metadata (e.g. CSR, COO, BCOO)
+        sparsity (dict[str, object] | None): Optional sparsity pattern metadata (e.g. CSR, COO, BCOO)
     """
 
     def __init__(
@@ -117,20 +116,20 @@ class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticM
         id: str,
         shape: tuple[int | str, ...],
         dtype: str = "float32",
-        sparsity: dict[str, Any] | None = None,
+        sparsity: dict[str, object] | None = None,
     ) -> None:
         """Initialize a ProxyTensor.
 
         id (str): Node ID producing this tensor
             shape (Tuple[Union[int, str], ...]): Tensor shape
             dtype (str): Tensor data type
-            sparsity (dict[str, Any] | None): Sparsity pattern metadata
+            sparsity (dict[str, object] | None): Sparsity pattern metadata
 
         Args:
             id (str): Node ID producing this tensor
             shape (tuple[int | str, ...]): Tensor shape
             dtype (str): Tensor data type
-            sparsity (dict[str, Any] | None, optional): Sparsity pattern metadata. Defaults to None.
+            sparsity (dict[str, object] | None, optional): Sparsity pattern metadata. Defaults to None.
         """
         self.id = id
         self.shape = shape

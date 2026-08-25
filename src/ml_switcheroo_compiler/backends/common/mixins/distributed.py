@@ -20,12 +20,12 @@ class DistributedASTVisitor:
         Args:
             node (Any): The node.
             input_vars (list[str]): Input variable names.
-            **kwargs: Extra arguments.
+            **kwargs (Any): Extra arguments.
 
         Returns:
             str: Generated code.
         """
-        target = node.attributes.get("target_stage", 0)
+        target: int = node.attributes.get("target_stage", 0)
         self.generator.code.append(f"    # Send tensor to pipeline stage {target}")
         if self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower() == "numpy":
             return f"_numpy_send({input_vars[0]}, target={target})"
@@ -45,14 +45,14 @@ class DistributedASTVisitor:
         Args:
             node (Any): The node.
             input_vars (list[str]): Input variable names.
-            **kwargs: Extra arguments.
+            **kwargs (Any): Extra arguments.
 
         Returns:
             str: Generated code.
         """
-        source = node.attributes.get("source_stage", 0)
-        shape = node.shape_metadata
-        dtype = getattr(node, "dtype", "float32")
+        source: int = node.attributes.get("source_stage", 0)
+        shape: Any = node.shape_metadata
+        dtype: str = getattr(node, "dtype", "float32")
         self.generator.code.append(f"    # Recv tensor from pipeline stage {source}")
 
         if self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower() == "numpy":

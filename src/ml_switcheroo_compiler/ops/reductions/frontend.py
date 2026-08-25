@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply reduction operations frontend."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -41,7 +39,7 @@ from .frontend_stats import (
 from .frontend_utils import reduce_window
 
 
-def sum(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
+def sum(a: object, axis: object = None, keepdims: bool = False) -> object:
     """Sum.
 
     Args:
@@ -53,12 +51,12 @@ def sum(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Sum", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def max(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
+def max(a: object, axis: object = None, keepdims: bool = False) -> object:
     """Max.
 
     Args:
@@ -70,12 +68,12 @@ def max(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Max", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def min(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
+def min(a: object, axis: object = None, keepdims: bool = False) -> object:
     """Min.
 
     Args:
@@ -87,8 +85,8 @@ def min(a: Any, axis: Any = None, keepdims: bool = False) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Min", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 

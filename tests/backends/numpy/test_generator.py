@@ -1,68 +1,59 @@
-"""Test Numpy generator edge cases coverage."""
+from unittest.mock import MagicMock, patch
 
-from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
-
-
-def test_numpy_generator_triinv():
-    """Test visit_TriInv string generation."""
-    # We can just call it on the class directly since it's a @classmethod
-    # TriInv does not output kwargs in its logic, but we can verify it doesn't break
-    res = NumpyASTVisitor.visit_TriInv(None, ["in_val"], dimension=0, equation="test")
-    assert res == "np.linalg.inv(in_val)"
+from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 
 
-def test_numpy_generator_format_kwargs_dimension():
-    """Test _format_kwargs with dimension keyword arg."""
-    res = NumpyASTVisitor._format_kwargs({"dimension": 2, "other": "test"})
-    assert "axis=2" in res
-    assert "other=test" in res
-    assert "dimension" not in res
+def test_numpy_type_translator():
+    assert NumpyTypeTranslator.get_fallback_prefix() == "np"
 
 
-def test_numpy_generator_generic_visit_dimension():
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
-    from ml_switcheroo_compiler.ir.core import LogicalNode
+def test_numpy_ast_visitor():
+    kwargs = {"equation": "ij,jk->ik", "dimension": 1, "other": "val"}
+    assert NumpyASTVisitor._format_kwargs(kwargs) == "other=val, axis=1"
 
-    node = LogicalNode(id="n1", op_type="Sum", inputs=["x"])
-    res = NumpyASTVisitor.generic_visit(node, ["x"], dimension=1)
-    assert res == "np.sum(x, axis=1)"
+    node = MagicMock(op_type="Parameter")
+    node.id = "p1"
+    assert NumpyASTVisitor.visit_Parameter(node, ["p1"]) == "p1 = None # Parameter"
 
+    assert NumpyASTVisitor.visit_Return(None, []) == "return None"
+    assert NumpyASTVisitor.visit_Return(None, ["v1"]) == "return v1"
+    assert NumpyASTVisitor.visit_Return(None, ["v1", "v2"]) == "return v1, v2"
 
-def test_numpy_generator_save_load(tmp_path):
-    import numpy as np
+    assert NumpyASTVisitor.visit_TriInv(None, ["a"]) == "np.linalg.inv(a)"
+    assert NumpyASTVisitor.visit_TruncateDiv(None, ["a", "b"]) == "np.trunc(np.divide(a, b))"
+    assert NumpyASTVisitor.visit_TruncateMod(None, ["a", "b"]) == "np.fmod(a, b)"
 
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
-
-    gen = NumpyGenerator(IRGraph())
-    arr = np.array([1, 2, 3])
-
-    # save/load
-    file1 = tmp_path / "test.npy"
-    gen.save(file1, arr)
-    res1 = gen.load(file1)
-    np.testing.assert_array_equal(res1, arr)
-
-    # savez
-    file2 = tmp_path / "test2.npz"
-    gen.savez(file2, a=arr)
-    res2 = gen.load(file2)
-    np.testing.assert_array_equal(res2["a"], arr)
-
-    # savez_compressed
-    file3 = tmp_path / "test3.npz"
-    gen.savez_compressed(file3, a=arr)
-    res3 = gen.load(file3)
-    np.testing.assert_array_equal(res3["a"], arr)
+    node = MagicMock(op_type="Sum")
+    assert NumpyASTVisitor.generic_visit(node, ["a"], dimension=1) == "np.sum(a, axis=1)"
+    assert NumpyASTVisitor.generic_visit(node, []) == "np.sum()"
+    assert NumpyASTVisitor.generic_visit(node, ["a"], keepdims=True) == "np.sum(a, keepdims=True)"
 
 
-def test_numpy_generator_get_rng():
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
-
-    rng = NumpyGenerator.get_numpy_rng(42)
-    assert rng is not None
-
-    gen = NumpyGenerator(IRGraph())
+def test_numpy_generator():
+    gen = NumpyGenerator(MagicMock(nodes=[]))
+    assert gen.get_fallback_prefix() == "np"
     assert gen._get_backend_prefix() == "np"
-    assert len(gen.get_helper_functions()) > 0
+
+    node = MagicMock(op_type="PowerIteration")
+    node.attributes = {"num_iters": 5}
+    assert gen.visit_PowerIteration(node, ["a"]) == "np_power_iteration(a, 5, None)"
+    assert gen.visit_PowerIteration(node, ["a", "b"]) == "np_power_iteration(a, 5, b)"
+
+    assert gen.get_numpy_rng() is not None
+
+    with patch("numpy.load", return_value="load"):
+        assert gen.load("file.npy") == "load"
+
+    with patch("numpy.save"):
+        gen.save("file.npy", "arr")
+
+    with patch("numpy.savez"):
+        gen.savez("file.npz", "arr")
+
+    with patch("numpy.savez_compressed"):
+        gen.savez_compressed("file.npz", "arr")
+
+
+def test_numpy_generator_helpers():
+    gen = NumpyGenerator(MagicMock(nodes=[]))
+    assert isinstance(gen.get_helper_functions(), list)

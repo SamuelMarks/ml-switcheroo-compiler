@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any, Callable, Optional
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision utilities."""
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
 
@@ -46,7 +47,7 @@ def _flip_both(img: Any, rng: Any) -> Any:
 
     Returns: Any: The flipped image, potentially along both axes.
     """
-    img = _flip_horizontal(img, rng)
+    img: Any = _flip_horizontal(img, rng)
     return _flip_vertical(img, rng)
 
 
@@ -69,16 +70,16 @@ def random_flip_eager(backend_module: Any, images: Any, mode: str, seed: Any = N
     Returns:
             tuple[int, ...]: Result.
     """
-    data_format = None
-    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    data_format: Any = None
+    ctx: Any = _prepare_eager_transform(backend_module, images, seed, data_format)
 
-    out = ctx.np_mod.copy(ctx.imgs)
-    strategy = _FLIP_STRATEGIES.get(mode, lambda img, rng: img)
+    out: Any = ctx.np_mod.copy(ctx.imgs)
+    strategy: Any = _FLIP_STRATEGIES.get(mode, lambda img, rng: img)
 
     for i in range(ctx.B):
         out[i] = strategy(out[i], ctx.rng)
 
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out: Any = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -144,10 +145,10 @@ def _apply_affine_transform(y_grid: Any, x_grid: Any, params: AffineTransformPar
     Returns:
         tuple[Any, Any]: The transformed Y and X coordinates.
     """
-    x_shifted = x_grid - params.cx
-    y_shifted = y_grid - params.cy
-    x_rot = x_shifted * params.cos_a + y_shifted * params.sin_a
-    y_rot = -x_shifted * params.sin_a + y_shifted * params.cos_a
+    x_shifted: Any = x_grid - params.cx
+    y_shifted: Any = y_grid - params.cy
+    x_rot: Any = x_shifted * params.cos_a + y_shifted * params.sin_a
+    y_rot: Any = -x_shifted * params.sin_a + y_shifted * params.cos_a
     return (y_rot + params.cy, x_rot + params.cx)
 
 
@@ -291,7 +292,7 @@ def _get_elastic_factor(rng: Any, f: Any) -> float:
         float: The sampled configuration parameter for elastic distortion.
     """
     if isinstance(f, (tuple, list)):
-        return rng.uniform(f[0], f[1])  # type: ignore
+        return rng.uniform(f[0], f[1])
     return float(f)
 
 
@@ -313,19 +314,19 @@ def random_elastic_transform_eager(
 
     Returns: Any: The batch of elastically transformed images.
     """
-    data_format = kwargs.get("data_format", None)
-    ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None), data_format)
-    a = _get_elastic_factor(ctx.rng, alpha)
-    s = _get_elastic_factor(ctx.rng, sigma)
+    data_format: Any = kwargs.get("data_format", None)
+    ctx: Any = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None), data_format)
+    a: Any = _get_elastic_factor(ctx.rng, alpha)
+    s: Any = _get_elastic_factor(ctx.rng, sigma)
     (new_y, new_x) = _generate_random_elastic_grid(ctx.np_mod, (ctx.B, ctx.H, ctx.W), ctx.rng, a, s)
-    t_config = TransformInterpolationConfig(
+    t_config: Any = TransformInterpolationConfig(
         new_y=new_y,
         new_x=new_x,
         order=1 if str(kwargs.get("interpolation", "bilinear")) == "bilinear" else 0,
         fill_value=float(kwargs.get("fill_value", 0.0)),
     )
-    out = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out: Any = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
+    out: Any = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -366,8 +367,8 @@ def _get_shear_factor(rng: Any, factor: Any) -> float:
         float: The sampled shear magnitude.
     """
     if isinstance(factor, (tuple, list)):
-        return rng.uniform(factor[0], factor[1])  # type: ignore
-    return rng.uniform(-factor, factor)  # type: ignore
+        return rng.uniform(factor[0], factor[1])
+    return rng.uniform(-factor, factor)
 
 
 def _compute_shear_grid(np_mod: Any, config: GeometricGridConfig) -> tuple[Any, Any]:
@@ -401,25 +402,25 @@ def random_zoom_eager(
 
     Returns: Any: The batch of zoomed images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect"))
-    interpolation = str(kwargs.get("interpolation", "bilinear"))
-    fill_value = float(kwargs.get("fill_value", 0.0))
-    seed = kwargs.get("seed", None)
-    data_format = kwargs.get("data_format", None)
-    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    fill_mode: Any = str(kwargs.get("fill_mode", "reflect"))
+    interpolation: Any = str(kwargs.get("interpolation", "bilinear"))
+    fill_value: Any = float(kwargs.get("fill_value", 0.0))
+    seed: Any = kwargs.get("seed", None)
+    data_format: Any = kwargs.get("data_format", None)
+    ctx: Any = _prepare_eager_transform(backend_module, images, seed, data_format)
     if width_factor is None:
-        width_factor = height_factor
+        width_factor: Any = height_factor
     (new_y, new_x) = _compute_zoom_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
-    config = RotationConfig(
+    config: Any = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data_format=data_format,
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out: Any = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
+    out: Any = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -441,23 +442,23 @@ def random_translation_eager(
 
     Returns: Any: The batch of translated images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect"))
-    interpolation = str(kwargs.get("interpolation", "bilinear"))
-    fill_value = float(kwargs.get("fill_value", 0.0))
-    seed = kwargs.get("seed", None)
-    data_format = kwargs.get("data_format", None)
-    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    fill_mode: Any = str(kwargs.get("fill_mode", "reflect"))
+    interpolation: Any = str(kwargs.get("interpolation", "bilinear"))
+    fill_value: Any = float(kwargs.get("fill_value", 0.0))
+    seed: Any = kwargs.get("seed", None)
+    data_format: Any = kwargs.get("data_format", None)
+    ctx: Any = _prepare_eager_transform(backend_module, images, seed, data_format)
     (new_y, new_x) = _compute_translation_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
-    config = RotationConfig(
+    config: Any = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data_format=data_format,
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out: Any = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
+    out: Any = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -479,21 +480,21 @@ def random_shear_eager(
 
     Returns: Any: The batch of sheared images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect"))
-    interpolation = str(kwargs.get("interpolation", "bilinear"))
-    fill_value = float(kwargs.get("fill_value", 0.0))
-    seed = kwargs.get("seed", None)
-    data_format = kwargs.get("data_format", None)
-    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    fill_mode: Any = str(kwargs.get("fill_mode", "reflect"))
+    interpolation: Any = str(kwargs.get("interpolation", "bilinear"))
+    fill_value: Any = float(kwargs.get("fill_value", 0.0))
+    seed: Any = kwargs.get("seed", None)
+    data_format: Any = kwargs.get("data_format", None)
+    ctx: Any = _prepare_eager_transform(backend_module, images, seed, data_format)
     (new_y, new_x) = _compute_shear_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=y_factor, factor2=x_factor))
-    config = RotationConfig(
+    config: Any = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data_format=data_format,
     )
-    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
+    out: Any = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
+    out: Any = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)

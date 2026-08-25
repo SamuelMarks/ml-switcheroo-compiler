@@ -4,8 +4,6 @@
 
 """Linear algebra operations package."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
 from ml_switcheroo_compiler.ops.linalg.dot import (
@@ -110,9 +108,9 @@ from .transform import hadamard_transform as hadamard_transform
 class Vecdot(OpDef):
     """Vecdot operator definition."""
 
-    op_name = "Vecdot"
+    op_name: object = "Vecdot"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Evaluate infer_shape operation.
 
         Args:
@@ -129,9 +127,9 @@ class Vecdot(OpDef):
 class CustomLinearSolve(OpDef):
     """CustomLinearSolve operator definition."""
 
-    op_name = "CustomLinearSolve"
+    op_name: object = "CustomLinearSolve"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Evaluate infer_shape operation.
 
         Args:
@@ -148,9 +146,9 @@ class CustomLinearSolve(OpDef):
 class CustomRoot(OpDef):
     """CustomRoot operator definition."""
 
-    op_name = "CustomRoot"
+    op_name: object = "CustomRoot"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Evaluate infer_shape operation.
 
         Args:
@@ -289,7 +287,6 @@ class CustomRoot(OpDef):
 from .dot import Pdot as Pdot
 
 __all__ = [
-    "Any",
     "ConvGeneralDilated",
     "ConvGeneralDilatedLocal",
     "ConvGeneralDilatedPatches",

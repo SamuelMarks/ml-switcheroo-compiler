@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -20,11 +20,11 @@ def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "correlate", None)
+    func: Any = getattr(backend_module, "correlate", None)
     if func:
         return func(*args, **kwargs)
     (a, v) = (args[0], args[1])
-    mode = kwargs.get("mode", "valid")
+    mode: Any = kwargs.get("mode", "valid")
     return backend_module.correlate(backend_module.asarray(a), backend_module.asarray(v), mode=mode)
 
 
@@ -40,7 +40,7 @@ def _np_windowhann(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
+    func: Any = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

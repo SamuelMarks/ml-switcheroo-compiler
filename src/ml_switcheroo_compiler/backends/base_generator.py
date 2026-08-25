@@ -3,7 +3,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Union
 
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
@@ -30,7 +30,7 @@ class IRGraphWalker:
         Args:
             input_prefix (str): The prefix for input args.
         """
-        visitor = CodeGeneratorVisitor(self.generator)
+        visitor: object = CodeGeneratorVisitor(self.generator)
         visitor.generate_body(input_prefix)
 
 
@@ -47,8 +47,8 @@ class InputContext:
 class FormatterProxyMixin:
     """FormatterProxyMixin class."""
 
-    formatter: Any
-    _formatter: Any
+    formatter: object
+    _formatter: object
     """Provide mixin for proxying formatter methods."""
 
     @property
@@ -58,7 +58,7 @@ class FormatterProxyMixin:
         Returns:
             dict[str, str]: The variable names map.
         """
-        return self.formatter.var_names  # type: ignore
+        return self.formatter.var_names
 
     @var_names.setter
     def var_names(self, value: dict[str, str]) -> None:
@@ -76,7 +76,7 @@ class FormatterProxyMixin:
         Returns:
             list[str]: The generated code list.
         """
-        return self.formatter.code  # type: ignore
+        return self.formatter.code
 
     @code.setter
     def code(self, value: list[str]) -> None:
@@ -94,7 +94,7 @@ class FormatterProxyMixin:
         Returns:
             int: The current indent level.
         """
-        return self.formatter.indent_level  # type: ignore
+        return self.formatter.indent_level
 
     @indent_level.setter
     def indent_level(self, value: int) -> None:
@@ -112,7 +112,7 @@ class FormatterProxyMixin:
         Returns:
             str: The header string.
         """
-        return self.formatter.header  # type: ignore
+        return self.formatter.header
 
     @header.setter
     def header(self, value: str) -> None:
@@ -129,9 +129,9 @@ class FormatterProxyMixin:
         Returns:
             str: Indentation string.
         """
-        return self.formatter.get_indent()  # type: ignore
+        return self.formatter.get_indent()
 
-    def add_line(self: Any, line: str) -> None:
+    def add_line(self: object, line: str) -> None:
         """Add a line of code.
 
         Args:
@@ -149,13 +149,13 @@ class FormatterProxyMixin:
         Returns:
             str: The assigned variable name.
         """
-        return self.formatter.assign_var_name(node_id, prefix)  # type: ignore
+        return self.formatter.assign_var_name(node_id, prefix)
 
 
 class EmitUtilsMixin:
     """EmitUtilsMixin class."""
 
-    add_line: Any
+    add_line: object
     """Provide mixin for emit utilities."""
 
     def _emit_body_return(self, returns: list[str]) -> None:
@@ -185,7 +185,7 @@ class EmitUtilsMixin:
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
     """Abstract base class for backend code generation."""
 
-    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: object = None) -> None:
         """Initialize the object.
 
         Args:
@@ -206,10 +206,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: The computed result.
         """
-        val = node.attributes.get("value")
+        val: object = node.attributes.get("value")
         return repr(val)
 
-    def visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Visit a node and return the formatted code string for the operation.
 
         Args:
@@ -220,15 +220,15 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: The computed result.
         """
-        op_type = getattr(node, "op_type", "")
-        method_name = f"visit_{op_type}"
+        op_type: object = getattr(node, "op_type", "")
+        method_name: object = f"visit_{op_type}"
         for visitor in getattr(self, "visitors", []):
             if hasattr(visitor, method_name):
-                method = getattr(visitor, method_name)
-                return method(node, input_vars, **kwargs)  # type: ignore
+                method: object = getattr(visitor, method_name)
+                return method(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
 
-    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -239,10 +239,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         from ml_switcheroo_compiler.ops.registry import backend_mapping_registry
 
-        ops = {}
-        prefix = self.get_fallback_prefix()
+        ops: object = {}
+        prefix: object = self.get_fallback_prefix()
         for op_name in backend_mapping_registry.operations.keys():
-            fmt = backend_mapping_registry.get_generator_mapping(prefix, op_name)
+            fmt: object = backend_mapping_registry.get_generator_mapping(prefix, op_name)
             if fmt is not None:
                 ops[op_name] = fmt
 
@@ -275,7 +275,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         return "keepdims"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Fallback visit method for operations not explicitly handled.
 
         Args:
@@ -286,15 +286,15 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: The code string.
         """
-        op_type = getattr(node, "op_type", "")
-        ops_map = self.get_ops_map(kwargs)
+        op_type: object = getattr(node, "op_type", "")
+        ops_map: object = self.get_ops_map(kwargs)
         if op_type in ops_map:
-            fmt = ops_map[op_type]
-            fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
-            fmt = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
+            fmt: object = ops_map[op_type]
+            fmt: object = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
+            fmt: object = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
             return fmt
 
-        ctx = FormatterContext(
+        ctx: object = FormatterContext(
             prefix=self.get_fallback_prefix(),
             op_type=op_type,
             input_vars=input_vars,
@@ -356,7 +356,7 @@ class PythonStringGenerator(BaseGenerator):
 class ClassBasedGenerator(BaseGenerator):
     """ClassBasedGenerator class."""
 
-    get_language: Any
+    get_language: object
     """Provide mixin for class-based string generators to avoid DRY issues in generate()."""
 
     _forward_method_name: str = "forward"
@@ -386,14 +386,14 @@ class ClassBasedGenerator(BaseGenerator):
         """
         self.code = [self.header]
         self.code.extend(self._get_prefix_code())
-        base_class = f"({self._base_class_name})" if self._base_class_name else ""
+        base_class: object = f"({self._base_class_name})" if self._base_class_name else ""
         self.add_line(f"class CompiledModel{base_class}:")
         self.indent_level = 1
-        self.add_line("def __init__(self):")
+        self.add_line("def __init__(self, *args, **kwargs) -> None:")
         self.indent_level += 1
         if self._base_class_name:
             self.add_line("super().__init__()")
-        has_params = self._emit_init_body()
+        has_params: object = self._emit_init_body()
         if not has_params:
             self.add_line("pass" if self.get_language() == "python" else "")
         self.add_line("")

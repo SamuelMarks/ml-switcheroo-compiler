@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Space-to-batch and batch-to-space ops."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class SpaceToBatchND(OpDef):
     """Space to Batch ND op."""
 
-    op_name = "SpaceToBatchND"
+    op_name: object = "SpaceToBatchND"
 
-    def infer_shape(self, input: Any, block_shape: Any, paddings: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, input: object, block_shape: object, paddings: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -31,9 +29,9 @@ class SpaceToBatchND(OpDef):
 class SpaceToBatch(OpDef):
     """Space to Batch op."""
 
-    op_name = "SpaceToBatch"
+    op_name: object = "SpaceToBatch"
 
-    def infer_shape(self, input: Any, block_size: Any, paddings: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, input: object, block_size: object, paddings: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -48,7 +46,7 @@ class SpaceToBatch(OpDef):
         return ()
 
 
-def space_to_batch(input: Any, block_size: Any, paddings: Any, **kwargs: Any) -> Any:
+def space_to_batch(input: object, block_size: object, paddings: object, **kwargs: object) -> object:
     """Space to batch operation.
 
     Args:
@@ -65,16 +63,16 @@ def space_to_batch(input: Any, block_size: Any, paddings: Any, **kwargs: Any) ->
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("SpaceToBatch", getattr(input, "data", input), block_size, paddings, **kwargs)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(input, "dtype", "float32"), getattr(input, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = get_active_backend().execute_op("SpaceToBatch", getattr(input, "data", input), block_size, paddings, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out_shape = get_op("SpaceToBatch")().infer_shape(input, block_size=block_size, paddings=paddings, **kwargs)
+    out_shape: object = get_op("SpaceToBatch")().infer_shape(input, block_size=block_size, paddings=paddings, **kwargs)
     return _emit_shape_node("SpaceToBatch", [input], {"block_size": block_size, "paddings": paddings, **kwargs}, out_shape, getattr(input, "dtype", "float32"))
 
 
-def space_to_batch_nd(input: Any, block_shape: Any, paddings: Any, **kwargs: Any) -> Any:
+def space_to_batch_nd(input: object, block_shape: object, paddings: object, **kwargs: object) -> object:
     """Space to batch ND operation.
 
     Args:
@@ -91,10 +89,10 @@ def space_to_batch_nd(input: Any, block_shape: Any, paddings: Any, **kwargs: Any
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("SpaceToBatchND", getattr(input, "data", input), block_shape, paddings, **kwargs)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(input, "dtype", "float32"), getattr(input, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = get_active_backend().execute_op("SpaceToBatchND", getattr(input, "data", input), block_shape, paddings, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     from ml_switcheroo_compiler.ops.base import get_op
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out_shape = get_op("SpaceToBatchND")().infer_shape(input, block_shape=block_shape, paddings=paddings, **kwargs)
+    out_shape: object = get_op("SpaceToBatchND")().infer_shape(input, block_shape=block_shape, paddings=paddings, **kwargs)
     return _emit_shape_node("SpaceToBatchND", [input], {"block_shape": block_shape, "paddings": paddings, **kwargs}, out_shape, getattr(input, "dtype", "float32"))

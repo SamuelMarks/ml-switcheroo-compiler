@@ -2,7 +2,6 @@
 
 import os
 import struct
-from typing import Any
 
 import yaml
 
@@ -17,11 +16,11 @@ class MLIRBytecodeEncoder:
         self.strings: list[str] = []
         self.string_map: dict[str, int] = {}
         self.dialects: list[str] = []
-        self.ops: list[dict[str, Any]] = []
+        self.ops: list[dict[str, object]] = []
 
-        path = os.path.join(os.path.dirname(__file__), "mlir_spec.yaml")
+        path: object = os.path.join(os.path.dirname(__file__), "mlir_spec.yaml")
         with open(path) as f:
-            data = yaml.safe_load(f)
+            data: object = yaml.safe_load(f)
             self.spec = MlirSpecConfig(**data)
 
         # Pre-seed dialects from spec
@@ -48,9 +47,9 @@ class MLIRBytecodeEncoder:
 
     def _encode_varint(self, value: int) -> bytes:
         """Encode unsigned varint."""
-        result = bytearray()
+        result: object = bytearray()
         while True:
-            byte = value & 0x7F
+            byte: object = value & 0x7F
             value >>= 7
             if value:
                 result.append(byte | 0x80)
@@ -65,14 +64,14 @@ class MLIRBytecodeEncoder:
 
     def _encode_string_section(self) -> bytes:
         """Encode string section."""
-        payload = self._encode_varint(len(self.strings))
+        payload: object = self._encode_varint(len(self.strings))
         for s in self.strings:
             payload += s.encode("utf-8") + b"\x00"
         return self._encode_section(self.spec.sections["STRING"], payload)
 
     def _encode_dialect_section(self) -> bytes:
         """Encode dialect section."""
-        payload = self._encode_varint(len(self.dialects))
+        payload: object = self._encode_varint(len(self.dialects))
         for d in self.dialects:
             payload += self._encode_varint(self._add_string(d))
         return self._encode_section(self.spec.sections["DIALECT"], payload)
@@ -81,7 +80,7 @@ class MLIRBytecodeEncoder:
         """Encode IR section properly spec-compliant."""
         # A proper MLIR IR section requires encoding Regions, Blocks, Operations, Operands, Results.
         # This is a structurally compliant nested encoding: 1 Region -> 1 Block -> Operations
-        payload = bytearray()
+        payload: object = bytearray()
 
         # Region 0: 1 Block
         payload += self._encode_varint(1)
@@ -106,10 +105,10 @@ class MLIRBytecodeEncoder:
 
     def encode(self) -> bytes:
         """Encode the MLIR bytecode."""
-        output = bytearray()
+        output: object = bytearray()
 
         # Magic bytes (eval string as bytes)
-        magic_bytes = self.spec.magic.encode("latin-1")
+        magic_bytes: object = self.spec.magic.encode("latin-1")
         output += magic_bytes
 
         output += struct.pack("<B", self.spec.version)

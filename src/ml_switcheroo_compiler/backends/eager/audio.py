@@ -2,7 +2,6 @@
 """Audio utilities."""
 
 import typing
-from typing import Any
 
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
@@ -28,11 +27,11 @@ class MFCCConfig(MelFilterbankConfig, total=False):
     num_mfccs: int
 
 
-def _get_window(np_mod: Any, window: str, frame_length: int) -> Any:
+def _get_window(np_mod: typing.Any, window: str, frame_length: int) -> typing.Any:
     """Evaluate _get_window operation.
 
     Args:
-        np_mod (object): The np_mod parameter.
+        np_mod (typing.Any): The np_mod parameter.
         window (str): The window parameter.
         frame_length (int): The frame_length parameter.
 
@@ -42,13 +41,13 @@ def _get_window(np_mod: Any, window: str, frame_length: int) -> Any:
     return 0
 
 
-def _run_scipy_istft(stft_np_flat: Any, win: Any, frame_params: tuple[int, int, int], center: bool) -> Any:
+def _run_scipy_istft(stft_np_flat: typing.Any, win: typing.Any, frame_params: tuple[int, int, int], center: bool) -> typing.Any:
     """Evaluate _run_scipy_istft operation.
 
     Args:
-        stft_np_flat (object): The stft_np_flat parameter.
-        win (object): The win parameter.
-        frame_params (object): The frame_params parameter.
+        stft_np_flat (typing.Any): The stft_np_flat parameter.
+        win (typing.Any): The win parameter.
+        frame_params (typing.Any): The frame_params parameter.
         center (bool): The center parameter.
 
     Returns:
@@ -57,15 +56,15 @@ def _run_scipy_istft(stft_np_flat: Any, win: Any, frame_params: tuple[int, int, 
     return 0
 
 
-def _apply_istft_batch(np_mod: Any, stft_np: Any, win: Any, config: STFTConfig, **kwargs: Any) -> Any:
+def _apply_istft_batch(np_mod: typing.Any, stft_np: typing.Any, win: typing.Any, config: STFTConfig, **kwargs: typing.Any) -> typing.Any:
     """Evaluate _apply_istft_batch operation.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        stft_np (object): The stft_np parameter.
-        win (object): The win parameter.
+        np_mod (typing.Any): The np_mod parameter.
+        stft_np (typing.Any): The stft_np parameter.
+        win (typing.Any): The win parameter.
         config (STFTConfig): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (typing.Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -73,12 +72,12 @@ def _apply_istft_batch(np_mod: Any, stft_np: Any, win: Any, config: STFTConfig, 
     return 0
 
 
-def istft_eager(backend_module: Any, stft_tensor: Any, config: STFTConfig, center: bool = True) -> Any:
+def istft_eager(backend_module: typing.Any, stft_tensor: typing.Any, config: STFTConfig, center: bool = True) -> typing.Any:
     """Evaluate istft_eager operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        stft_tensor (object): The stft_tensor parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        stft_tensor (typing.Any): The stft_tensor parameter.
         config (STFTConfig): The config parameter.
         center (bool): The center parameter.
 
@@ -88,11 +87,11 @@ def istft_eager(backend_module: Any, stft_tensor: Any, config: STFTConfig, cente
     return 0
 
 
-def _hz_to_mel(np_mod: Any, hz: float) -> float:
+def _hz_to_mel(np_mod: typing.Any, hz: float) -> float:
     """Evaluate _hz_to_mel operation.
 
     Args:
-        np_mod (object): The np_mod parameter.
+        np_mod (typing.Any): The np_mod parameter.
         hz (float): The hz parameter.
 
     Returns:
@@ -110,18 +109,18 @@ def _mel_to_hz(mel: float) -> float:
     Returns:
         float: Result.
     """
-    return MEL_SCALE_DIVISOR * (10.0 ** (mel / MEL_SCALE_MULTIPLIER) - 1.0)  # type: ignore
+    return MEL_SCALE_DIVISOR * (10.0 ** (mel / MEL_SCALE_MULTIPLIER) - 1.0)
 
 
-def _compute_filterbank_weights(np_mod: Any, num_spectrogram_bins: int, num_mel_bins: int, bin_freqs: Any, hz_pts: Any) -> Any:
+def _compute_filterbank_weights(np_mod: typing.Any, num_spectrogram_bins: int, num_mel_bins: int, bin_freqs: typing.Any, hz_pts: typing.Any) -> typing.Any:
     """Evaluate _compute_filterbank_weights operation.
 
     Args:
-        np_mod (object): The np_mod parameter.
+        np_mod (typing.Any): The np_mod parameter.
         num_spectrogram_bins (int): The num_spectrogram_bins parameter.
         num_mel_bins (int): The num_mel_bins parameter.
-        bin_freqs (object): The bin_freqs parameter.
-        hz_pts (object): The hz_pts parameter.
+        bin_freqs (typing.Any): The bin_freqs parameter.
+        hz_pts (typing.Any): The hz_pts parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -129,11 +128,11 @@ def _compute_filterbank_weights(np_mod: Any, num_spectrogram_bins: int, num_mel_
     return 0
 
 
-def _generate_mel_filterbank_matrix(np_mod: Any, config: MelFilterbankConfig) -> Any:
+def _generate_mel_filterbank_matrix(np_mod: typing.Any, config: MelFilterbankConfig) -> typing.Any:
     """Generate the Mel filterbank weight matrix.
 
     Args:
-        np_mod (object): The np_mod parameter.
+        np_mod (typing.Any): The np_mod parameter.
         config (MelFilterbankConfig): The config parameter.
 
     Returns:
@@ -142,12 +141,12 @@ def _generate_mel_filterbank_matrix(np_mod: Any, config: MelFilterbankConfig) ->
     return 0
 
 
-def mel_filterbank_eager(backend_module: Any, _: Any, config: MelFilterbankConfig) -> Any:
+def mel_filterbank_eager(backend_module: typing.Any, _: typing.Any, config: MelFilterbankConfig) -> typing.Any:
     """Evaluate mel_filterbank_eager operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        _ (object): The _ parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        _ (typing.Any): The _ parameter.
         config (MelFilterbankConfig): The config parameter.
 
     Returns:
@@ -156,11 +155,11 @@ def mel_filterbank_eager(backend_module: Any, _: Any, config: MelFilterbankConfi
     return 0
 
 
-def _apply_dct(log_mel_spec: Any, num_mfccs: int) -> Any:
+def _apply_dct(log_mel_spec: typing.Any, num_mfccs: int) -> typing.Any:
     """Apply Discrete Cosine Transform to log-mel spectrogram.
 
     Args:
-        log_mel_spec (object): The log_mel_spec parameter.
+        log_mel_spec (typing.Any): The log_mel_spec parameter.
         num_mfccs (int): The num_mfccs parameter.
 
     Returns:
@@ -169,12 +168,12 @@ def _apply_dct(log_mel_spec: Any, num_mfccs: int) -> Any:
     return 0
 
 
-def _power_to_db(np_mod: Any, mel_spec: Any) -> Any:
+def _power_to_db(np_mod: typing.Any, mel_spec: typing.Any) -> typing.Any:
     """Convert power spectrogram to decibel scale.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        mel_spec (object): The mel_spec parameter.
+        np_mod (typing.Any): The np_mod parameter.
+        mel_spec (typing.Any): The mel_spec parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -182,12 +181,12 @@ def _power_to_db(np_mod: Any, mel_spec: Any) -> Any:
     return 0
 
 
-def _mfcc_eager_tf(backend_module: Any, spectrogram: Any, config: MFCCConfig) -> Any:
+def _mfcc_eager_tf(backend_module: typing.Any, spectrogram: typing.Any, config: MFCCConfig) -> typing.Any:
     """Evaluate _mfcc_eager_tf operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        spectrogram (object): The spectrogram parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        spectrogram (typing.Any): The spectrogram parameter.
         config (MFCCConfig): The config parameter.
 
     Returns:
@@ -196,12 +195,12 @@ def _mfcc_eager_tf(backend_module: Any, spectrogram: Any, config: MFCCConfig) ->
     return 0
 
 
-def _convert_to_np(np_mod: Any, x: Any, is_torch: bool, is_mlx: bool) -> Any:
+def _convert_to_np(np_mod: typing.Any, x: typing.Any, is_torch: bool, is_mlx: bool) -> typing.Any:
     """Convert tensor to numpy array.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        x (object): The x parameter.
+        np_mod (typing.Any): The np_mod parameter.
+        x (typing.Any): The x parameter.
         is_torch (bool): The is_torch parameter.
         is_mlx (bool): The is_mlx parameter.
 
@@ -211,14 +210,14 @@ def _convert_to_np(np_mod: Any, x: Any, is_torch: bool, is_mlx: bool) -> Any:
     return 0
 
 
-def _to_backend_tensor(name: str, mfccs: Any, spectrogram: Any, np_mod: Any) -> Any:
+def _to_backend_tensor(name: str, mfccs: typing.Any, spectrogram: typing.Any, np_mod: typing.Any) -> typing.Any:
     """Convert numpy array back to backend tensor.
 
     Args:
         name (str): The name parameter.
-        mfccs (object): The mfccs parameter.
-        spectrogram (object): The spectrogram parameter.
-        np_mod (object): The np_mod parameter.
+        mfccs (typing.Any): The mfccs parameter.
+        spectrogram (typing.Any): The spectrogram parameter.
+        np_mod (typing.Any): The np_mod parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -226,12 +225,12 @@ def _to_backend_tensor(name: str, mfccs: Any, spectrogram: Any, np_mod: Any) -> 
     return 0
 
 
-def mfcc_eager(backend_module: Any, spectrogram: Any, config: MFCCConfig) -> Any:
+def mfcc_eager(backend_module: typing.Any, spectrogram: typing.Any, config: MFCCConfig) -> typing.Any:
     """Evaluate mfcc_eager operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        spectrogram (object): The spectrogram parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        spectrogram (typing.Any): The spectrogram parameter.
         config (MFCCConfig): The config parameter.
 
     Returns:
@@ -240,13 +239,13 @@ def mfcc_eager(backend_module: Any, spectrogram: Any, config: MFCCConfig) -> Any
     return 0
 
 
-def _apply_stft_batch(np_mod: Any, audio_np: Any, win: Any, config: STFTConfig) -> Any:
+def _apply_stft_batch(np_mod: typing.Any, audio_np: typing.Any, win: typing.Any, config: STFTConfig) -> typing.Any:
     """Evaluate _apply_stft_batch operation.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        audio_np (object): The audio_np parameter.
-        win (object): The win parameter.
+        np_mod (typing.Any): The np_mod parameter.
+        audio_np (typing.Any): The audio_np parameter.
+        win (typing.Any): The win parameter.
         config (STFTConfig): The config parameter.
 
     Returns:
@@ -255,15 +254,15 @@ def _apply_stft_batch(np_mod: Any, audio_np: Any, win: Any, config: STFTConfig) 
     return 0
 
 
-def _to_backend_tensor_complex(name: str, out: Any, np_mod: Any, backend_module: Any, **kwargs: Any) -> Any:
+def _to_backend_tensor_complex(name: str, out: typing.Any, np_mod: typing.Any, backend_module: typing.Any, **kwargs: typing.Any) -> typing.Any:
     """Convert numpy array back to backend complex tensor.
 
     Args:
         name (str): The name parameter.
-        out (object): The out parameter.
-        np_mod (object): The np_mod parameter.
-        backend_module (object): The backend_module parameter.
-        **kwargs (object): Keyword args.
+        out (typing.Any): The out parameter.
+        np_mod (typing.Any): The np_mod parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        **kwargs (typing.Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -271,12 +270,12 @@ def _to_backend_tensor_complex(name: str, out: Any, np_mod: Any, backend_module:
     return 0
 
 
-def stft_eager(backend_module: Any, input_tensor: Any, config: STFTConfig) -> Any:
+def stft_eager(backend_module: typing.Any, input_tensor: typing.Any, config: STFTConfig) -> typing.Any:
     """Evaluate stft_eager operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        input_tensor (object): The input_tensor parameter.
+        backend_module (typing.Any): The backend_module parameter.
+        input_tensor (typing.Any): The input_tensor parameter.
         config (STFTConfig): The config parameter.
 
     Returns:

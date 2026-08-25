@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Vision operations."""
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -23,12 +22,12 @@ class AffineConfig:
 
     fill_mode: str = "reflect"
     interpolation: str = "bilinear"
-    seed: Any = None
+    seed: object = None
     fill_value: float = 0.0
-    data_format: Any = None
+    data_format: object = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Any:  # type: ignore
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> object:
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -40,13 +39,13 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AffineTransform", images.data, transforms.data, interpolation=interpolation)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AffineTransform", images.data, transforms.data, interpolation=interpolation)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Any:  # type: ignore
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> object:
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -59,8 +58,8 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
         Tensor: Generated affine matrices.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "AffineGenerator",
             batch_size=batch_size,
             angles=angles.data,
@@ -74,7 +73,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:  # type: ignore
+def random_flip(images: Tensor, mode: object = "horizontal_and_vertical", seed: object = None, **kwargs: object) -> object:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -87,23 +86,23 @@ def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any
         Tensor: Flipped images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RandomFlip", images.data, mode=mode, seed=seed)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RandomFlip", images.data, mode=mode, seed=seed)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"mode": mode, "seed": seed}
+    kwargs: object = {"mode": mode, "seed": seed}
     return get_op("RandomFlip")()(images, **kwargs)
 
 
 def random_rotation(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     factor: float,
     config: AffineConfig | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly rotate images.
 
     Args:
@@ -116,8 +115,8 @@ def random_rotation(
         Tensor: Rotated images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomRotation",
             images.data,
             factor=factor,
@@ -139,7 +138,7 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size: tuple[Any, ...], seed: Any = None, **kwargs: Any) -> Any:  # type: ignore
+def random_crop(images: Tensor, size: tuple[object, ...], seed: object = None, **kwargs: object) -> object:
     """Randomly crop images.
 
     Args:
@@ -152,21 +151,21 @@ def random_crop(images: Tensor, size: tuple[Any, ...], seed: Any = None, **kwarg
         Tensor: Cropped images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RandomCrop", images.data, size=size, seed=seed)
-        new_shape = list(backend.array(data).shape)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RandomCrop", images.data, size=size, seed=seed)
+        new_shape: object = list(backend.array(data).shape)
         return Tensor(backend.array(data), TensorConfig(tuple(new_shape), images.dtype, images.device))
 
-    kwargs = {"size": size, "seed": seed}
+    kwargs: object = {"size": size, "seed": seed}
     return get_op("RandomCrop")()(images, **kwargs)
 
 
 def random_zoom(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly zoom images.
 
     Args:
@@ -179,8 +178,8 @@ def random_zoom(
         Tensor: Result.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomZoom",
             images.data,
             height_factor=height_factor,
@@ -205,12 +204,12 @@ def random_zoom(
 
 
 def random_translation(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly translate images.
 
     Args:
@@ -224,8 +223,8 @@ def random_translation(
         Tensor: Translated images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomTranslation",
             images.data,
             height_factor=height_factor,
@@ -250,11 +249,11 @@ def random_translation(
 
 
 def random_shear(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly shear images.
 
     Args:
@@ -267,8 +266,8 @@ def random_shear(
         Tensor: Sheared images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomShear",
             images.data,
             y_factor=y_factor,
@@ -293,10 +292,10 @@ def random_shear(
 
 
 def random_perspective(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     factor: float | tuple[float, float],
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly apply perspective transform to images.
 
     Args:
@@ -308,8 +307,8 @@ def random_perspective(
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomPerspective",
             images.data,
             factor=factor,
@@ -332,11 +331,11 @@ def random_perspective(
 
 
 def random_elastic_transform(
-    images: Tensor,  # type: ignore
+    images: Tensor,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs: Any,
-) -> Any:
+    **kwargs: object,
+) -> object:
     """Randomly apply elastic transform to images.
 
     Args:
@@ -349,8 +348,8 @@ def random_elastic_transform(
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomElasticTransform",
             images.data,
             alpha=alpha,
@@ -374,7 +373,7 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Any:  # type: ignore
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> object:
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
@@ -386,19 +385,19 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, theta.dtype, theta.device))
     return _emit_shape_node("AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype)
 
 
 def grid_sample(
-    input: Tensor,  # type: ignore
-    grid: Tensor,  # type: ignore
+    input: Tensor,
+    grid: Tensor,
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,
-) -> Any:
+) -> object:
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
@@ -412,8 +411,8 @@ def grid_sample(
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "GridSample",
             input.data,
             grid.data,
@@ -435,9 +434,9 @@ def grid_sample(
 class AffineGenerator(OpDef):
     """AffineGenerator operation."""
 
-    op_name = "AffineGenerator"
+    op_name: object = "AffineGenerator"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -455,9 +454,9 @@ class AffineGenerator(OpDef):
 class AffineGrid(OpDef):
     """AffineGrid operation."""
 
-    op_name = "AffineGrid"
+    op_name: object = "AffineGrid"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -475,9 +474,9 @@ class AffineGrid(OpDef):
 class AffineTransform(OpDef):
     """AffineTransform operation."""
 
-    op_name = "AffineTransform"
+    op_name: object = "AffineTransform"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -495,9 +494,9 @@ class AffineTransform(OpDef):
 class PerspectiveTransform(OpDef):
     """PerspectiveTransform operation."""
 
-    op_name = "PerspectiveTransform"
+    op_name: object = "PerspectiveTransform"
 
-    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:

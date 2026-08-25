@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Convolve")
-def _np_convolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_convolve(backend_module: object, *args: object, **kwargs: object) -> object:
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
@@ -21,13 +20,13 @@ def _np_convolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.convolve(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedLocal")
-def _np_convgeneraldilatedlocal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_convgeneraldilatedlocal(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ConvGeneralDilatedLocal.
 
     Args:
@@ -44,7 +43,7 @@ def _np_convgeneraldilatedlocal(backend_module: Any, *args: Any, **kwargs: Any) 
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedPatches")
-def _np_convgeneraldilatedpatches(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_convgeneraldilatedpatches(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ConvGeneralDilatedPatches.
 
     Args:
@@ -61,7 +60,7 @@ def _np_convgeneraldilatedpatches(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("ConvWithGeneralPadding")
-def _np_convwithgeneralpadding(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_convwithgeneralpadding(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ConvWithGeneralPadding.
 
     Args:
@@ -78,7 +77,7 @@ def _np_convwithgeneralpadding(backend_module: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("RawConv2D")
-def _np_rawconv2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rawconv2d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement RawConv2D.
 
     Args:

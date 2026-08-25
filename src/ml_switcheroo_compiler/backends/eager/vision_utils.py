@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any, Callable, Optional
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision utilities."""
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
@@ -224,6 +225,38 @@ def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: Perspective
     """
     return 0
 
+
+__all__ = [
+    "EagerTransformContext",
+    "GeometricGridConfig",
+    "MapCoordsContext",
+    "PerspectiveChannelContext",
+    "PerspectiveConfig",
+    "PerspectiveContext",
+    "RandomCropConfig",
+    "ResizeContext",
+    "TransformInterpolationConfig",
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_apply_perspective_batch",
+    "_apply_perspective_channel",
+    "_compute_perspective_matrix",
+    "_generate_perspective_coords",
+    "_generate_perspective_grid",
+    "_map_coords_bilinear",
+    "_map_coords_nearest",
+    "_np_map_coordinates",
+    "_prepare_eager_transform",
+    "_to_channels_last",
+    "_to_numpy_array",
+    "annotations",
+    "dataclass",
+]
 
 __all__ = [
     "EagerTransformContext",

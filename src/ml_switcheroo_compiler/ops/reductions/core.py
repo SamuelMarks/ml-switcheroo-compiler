@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Reductions."""
-from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -20,7 +19,7 @@ class ReductionOp(OpDef):
 
     op_name: str = ""
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: object, **kwargs: object) -> object:
         """Universal dispatcher for the operation.
 
         Args:
@@ -34,7 +33,7 @@ class ReductionOp(OpDef):
 
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
@@ -46,7 +45,7 @@ class ReductionOp(OpDef):
         """
         return ()  # Symbolic shape inference will handle axis reduction logic
 
-    def _format_args(self, x: str, **kwargs: Any) -> str:
+    def _format_args(self, x: str, **kwargs: object) -> str:
         """Format args.
 
         Args:
@@ -56,7 +55,7 @@ class ReductionOp(OpDef):
         Returns:
             str: Result.
         """
-        args = [x]
+        args: object = [x]
         if "axis" in kwargs and kwargs["axis"] is not None:
             args.append(f"axis={kwargs['axis']}")
         if kwargs.get("keepdims"):

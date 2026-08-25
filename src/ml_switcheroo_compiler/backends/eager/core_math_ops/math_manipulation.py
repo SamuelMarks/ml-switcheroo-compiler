@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("AllGather")
-def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
+def _all_gather(backend_module: typing.Any, tensor: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _all_gather operation.
 
     Args:
@@ -29,7 +29,7 @@ def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> 
 
 
 @global_eager_registry.register("Argwhere")
-def _argwhere(backend_module: Any, a: Any, **kwargs: Any) -> Any:
+def _argwhere(backend_module: typing.Any, a: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _argwhere operation.
 
     Args:
@@ -44,7 +44,7 @@ def _argwhere(backend_module: Any, a: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Extract")
-def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _extract(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _extract operation.
 
     Args:
@@ -55,7 +55,7 @@ def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "extract", None)
+    func: typing.Any = getattr(backend_module, "extract", None)
     if func:
         return func(*args, **kwargs)
     (condition, arr) = (args[0], args[1])
@@ -65,7 +65,7 @@ def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Pswapaxes")
-def _pswapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _pswapaxes(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _pswapaxes operation.
 
     Args:
@@ -82,7 +82,7 @@ def _pswapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Rot90")
-def _rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _rot90(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _rot90 operation.
 
     Args:
@@ -97,7 +97,7 @@ def _rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Nonzero")
-def _nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _nonzero(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _nonzero operation.
 
     Args:
@@ -112,7 +112,7 @@ def _nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Repeat")
-def _repeat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _repeat(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _repeat operation.
 
     Args:
@@ -127,7 +127,7 @@ def _repeat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tile")
-def _tile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _tile(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _tile operation.
 
     Args:
@@ -142,7 +142,7 @@ def _tile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("UpdateSlice")
-def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _updateslice(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _updateslice operation.
 
     Args:
@@ -158,17 +158,17 @@ def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     if not hasattr(backend_module, "array"):
         raise RuntimeError("Expected numpy-like backend")
-    x = args[0]
-    update = args[1] if len(args) > 1 else kwargs.get("update")
-    start_indices = args[2] if len(args) > 2 else kwargs.get("start_indices")
-    out = backend_module.array(x).copy()
-    slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for (i, s) in enumerate(start_indices))  # type: ignore
+    x: typing.Any = args[0]
+    update: typing.Any = args[1] if len(args) > 1 else kwargs.get("update")
+    start_indices: typing.Any = args[2] if len(args) > 2 else kwargs.get("start_indices")
+    out: typing.Any = backend_module.array(x).copy()
+    slices: typing.Any = tuple(slice(s, s + getattr(update, "shape", ())[i]) for (i, s) in enumerate(start_indices))
     out[slices] = update
     return out
 
 
 @global_eager_registry.register("Flatnonzero")
-def _flatnonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _flatnonzero(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _flatnonzero operation.
 
     Args:
@@ -179,14 +179,14 @@ def _flatnonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "flatnonzero", None)
+    func: typing.Any = getattr(backend_module, "flatnonzero", None)
     if func:
         return func(*args, **kwargs)
     return backend_module.flatnonzero(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Fliplr")
-def _fliplr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _fliplr(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _fliplr operation.
 
     Args:
@@ -197,14 +197,14 @@ def _fliplr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fliplr", None)
+    func: typing.Any = getattr(backend_module, "fliplr", None)
     if func:
         return func(*args, **kwargs)
     return backend_module.fliplr(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Flipud")
-def _flipud(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _flipud(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _flipud operation.
 
     Args:
@@ -215,14 +215,14 @@ def _flipud(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "flipud", None)
+    func: typing.Any = getattr(backend_module, "flipud", None)
     if func:
         return func(*args, **kwargs)
     return backend_module.flipud(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Hsplit")
-def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_hsplit(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_hsplit operation.
 
     Args:
@@ -233,7 +233,7 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
+    func: typing.Any = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -242,7 +242,7 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ScatterApply")
-def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_scatterapply(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_scatterapply operation.
 
     Args:
@@ -256,7 +256,7 @@ def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Raises:
         RuntimeError: An exception.
     """
-    func = getattr(backend_module, "scatterapply", getattr(backend_module, "scatterapply", None))
+    func: typing.Any = getattr(backend_module, "scatterapply", getattr(backend_module, "scatterapply", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -265,7 +265,7 @@ def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ScatterNd")
-def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_scatternd(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_scatternd operation.
 
     Args:
@@ -276,7 +276,7 @@ def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
+    func: typing.Any = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -285,7 +285,7 @@ def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TensorArrayStack")
-def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarraystack(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tensorarraystack operation.
 
     Args:
@@ -296,7 +296,7 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
+    func: typing.Any = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -305,7 +305,7 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TensorScatterUpdate")
-def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorscatterupdate(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tensorscatterupdate operation.
 
     Args:
@@ -316,7 +316,7 @@ def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> A
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
+    func: typing.Any = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -325,7 +325,7 @@ def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> A
 
 
 @global_eager_registry.register("Unfold")
-def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unfold(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_unfold operation.
 
     Args:
@@ -336,7 +336,7 @@ def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
+    func: typing.Any = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -345,7 +345,7 @@ def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Unstack")
-def _np_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unstack(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_unstack operation.
 
     Args:
@@ -356,17 +356,17 @@ def _np_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
+    func: typing.Any = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
 
-    axis = kwargs.get("axis", 0)
+    axis: typing.Any = kwargs.get("axis", 0)
     return np.split(args[0], args[0].shape[axis], axis=axis)
 
 
 @global_eager_registry.register("UpdateSlice")
-def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_updateslice(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_updateslice operation.
 
     Args:
@@ -380,7 +380,7 @@ def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Raises:
         RuntimeError: An exception.
     """
-    func = getattr(backend_module, "updateslice", getattr(backend_module, "updateslice", None))
+    func: typing.Any = getattr(backend_module, "updateslice", getattr(backend_module, "updateslice", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -390,7 +390,7 @@ def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Vsplit")
-def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_vsplit(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_vsplit operation.
 
     Args:
@@ -401,7 +401,7 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
+    func: typing.Any = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

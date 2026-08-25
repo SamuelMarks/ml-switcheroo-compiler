@@ -2,7 +2,7 @@
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -14,11 +14,11 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 def _emit_signal_node(
     op_type: str,
-    inputs: list[Tensor],  # type: ignore
-    attrs: dict[str, Any],
+    inputs: list[Tensor],
+    attrs: dict[str, object],
     out_shape: tuple[int, ...],
     dtype: str,
-) -> Any:
+) -> object:
     """Emit a signal node.
 
     Args:
@@ -31,10 +31,10 @@ def _emit_signal_node(
     Returns:
         Tensor: Result.
     """
-    return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
-def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, Any]:
+def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, object]:
     """Calculate padding configuration for convolve2d.
 
     Args:
@@ -43,6 +43,6 @@ def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, 
         fillvalue (float): Fill value for 'fill' boundary.
 
     Returns:
-        dict[str, Any]: Padding configuration dictionary.
+        dict[str, object]: Padding configuration dictionary.
     """
     return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}

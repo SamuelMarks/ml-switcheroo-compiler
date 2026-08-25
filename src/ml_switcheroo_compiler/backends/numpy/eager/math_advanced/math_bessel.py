@@ -2,7 +2,7 @@
 """Math Ops."""
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("BesselI0e")
-def _np_bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_bessel_i0e operation.
 
     Args:
@@ -30,7 +30,7 @@ def _np_bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("BesselI1e")
-def _np_bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_bessel_i1e operation.
 
     Args:
@@ -47,7 +47,7 @@ def _np_bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("modified_bessel_i0")
-def _np_modified_bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_modified_bessel_i0(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_modified_bessel_i0 operation.
 
     Args:
@@ -60,14 +60,14 @@ def _np_modified_bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> An
     """
     import numpy as np
 
-    x = _get_np_arg(args, 0)
+    x: object = _get_np_arg(args, 0)
     if x is None:
         return None
     return np.i0(x)
 
 
 @numpy_eager_registry.register("modified_bessel_i1")
-def _np_modified_bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_modified_bessel_i1(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_modified_bessel_i1 operation.
 
     Args:
@@ -78,23 +78,23 @@ def _np_modified_bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> An
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
-    x = _get_np_arg(args, 0)
+    sc: object = _get_sc()
+    x: object = _get_np_arg(args, 0)
     if x is None:
         return None
     if sc is None:
         import numpy as np
 
-        t = np.linspace(0, np.pi, 100)
-        t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
-        x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
-        integrand = np.exp(x_ex * np.cos(t)) * np.cos(t)
+        t: object = np.linspace(0, np.pi, 100)
+        t: object = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
+        x_ex: object = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
+        integrand: object = np.exp(x_ex * np.cos(t)) * np.cos(t)
         return (1.0 / np.pi) * np.trapz(integrand, x=t, axis=-1)
     return sc.i1(x)
 
 
 @numpy_eager_registry.register("modified_bessel_k0")
-def _np_modified_bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_modified_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_modified_bessel_k0 operation.
 
     Args:
@@ -105,23 +105,23 @@ def _np_modified_bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> An
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
-    x = _get_np_arg(args, 0)
+    sc: object = _get_sc()
+    x: object = _get_np_arg(args, 0)
     if x is None:
         return None
     if sc is None:
         import numpy as np
 
-        t = np.linspace(0, 10, 100)
-        t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
-        x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
-        integrand = np.exp(-x_ex * np.cosh(t))
+        t: object = np.linspace(0, 10, 100)
+        t: object = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
+        x_ex: object = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
+        integrand: object = np.exp(-x_ex * np.cosh(t))
         return np.trapz(integrand, x=t, axis=-1)
     return sc.k0(x)
 
 
 @numpy_eager_registry.register("modified_bessel_k1")
-def _np_modified_bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_modified_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_modified_bessel_k1 operation.
 
     Args:
@@ -132,16 +132,16 @@ def _np_modified_bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> An
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
-    x = _get_np_arg(args, 0)
+    sc: object = _get_sc()
+    x: object = _get_np_arg(args, 0)
     if x is None:
         return None
     if sc is None:
         import numpy as np
 
-        t = np.linspace(0, 10, 100)
-        t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
-        x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
-        integrand = np.exp(-x_ex * np.cosh(t)) * np.cosh(t)
+        t: object = np.linspace(0, 10, 100)
+        t: object = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
+        x_ex: object = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
+        integrand: object = np.exp(-x_ex * np.cosh(t)) * np.cosh(t)
         return np.trapz(integrand, x=t, axis=-1)
     return sc.k1(x)

@@ -2,29 +2,28 @@
 """Dtype resolution and type inference logic."""
 
 import re
-from typing import Any
 
 from ml_switcheroo_compiler.core.dtype import DType
 
 
-def resolve_dtype(res_data: Any, first_tensor: Any) -> Any:
+def resolve_dtype(res_data: object, first_tensor: object) -> object:
     """Resolve the dtype for the eager result.
 
     Args:
         res_data (object): The raw result data.
         first_tensor (object): The first input tensor, used as fallback.
 
-    Returns: Any: The resolved DType.
+    Returns: object: The resolved DType.
     """
     if hasattr(res_data, "dtype"):
-        dtype_str = str(res_data.dtype)
+        dtype_str: object = str(res_data.dtype)
         if "dtype" in dtype_str:
-            m = re.search(r"dtype\('(.*?)'\)", dtype_str)
+            m: object = re.search(r"dtype\('(.*?)'\)", dtype_str)
             if m:
-                dtype_str = m.group(1)
+                dtype_str: object = m.group(1)
         if dtype_str.startswith("dtype"):
-            dtype_str = "float32"
-        dtype_str = dtype_str.split(".")[-1]
+            dtype_str: object = "float32"
+        dtype_str: object = dtype_str.split(".")[-1]
         try:
             return DType(dtype_str)
         except ValueError:
@@ -34,7 +33,7 @@ def resolve_dtype(res_data: Any, first_tensor: Any) -> Any:
     return DType.Float32
 
 
-def resolve_output_dtype_and_device(first_tensor: Any, kwargs: dict[str, Any]) -> tuple[Any, Any]:
+def resolve_output_dtype_and_device(first_tensor: object, kwargs: dict[str, object]) -> tuple[object, object]:
     """Resolve output dtype and device based on inputs and kwargs.
 
     Args:
@@ -42,14 +41,14 @@ def resolve_output_dtype_and_device(first_tensor: Any, kwargs: dict[str, Any]) -
         kwargs (dict): The keyword arguments passed to the operation.
 
     Returns:
-        tuple[Any, Any]: A tuple containing the resolved dtype and device.
+        tuple[object, object]: A tuple containing the resolved dtype and device.
     """
-    out_dtype = None
+    out_dtype: object = None
     if "dtype" in kwargs:
-        out_dtype = kwargs["dtype"]
+        out_dtype: object = kwargs["dtype"]
     elif first_tensor is not None:
-        out_dtype = first_tensor.dtype
+        out_dtype: object = first_tensor.dtype
     else:
-        out_dtype = DType.Float32
-    device = first_tensor.device if first_tensor is not None else None
+        out_dtype: object = DType.Float32
+    device: object = first_tensor.device if first_tensor is not None else None
     return out_dtype, device

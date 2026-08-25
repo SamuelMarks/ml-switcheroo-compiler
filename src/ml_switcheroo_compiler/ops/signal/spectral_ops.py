@@ -6,7 +6,7 @@ from .common_ops import _emit_signal_node
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class Welch(OpDef):
     """Welch."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -65,9 +65,9 @@ class WelchConfig:
 
 
 def welch(
-    x: Tensor,  # type: ignore
+    x: Tensor,
     config_params: Optional[WelchConfig] = None,
-) -> Any:
+) -> object:
     """Evaluate welch operation.
 
     Args:
@@ -78,10 +78,10 @@ def welch(
         tuple: Result.
     """
     if config_params is None:
-        config_params = WelchConfig()
+        config_params: object = WelchConfig()
 
     if config.eager_mode:
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         f, Pxx = backend.execute_op(
             "Welch",
             x.data,
@@ -101,10 +101,10 @@ def welch(
             Tensor(Pxx, TensorConfig(Pxx.shape, x.dtype, x.device)),
         )
 
-    f_shape = (256,)
-    Pxx_shape = (256,)
+    f_shape: object = (256,)
+    Pxx_shape: object = (256,)
 
-    f, Pxx = _emit_linalg_node(  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    f, Pxx = _emit_linalg_node(
         "Welch",
         [x],
         {
@@ -129,7 +129,7 @@ def welch(
 class WindowHann(OpDef):
     """WindowHann class."""
 
-    def infer_shape(self, length: int, **kwargs: Any) -> Any:
+    def infer_shape(self, length: int, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -146,7 +146,7 @@ class WindowHann(OpDef):
 class WindowHamming(OpDef):
     """WindowHamming class."""
 
-    def infer_shape(self, length: int, **kwargs: Any) -> Any:
+    def infer_shape(self, length: int, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -163,7 +163,7 @@ class WindowHamming(OpDef):
 class Stft(OpDef):
     """Stft class."""
 
-    def infer_shape(self, x: Any, nfft: int, noverlap: int = 0, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
         """infer_shape function.
 
         Args:
@@ -180,10 +180,10 @@ class Stft(OpDef):
         """
         if not hasattr(x, "shape") or not x.shape:
             return ()
-        step = nfft - noverlap
+        step: object = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
-        num_frames = (x.shape[-1] - noverlap) // step
+        num_frames: object = (x.shape[-1] - noverlap) // step
         return x.shape[:-1] + (nfft // 2 + 1, num_frames)
 
 
@@ -191,7 +191,7 @@ class Stft(OpDef):
 class Istft(OpDef):
     """Istft class."""
 
-    def infer_shape(self, x: Any, nfft: int, noverlap: int = 0, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
         """infer_shape function.
 
         Args:
@@ -208,7 +208,7 @@ class Istft(OpDef):
         """
         if not hasattr(x, "shape") or not x.shape or len(x.shape) < 2:
             return ()
-        step = nfft - noverlap
+        step: object = nfft - noverlap
         if step <= 0:
             raise ValueError("noverlap must be less than nfft")
         T = x.shape[-1]
@@ -216,7 +216,7 @@ class Istft(OpDef):
         return x.shape[:-2] + (L,)
 
 
-def window_hann(length: int) -> Any:
+def window_hann(length: int) -> object:
     """Generate a Hann window.
 
     Args:
@@ -226,14 +226,14 @@ def window_hann(length: int) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("WindowHann", length)
-        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("WindowHann", length)
+        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
     # Note: Using float32 as default dtype for window
     return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
 
 
-def window_hamming(length: int) -> Any:
+def window_hamming(length: int) -> object:
     """Generate a Hamming window.
 
     Args:
@@ -243,13 +243,13 @@ def window_hamming(length: int) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("WindowHamming", length)
-        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("WindowHamming", length)
+        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
-def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
+def stft(x: Tensor, nfft: int, noverlap: int = 0) -> object:
     """Compute the Short Time Fourier Transform.
 
     Args:
@@ -261,15 +261,15 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
+        out_shape: object = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    out_shape: object = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
     return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "complex64")
 
 
-def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
+def istft(x: Tensor, nfft: int, noverlap: int = 0) -> object:
     """Compute the Inverse Short Time Fourier Transform.
 
     Args:
@@ -281,9 +281,9 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
+        out_shape: object = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    out_shape: object = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
     return _emit_shape_node("Istft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "float32")

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module registry.py."""
 
-from typing import Any
-
 """Backend Registry."""
 
 import logging
@@ -100,7 +98,7 @@ _LOADERS = {
     "edge_wasm_simd": _load_edge_wasm_simd,
 }
 
-BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
+BackendName: object = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
 
 
 class BackendRegistry:
@@ -178,11 +176,11 @@ class BackendRegistry:
             ValueError: If the specified backend is not found or cannot be loaded.
         """
         cls._try_load_lazy(name)
-        resolved_name = cls._resolve_alias(name)
+        resolved_name: object = cls._resolve_alias(name)
 
         if resolved_name not in cls._registry:
-            keys = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())
-            msg = f"Backend '{name}' not found. Available: {keys}"
+            keys: object = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())
+            msg: object = f"Backend '{name}' not found. Available: {keys}"
             raise ValueError(msg)
         return cls._registry[resolved_name]
 
@@ -209,7 +207,7 @@ def get_active_backend() -> type["BaseGenerator"]:
     Returns:
         type['BaseGenerator']: The currently active backend class.
     """
-    return BackendRegistry.get(config.backend)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return BackendRegistry.get(config.backend)
 
 
 def register_backend(name: BackendName) -> Callable[[type["BaseGenerator"]], type["BaseGenerator"]]:

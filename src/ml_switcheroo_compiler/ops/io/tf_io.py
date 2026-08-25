@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = ",", use_quote_delim: Any = True, na_value: Any = "", select_cols: Any = None, name: Any = None) -> list[Tensor]:  # type: ignore
+def decode_csv(records: Tensor, record_defaults: list[object], field_delim: object = ",", use_quote_delim: object = True, na_value: object = "", select_cols: object = None, name: object = None) -> list[Tensor]:
     """Decode csv.
 
     Args:
@@ -37,13 +36,13 @@ def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = "
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name)  # type: ignore
+        return get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))  # type: ignore
+    return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))
 
 
-def parse_example(serialized: Tensor, features: dict[str, Any], example_names: Any = None, name: Any = None) -> dict[str, Tensor]:  # type: ignore
+def parse_example(serialized: Tensor, features: dict[str, object], example_names: object = None, name: object = None) -> dict[str, Tensor]:
     """Parse example.
 
     Args:
@@ -60,13 +59,13 @@ def parse_example(serialized: Tensor, features: dict[str, Any], example_names: A
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name)  # type: ignore
+        return get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))  # type: ignore
+    return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:  # type: ignore
+def serialize_tensor(tensor: Tensor, name: object = None) -> object:
     """Serialize tensor.
 
     Args:
@@ -87,7 +86,7 @@ def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:  # type: ignore
     return _emit_shape_node("SerializeTensor", [tensor], {"name": name}, getattr(tensor, "shape", ()), getattr(tensor, "dtype", "float32"))
 
 
-def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any:  # type: ignore
+def parse_tensor(serialized: Tensor, out_type: DType, name: object = None) -> object:
     """Parse tensor.
 
     Args:
@@ -109,7 +108,7 @@ def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any: 
     return _emit_shape_node("ParseTensor", [serialized], {"out_type": out_type, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def parse_sequence_example(serialized: Tensor, context_features: Any = None, sequence_features: Any = None, example_names: Any = None, name: Any = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:  # type: ignore
+def parse_sequence_example(serialized: Tensor, context_features: object = None, sequence_features: object = None, example_names: object = None, name: object = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
     """Parse sequence example.
 
     Args:
@@ -127,10 +126,10 @@ def parse_sequence_example(serialized: Tensor, context_features: Any = None, seq
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name)  # type: ignore
+        return get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))  # type: ignore
+    return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
 class TFRecordOptions:
@@ -148,7 +147,7 @@ class TFRecordOptions:
 class TFRecordWriter:
     """Writer for TFRecord format."""
 
-    def __init__(self, path: str, options: Any = None) -> None:
+    def __init__(self, path: str, options: object = None) -> None:
         """Initialize.
 
         Args:
@@ -158,7 +157,7 @@ class TFRecordWriter:
         self.path = path
         self.options = options
 
-    def write(self, record: Any) -> None:
+    def write(self, record: object) -> None:
         """Write record.
 
         Args:
@@ -185,7 +184,7 @@ class TFRecordWriter:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit context manager.
 
         Args:
@@ -200,9 +199,9 @@ class TFRecordWriter:
 class DecodeCsv(OpDef):
     """DecodeCsv operation."""
 
-    op_name = "DecodeCsv"
+    op_name: object = "DecodeCsv"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -214,12 +213,12 @@ class DecodeCsv(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -227,9 +226,9 @@ class DecodeCsv(OpDef):
 class ParseExample(OpDef):
     """ParseExample operation."""
 
-    op_name = "ParseExample"
+    op_name: object = "ParseExample"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -241,12 +240,12 @@ class ParseExample(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -254,9 +253,9 @@ class ParseExample(OpDef):
 class SerializeTensor(OpDef):
     """SerializeTensor operation."""
 
-    op_name = "SerializeTensor"
+    op_name: object = "SerializeTensor"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -268,12 +267,12 @@ class SerializeTensor(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -281,9 +280,9 @@ class SerializeTensor(OpDef):
 class ParseTensor(OpDef):
     """ParseTensor operation."""
 
-    op_name = "ParseTensor"
+    op_name: object = "ParseTensor"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -295,12 +294,12 @@ class ParseTensor(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -308,9 +307,9 @@ class ParseTensor(OpDef):
 class ParseSequenceExample(OpDef):
     """ParseSequenceExample operation."""
 
-    op_name = "ParseSequenceExample"
+    op_name: object = "ParseSequenceExample"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -322,10 +321,10 @@ class ParseSequenceExample(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res

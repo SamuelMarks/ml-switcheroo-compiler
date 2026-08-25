@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for norms.py."""
@@ -15,7 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
 
-def matrix_power(input: Tensor, n: int) -> Any:  # type: ignore
+def matrix_power(input: Tensor, n: int) -> object:
     """Raise a square matrix to the integer power `n`.
 
     Args:
@@ -28,10 +26,10 @@ def matrix_power(input: Tensor, n: int) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
-        return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
+        return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
+    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
 
 
 def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None, keepdims: bool) -> tuple[int, ...]:
@@ -47,16 +45,16 @@ def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None
     """
     if axis is None:
         return tuple(1 for _ in x_shape) if keepdims else ()
-    axes = (axis,) if isinstance(axis, int) else axis
+    axes: object = (axis,) if isinstance(axis, int) else axis
     return compute_reduction_shape(x_shape, axes, keepdims)
 
 
 def norm(
-    x: Tensor,  # type: ignore
+    x: Tensor,
     ord: int | str | None = None,
     axis: int | tuple[int, ...] | None = None,
     keepdims: bool = False,
-) -> Any:
+) -> object:
     """Matrix or vector norm.
 
     Args:
@@ -68,20 +66,20 @@ def norm(
     Returns:
         Tensor: Result.
     """
-    out_shape = _norm_out_shape(x.shape, axis, keepdims)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    out_shape: object = _norm_out_shape(x.shape, axis, keepdims)
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
 
-        return Tensor(data, TensorConfig(out_shape, getattr(x, "dtype", None), getattr(x, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return Tensor(data, TensorConfig(out_shape, getattr(x, "dtype", None), getattr(x, "device", None)))
 
-    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
 
 
-def matrix_exponential(a: Tensor) -> Any:  # type: ignore
+def matrix_exponential(a: Tensor) -> object:
     """Evaluate matrix_exponential operation.
 
     Args:
@@ -93,13 +91,13 @@ def matrix_exponential(a: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
-        return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
+        return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
+    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
 
 
-def matrix_exp(a: Tensor) -> Any:  # type: ignore
+def matrix_exp(a: Tensor) -> object:
     """Evaluate matrix_exp operation.
 
     Args:
@@ -112,10 +110,10 @@ def matrix_exp(a: Tensor) -> Any:  # type: ignore
 
 
 def _power_iteration_eager(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     num_iters: int,
-    u: Tensor | None,  # type: ignore
-) -> Any:
+    u: Tensor | None,
+) -> object:
     """Execute power iteration eagerly.
 
     Args:
@@ -128,7 +126,7 @@ def _power_iteration_eager(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
 
     v_data, u_data, sigma_data = backend.execute_op(
         "PowerIteration",
@@ -138,17 +136,17 @@ def _power_iteration_eager(
     )
 
     return (
-        Tensor(v_data, TensorConfig(v_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        Tensor(u_data, TensorConfig(u_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        Tensor(sigma_data, TensorConfig(sigma_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        Tensor(v_data, TensorConfig(v_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        Tensor(u_data, TensorConfig(u_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        Tensor(sigma_data, TensorConfig(sigma_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
     )
 
 
 def power_iteration(
-    input: Tensor,  # type: ignore
+    input: Tensor,
     num_iters: int = 1,
-    u: Tensor | None = None,  # type: ignore
-) -> Any:
+    u: Tensor | None = None,
+) -> object:
     """Compute the dominant singular value and vectors using power iteration.
 
     Args:
@@ -162,19 +160,19 @@ def power_iteration(
     if config.eager_mode:
         return _power_iteration_eager(input, num_iters, u)
 
-    inputs = [input]
+    inputs: object = [input]
     if u is not None:
         inputs.append(u)
 
-    in_shape = input.shape
-    v_shape = in_shape[:-2] + (in_shape[-1],)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    u_shape = in_shape[:-2] + (in_shape[-2],)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    sigma_shape = in_shape[:-2]
+    in_shape: object = input.shape
+    v_shape: object = in_shape[:-2] + (in_shape[-1],)
+    u_shape: object = in_shape[:-2] + (in_shape[-2],)
+    sigma_shape: object = in_shape[:-2]
 
     return _emit_linalg_node(
         "PowerIteration",
         inputs,
         {"num_iters": num_iters},
         [v_shape, u_shape, sigma_shape],
-        [getattr(input, "dtype", None), getattr(input, "dtype", None), getattr(input, "dtype", None)],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        [getattr(input, "dtype", None), getattr(input, "dtype", None), getattr(input, "dtype", None)],
     )

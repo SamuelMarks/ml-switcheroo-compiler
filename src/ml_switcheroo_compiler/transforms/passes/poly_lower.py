@@ -29,26 +29,26 @@ def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) 
 
     import uuid
 
-    uid = uuid.uuid4().hex[:6]
-    k = node.attributes.get("k", 1)
+    uid: object = uuid.uuid4().hex[:6]
+    k: object = node.attributes.get("k", 1)
 
-    topk_id = f"topk_{uid}"
-    topk = IRNode(id=topk_id, op_type="TopK", inputs=[node.inputs[1]], attributes={"k": k, "axis": -1})
+    topk_id: object = f"topk_{uid}"
+    topk: object = IRNode(id=topk_id, op_type="TopK", inputs=[node.inputs[1]], attributes={"k": k, "axis": -1})
     new_nodes[topk_id] = topk
 
     # TopK returns tuple (values, indices), we need indices
-    idx_id = f"topk_idx_{uid}"
-    idx_node = IRNode(id=idx_id, op_type="TupleGetItem", inputs=[topk_id], attributes={"index": 1})
+    idx_id: object = f"topk_idx_{uid}"
+    idx_node: object = IRNode(id=idx_id, op_type="TupleGetItem", inputs=[topk_id], attributes={"index": 1})
     new_nodes[idx_id] = idx_node
 
     # Expand targets
-    exp_id = f"exp_t_{uid}"
-    exp_node = IRNode(id=exp_id, op_type="ExpandDims", inputs=[node.inputs[0]], attributes={"axis": -1})
+    exp_id: object = f"exp_t_{uid}"
+    exp_node: object = IRNode(id=exp_id, op_type="ExpandDims", inputs=[node.inputs[0]], attributes={"axis": -1})
     new_nodes[exp_id] = exp_node
 
     # Eq
-    eq_id = f"eq_{uid}"
-    eq_node = IRNode(id=eq_id, op_type="Equal", inputs=[idx_id, exp_id], attributes={})
+    eq_id: object = f"eq_{uid}"
+    eq_node: object = IRNode(id=eq_id, op_type="Equal", inputs=[idx_id, exp_id], attributes={})
     new_nodes[eq_id] = eq_node
 
     # ReduceAny
@@ -67,31 +67,31 @@ def polyfill_lowering_pass(graph: IRGraph) -> bool:
     Returns:
         bool: modified.
     """
-    modified = False
+    modified: object = False
     new_nodes: dict[str, IRNode] = {}
 
     for _node_id, node in graph.nodes.items():
         if node.op_type == "InTopK":
             _lower_in_top_k(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type == "CtcGreedyDecoder":
             _lower_ctc_greedy_decoder(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type == "IsotonicRegression":
             _lower_isotonic_regression(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type == "ConvTranspose":
             _lower_conv_transpose(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type == "DepthwiseConv2dBackpropFilter":
             _lower_depthwise_bwd_filter(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type == "DepthwiseConv2dBackpropInput":
             _lower_depthwise_bwd_input(node, graph, new_nodes)
-            modified = True
+            modified: object = True
         elif node.op_type in ("Dilation2d", "Erosion2d"):
             _lower_morph_2d(node, graph, new_nodes)
-            modified = True
+            modified: object = True
 
         new_nodes[node.id] = node
 
@@ -122,9 +122,9 @@ def _lower_ctc_greedy_decoder(node: IRNode, graph: IRGraph, new_nodes: dict[str,
     """
     import uuid
 
-    uid = uuid.uuid4().hex[:6]
-    argmax_id = f"ctc_argmax_{uid}"
-    argmax = IRNode(id=argmax_id, op_type="Argmax", inputs=[node.inputs[0]], attributes={"axis": -1, "keepdims": False})
+    uid: object = uuid.uuid4().hex[:6]
+    argmax_id: object = f"ctc_argmax_{uid}"
+    argmax: object = IRNode(id=argmax_id, op_type="Argmax", inputs=[node.inputs[0]], attributes={"axis": -1, "keepdims": False})
     new_nodes[argmax_id] = argmax
 
     # We mutate the original node to be CollapseRepeated
@@ -152,8 +152,8 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     from ml_switcheroo_ir import LogicalGraph
 
     node.op_type = "WhileLoop"
-    cond_graph = LogicalGraph(name="pava_cond")
-    body_graph = LogicalGraph(name="pava_body")
+    cond_graph: object = LogicalGraph(name="pava_cond")
+    body_graph: object = LogicalGraph(name="pava_body")
 
     node.attributes = {"cond": cond_graph, "body": body_graph}
 

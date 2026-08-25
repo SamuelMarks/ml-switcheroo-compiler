@@ -569,7 +569,6 @@ from ml_switcheroo_compiler.ops.sparse import (
     sparse_to_dense,
 )
 from ml_switcheroo_compiler.ops.state import (
-    Any,
     AssignVariable,
     ReadVariable,
 )
@@ -793,7 +792,6 @@ __all__ = [
     "AffineGenerator",
     "AffineGrid",
     "AffineTransform",
-    "Any",
     "Append",
     "AsStringConfig",
     "AssertOp",

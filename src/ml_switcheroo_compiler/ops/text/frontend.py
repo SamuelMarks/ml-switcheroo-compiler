@@ -3,7 +3,7 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -27,7 +27,7 @@ class AsStringConfig:
     fill: str = ""
 
 
-def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:  # type: ignore
+def string_to_hash(input_tensor: Tensor, num_buckets: int) -> object:
     """Hashes string tensors to integer buckets.
 
     Args:
@@ -38,8 +38,8 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:  # type: igno
         Tensor: Hashed integers.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringToHash", input_tensor.data, num_buckets=num_buckets)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringToHash", input_tensor.data, num_buckets=num_buckets)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -53,7 +53,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:  # type: igno
     )
 
 
-def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:  # type: ignore
+def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> object:
     """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
@@ -65,8 +65,8 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:  # t
         Tensor: Replaced string tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
@@ -80,7 +80,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:  # t
     )
 
 
-def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:  # type: ignore
+def regex_full_match(input_tensor: Tensor, pattern: str) -> object:
     """Check if each string fully matches the regex pattern.
 
     Args:
@@ -91,8 +91,8 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:  # type: ignore
         Tensor: Boolean tensor of matches.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Bool, input_tensor.device),
@@ -106,7 +106,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:  # type: ignore
     )
 
 
-def string_join(inputs: list[Tensor], separator: str = "") -> Any:  # type: ignore
+def string_join(inputs: list[Tensor], separator: str = "") -> object:
     """Join strings in a list of tensors.
 
     Args:
@@ -117,8 +117,8 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Any:  # type: igno
         Tensor: Joined string tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, inputs[0].device),
@@ -132,7 +132,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Any:  # type: igno
     )
 
 
-def string_length(input_tensor: Tensor) -> Any:  # type: ignore
+def string_length(input_tensor: Tensor) -> object:
     """Compute the length of each string.
 
     Args:
@@ -142,8 +142,8 @@ def string_length(input_tensor: Tensor) -> Any:  # type: ignore
         Tensor: Lengths (Int32).
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringLength", input_tensor.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringLength", input_tensor.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -157,7 +157,7 @@ def string_length(input_tensor: Tensor) -> Any:  # type: ignore
     )
 
 
-def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:  # type: ignore
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> object:
     """Return substrings.
 
     Args:
@@ -169,8 +169,8 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:  # type: ign
         Tensor: Substrings.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
@@ -184,7 +184,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:  # type: ign
     )
 
 
-def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:  # type: ignore
+def _string_split_eager(input_tensor: Tensor, delimiter: str) -> object:
     """Evaluate _string_split_eager operation.
 
     Args:
@@ -194,7 +194,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:  # type: i
     Returns:
         tuple: Result.
     """
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)
     return (
         Tensor(
@@ -208,7 +208,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:  # type: i
     )
 
 
-def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:  # type: ignore
+def _string_split_trace(input_tensor: Tensor, delimiter: str) -> object:
     """Evaluate _string_split_trace operation.
 
     Args:
@@ -224,12 +224,12 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:  # type: i
     if not global_tracing_state.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
 
-    out_id_tokens = str(uuid.uuid4())
-    out_id_lengths = str(uuid.uuid4())
+    out_id_tokens: object = str(uuid.uuid4())
+    out_id_lengths: object = str(uuid.uuid4())
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs((input_tensor,))
 
-    node = LogicalNode(
+    node: object = LogicalNode(
         id=out_id_tokens,
         op_type="StringSplit",
         inputs=input_ids,
@@ -238,8 +238,8 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:  # type: i
     )
     global_tracing_state.add_node(node)
 
-    proxy_tokens = ProxyTensor(id=out_id_tokens, shape=(), dtype="string")  # type: ignore
-    proxy_lengths = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")  # type: ignore
+    proxy_tokens: object = ProxyTensor(id=out_id_tokens, shape=(), dtype="string")
+    proxy_lengths: object = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")
 
     return (
         Tensor(proxy_tokens, TensorConfig((), DType.String, input_tensor.device)),
@@ -247,7 +247,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:  # type: i
     )
 
 
-def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:  # type: ignore
+def string_split(input_tensor: Tensor, delimiter: str = " ") -> object:
     """Split string tensors into tokens.
 
     Args:
@@ -262,7 +262,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:  # type: ig
     return _string_split_trace(input_tensor, delimiter)
 
 
-def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:  # type: ignore
+def lookup(input_tensor: Tensor, vocabulary: Tensor) -> object:
     """Map tensor values to integer indices using a vocabulary.
 
     Args:
@@ -273,8 +273,8 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:  # type: ignore
         Tensor: Integer indices.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -288,7 +288,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:  # type: ignore
     )
 
 
-def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:  # type: ignore
+def text_vectorization(input_tensor: Tensor, **kwargs: object) -> object:
     """Text vectorization.
 
     Args:
@@ -299,8 +299,8 @@ def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:  # type: ign
         Tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -314,7 +314,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:  # type: ign
     )
 
 
-def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:  # type: ignore
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> object:
     """Parse numeric values from string tensors.
 
     Args:
@@ -325,8 +325,8 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:
         Tensor: Parsed numeric tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, dtype, input_tensor.device),
@@ -340,7 +340,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:
     )
 
 
-def string_lower(input_tensor: Tensor) -> Any:  # type: ignore
+def string_lower(input_tensor: Tensor) -> object:
     """Convert string tensors to lowercase.
 
     Args:
@@ -350,8 +350,8 @@ def string_lower(input_tensor: Tensor) -> Any:  # type: ignore
         Tensor: Lowercased string tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringLower", input_tensor.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringLower", input_tensor.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
@@ -365,7 +365,7 @@ def string_lower(input_tensor: Tensor) -> Any:  # type: ignore
     )
 
 
-def string_upper(input_tensor: Tensor) -> Any:  # type: ignore
+def string_upper(input_tensor: Tensor) -> object:
     """Convert string tensors to uppercase.
 
     Args:
@@ -375,8 +375,8 @@ def string_upper(input_tensor: Tensor) -> Any:  # type: ignore
         Tensor: Uppercased string tensor.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringUpper", input_tensor.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringUpper", input_tensor.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
@@ -390,7 +390,7 @@ def string_upper(input_tensor: Tensor) -> Any:  # type: ignore
     )
 
 
-def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Any:  # type: ignore
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> object:
     """Compute the Levenshtein distance between sequences.
 
     Args:
@@ -402,8 +402,8 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
         Tensor: The edit distances.
     """
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Float32, hypothesis.device),
@@ -417,7 +417,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     )
 
 
-def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
+def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, object]:
     """Convert AsStringConfig to a dictionary.
 
     Args:
@@ -426,7 +426,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
     Returns:
             tuple[int, ...]: Result.
     """
-    conf = conf if conf is not None else AsStringConfig()
+    conf: object = conf if conf is not None else AsStringConfig()
     return {
         "precision": conf.precision,
         "scientific": conf.scientific,
@@ -437,9 +437,9 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
 
 
 def as_string(
-    input_tensor: Tensor,  # type: ignore
+    input_tensor: Tensor,
     config: Optional[AsStringConfig] = None,
-) -> Any:
+) -> object:
     """Convert a numeric tensor to a string tensor.
 
     Args:
@@ -449,10 +449,10 @@ def as_string(
     Returns:
         Tensor: A string tensor of the same shape.
     """
-    kwargs = _as_string_config_to_dict(config)
+    kwargs: object = _as_string_config_to_dict(config)
     if global_config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AsString", input_tensor.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AsString", input_tensor.data, **kwargs)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),

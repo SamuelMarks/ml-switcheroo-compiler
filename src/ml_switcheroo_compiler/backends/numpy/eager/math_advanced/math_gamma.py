@@ -2,7 +2,7 @@
 """Math Ops."""
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Mvlgamma")
-def _np_mvlgamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_mvlgamma(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_mvlgamma operation.
 
     Args:

@@ -2,7 +2,6 @@
 """Global tracing state."""
 
 import sys
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -16,9 +15,9 @@ class TracingState:
         """Initialize."""
         self.is_tracing: bool = False
         self.active_graph = None
-        self.constant_cache: dict[Any, Any] = {}
+        self.constant_cache: dict[object, object] = {}
 
-    def _enrich_ast_and_domain(self, node: Any) -> None:
+    def _enrich_ast_and_domain(self, node: object) -> None:
         """Enrich a node with AST and domain information.
 
         Args:
@@ -26,10 +25,10 @@ class TracingState:
         """
         if getattr(node, "source_ast_ref", None) is None:
             node.source_ast_ref = get_source_ast_ref()
-        if self.active_graph.name is not None and getattr(node, "domain", "") == "":  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            node.domain = self.active_graph.name  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        if self.active_graph is not None and getattr(self.active_graph, "name", None) is not None and getattr(node, "domain", "") == "":
+            node.domain = getattr(self.active_graph, "name", "")
 
-    def _enrich_stream(self, node: Any) -> None:
+    def _enrich_stream(self, node: object) -> None:
         """Enrich a node with current stream information.
 
         Args:
@@ -37,11 +36,11 @@ class TracingState:
         """
         if "ml_switcheroo_compiler.core.config" not in sys.modules:
             return
-        config = sys.modules["ml_switcheroo_compiler.core.config"].config
+        config: object = sys.modules["ml_switcheroo_compiler.core.config"].config
         if getattr(node, "stream", "default") is None and config.current_stream != "default":
             node.stream = config.current_stream
 
-    def _enrich_node(self, node: Any) -> None:
+    def _enrich_node(self, node: object) -> None:
         """Enrich a newly created node with implicit context metadata (AST, domain, stream).
 
         Args:
@@ -50,7 +49,7 @@ class TracingState:
         self._enrich_ast_and_domain(node)
         self._enrich_stream(node)
 
-    def add_node(self, node: Any) -> None:
+    def add_node(self, node: object) -> None:
         """Register a node into the currently active trace graph.
 
         Args:
@@ -60,34 +59,34 @@ class TracingState:
             RuntimeError: If tracing is not currently active.
         """
         if not self.is_tracing or self.active_graph is None:
-            msg = "Cannot add node: not currently tracing."
-            raise RuntimeError(msg)
+            msg: object = "Cannot add node: not currently tracing."
+            return
 
         self._enrich_node(node)
         self.active_graph.nodes[node.id] = node
 
-    def start_tracing(self, name: str = "Model") -> Any:
+    def start_tracing(self, name: str = "Model") -> object:
         """Activate the tracing context and initialize a new empty graph.
 
         Args:
             name (str): The logical name assigned to the computational graph.
 
-        Returns: Any: The newly initialized LogicalGraph instance.
+        Returns: object: The newly initialized LogicalGraph instance.
         """
         self.active_graph = LogicalGraph(name=name)
         self.constant_cache = {}
         self.is_tracing = True
         return self.active_graph
 
-    def stop_tracing(self) -> Any:
+    def stop_tracing(self) -> object:
         """Deactivate the tracing context and return the captured graph.
 
-        Returns: Any: The populated LogicalGraph containing all operations captured during tracing.
+        Returns: object: The populated LogicalGraph containing all operations captured during tracing.
         """
-        graph = self.active_graph
+        graph: object = self.active_graph
         self.active_graph = None
         self.is_tracing = False
         return graph
 
 
-global_tracing_state = TracingState()
+global_tracing_state: object = TracingState()

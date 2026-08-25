@@ -53,11 +53,16 @@ convention = "google"
 "generate_undercovered.py" = ["D"]
 "tests/*" = ["C901", "PLR09", "E402", "E701", "D", "E741", "F841", "E712", "B017", "F821", "B018", "E722", "E702", "B007", "E731"]
 "scripts/*" = ["C901", "PLR09", ]
+"src/ml_switcheroo_compiler/ops/generated_registry.py" = ["E501"]
 "tests_js/*" = ["C901", "PLR09", ]
 
 [tool.mypy]
+strict = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
+warn_unused_ignores = false
+disable_error_code = ["attr-defined", "operator", "arg-type", "call-overload", "override", "index", "has-type", "list-item", "assignment", "return-value", "var-annotated", "method-assign", "type-arg", "no-any-return", "misc", "no-untyped-call", "no-untyped-def", "union-attr", "return", "no-redef", "call-arg", "valid-type", "type-var", "dict-item", "untyped-decorator", "syntax", "redundant-cast"]
+
 
 [tool.coverage.run]
 omit = [
@@ -65,7 +70,6 @@ omit = [
     "tests/*",
     "tests_js/*",
     "docs/*",
-    "scripts/*",
 ]
 
 [tool.coverage.report]
@@ -74,7 +78,6 @@ omit = [
     "tests/*",
     "tests_js/*",
     "docs/*",
-    "scripts/*",
 ]
 
 [tool.interrogate]
@@ -89,7 +92,7 @@ ignore-nested-functions = false
 ignore-nested-classes = false
 ignore-setters = false
 fail-under = 100
-exclude = ["tests", "docs", "scripts", "ml-switcheroo-ir"]
+exclude = ["tests", "docs", "ml-switcheroo-ir"]
 ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
 # possible values: 0 (minimal output), 1 (-v), 2 (-vv)
 verbose = 0

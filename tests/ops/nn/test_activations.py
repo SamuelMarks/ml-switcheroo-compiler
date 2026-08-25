@@ -45,3 +45,22 @@ def test_activations_dispatcher():
 
         assert squareplus(1, kw=2) == "mock_result"
         mock_dispatch.assert_called_with("Squareplus", 1, kw=2)
+
+
+def test_isotonic_regression_eager():
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.nn.activations import isotonic_regression
+
+    config.eager_mode = True
+    try:
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            backend = MagicMock()
+            backend.execute_op.return_value = "eager_iso"
+            mock_backend.return_value = backend
+
+            res = isotonic_regression("y", sample_weights="w")
+            assert res == "eager_iso"
+    finally:
+        config.eager_mode = False

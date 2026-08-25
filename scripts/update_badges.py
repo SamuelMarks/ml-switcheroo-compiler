@@ -9,6 +9,7 @@ import json
 import os
 import re
 import subprocess
+from typing import Any, Optional
 
 
 def get_color(pct: float) -> str:
@@ -20,11 +21,11 @@ def get_color(pct: float) -> str:
     Returns:
         str: The color name corresponding to the coverage range.
     """
-    threshold_brightgreen = 100
-    threshold_green = 90
-    threshold_yellowgreen = 80
-    threshold_yellow = 70
-    threshold_orange = 60
+    threshold_brightgreen: float = 100.0
+    threshold_green: float = 90.0
+    threshold_yellowgreen: float = 80.0
+    threshold_yellow: float = 70.0
+    threshold_orange: float = 60.0
 
     if pct >= threshold_brightgreen:
         return "brightgreen"
@@ -56,7 +57,7 @@ def format_cov(cov: float) -> str:
     return f"{cov:.1f}"
 
 
-def get_test_coverage() -> float:
+def get_test_coverage() -> Optional[float]:
     """Retrieve the total test coverage percentage from the coverage tool.
 
     Runs the `coverage json` command to generate a report, parses the resulting JSON
@@ -70,8 +71,8 @@ def get_test_coverage() -> float:
         # Run coverage json, check=True will raise an exception if it fails (e.g. no .coverage file)
         subprocess.run(["coverage", "json", "-o", "coverage.json"], check=True, capture_output=True)
         with open("coverage.json") as f:
-            data = json.load(f)
-            return data["totals"]["percent_covered"]
+            data: dict[str, Any] = json.load(f)
+            return float(data["totals"]["percent_covered"])
     except Exception:
         return None
 
@@ -88,11 +89,11 @@ def get_doc_coverage() -> float:
     import ast
 
     class DocVisitor(ast.NodeVisitor):
-        def __init__(self):
-            self.total_nodes = 0
-            self.nodes_with_docstrings = 0
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            self.total_nodes: int = 0
+            self.nodes_with_docstrings: int = 0
 
-        def visit_ClassDef(self, node):
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):
@@ -100,25 +101,25 @@ def get_doc_coverage() -> float:
                 # Visit methods
                 self.generic_visit(node)
 
-        def visit_FunctionDef(self, node):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):
                     self.nodes_with_docstrings += 1
             # Do not visit inner functions/classes
 
-        def visit_AsyncFunctionDef(self, node):
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):
                     self.nodes_with_docstrings += 1
             # Do not visit inner functions/classes
 
-    total_nodes = 0
-    nodes_with_docstrings = 0
+    total_nodes: int = 0
+    nodes_with_docstrings: int = 0
 
     # We can walk the source directory
-    src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "ml_switcheroo_compiler")
+    src_dir: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "ml_switcheroo_compiler")
 
     if not os.path.exists(src_dir):
         return 0.0
@@ -130,18 +131,18 @@ def get_doc_coverage() -> float:
                 if file == "__init__.py":
                     continue
 
-                path = os.path.join(root, file)
+                path: str = os.path.join(root, file)
                 with open(path, encoding="utf-8") as f:
                     try:
-                        content = f.read()
-                        tree = ast.parse(content, filename=path)
+                        content: str = f.read()
+                        tree: ast.Module = ast.parse(content, filename=path)
 
                         # Check module docstring
                         total_nodes += 1
                         if ast.get_docstring(tree):
                             nodes_with_docstrings += 1
 
-                        visitor = DocVisitor()
+                        visitor: DocVisitor = DocVisitor()
                         visitor.visit(tree)
                         total_nodes += visitor.total_nodes
                         nodes_with_docstrings += visitor.nodes_with_docstrings
@@ -167,16 +168,16 @@ def update_readme() -> None:
     if not os.path.exists("README.md"):
         return
 
-    test_cov = get_test_coverage()
-    doc_cov = get_doc_coverage()
+    test_cov: Optional[float] = get_test_coverage()
+    doc_cov: float = get_doc_coverage()
 
     with open("README.md") as f:
-        content = f.read()
+        content: str = f.read()
 
     if test_cov is not None:
-        test_str = format_cov(test_cov)
-        test_color = get_color(test_cov)
-        test_re = re.compile(
+        test_str: str = format_cov(test_cov)
+        test_color: str = get_color(test_cov)
+        test_re: re.Pattern[str] = re.compile(
             r"\[?\!\[Test Coverage\]\(https://img\.shields\.io/badge/(?:[tT]est_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
         )
         content = test_re.sub(
@@ -185,9 +186,9 @@ def update_readme() -> None:
         )
 
     if doc_cov is not None:
-        doc_str = format_cov(doc_cov)
-        doc_color = get_color(doc_cov)
-        doc_re = re.compile(
+        doc_str: str = format_cov(doc_cov)
+        doc_color: str = get_color(doc_cov)
+        doc_re: re.Pattern[str] = re.compile(
             r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
         )
         content = doc_re.sub(

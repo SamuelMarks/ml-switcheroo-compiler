@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module pb_utils.py."""
 
-from typing import Any
-
 """Minimal Protobuf Encoder."""
 
 
@@ -17,9 +15,9 @@ def encode_varint(value: int) -> bytes:
     """
     if value < 0:
         value += 1 << 64
-    res = bytearray()
+    res: object = bytearray()
     while True:
-        byte = value & 0x7F
+        byte: object = value & 0x7F
         value >>= 7
         if value:
             res.append(byte | 0x80)

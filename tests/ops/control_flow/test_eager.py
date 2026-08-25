@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 """Tests for eager control flow."""
 
 import numpy as np
@@ -121,3 +123,37 @@ def test_while_loop_eager_non_tuple():
     init_val = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
     res = while_loop_eager(cond_fn, body_fn, init_val)
     assert res.numpy() == 5.0
+
+
+from ml_switcheroo_compiler.ops.control_flow.eager import map_fn_eager, scan_eager
+
+
+def test_scan_tuple_return():
+    # test scan returning a tuple for y
+    def f(carry, x):
+        return carry, (x, x)
+
+    init = Tensor(np.array(0), TensorConfig((), DType.Int32, None))
+    xs = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, None))
+
+    with patch("ml_switcheroo_compiler.ops.control_flow.eager.get_active_backend") as mock_backend:
+        backend = MagicMock()
+        backend.execute_op.return_value = MagicMock(shape=(2, 2))
+        mock_backend.return_value = backend
+
+        carry, y = scan_eager(f, init, xs)
+        assert y is not None
+
+
+def test_map_fn_tuple_return():
+    def f(x):
+        return (x, x)
+
+    xs = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, None))
+    with patch("ml_switcheroo_compiler.ops.control_flow.eager.get_active_backend") as mock_backend:
+        backend = MagicMock()
+        backend.execute_op.return_value = MagicMock(shape=(2, 2))
+        mock_backend.return_value = backend
+
+        y = map_fn_eager(f, xs)
+        assert y is not None

@@ -7,7 +7,6 @@ from __future__ import annotations
 """Shape operations for Tensor objects."""
 import builtins
 from collections.abc import Sequence
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 
@@ -20,10 +19,10 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def dynamic_slice(
-    input: Tensor,  # type: ignore
-    start_indices: Sequence[Tensor],  # type: ignore
+    input: Tensor,
+    start_indices: Sequence[Tensor],
     slice_sizes: Sequence[int],
-) -> Any:
+) -> object:
     """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
@@ -35,29 +34,29 @@ def dynamic_slice(
         Tensor: Result.
     """
     if config.eager_mode:
-        starts = []
+        starts: object = []
         for s in start_indices:
             if hasattr(s, "data"):
-                starts.append(int(s.data))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                starts.append(int(s.data))
             else:
                 starts.append(int(s))
-        starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
-        idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data = input.data[idx]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        starts: object = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
+        idx: object = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
+        data: object = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs = [input, *start_indices]
+    inputs: object = [input, *start_indices]
     # shape calculation placeholder
-    out_shape = tuple(slice_sizes)
+    out_shape: object = tuple(slice_sizes)
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
-        {"slice_sizes": tuple[Any, ...](slice_sizes)},
+        {"slice_sizes": tuple[object, ...](slice_sizes)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> Any:  # type: ignore
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> object:
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
@@ -70,16 +69,16 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
-    starts = [s if isinstance(s, Tensor) else array(s) for s in start_indices]
+    starts: object = [s if isinstance(s, Tensor) else array(s) for s in start_indices]
     return dynamic_update_slice(input, update, starts)
 
 
 @dispatch_eager("DynamicUpdateSlice")
 def dynamic_update_slice(
-    operand: Tensor,  # type: ignore
-    update: Tensor,  # type: ignore
-    start_indices: Sequence[Tensor],  # type: ignore
-) -> Any:
+    operand: Tensor,
+    update: Tensor,
+    start_indices: Sequence[Tensor],
+) -> object:
     """Update a slice of an array at dynamically computed start indices.
 
     Args:
@@ -90,7 +89,7 @@ def dynamic_update_slice(
     Returns:
         Tensor: Result.
     """
-    inputs = [operand, update, *start_indices]
+    inputs: object = [operand, update, *start_indices]
     return _emit_shape_node(
         "DynamicUpdateSlice",
         inputs,
@@ -104,9 +103,9 @@ def dynamic_update_slice(
 class DynamicSlice(OpDef):
     """DynamicSlice operation."""
 
-    op_name = "DynamicSlice"
+    op_name: object = "DynamicSlice"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -116,7 +115,7 @@ class DynamicSlice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
+        slice_sizes: object = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
 
 
@@ -124,15 +123,15 @@ class DynamicSlice(OpDef):
 class DynamicUpdateSlice(OpDef):
     """DynamicUpdateSlice operation."""
 
-    op_name = "DynamicUpdateSlice"
+    op_name: object = "DynamicUpdateSlice"
 
     def infer_shape(
         self,
-        x: Any,
-        update: Any,
-        start_indices: Any,
-        **kwargs: Any,
-    ) -> Any:
+        x: object,
+        update: object,
+        start_indices: object,
+        **kwargs: object,
+    ) -> object:
         """Infer shape.
 
         Args:
@@ -141,6 +140,6 @@ class DynamicUpdateSlice(OpDef):
             start_indices (object): The start_indices parameter for the operation.
             **kwargs: Additional keyword arguments.
 
-        Returns: Any: The computed result.
+        Returns: object: The computed result.
         """
         return getattr(x, "shape", ())

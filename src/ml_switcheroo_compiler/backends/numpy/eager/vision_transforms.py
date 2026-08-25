@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy vision transforms."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_elastic_transform_eager,
     random_perspective_eager,
@@ -12,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("RandomShear")
-def _np_random_shear(backend_module: Any, images: Any, y_factor: Any, x_factor: Any = None, **kwargs: Any) -> Any:
+def _np_random_shear(backend_module: object, images: object, y_factor: object, x_factor: object = None, **kwargs: object) -> object:
     """Evaluate _np_random_shear operation.
 
     Args:
@@ -29,7 +27,7 @@ def _np_random_shear(backend_module: Any, images: Any, y_factor: Any, x_factor: 
 
 
 @numpy_eager_registry.register("RandomPerspective")
-def _np_random_perspective(backend_module: Any, images: Any, factor: Any, **kwargs: Any) -> Any:
+def _np_random_perspective(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
     """Evaluate _np_random_perspective operation.
 
     Args:
@@ -45,7 +43,7 @@ def _np_random_perspective(backend_module: Any, images: Any, factor: Any, **kwar
 
 
 @numpy_eager_registry.register("RandomElasticTransform")
-def _np_random_elastic_transform(backend_module: Any, images: Any, alpha: Any, sigma: Any, **kwargs: Any) -> Any:
+def _np_random_elastic_transform(backend_module: object, images: object, alpha: object, sigma: object, **kwargs: object) -> object:
     """Evaluate _np_random_elastic_transform operation.
 
     Args:

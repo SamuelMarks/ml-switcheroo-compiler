@@ -5,14 +5,13 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Generate random ops module."""
-from typing import Any
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import _dispatch_random, _emit_random_node
 
 
-def randint(key: Any, shape: Any, minval: Any, maxval: Any, dtype: Any = None) -> Any:
+def randint(key: object, shape: object, minval: object, maxval: object, dtype: object = None) -> object:
     """Sample uniform random integers from a given key.
 
     Args:
@@ -22,13 +21,13 @@ def randint(key: Any, shape: Any, minval: Any, maxval: Any, dtype: Any = None) -
         maxval (object): The maxval parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
-    dtype = dtype or dtypes.DType.Int32
+    dtype: object = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomRandint", [key], shape, dtype, {"minval": minval, "maxval": maxval})
 
 
-def bernoulli(key: Any, p: Any = 0.5, shape: Any = None) -> Any:
+def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
     """Sample Bernoulli random variables from a given key.
 
     Args:
@@ -36,14 +35,14 @@ def bernoulli(key: Any, p: Any = 0.5, shape: Any = None) -> Any:
         p (object): The p parameter for the operation.
         shape (object): The target shape.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     if shape is None:
-        shape = ()
+        shape: object = ()
     return _emit_random_node("RandomBernoulli", [key], shape, dtypes.DType.Bool, {"p": p})
 
 
-def categorical(key: Any, logits: Any, axis: Any = -1, shape: Any = None) -> Any:
+def categorical(key: object, logits: object, axis: object = -1, shape: object = None) -> object:
     """Sample categorical random variables from a given key.
 
     Args:
@@ -52,16 +51,16 @@ def categorical(key: Any, logits: Any, axis: Any = -1, shape: Any = None) -> Any
         axis (object): The axis along which to perform the operation.
         shape (object): The target shape.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
-    out_shape = shape or ()
-    inputs = [key]
+    out_shape: object = shape or ()
+    inputs: object = [key]
     if isinstance(logits, Tensor):
         inputs.append(logits)
     return _emit_random_node("RandomCategorical", inputs, out_shape, dtypes.DType.Int32, {"axis": axis})
 
 
-def permutation(key: Any, x: Any, axis: Any = 0, independent: Any = False) -> Any:
+def permutation(key: object, x: object, axis: object = 0, independent: object = False) -> object:
     """Generate random permutation of a sequence.
 
     Args:
@@ -73,12 +72,12 @@ def permutation(key: Any, x: Any, axis: Any = 0, independent: Any = False) -> An
     Returns:
             tuple[int, ...]: Result.
     """
-    shape = getattr(x, "shape", ())
-    dtype = getattr(x, "dtype", None)
-    return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    shape: object = getattr(x, "shape", ())
+    dtype: object = getattr(x, "dtype", None)
+    return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 
-def choice(key: Any, a: Any, **kwargs: Any) -> Any:
+def choice(key: object, a: object, **kwargs: object) -> object:
     """Generate a random sample from a given 1-D array.
 
     Args:
@@ -86,19 +85,19 @@ def choice(key: Any, a: Any, **kwargs: Any) -> Any:
         a (object): The input a tensor.
         **kwargs (object): Optional arguments shape, replace, p, axis.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
-    shape = kwargs.get("shape", ())
-    replace = kwargs.get("replace", True)
-    p = kwargs.get("p", None)
-    axis = kwargs.get("axis", 0)
-    inputs = [key, a]
+    shape: object = kwargs.get("shape", ())
+    replace: object = kwargs.get("replace", True)
+    p: object = kwargs.get("p", None)
+    axis: object = kwargs.get("axis", 0)
+    inputs: object = [key, a]
     if isinstance(p, Tensor):
         inputs.append(p)
     return _emit_random_node("RandomChoice", inputs, shape, a.dtype, {"replace": replace, "axis": axis})
 
 
-def binomial(key: Any, n: Any, p: Any, shape: Any = None, dtype: Any = None) -> Any:
+def binomial(key: object, n: object, p: object, shape: object = None, dtype: object = None) -> object:
     """Sample binomial random values from a given key.
 
     Args:
@@ -112,12 +111,12 @@ def binomial(key: Any, n: Any, p: Any, shape: Any = None, dtype: Any = None) -> 
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape = ()
-    dtype = dtype or dtypes.DType.Int32
+        shape: object = ()
+    dtype: object = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomBinomial", [key], shape, dtype)
 
 
-def geometric(*args: Any, **kwargs: Any) -> Any:
+def geometric(*args: object, **kwargs: object) -> object:
     """Evaluate geometric operation.
 
     Args:
@@ -130,7 +129,7 @@ def geometric(*args: Any, **kwargs: Any) -> Any:
     return _dispatch_random("geometric", *args, **kwargs)
 
 
-def poisson(key: Any, lam: Any, shape: Any = None, dtype: Any = None) -> Any:
+def poisson(key: object, lam: object, shape: object = None, dtype: object = None) -> object:
     """Sample poisson random values from a given key.
 
     Args:
@@ -143,12 +142,12 @@ def poisson(key: Any, lam: Any, shape: Any = None, dtype: Any = None) -> Any:
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape = ()
-    dtype = dtype or dtypes.DType.Int32
+        shape: object = ()
+    dtype: object = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)
 
 
-def rademacher(*args: Any, **kwargs: Any) -> Any:
+def rademacher(*args: object, **kwargs: object) -> object:
     """Evaluate rademacher operation.
 
     Args:
@@ -161,7 +160,7 @@ def rademacher(*args: Any, **kwargs: Any) -> Any:
     return _dispatch_random("rademacher", *args, **kwargs)
 
 
-def multinomial(key: Any, n: int, pvals: Any, shape: Any = None) -> Any:
+def multinomial(key: object, n: int, pvals: object, shape: object = None) -> object:
     """Sample from multinomial distribution.
 
     Args:
@@ -170,8 +169,8 @@ def multinomial(key: Any, n: int, pvals: Any, shape: Any = None) -> Any:
         pvals (object): Probabilities of each of the p different outcomes.
         shape (object): Target shape.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     if shape is None:
-        shape = ()
+        shape: object = ()
     return _emit_random_node("RandomMultinomial", [key, pvals], shape, dtypes.DType.Int32, {"n": n})

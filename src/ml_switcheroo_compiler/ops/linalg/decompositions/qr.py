@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for qr.py."""
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Qr(OpDef):
     """Qr Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -29,10 +28,10 @@ class Qr(OpDef):
         """
         if not args:
             return ()
-        a_shape = args[0].shape
-        mode = kwargs.get("mode", "reduced")
+        a_shape: object = args[0].shape
+        mode: object = kwargs.get("mode", "reduced")
         m, n = a_shape[-2], a_shape[-1]
-        k = min(m, n)
+        k: object = min(m, n)
         if mode == "complete":
             return a_shape[:-2] + (m, m), a_shape[:-2] + (m, n)
         if mode == "r":
@@ -44,7 +43,7 @@ class Qr(OpDef):
 class Hessenberg(OpDef):
     """Hessenberg Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -61,7 +60,7 @@ class Hessenberg(OpDef):
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -78,7 +77,7 @@ class HouseholderProduct(OpDef):
 class Schur(OpDef):
     """Schur Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -95,7 +94,7 @@ class Schur(OpDef):
 class Tridiagonal(OpDef):
     """Tridiagonal Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -105,13 +104,13 @@ class Tridiagonal(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        a_shape = args[0].shape
-        diag_shape = a_shape[:-1]
-        off_diag_shape = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
+        a_shape: object = args[0].shape
+        diag_shape: object = a_shape[:-1]
+        off_diag_shape: object = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
         return diag_shape, off_diag_shape, a_shape
 
 
-def qr(input: Tensor, mode: str = "reduced") -> Any:  # type: ignore
+def qr(input: Tensor, mode: str = "reduced") -> object:
     """Compute the QR decomposition of a matrix.
 
     Args:
@@ -124,8 +123,8 @@ def qr(input: Tensor, mode: str = "reduced") -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        res = backend.execute_op("Qr", input.data, mode=mode)
+        backend: object = get_active_backend()
+        res: object = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
             return Tensor(res, TensorConfig(res.shape, input.dtype, input.device))
         q, r = res
@@ -134,18 +133,18 @@ def qr(input: Tensor, mode: str = "reduced") -> Any:  # type: ignore
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
         )
     m, n = input.shape[-2], input.shape[-1]
-    k = min(m, n)
+    k: object = min(m, n)
     if mode == "complete":
-        q_shape, r_shape = input.shape[:-2] + (m, m), input.shape[:-2] + (m, n)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        q_shape, r_shape = input.shape[:-2] + (m, m), input.shape[:-2] + (m, n)
     elif mode == "r":
-        r_shape = (input.shape[:-2] + (k, n),)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        r_shape: object = (input.shape[:-2] + (k, n),)
         return _emit_linalg_node("Qr", [input], {"mode": mode}, [r_shape[0]], [input.dtype])
     else:
-        q_shape, r_shape = input.shape[:-2] + (m, k), input.shape[:-2] + (k, n)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        q_shape, r_shape = input.shape[:-2] + (m, k), input.shape[:-2] + (k, n)
     return _emit_linalg_node("Qr", [input], {"mode": mode}, [q_shape, r_shape], [input.dtype] * 2)
 
 
-def hessenberg(a: Tensor) -> Any:  # type: ignore
+def hessenberg(a: Tensor) -> object:
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
@@ -157,7 +156,7 @@ def hessenberg(a: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         h, q = backend.execute_op("Hessenberg", a.data)
         return (
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
@@ -166,7 +165,7 @@ def hessenberg(a: Tensor) -> Any:  # type: ignore
     return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def householder_product(a: Tensor, tau: Tensor) -> Any:  # type: ignore
+def householder_product(a: Tensor, tau: Tensor) -> object:
     """Compute the product of Householder reflectors.
 
     Args:
@@ -179,13 +178,13 @@ def householder_product(a: Tensor, tau: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("HouseholderProduct", a.data, tau.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("HouseholderProduct", a.data, tau.data)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
 
-def schur(a: Tensor) -> Any:  # type: ignore
+def schur(a: Tensor) -> object:
     """Compute the Schur decomposition of a matrix.
 
     Args:
@@ -197,7 +196,7 @@ def schur(a: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         t, z = backend.execute_op("Schur", a.data)
         return (
             Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
@@ -206,7 +205,7 @@ def schur(a: Tensor) -> Any:  # type: ignore
     return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal(a: Tensor) -> Any:  # type: ignore
+def tridiagonal(a: Tensor) -> object:
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
@@ -218,15 +217,15 @@ def tridiagonal(a: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         diag, off_diag, q = backend.execute_op("Tridiagonal", a.data)
         return (
             Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
             Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
         )
-    diag_shape = a.shape[:-1]
-    off_diag_shape = a.shape[:-2] + (a.shape[-1] - 1,) if a.shape[-1] > 0 else a.shape[:-1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    diag_shape: object = a.shape[:-1]
+    off_diag_shape: object = a.shape[:-2] + (a.shape[-1] - 1,) if a.shape[-1] > 0 else a.shape[:-1]
     return _emit_linalg_node("Tridiagonal", [a], {}, [diag_shape, off_diag_shape, a.shape], [a.dtype] * 3)
 
 
@@ -234,7 +233,7 @@ def tridiagonal(a: Tensor) -> Any:  # type: ignore
 class Qdwh(OpDef):
     """Qdwh Operation Definition."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -247,7 +246,7 @@ class Qdwh(OpDef):
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
 
-def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Any:  # type: ignore
+def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> object:
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:
@@ -261,7 +260,7 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Any
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         q, h, num_iters, is_converged = backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations)
         return (
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
@@ -274,5 +273,5 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Any
         [a],
         {"is_hermitian": is_hermitian, "max_iterations": max_iterations},
         [a.shape, a.shape, a.shape[:-2], a.shape[:-2]],
-        [a.dtype, a.dtype, "int32", "bool"],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        [a.dtype, a.dtype, "int32", "bool"],
     )

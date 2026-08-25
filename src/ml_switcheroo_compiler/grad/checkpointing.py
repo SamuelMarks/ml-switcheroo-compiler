@@ -7,7 +7,6 @@ import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -23,17 +22,17 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedG
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
-def checkpoint(fun: Callable[..., Any]) -> Callable[..., Any]:
+def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
     """Gradient checkpointing / rematerialization.
 
     Args:
-        fun (Callable[..., Any]): The function to checkpoint.
+        fun (Callable[..., object]): The function to checkpoint.
 
     Returns:
-        Callable[..., Any]: The checkpointed function.
+        Callable[..., object]: The checkpointed function.
     """
 
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: object, **kwargs: object) -> object:
         """Evaluate wrapper operation.
 
         Args:
@@ -58,29 +57,29 @@ def checkpoint(fun: Callable[..., Any]) -> Callable[..., Any]:
         from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        tensor_args = [a for a in args if isinstance(a, Tensor)]
-        fwd_block = _trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
+        tensor_args: object = [a for a in args if isinstance(a, Tensor)]
+        fwd_block: object = _trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
 
         # Infer output metadata from the traced block
-        out_node_id = fwd_block.outputs[0]
-        nodes_dict = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
-        out_node = nodes_dict[out_node_id]
-        real_out_node = nodes_dict[out_node.inputs[0]]
+        out_node_id: object = fwd_block.outputs[0]
+        nodes_dict: object = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
+        out_node: object = nodes_dict[out_node_id]
+        real_out_node: object = nodes_dict[out_node.inputs[0]]
 
-        shape = real_out_node.shape_metadata
+        shape: object = real_out_node.shape_metadata
         # Try to infer dtype. Proxy tensors typically just use float32 as default if not specified
-        dtype = "float32"
+        dtype: object = "float32"
         if hasattr(real_out_node, "attributes") and "dtype" in real_out_node.attributes:
-            dtype = real_out_node.attributes["dtype"]
+            dtype: object = real_out_node.attributes["dtype"]
         elif tensor_args:
-            dtype = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
+            dtype: object = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
 
-        device = "cpu"
+        device: object = "cpu"
         if tensor_args:
-            device = getattr(tensor_args[0], "device", "cpu")
+            device: object = getattr(tensor_args[0], "device", "cpu")
 
-        out_id = str(uuid.uuid4())
-        node = LogicalNode(
+        out_id: object = str(uuid.uuid4())
+        node: object = LogicalNode(
             id=out_id,
             op_type="Checkpoint",
             inputs=[a.data.id for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
@@ -89,31 +88,31 @@ def checkpoint(fun: Callable[..., Any]) -> Callable[..., Any]:
         )
         global_tracing_state.add_node(node)
 
-        proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)  # type: ignore
+        proxy: object = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
         return Tensor(proxy, TensorConfig(shape, DType(dtype), device))
 
     return wrapper
 
 
-def remat(fun: Callable[..., Any]) -> Callable[..., Any]:
+def remat(fun: Callable[..., object]) -> Callable[..., object]:
     """Gradient checkpointing / rematerialization alias.
 
     Args:
-        fun (Callable[..., Any]): The function to rematerialize.
+        fun (Callable[..., object]): The function to rematerialize.
 
     Returns:
-        Callable[..., Any]: The rematerialized function.
+        Callable[..., object]: The rematerialized function.
     """
     return checkpoint(fun)
 
 
-def recompute_grad(fun: Callable[..., Any]) -> Callable[..., Any]:
+def recompute_grad(fun: Callable[..., object]) -> Callable[..., object]:
     """Gradient checkpointing / rematerialization.
 
     Args:
-        fun (Callable[..., Any]): The function to recompute gradients for.
+        fun (Callable[..., object]): The function to recompute gradients for.
 
     Returns:
-        Callable[..., Any]: The recomputing function.
+        Callable[..., object]: The recomputing function.
     """
     return checkpoint(fun)

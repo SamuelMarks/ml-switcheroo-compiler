@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Frontend reductions ops."""
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -17,7 +16,7 @@ from .frontend_utils import _emit_reduction_node
 
 
 @dispatch_eager("Psum")
-def psum(x: Tensor, axis_name: str) -> Any:  # type: ignore
+def psum(x: Tensor, axis_name: str) -> object:
     """Compute an all-reduce sum over the specified mapped axis.
 
     Args:
@@ -27,11 +26,11 @@ def psum(x: Tensor, axis_name: str) -> Any:  # type: ignore
     Returns:
         Tensor: Result.
     """
-    return _emit_reduction_node("Psum", [x], {"axis_name": axis_name}, x.shape, x.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_reduction_node("Psum", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("Pmean")
-def pmean(x: Tensor, axis_name: str) -> Any:  # type: ignore
+def pmean(x: Tensor, axis_name: str) -> object:
     """Compute an all-reduce mean over the specified mapped axis.
 
     Args:
@@ -41,11 +40,11 @@ def pmean(x: Tensor, axis_name: str) -> Any:  # type: ignore
     Returns:
         Tensor: Result.
     """
-    return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("ApproxMaxK")
-def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:  # type: ignore
+def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> object:
     """Compute approximate top-k max elements and their indices.
 
     Args:
@@ -57,19 +56,19 @@ def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    attributes = {
+    attributes: object = {
         "k": k,
         "reduction_dimension": reduction_dimension,
         "recall_target": recall_target,
     }
 
-    val = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
-    idx = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
+    val: object = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
+    idx: object = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
 @dispatch_eager("ApproxMinK")
-def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:  # type: ignore
+def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> object:
     """Compute approximate top-k min elements and their indices.
 
     Args:
@@ -81,23 +80,23 @@ def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    attributes = {
+    attributes: object = {
         "k": k,
         "reduction_dimension": reduction_dimension,
         "recall_target": recall_target,
     }
 
-    val = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
-    idx = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
+    val: object = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
+    idx: object = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
 def ctc_loss(
-    log_probs: Tensor,  # type: ignore
-    targets: Tensor,  # type: ignore
-    input_lengths: Tensor,  # type: ignore
-    target_lengths: Tensor,  # type: ignore
-) -> Any:
+    log_probs: Tensor,
+    targets: Tensor,
+    input_lengths: Tensor,
+    target_lengths: Tensor,
+) -> object:
     """Connectionist Temporal Classification Loss.
 
     Args:
@@ -109,12 +108,12 @@ def ctc_loss(
     Returns:
         Tensor: The loss.
     """
-    inputs = [log_probs, targets, input_lengths, target_lengths]
+    inputs: object = [log_probs, targets, input_lengths, target_lengths]
     return _emit_reduction_node("CTCLoss", inputs, {}, (), log_probs.dtype)
 
 
 @dispatch_eager("Corrcoef")
-def corrcoef(x: Any, y: Any = None, rowvar: bool = True, bias: Any = None, ddof: Any = None) -> Any:
+def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None) -> object:
     """Return Pearson product-moment correlation coefficients.
 
     Args:
@@ -132,12 +131,12 @@ def corrcoef(x: Any, y: Any = None, rowvar: bool = True, bias: Any = None, ddof:
         [x, y] if y is not None else [x],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof},
         (None, None),
-        "float32",  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        "float32",
     )
 
 
 @dispatch_eager("Correlate")
-def correlate(a: Any, v: Any, mode: str = "valid") -> Any:
+def correlate(a: object, v: object, mode: str = "valid") -> object:
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
@@ -148,15 +147,15 @@ def correlate(a: Any, v: Any, mode: str = "valid") -> Any:
     Returns:
         Tensor: Result.
     """
-    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
 
 
 @dispatch_eager("Cov")
 def cov(
-    m: Any,
-    y: Any = None,
-    **kwargs: Any,
-) -> Any:
+    m: object,
+    y: object = None,
+    **kwargs: object,
+) -> object:
     """Estimate a covariance matrix, given data and weights.
 
     Args:
@@ -170,21 +169,21 @@ def cov(
     Raises:
         ValueError: An exception.
     """
-    allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
+    allowed_keys: object = {"rowvar", "bias", "ddof", "fweights", "aweights"}
     for k in kwargs:
         if k not in allowed_keys:
             raise ValueError(f"Invalid keyword argument to cov: {k}")
 
-    rowvar = kwargs.get("rowvar", True)
-    bias = kwargs.get("bias", False)
-    ddof = kwargs.get("ddof", None)
-    fweights = kwargs.get("fweights", None)
-    aweights = kwargs.get("aweights", None)
+    rowvar: object = kwargs.get("rowvar", True)
+    bias: object = kwargs.get("bias", False)
+    ddof: object = kwargs.get("ddof", None)
+    fweights: object = kwargs.get("fweights", None)
+    aweights: object = kwargs.get("aweights", None)
 
     return _emit_reduction_node(
         "Cov",
         [m, y] if y is not None else [m],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof, "fweights": fweights, "aweights": aweights},
         (None, None),
-        "float32",  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        "float32",
     )

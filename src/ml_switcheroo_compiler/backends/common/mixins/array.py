@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Provide mixin module."""
-from typing import Any
 
 from .common import CommonASTVisitor
 
@@ -13,7 +12,7 @@ class ArrayASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Convert to array and shape manipulation AST generator mixin."""
 
-    def visit_ApproxMaxK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ApproxMaxK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for an approximate maximum k-elements operation.
 
         Args:
@@ -24,12 +23,12 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the approximate max k operation.
         """
-        pfx = self.generator.get_fallback_prefix()
-        k = kwargs.get("k", 1)
-        reduction_dimension = kwargs.get("reduction_dimension", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        k: object = kwargs.get("k", 1)
+        reduction_dimension: object = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
-    def visit_ApproxMaxKIndices(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ApproxMaxKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for retrieving the indices of an approximate maximum k-elements operation.
 
         Args:
@@ -40,12 +39,12 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code to get the indices of the approximate max k elements.
         """
-        pfx = self.generator.get_fallback_prefix()
-        k = kwargs.get("k", 1)
-        reduction_dimension = kwargs.get("reduction_dimension", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        k: object = kwargs.get("k", 1)
+        reduction_dimension: object = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
-    def visit_ApproxMinK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ApproxMinK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for an approximate minimum k-elements operation.
 
         Args:
@@ -56,12 +55,12 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the approximate min k operation.
         """
-        pfx = self.generator.get_fallback_prefix()
-        k = kwargs.get("k", 1)
-        reduction_dimension = kwargs.get("reduction_dimension", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        k: object = kwargs.get("k", 1)
+        reduction_dimension: object = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
-    def visit_ApproxMinKIndices(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ApproxMinKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for retrieving the indices of an approximate minimum k-elements operation.
 
         Args:
@@ -72,12 +71,12 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code to get the indices of the approximate min k elements.
         """
-        pfx = self.generator.get_fallback_prefix()
-        k = kwargs.get("k", 1)
-        reduction_dimension = kwargs.get("reduction_dimension", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        k: object = kwargs.get("k", 1)
+        reduction_dimension: object = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
-    def visit_ArgSort(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ArgSort(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for computing the indices that would sort an array.
 
         Args:
@@ -88,11 +87,11 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argsort operation.
         """
-        pfx = self.generator.get_fallback_prefix()
-        dimension = kwargs.get("dimension", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        dimension: object = kwargs.get("dimension", -1)
         return f"{pfx}_argsort({input_vars[0]}, dimension={dimension})"
 
-    def visit_Argwhere(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Argwhere(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for finding the indices of array elements that are non-zero.
 
         Args:
@@ -103,10 +102,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argwhere operation.
         """
-        pfx = self.generator.get_fallback_prefix()
+        pfx: object = self.generator.get_fallback_prefix()
         return f"{pfx}_argwhere({input_vars[0]})"
 
-    def visit_Argpartition(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Argpartition(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for performing an indirect partition along the given axis.
 
         Args:
@@ -117,12 +116,12 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argpartition operation.
         """
-        pfx = self.generator.get_fallback_prefix()
-        kth = kwargs.get("kth")
-        axis = kwargs.get("axis", -1)
+        pfx: object = self.generator.get_fallback_prefix()
+        kth: object = kwargs.get("kth")
+        axis: object = kwargs.get("axis", -1)
         return f"{pfx}_argpartition({input_vars[0]}, kth={kth}, axis={axis})"
 
-    def visit_AsString(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AsString(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for converting a tensor to its string representation.
 
         Args:
@@ -133,10 +132,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for string conversion.
         """
-        pfx = self.generator.get_fallback_prefix()
+        pfx: object = self.generator.get_fallback_prefix()
         return f"{pfx}_as_string({input_vars[0]})"
 
-    def visit_AxisIndex(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AxisIndex(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for returning the index along a mapped axis.
 
         Args:
@@ -147,11 +146,11 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for retrieving the axis index.
         """
-        pfx = self.generator.get_fallback_prefix()
-        axis_name = kwargs.get("axis_name", "")
+        pfx: object = self.generator.get_fallback_prefix()
+        axis_name: object = kwargs.get("axis_name", "")
         return f"{pfx}_axis_index(axis_name='{axis_name}')"
 
-    def visit_TopK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_TopK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for finding the k largest entries for the given dimensions.
 
         Args:
@@ -162,13 +161,13 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for computing the top k elements.
         """
-        k = node.attributes.get("k", 1)
-        k_val = k.expr if hasattr(k, "expr") else str(k)
-        is_idx = node.attributes.get("return_indices", False)
-        pfx = self.generator.get_fallback_prefix()
-        var = input_vars[0]
+        k: object = node.attributes.get("k", 1)
+        k_val: object = k.expr if hasattr(k, "expr") else str(k)
+        is_idx: object = node.attributes.get("return_indices", False)
+        pfx: object = self.generator.get_fallback_prefix()
+        var: object = input_vars[0]
 
-        native = self._topk_native_dispatch(pfx, var, k_val, is_idx)
+        native: object = self._topk_native_dispatch(pfx, var, k_val, is_idx)
         if native is not None:
             return native
 
@@ -186,10 +185,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string with the native backend call, or None if no native function is defined.
         """
-        idx_int = 1 if is_idx else 0
-        idx_str = "indices" if is_idx else "values"
+        idx_int: object = 1 if is_idx else 0
+        idx_str: object = "indices" if is_idx else "values"
 
-        dispatch = {
+        dispatch: object = {
             "jax": f"jax.lax.top_k({var}, {k_val})[{idx_int}]",
             "torch": f"torch.topk({var}, {k_val}, dim=-1).{idx_str}",
             "pt": f"torch.topk({var}, {k_val}, dim=-1).{idx_str}",
@@ -211,11 +210,11 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string computing the top-k values or indices using a sort fallback.
         """
-        op_pfx = "mx" if pfx == "mlx" else pfx
-        op_fn = f"{op_pfx}.argsort" if is_idx else f"{op_pfx}.sort"
+        op_pfx: object = "mx" if pfx == "mlx" else pfx
+        op_fn: object = f"{op_pfx}.argsort" if is_idx else f"{op_pfx}.sort"
         return f"{op_fn}({var}, axis=-1)[..., -({k_val}):][..., ::-1]"
 
-    def visit_Meshgrid(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Meshgrid(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for creating coordinate matrices from coordinate vectors.
 
         Args:
@@ -226,10 +225,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for generating a meshgrid.
         """
-        idx = node.attributes.get("output_index", 0)
-        indexing = node.attributes.get("indexing", "ij")
-        pfx = self.generator.get_fallback_prefix()
-        inputs_str = ", ".join(input_vars)
+        idx: object = node.attributes.get("output_index", 0)
+        indexing: object = node.attributes.get("indexing", "ij")
+        pfx: object = self.generator.get_fallback_prefix()
+        inputs_str: object = ", ".join(input_vars)
         if pfx == "mlx":
             return f"mx.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         elif pfx == "jax":
@@ -237,10 +236,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         elif pfx == "torch" or pfx == "pt":
             return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         else:
-            fallback = getattr(self.generator, "get_fallback_prefix", lambda: "numpy")()
+            fallback: object = getattr(self.generator, "get_fallback_prefix", lambda: "numpy")()
             return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
-    def visit_Slice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Slice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for a tensor slicing operation.
 
         Args:
@@ -251,21 +250,21 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the slice operation.
         """
-        dim = node.attributes.get("dim")
-        start = node.attributes.get("start")
-        end = node.attributes.get("end")
-        step = node.attributes.get("step", 1)
+        dim: object = node.attributes.get("dim")
+        start: object = node.attributes.get("start")
+        end: object = node.attributes.get("end")
+        step: object = node.attributes.get("step", 1)
 
-        start_str = "None" if start is None else str(start)
-        end_str = "None" if end is None else str(end)
-        step_str = "None" if step is None else str(step)
+        start_str: object = "None" if start is None else str(start)
+        end_str: object = "None" if end is None else str(end)
+        step_str: object = "None" if step is None else str(step)
 
         if dim < 0:
             return f"{input_vars[0]}[(..., slice({start_str}, {end_str}, {step_str})) + (slice(None),) * ({-dim - 1})]"
         else:
             return f"{input_vars[0]}[(slice(None),) * ({dim}) + (slice({start_str}, {end_str}, {step_str}),) + (...,)]"
 
-    def visit_DynamicSlice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_DynamicSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for dynamically slicing a tensor.
 
         Args:
@@ -276,22 +275,22 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for dynamic slicing.
         """
-        operand = input_vars[0]
-        starts = input_vars[1:]
-        slice_sizes = node.attributes.get("slice_sizes", [])
-        pfx = self.generator.get_fallback_prefix()
+        operand: object = input_vars[0]
+        starts: object = input_vars[1:]
+        slice_sizes: object = node.attributes.get("slice_sizes", [])
+        pfx: object = self.generator.get_fallback_prefix()
 
-        starts_str = ", ".join(starts)
+        starts_str: object = ", ".join(starts)
         if pfx == "jax":
-            sizes_str = ", ".join(map(str, slice_sizes))
+            sizes_str: object = ", ".join(map(str, slice_sizes))
             return f"jax.lax.dynamic_slice({operand}, ({starts_str},), ({sizes_str},))"
         elif pfx == "tf":
-            sizes_str = ", ".join(map(str, slice_sizes))
+            sizes_str: object = ", ".join(map(str, slice_sizes))
             return f"tf.slice({operand}, [{starts_str}], [{sizes_str}])"
         else:
             return f"{operand}[tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {list(slice_sizes)}))]"
 
-    def visit_DynamicUpdateSlice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_DynamicUpdateSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for dynamically updating a slice of a tensor.
 
         Args:
@@ -302,21 +301,21 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the dynamic update slice operation.
         """
-        operand = input_vars[0]
-        update = input_vars[1]
-        starts = input_vars[2:]
-        pfx = self.generator.get_fallback_prefix()
+        operand: object = input_vars[0]
+        update: object = input_vars[1]
+        starts: object = input_vars[2:]
+        pfx: object = self.generator.get_fallback_prefix()
 
-        starts_str = ", ".join(starts)
+        starts_str: object = ", ".join(starts)
         if pfx == "jax":
             return f"jax.lax.dynamic_update_slice({operand}, {update}, ({starts_str},))"
         elif pfx == "tf":
             return f"tf.tensor_scatter_nd_update({operand}, tf.stack([{starts_str}], axis=-1), {update})"
         else:
-            copy_meth = "clone()" if pfx in ("torch", "pt") else "copy()"
+            copy_meth: object = "clone()" if pfx in ("torch", "pt") else "copy()"
             return f"(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {update}.shape)), {update}), out][1])({operand}.{copy_meth})"
 
-    def visit_GetItem(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_GetItem(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for fetching an item from an array via an index or slice.
 
         Args:
@@ -327,10 +326,10 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code to get an item from the array.
         """
-        key = node.attributes.get("key", "")
+        key: object = node.attributes.get("key", "")
         return f"{input_vars[0]}[{key}]"
 
-    def visit_PutAlongAxis(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_PutAlongAxis(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for placing values into a destination array along a specified axis.
 
         Args:

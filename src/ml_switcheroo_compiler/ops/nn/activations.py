@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Activations and advanced NN operations."""
 
-from typing import Any
-
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
@@ -10,7 +8,7 @@ from ml_switcheroo_compiler.ops.registry import get_op, register_op
 from ml_switcheroo_compiler.ops.shape.joining import concatenate
 
 
-def crelu(features: Any, axis: Any = -1, name: Any = None) -> Any:
+def crelu(features: object, axis: object = -1, name: object = None) -> object:
     """Compute Concatenated ReLU.
 
     Args:
@@ -21,14 +19,14 @@ def crelu(features: Any, axis: Any = -1, name: Any = None) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    negative = get_op("Negative")()
+    negative: object = get_op("Negative")()
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
     return maximum(concatenate([features, negative(features)], axis=axis), 0.0)
 
 
-def isotonic_regression(y: Any, sample_weights: Any = None, increasing: Any = True, name: Any = None) -> Any:
+def isotonic_regression(y: object, sample_weights: object = None, increasing: object = True, name: object = None) -> object:
     """Solves isotonic regression problems.
 
     Args:
@@ -49,14 +47,14 @@ def isotonic_regression(y: Any, sample_weights: Any = None, increasing: Any = Tr
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out1 = _emit_shape_node("IsotonicRegression", [y], {"sample_weights": sample_weights, "increasing": increasing, "name": name}, getattr(y, "shape", ()), getattr(y, "dtype", "float32"))
+    out1: object = _emit_shape_node("IsotonicRegression", [y], {"sample_weights": sample_weights, "increasing": increasing, "name": name}, getattr(y, "shape", ()), getattr(y, "dtype", "float32"))
     return out1, Tensor(None, TensorConfig(getattr(y, "shape", ()), "int32", "cpu"))
 
 
 __all__ = ["softplus", "softmax", "log_softmax", "sigmoid", "one_hot", "rrelu"]
 
 
-def softplus(x: Any) -> Any:
+def softplus(x: object) -> object:
     """Softplus activation.
 
     Args:
@@ -74,9 +72,9 @@ def softplus(x: Any) -> Any:
 class Softmax(OpDef):
     """Operator Softmax."""
 
-    op_name = "Softmax"
+    op_name: object = "Softmax"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -88,16 +86,16 @@ class Softmax(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
+def softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
     """Softmax activation.
 
     Args:
@@ -124,9 +122,9 @@ def softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
 class LogSoftmax(OpDef):
     """Operator LogSoftmax."""
 
-    op_name = "LogSoftmax"
+    op_name: object = "LogSoftmax"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -138,16 +136,16 @@ class LogSoftmax(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def log_softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
+def log_softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
     """LogSoftmax activation.
 
     Args:
@@ -174,9 +172,9 @@ def log_softmax(x: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
 class Sigmoid(OpDef):
     """Operator Sigmoid."""
 
-    op_name = "Sigmoid"
+    op_name: object = "Sigmoid"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -188,16 +186,16 @@ class Sigmoid(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def sigmoid(x: Any, *args: Any, **kwargs: Any) -> Any:
+def sigmoid(x: object, *args: object, **kwargs: object) -> object:
     """Sigmoid activation.
 
     Args:
@@ -223,9 +221,9 @@ def sigmoid(x: Any, *args: Any, **kwargs: Any) -> Any:
 class OneHot(OpDef):
     """Operator OneHot."""
 
-    op_name = "OneHot"
+    op_name: object = "OneHot"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -237,16 +235,16 @@ class OneHot(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def one_hot(indices: Any, depth: int, *args: Any, **kwargs: Any) -> Any:
+def one_hot(indices: object, depth: int, *args: object, **kwargs: object) -> object:
     """OneHot encoding.
 
     Args:
@@ -267,10 +265,10 @@ def one_hot(indices: Any, depth: int, *args: Any, **kwargs: Any) -> Any:
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     kwargs["depth"] = depth
-    shape = getattr(indices, "shape", ()) + (depth,)
+    shape: object = getattr(indices, "shape", ()) + (depth,)
     import copy
 
-    meta = copy.copy(getattr(indices, "shape_metadata", None))
+    meta: object = copy.copy(getattr(indices, "shape_metadata", None))
     if meta is not None:
         meta.shape = shape
     return emit_ir_node(None, "OneHot", [indices], meta, kwargs)
@@ -280,9 +278,9 @@ def one_hot(indices: Any, depth: int, *args: Any, **kwargs: Any) -> Any:
 class Rrelu(OpDef):
     """Operator Rrelu."""
 
-    op_name = "Rrelu"
+    op_name: object = "Rrelu"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -294,16 +292,16 @@ class Rrelu(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def rrelu(x: Any, *args: Any, **kwargs: Any) -> Any:
+def rrelu(x: object, *args: object, **kwargs: object) -> object:
     """Rrelu activation.
 
     Args:
@@ -329,9 +327,9 @@ def rrelu(x: Any, *args: Any, **kwargs: Any) -> Any:
 class HardSilu(OpDef):
     """HardSilu activation."""
 
-    op_name = "HardSilu"
+    op_name: object = "HardSilu"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -341,7 +339,7 @@ class HardSilu(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -349,9 +347,9 @@ class HardSilu(OpDef):
 class HardSwish(OpDef):
     """HardSwish activation."""
 
-    op_name = "HardSwish"
+    op_name: object = "HardSwish"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -361,7 +359,7 @@ class HardSwish(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -369,9 +367,9 @@ class HardSwish(OpDef):
 class Squareplus(OpDef):
     """Squareplus activation."""
 
-    op_name = "Squareplus"
+    op_name: object = "Squareplus"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -381,11 +379,11 @@ class Squareplus(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else None
+        x: object = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
-def hard_silu(*args: Any, **kwargs: Any) -> Any:
+def hard_silu(*args: object, **kwargs: object) -> object:
     """Hard SiLU activation.
 
     Args:
@@ -400,7 +398,7 @@ def hard_silu(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("HardSilu", *args, **kwargs)
 
 
-def hard_swish(*args: Any, **kwargs: Any) -> Any:
+def hard_swish(*args: object, **kwargs: object) -> object:
     """Hard Swish activation.
 
     Args:
@@ -415,7 +413,7 @@ def hard_swish(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("HardSwish", *args, **kwargs)
 
 
-def mish(*args: Any, **kwargs: Any) -> Any:
+def mish(*args: object, **kwargs: object) -> object:
     """Mish activation.
 
     Args:
@@ -430,7 +428,7 @@ def mish(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Mish", *args, **kwargs)
 
 
-def squareplus(*args: Any, **kwargs: Any) -> Any:
+def squareplus(*args: object, **kwargs: object) -> object:
     """Squareplus activation.
 
     Args:

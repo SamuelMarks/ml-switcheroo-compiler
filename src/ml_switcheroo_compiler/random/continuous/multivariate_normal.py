@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Core abstractions and logic definitions for multivariate_normal.py."""
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -17,12 +16,12 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 class MultivariateNormalOptions:
     """Options for multivariate normal."""
 
-    shape: Any | None = None
-    dtype: Any | None = None
+    shape: object | None = None
+    dtype: object | None = None
     method: str = "cholesky"
 
 
-def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNormalOptions | None = None) -> Any:
+def multivariate_normal(key: object, mean: object, cov: object, options: MultivariateNormalOptions | None = None) -> object:
     """Sample from a multivariate normal distribution.
 
     Args:
@@ -34,14 +33,14 @@ def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNorm
     Returns:
             tuple[int, ...]: Result.
     """
-    options = options or MultivariateNormalOptions()
-    shape = options.shape
-    dtype = options.dtype
-    method = options.method
+    options: object = options or MultivariateNormalOptions()
+    shape: object = options.shape
+    dtype: object = options.dtype
+    method: object = options.method
 
-    dtype = dtype or dtypes.DType.Float32
-    out_shape = shape if shape is not None else ()
-    inputs = [key]
+    dtype: object = dtype or dtypes.DType.Float32
+    out_shape: object = shape if shape is not None else ()
+    inputs: object = [key]
     if isinstance(mean, Tensor):
         inputs.append(mean)
     if isinstance(cov, Tensor):

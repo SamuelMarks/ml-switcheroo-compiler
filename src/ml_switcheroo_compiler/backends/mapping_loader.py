@@ -1,7 +1,7 @@
 """Backend YAML Mapping Loader."""
 
 import os
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
 from pydantic import BaseModel, Field
@@ -11,7 +11,7 @@ class KwargTranslation(BaseModel):
     """Kwarg translation."""
 
     target_name: str
-    default_value: Optional[Any] = None
+    default_value: Optional[object] = None
 
 
 class OpMappingSchema(BaseModel):
@@ -42,26 +42,26 @@ def load_backend_mappings(backend_name: str) -> BackendMappingSchema:
     if backend_name in _MAPPING_CACHE:
         return _MAPPING_CACHE[backend_name]
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(base_dir, backend_name, "mappings.yaml")
+    base_dir: object = os.path.dirname(os.path.abspath(__file__))
+    yaml_path: object = os.path.join(base_dir, backend_name, "mappings.yaml")
 
     if not os.path.exists(yaml_path):
-        schema = BackendMappingSchema(backend_name=backend_name, operations={})
+        schema: object = BackendMappingSchema(backend_name=backend_name, operations={})
         _MAPPING_CACHE[backend_name] = schema
         return schema
 
     with open(yaml_path) as f:
-        data = yaml.safe_load(f) or {}
+        data: object = yaml.safe_load(f) or {}
 
-    schema = BackendMappingSchema(**data)
+    schema: object = BackendMappingSchema(**data)
     _MAPPING_CACHE[backend_name] = schema
     return schema
 
 
-def resolve_target_api(api_str: str, custom_code: Optional[str] = None, backend_module: Any = None) -> Any:
+def resolve_target_api(api_str: str, custom_code: Optional[str] = None, backend_module: object = None) -> object:
     """Resolve target api."""
     if api_str == "custom_op" and custom_code:
-        local_env = {"backend_module": backend_module}
+        local_env: object = {"backend_module": backend_module}
         if backend_module:
             for k in dir(backend_module):
                 if not k.startswith("__"):
@@ -74,13 +74,13 @@ def resolve_target_api(api_str: str, custom_code: Optional[str] = None, backend_
     if not api_str:
         return None
 
-    parts = api_str.split(".")
+    parts: object = api_str.split(".")
     try:
         import importlib
 
-        mod = importlib.import_module(parts[0])
+        mod: object = importlib.import_module(parts[0])
         for p in parts[1:]:
-            mod = getattr(mod, p)
+            mod: object = getattr(mod, p)
         return mod
     except Exception:
         if backend_module and hasattr(backend_module, api_str):

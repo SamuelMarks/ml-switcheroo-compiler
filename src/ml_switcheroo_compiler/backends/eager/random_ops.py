@@ -1,13 +1,11 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Generate random operations for eager backends."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("PRNGKey")
-def prng_key(backend_module: Any, seed: int) -> Any:
+def prng_key(backend_module: object, seed: int) -> object:
     """Create a PRNGKey.
 
     Args:
@@ -23,7 +21,7 @@ def prng_key(backend_module: Any, seed: int) -> Any:
 
 
 @global_eager_registry.register("RandomSplit")
-def random_split(backend_module: Any, key: Any, num: int = 2) -> Any:
+def random_split(backend_module: object, key: object, num: int = 2) -> object:
     """Split a PRNGKey.
 
     Args:
@@ -36,14 +34,14 @@ def random_split(backend_module: Any, key: Any, num: int = 2) -> Any:
     """
     import random
 
-    data_list = [[random.randint(0, 0xFFFFFFFF), random.randint(0, 0xFFFFFFFF)] for _ in range(num)]
+    data_list: object = [[random.randint(0, 0xFFFFFFFF), random.randint(0, 0xFFFFFFFF)] for _ in range(num)]
     if hasattr(backend_module, "array"):
         return backend_module.array(data_list, dtype="uint32")
     return data_list
 
 
 @global_eager_registry.register("RandomFoldIn")
-def random_fold_in(backend_module: Any, key: Any, data: int) -> Any:
+def random_fold_in(backend_module: object, key: object, data: int) -> object:
     """Fold in data to a PRNGKey.
 
     Args:
@@ -54,16 +52,16 @@ def random_fold_in(backend_module: Any, key: Any, data: int) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    val0 = int(key[0]) if hasattr(key, "__getitem__") else 0
-    val1 = int(key[1]) if hasattr(key, "__getitem__") else 0
-    data_list = [val0 + data, val1]
+    val0: object = int(key[0]) if hasattr(key, "__getitem__") else 0
+    val1: object = int(key[1]) if hasattr(key, "__getitem__") else 0
+    data_list: object = [val0 + data, val1]
     if hasattr(backend_module, "array"):
         return backend_module.array(data_list, dtype="uint32")
     return data_list
 
 
 @global_eager_registry.register("Rand")
-def rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def rand(backend_module: object, *args: object, **kwargs: object) -> object:
     """Generate uniform random values.
 
     Args:
@@ -74,11 +72,11 @@ def rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    shape = kwargs.get("shape", args if args else ())
+    shape: object = kwargs.get("shape", args if args else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-        shape = tuple(shape[0])
+        shape: object = tuple(shape[0])
     if hasattr(backend_module, "random"):
-        rand_mod = backend_module.random
+        rand_mod: object = backend_module.random
         if hasattr(rand_mod, "uniform"):
             return rand_mod.uniform(size=shape)
         if hasattr(rand_mod, "rand"):
@@ -92,7 +90,7 @@ def rand(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Randn")
-def randn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def randn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Generate normal random values.
 
     Args:
@@ -103,11 +101,11 @@ def randn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    shape = kwargs.get("shape", args if args else ())
+    shape: object = kwargs.get("shape", args if args else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-        shape = tuple(shape[0])
+        shape: object = tuple(shape[0])
     if hasattr(backend_module, "random"):
-        rand_mod = backend_module.random
+        rand_mod: object = backend_module.random
         if hasattr(rand_mod, "normal"):
             return rand_mod.normal(size=shape)
         if hasattr(rand_mod, "randn"):
@@ -121,7 +119,7 @@ def randn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Randint")
-def randint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def randint(backend_module: object, *args: object, **kwargs: object) -> object:
     """Generate integer random values.
 
     Args:
@@ -132,9 +130,9 @@ def randint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    low = kwargs.get("low", args[0] if len(args) > 0 else 0)
-    high = kwargs.get("high", args[1] if len(args) > 1 else 10)
-    shape = kwargs.get("shape", args[2] if len(args) > 2 else ())
+    low: object = kwargs.get("low", args[0] if len(args) > 0 else 0)
+    high: object = kwargs.get("high", args[1] if len(args) > 1 else 10)
+    shape: object = kwargs.get("shape", args[2] if len(args) > 2 else ())
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "randint"):
         return backend_module.random.randint(low, high, size=shape)
 

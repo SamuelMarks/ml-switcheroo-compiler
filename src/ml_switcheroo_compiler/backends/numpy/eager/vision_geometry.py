@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared vision utilities and ops."""
 
-from typing import Any
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
@@ -10,7 +8,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AffineGenerator")
-def _np_affine_generator(backend_module: Any, batch_size: int, angles: Any, shears: Any, zooms: Any, **kwargs: Any) -> Any:
+def _np_affine_generator(backend_module: object, batch_size: int, angles: object, shears: object, zooms: object, **kwargs: object) -> object:
     """Evaluate _np_affine_generator operation.
 
     Args:
@@ -24,14 +22,14 @@ def _np_affine_generator(backend_module: Any, batch_size: int, angles: Any, shea
     Returns:
             tuple[int, ...]: Result.
     """
-    out = np.zeros((batch_size, 8))
+    out: object = np.zeros((batch_size, 8))
     out[:, 0] = 1.0
     out[:, 4] = 1.0
     return out
 
 
 @numpy_eager_registry.register("ElasticTransform")
-def _np_elastic_transform(backend_module: Any, images: Any, displacement: Any, **kwargs: Any) -> Any:
+def _np_elastic_transform(backend_module: object, images: object, displacement: object, **kwargs: object) -> object:
     """Apply elastic transformation to an image.
 
     Args:
@@ -43,20 +41,20 @@ def _np_elastic_transform(backend_module: Any, images: Any, displacement: Any, *
     Returns:
         The transformed images array.
     """
-    arr = np.asarray(images)
-    disp = np.asarray(displacement)
+    arr: object = np.asarray(images)
+    disp: object = np.asarray(displacement)
     if disp.ndim < 1 or disp.size == 0 or disp.all() is None:
         return arr
     if arr.ndim >= 2:
         # simple translation by mean displacement to mimic the effect
-        shift_y = int(np.mean(disp[..., 0])) if disp.size > 0 else 0
-        shift_x = int(np.mean(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
+        shift_y: object = int(np.mean(disp[..., 0])) if disp.size > 0 else 0
+        shift_x: object = int(np.mean(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
         return np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1))
     return arr
 
 
 @numpy_eager_registry.register("ExtractBoundingBoxes")
-def _np_extract_bounding_boxes(backend_module: Any, images: Any, boxes: Any, box_indices: Any, **kwargs: Any) -> Any:
+def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object) -> object:
     """Evaluate _np_extract_bounding_boxes operation.
 
     Args:
@@ -73,7 +71,7 @@ def _np_extract_bounding_boxes(backend_module: Any, images: Any, boxes: Any, box
 
 
 @numpy_eager_registry.register("IoU")
-def _np_iou(backend_module: Any, boxes1: Any, boxes2: Any, **kwargs: Any) -> Any:
+def _np_iou(backend_module: object, boxes1: object, boxes2: object, **kwargs: object) -> object:
     """Evaluate _np_iou operation.
 
     Args:
@@ -89,7 +87,7 @@ def _np_iou(backend_module: Any, boxes1: Any, boxes2: Any, **kwargs: Any) -> Any
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
-def _np_nms(backend_module: Any, boxes: Any, scores: Any, max_output_size: Any, **kwargs: Any) -> Any:
+def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
     """Evaluate _np_nms operation.
 
     Args:
@@ -106,7 +104,7 @@ def _np_nms(backend_module: Any, boxes: Any, scores: Any, max_output_size: Any, 
 
 
 @numpy_eager_registry.register("PerspectiveTransform")
-def _np_perspective_transform(backend_module: Any, images: Any, start_points: Any, end_points: Any, config: Any, **kwargs: Any) -> Any:
+def _np_perspective_transform(backend_module: object, images: object, start_points: object, end_points: object, config: object, **kwargs: object) -> object:
     """Evaluate _np_perspective_transform operation.
 
     Args:
@@ -124,7 +122,7 @@ def _np_perspective_transform(backend_module: Any, images: Any, start_points: An
 
 
 @numpy_eager_registry.register("AffineGrid")
-def _np_affine_grid(backend_module: Any, theta: Any, size: tuple[Any, ...], align_corners: bool = False, **kwargs: Any) -> Any:
+def _np_affine_grid(backend_module: object, theta: object, size: tuple[object, ...], align_corners: bool = False, **kwargs: object) -> object:
     """Evaluate _np_affine_grid operation.
 
     Args:
@@ -138,7 +136,7 @@ def _np_affine_grid(backend_module: Any, theta: Any, size: tuple[Any, ...], alig
             tuple[int, ...]: Result.
     """
     if isinstance(theta, np.ndarray):
-        s = list(size)
+        s: object = list(size)
         if len(s) == 4:
             return np.zeros((s[0], s[2], s[3], 2), dtype=theta.dtype)
         return np.zeros(s + [2], dtype=theta.dtype)
@@ -146,7 +144,7 @@ def _np_affine_grid(backend_module: Any, theta: Any, size: tuple[Any, ...], alig
 
 
 @numpy_eager_registry.register("AffineTransform")
-def _np_affine_transform(backend_module: Any, images: Any, transforms: Any, interpolation: str = "nearest", **kwargs: Any) -> Any:
+def _np_affine_transform(backend_module: object, images: object, transforms: object, interpolation: str = "nearest", **kwargs: object) -> object:
     """Evaluate _np_affine_transform operation.
 
     Args:
@@ -178,6 +176,26 @@ __all__ = [
     "_np_nms",
     "_np_perspective_transform",
     "_np_affine_grid",
+    "np",
+    "numpy_eager_registry",
+]
+
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_affine_generator",
+    "_np_affine_grid",
+    "_np_affine_transform",
+    "_np_elastic_transform",
+    "_np_extract_bounding_boxes",
+    "_np_iou",
+    "_np_nms",
+    "_np_perspective_transform",
     "np",
     "numpy_eager_registry",
 ]

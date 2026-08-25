@@ -4,8 +4,6 @@
 Provides operations and node definitions related to text manipulation and processing.
 """
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import (
@@ -23,7 +21,7 @@ from ml_switcheroo_compiler.ops.base import (
 class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape.
 
         Args:
@@ -40,7 +38,7 @@ class StringToHash(OpDef):
 class RegexReplace(OpDef):
     """Operation that replaces matches of a regular expression in a string tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the regular expression replacement.
 
         Args:
@@ -57,7 +55,7 @@ class RegexReplace(OpDef):
 class StringSplit(OpDef):
     """Operation that splits string elements based on a given delimiter."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after splitting strings in the input tensor.
 
         Args:
@@ -74,7 +72,7 @@ class StringSplit(OpDef):
 class Lookup(OpDef):
     """Operation that retrieves values from a table based on given keys."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the table lookup.
 
         Args:
@@ -86,7 +84,7 @@ class Lookup(OpDef):
         """
         # The first argument is input_tensor. The shape should be the same as input_tensor.
         if args and hasattr(args[0], "shape"):
-            return args[0].shape  # type: ignore
+            return getattr(args[0], "shape", ())
         return ()
 
 
@@ -94,7 +92,7 @@ class Lookup(OpDef):
 class Hashing(OpDef):
     """Operation that applies a hashing algorithm to map inputs to bins."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the hashing operation.
 
         Args:
@@ -111,7 +109,7 @@ class Hashing(OpDef):
 class StringLookup(OpDef):
     """Operation that translates strings into integer indices using a vocabulary."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the string lookup operation.
 
         Args:
@@ -128,7 +126,7 @@ class StringLookup(OpDef):
 class IntegerLookup(OpDef):
     """Operation that translates integer indices into other integers or strings using a vocabulary."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the integer lookup operation.
 
         Args:
@@ -145,7 +143,7 @@ class IntegerLookup(OpDef):
 class TextVectorization(OpDef):
     """Operation that maps text features to integer sequences or dense vectors."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the text vectorization operation.
 
         Args:
@@ -162,7 +160,7 @@ class TextVectorization(OpDef):
 class StringToNumber(OpDef):
     """Operation that converts strings to numeric values."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after converting strings to numbers.
 
         Args:
@@ -179,7 +177,7 @@ class StringToNumber(OpDef):
 class StringLower(OpDef):
     """Operation that converts string characters to lowercase."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the lowercase conversion.
 
         Args:
@@ -196,7 +194,7 @@ class StringLower(OpDef):
 class StringUpper(OpDef):
     """Operation that converts string characters to uppercase."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after applying the uppercase conversion.
 
         Args:
@@ -213,7 +211,7 @@ class StringUpper(OpDef):
 class StringJoin(OpDef):
     """Operation that joins an iterable of strings into a single string using a separator."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after joining the strings.
 
         Args:
@@ -230,7 +228,7 @@ class StringJoin(OpDef):
 class StringLength(OpDef):
     """Operation that computes the length of each string in the input tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after computing the string lengths.
 
         Args:
@@ -247,7 +245,7 @@ class StringLength(OpDef):
 class StringSubstr(OpDef):
     """Operation that extracts substrings from a tensor of strings."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after extracting substrings.
 
         Args:
@@ -264,7 +262,7 @@ class StringSubstr(OpDef):
 class RegexFullMatch(OpDef):
     """Operation that checks if the input strings fully match a given regular expression."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the resulting shape after checking for full regular expression matches.
 
         Args:
@@ -277,7 +275,7 @@ class RegexFullMatch(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def string_to_hash(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
+def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
     """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
@@ -288,18 +286,18 @@ def string_to_hash(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
         A tensor comprising the generated hashed values.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Hashing", inputs.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Hashing", inputs.data, **kwargs)
 
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("Hashing")()(inputs, **kwargs)  # type: ignore
+    return get_op("Hashing")()(inputs, **kwargs)
 
 
-def lookup(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
+def lookup(inputs: "Tensor", **kwargs: object) -> "Tensor":
     """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
@@ -310,18 +308,18 @@ def lookup(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
         A tensor holding the retrieved vocabulary values or indices.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("StringLookup", inputs.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("StringLookup", inputs.data, **kwargs)
 
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("StringLookup")()(inputs, **kwargs)  # type: ignore
+    return get_op("StringLookup")()(inputs, **kwargs)
 
 
-def text_vectorization(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
+def text_vectorization(inputs: "Tensor", **kwargs: object) -> "Tensor":
     """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
@@ -332,22 +330,22 @@ def text_vectorization(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ig
         A numeric tensor containing the vectorized representations of the incoming text.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("TextVectorization", inputs.data, **kwargs)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("TextVectorization", inputs.data, **kwargs)
 
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("TextVectorization")()(inputs, **kwargs)  # type: ignore
+    return get_op("TextVectorization")()(inputs, **kwargs)
 
 
 @register_op("EditDistance")
 class EditDistance(OpDef):
     """Operation that computes the Levenshtein distance between two sequences."""
 
-    def infer_shape(self, hypothesis: Any, truth: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, hypothesis: object, truth: object, **kwargs: object) -> object:
         """Infer the resulting shape after computing the edit distance.
 
         Args:
@@ -365,7 +363,7 @@ class EditDistance(OpDef):
 class AsString(OpDef):
     """Operation that converts elements of a tensor into string representations."""
 
-    def infer_shape(self, input_tensor: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, input_tensor: object, **kwargs: object) -> object:
         """Infer the resulting shape after formatting the input elements as strings.
 
         Args:
@@ -382,9 +380,9 @@ class AsString(OpDef):
 class ArrayRepr(OpDef):
     """Operation that computes the string representation of an array."""
 
-    op_name = "ArrayRepr"
+    op_name: object = "ArrayRepr"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape.
 
         Args:
@@ -401,9 +399,9 @@ class ArrayRepr(OpDef):
 class ArrayStr(OpDef):
     """Operation that computes the string representation of an array."""
 
-    op_name = "ArrayStr"
+    op_name: object = "ArrayStr"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape.
 
         Args:

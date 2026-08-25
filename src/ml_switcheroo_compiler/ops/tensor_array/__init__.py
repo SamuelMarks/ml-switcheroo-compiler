@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Tensor array ops."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class TensorArrayRead(OpDef):
     """Tensor array read."""
 
-    op_name = "TensorArrayRead"
+    op_name: object = "TensorArrayRead"
 
-    def infer_shape(self, handle: Any, index: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, handle: object, index: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -31,9 +29,9 @@ class TensorArrayRead(OpDef):
 class TensorArrayWrite(OpDef):
     """Tensor array write."""
 
-    op_name = "TensorArrayWrite"
+    op_name: object = "TensorArrayWrite"
 
-    def infer_shape(self, handle: Any, index: Any, value: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -52,9 +50,9 @@ class TensorArrayWrite(OpDef):
 class TensorArrayStack(OpDef):
     """Tensor array stack."""
 
-    op_name = "TensorArrayStack"
+    op_name: object = "TensorArrayStack"
 
-    def infer_shape(self, handle: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, handle: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -65,8 +63,8 @@ class TensorArrayStack(OpDef):
             tuple[int, ...]: Result.
         """
         # Adds a dimension
-        elem_shape = getattr(handle, "element_shape", ())
-        size = getattr(handle, "size", None)
+        elem_shape: object = getattr(handle, "element_shape", ())
+        size: object = getattr(handle, "size", None)
         if size is not None and isinstance(size, int):
             return (size,) + elem_shape
         return (None,) + elem_shape

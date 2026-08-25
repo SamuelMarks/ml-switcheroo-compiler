@@ -3,14 +3,12 @@
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _get_shape_list(x: Any) -> list[Any]:
+def _get_shape_list(x: object) -> list[object]:
     """Help to convert shape to list.
 
     Args:
@@ -23,7 +21,7 @@ def _get_shape_list(x: Any) -> list[Any]:
         return list(x)
     if not hasattr(x, "shape") or x.shape is None:
         return []
-    s = x.shape
+    s: object = x.shape
     if isinstance(s, tuple):
         return list(s)
     if isinstance(s, int):
@@ -33,7 +31,7 @@ def _get_shape_list(x: Any) -> list[Any]:
     return []
 
 
-def _normalize_axes(axes: Any, length: int) -> list[Any]:
+def _normalize_axes(axes: object, length: int) -> list[object]:
     """Help to normalize axes.
 
     Args:
@@ -43,11 +41,11 @@ def _normalize_axes(axes: Any, length: int) -> list[Any]:
     Returns:
         list: Result.
     """
-    a = [axes] if isinstance(axes, int) else axes
+    a: object = [axes] if isinstance(axes, int) else axes
     return [x + length if x < 0 else x for x in a]
 
 
-def _resolve_reshape_minus_one(x_shape: tuple[Any, ...], newshape: list[Any]) -> list[Any]:
+def _resolve_reshape_minus_one(x_shape: tuple[object, ...], newshape: list[object]) -> list[object]:
     """Resolve the -1 dimension in a reshape operation.
 
     Args:
@@ -59,8 +57,8 @@ def _resolve_reshape_minus_one(x_shape: tuple[Any, ...], newshape: list[Any]) ->
     """
     import math
 
-    known = math.prod(s for s in newshape if s != -1 and s is not None)
-    total = math.prod(s for s in x_shape if s is not None)
+    known: object = math.prod(s for s in newshape if s != -1 and s is not None)
+    total: object = math.prod(s for s in x_shape if s is not None)
     if total > 0 and known > 0:
         newshape[newshape.index(-1)] = total // known
     return newshape
@@ -70,7 +68,7 @@ def _resolve_reshape_minus_one(x_shape: tuple[Any, ...], newshape: list[Any]) ->
 class Reshape(OpDef):
     """Provide an operator definition for reshaping a tensor to a new shape."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -80,15 +78,15 @@ class Reshape(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        newshape = args[1] if len(args) > 1 else kwargs["newshape"]
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        newshape: object = args[1] if len(args) > 1 else kwargs["newshape"]
 
         if not hasattr(x, "shape") or not isinstance(newshape, (tuple, list)):
             return newshape
 
-        out_shape = list(newshape)
+        out_shape: object = list(newshape)
         if -1 in out_shape:
-            out_shape = _resolve_reshape_minus_one(x.shape, out_shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            out_shape: object = _resolve_reshape_minus_one(x.shape, out_shape)
 
         return tuple(out_shape)
 
@@ -97,7 +95,7 @@ class Reshape(OpDef):
 class Transpose(OpDef):
     """Provide an operator definition for transposing the dimensions of a tensor."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
@@ -107,13 +105,13 @@ class Transpose(OpDef):
         Returns:
             The computed shape or evaluation result.
         """
-        x = args[0] if len(args) > 0 else kwargs["x"]
-        axes = args[1] if len(args) > 1 else kwargs.get("axes", None)
+        x: object = args[0] if len(args) > 0 else kwargs["x"]
+        axes: object = args[1] if len(args) > 1 else kwargs.get("axes", None)
         if isinstance(x, tuple) and axes is not None:
             return tuple(x[i] for i in axes)
         return tuple(reversed(x)) if isinstance(x, tuple) else None
 
-    def _format_args(self, x: str, axes: Any) -> str:
+    def _format_args(self, x: str, axes: object) -> str:
         """Evaluate _format_args operation.
 
         Args:
@@ -130,7 +128,7 @@ class Transpose(OpDef):
 class BroadcastTo(OpDef):
     """Provide an operator definition for broadcasting a tensor to a new shape."""
 
-    def infer_shape(self, x: Any, shape: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, shape: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
@@ -148,7 +146,7 @@ class BroadcastTo(OpDef):
             return shape
 
         try:
-            broadcasted = broadcast_shapes(x, shape)
+            broadcasted: object = broadcast_shapes(x, shape)
             if broadcasted != shape:
                 raise ValueError(f"[broadcast_shapes] Shapes {x} and {shape} cannot be broadcast.")
         except ValueError as e:
@@ -161,15 +159,15 @@ class BroadcastTo(OpDef):
 class BroadcastInDim(OpDef):
     """Provide an operator definition for broadcasting a tensor in a given set of dimensions."""
 
-    op_name = "BroadcastInDim"
+    op_name: object = "BroadcastInDim"
 
     def infer_shape(
         self,
-        x: Any,
-        shape: Any,
-        broadcast_dimensions: Any,
-        **kwargs: Any,
-    ) -> Any:
+        x: object,
+        shape: object,
+        broadcast_dimensions: object,
+        **kwargs: object,
+    ) -> object:
         """Infer the output shape of the broadcasting operation.
 
         Args:
@@ -178,7 +176,7 @@ class BroadcastInDim(OpDef):
             broadcast_dimensions (object): The broadcast_dimensions parameter for the operation.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The computed result.
+        Returns: object: The computed result.
         """
         return tuple(shape)
 
@@ -187,15 +185,15 @@ class BroadcastInDim(OpDef):
 class Resize(OpDef):
     """Provide an operator definition for resizing an image tensor to a target shape."""
 
-    op_name = "Resize"
+    op_name: object = "Resize"
 
     def infer_shape(
         self,
-        image: Any,
-        shape: Any,
-        method: Any = "bilinear",
-        **kwargs: Any,
-    ) -> Any:
+        image: object,
+        shape: object,
+        method: object = "bilinear",
+        **kwargs: object,
+    ) -> object:
         """Infer the output shape of the resizing operation.
 
         Args:
@@ -204,11 +202,11 @@ class Resize(OpDef):
             method (object): The method parameter for the operation.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The computed result.
+        Returns: object: The computed result.
         """
         if not hasattr(image, "shape") or not image.shape:
             return ()
-        out_shape = list(image.shape)
+        out_shape: object = list(image.shape)
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
         if len(out_shape) >= MAGIC_VAL_3:
@@ -221,9 +219,9 @@ class Resize(OpDef):
 class Atleast1d(OpDef):
     """Provide an operator definition for atleast_1d."""
 
-    op_name = "Atleast1d"
+    op_name: object = "Atleast1d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -233,10 +231,10 @@ class Atleast1d(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        x: object = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
+        if not hasattr(x, "shape") or x.shape is None:
             return (1,)
-        shape = _get_shape_list(x)
+        shape: object = _get_shape_list(x)
         if len(shape) < 1:
             shape.insert(0, 1)
         return tuple(shape)
@@ -246,9 +244,9 @@ class Atleast1d(OpDef):
 class Atleast2d(OpDef):
     """Provide an operator definition for atleast_2d."""
 
-    op_name = "Atleast2d"
+    op_name: object = "Atleast2d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -258,10 +256,10 @@ class Atleast2d(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        x: object = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
+        if not hasattr(x, "shape") or x.shape is None:
             return (1, 1)
-        shape = _get_shape_list(x)
+        shape: object = _get_shape_list(x)
         if len(shape) == 0:
             return (1, 1)
         if len(shape) == 1:
@@ -273,9 +271,9 @@ class Atleast2d(OpDef):
 class Atleast3d(OpDef):
     """Provide an operator definition for atleast_3d."""
 
-    op_name = "Atleast3d"
+    op_name: object = "Atleast3d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -285,10 +283,10 @@ class Atleast3d(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        x: object = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
+        if not hasattr(x, "shape") or x.shape is None:
             return (1, 1, 1)
-        shape = _get_shape_list(x)
+        shape: object = _get_shape_list(x)
         if len(shape) == 0:
             return (1, 1, 1)
         if len(shape) == 1:
@@ -302,9 +300,9 @@ class Atleast3d(OpDef):
 class ExpandDims(OpDef):
     """Provide an operator definition for expanding the dimensions of a tensor."""
 
-    op_name = "ExpandDims"
+    op_name: object = "ExpandDims"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -314,15 +312,15 @@ class ExpandDims(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
-        axis = args[1] if len(args) > 1 else kwargs.get("axis")
-        if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        x: object = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
+        axis: object = args[1] if len(args) > 1 else kwargs.get("axis")
+        if not hasattr(x, "shape") or x.shape is None:
             return (None,)
-        shape = _get_shape_list(x)
+        shape: object = _get_shape_list(x)
         if axis is None:
             return tuple(shape)
         if axis < 0:
-            axis = axis + len(shape) + 1
+            axis: object = axis + len(shape) + 1
         shape.insert(axis, 1)
         return tuple(shape)
 
@@ -331,9 +329,9 @@ class ExpandDims(OpDef):
 class Block(OpDef):
     """Block operator."""
 
-    op_name = "Block"
+    op_name: object = "Block"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -343,7 +341,7 @@ class Block(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        arrays = args[0] if args else kwargs.get("arrays")
+        arrays: object = args[0] if args else kwargs.get("arrays")
         if not isinstance(arrays, (list, tuple)):
             return ()
         return ()
@@ -353,9 +351,9 @@ class Block(OpDef):
 class C(OpDef):
     """C operation for concatenation shorthand."""
 
-    op_name = "C"
+    op_name: object = "C"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -372,9 +370,9 @@ class C(OpDef):
 class Collapse(OpDef):
     """Collapse operation for shape manipulation."""
 
-    op_name = "Collapse"
+    op_name: object = "Collapse"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -391,9 +389,9 @@ class Collapse(OpDef):
 class Delete(OpDef):
     """Delete operator."""
 
-    op_name = "Delete"
+    op_name: object = "Delete"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -403,19 +401,19 @@ class Delete(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        arr = args[0] if args else kwargs.get("arr")
+        arr: object = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
             return None
-        return tuple(arr.shape)  # Approximate  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return tuple(arr.shape)  # Approximate
 
 
 @register_op("DiagIndices")
 class DiagIndices(OpDef):
     """DiagIndices operator."""
 
-    op_name = "DiagIndices"
+    op_name: object = "DiagIndices"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -425,8 +423,8 @@ class DiagIndices(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        n = args[0] if args else kwargs.get("n")
-        ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
+        n: object = args[0] if args else kwargs.get("n")
+        ndim: object = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
         return tuple([(n,)] * ndim)
 
 
@@ -434,9 +432,9 @@ class DiagIndices(OpDef):
 class DiagIndicesFrom(OpDef):
     """DiagIndicesFrom operator."""
 
-    op_name = "DiagIndicesFrom"
+    op_name: object = "DiagIndicesFrom"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -446,7 +444,7 @@ class DiagIndicesFrom(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        arr = args[0] if args else kwargs.get("arr")
+        arr: object = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
             return None
         return tuple([(arr.shape[0],)] * len(arr.shape))
@@ -456,9 +454,9 @@ class DiagIndicesFrom(OpDef):
 class Diagflat(OpDef):
     """Diagflat operator."""
 
-    op_name = "Diagflat"
+    op_name: object = "Diagflat"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -468,14 +466,14 @@ class Diagflat(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        v = args[0] if args else kwargs.get("v")
+        v: object = args[0] if args else kwargs.get("v")
         if not hasattr(v, "shape"):
             return None
         import math
 
-        size = math.prod(v.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + abs(k)
+        size: object = math.prod(v.shape)
+        k: object = args[1] if len(args) > 1 else kwargs.get("k", 0)
+        s: object = size + abs(k)
         return (s, s)
 
 
@@ -483,9 +481,9 @@ class Diagflat(OpDef):
 class FillDiagonal(OpDef):
     """FillDiagonal operator."""
 
-    op_name = "FillDiagonal"
+    op_name: object = "FillDiagonal"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -495,19 +493,19 @@ class FillDiagonal(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        a = args[0] if args else kwargs.get("a")
+        a: object = args[0] if args else kwargs.get("a")
         if not hasattr(a, "shape"):
             return None
-        return tuple(a.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return tuple(a.shape)
 
 
 @register_op("Insert")
 class Insert(OpDef):
     """Insert operator."""
 
-    op_name = "Insert"
+    op_name: object = "Insert"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -517,19 +515,19 @@ class Insert(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        arr = args[0] if args else kwargs.get("arr")
+        arr: object = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
             return None
-        return tuple(arr.shape)  # Approximate  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return tuple(arr.shape)  # Approximate
 
 
 @register_op("Moveaxis")
 class Moveaxis(OpDef):
     """Provide an operator definition for moving axes of a tensor."""
 
-    op_name = "Moveaxis"
+    op_name: object = "Moveaxis"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -539,15 +537,15 @@ class Moveaxis(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape") or x.shape is None:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        if not hasattr(x, "shape") or x.shape is None:
             return None
-        shape = _get_shape_list(x)
-        source = args[1] if len(args) > 1 else kwargs.get("source")
-        destination = args[2] if len(args) > 2 else kwargs.get("destination")
+        shape: object = _get_shape_list(x)
+        source: object = args[1] if len(args) > 1 else kwargs.get("source")
+        destination: object = args[2] if len(args) > 2 else kwargs.get("destination")
         return self._calc_shape(shape, source, destination)
 
-    def _calc_shape(self, shape: list[int], source: Any, destination: Any) -> tuple[Any, ...]:
+    def _calc_shape(self, shape: list[int], source: object, destination: object) -> tuple[object, ...]:
         """Calculate the output shape for a moveaxis operation.
 
         Args:
@@ -558,10 +556,10 @@ class Moveaxis(OpDef):
         Returns:
             tuple: The calculated shape.
         """
-        length = len(shape)
-        sl = _normalize_axes(source, length)
-        dl = _normalize_axes(destination, length)
-        order = [i for i in range(length) if i not in sl]
+        length: object = len(shape)
+        sl: object = _normalize_axes(source, length)
+        dl: object = _normalize_axes(destination, length)
+        order: object = [i for i in range(length) if i not in sl]
         for dest, src in sorted(zip(dl, sl)):
             order.insert(dest, src)
         return tuple(shape[i] for i in order)
@@ -571,9 +569,9 @@ class Moveaxis(OpDef):
 class Permute(OpDef):
     """Provide an operator definition for permuting the dimensions of a tensor."""
 
-    op_name = "Permute"
+    op_name: object = "Permute"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -583,11 +581,11 @@ class Permute(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
-        dims = args[1] if len(args) > 1 else kwargs.get("dims")
+        shape: object = _get_shape_list(x)
+        dims: object = args[1] if len(args) > 1 else kwargs.get("dims")
         if dims is None:
             return tuple(shape[::-1])
         return tuple(shape[i] for i in dims)
@@ -597,9 +595,9 @@ class Permute(OpDef):
 class Roll(OpDef):
     """Provide an operator definition for rolling array elements along a given axis."""
 
-    op_name = "Roll"
+    op_name: object = "Roll"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -609,7 +607,7 @@ class Roll(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
         return tuple(_get_shape_list(x))
@@ -619,9 +617,9 @@ class Roll(OpDef):
 class Squeeze(OpDef):
     """Provide an operator definition for squeezing dimensions of a tensor."""
 
-    op_name = "Squeeze"
+    op_name: object = "Squeeze"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -631,14 +629,14 @@ class Squeeze(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
-        axis = args[1] if len(args) > 1 else kwargs.get("axis")
+        shape: object = _get_shape_list(x)
+        axis: object = args[1] if len(args) > 1 else kwargs.get("axis")
         return self._calc_shape(shape, axis)
 
-    def _calc_shape(self, shape: list[int], axis: Any) -> tuple[Any, ...]:
+    def _calc_shape(self, shape: list[int], axis: object) -> tuple[object, ...]:
         """Calculate the output shape for a squeeze operation.
 
         Args:
@@ -650,8 +648,8 @@ class Squeeze(OpDef):
         """
         if axis is None:
             return tuple(s for s in shape if s != 1)
-        axes = [axis] if isinstance(axis, int) else axis
-        n = {a + len(shape) if a < 0 else a for a in axes}
+        axes: object = [axis] if isinstance(axis, int) else axis
+        n: object = {a + len(shape) if a < 0 else a for a in axes}
         return tuple(shape[i] for i in range(len(shape)) if i not in n)
 
 
@@ -659,9 +657,9 @@ class Squeeze(OpDef):
 class Swapaxes(OpDef):
     """Provide an operator definition for swapping two axes of an array."""
 
-    op_name = "Swapaxes"
+    op_name: object = "Swapaxes"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -671,15 +669,15 @@ class Swapaxes(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("a", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = _get_shape_list(x)
-        axis1 = args[1] if len(args) > 1 else kwargs.get("axis1")
-        axis2 = args[2] if len(args) > 2 else kwargs.get("axis2")
-        a1 = axis1 + len(shape) if axis1 < 0 else axis1  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        a2 = axis2 + len(shape) if axis2 < 0 else axis2  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        shape[a1], shape[a2] = shape[a2], shape[a1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        shape: object = _get_shape_list(x)
+        axis1: object = args[1] if len(args) > 1 else kwargs.get("axis1")
+        axis2: object = args[2] if len(args) > 2 else kwargs.get("axis2")
+        a1: object = axis1 + len(shape) if axis1 < 0 else axis1
+        a2: object = axis2 + len(shape) if axis2 < 0 else axis2
+        shape[a1], shape[a2] = shape[a2], shape[a1]
         return tuple(shape)
 
 
@@ -687,9 +685,9 @@ class Swapaxes(OpDef):
 class Flip(OpDef):
     """Provide an operator definition for flipping an array."""
 
-    op_name = "Flip"
+    op_name: object = "Flip"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -699,7 +697,7 @@ class Flip(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("m", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
         return tuple(_get_shape_list(x))
@@ -709,9 +707,9 @@ class Flip(OpDef):
 class Fliplr(OpDef):
     """Provide an operator definition for flipping an array left/right."""
 
-    op_name = "Fliplr"
+    op_name: object = "Fliplr"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -721,7 +719,7 @@ class Fliplr(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("m", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
         return tuple(_get_shape_list(x))
@@ -731,9 +729,9 @@ class Fliplr(OpDef):
 class Flipud(OpDef):
     """Provide an operator definition for flipping an array up/down."""
 
-    op_name = "Flipud"
+    op_name: object = "Flipud"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -743,7 +741,7 @@ class Flipud(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        x = args[0] if args else kwargs.get("m", kwargs.get("x"))
+        x: object = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
         return tuple(_get_shape_list(x))

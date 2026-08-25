@@ -3,14 +3,13 @@
 
 import os
 from multiprocessing.connection import Client, Listener
-from typing import Any
 
 import numpy as np
 
 BASE_PORT = 15200
 
 
-def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:  # type: ignore
+def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
     """Exchange IPC data as coordinator.
 
     Args:
@@ -24,18 +23,18 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
     """
     import time
 
-    address = ("localhost", BASE_PORT)
-    gathered = [tensor_data]
+    address: object = ("localhost", BASE_PORT)
+    gathered: object = [tensor_data]
 
     try:
         with Listener(address, authkey=b"ml_switcheroo") as listener:
             for _ in range(size - 1):
                 with listener.accept() as conn:
                     other_rank, other_data = conn.recv()
-                    gathered.append((other_rank, other_data))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                    gathered.append((other_rank, other_data))
 
         # Sort by rank
-        gathered_sorted = [tensor_data] * size
+        gathered_sorted: object = [tensor_data] * size
         for item in gathered:
             if isinstance(item, tuple):
                 r, d = item
@@ -45,8 +44,8 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
 
         # Broadcast back to other ranks
         for r in range(1, size):
-            r_address = ("localhost", BASE_PORT + r)
-            start_time = time.time()
+            r_address: object = ("localhost", BASE_PORT + r)
+            start_time: object = time.time()
             while True:
                 try:
                     with Client(r_address, authkey=b"ml_switcheroo") as conn:
@@ -63,7 +62,7 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
         return [tensor_data] * size
 
 
-def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:  # type: ignore
+def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
     """Exchange IPC data as worker.
 
     Args:
@@ -81,11 +80,11 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, tim
     """
     import time
 
-    port = BASE_PORT + rank
-    address = ("localhost", port)
+    port: object = BASE_PORT + rank
+    address: object = ("localhost", port)
     try:
         with Listener(address, authkey=b"ml_switcheroo") as listener:
-            start_time = time.time()
+            start_time: object = time.time()
             while True:
                 try:
                     with Client(("localhost", BASE_PORT), authkey=b"ml_switcheroo") as conn:
@@ -98,14 +97,14 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, tim
 
             # Receive broadcasted data
             with listener.accept() as conn:
-                res = conn.recv()
-        return res  # type: ignore
+                res: object = conn.recv()
+        return res
     except Exception:
         # Fallback if connection fails
         return [tensor_data] * size
 
 
-def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np.ndarray]:  # type: ignore
+def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np.ndarray]:
     """Exchanges and synchronizes numpy arrays across local workers using standard multiprocessing IPC.
 
     Args:
@@ -116,8 +115,8 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np
     Returns:
         list[np.ndarray]: Gathered array payloads from all workers.
     """
-    timeout = 10.0
-    retry_interval = 0.05
+    timeout: object = 10.0
+    retry_interval: object = 0.05
 
     if rank == 0:
         return _exchange_ipc_data_coordinator(size, tensor_data, timeout, retry_interval)
@@ -125,7 +124,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np
         return _exchange_ipc_data_worker(rank, size, tensor_data, timeout, retry_interval)
 
 
-def _ipc_all_gather(tensor: Any, axis: int, mesh: Any) -> Any:
+def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
     """Evaluate _ipc_all_gather operation.
 
     Args:
@@ -139,19 +138,19 @@ def _ipc_all_gather(tensor: Any, axis: int, mesh: Any) -> Any:
     if isinstance(tensor, str):
         return tensor
 
-    t = np.asarray(tensor)
+    t: object = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
-        rank = int(os.environ.get("RANK", "0"))
-        size = getattr(mesh, "size", 1)
+        rank: object = int(os.environ.get("RANK", "0"))
+        size: object = getattr(mesh, "size", 1)
 
         # Execute real IPC data exchange
-        exchanged = _exchange_ipc_data(rank, size, t)
+        exchanged: object = _exchange_ipc_data(rank, size, t)
         return np.concatenate(exchanged, axis=axis if axis is not None else 0)
 
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
 
-def _ipc_reduce_scatter(tensor: Any, op: str, axis: int, mesh: Any) -> Any:
+def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> object:
     """Evaluate _ipc_reduce_scatter operation.
 
     Args:
@@ -166,32 +165,32 @@ def _ipc_reduce_scatter(tensor: Any, op: str, axis: int, mesh: Any) -> Any:
     if isinstance(tensor, str):
         return tensor
 
-    t = np.asarray(tensor)
+    t: object = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
-        rank = int(os.environ.get("RANK", "0"))
-        size = getattr(mesh, "size", 1)
+        rank: object = int(os.environ.get("RANK", "0"))
+        size: object = getattr(mesh, "size", 1)
 
         # Gather all tensors via IPC
-        exchanged = _exchange_ipc_data(rank, size, t)
+        exchanged: object = _exchange_ipc_data(rank, size, t)
 
         # Perform reduction
         if op == "sum":
-            reduced = sum(exchanged)
+            reduced: object = sum(exchanged)
         elif op == "max":
-            reduced = np.maximum.reduce(exchanged)
+            reduced: object = np.maximum.reduce(exchanged)
         elif op == "min":
-            reduced = np.minimum.reduce(exchanged)
+            reduced: object = np.minimum.reduce(exchanged)
         else:
-            reduced = sum(exchanged)
+            reduced: object = sum(exchanged)
 
         # Scatter (slice and return own chunk)
-        sub_arrays = np.array_split(reduced, size, axis=axis if axis is not None else 0)
+        sub_arrays: object = np.array_split(reduced, size, axis=axis if axis is not None else 0)
         return sub_arrays[rank % len(sub_arrays)]
 
     return t
 
 
-def _ipc_all_reduce(tensor: Any, op: str, mesh: Any) -> Any:
+def _ipc_all_reduce(tensor: object, op: str, mesh: object) -> object:
     """Evaluate _ipc_all_reduce operation.
 
     Args:
@@ -205,13 +204,13 @@ def _ipc_all_reduce(tensor: Any, op: str, mesh: Any) -> Any:
     if isinstance(tensor, str):
         return tensor
 
-    t = np.asarray(tensor)
+    t: object = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
-        rank = int(os.environ.get("RANK", "0"))
-        size = getattr(mesh, "size", 1)
+        rank: object = int(os.environ.get("RANK", "0"))
+        size: object = getattr(mesh, "size", 1)
 
         # Gather all tensors via IPC
-        exchanged = _exchange_ipc_data(rank, size, t)
+        exchanged: object = _exchange_ipc_data(rank, size, t)
 
         # Perform reduction and return same result on all workers
         if op == "sum":

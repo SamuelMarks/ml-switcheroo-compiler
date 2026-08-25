@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for sets.py."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Setdiff1d(OpDef):
     """Setdiff1d operator definition."""
 
-    op_name = "Setdiff1d"
+    op_name: object = "Setdiff1d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -29,16 +27,16 @@ class Setdiff1d(OpDef):
 class Setxor1d(OpDef):
     """Setxor1d operator definition."""
 
-    op_name = "Setxor1d"
+    op_name: object = "Setxor1d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()
 
@@ -47,16 +45,16 @@ class Setxor1d(OpDef):
 class Union1d(OpDef):
     """Union1d operator definition."""
 
-    op_name = "Union1d"
+    op_name: object = "Union1d"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()
 
@@ -65,16 +63,16 @@ class Union1d(OpDef):
 class UniqueAll(OpDef):
     """UniqueAll operator definition."""
 
-    op_name = "UniqueAll"
+    op_name: object = "UniqueAll"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()
 
@@ -83,16 +81,16 @@ class UniqueAll(OpDef):
 class UniqueCounts(OpDef):
     """UniqueCounts operator definition."""
 
-    op_name = "UniqueCounts"
+    op_name: object = "UniqueCounts"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()
 
@@ -101,16 +99,16 @@ class UniqueCounts(OpDef):
 class UniqueInverse(OpDef):
     """UniqueInverse operator definition."""
 
-    op_name = "UniqueInverse"
+    op_name: object = "UniqueInverse"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()
 
@@ -119,15 +117,15 @@ class UniqueInverse(OpDef):
 class UniqueValues(OpDef):
     """UniqueValues operator definition."""
 
-    op_name = "UniqueValues"
+    op_name: object = "UniqueValues"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         return args[0] if args else ()

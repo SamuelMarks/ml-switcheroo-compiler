@@ -2,67 +2,66 @@
 """Module registry.py."""
 
 import os
-from typing import Any
 
 import yaml
 
 _REGISTRY: dict[str, type] = {}
-_YAML_REGISTRY: dict[str, Any] = {}
-_UTIL_REGISTRY: dict[str, Any] = {}
+_YAML_REGISTRY: dict[str, object] = {}
+_UTIL_REGISTRY: dict[str, object] = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
     """_load_yaml_registry function.
 
     Args:
-        force (Any): The force parameter.
+        force (object): The force parameter.
 
     Returns:
-        Any: Result.
+        object: Result.
     """
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
-        yaml_path = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
+        yaml_path: object = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 from ml_switcheroo_compiler.ops.config_models import OpsRegistry
 
-                raw_yaml = yaml.safe_load(f)
+                raw_yaml: object = yaml.safe_load(f)
                 _YAML_REGISTRY = OpsRegistry(root=raw_yaml).model_dump()
 
 
-def register_op(name: str) -> Any:
+def register_op(name: str) -> object:
     """Decorator to register a custom operation."""
 
     def decorator(cls: type) -> type:
         """Decorator function.
 
         Args:
-        cls (Any): The cls parameter.
+        cls (object): The cls parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        cls.op_type = name  # type: ignore
+        cls.op_type = name
         _REGISTRY[name] = cls
         return cls
 
     return decorator
 
 
-def register_util(name: str) -> Any:
+def register_util(name: str) -> object:
     """Decorator to register a util."""
 
-    def decorator(func: Any) -> Any:
+    def decorator(func: object) -> object:
         """Decorator function.
 
         Args:
-        func (Any): The func parameter.
+        func (object): The func parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         _UTIL_REGISTRY[name] = func
         return func
@@ -70,7 +69,7 @@ def register_util(name: str) -> Any:
     return decorator
 
 
-def get_util(name: str) -> Any:
+def get_util(name: str) -> object:
     """Get a util."""
     if name not in _UTIL_REGISTRY:
         raise KeyError(f"Util {name} not found")
@@ -88,49 +87,49 @@ def get_op(op_name: str) -> type:
         from ml_switcheroo_compiler.ops.base import OpDef
 
         # Create dynamic OpDef class from yaml
-        op_data = _YAML_REGISTRY[op_name]
+        op_data: object = _YAML_REGISTRY[op_name]
 
         # Build dynamic class
         class DynamicOpDef(OpDef):
             """DynamicOpDef class."""
 
-            op_type = op_name
-            op_name_class = op_name
+            op_type: object = op_name
+            op_name_class: object = op_name
             # attach data
             _yaml_data = op_data
 
             @classmethod
-            def get_yaml_data(cls: Any) -> Any:
+            def get_yaml_data(cls: object) -> object:
                 """get_yaml_data function.
 
                 Args:
-                cls (Any): The cls parameter.
+                cls (object): The cls parameter.
 
                 Returns:
-                Any: Result.
+                object: Result.
                 """
                 return cls._yaml_data
 
-            def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+            def infer_shape(self, *args: object, **kwargs: object) -> object:
                 """Infer shape precisely using heuristics.
 
                 Args:
-                    self (Any): The self parameter.
-                    *args (Any): Positional args.
-                    **kwargs (Any): Keyword args.
+                    self (object): The self parameter.
+                    *args (object): Positional args.
+                    **kwargs (object): Keyword args.
 
                 Returns:
-                    Any: Result shape tuple.
+                    object: Result shape tuple.
                 """
-                inputs = kwargs.get("inputs", [])
+                inputs: object = kwargs.get("inputs", [])
 
                 if not inputs:
                     if len(args) > 0 and isinstance(args[0], (list, tuple)):
-                        inputs = args[0]
+                        inputs: object = args[0]
                     else:
-                        inputs = list(args)
+                        inputs: object = list(args)
 
-                shapes = []
+                shapes: object = []
                 for inp in inputs:
                     if hasattr(inp, "shape_metadata") and inp.shape_metadata is not None:
                         shapes.append(tuple(inp.shape_metadata))
@@ -175,7 +174,7 @@ def get_all_ops() -> dict[str, type]:
 
 
 # Alias for backwards compatibility
-get_op_class = get_op
+get_op_class: object = get_op
 
 # Initialize on load
 _load_yaml_registry()
@@ -185,52 +184,52 @@ _load_yaml_registry()
 class _RegistryShim:
     """_RegistryShim class."""
 
-    def __init__(self, data: Any) -> None:
+    def __init__(self, data: object) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        data (Any): The data parameter.
+        self (object): The self parameter.
+        data (object): The data parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         self.operations = data
 
-    def get_generator_mapping(self, prefix: str, op_name: str) -> Any:
+    def get_generator_mapping(self, prefix: str, op_name: str) -> object:
         """get_generator_mapping function.
 
         Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
+        self (object): The self parameter.
+        prefix (object): The prefix parameter.
+        op_name (object): The op_name parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
-        op = self.operations.get(op_name, {})
+        op: object = self.operations.get(op_name, {})
         if not op:
             return None
-        variants = op.get("variants", {})
-        backend = variants.get(prefix, {})
+        variants: object = op.get("variants", {})
+        backend: object = variants.get(prefix, {})
         return backend.get("generator")
 
 
-backend_mapping_registry = _RegistryShim(_YAML_REGISTRY)
+backend_mapping_registry: object = _RegistryShim(_YAML_REGISTRY)
 _OP_REGISTRY = _REGISTRY
-_FRONTEND_REGISTRY: dict[str, Any] = {}
+_FRONTEND_REGISTRY: dict[str, object] = {}
 
 
-def get_backend_mapping(op_name: str) -> dict[str, Any]:
+def get_backend_mapping(op_name: str) -> dict[str, object]:
     """get_backend_mapping function.
 
     Args:
-        op_name (Any): The op_name parameter.
+        op_name (object): The op_name parameter.
 
     Returns:
-        Any: Result.
+        object: Result.
     """
-    op = _YAML_REGISTRY.get(op_name)
+    op: object = _YAML_REGISTRY.get(op_name)
     if op:
         return dict(op.get("variants", {}))
     return {}
@@ -240,24 +239,24 @@ def get_backend_mapping(op_name: str) -> dict[str, Any]:
 _FRONTENDS = {}
 
 
-def register_frontend(name: str) -> Any:
+def register_frontend(name: str) -> object:
     """register_frontend function.
 
     Args:
-        name (Any): The name parameter.
+        name (object): The name parameter.
 
     Returns:
-        Any: Result.
+        object: Result.
     """
 
-    def decorator(cls: Any) -> Any:
+    def decorator(cls: object) -> object:
         """Decorator function.
 
         Args:
-        cls (Any): The cls parameter.
+        cls (object): The cls parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         _FRONTENDS[name] = cls
         return cls
@@ -265,14 +264,14 @@ def register_frontend(name: str) -> Any:
     return decorator
 
 
-def get_frontend(name: str) -> Any:
+def get_frontend(name: str) -> object:
     """get_frontend function.
 
     Args:
-        name (Any): The name parameter.
+        name (object): The name parameter.
 
     Returns:
-        Any: Result.
+        object: Result.
     """
     if name not in _FRONTENDS:
         raise KeyError(f"Frontend {name} not found")
@@ -283,66 +282,66 @@ def get_frontend(name: str) -> Any:
 class _RegistryShimFix:
     """_RegistryShimFix class."""
 
-    def __init__(self, data: Any) -> None:
+    def __init__(self, data: object) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        data (Any): The data parameter.
+        self (object): The self parameter.
+        data (object): The data parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         self.operations = data
 
-    def get_generator_mapping(self, prefix: str, op_name: str) -> Any:
+    def get_generator_mapping(self, prefix: str, op_name: str) -> object:
         """get_generator_mapping function.
 
         Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
+        self (object): The self parameter.
+        prefix (object): The prefix parameter.
+        op_name (object): The op_name parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
-        op = self.operations.get(op_name, {})
+        op: object = self.operations.get(op_name, {})
         if not op:
             return None
-        variants = op.get("variants", {})
-        backend = variants.get(prefix, {})
+        variants: object = op.get("variants", {})
+        backend: object = variants.get(prefix, {})
         return backend.get("generator")
 
-    def get_eager_mapping(self, prefix: str, op_name: str) -> Any:
+    def get_eager_mapping(self, prefix: str, op_name: str) -> object:
         """get_eager_mapping function.
 
         Args:
-        self (Any): The self parameter.
-        prefix (Any): The prefix parameter.
-        op_name (Any): The op_name parameter.
+        self (object): The self parameter.
+        prefix (object): The prefix parameter.
+        op_name (object): The op_name parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
-        op = self.operations.get(op_name, {})
+        op: object = self.operations.get(op_name, {})
         if not op:
             return None
-        variants = op.get("variants", {})
-        backend = variants.get(prefix, {})
+        variants: object = op.get("variants", {})
+        backend: object = variants.get(prefix, {})
         return backend.get("eager")
 
-    def get_op(self, op_name: str) -> Any:
+    def get_op(self, op_name: str) -> object:
         """get_op function.
 
         Args:
-        self (Any): The self parameter.
-        op_name (Any): The op_name parameter.
+        self (object): The self parameter.
+        op_name (object): The op_name parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         return self.operations.get(op_name)
 
 
-backend_mapping_registry: Any = _RegistryShimFix(_YAML_REGISTRY)  # type: ignore
+backend_mapping_registry: object = _RegistryShimFix(_YAML_REGISTRY)
 from ml_switcheroo_compiler.ops.base import OpDef

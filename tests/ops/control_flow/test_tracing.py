@@ -1,3 +1,8 @@
+from unittest.mock import MagicMock, patch
+
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
 """Tests for tracing control flow."""
 
 import pytest
@@ -7,7 +12,6 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.tracing import cond_tracing, map_fn_tracing, scan_tracing, while_loop_tracing
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 class MockData:
@@ -97,3 +101,71 @@ def test_assert_value_tracing():
 
     x = Tensor(MockData("x"), TensorConfig((), DType.Bool, Device("cpu")))
     assert_value_tracing(x, "test msg")
+
+
+import pytest
+
+from ml_switcheroo_compiler.core.errors import TracingError
+from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, pmap_tracing, stop_gradient_tracing
+
+
+def test_tracing_error_outside_context():
+    global_tracing_state.is_tracing = False
+    with pytest.raises(TracingError):
+        cond_tracing(MagicMock(), MagicMock(), MagicMock())
+    with pytest.raises(TracingError):
+        while_loop_tracing(MagicMock(), MagicMock(), MagicMock())
+    with pytest.raises(TracingError):
+        scan_tracing(MagicMock(), MagicMock(), MagicMock())
+    with pytest.raises(TracingError):
+        map_fn_tracing(MagicMock(), MagicMock())
+    with pytest.raises(TracingError):
+        pmap_tracing(MagicMock())(1)
+
+    assert stop_gradient_tracing(1) == 1
+
+    with patch("ml_switcheroo_compiler.ops.control_flow.tracing.record_assertion") as mock_assert:
+        assert_value_tracing(MagicMock(), "msg")
+        mock_assert.assert_called_once()
+
+
+def test_while_loop_tensor_init():
+    def c(x):
+        return x
+
+    def b(x):
+        return x
+
+    t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
+
+    global_tracing_state.start_tracing()
+    res = while_loop_tracing(c, b, t)
+    global_tracing_state.stop_tracing()
+    assert isinstance(res, Tensor)
+
+
+def test_flatten_inputs_other():
+    assert _flatten_inputs(1) == []
+
+
+def test_pmap_tracing_other_args():
+    def f(x, y):
+        return x
+
+    t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
+    global_tracing_state.start_tracing()
+    res = pmap_tracing(f)(t, 1)
+    global_tracing_state.stop_tracing()
+
+
+def test_stop_gradient_tracing_traced():
+    t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
+    p = ProxyTensor("p", (), DType.Int32.value)
+
+    global_tracing_state.start_tracing()
+    res1 = stop_gradient_tracing(t)
+    assert isinstance(res1, Tensor)
+
+    res2 = stop_gradient_tracing(p)
+    assert isinstance(res2, ProxyTensor)
+    global_tracing_state.stop_tracing()

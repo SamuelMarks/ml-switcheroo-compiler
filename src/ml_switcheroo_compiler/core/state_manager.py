@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module state_manager.py."""
 
-from typing import Any
-
 """State functionalization pass."""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
@@ -15,8 +13,8 @@ def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
         node (LogicalNode): The Assign node to process.
         state_env (dict[str, str]): The mapping of state variables to their current node IDs.
     """
-    target = node.inputs[0]
-    new_val = node.inputs[1]
+    target: object = node.inputs[0]
+    new_val: object = node.inputs[1]
     if target in state_env:
         state_env[target] = new_val
 
@@ -31,7 +29,7 @@ def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
     Returns:
         LogicalNode: The new cloned node with updated inputs.
     """
-    new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
+    new_inputs: object = [state_env.get(inp, inp) for inp in node.inputs]
     return LogicalNode(
         id=node.id,
         op_type=node.op_type,
@@ -56,7 +54,7 @@ def _build_functional_outputs(graph_outputs: list[str], state_vars: list[str], s
     Returns:
         list[str]: The new functional outputs list.
     """
-    functional_outputs = list(graph_outputs)
+    functional_outputs: object = list(graph_outputs)
     for v in state_vars:
         functional_outputs.append(state_env[v])
     return functional_outputs
@@ -77,8 +75,8 @@ def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
     Returns:
         LogicalGraph: The functionalized graph.
     """
-    new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
-    sorted_nodes = topological_sort(graph)
+    new_graph: object = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
+    sorted_nodes: object = topological_sort(graph)
     state_env: dict[str, str] = {v: v for v in state_vars}
 
     for node in sorted_nodes:

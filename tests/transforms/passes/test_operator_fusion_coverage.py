@@ -163,3 +163,68 @@ def test_operator_fusion_extra_coverage():
     # test _build_pattern with inputs
     strat4 = YamlFusionRule("test4", FusionPatternConfig(pattern=NodePatternConfig(op_type="A", inputs=[NodePatternConfig(op_type="B")]), replacement=ReplacementConfig(op_type="x", inputs=[], capture_to_replace="x")))
     assert strat4.pattern.inputs is not None
+
+
+def test_operator_fusion_coverage_patch():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.config_models import NodePatternConfig
+    from ml_switcheroo_compiler.transforms.passes.operator_fusion import FusionRule, MemoryAwareCostModel, PatternMatchingEngine
+
+    class ReplaceFutureNodeRule(FusionRule):
+        def __init__(self):
+            super().__init__("replace_future", NodePatternConfig(op_type="OpA"))
+
+        def apply(self, g, match):
+            new_node = IRNode(id="n2", op_type="OpB_Fused", inputs=[])
+            return {"n2": new_node}
+
+    g = IRGraph()
+    g.nodes["n1"] = IRNode(id="n1", op_type="OpA", inputs=[])
+    g.nodes["n2"] = IRNode(id="n2", op_type="OpB", inputs=["n1"])
+
+    eng = PatternMatchingEngine([ReplaceFutureNodeRule()])
+    eng.apply_passes(g)
+
+    class ReplaceWithSymbolicShapeRule(FusionRule):
+        def __init__(self):
+            super().__init__("symbolic_shape", NodePatternConfig(op_type="OpC"))
+
+        def apply(self, g, match):
+            new_node = IRNode(id="n4", op_type="OpC_Fused", inputs=[])
+            new_node.shape_metadata = ["batch", 128]
+            return {"n3": new_node}
+
+    g2 = IRGraph()
+    g2.nodes["n3"] = IRNode(id="n3", op_type="OpC", inputs=[])
+
+    eng2 = PatternMatchingEngine([ReplaceWithSymbolicShapeRule()], cost_model=MemoryAwareCostModel({"max_fusion_memory_bytes": 1024}))
+    eng2.apply_passes(g2)
+
+
+def test_operator_fusion_symbolic_shape_coverage():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.config_models import NodePatternConfig
+    from ml_switcheroo_compiler.transforms.passes.operator_fusion import FusionRule, MemoryAwareCostModel, PatternMatchingEngine
+
+    class ReplaceWithSymbolicShapeRule(FusionRule):
+        def __init__(self):
+            super().__init__("symbolic_shape", NodePatternConfig(op_type="OpC"))
+
+        def apply(self, g, match):
+            class FakeNode:
+                def __init__(self):
+                    self.id = "n4"
+                    self.shape_metadata = ["batch", 128]
+                    self.is_dynamic_shape = False
+                    self.attributes = {}
+                    self.inputs = []
+                    self.op_type = "OpC_Fused"
+
+            new_node = FakeNode()
+            return {"n3": new_node}
+
+    g2 = IRGraph()
+    g2.nodes["n3"] = IRNode(id="n3", op_type="OpC", inputs=[])
+
+    eng2 = PatternMatchingEngine([ReplaceWithSymbolicShapeRule()], cost_model=MemoryAwareCostModel({"max_fusion_memory_bytes": 1024}))
+    eng2.apply_passes(g2)

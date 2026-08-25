@@ -230,6 +230,25 @@ def test_jvp_vjp_hvp() -> None:
 
     (val, tan) = jvp(f_aux, (1.0,), (0.5,), has_aux=True)
     assert val == (2.0, {"a": 1})
+
+    # --- Shape and Dtype Inference Tests for AD Backward Passes ---
+    import numpy as np
+    from ml_switcheroo_compiler.grad.jvp_vjp import hvp
+
+    def hvp_test_func(x):
+        return x * x * x
+
+    primal_x = np.array([2.0, 3.0], dtype=np.float32)
+    tangent_v = np.array([1.0, 1.0], dtype=np.float32)
+
+    # HVP of x^3 is d(3x^2)/dx * v = 6x * v
+    val_hvp, out_tan_hvp = hvp(hvp_test_func, primal_x, tangent_v)
+    assert val_hvp.shape == (2,)
+    assert val_hvp.dtype == np.float32
+    assert out_tan_hvp.shape == (2,)
+    assert out_tan_hvp.dtype == np.float32
+    assert np.allclose(out_tan_hvp, [12.0, 18.0])
+    # --------------------------------------------------------------
     assert tan == 1.0
     (val, tan) = jvp(f_aux, (1.0,), ((0.5,),), has_aux=True)
     assert tan == (1.0,)

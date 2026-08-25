@@ -1,6 +1,6 @@
 """Pydantic models for WASM SIMD configuration."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,7 +12,7 @@ class WasmTemplateConfig(BaseModel):
     body: Optional[str] = None
     peel_loop: Optional[str] = None
     global_code: Optional[str] = None
-    model_config = {"extra": "allow"}
+    model_config: object = {"extra": "allow"}
 
 
 class WasmTemplatesConfig(BaseModel):
@@ -22,10 +22,10 @@ class WasmTemplatesConfig(BaseModel):
     js_orchestration: dict[str, str] = {}
     cpp_helpers: list[str] = []
 
-    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+    def model_dump(self, *args: object, **kwargs: object) -> object:
         """Dump the model."""
         """Return dict representation."""
-        res = super().model_dump(*args, **kwargs)
+        res: object = super().model_dump(*args, **kwargs)
         return res
 
 
@@ -43,6 +43,6 @@ class WasmIntrinsicsConfig(BaseModel):
     intrinsics: dict[str, WasmIntrinsicConfig]
     scalars: Optional[dict[str, str]] = None
 
-    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+    def model_dump(self, *args: object, **kwargs: object) -> object:
         """Dump the model."""
         return super().model_dump(*args, **kwargs)

@@ -1,11 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """TensorFlow Target Emission."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @register_backend("tensorflow")
@@ -13,7 +12,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
     """Emit TensorFlow-compatible code from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load.
 
         Args:
@@ -31,7 +30,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
             return pickle.load(f)
 
     @classmethod
-    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -46,7 +45,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez.
 
         Args:
@@ -56,13 +55,13 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         import pickle
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with open(file, "wb") as f:
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed.
 
         Args:
@@ -73,12 +72,12 @@ class TensorFlowCodeGenerator(BaseGenerator):
         import gzip
         import pickle
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Init.
 
         Args:
@@ -87,7 +86,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
-    def _format_zeros_like(self, op: str, kwargs: Any) -> str:
+    def _format_zeros_like(self, op: str, kwargs: object) -> str:
         """Evaluate _format_zeros_like operation.
 
         Args:
@@ -97,12 +96,12 @@ class TensorFlowCodeGenerator(BaseGenerator):
         Returns:
         str: Result.
         """
-        res = f"tf.{op}({{shape}})"
+        res: object = f"tf.{op}({{shape}})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: Any) -> str:
+    def _format_full(self, kwargs: object) -> str:
         """Evaluate _format_full operation.
 
         Args:
@@ -111,12 +110,12 @@ class TensorFlowCodeGenerator(BaseGenerator):
         Returns:
         str: Result.
         """
-        res = "tf.full({shape}, {fill_value})"
+        res: object = "tf.full({shape}, {fill_value})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_transpose(self, kwargs: Any) -> str:
+    def _format_transpose(self, kwargs: object) -> str:
         """Evaluate _format_transpose operation.
 
         Args:
@@ -129,7 +128,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
             return "tf.transpose({0}, perm={axes})"
         return "tf.transpose({0})"
 
-    def visit_RaggedDot(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate visit_RaggedDot operation.
 
         Args:
@@ -142,7 +141,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         return f"tf_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes.
 
         Args:
@@ -153,8 +152,8 @@ class TensorFlowCodeGenerator(BaseGenerator):
         Returns:
             str: The code string.
         """
-        args_str = ", ".join(input_vars)
-        eq = kwargs.get("equation", "")
+        args_str: object = ", ".join(input_vars)
+        eq: object = kwargs.get("equation", "")
         return f"tf.einsum('{eq}', {args_str})"
 
     def generate(self) -> str:
@@ -162,8 +161,8 @@ class TensorFlowCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
+        gen: object = NumpyGenerator(self.graph)
+        base_code: object = gen.generate()
         return transpile_source(base_code, target_framework="tensorflow")
 
     def get_fallback_prefix(self) -> str:
@@ -174,7 +173,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         return "tf.math"
 
-    def _get_creation_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
+    def _get_creation_ops(self, kwargs: dict[str, object]) -> dict[str, str]:
         """Evaluate _get_creation_ops operation.
 
         Args:
@@ -226,5 +225,5 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         self.indent_level = 0
         self.add_line("@tf.function")
-        self.add_line("def apply_model(*args, **kwargs):")
+        self.add_line("def apply_model(*args, **kwargs) -> object:")
         self.indent_level += 1

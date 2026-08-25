@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Generate random operations."""
 import uuid
-from typing import Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -21,11 +20,11 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 def _emit_random_node(
     op_type: str,
-    inputs: list[Tensor],  # type: ignore
+    inputs: list[Tensor],
     shape: tuple[int, ...],
     dtype: dtypes.DType,
-    attributes: dict[str, Any] | None = None,
-) -> Tensor:  # type: ignore
+    attributes: dict[str, object] | None = None,
+) -> Tensor:
     """Evaluate _emit_random_node operation.
 
     Args:
@@ -39,28 +38,28 @@ def _emit_random_node(
         Tensor: Result.
     """
     if config.eager_mode:
-        attrs = dict(attributes) if attributes is not None else {}
+        attrs: object = dict(attributes) if attributes is not None else {}
         if "shape" not in attrs:
             attrs["shape"] = shape
         if "dtype" not in attrs:
             attrs["dtype"] = getattr(dtype, "value", dtype)
-        res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
+        res: object = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
         return Tensor(res, TensorConfig(shape, dtype, config.default_device))
 
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type=op_type,
-        inputs=[inp.data.id for inp in inputs],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[getattr(inp.data, "id", str(id(inp))) for inp in inputs],
         attributes=attributes or {},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=shape, dtype=getattr(dtype, "value", str(dtype)))  # type: ignore
+    proxy: object = ProxyTensor(id=out_id, shape=shape, dtype=getattr(dtype, "value", str(dtype)))
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: Any) -> Any:
+def _dispatch_random_eager(func_name: str, op_name: str, *args: object, **kwargs: object) -> object:
     """Help to dispatch random functions in eager mode.
 
     Args:
@@ -72,11 +71,11 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: A
     Returns:
             tuple[int, ...]: Result.
     """
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)
 
 
-def _dispatch_random(func_name: str, *args: Any, **kwargs: Any) -> Any:
+def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
     """Evaluate _dispatch_random operation.
 
     Args:
@@ -87,11 +86,11 @@ def _dispatch_random(func_name: str, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    op_name = "".join(word.capitalize() for word in func_name.split("_"))
+    op_name: object = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
         return _dispatch_random_eager(func_name, op_name, *args, **kwargs)
 
-    op_cls = get_op(op_name)
+    op_cls: object = get_op(op_name)
     if op_cls:
         return op_cls()(*args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -99,7 +98,7 @@ def _dispatch_random(func_name: str, *args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node(op_name, list(args), kwargs, (), "float32")
 
 
-def rng_uniform(a: Any, b: Any, shape: Any, dtype: Any = None) -> Any:
+def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> object:
     """Generate uniform random values.
 
     Args:
@@ -108,21 +107,21 @@ def rng_uniform(a: Any, b: Any, shape: Any, dtype: Any = None) -> Any:
         shape (object): Shape.
         dtype (object): Data type.
 
-    Returns: Any: Random values.
+    Returns: object: Random values.
     """
     return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)
 
 
-def _get_numpy_rng(*args: Any, **kwargs: Any) -> Any:
+def _get_numpy_rng(*args: object, **kwargs: object) -> object:
     """Get the NumPy RNG instance from the numpy backend.
 
     Args:
         *args (object): Positional arguments.
         **kwargs (object): Keyword arguments.
 
-    Returns: Any: The NumPy RNG instance.
+    Returns: object: The NumPy RNG instance.
     """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    backend_cls = BackendRegistry.get("numpy")
-    return backend_cls.get_numpy_rng(*args, **kwargs)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    backend_cls: object = BackendRegistry.get("numpy")
+    return backend_cls.get_numpy_rng(*args, **kwargs)

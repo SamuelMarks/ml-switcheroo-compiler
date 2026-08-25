@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply pooling reduction operations."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -11,7 +9,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class CTCLoss(OpDef):
     """Connectionist Temporal Classification Loss."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the CTCLoss output.
 
         Args:
@@ -21,9 +19,9 @@ class CTCLoss(OpDef):
         Returns:
             The inferred shape tuple (typically containing the batch size), or an empty tuple if it cannot be determined.
         """
-        log_probs = args[0] if len(args) > 0 else kwargs.get("log_probs")
+        log_probs: object = args[0] if len(args) > 0 else kwargs.get("log_probs")
         if hasattr(log_probs, "shape"):
-            return (log_probs.shape[1],) if len(log_probs.shape) >= MAGIC_VAL_2 else ()  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            return (log_probs.shape[1],) if len(log_probs.shape) >= MAGIC_VAL_2 else ()
         return ()
 
 
@@ -31,7 +29,7 @@ class CTCLoss(OpDef):
 class FractionalMaxPool2D(OpDef):
     """Fractional max pooling 2D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the FractionalMaxPool2D output.
 
         Args:
@@ -41,11 +39,11 @@ class FractionalMaxPool2D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-2], s[-1] = output_size[0], output_size[1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-2], s[-1] = output_size[0], output_size[1]
             return tuple(s)
         return ()
 
@@ -54,7 +52,7 @@ class FractionalMaxPool2D(OpDef):
 class AdaptiveAvgPool2D(OpDef):
     """Adaptive average pooling 2D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the AdaptiveAvgPool2D output.
 
         Args:
@@ -64,11 +62,11 @@ class AdaptiveAvgPool2D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-2], s[-1] = output_size[0], output_size[1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-2], s[-1] = output_size[0], output_size[1]
             return tuple(s)
         return ()
 
@@ -77,7 +75,7 @@ class AdaptiveAvgPool2D(OpDef):
 class AdaptiveMaxPool2D(OpDef):
     """Adaptive max pooling 2D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the AdaptiveMaxPool2D output.
 
         Args:
@@ -87,11 +85,11 @@ class AdaptiveMaxPool2D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-2], s[-1] = output_size[0], output_size[1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-2], s[-1] = output_size[0], output_size[1]
             return tuple(s)
         return ()
 
@@ -100,7 +98,7 @@ class AdaptiveMaxPool2D(OpDef):
 class Unfold(OpDef):
     """Unfold (Im2Col) operator."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the Unfold output.
 
         Args:
@@ -117,7 +115,7 @@ class Unfold(OpDef):
 class Fold(OpDef):
     """Fold (Col2Im) operator."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the Fold output.
 
         Args:
@@ -134,7 +132,7 @@ class Fold(OpDef):
 class FractionalMaxPool3D(OpDef):
     """Fractional max pooling 3D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the FractionalMaxPool3D output.
 
         Args:
@@ -144,11 +142,11 @@ class FractionalMaxPool3D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -157,7 +155,7 @@ class FractionalMaxPool3D(OpDef):
 class AdaptiveAvgPool3D(OpDef):
     """Adaptive average pooling 3D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the AdaptiveAvgPool3D output.
 
         Args:
@@ -167,11 +165,11 @@ class AdaptiveAvgPool3D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -180,7 +178,7 @@ class AdaptiveAvgPool3D(OpDef):
 class AdaptiveMaxPool3D(OpDef):
     """Adaptive max pooling 3D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the AdaptiveMaxPool3D output.
 
         Args:
@@ -190,11 +188,11 @@ class AdaptiveMaxPool3D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -203,7 +201,7 @@ class AdaptiveMaxPool3D(OpDef):
 class MaxUnpool1D(OpDef):
     """Max unpooling 1D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the MaxUnpool1D output.
 
         Args:
@@ -213,11 +211,11 @@ class MaxUnpool1D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimension, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[2] if len(args) > 2 else kwargs.get("output_size")
         if hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-1] = output_size[0]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-1] = output_size[0]
             return tuple(s)
         return ()
 
@@ -226,7 +224,7 @@ class MaxUnpool1D(OpDef):
 class MaxUnpool2D(OpDef):
     """Max unpooling 2D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the MaxUnpool2D output.
 
         Args:
@@ -236,11 +234,11 @@ class MaxUnpool2D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[2] if len(args) > 2 else kwargs.get("output_size")
         if hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-2], s[-1] = output_size[0], output_size[1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-2], s[-1] = output_size[0], output_size[1]
             return tuple(s)
         return ()
 
@@ -249,7 +247,7 @@ class MaxUnpool2D(OpDef):
 class MaxUnpool3D(OpDef):
     """Max unpooling 3D."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the MaxUnpool3D output.
 
         Args:
@@ -259,11 +257,11 @@ class MaxUnpool3D(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[2] if len(args) > 2 else kwargs.get("output_size")
         if hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -272,7 +270,7 @@ class MaxUnpool3D(OpDef):
 class AdaptiveMaxPool3D_Indices(OpDef):
     """Adaptive max pooling 3D indices."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the AdaptiveMaxPool3D indices output.
 
         Args:
@@ -282,11 +280,11 @@ class AdaptiveMaxPool3D_Indices(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -295,7 +293,7 @@ class AdaptiveMaxPool3D_Indices(OpDef):
 class FractionalMaxPool3D_Indices(OpDef):
     """Fractional max pooling 3D indices."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the FractionalMaxPool3D indices output.
 
         Args:
@@ -305,11 +303,11 @@ class FractionalMaxPool3D_Indices(OpDef):
         Returns:
             The inferred shape tuple with updated spatial dimensions, or an empty tuple if it cannot be determined.
         """
-        operand = args[0] if len(args) > 0 else kwargs.get("operand")
-        output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand")
+        output_size: object = args[1] if len(args) > 1 else kwargs.get("output_size")
         if hasattr(operand, "shape") and hasattr(output_size, "__getitem__"):
-            s = list(operand.shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            s: object = list(operand.shape)
+            s[-3], s[-2], s[-1] = output_size[0], output_size[1], output_size[2]
             return tuple(s)
         return ()
 
@@ -318,7 +316,7 @@ class FractionalMaxPool3D_Indices(OpDef):
 class MaxPoolWithIndices(OpDef):
     """Max pooling with indices."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the MaxPoolWithIndices output.
 
         Args:
@@ -335,7 +333,7 @@ class MaxPoolWithIndices(OpDef):
 class MaxPoolWithIndices_Indices(OpDef):
     """Max pooling with indices (indices part)."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the MaxPoolWithIndices indices output.
 
         Args:

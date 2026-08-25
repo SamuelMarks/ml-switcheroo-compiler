@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Vision operations."""
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,7 +14,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def rgb_to_hsv(images: Tensor) -> Any:  # type: ignore
+def rgb_to_hsv(images: Tensor) -> object:
     """Convert one or more images from RGB to HSV.
 
     Args:
@@ -25,14 +24,14 @@ def rgb_to_hsv(images: Tensor) -> Any:  # type: ignore
         Tensor: HSV images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RgbToHsv", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RgbToHsv", images.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("RgbToHsv")()(images, dtype=DType.Int32)
 
 
-def hsv_to_rgb(images: Tensor) -> Any:  # type: ignore
+def hsv_to_rgb(images: Tensor) -> object:
     """Convert one or more images from HSV to RGB.
 
     Args:
@@ -42,14 +41,14 @@ def hsv_to_rgb(images: Tensor) -> Any:  # type: ignore
         Tensor: RGB images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("HsvToRgb", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("HsvToRgb", images.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("HsvToRgb")()(images, dtype=DType.Int32)
 
 
-def adjust_hue(images: Tensor, delta: float) -> Any:  # type: ignore
+def adjust_hue(images: Tensor, delta: float) -> object:
     """Adjust hue of RGB images.
 
     Args:
@@ -60,15 +59,15 @@ def adjust_hue(images: Tensor, delta: float) -> Any:  # type: ignore
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AdjustHue", images.data, delta=delta)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AdjustHue", images.data, delta=delta)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
-    kwargs = {"delta": delta}
+    kwargs: object = {"delta": delta}
     return get_op("AdjustHue")()(images, dtype=DType.Int32, **kwargs)
 
 
-def adjust_saturation(images: Tensor, saturation_factor: float) -> Any:  # type: ignore
+def adjust_saturation(images: Tensor, saturation_factor: float) -> object:
     """Adjust saturation of RGB images.
 
     Args:
@@ -79,13 +78,13 @@ def adjust_saturation(images: Tensor, saturation_factor: float) -> Any:  # type:
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AdjustSaturation", images.data, saturation_factor=saturation_factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AdjustSaturation", images.data, saturation_factor=saturation_factor)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node("AdjustSaturation", [images], {"saturation_factor": saturation_factor}, (), DType.Int32)
 
 
-def adjust_contrast(images: Tensor, contrast_factor: float) -> Any:  # type: ignore
+def adjust_contrast(images: Tensor, contrast_factor: float) -> object:
     """Adjust contrast of RGB or grayscale images.
 
     Args:
@@ -96,13 +95,13 @@ def adjust_contrast(images: Tensor, contrast_factor: float) -> Any:  # type: ign
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AdjustContrast", images.data, contrast_factor=contrast_factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AdjustContrast", images.data, contrast_factor=contrast_factor)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node("AdjustContrast", [images], {"contrast_factor": contrast_factor}, (), DType.Int32)
 
 
-def adjust_brightness(images: Tensor, delta: float) -> Any:  # type: ignore
+def adjust_brightness(images: Tensor, delta: float) -> object:
     """Adjust brightness of images.
 
     Args:
@@ -113,15 +112,15 @@ def adjust_brightness(images: Tensor, delta: float) -> Any:  # type: ignore
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AdjustBrightness", images.data, delta=delta)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AdjustBrightness", images.data, delta=delta)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
-    kwargs = {"delta": delta}
+    kwargs: object = {"delta": delta}
     return get_op("AdjustBrightness")()(images, dtype=DType.Int32, **kwargs)
 
 
-def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> Any:  # type: ignore
+def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> object:
     """Convert RGB images to grayscale.
 
     Args:
@@ -132,8 +131,8 @@ def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> Any:
         Tensor: Grayscale image or batch of grayscale images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RgbToGrayscale", images.data, data_format=data_format)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RgbToGrayscale", images.data, data_format=data_format)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -142,9 +141,9 @@ def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> Any:
 
 
 def random_color_jitter(
-    images: Tensor,  # type: ignore
-    **kwargs: Any,
-) -> Any:
+    images: Tensor,
+    **kwargs: object,
+) -> object:
     """Randomly applies color jitter to images.
 
     Args:
@@ -155,8 +154,8 @@ def random_color_jitter(
         Tensor: Jittered images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RandomColorJitter",
             images.data,
             **kwargs,
@@ -176,7 +175,7 @@ def random_color_jitter(
     )
 
 
-def solarize(images: Tensor, threshold: float = 0.5, value_range: tuple[Any, ...] = (0, 255)) -> Any:  # type: ignore
+def solarize(images: Tensor, threshold: float = 0.5, value_range: tuple[object, ...] = (0, 255)) -> object:
     """Solarize images (invert all pixel values above a threshold).
 
     Args:
@@ -188,18 +187,18 @@ def solarize(images: Tensor, threshold: float = 0.5, value_range: tuple[Any, ...
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Solarize", images.data, threshold=threshold)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Solarize", images.data, threshold=threshold)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"threshold": threshold, "value_range": value_range}
+    kwargs: object = {"threshold": threshold, "value_range": value_range}
     return get_op("Solarize")()(images, **kwargs)
 
 
-def invert(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> Any:  # type: ignore
+def invert(images: Tensor, value_range: tuple[object, ...] = (0, 255)) -> object:
     """Invert image pixels.
 
     Args:
@@ -210,8 +209,8 @@ def invert(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> Any:  # t
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Invert", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Invert", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -220,7 +219,7 @@ def invert(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> Any:  # t
     return get_op("Invert")()(images, value_range=value_range)
 
 
-def posterize(images: Tensor, bits: int) -> Any:  # type: ignore
+def posterize(images: Tensor, bits: int) -> object:
     """Posterize images (reduce the number of bits for each color channel).
 
     Args:
@@ -231,18 +230,18 @@ def posterize(images: Tensor, bits: int) -> Any:  # type: ignore
         Tensor: Posterized images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Posterize", images.data, bits=bits)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Posterize", images.data, bits=bits)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"bits": bits}
+    kwargs: object = {"bits": bits}
     return get_op("Posterize")()(images, **kwargs)
 
 
-def degeneration(images: Tensor, factor: float = 0.0) -> Any:  # type: ignore
+def degeneration(images: Tensor, factor: float = 0.0) -> object:
     """Apply degeneration/noise to images.
 
     Args:
@@ -253,18 +252,18 @@ def degeneration(images: Tensor, factor: float = 0.0) -> Any:  # type: ignore
         Tensor: Degenerated images.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Degeneration", images.data, factor=factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Degeneration", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}
+    kwargs: object = {"factor": factor}
     return get_op("Degeneration")()(images, **kwargs)
 
 
-def augmix(images: Tensor, factor: float = 0.3) -> Any:  # type: ignore
+def augmix(images: Tensor, factor: float = 0.3) -> object:
     """AugMix operation.
 
     Args:
@@ -275,18 +274,18 @@ def augmix(images: Tensor, factor: float = 0.3) -> Any:  # type: ignore
         Tensor.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AugMix", images.data, factor=factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AugMix", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}
+    kwargs: object = {"factor": factor}
     return get_op("AugMix")()(images, **kwargs)
 
 
-def auto_contrast(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> Any:  # type: ignore
+def auto_contrast(images: Tensor, value_range: tuple[object, ...] = (0, 255)) -> object:
     """AutoContrast operation.
 
     Args:
@@ -297,8 +296,8 @@ def auto_contrast(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> An
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("AutoContrast", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("AutoContrast", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -307,7 +306,7 @@ def auto_contrast(images: Tensor, value_range: tuple[Any, ...] = (0, 255)) -> An
     return get_op("AutoContrast")()(images, value_range=value_range)
 
 
-def rand_augment(images: Tensor, factor: float = 0.5) -> Any:  # type: ignore
+def rand_augment(images: Tensor, factor: float = 0.5) -> object:
     """RandAugment operation.
 
     Args:
@@ -318,18 +317,18 @@ def rand_augment(images: Tensor, factor: float = 0.5) -> Any:  # type: ignore
         Tensor.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RandAugment", images.data, factor=factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RandAugment", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}
+    kwargs: object = {"factor": factor}
     return get_op("RandAugment")()(images, **kwargs)
 
 
-def random_erasing(images: Tensor, factor: float = 1.0) -> Any:  # type: ignore
+def random_erasing(images: Tensor, factor: float = 1.0) -> object:
     """RandomErasing operation.
 
     Args:
@@ -340,18 +339,18 @@ def random_erasing(images: Tensor, factor: float = 1.0) -> Any:  # type: ignore
         Tensor.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RandomErasing", images.data, factor=factor)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RandomErasing", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}
+    kwargs: object = {"factor": factor}
     return get_op("RandomErasing")()(images, **kwargs)
 
 
-def equalization(images: Tensor) -> Any:  # type: ignore
+def equalization(images: Tensor) -> object:
     """Equalization operation.
 
     Args:
@@ -361,8 +360,8 @@ def equalization(images: Tensor) -> Any:  # type: ignore
         Tensor.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Equalization", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Equalization", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -371,7 +370,7 @@ def equalization(images: Tensor) -> Any:  # type: ignore
     return get_op("Equalization")()(images)
 
 
-def rgb_to_yiq(images: Tensor) -> Any:  # type: ignore
+def rgb_to_yiq(images: Tensor) -> object:
     """Convert one or more images from RGB to YIQ.
 
     Args:
@@ -381,8 +380,8 @@ def rgb_to_yiq(images: Tensor) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RgbToYiq", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RgbToYiq", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -390,7 +389,7 @@ def rgb_to_yiq(images: Tensor) -> Any:  # type: ignore
     return _emit_shape_node("RgbToYiq", [images], {}, (), images.dtype)
 
 
-def yiq_to_rgb(images: Tensor) -> Any:  # type: ignore
+def yiq_to_rgb(images: Tensor) -> object:
     """Convert one or more images from YIQ to RGB.
 
     Args:
@@ -400,8 +399,8 @@ def yiq_to_rgb(images: Tensor) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("YiqToRgb", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("YiqToRgb", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -409,7 +408,7 @@ def yiq_to_rgb(images: Tensor) -> Any:  # type: ignore
     return _emit_shape_node("YiqToRgb", [images], {}, (), images.dtype)
 
 
-def rgb_to_yuv(images: Tensor) -> Any:  # type: ignore
+def rgb_to_yuv(images: Tensor) -> object:
     """Convert one or more images from RGB to YUV.
 
     Args:
@@ -419,8 +418,8 @@ def rgb_to_yuv(images: Tensor) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("RgbToYuv", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("RgbToYuv", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -428,7 +427,7 @@ def rgb_to_yuv(images: Tensor) -> Any:  # type: ignore
     return _emit_shape_node("RgbToYuv", [images], {}, (), images.dtype)
 
 
-def yuv_to_rgb(images: Tensor) -> Any:  # type: ignore
+def yuv_to_rgb(images: Tensor) -> object:
     """Convert one or more images from YUV to RGB.
 
     Args:
@@ -438,8 +437,8 @@ def yuv_to_rgb(images: Tensor) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("YuvToRgb", images.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("YuvToRgb", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -451,9 +450,9 @@ def yuv_to_rgb(images: Tensor) -> Any:  # type: ignore
 class AdjustBrightness(OpDef):
     """AdjustBrightness operation."""
 
-    op_name = "AdjustBrightness"
+    op_name: object = "AdjustBrightness"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -471,9 +470,9 @@ class AdjustBrightness(OpDef):
 class AdjustContrast(OpDef):
     """AdjustContrast operation."""
 
-    op_name = "AdjustContrast"
+    op_name: object = "AdjustContrast"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -491,9 +490,9 @@ class AdjustContrast(OpDef):
 class AdjustHue(OpDef):
     """AdjustHue operation."""
 
-    op_name = "AdjustHue"
+    op_name: object = "AdjustHue"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -511,9 +510,9 @@ class AdjustHue(OpDef):
 class AdjustSaturation(OpDef):
     """AdjustSaturation operation."""
 
-    op_name = "AdjustSaturation"
+    op_name: object = "AdjustSaturation"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -531,9 +530,9 @@ class AdjustSaturation(OpDef):
 class AugMix(OpDef):
     """AugMix operation."""
 
-    op_name = "AugMix"
+    op_name: object = "AugMix"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -551,9 +550,9 @@ class AugMix(OpDef):
 class AutoContrast(OpDef):
     """AutoContrast operation."""
 
-    op_name = "AutoContrast"
+    op_name: object = "AutoContrast"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -571,9 +570,9 @@ class AutoContrast(OpDef):
 class Equalization(OpDef):
     """Equalization operation."""
 
-    op_name = "Equalization"
+    op_name: object = "Equalization"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -591,9 +590,9 @@ class Equalization(OpDef):
 class Invert(OpDef):
     """Invert operation."""
 
-    op_name = "Invert"
+    op_name: object = "Invert"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -611,9 +610,9 @@ class Invert(OpDef):
 class Posterize(OpDef):
     """Posterize operation."""
 
-    op_name = "Posterize"
+    op_name: object = "Posterize"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -631,9 +630,9 @@ class Posterize(OpDef):
 class RgbToGrayscale(OpDef):
     """RgbToGrayscale operation."""
 
-    op_name = "RgbToGrayscale"
+    op_name: object = "RgbToGrayscale"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -644,9 +643,9 @@ class RgbToGrayscale(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        s = list(getattr(images, "shape", ()))
+        s: object = list(getattr(images, "shape", ()))
         if len(s) > 0:
-            data_format = kwargs.get("data_format", "channels_last")
+            data_format: object = kwargs.get("data_format", "channels_last")
             if data_format == "channels_first":
                 s[-3] = 1
             else:
@@ -658,9 +657,9 @@ class RgbToGrayscale(OpDef):
 class Solarize(OpDef):
     """Solarize operation."""
 
-    op_name = "Solarize"
+    op_name: object = "Solarize"
 
-    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:

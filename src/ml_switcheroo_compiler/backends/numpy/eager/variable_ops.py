@@ -1,13 +1,11 @@
 """Numpy Variable Ops."""
 
-from typing import Any
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Assign")
-def _np_assign(backend_module: Any, x: Any, y: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_assign(backend_module: object, x: object, y: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_assign operation.
 
     Args:
@@ -24,7 +22,7 @@ def _np_assign(backend_module: Any, x: Any, y: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("Cast")
-def _np_cast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_cast(backend_module: object, x: object, dtype: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_cast operation.
 
     Args:
@@ -37,17 +35,17 @@ def _np_cast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: Any)
     Returns:
             tuple[int, ...]: Result.
     """
-    dt = getattr(dtype, "value", dtype)
+    dt: object = getattr(dtype, "value", dtype)
     if isinstance(dt, str):
         if "bfloat" in dt or "float8" in dt:
-            dt = "float32"
+            dt: object = "float32"
         elif "int4" in dt:
-            dt = "int8"
+            dt: object = "int8"
     return backend_module.asarray(x).astype(dt)
 
 
 @numpy_eager_registry.register("Bitcast")
-def _np_bitcast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bitcast(backend_module: object, x: object, dtype: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_bitcast operation.
 
     Args:
@@ -64,7 +62,7 @@ def _np_bitcast(backend_module: Any, x: Any, dtype: Any, *args: Any, **kwargs: A
 
 
 @numpy_eager_registry.register("ReadVariable")
-def _np_read_variable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_read_variable(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_read_variable operation.
 
     Args:
@@ -79,7 +77,7 @@ def _np_read_variable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("AssignVariable")
-def _np_assign_variable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_assign_variable(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_assign_variable operation.
 
     Args:

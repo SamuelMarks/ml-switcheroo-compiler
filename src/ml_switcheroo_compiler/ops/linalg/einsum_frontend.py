@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for einsum_frontend.py."""
@@ -42,9 +40,9 @@ def _get_tensordot_letters(len_a: int, len_b: int) -> tuple[list[str], list[str]
     Returns:
             tuple[int, ...]: Result.
     """
-    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    a_letters = [alphabet[i] for i in range(len_a)]
-    b_letters = [alphabet[i + len_a] for i in range(len_b)]
+    alphabet: object = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    a_letters: object = [alphabet[i] for i in range(len_a)]
+    b_letters: object = [alphabet[i + len_a] for i in range(len_b)]
     return a_letters, b_letters
 
 
@@ -59,8 +57,8 @@ def _get_tensordot_output_string(a_letters: list[str], b_letters: list[str], con
     Returns:
         str: Result.
     """
-    out_a = "".join([let for let in a_letters if let not in contracted])
-    out_b = "".join([let for let in b_letters if let not in contracted])
+    out_a: object = "".join([let for let in a_letters if let not in contracted])
+    out_b: object = "".join([let for let in b_letters if let not in contracted])
     return out_a + out_b
 
 
@@ -81,14 +79,14 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     a_letters, b_letters = _get_tensordot_letters(len(shape_a), len(shape_b))
     for idx_a, idx_b in zip(axes_a, axes_b):
         b_letters[idx_b] = a_letters[idx_a]
-    a_str = "".join(a_letters)
-    b_str = "".join(b_letters)
-    contracted = {a_letters[i] for i in axes_a}
-    out_str = _get_tensordot_output_string(a_letters, b_letters, contracted)
+    a_str: object = "".join(a_letters)
+    b_str: object = "".join(b_letters)
+    contracted: object = {a_letters[i] for i in axes_a}
+    out_str: object = _get_tensordot_output_string(a_letters, b_letters, contracted)
     return a_str, b_str, out_str
 
 
-def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Any:  # type: ignore
+def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> object:
     """Evaluate _tensordot_einsum_routing operation.
 
     Args:
@@ -101,11 +99,11 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     """
     axes_a, axes_b = _validate_tensordot_axes(axes)
     a_str, b_str, out_str = _generate_tensordot_einsum_strings(a.shape, b.shape, axes_a, axes_b)
-    eq = f"{a_str},{b_str}->{out_str}"
+    eq: object = f"{a_str},{b_str}->{out_str}"
     return einsum(eq, a, b)
 
 
-def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> Any:  # type: ignore
+def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> object:
     """Compute the tensor dot product along specified axes.
 
     Args:
@@ -121,13 +119,13 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
-def einsum(equation: str, *operands: Tensor) -> Any:  # type: ignore
+def einsum(equation: str, *operands: Tensor) -> object:
     """Evaluate the Einstein summation convention on the operands.
 
     Args:
@@ -140,16 +138,16 @@ def einsum(equation: str, *operands: Tensor) -> Any:  # type: ignore
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
+        backend: object = get_active_backend()
 
         # Extract raw data from operands if they are Tensors
-        raw_operands = [getattr(op, "data", op) for op in operands]
-        data = backend.execute_op("Einsum", equation, *raw_operands)
+        raw_operands: object = [getattr(op, "data", op) for op in operands]
+        data: object = backend.execute_op("Einsum", equation, *raw_operands)
 
         # Infer dtype and device safely
-        first_op = operands[0]
-        dtype = getattr(first_op, "dtype", getattr(raw_operands[0], "dtype", "float32"))
-        device = getattr(first_op, "device", "cpu")
+        first_op: object = operands[0]
+        dtype: object = getattr(first_op, "dtype", getattr(raw_operands[0], "dtype", "float32"))
+        device: object = getattr(first_op, "device", "cpu")
 
         return Tensor(data, TensorConfig(data.shape, dtype, device))
     return _emit_linalg_node("Einsum", operands, {"equation": equation}, [()], [operands[0].dtype])
@@ -166,8 +164,8 @@ def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Seque
     Returns:
             tuple[int, ...]: Result.
     """
-    contract_set = set(contracting)
-    batch_set = set(batch)
+    contract_set: object = set(contracting)
+    batch_set: object = set(batch)
     return [i for i in range(shape_len) if i not in contract_set and i not in batch_set]
 
 
@@ -189,13 +187,13 @@ def _infer_dot_general_shape(
     contracting, batch = dimension_numbers
     lhs_contracting, rhs_contracting = contracting
     lhs_batch, rhs_batch = batch
-    out_shape = []
+    out_shape: object = []
     for b in lhs_batch:
         out_shape.append(lhs_shape[b])
-    lhs_remaining = _get_remaining_dims(len(lhs_shape), lhs_contracting, lhs_batch)
+    lhs_remaining: object = _get_remaining_dims(len(lhs_shape), lhs_contracting, lhs_batch)
     for r in lhs_remaining:
         out_shape.append(lhs_shape[r])
-    rhs_remaining = _get_remaining_dims(len(rhs_shape), rhs_contracting, rhs_batch)
+    rhs_remaining: object = _get_remaining_dims(len(rhs_shape), rhs_contracting, rhs_batch)
     for r in rhs_remaining:
         out_shape.append(rhs_shape[r])
     return tuple(out_shape)

@@ -93,12 +93,24 @@ operations:
     target_api: _execute_binom_cdf
   BinomPmf:
     target_api: jax.scipy.stats.binom.pmf
+  BroadcastToRank:
+    target_api: jax.numpy.broadcasttorank
   Cast:
     target_api: _execute_cast
+  Collapse:
+    target_api: jax.numpy.collapse
+  ConvTransposeShapeTuple:
+    target_api: jax.numpy.convtransposeshapetuple
   Convolve:
     target_api: jax.scipy.signal.convolve
   Convolve2d:
     target_api: jax.scipy.signal.convolve2d
+  Cumlogsumexp:
+    target_api: jax.numpy.cumlogsumexp
+  Cummax:
+    target_api: jax.numpy.cummax
+  Cummin:
+    target_api: jax.numpy.cummin
   Cumprod:
     custom_code: 'lambda *a, **k: jax.numpy.cumprod(*a, **k)'
     target_api: custom_op
@@ -154,9 +166,13 @@ operations:
   Ifftshift:
     custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ifftshift(args[0], **kwargs)'
     target_api: custom_op
+  IgammaGradA:
+    target_api: jax.numpy.igammagrada
   Ihfft:
     custom_code: 'lambda *args, **kwargs: jax.numpy.fft.ihfft(args[0], **kwargs)'
     target_api: custom_op
+  IndexInDim:
+    target_api: jax.numpy.indexindim
   Irfft:
     custom_code: 'lambda *args, **kwargs: jax.numpy.fft.irfft(args[0], **kwargs)'
     target_api: custom_op
@@ -173,6 +189,8 @@ operations:
     custom_code: 'lambda *args, **kwargs: jax.nn.log_softmax(args[0], axis=kwargs.get(''axis'',
       -1))'
     target_api: custom_op
+  Logcumsumexp:
+    target_api: jax.numpy.logcumsumexp
   MatrixExponential:
     target_api: jax.scipy.linalg.expm
   Mish:
@@ -194,14 +212,38 @@ operations:
     target_api: jax.scipy.linalg.polar
   Polygamma:
     target_api: jax.scipy.special.polygamma
+  RNNCellDeviceWrapper:
+    target_api: jax.numpy.rnncelldevicewrapper
+  RNNCellDropoutWrapper:
+    target_api: jax.numpy.rnncelldropoutwrapper
+  RNNCellResidualWrapper:
+    target_api: jax.numpy.rnncellresidualwrapper
+  RaggedConstant:
+    target_api: jax.numpy.raggedconstant
+  RaggedCrossHashed:
+    target_api: jax.numpy.raggedcrosshashed
+  RaggedRange:
+    target_api: jax.numpy.raggedrange
+  RaggedRowSplitsToSegmentIds:
+    target_api: jax.numpy.raggedrowsplitstosegmentids
+  RaggedSegmentIdsToRowSplits:
+    target_api: jax.numpy.raggedsegmentidstorowsplits
+  RaggedStack:
+    target_api: jax.numpy.raggedstack
+  RaggedStackDynamicPartitions:
+    target_api: jax.numpy.raggedstackdynamicpartitions
   RaggedTensorToDense:
     target_api: _execute_ragged_tensor_to_dense
+  RandomGammaGrad:
+    target_api: jax.numpy.randomgammagrad
   ReduceScatter:
     custom_code: 'lambda tensor, *args, **kwargs: jax.lax.reduce_scatter(tensor, jax.lax.add
       if kwargs.get(''op_type'', ''sum'').lower() == ''sum'' else jax.lax.max, scatter_dimension=kwargs.get(''axis'',
       0), axis_name=kwargs.get(''axis_name'', ''i'')) if hasattr(jax.lax, ''reduce_scatter'')
       else tensor'
     target_api: custom_op
+  Reverse:
+    target_api: jax.numpy.reverse
   Rfft:
     custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfft(args[0], **kwargs)'
     target_api: custom_op
@@ -234,6 +276,50 @@ operations:
     custom_code: 'lambda *args, **kwargs: jax.nn.softmax(args[0], axis=kwargs.get(''axis'',
       -1))'
     target_api: custom_op
+  SparseBincount:
+    target_api: jax.numpy.sparsebincount
+  SparseCrossHashed:
+    target_api: jax.numpy.sparsecrosshashed
+  SparseExpandDims:
+    target_api: jax.numpy.sparseexpanddims
+  SparseEye:
+    target_api: jax.numpy.sparseeye
+  SparseFillEmptyRows:
+    target_api: jax.numpy.sparsefillemptyrows
+  SparseMapValues:
+    target_api: jax.numpy.sparsemapvalues
+  SparseMask:
+    target_api: jax.numpy.sparsemask
+  SparseMaximum:
+    target_api: jax.numpy.sparsemaximum
+  SparseMinimum:
+    target_api: jax.numpy.sparseminimum
+  SparseReduceMax:
+    target_api: jax.numpy.sparsereducemax
+  SparseReduceSum:
+    target_api: jax.numpy.sparsereducesum
+  SparseReorder:
+    target_api: jax.numpy.sparsereorder
+  SparseResetShape:
+    target_api: jax.numpy.sparseresetshape
+  SparseReshape:
+    target_api: jax.numpy.sparsereshape
+  SparseRetain:
+    target_api: jax.numpy.sparseretain
+  SparseSegmentMean:
+    target_api: jax.numpy.sparsesegmentmean
+  SparseSegmentSqrtN:
+    target_api: jax.numpy.sparsesegmentsqrtn
+  SparseSegmentSum:
+    target_api: jax.numpy.sparsesegmentsum
+  SparseSlice:
+    target_api: jax.numpy.sparseslice
+  SparseSoftmax:
+    target_api: jax.numpy.sparsesoftmax
+  SparseToIndicator:
+    target_api: jax.numpy.sparsetoindicator
+  SparseTranspose:
+    target_api: jax.numpy.sparsetranspose
   SpecialGamma:
     target_api: jax.scipy.special.gamma
   Squareplus:

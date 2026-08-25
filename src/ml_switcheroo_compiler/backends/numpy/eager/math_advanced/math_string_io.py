@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -12,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
-def _parse_scanop_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, ...]:
+def _parse_scanop_args(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[object, ...]:
     """Parse ScanOp arguments.
 
     Args:
@@ -22,15 +21,15 @@ def _parse_scanop_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[A
     Returns:
         tuple: Result.
     """
-    fn = args[0] if len(args) > 0 else kwargs.get("fn")
-    elems = args[1] if len(args) > 1 else kwargs.get("elems")
-    acc = args[2] if len(args) > 2 else None
-    has_acc = len(args) > 2
+    fn: object = args[0] if len(args) > 0 else kwargs.get("fn")
+    elems: object = args[1] if len(args) > 1 else kwargs.get("elems")
+    acc: object = args[2] if len(args) > 2 else None
+    has_acc: object = len(args) > 2
     return (fn, elems, acc, has_acc)
 
 
 @numpy_eager_registry.register("SparseDenseMatMul")
-def _np_sparsedensematmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sparsedensematmul(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SparseDenseMatMul.
 
     Args:
@@ -48,7 +47,7 @@ def _np_sparsedensematmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "SparseDenseMatMul"):
-            cls_or_func = _ops.SparseDenseMatMul
+            cls_or_func: object = _ops.SparseDenseMatMul
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
     except Exception as e:
@@ -60,7 +59,7 @@ def _np_sparsedensematmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
 
 
 @numpy_eager_registry.register("SparseMapValues")
-def _np_sparsemapvalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sparsemapvalues(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SparseMapValues.
 
     Args:
@@ -71,13 +70,13 @@ def _np_sparsemapvalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    fn = args[0]
-    sp_input = args[1]
+    fn: object = args[0]
+    sp_input: object = args[1]
     return fn(backend_module.array(sp_input))
 
 
 @numpy_eager_registry.register("SparseReshape")
-def _np_sparsereshape(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sparsereshape(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SparseReshape.
 
     Args:
@@ -92,7 +91,7 @@ def _np_sparsereshape(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("SparseSampledAdd")
-def _np_sparsesampledadd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sparsesampledadd(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SparseSampledAdd.
 
     Args:
@@ -107,7 +106,7 @@ def _np_sparsesampledadd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("SparseTranspose")
-def _np_sparsetranspose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sparsetranspose(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SparseTranspose.
 
     Args:
@@ -122,7 +121,7 @@ def _np_sparsetranspose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("decode_csv")
-def _np_decode_csv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_decode_csv(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_decode_csv operation.
 
     Args:
@@ -137,7 +136,7 @@ def _np_decode_csv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("decode_image")
-def _np_decode_image(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_decode_image(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_decode_image operation.
 
     Args:
@@ -152,7 +151,7 @@ def _np_decode_image(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("parse_example")
-def _np_parse_example(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_parse_example(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_parse_example operation.
 
     Args:
@@ -167,7 +166,7 @@ def _np_parse_example(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("parse_tensor")
-def _np_parse_tensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_parse_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_parse_tensor operation.
 
     Args:
@@ -182,7 +181,7 @@ def _np_parse_tensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("read_file")
-def _np_read_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_read_file(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_read_file operation.
 
     Args:
@@ -197,7 +196,7 @@ def _np_read_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("write_file")
-def _np_write_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_write_file(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_write_file operation.
 
     Args:
@@ -211,7 +210,7 @@ def _np_write_file(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return _np_write_file_camel(backend_module, *args, **kwargs)
 
 
-def _parse_csv_row(row: list[str], record_defaults: list[Any], np: Any) -> list[Any]:
+def _parse_csv_row(row: list[str], record_defaults: list[object], np: object) -> list[object]:
     """Parse a single CSV row, applying defaults on parse error or missing elements.
 
     Args:
@@ -225,10 +224,10 @@ def _parse_csv_row(row: list[str], record_defaults: list[Any], np: Any) -> list[
     Raises:
         RuntimeError: An exception.
     """
-    row_out = []
+    row_out: object = []
     for i, val in enumerate(row):
-        default = record_defaults[i] if i < len(record_defaults) else 0.0
-        dt = np.asarray(default).dtype
+        default: object = record_defaults[i] if i < len(record_defaults) else 0.0
+        dt: object = np.asarray(default).dtype
         try:
             row_out.append(np.array(val, dtype=dt))
         except Exception as e:
@@ -238,7 +237,7 @@ def _parse_csv_row(row: list[str], record_defaults: list[Any], np: Any) -> list[
     return row_out
 
 
-def _get_csv_data(args: tuple[Any, ...], np: Any) -> str:
+def _get_csv_data(args: tuple[object, ...], np: object) -> str:
     """Extract and decode the CSV data string from arguments.
 
     Args:
@@ -250,12 +249,12 @@ def _get_csv_data(args: tuple[Any, ...], np: Any) -> str:
     """
     if not args:
         return ""
-    arg0 = np.asarray(args[0])
-    data = arg0.item() if arg0.ndim == 0 else arg0.flatten()[0]
+    arg0: object = np.asarray(args[0])
+    data: object = arg0.item() if arg0.ndim == 0 else arg0.flatten()[0]
     return data.decode("utf-8") if isinstance(data, bytes) else str(data)
 
 
-def _get_csv_defaults(args: tuple[Any, ...], kwargs: dict[str, Any]) -> list[Any]:
+def _get_csv_defaults(args: tuple[object, ...], kwargs: dict[str, object]) -> list[object]:
     """Extract record defaults from arguments or keyword arguments.
 
     Args:
@@ -265,11 +264,11 @@ def _get_csv_defaults(args: tuple[Any, ...], kwargs: dict[str, Any]) -> list[Any
     Returns:
         A list of record default values.
     """
-    return kwargs.get("record_defaults", args[1] if len(args) > 1 else [])  # type: ignore
+    return kwargs.get("record_defaults", args[1] if len(args) > 1 else [])
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_decode_csv_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_decode_csv_camel operation.
 
     Args:
@@ -290,11 +289,11 @@ def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     if len(args) == 0:
         return [np.array([])]
-    data_str = _get_csv_data(args, np)
-    record_defaults = _get_csv_defaults(args, kwargs)
-    out = []
+    data_str: object = _get_csv_data(args, np)
+    record_defaults: object = _get_csv_defaults(args, kwargs)
+    out: object = []
     try:
-        reader = csv.reader(io.StringIO(data_str))
+        reader: object = csv.reader(io.StringIO(data_str))
         for row in reader:
             out.append(_parse_csv_row(row, record_defaults, np))
     except Exception as e:
@@ -304,7 +303,7 @@ def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return tuple([np.stack([r[i] for r in out]) for i in range(len(record_defaults))])
 
 
-def _load_vision_formats() -> dict[str, Any]:
+def _load_vision_formats() -> dict[str, object]:
     """Load vision formats from YAML.
 
     Returns:
@@ -314,19 +313,19 @@ def _load_vision_formats() -> dict[str, Any]:
 
     import yaml
 
-    yaml_path = os.path.join(os.path.dirname(__file__), "..", "vision_formats.yaml")
+    yaml_path: object = os.path.join(os.path.dirname(__file__), "..", "vision_formats.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             from typing import cast
 
-            return cast(dict[str, Any], yaml.safe_load(f).get("formats", {}))
+            return cast(dict[str, object], yaml.safe_load(f).get("formats", {}))
     return {}
 
 
 @numpy_eager_registry.register("DecodeImage")
 @numpy_eager_registry.register("DecodeJpeg")
 @numpy_eager_registry.register("DecodePng")
-def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_decode_image_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_decode_image_camel operation.
 
     Args:
@@ -347,29 +346,29 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
 
     if len(args) == 0:
         return np.array([])
-    data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
+    data: object = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
 
     try:
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("Expected bytes for image decoding.")
 
-        image = Image.open(io.BytesIO(data))
+        image: object = Image.open(io.BytesIO(data))
 
         # Read channels config if needed, default to RGB
-        channels = kwargs.get("channels", 0)
+        channels: object = kwargs.get("channels", 0)
         if channels == 1:
-            conv_img = image.convert("L")
-            arr = np.array(conv_img, dtype=np.uint8)[..., np.newaxis]
+            conv_img: object = image.convert("L")
+            arr: object = np.array(conv_img, dtype=np.uint8)[..., np.newaxis]
         elif channels == 3:
-            conv_img = image.convert("RGB")
-            arr = np.array(conv_img, dtype=np.uint8)
+            conv_img: object = image.convert("RGB")
+            arr: object = np.array(conv_img, dtype=np.uint8)
         elif channels == 4:
-            conv_img = image.convert("RGBA")
-            arr = np.array(conv_img, dtype=np.uint8)
+            conv_img: object = image.convert("RGBA")
+            arr: object = np.array(conv_img, dtype=np.uint8)
         else:
-            arr = np.array(image, dtype=np.uint8)
+            arr: object = np.array(image, dtype=np.uint8)
             if arr.ndim == 2:
-                arr = arr[..., np.newaxis]
+                arr: object = arr[..., np.newaxis]
 
         return arr
     except Exception as e:
@@ -378,7 +377,7 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
 
 @numpy_eager_registry.register("EncodeJpeg")
 @numpy_eager_registry.register("EncodePng")
-def _np_encode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_encode_image_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate encode operation.
 
     Args:
@@ -400,23 +399,23 @@ def _np_encode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
     if len(args) == 0:
         return np.array(b"")
 
-    arr = np.asarray(args[0])
+    arr: object = np.asarray(args[0])
 
-    formats = _load_vision_formats()
+    formats: object = _load_vision_formats()
 
     # We cheat to get the op name from kwargs or assume JPEG
-    op_name = kwargs.get("op_name", "EncodeJpeg")
-    fmt = formats.get(op_name, {}).get("format", "JPEG")
+    op_name: object = kwargs.get("op_name", "EncodeJpeg")
+    fmt: object = formats.get(op_name, {}).get("format", "JPEG")
 
     try:
         if arr.ndim == 3 and arr.shape[-1] == 1:
-            arr = arr.squeeze(-1)
+            arr: object = arr.squeeze(-1)
 
         if arr.dtype != np.uint8:
-            arr = arr.astype(np.uint8)
+            arr: object = arr.astype(np.uint8)
 
-        image = Image.fromarray(arr)
-        bio = io.BytesIO()
+        image: object = Image.fromarray(arr)
+        bio: object = io.BytesIO()
         image.save(bio, format=fmt)
         return np.array(bio.getvalue())
     except Exception as e:
@@ -424,7 +423,7 @@ def _np_encode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_parse_example_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_parse_example_camel operation.
 
     Args:
@@ -442,15 +441,15 @@ def _np_parse_example_camel(backend_module: Any, *args: Any, **kwargs: Any) -> A
 
     import numpy as np
 
-    features = kwargs.get("features", args[1] if len(args) > 1 else {})
+    features: object = kwargs.get("features", args[1] if len(args) > 1 else {})
     if len(args) == 0:
         return {k: np.zeros(getattr(v, "shape", (1,)), dtype=getattr(v, "dtype", np.float32)) for (k, v) in features.items()}
-    data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
-    out = {}
+    data: object = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
+    out: object = {}
     try:
         if isinstance(data, bytes):
-            data = data.decode("utf-8")
-        parsed = json.loads(data)
+            data: object = data.decode("utf-8")
+        parsed: object = json.loads(data)
         for k, v in features.items():
             if k in parsed:
                 out[k] = np.array(parsed[k], dtype=getattr(v, "dtype", np.float32))
@@ -462,7 +461,7 @@ def _np_parse_example_camel(backend_module: Any, *args: Any, **kwargs: Any) -> A
 
 
 @numpy_eager_registry.register("ParseTensor")
-def _np_parse_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_parse_tensor_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_parse_tensor_camel operation.
 
     Args:
@@ -482,8 +481,8 @@ def _np_parse_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
 
     if len(args) == 0:
         return np.array([])
-    data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
-    dtype = kwargs.get("out_type", np.float32)
+    data: object = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
+    dtype: object = kwargs.get("out_type", np.float32)
     try:
         return np.array(pickle.loads(data), dtype=dtype)
     except Exception as e:
@@ -491,7 +490,7 @@ def _np_parse_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
 
 
 @numpy_eager_registry.register("ReadFile")
-def _np_read_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_read_file_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_read_file_camel operation.
 
     Args:
@@ -509,7 +508,7 @@ def _np_read_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     if len(args) == 0:
         return np.array(b"")
-    filename = str(np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0])
+    filename: object = str(np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0])
     try:
         with open(filename, "rb") as f:
             return np.array(f.read())
@@ -518,7 +517,7 @@ def _np_read_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("WriteFile")
-def _np_write_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_write_file_camel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_write_file_camel operation.
 
     Args:
@@ -536,8 +535,8 @@ def _np_write_file_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     if len(args) < 2:
         return None
-    filename = str(np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0])
-    contents = np.asarray(args[1])
+    filename: object = str(np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0])
+    contents: object = np.asarray(args[1])
     try:
         with open(filename, "wb") as f:
             if contents.ndim == 0 and isinstance(contents.item(), bytes):

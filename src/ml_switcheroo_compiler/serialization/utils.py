@@ -1,10 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Serialization utilities."""
 
-from typing import Any
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-def _extract_numpy_weights(weights: dict[str, Any]) -> dict[str, Any]:
+def _extract_numpy_weights(weights: dict[str, object]) -> dict[str, object]:
     """Extract numpy weights.
 
     Args:
@@ -13,7 +13,7 @@ def _extract_numpy_weights(weights: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict: Result.
     """
-    weights_np = {}
+    weights_np: object = {}
     for k, w in weights.items():
         if hasattr(w, "numpy"):
             weights_np[k] = w.numpy()
@@ -30,7 +30,7 @@ def _extract_numpy_weights(weights: dict[str, Any]) -> dict[str, Any]:
     return weights_np
 
 
-def to_numpy(tensor: Any) -> Any:
+def to_numpy(tensor: object) -> object:
     """Convert tensor to numpy array.
 
     Args:
@@ -50,7 +50,7 @@ def to_numpy(tensor: Any) -> Any:
         return tensor
 
 
-def concatenate_arrays(arrays: list[Any]) -> Any:
+def concatenate_arrays(arrays: list[object]) -> object:
     """Concatenate numpy arrays.
 
     Args:
@@ -64,7 +64,7 @@ def concatenate_arrays(arrays: list[Any]) -> Any:
     return ops.concatenate(arrays, axis=0)
 
 
-def is_numpy_array(array: Any) -> bool:
+def is_numpy_array(array: object) -> bool:
     """Check if array is a numpy array.
 
     Args:
@@ -76,7 +76,7 @@ def is_numpy_array(array: Any) -> bool:
     return type(array).__module__ == "numpy" or hasattr(array, "numpy") or hasattr(array, "__array__")
 
 
-def _dtype_to_descr(dtype: Any) -> str:
+def _dtype_to_descr(dtype: object) -> str:
     """Map DType to numpy descr string.
 
     Args:
@@ -87,7 +87,7 @@ def _dtype_to_descr(dtype: Any) -> str:
     """
     from ml_switcheroo_compiler.core.dtype import DType
 
-    mapping = {
+    mapping: object = {
         DType.Float32: "<f4",
         DType.Float64: "<f8",
         DType.Float16: "<f2",
@@ -110,7 +110,7 @@ def _dtype_to_descr(dtype: Any) -> str:
     return "<f4"
 
 
-def _extract_arr_shape_dtype(arr: Any) -> tuple[Any, ...]:
+def _extract_arr_shape_dtype(arr: object) -> tuple[object, ...]:
     """Extract shape and dtype string from an array object.
 
     Args:
@@ -119,11 +119,11 @@ def _extract_arr_shape_dtype(arr: Any) -> tuple[Any, ...]:
     Returns:
         tuple: (shape, dtype_str)
     """
-    dtype = arr.dtype.name if hasattr(getattr(arr, "dtype", None), "name") else str(getattr(arr, "dtype", "<f4"))
+    dtype: object = arr.dtype.name if hasattr(getattr(arr, "dtype", None), "name") else str(getattr(arr, "dtype", "<f4"))
     return getattr(arr, "shape", ()), dtype
 
 
-def _get_shape_and_dtype(tensor: Any) -> tuple[Any, ...]:
+def _get_shape_and_dtype(tensor: object) -> tuple[object, ...]:
     """Get shape and dtype from a generic tensor object.
 
     Args:
@@ -141,7 +141,7 @@ def _get_shape_and_dtype(tensor: Any) -> tuple[Any, ...]:
     return getattr(tensor, "shape", ()), getattr(tensor, "dtype", "<f4")
 
 
-def _extract_arr_bytes(arr: Any) -> bytes:
+def _extract_arr_bytes(arr: object) -> bytes:
     """Extract raw bytes from an array object.
 
     Args:
@@ -151,13 +151,13 @@ def _extract_arr_bytes(arr: Any) -> bytes:
         bytes: The raw data bytes.
     """
     if hasattr(arr, "tobytes"):
-        return arr.tobytes()  # type: ignore
+        return arr.tobytes()
     if hasattr(arr, "data") and hasattr(arr.data, "tobytes"):
-        return arr.data.tobytes()  # type: ignore
+        return arr.data.tobytes()
     return b""
 
 
-def _get_data_bytes(tensor: Any) -> bytes:
+def _get_data_bytes(tensor: object) -> bytes:
     """Get raw data bytes from a generic tensor object.
 
     Args:
@@ -169,13 +169,13 @@ def _get_data_bytes(tensor: Any) -> bytes:
     if hasattr(tensor, "eval"):
         return _extract_arr_bytes(tensor.eval())
     if hasattr(tensor, "numpy"):
-        return tensor.numpy().tobytes()  # type: ignore
+        return tensor.numpy().tobytes()
     if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
-        return tensor.data.numpy().tobytes()  # type: ignore
+        return tensor.data.numpy().tobytes()
     return b""
 
 
-def _tensor_to_npy_bytes(tensor: Any) -> bytes:
+def _tensor_to_npy_bytes(tensor: object) -> bytes:
     """Convert a tensor to npy bytes.
 
     Args:
@@ -187,21 +187,21 @@ def _tensor_to_npy_bytes(tensor: Any) -> bytes:
     import struct
 
     shape, dtype = _get_shape_and_dtype(tensor)
-    data_bytes = _get_data_bytes(tensor)
-    dtype_str = _dtype_to_descr(dtype)
+    data_bytes: object = _get_data_bytes(tensor)
+    dtype_str: object = _dtype_to_descr(dtype)
 
-    magic = b"\x93NUMPY"
+    magic: object = b"\x93NUMPY"
     major, minor = 1, 0
-    shape_str = f"({shape[0]},)" if len(shape) == 1 else str(shape)
+    shape_str: object = f"({shape[0]},)" if len(shape) == 1 else str(shape)
 
-    dict_str = "{'descr': '" + dtype_str + "', 'fortran_order': False, 'shape': " + shape_str + "}, "
+    dict_str: object = "{'descr': '" + dtype_str + "', 'fortran_order': False, 'shape': " + shape_str + "}, "
     dict_str += " " * (16 - (len(dict_str) + 10) % 16) + "\n"
 
-    header = magic + struct.pack("<BBH", major, minor, len(dict_str)) + dict_str.encode("ascii")
+    header: object = magic + struct.pack("<BBH", major, minor, len(dict_str)) + dict_str.encode("ascii")
     return header + data_bytes
 
 
-def get_npz_bytes(weights: dict[str, Any]) -> bytes:
+def get_npz_bytes(weights: dict[str, object]) -> bytes:
     """Get npz bytes.
 
     Args:
@@ -215,19 +215,19 @@ def get_npz_bytes(weights: dict[str, Any]) -> bytes:
 
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     if hasattr(backend, "get_npz_bytes"):
-        return backend.get_npz_bytes(weights)  # type: ignore
+        return backend.get_npz_bytes(weights)
 
-    buf = io.BytesIO()
+    buf: object = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_STORED) as zf:
         for k, v in weights.items():
-            name = k if k.endswith(".npy") else f"{k}.npy"
+            name: object = k if k.endswith(".npy") else f"{k}.npy"
             zf.writestr(name, _tensor_to_npy_bytes(v))
     return buf.getvalue()
 
 
-def parse_npz(file_obj: Any) -> dict[str, Any]:
+def parse_npz(file_obj: object) -> dict[str, object]:
     """Parse npz file.
 
     Args:
@@ -239,14 +239,14 @@ def parse_npz(file_obj: Any) -> dict[str, Any]:
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     try:
-        backend_cls = BackendRegistry.get("numpy")
-        with backend_cls.load(file_obj) as data:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        backend_cls: object = BackendRegistry.get("numpy")
+        with backend_cls.load(file_obj) as data:
             return {k: data[k] for k in getattr(data, "files", [])}
     except Exception:
         return {}
 
 
-def load_npz(file_obj: Any) -> list[Any]:
+def load_npz(file_obj: object) -> list[object]:
     """Load weights from a .npz file object.
 
     Args:
@@ -257,22 +257,22 @@ def load_npz(file_obj: Any) -> list[Any]:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     if hasattr(backend, "load_npz"):
         try:
-            return backend.load_npz(file_obj)  # type: ignore
+            return backend.load_npz(file_obj)
         except Exception as e:
             import logging
 
             logging.getLogger(__name__).warning(f"Backend load_npz failed: {e}. Falling back.")
 
-    parsed = parse_npz(file_obj)
+    parsed: object = parse_npz(file_obj)
     # the original load_npz returned a list of weights (assuming ordered arrays or dict?)
-    # Wait, the signature says -> list[Any]. Let's return list of values
+    # Wait, the signature says -> list[object]. Let's return list of values
     return list(parsed.values())
 
 
-def save_ir_graph(graph: Any, filepath: str) -> None:
+def save_ir_graph(graph: IRGraph, filepath: str) -> None:
     """Save an IR graph configuration to a file reliably.
 
     Args:
@@ -285,7 +285,7 @@ def save_ir_graph(graph: Any, filepath: str) -> None:
         f.write(graph_to_json(graph))
 
 
-def load_ir_graph(filepath: str) -> Any:
+def load_ir_graph(filepath: str) -> object:
     """Load an IR graph configuration from a file reliably.
 
     Args:

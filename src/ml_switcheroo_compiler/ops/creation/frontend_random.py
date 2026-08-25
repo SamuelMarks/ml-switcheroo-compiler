@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Any
 
 """Constants & Creation Operations."""
 
@@ -23,7 +22,7 @@ def rand(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Any:
+) -> object:
     """Return a tensor filled with random numbers from a uniform distribution.
 
     Args:
@@ -34,12 +33,12 @@ def rand(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype = dtype or config.default_float_dtype
-    device = device or config.default_device
-    shape = tuple(size)
+    dtype: object = dtype or config.default_float_dtype
+    device: object = device or config.default_device
+    shape: object = tuple(size)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Rand", *shape)
+        data: object = get_active_backend().execute_op("Rand", *shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Rand", shape, dtype)
 
@@ -48,7 +47,7 @@ def randn(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Any:
+) -> object:
     """Return a tensor filled with random numbers from a standard normal distribution.
 
     Args:
@@ -59,12 +58,12 @@ def randn(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype = dtype or config.default_float_dtype
-    device = device or config.default_device
-    shape = tuple(size)
+    dtype: object = dtype or config.default_float_dtype
+    device: object = device or config.default_device
+    shape: object = tuple(size)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Randn", *shape)
+        data: object = get_active_backend().execute_op("Randn", *shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randn", shape, dtype)
 
@@ -75,7 +74,7 @@ def randint(
     size: Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Any:
+) -> object:
     """Return a tensor filled with random integers from [low, high).
 
     Args:
@@ -88,12 +87,12 @@ def randint(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype = dtype or config.default_int_dtype
-    device = device or config.default_device
-    shape = tuple(size)
+    dtype: object = dtype or config.default_int_dtype
+    device: object = device or config.default_device
+    shape: object = tuple(size)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Randint", low, high, size=shape)
+        data: object = get_active_backend().execute_op("Randint", low, high, size=shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randint", shape, dtype, {"low": low, "high": high})
 

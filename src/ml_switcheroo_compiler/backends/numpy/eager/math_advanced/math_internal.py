@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -15,7 +14,7 @@ from .math_string_io import _parse_scanop_args
 
 
 @numpy_eager_registry.register("PopulationCount")
-def _np_population_count(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_population_count(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
     """Count the number of set bits in the binary representation of each element.
 
     Args:
@@ -24,14 +23,14 @@ def _np_population_count(backend_module: Any, x: Any, *args: Any, **kwargs: Any)
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
-    x_arr = np.asarray(x)
+    x_arr: object = np.asarray(x)
     return np.array([bin(n).count("1") for n in x_arr.flat]).reshape(x_arr.shape)
 
 
 @numpy_eager_registry.register("GetPrintoptions")
-def _np_get_printoptions_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_get_printoptions_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement GetPrintoptions via get_printoptions.
 
     Args:
@@ -39,13 +38,13 @@ def _np_get_printoptions_(backend_module: Any, *args: Any, **kwargs: Any) -> Any
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.get_printoptions(*args, **kwargs)
 
 
 @numpy_eager_registry.register("AffineConfig")
-def _np_affineconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_affineconfig(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement AffineConfig.
 
     Args:
@@ -60,7 +59,7 @@ def _np_affineconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("BlurConfig")
-def _np_blurconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_blurconfig(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement BlurConfig.
 
     Args:
@@ -77,7 +76,7 @@ def _np_blurconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("CustomRoot")
-def _np_customroot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_customroot(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement CustomRoot.
 
     Args:
@@ -88,16 +87,16 @@ def _np_customroot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    f = args[0]
-    initial_guess = args[1]
-    solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
+    f: object = args[0]
+    initial_guess: object = args[1]
+    solve: object = kwargs.get("solve", args[2] if len(args) > 2 else None)
     if solve:
         return solve(f, initial_guess)
     return initial_guess
 
 
 @numpy_eager_registry.register("ElasticConfig")
-def _np_elasticconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_elasticconfig(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ElasticConfig.
 
     Args:
@@ -114,7 +113,7 @@ def _np_elasticconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("LinearOperator")
-def _np_linearoperator(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperator(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperator.
 
     Args:
@@ -131,7 +130,7 @@ def _np_linearoperator(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("LinearOperatorAdjoint")
-def _np_linearoperatoradjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatoradjoint(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorAdjoint.
 
     Args:
@@ -148,7 +147,7 @@ def _np_linearoperatoradjoint(backend_module: Any, *args: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant")
-def _np_linearoperatorcirculant(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorcirculant(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorCirculant.
 
     Args:
@@ -165,7 +164,7 @@ def _np_linearoperatorcirculant(backend_module: Any, *args: Any, **kwargs: Any) 
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant2D")
-def _np_linearoperatorcirculant2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorcirculant2d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorCirculant2D.
 
     Args:
@@ -182,7 +181,7 @@ def _np_linearoperatorcirculant2d(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("LinearOperatorCirculant3D")
-def _np_linearoperatorcirculant3d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorcirculant3d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorCirculant3D.
 
     Args:
@@ -199,7 +198,7 @@ def _np_linearoperatorcirculant3d(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("LinearOperatorComposition")
-def _np_linearoperatorcomposition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorcomposition(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorComposition.
 
     Args:
@@ -216,7 +215,7 @@ def _np_linearoperatorcomposition(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("LinearOperatorHouseholder")
-def _np_linearoperatorhouseholder(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorhouseholder(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorHouseholder.
 
     Args:
@@ -233,7 +232,7 @@ def _np_linearoperatorhouseholder(backend_module: Any, *args: Any, **kwargs: Any
 
 
 @numpy_eager_registry.register("LinearOperatorKronecker")
-def _np_linearoperatorkronecker(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorkronecker(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorKronecker.
 
     Args:
@@ -250,7 +249,7 @@ def _np_linearoperatorkronecker(backend_module: Any, *args: Any, **kwargs: Any) 
 
 
 @numpy_eager_registry.register("LinearOperatorLowRankUpdate")
-def _np_linearoperatorlowrankupdate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatorlowrankupdate(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorLowRankUpdate.
 
     Args:
@@ -267,7 +266,7 @@ def _np_linearoperatorlowrankupdate(backend_module: Any, *args: Any, **kwargs: A
 
 
 @numpy_eager_registry.register("LinearOperatorToeplitz")
-def _np_linearoperatortoeplitz(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_linearoperatortoeplitz(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement LinearOperatorToeplitz.
 
     Args:
@@ -284,7 +283,7 @@ def _np_linearoperatortoeplitz(backend_module: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("PerspectiveConfig")
-def _np_perspectiveconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_perspectiveconfig(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement PerspectiveConfig.
 
     Args:
@@ -301,7 +300,7 @@ def _np_perspectiveconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any
 
 
 @numpy_eager_registry.register("RawMatMul")
-def _np_rawmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rawmatmul(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement RawMatMul.
 
     Args:
@@ -319,7 +318,7 @@ def _np_rawmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "RawMatMul"):
-            cls_or_func = _ops.RawMatMul
+            cls_or_func: object = _ops.RawMatMul
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
     except Exception as e:
@@ -331,7 +330,7 @@ def _np_rawmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("RawMerge")
-def _np_rawmerge(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rawmerge(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement RawMerge.
 
     Args:
@@ -342,12 +341,12 @@ def _np_rawmerge(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    inputs = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else args
+    inputs: object = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else args
     return (inputs[0], np.array(0, dtype=np.int32)) if inputs else (None, np.array(-1, dtype=np.int32))
 
 
 @numpy_eager_registry.register("RawOp")
-def _np_rawop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rawop(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement RawOp.
 
     Args:
@@ -362,7 +361,7 @@ def _np_rawop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("RawSwitch")
-def _np_rawswitch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rawswitch(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement RawSwitch.
 
     Args:
@@ -373,15 +372,15 @@ def _np_rawswitch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    data = args[0]
-    pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
+    data: object = args[0]
+    pred: object = args[1] if len(args) > 1 else kwargs.get("pred", False)
     if bool(np.asarray(pred).item()):
         return (None, data)
     return (data, None)
 
 
 @numpy_eager_registry.register("ScanOp")
-def _np_scanop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_scanop(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ScanOp.
 
     Args:
@@ -395,22 +394,22 @@ def _np_scanop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     (fn, elems, acc, has_acc) = _parse_scanop_args(args, kwargs)
     if not callable(fn) or elems is None:
         return args[0] if args else None
-    elems_arr = np.asarray(elems)
+    elems_arr: object = np.asarray(elems)
     if elems_arr.size == 0:
         return elems_arr
-    out = np.empty_like(elems_arr)
+    out: object = np.empty_like(elems_arr)
     if not has_acc:
-        acc = elems_arr[0]
+        acc: object = elems_arr[0]
         out[0] = acc
-    start_idx = 0 if has_acc else 1
+    start_idx: object = 0 if has_acc else 1
     for i in range(start_idx, elems_arr.shape[0]):
-        acc = fn(acc, elems_arr[i])
+        acc: object = fn(acc, elems_arr[i])
         out[i] = acc
     return out
 
 
 @numpy_eager_registry.register("SwitchOp")
-def _np_switchop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_switchop(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement SwitchOp.
 
     Args:
@@ -421,15 +420,15 @@ def _np_switchop(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    data = args[0]
-    pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
+    data: object = args[0]
+    pred: object = args[1] if len(args) > 1 else kwargs.get("pred", False)
     if bool(np.asarray(pred).item()):
         return (None, data)
     return (data, None)
 
 
 @numpy_eager_registry.register("TensorArrayRead")
-def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarrayread(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement TensorArrayRead.
 
     Args:
@@ -440,13 +439,13 @@ def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    handle = args[0]
-    index = args[1]
+    handle: object = args[0]
+    index: object = args[1]
     return handle[index]
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
-def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarraywrite(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement TensorArrayWrite.
 
     Args:
@@ -457,10 +456,10 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    handle = args[0]
-    index = args[1]
-    value = args[2]
-    new_handle = list(handle)
+    handle: object = args[0]
+    index: object = args[1]
+    value: object = args[2]
+    new_handle: object = list(handle)
     if index >= len(new_handle):
         new_handle.extend([None] * (index - len(new_handle) + 1))
     new_handle[index] = value
@@ -468,7 +467,7 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("TensorConfig")
-def _np_tensorconfig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorconfig(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement TensorConfig.
 
     Args:

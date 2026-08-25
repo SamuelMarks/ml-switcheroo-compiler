@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Misc operations."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Infeed(OpDef):
     """Read from the infeed queue."""
 
-    op_name = "Infeed"
+    op_name: object = "Infeed"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -29,9 +27,9 @@ class Infeed(OpDef):
 class Vectorize(OpDef):
     """Generalized function class."""
 
-    op_name = "Vectorize"
+    op_name: object = "Vectorize"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -48,9 +46,9 @@ class Vectorize(OpDef):
 class AxisIndex(OpDef):
     """AxisIndex operation."""
 
-    op_name = "AxisIndex"
+    op_name: object = "AxisIndex"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -65,7 +63,7 @@ class AxisIndex(OpDef):
         return getattr(args[0], "shape", ())
 
 
-def infeed(*args: Any, **kwargs: Any) -> Any:
+def infeed(*args: object, **kwargs: object) -> object:
     """Read from the infeed queue.
 
     Args:
@@ -80,7 +78,7 @@ def infeed(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("Infeed", *args, **kwargs)
 
 
-def vectorize(*args: Any, **kwargs: Any) -> Any:
+def vectorize(*args: object, **kwargs: object) -> object:
     """Vectorize a python function.
 
     Args:

@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def read_file(filename: str | Tensor, name: Any = None) -> Any:  # type: ignore
+def read_file(filename: str | Tensor, name: object = None) -> object:
     """Read file.
 
     Args:
@@ -38,7 +37,7 @@ def read_file(filename: str | Tensor, name: Any = None) -> Any:  # type: ignore
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> None:  # type: ignore
+def write_file(filename: str | Tensor, contents: Tensor, name: object = None) -> None:
     """Write file.
 
     Args:
@@ -54,10 +53,10 @@ def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> No
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)  # type: ignore
+        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")  # type: ignore
+    return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")
 
 
 def gfile_copy(src: str, dst: str, overwrite: bool = False) -> None:
@@ -97,7 +96,7 @@ def gfile_stat(path: str) -> dict[str, int]:
     Returns:
             tuple[int, ...]: Result.
     """
-    st = os.stat(path)
+    st: object = os.stat(path)
     return {"length": st.st_size, "mtime": int(st.st_mtime)}
 
 
@@ -114,9 +113,9 @@ def gfile_makedirs(path: str) -> None:
 class ReadFile(OpDef):
     """ReadFile operation."""
 
-    op_name = "ReadFile"
+    op_name: object = "ReadFile"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -128,12 +127,12 @@ class ReadFile(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -141,9 +140,9 @@ class ReadFile(OpDef):
 class WriteFile(OpDef):
     """WriteFile operation."""
 
-    op_name = "WriteFile"
+    op_name: object = "WriteFile"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -155,10 +154,10 @@ class WriteFile(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res

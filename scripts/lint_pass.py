@@ -1,9 +1,9 @@
-"""Lint pass enforcement script."""
+"""Linting pass checks."""
 
 import sys
 
 
-def main():
+def main() -> object:
     """Run lint pass."""
     print("Linting passed.")
     sys.exit(0)

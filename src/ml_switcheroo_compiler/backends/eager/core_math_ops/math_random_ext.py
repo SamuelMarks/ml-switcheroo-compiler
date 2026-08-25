@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Pshuffle")
-def _pshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _pshuffle operation.
 
     Args:
@@ -26,7 +24,7 @@ def _pshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Gumbel")
-def _np_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_gumbel(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_gumbel operation.
 
     Args:
@@ -37,7 +35,7 @@ def _np_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
+    func: object = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -46,7 +44,7 @@ def _np_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("RngUniform")
-def _np_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rnguniform(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_rnguniform operation.
 
     Args:
@@ -57,7 +55,7 @@ def _np_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
+    func: object = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -66,7 +64,7 @@ def _np_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Wald")
-def _np_wald(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_wald(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_wald operation.
 
     Args:
@@ -77,7 +75,7 @@ def _np_wald(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
+    func: object = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

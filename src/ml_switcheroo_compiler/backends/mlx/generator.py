@@ -73,7 +73,8 @@ _MLX_MFCC_TMPL = """def mlx_mfcc(spectrogram, config):
     dct_mat[0, :] = dct_mat[0, :] * 0.7071067811865476
     return mx.matmul(log_mel, dct_mat.T)
 """
-from typing import Any
+
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 _MLX_POWER_ITERATION_TMPL = """def mlx_power_iteration(w, num_iters, u=None):
     import mlx.core as mx
@@ -101,7 +102,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     _base_class_name: str = "nn.Module"
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Init.
 
         Args:
@@ -119,7 +120,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         )
 
     @classmethod
-    def save_gguf(cls, file: str, arrays: dict[str, Any]) -> None:
+    def save_gguf(cls, file: str, arrays: dict[str, object]) -> None:
         """Save a dictionary of arrays to GGUF format.
 
         Args:
@@ -129,10 +130,10 @@ class MLXCodeGenerator(ClassBasedGenerator):
         import mlx.core as mx
 
         if hasattr(mx, "save_gguf"):
-            mx.save_gguf(file, arrays)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            mx.save_gguf(file, arrays)
 
     @classmethod
-    def set_default_stream(cls, stream: Any) -> None:
+    def set_default_stream(cls, stream: object) -> None:
         """Set the default stream.
 
         Args:
@@ -172,8 +173,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
+        gen: object = NumpyGenerator(self.graph)
+        base_code: object = gen.generate()
         return transpile_source(base_code, target_framework="mlx")
 
     def get_fallback_prefix(self) -> str:
@@ -201,7 +202,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         Returns:
             list: The evaluated or processed output.
         """
-        res = [
+        res: object = [
             "import mlx.core as mx",
             "import mlx.nn as nn\n",
             *_MLX_RESIZE_TMPL.split("\n"),
@@ -214,7 +215,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return res
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load.
 
         Args:
@@ -232,7 +233,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         return mx.load(filepath)
 
     @classmethod
-    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -246,7 +247,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         mx.save(file, arr)
 
     @classmethod
-    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez.
 
         Args:
@@ -256,12 +257,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         mx.save_safetensors(file, data)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
+    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed.
 
         Args:
@@ -271,7 +272,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
         mx.save_safetensors(file, data)

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixins for code generators."""
 
-from typing import Any
-
 
 class GeneratorLifecycleMixin:
     """Provide mixin for the generation lifecycle."""
@@ -25,7 +23,7 @@ class GeneratorLifecycleMixin:
         Returns:
             list[str]: The header lines.
         """
-        return [self.header.strip()]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Resolve and register required imports.
@@ -38,7 +36,7 @@ class GeneratorLifecycleMixin:
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
         self.indent_level = 0
-        self.add_line("def apply_model(params, *args, **kwargs):")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level += 1
 
     def _traverse_ir_graph(self) -> None:
@@ -61,7 +59,7 @@ class GeneratorLifecycleMixin:
         """
         from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
 
-        walker = IRGraphWalker(self)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        walker: object = IRGraphWalker(self)
         walker.walk(input_prefix)
 
 
@@ -69,7 +67,7 @@ class EagerExecutionMixin:
     """Provide mixin for eager execution classmethods."""
 
     @classmethod
-    def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
+    def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
         """Execute an operation eagerly.
 
         Args:
@@ -77,12 +75,12 @@ class EagerExecutionMixin:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: The eager evaluation result.
+        Returns: object: The eager evaluation result.
         """
         return None
 
     @classmethod
-    def zeros(cls: type, shape: tuple[int, ...]) -> Any:
+    def zeros(cls: type, shape: tuple[int, ...]) -> object:
         """Evaluate zeros operation.
 
         Args:
@@ -98,7 +96,7 @@ class EagerExecutionMixin:
         return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else numpy, shape)
 
     @classmethod
-    def array(cls: type, data: Any, dtype: Any = None) -> Any:
+    def array(cls: type, data: object, dtype: object = None) -> object:
         """Evaluate array operation.
 
         Args:
@@ -115,7 +113,7 @@ class EagerExecutionMixin:
         return generic_array(cls.get_module() if hasattr(cls, "get_module") else numpy, data, dtype)
 
     @classmethod
-    def asarray(cls: type, data: Any) -> Any:
+    def asarray(cls: type, data: object) -> object:
         """Evaluate asarray operation.
 
         Args:
@@ -131,7 +129,7 @@ class EagerExecutionMixin:
         return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
 
     @classmethod
-    def item(cls: type, data: Any) -> float:
+    def item(cls: type, data: object) -> float:
         """Evaluate item operation.
 
         Args:
@@ -144,4 +142,4 @@ class EagerExecutionMixin:
 
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
 
-        return generic_item(cls.get_module() if hasattr(cls, "get_module") else numpy, data)  # type: ignore
+        return generic_item(cls.get_module() if hasattr(cls, "get_module") else numpy, data)

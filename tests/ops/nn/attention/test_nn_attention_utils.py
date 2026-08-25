@@ -4,7 +4,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, ScaledDotProductAttention, alibi_mask, rope, sinusoidal_positional_encoding
+from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
+from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
@@ -13,7 +14,7 @@ def test_nn_attention_utils_coverage():
     t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
 
     assert RopeOp().infer_shape(t) == (1, 1, 2)
-    assert ScaledDotProductAttention().infer_shape(t, t, t) == (1, 1, 2)
+    assert ScaledDotProductAttention().infer_shape(t, t, t, None) == (1, 1, 2)
 
     assert rope(t, axis=2) is not None
 

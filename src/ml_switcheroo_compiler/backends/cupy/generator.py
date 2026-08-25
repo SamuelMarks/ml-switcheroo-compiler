@@ -3,6 +3,8 @@
 
 from typing import Any
 
+from ml_switcheroo_compiler.ir.core import IRGraph
+
 try:
     import cupy as cp
 except ImportError:
@@ -18,11 +20,11 @@ from ml_switcheroo_compiler.ir.core import IRNode
 class CupyGenerator(PythonStringGenerator):
     """Generate CuPy python code from IR."""
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Init.
 
         Args:
-            graph (object): The graph parameter.
+            graph (IRGraph): The graph parameter.
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
@@ -39,9 +41,9 @@ class CupyGenerator(PythonStringGenerator):
         """Get helper functions.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
-        res = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        res: list[str] = []
         return res
 
     _import_header = "import cupy as cp"

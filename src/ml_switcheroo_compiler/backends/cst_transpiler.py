@@ -2,7 +2,7 @@
 """Module cst_transpiler.py."""
 
 import os
-from typing import Any
+from typing import Any, cast
 
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
 
@@ -42,8 +42,6 @@ class CSTTransformer(cst.CSTTransformer):
     def __init__(self, target_framework: str = "jax") -> None:
         """Initialize the CSTTransformer.
 
-        target_framework (str): The target framework to transpile to
-
         Args:
             target_framework (str): The target_framework parameter.
         """
@@ -68,6 +66,7 @@ class CSTTransformer(cst.CSTTransformer):
         if not updated_node.module or not self.target_config:
             return updated_node
 
+        src_module: str = ""
         if isinstance(updated_node.module, cst.Name):
             src_module = updated_node.module.value
         elif isinstance(updated_node.module, cst.Attribute):
@@ -85,9 +84,9 @@ class CSTTransformer(cst.CSTTransformer):
             return updated_node
 
         if src_module in KNOWN_SOURCE_FRAMEWORKS:
-            target_module = self.target_config.target_module
+            target_module: str = self.target_config.target_module
             if target_module != src_module:
-                target_parts = target_module.split(".")
+                target_parts: list[str] = target_module.split(".")
                 return updated_node.with_changes(module=_build_attribute_chain(target_parts))
 
         return updated_node
@@ -109,14 +108,14 @@ class CSTTransformer(cst.CSTTransformer):
         if not self.target_config:
             return updated_node
 
-        new_names = []
-        mutated = False
-        target_module = self.target_config.target_module
+        new_names: list[cst.ImportAlias] = []
+        mutated: bool = False
+        target_module: str = self.target_config.target_module
         for alias in updated_node.names:
             if isinstance(alias.name, cst.Name) and alias.name.value in KNOWN_SOURCE_FRAMEWORKS:
                 if alias.name.value != target_module:
-                    target_parts = target_module.split(".")
-                    new_alias = alias.with_changes(name=_build_attribute_chain(target_parts))
+                    target_parts: list[str] = target_module.split(".")
+                    new_alias: cst.ImportAlias = alias.with_changes(name=cast(cst.Name, _build_attribute_chain(target_parts)))
                     new_names.append(new_alias)
                     mutated = True
                 else:
@@ -145,13 +144,13 @@ class CSTTransformer(cst.CSTTransformer):
         if not self.target_config:
             return updated_node
 
-        new_args = []
-        mutated_args = False
-        kw_map = self.target_config.kwarg_map
+        new_args: list[cst.Arg] = []
+        mutated_args: bool = False
+        kw_map: dict[str, str] = self.target_config.kwarg_map
         if kw_map:
             for arg in updated_node.args:
                 if arg.keyword and arg.keyword.value in kw_map:
-                    new_kw = arg.keyword.with_changes(value=kw_map[arg.keyword.value])
+                    new_kw: cst.Name = arg.keyword.with_changes(value=kw_map[arg.keyword.value])
                     new_args.append(arg.with_changes(keyword=new_kw))
                     mutated_args = True
                 else:
@@ -159,20 +158,20 @@ class CSTTransformer(cst.CSTTransformer):
         else:
             new_args = list(updated_node.args)
 
-        final_node = updated_node
+        final_node: cst.Call = updated_node
         if mutated_args:
             final_node = final_node.with_changes(args=new_args)
 
         if not isinstance(final_node.func, cst.Attribute):
             return final_node
 
-        func_attr_value = final_node.func.attr.value
+        func_attr_value: str = final_node.func.attr.value
 
         # Handle explicit broadcast translations
         for fw, fw_config in _CONFIG.frameworks.items():
             if fw_config.broadcast_method == func_attr_value and self.target_framework != fw:
                 # Transpile broadcast call
-                target_base = _build_attribute_chain(self.target_config.module_path + [self.target_config.broadcast_method])
+                target_base: cst.BaseExpression = _build_attribute_chain(self.target_config.module_path + [self.target_config.broadcast_method])
 
                 # Special cases for expand/broadcast_to args
                 if fw_config.broadcast_method == "expand" and self.target_config.broadcast_method == "broadcast_to":
@@ -191,13 +190,13 @@ class CSTTransformer(cst.CSTTransformer):
                 return _get_base_name(node.value)
             return ""
 
-        src_call_base = _get_base_name(final_node.func)
+        src_call_base: str = _get_base_name(final_node.func)
 
         if src_call_base in KNOWN_SOURCE_FRAMEWORKS:
-            target_chain = self.target_config.module_path
+            target_chain: list[str] = self.target_config.module_path
             if target_chain != [src_call_base]:
-                new_value = _build_attribute_chain(target_chain)
-                new_func = final_node.func.with_changes(value=new_value)
+                new_value: cst.BaseExpression = _build_attribute_chain(target_chain)
+                new_func: cst.Attribute = final_node.func.with_changes(value=new_value)
                 return final_node.with_changes(func=new_func)
 
         return final_node
@@ -219,9 +218,8 @@ class CSTTransformer(cst.CSTTransformer):
         if not self.target_config:
             return updated_node
 
-        new_bases = []
-        mutated_bases = False
-        class_bases_map = self.target_config.class_bases
+        new_bases: list[cst.Arg] = []
+        mutated_bases: bool = False
 
         def get_attr_chain(node: cst.BaseExpression) -> str:
             """Get the attribute chain."""
@@ -232,20 +230,20 @@ class CSTTransformer(cst.CSTTransformer):
             return ""
 
         for base in updated_node.bases:
-            chain = get_attr_chain(base.value)
-            found = False
+            chain: str = get_attr_chain(base.value)
+            found: bool = False
             for src_fw, src_config in _CONFIG.frameworks.items():
                 if self.target_framework == src_fw:
                     continue
                 # If the base matches a class_base from another framework, we translate to target's base if any
                 for src_k, src_v in src_config.class_bases.items():
                     # E.g. "nn.Module" or "flax.linen.Module"
-                    src_full = ".".join(src_v) if src_v else ""
-                    if chain == ".".join(src_v) or chain == src_k:
+                    src_full: str = ".".join(src_v) if src_v else ""
+                    if chain == src_full or chain == src_k:
                         # Find target base
-                        target_base_parts = next(iter(self.target_config.class_bases.values()), None)
+                        target_base_parts: list[str] | None = next(iter(self.target_config.class_bases.values()), None)
                         if target_base_parts:
-                            new_base = base.with_changes(value=_build_attribute_chain(target_base_parts))
+                            new_base: cst.Arg = base.with_changes(value=_build_attribute_chain(target_base_parts))
                             new_bases.append(new_base)
                             mutated_bases = True
                             found = True
@@ -277,7 +275,7 @@ class CSTTransformer(cst.CSTTransformer):
         if not self.target_config:
             return updated_node
 
-        method_map = self.target_config.method_map
+        method_map: dict[str, str] = self.target_config.method_map
         if updated_node.name.value in method_map:
             if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
                 if updated_node.params.params and updated_node.params.params[0].name.value == "self":
@@ -302,7 +300,7 @@ class CSTTransformer(cst.CSTTransformer):
             cst.BaseExpression: The modified expression.
         """
         if isinstance(updated_node.value, cst.Name) and updated_node.value.value == "self":
-            attr_name = updated_node.attr.value
+            attr_name: str = updated_node.attr.value
             return cst.Subscript(value=cst.Name("state"), slice=[cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(f'"{attr_name}"')))])
         return updated_node
 
@@ -341,10 +339,10 @@ def transpile_source(source_code: str, target_framework: str = "jax") -> str:
     Returns:
         str: Result.
     """
-    tree = cst.parse_module(source_code)
-    wrapper = cst.MetadataWrapper(tree)
-    transformer = CSTTransformer(target_framework=target_framework)
-    modified_tree = wrapper.visit(transformer)
+    tree: cst.Module = cst.parse_module(source_code)
+    wrapper: cst.MetadataWrapper = cst.MetadataWrapper(tree)
+    transformer: CSTTransformer = CSTTransformer(target_framework=target_framework)
+    modified_tree: cst.Module = cast(cst.Module, wrapper.visit(transformer))
     return modified_tree.code
 
 
@@ -377,10 +375,10 @@ def type_infer_dry_run(source_code: str) -> dict[str, str]:
         dict[str, str]: Result.
     """
     try:
-        tree = cst.parse_module(source_code)
-        visitor = TypeInferenceVisitor()
+        tree: cst.Module = cst.parse_module(source_code)
+        visitor: TypeInferenceVisitor = TypeInferenceVisitor()
         tree.visit(visitor)
-        res = visitor.inferred_types
+        res: dict[str, str] = visitor.inferred_types
         res["dry_run"] = "success"
         return res
     except cst.ParserSyntaxError:

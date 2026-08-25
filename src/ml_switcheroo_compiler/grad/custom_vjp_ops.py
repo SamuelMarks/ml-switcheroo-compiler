@@ -7,7 +7,6 @@ import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -26,28 +25,28 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 class CustomVJPFunction:
     """Wrap for custom_vjp functions."""
 
-    def __init__(self, fun: Callable[..., Any]) -> None:
+    def __init__(self, fun: Callable[..., object]) -> None:
         """Initialize the custom VJP wrapper.
 
         Args:
-            fun (Callable[..., Any]): The base function being wrapped for custom VJPs.
+            fun (Callable[..., object]): The base function being wrapped for custom VJPs.
         """
         self.fun = fun
         self.fwd = None
         self.bwd = None
         self._tracing_fwd = False
 
-    def defvjp(self, fwd: Callable[..., Any], bwd: Callable[..., Any]) -> None:
+    def defvjp(self, fwd: Callable[..., object], bwd: Callable[..., object]) -> None:
         """Define the forward and backward passes.
 
         Args:
-            fwd (Callable[..., Any]): The forward pass.
-            bwd (Callable[..., Any]): The backward pass.
+            fwd (Callable[..., object]): The forward pass.
+            bwd (Callable[..., object]): The backward pass.
         """
-        self.fwd = fwd  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        self.bwd = bwd  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self.fwd = fwd
+        self.bwd = bwd
 
-    def _extract_tensor_args(self, args: tuple[Any, ...]) -> list[Any]:
+    def _extract_tensor_args(self, args: tuple[object, ...]) -> list[object]:
         """Extract all tensor instances from the provided arguments.
 
         Args:
@@ -58,13 +57,13 @@ class CustomVJPFunction:
         """
         return [a for a in args if isinstance(a, Tensor)]
 
-    def _trace_fwd_graph(self, tensor_args: list[Any]) -> Any:
+    def _trace_fwd_graph(self, tensor_args: list[object]) -> object:
         """Trace the forward pass of the custom VJP function to construct its logical graph.
 
         Args:
             tensor_args (list): The list of tensor arguments.
 
-        Returns: Any: The traced logical graph for the forward pass.
+        Returns: object: The traced logical graph for the forward pass.
         """
         if self.fwd is None or self.bwd is None:
             return None
@@ -75,7 +74,7 @@ class CustomVJPFunction:
         finally:
             self._tracing_fwd = False
 
-    def _resolve_output_metadata(self, tensor_args: list[Any]) -> tuple[tuple[int, ...], str, str]:
+    def _resolve_output_metadata(self, tensor_args: list[object]) -> tuple[tuple[int, ...], str, str]:
         """Determine the shape, dtype, and device for the output based on the input tensors.
 
         Args:
@@ -84,17 +83,17 @@ class CustomVJPFunction:
         Returns:
             tuple: A tuple containing the output shape, dtype, and device string.
         """
-        shape = ()
-        dtype = "float32"
-        device = "cpu"
+        shape: object = ()
+        dtype: object = "float32"
+        device: object = "cpu"
         if tensor_args:
-            first_arg = tensor_args[0]
-            shape = getattr(first_arg, "shape", ())
-            dtype = getattr(getattr(first_arg, "dtype", None), "value", "float32")
-            device = getattr(first_arg, "device", "cpu")
+            first_arg: object = tensor_args[0]
+            shape: object = getattr(first_arg, "shape", ())
+            dtype: object = getattr(getattr(first_arg, "dtype", None), "value", "float32")
+            device: object = getattr(first_arg, "device", "cpu")
         return (shape, dtype, device)
 
-    def _emit_vjp_node(self, tensor_args: list[Any], fwd_graph: Any, primal_graph: Any) -> Any:
+    def _emit_vjp_node(self, tensor_args: list[object], fwd_graph: object, primal_graph: object) -> object:
         """Emit a CustomVJP node into the active computation graph.
 
         Args:
@@ -102,11 +101,11 @@ class CustomVJPFunction:
             fwd_graph (object): The traced forward graph.
             primal_graph (object): The primal logical graph.
 
-        Returns: Any: The proxy tensor representing the custom VJP output.
+        Returns: object: The proxy tensor representing the custom VJP output.
         """
-        out_id = str(uuid.uuid4())
-        meta = self._resolve_output_metadata(tensor_args)
-        node = LogicalNode(
+        out_id: object = str(uuid.uuid4())
+        meta: object = self._resolve_output_metadata(tensor_args)
+        node: object = LogicalNode(
             id=out_id,
             op_type="CustomVJP",
             inputs=[a.data.id for a in tensor_args],
@@ -114,28 +113,28 @@ class CustomVJPFunction:
             shape_metadata=meta[0],
         )
         global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])  # type: ignore
+        proxy: object = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+    def __call__(self, *args: object, **kwargs: object) -> object:
         """Execute the function, tracing the forward and primal graphs if tracing is active.
 
         Args:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: The computed primal output.
+        Returns: object: The computed primal output.
         """
         if config.eager_mode or not global_tracing_state.is_tracing or self._tracing_fwd:
             return self.fun(*args, **kwargs)
 
-        tensor_args = self._extract_tensor_args(args)
-        fwd_graph = self._trace_fwd_graph(tensor_args)
-        primal_graph = _trace_function(self.fun, tuple(tensor_args), "primal_pass")
+        tensor_args: object = self._extract_tensor_args(args)
+        fwd_graph: object = self._trace_fwd_graph(tensor_args)
+        primal_graph: object = _trace_function(self.fun, tuple(tensor_args), "primal_pass")
         return self._emit_vjp_node(tensor_args, fwd_graph, primal_graph)
 
 
-def custom_vjp(fun: Callable[..., Any]) -> Callable[..., Any]:
+def custom_vjp(fun: Callable[..., object]) -> Callable[..., object]:
     """Wrap a function to allow defining custom vector-Jacobian product (VJP) rules.
 
     Args:

@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -21,9 +20,9 @@ from ml_switcheroo_compiler.serialization.utils import load_npz
 class SparsePlus(OpDef):
     """SparsePlus operation."""
 
-    op_name = "SparsePlus"
+    op_name: object = "SparsePlus"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -35,12 +34,12 @@ class SparsePlus(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
@@ -48,9 +47,9 @@ class SparsePlus(OpDef):
 class SparseSigmoid(OpDef):
     """SparseSigmoid operation."""
 
-    op_name = "SparseSigmoid"
+    op_name: object = "SparseSigmoid"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -62,16 +61,16 @@ class SparseSigmoid(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res = shapes[0]
+        res: object = shapes[0]
         for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
+            res: object = broadcast_shapes(res, s)
         return res
 
 
-def sparse_plus(*args: Any, **kwargs: Any) -> Any:
+def sparse_plus(*args: object, **kwargs: object) -> object:
     """SparsePlus frontend.
 
     Args:
@@ -92,7 +91,7 @@ def sparse_plus(*args: Any, **kwargs: Any) -> Any:
     return _emit_shape_node("SparsePlus", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def sparse_sigmoid(*args: Any, **kwargs: Any) -> Any:
+def sparse_sigmoid(*args: object, **kwargs: object) -> object:
     """SparseSigmoid frontend.
 
     Args:

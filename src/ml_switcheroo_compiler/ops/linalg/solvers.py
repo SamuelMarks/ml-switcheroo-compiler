@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for solvers.py."""
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -17,7 +16,7 @@ from .decompositions.solvers import TriangularSolve
 from .utils import _emit_linalg_node
 
 
-def cholesky_solve(chol: Tensor, rhs: Tensor) -> Any:  # type: ignore
+def cholesky_solve(chol: Tensor, rhs: Tensor) -> object:
     """Solve systems of linear equations A X = RHS given the Cholesky factorization of A.
 
     Args:
@@ -28,14 +27,14 @@ def cholesky_solve(chol: Tensor, rhs: Tensor) -> Any:  # type: ignore
         Tensor: The solution tensor X.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("CholeskySolve", chol.data, rhs.data)
+        data: object = get_active_backend().execute_op("CholeskySolve", chol.data, rhs.data)
         return Tensor(data, TensorConfig(data.shape, rhs.dtype, rhs.device))
 
-    out_shape = CholeskySolve().infer_shape(chol, rhs)
+    out_shape: object = CholeskySolve().infer_shape(chol, rhs)
     return _emit_linalg_node("CholeskySolve", [chol, rhs], {}, [tuple(out_shape)], [rhs.dtype])
 
 
-def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> Any:  # type: ignore
+def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> object:
     """Solve systems of linear equations for a banded triangular matrix.
 
     Args:
@@ -48,10 +47,10 @@ def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjo
         Tensor: The solution to the banded triangular system.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("BandedTriangularSolve", bands.data, rhs.data, lower=lower, adjoint=adjoint)
+        data: object = get_active_backend().execute_op("BandedTriangularSolve", bands.data, rhs.data, lower=lower, adjoint=adjoint)
         return Tensor(data, TensorConfig(data.shape, rhs.dtype, rhs.device))
 
-    out_shape = BandedTriangularSolve().infer_shape(bands, rhs)
+    out_shape: object = BandedTriangularSolve().infer_shape(bands, rhs)
     return _emit_linalg_node(
         "BandedTriangularSolve",
         [bands, rhs],
@@ -62,12 +61,12 @@ def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjo
 
 
 def conjugate_gradient(
-    operator: Any,
-    rhs: Any,
-    tol: Any = 1e-05,
-    max_iter: Any = 20,
-    name: Any = "conjugate_gradient",
-) -> Any:
+    operator: object,
+    rhs: object,
+    tol: object = 1e-05,
+    max_iter: object = 20,
+    name: object = "conjugate_gradient",
+) -> object:
     """Solve a system of linear equations using the conjugate gradient method.
 
     Args:
@@ -77,7 +76,7 @@ def conjugate_gradient(
         max_iter (object): The maximum number of iterations. Defaults to 20.
         name (object): The name of the operation. Defaults to "conjugate_gradient".
 
-    Returns: Any: The approximate solution to the system.
+    Returns: object: The approximate solution to the system.
     """
     return rhs
 
@@ -89,30 +88,30 @@ class Lstsq(OpDef):
     Computes the least squares solution to a linear matrix equation.
     """
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the least squares operation.
 
         Args:
             *args (object): Positional arguments, typically the input matrices A and B.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
-        a = args[0]
-        b = args[1]
-        shape_a = getattr(a, "shape", ())
-        shape_b = getattr(b, "shape", ())
-        m, n = shape_a[-2:]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        a: object = args[0]
+        b: object = args[1]
+        shape_a: object = getattr(a, "shape", ())
+        shape_b: object = getattr(b, "shape", ())
+        m, n = shape_a[-2:]
         if len(shape_b) == len(shape_a) - 1:
             return shape_b[:-1] + (n,)
-        return shape_b[:-2] + (n, shape_b[-1])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return shape_b[:-2] + (n, shape_b[-1])
 
 
 def lstsq(
-    a: Tensor,  # type: ignore
-    b: Tensor,  # type: ignore
+    a: Tensor,
+    b: Tensor,
     rcond: float | None = None,
-) -> Any:
+) -> object:
     """Evaluate lstsq operation.
 
     Args:
@@ -124,17 +123,17 @@ def lstsq(
         Tensor: Result.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
+        data: object = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
         if isinstance(data, tuple) or (hasattr(data, "solution") and hasattr(data, "residuals")):
             # torch returns namedtuple, numpy returns tuple
-            data = data.solution if hasattr(data, "solution") else data[0]
+            data: object = data.solution if hasattr(data, "solution") else data[0]
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
 
-    out_shape = Lstsq().infer_shape(a, b)
+    out_shape: object = Lstsq().infer_shape(a, b)
     return _emit_linalg_node("Lstsq", [a, b], {"rcond": rcond}, [tuple(out_shape)], [b.dtype])
 
 
-def lu(input: Any, output_idx_type: Any = None, name: Any = None) -> Any:
+def lu(input: object, output_idx_type: object = None, name: object = None) -> object:
     """Evaluate lu operation.
 
     Args:
@@ -148,7 +147,7 @@ def lu(input: Any, output_idx_type: Any = None, name: Any = None) -> Any:
     return input, input, input
 
 
-def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:  # type: ignore
+def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: object = False, name: object = None) -> object:
     """Evaluate lu_matrix_inverse operation.
 
     Args:
@@ -161,10 +160,10 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = Fa
         Tensor: Result.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("LuMatrixInverse", lower_upper.data, perm.data, validate_args=validate_args)
+        data: object = get_active_backend().execute_op("LuMatrixInverse", lower_upper.data, perm.data, validate_args=validate_args)
         return Tensor(data, TensorConfig(data.shape, lower_upper.dtype, lower_upper.device))
 
-    out_shape = LuMatrixInverse().infer_shape(lower_upper, perm)
+    out_shape: object = LuMatrixInverse().infer_shape(lower_upper, perm)
     return _emit_linalg_node(
         "LuMatrixInverse",
         [lower_upper, perm],
@@ -174,7 +173,7 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = Fa
     )
 
 
-def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:  # type: ignore
+def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: object = False, name: object = None) -> object:
     """Reconstruct a matrix from its LU decomposition and permutation.
 
     Args:
@@ -187,20 +186,20 @@ def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: Any = False
         Tensor: The reconstructed original matrix.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("LuReconstruct", lower_upper.data, perm.data, validate_args=validate_args)
+        data: object = get_active_backend().execute_op("LuReconstruct", lower_upper.data, perm.data, validate_args=validate_args)
         return Tensor(data, TensorConfig(data.shape, lower_upper.dtype, lower_upper.device))
 
-    out_shape = LuReconstruct().infer_shape(lower_upper, perm)
+    out_shape: object = LuReconstruct().infer_shape(lower_upper, perm)
     return _emit_linalg_node("LuReconstruct", [lower_upper, perm], {"validate_args": validate_args}, [tuple(out_shape)], [lower_upper.dtype])
 
 
 def lu_solve(
-    lower_upper: Any,
-    perm: Any,
-    rhs: Any,
-    validate_args: Any = False,
-    name: Any = None,
-) -> Any:
+    lower_upper: object,
+    perm: object,
+    rhs: object,
+    validate_args: object = False,
+    name: object = None,
+) -> object:
     """Solve a system of linear equations using the LU decomposition of the matrix.
 
     Args:
@@ -210,12 +209,12 @@ def lu_solve(
         validate_args (object): Whether to validate the inputs. Defaults to False.
         name (object): Optional name for the operation. Defaults to None.
 
-    Returns: Any: The solution to the linear system.
+    Returns: object: The solution to the linear system.
     """
     return rhs
 
 
-def triangular_solve(matrix: Tensor, rhs: Tensor, lower: Any = True, adjoint: Any = False, name: Any = None) -> Any:  # type: ignore
+def triangular_solve(matrix: Tensor, rhs: Tensor, lower: object = True, adjoint: object = False, name: object = None) -> object:
     """Solve a system of linear equations with a triangular matrix.
 
     Args:
@@ -229,10 +228,10 @@ def triangular_solve(matrix: Tensor, rhs: Tensor, lower: Any = True, adjoint: An
         Tensor: The solution to the triangular system.
     """
     if config.eager_mode:
-        data = get_active_backend().execute_op("TriangularSolve", matrix.data, rhs.data, lower=lower, adjoint=adjoint, unit_diagonal=False)
+        data: object = get_active_backend().execute_op("TriangularSolve", matrix.data, rhs.data, lower=lower, adjoint=adjoint, unit_diagonal=False)
         return Tensor(data, TensorConfig(data.shape, rhs.dtype, rhs.device))
 
-    out_shape = TriangularSolve().infer_shape(matrix, rhs)
+    out_shape: object = TriangularSolve().infer_shape(matrix, rhs)
     return _emit_linalg_node(
         "TriangularSolve",
         [matrix, rhs],
@@ -243,12 +242,12 @@ def triangular_solve(matrix: Tensor, rhs: Tensor, lower: Any = True, adjoint: An
 
 
 def tridiagonal_solve(
-    diagonals: Any,
-    rhs: Any,
-    diagonals_format: Any = "...",
-    partial_pivoting: Any = True,
-    name: Any = None,
-) -> Any:
+    diagonals: object,
+    rhs: object,
+    diagonals_format: object = "...",
+    partial_pivoting: object = True,
+    name: object = None,
+) -> object:
     """Solve systems of linear equations with tridiagonal matrices.
 
     Args:
@@ -258,12 +257,12 @@ def tridiagonal_solve(
         partial_pivoting (object): Whether to use partial pivoting. Defaults to True.
         name (object): Optional name for the operation. Defaults to None.
 
-    Returns: Any: The solution to the tridiagonal system.
+    Returns: object: The solution to the tridiagonal system.
     """
     return rhs
 
 
-def tensorinv(a: Tensor, ind: Any = 2, name: Any = None) -> Any:  # type: ignore
+def tensorinv(a: Tensor, ind: object = 2, name: object = None) -> object:
     """Evaluate tensorinv operation.
 
     Args:
@@ -275,13 +274,13 @@ def tensorinv(a: Tensor, ind: Any = 2, name: Any = None) -> Any:  # type: ignore
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Tensorinv", a.data, ind=ind)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Tensorinv", a.data, ind=ind)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Tensorinv", [a], {"ind": ind}, [()], [a.dtype])
 
 
-def tensorsolve(a: Tensor, b: Tensor, axes: Any = None, name: Any = None) -> Any:  # type: ignore
+def tensorsolve(a: Tensor, b: Tensor, axes: object = None, name: object = None) -> object:
     """Solve a tensor equation equation `a x = b` for x.
 
     Args:
@@ -294,8 +293,8 @@ def tensorsolve(a: Tensor, b: Tensor, axes: Any = None, name: Any = None) -> Any
         Tensor: The solution tensor x.
     """
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op("Tensorsolve", a.data, b.data, axes=axes)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("Tensorsolve", a.data, b.data, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Tensorsolve", [a, b], {"axes": axes}, [()], [a.dtype])
 
@@ -307,17 +306,17 @@ class Pinv(OpDef):
     Computes the Moore-Penrose pseudo-inverse of a matrix.
     """
 
-    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, **kwargs: object) -> object:
         """Infer the output shape of the pseudo-inverse operation.
 
         Args:
             a (object): The input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The computed result.
+        Returns: object: The computed result.
         """
         if hasattr(a, "shape"):
-            s = list(a.shape)
+            s: object = list(a.shape)
             if len(s) >= MAGIC_VAL_2:
                 s[-2], s[-1] = s[-1], s[-2]
             return tuple(s)
@@ -331,16 +330,16 @@ class Sqrtm(OpDef):
     Computes the principal square root of a matrix.
     """
 
-    op_name = "Sqrtm"
+    op_name: object = "Sqrtm"
 
-    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the square root operation.
 
         Args:
             a (object): The input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return a.shape
 
@@ -352,9 +351,9 @@ class CholeskySolve(OpDef):
     Computes the solution to a system of linear equations using the Cholesky factorization.
     """
 
-    op_name = "CholeskySolve"
+    op_name: object = "CholeskySolve"
 
-    def infer_shape(self, chol: Any, rhs: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, chol: object, rhs: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the Cholesky solve operation.
 
         Args:
@@ -362,7 +361,7 @@ class CholeskySolve(OpDef):
             rhs (object): The right-hand side tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return rhs.shape
 
@@ -374,9 +373,9 @@ class BandedTriangularSolve(OpDef):
     Solves a linear system with a banded triangular matrix.
     """
 
-    op_name = "BandedTriangularSolve"
+    op_name: object = "BandedTriangularSolve"
 
-    def infer_shape(self, bands: Any, rhs: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, bands: object, rhs: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the banded triangular solve operation.
 
         Args:
@@ -384,7 +383,7 @@ class BandedTriangularSolve(OpDef):
             rhs (object): The right-hand side tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return rhs.shape
 
@@ -396,9 +395,9 @@ class EighTridiagonal(OpDef):
     Computes eigenvalues and eigenvectors of a real symmetric tridiagonal matrix.
     """
 
-    op_name = "EighTridiagonal"
+    op_name: object = "EighTridiagonal"
 
-    def infer_shape(self, alpha: Any, beta: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, alpha: object, beta: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the eigensolver operation.
 
         Args:
@@ -406,7 +405,7 @@ class EighTridiagonal(OpDef):
             beta (object): The off-diagonal elements of the tridiagonal matrix.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: A tuple containing the inferred shapes for the eigenvalues and eigenvectors.
+        Returns: object: A tuple containing the inferred shapes for the eigenvalues and eigenvectors.
         """
         # Actually returns (eigvals, eigvecs)
         return (alpha.shape, list(alpha.shape) + [alpha.shape[-1]])
@@ -419,16 +418,16 @@ class MatrixNorm(OpDef):
     Computes a matrix norm.
     """
 
-    op_name = "MatrixNorm"
+    op_name: object = "MatrixNorm"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the matrix norm operation.
 
         Args:
             *args (object): Positional arguments, typically the input matrix.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return ()
 
@@ -440,16 +439,16 @@ class VectorNorm(OpDef):
     Computes a vector norm.
     """
 
-    op_name = "VectorNorm"
+    op_name: object = "VectorNorm"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the vector norm operation.
 
         Args:
             *args (object): Positional arguments, typically the input vector.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return ()
 
@@ -461,18 +460,18 @@ class Svdvals(OpDef):
     Computes the singular values of a matrix.
     """
 
-    op_name = "Svdvals"
+    op_name: object = "Svdvals"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the singular values operation.
 
         Args:
             *args (object): Positional arguments, typically the input matrix.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
-        in_shape = args[0].shape
+        in_shape: object = args[0].shape
         return in_shape[:-1] if len(in_shape) > 1 else ()
 
 
@@ -483,19 +482,19 @@ class Tensorinv(OpDef):
     Computes the inverse of a tensor operationally.
     """
 
-    op_name = "Tensorinv"
+    op_name: object = "Tensorinv"
 
-    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the tensor inverse operation.
 
         Args:
             a (object): The input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
-        in_shape = a.shape
-        ind = kwargs.get("ind", 2)
+        in_shape: object = a.shape
+        ind: object = kwargs.get("ind", 2)
         return in_shape[ind:] + in_shape[:ind]
 
 
@@ -506,9 +505,9 @@ class Tensorsolve(OpDef):
     Solves a linear tensor equation.
     """
 
-    op_name = "Tensorsolve"
+    op_name: object = "Tensorsolve"
 
-    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the tensor solve operation.
 
         Args:
@@ -516,7 +515,7 @@ class Tensorsolve(OpDef):
             b (object): The right-hand side tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return a.shape[len(b.shape) :]
 
@@ -528,9 +527,9 @@ class LuMatrixInverse(OpDef):
     Computes the inverse of a matrix from its LU decomposition.
     """
 
-    op_name = "LuMatrixInverse"
+    op_name: object = "LuMatrixInverse"
 
-    def infer_shape(self, lower_upper: Any, perm: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, lower_upper: object, perm: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the LU matrix inverse operation.
 
         Args:
@@ -538,7 +537,7 @@ class LuMatrixInverse(OpDef):
             perm (object): The permutation vector or matrix.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return lower_upper.shape
 
@@ -550,9 +549,9 @@ class LuReconstruct(OpDef):
     Reconstructs a matrix from its LU decomposition and permutation.
     """
 
-    op_name = "LuReconstruct"
+    op_name: object = "LuReconstruct"
 
-    def infer_shape(self, lower_upper: Any, perm: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, lower_upper: object, perm: object, **kwargs: object) -> object:
         """Infer the shape of the output tensor for the LU reconstruct operation.
 
         Args:
@@ -560,6 +559,6 @@ class LuReconstruct(OpDef):
             perm (object): The permutation vector or matrix.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: Any: The inferred shape of the output tensor.
+        Returns: object: The inferred shape of the output tensor.
         """
         return lower_upper.shape

@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Acos")
-def _acos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _acos(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _acos operation.
 
     Args:
@@ -20,7 +18,7 @@ def _acos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
+    func: object = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -29,7 +27,7 @@ def _acos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Acosh")
-def _acosh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _acosh(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _acosh operation.
 
     Args:
@@ -40,7 +38,7 @@ def _acosh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
+    func: object = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -49,7 +47,7 @@ def _acosh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Asin")
-def _asin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _asin(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _asin operation.
 
     Args:
@@ -60,7 +58,7 @@ def _asin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
+    func: object = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -69,7 +67,7 @@ def _asin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Asinh")
-def _asinh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _asinh(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _asinh operation.
 
     Args:
@@ -80,7 +78,7 @@ def _asinh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
+    func: object = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -89,7 +87,7 @@ def _asinh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Atan")
-def _atan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _atan(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _atan operation.
 
     Args:
@@ -100,7 +98,7 @@ def _atan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
+    func: object = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -109,7 +107,7 @@ def _atan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Atanh")
-def _atanh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _atanh(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _atanh operation.
 
     Args:
@@ -120,7 +118,7 @@ def _atanh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
+    func: object = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -129,7 +127,7 @@ def _atanh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Atan2")
-def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _atan2(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _atan2 operation.
 
     Args:
@@ -140,7 +138,7 @@ def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
+    func: object = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -149,7 +147,7 @@ def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Sinc")
-def _sinc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _sinc(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _sinc operation.
 
     Args:
@@ -160,7 +158,7 @@ def _sinc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "sinc", None)
+    func: object = getattr(backend_module, "sinc", None)
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -169,7 +167,7 @@ def _sinc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Isin")
-def _isin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isin(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _isin operation.
 
     Args:
@@ -184,7 +182,7 @@ def _isin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Isinf")
-def _isinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isinf(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _isinf operation.
 
     Args:
@@ -195,7 +193,7 @@ def _isinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "isinf", None)
+    func: object = getattr(backend_module, "isinf", None)
     if func:
         return func(*args, **kwargs)
 
@@ -203,7 +201,7 @@ def _isinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Isposinf")
-def _isposinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _isposinf(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _isposinf operation.
 
     Args:
@@ -214,7 +212,7 @@ def _isposinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "isposinf", None)
+    func: object = getattr(backend_module, "isposinf", None)
     if func:
         return func(*args, **kwargs)
 

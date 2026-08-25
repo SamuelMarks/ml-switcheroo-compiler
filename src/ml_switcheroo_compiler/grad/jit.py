@@ -7,7 +7,6 @@ import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -27,30 +26,30 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 class JitOptions:
     """Options for JIT compilation."""
 
-    static_argnums: Any = None
-    static_argnames: Any = None
-    donate_argnums: Any = None
-    donate_argnames: Any = None
+    static_argnums: object = None
+    static_argnames: object = None
+    donate_argnums: object = None
+    donate_argnames: object = None
     keep_unused: bool = False
-    device: Any = None
-    backend: Any = None
+    device: object = None
+    backend: object = None
     inline: bool = False
-    abstracted_axes: Any = None
+    abstracted_axes: object = None
 
 
-def jit(fun: Callable[..., Any], options: Any = None) -> Callable[..., Any]:
+def jit(fun: Callable[..., object], options: object = None) -> Callable[..., object]:
     """Return a JIT wrapper.
 
     Args:
-        fun (Callable[..., Any]): The function to jit compile.
+        fun (Callable[..., object]): The function to jit compile.
         options (JitOptions): Configuration options.
 
     Returns:
-        Callable[..., Any]: The JIT wrapped function.
+        Callable[..., object]: The JIT wrapped function.
     """
-    options = options or JitOptions()
+    options: object = options or JitOptions()
 
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
+    def wrapped(*args: object, **kwargs: object) -> object:
         """Evaluate wrapped operation.
 
         Args:
@@ -75,7 +74,7 @@ def disable_jit() -> typing.Iterator[None]:
     yield
 
 
-def eval_shape(fun: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+def eval_shape(fun: Callable[..., object], *args: object, **kwargs: object) -> object:
     """Evaluate eval_shape operation.
 
     Args:

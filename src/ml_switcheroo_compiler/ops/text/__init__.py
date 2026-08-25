@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module __init__.py."""
 
-from typing import Any
-
 """Text operations module."""
 
 from ml_switcheroo_compiler.ops.text import ops
@@ -33,10 +31,10 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class CreateToken(OpDef):
     """CreateToken operation."""
 
-    op_name = "CreateToken"
+    op_name: object = "CreateToken"
 
 
-def create_token(*args: Any, **kwargs: Any) -> Any:
+def create_token(*args: object, **kwargs: object) -> object:
     """Create token.
 
     Args:

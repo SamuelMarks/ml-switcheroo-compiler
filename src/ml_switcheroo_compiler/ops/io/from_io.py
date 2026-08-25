@@ -6,7 +6,6 @@ from __future__ import annotations
 import glob
 import os
 import shutil
-from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -26,9 +25,9 @@ class Fromfile(OpDef):
         like (object): Like.
     """
 
-    op_name = "Fromfile"
+    op_name: object = "Fromfile"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -38,7 +37,7 @@ class Fromfile(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        count = kwargs.get("count", -1)
+        count: object = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -51,9 +50,9 @@ class Fromstring(OpDef):
         like (object): Like.
     """
 
-    op_name = "Fromstring"
+    op_name: object = "Fromstring"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -63,7 +62,7 @@ class Fromstring(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        count = kwargs.get("count", -1)
+        count: object = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -76,9 +75,9 @@ class Fromiter(OpDef):
         like (object): Like.
     """
 
-    op_name = "Fromiter"
+    op_name: object = "Fromiter"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -88,7 +87,7 @@ class Fromiter(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        count = kwargs.get("count", -1)
+        count: object = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -101,9 +100,9 @@ class Fromfunction(OpDef):
         like (object): Like.
     """
 
-    op_name = "Fromfunction"
+    op_name: object = "Fromfunction"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -113,11 +112,11 @@ class Fromfunction(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
+        shape: object = kwargs.get("shape", args[1] if len(args) > 1 else ())
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
 
 
-def fromfile(file: Any, dtype: Any = float, count: int = -1, sep: str = "", offset: int = 0, *, like: Any = None) -> Any:
+def fromfile(file: object, dtype: object = float, count: int = -1, sep: str = "", offset: int = 0, *, like: object = None) -> object:
     """Construct an array from data in a text or binary file.
 
     Args:
@@ -140,7 +139,7 @@ def fromfile(file: Any, dtype: Any = float, count: int = -1, sep: str = "", offs
     return dispatch_op("Fromfile", file, dtype=dtype, count=count, sep=sep, offset=offset, like=like)
 
 
-def fromstring(string: str, dtype: Any = float, count: int = -1, sep: str = "", *, like: Any = None) -> Any:
+def fromstring(string: str, dtype: object = float, count: int = -1, sep: str = "", *, like: object = None) -> object:
     """Provide a new 1-D array initialized from text data in a string.
 
     Args:
@@ -162,7 +161,7 @@ def fromstring(string: str, dtype: Any = float, count: int = -1, sep: str = "", 
     return dispatch_op("Fromstring", string, dtype=dtype, count=count, sep=sep, like=like)
 
 
-def fromiter(iterable: Any, dtype: Any, count: int = -1, *, like: Any = None) -> Any:
+def fromiter(iterable: object, dtype: object, count: int = -1, *, like: object = None) -> object:
     """Create a new 1-dimensional array from an iterable object.
 
     Args:
@@ -183,7 +182,7 @@ def fromiter(iterable: Any, dtype: Any, count: int = -1, *, like: Any = None) ->
     return dispatch_op("Fromiter", iterable, dtype, count=count, like=like)
 
 
-def fromfunction(function: Any, shape: Any, *, dtype: Any = float, like: Any = None, **kwargs: Any) -> Any:
+def fromfunction(function: object, shape: object, *, dtype: object = float, like: object = None, **kwargs: object) -> object:
     """Construct an array by executing a function over each coordinate.
 
     Args:

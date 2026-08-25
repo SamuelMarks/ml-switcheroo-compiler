@@ -11,8 +11,8 @@ templates:
       \ = 0;\n    }}\n}}\n"
   matmul:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\n#ifdef USE_BLAS\ncblas_sgemm(CblasRowMajor,\
-      \ CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in0}.data.data(), {K}, {in1}.data.data(),\
-      \ {N}, 0.0f, {clean_id}.data.data(), {N});\n#else\nfor (size_t i = 0; i < {M};\
+      \ CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in0}.data, {K}, {in1}.data,\
+      \ {N}, 0.0f, {clean_id}.data, {N});\n#else\nfor (size_t i = 0; i < {M};\
       \ ++i) {{\n    for (size_t j = 0; j < {N}; ++j) {{\n        float sum = 0.0f;\n\
       \        for (size_t k = 0; k < {K}; ++k) {{\n            sum += {in0}.data[i\
       \ * {K} + k] * {in1}.data[k * {N} + j];\n        }}\n        {clean_id}.data[i\

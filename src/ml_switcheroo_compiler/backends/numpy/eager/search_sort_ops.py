@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy Search and Sort Ops."""
 
-from typing import Any
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -10,7 +8,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
 
 
 @numpy_eager_registry.register("SortKeyVal")
-def _np_sort_key_val(backend_module: Any, keys: Any, values: Any, axis: int = -1, *args: Any, **kwargs: Any) -> Any:
+def _np_sort_key_val(backend_module: object, keys: object, values: object, axis: int = -1, *args: object, **kwargs: object) -> object:
     """Evaluate _np_sort_key_val operation.
 
     Args:
@@ -24,16 +22,16 @@ def _np_sort_key_val(backend_module: Any, keys: Any, values: Any, axis: int = -1
     Returns:
             tuple[int, ...]: Result.
     """
-    keys_arr = np.asarray(keys)
-    values_arr = np.asarray(values)
-    idx = np.argsort(keys_arr, axis=axis)
-    sorted_keys = np.take_along_axis(keys_arr, idx, axis=axis)
-    sorted_values = np.take_along_axis(values_arr, idx, axis=axis)
+    keys_arr: object = np.asarray(keys)
+    values_arr: object = np.asarray(values)
+    idx: object = np.argsort(keys_arr, axis=axis)
+    sorted_keys: object = np.take_along_axis(keys_arr, idx, axis=axis)
+    sorted_values: object = np.take_along_axis(values_arr, idx, axis=axis)
     return (sorted_keys, sorted_values)
 
 
 @numpy_eager_registry.register("Partition")
-def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_partition(backend_module: object, *args: object, **kwargs: object) -> object:
     """Partition op.
 
     Args:
@@ -48,7 +46,7 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Percentile")
-def _np_percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_percentile(backend_module: object, *args: object, **kwargs: object) -> object:
     """Percentile op.
 
     Args:
@@ -63,7 +61,7 @@ def _np_percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Quantile")
-def _np_quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_quantile(backend_module: object, *args: object, **kwargs: object) -> object:
     """Quantile op.
 
     Args:
@@ -78,7 +76,7 @@ def _np_quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Unique")
-def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_unique(backend_module: object, *args: object, **kwargs: object) -> object:
     """Compute unique op.
 
     Args:
@@ -93,7 +91,7 @@ def _np_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("ArgSort")
-def _np_argsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_argsort(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_argsort operation.
 
     Args:
@@ -108,7 +106,7 @@ def _np_argsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Sort")
-def _np_sort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sort(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_sort operation.
 
     Args:
@@ -119,13 +117,13 @@ def _np_sort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    is_stable = kwargs.pop("is_stable", True)
+    is_stable: object = kwargs.pop("is_stable", True)
     kwargs["kind"] = "stable" if is_stable else "quicksort"
     return backend_module.sort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TopK")
-def _np_top_k(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_top_k(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_top_k operation.
 
     Args:
@@ -140,7 +138,7 @@ def _np_top_k(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("SearchSorted")
-def _np_search_sorted(backend_module: Any, x: Any, v: Any, side: str = "left") -> Any:
+def _np_search_sorted(backend_module: object, x: object, v: object, side: str = "left") -> object:
     """Evaluate _np_search_sorted operation.
 
     Args:
@@ -156,7 +154,7 @@ def _np_search_sorted(backend_module: Any, x: Any, v: Any, side: str = "left") -
 
 
 @numpy_eager_registry.register("Setdiff1d")
-def _np_setdiff1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_setdiff1d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_setdiff1d operation.
 
     Args:
@@ -171,7 +169,7 @@ def _np_setdiff1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Setxor1d")
-def _np_setxor1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_setxor1d(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_setxor1d operation.
 
     Args:
@@ -186,7 +184,7 @@ def _np_setxor1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("SortComplex")
-def _np_sort_complex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_sort_complex(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_sort_complex operation.
 
     Args:

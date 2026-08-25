@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module pickle_format.py."""
 
-from typing import Any
-
 """Pickle format serialization."""
 
 import pickle
@@ -13,7 +11,7 @@ from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, Weig
 class PickleWeightFormat(WeightLoader, WeightSaver):
     """Pickle weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, Any]:
+    def load(self, filepath: str) -> dict[str, object]:
         """Load pickle weights.
 
         Args:
@@ -23,9 +21,9 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
         dict: Result.
         """
         with open(filepath, "rb") as f:
-            return pickle.load(f)  # type: ignore
+            return pickle.load(f)
 
-    def save(self, weights_np: dict[str, Any], filepath: str) -> None:
+    def save(self, weights_np: dict[str, object], filepath: str) -> None:
         """Save pickle weights.
 
         Args:

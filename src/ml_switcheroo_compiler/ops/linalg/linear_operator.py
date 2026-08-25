@@ -6,7 +6,6 @@ from __future__ import annotations
 
 """Core abstractions and logic definitions for linear_operator.py."""
 
-from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -14,7 +13,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class BaseLinearOperator(OpDef):
     """Base for linear operators."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """infer_shape function.
 
         Args:
@@ -24,15 +23,15 @@ class BaseLinearOperator(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            node (object): The node.
+            **kwargs (object): Keyword arguments.
+        self (object): The self parameter.
 
         Returns:
-        Any: Result.
+        object: Result.
         """
         # Default shape inference attempts to find a shape or operand
-        operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
+        operand: object = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
         if hasattr(operand, "shape"):
             return getattr(operand, "shape", ())
         return ()

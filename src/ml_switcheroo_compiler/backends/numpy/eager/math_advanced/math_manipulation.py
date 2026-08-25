@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Append")
-def _np_append(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_append(backend_module: object, *args: object, **kwargs: object) -> object:
     """Append values to the end of an array.
 
     Args:
@@ -21,13 +20,13 @@ def _np_append(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.append(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ArgWhere")
-def _np_argwhere(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_argwhere(backend_module: object, *args: object, **kwargs: object) -> object:
     """Find the indices of array elements that are non-zero, grouped by element.
 
     Args:
@@ -35,13 +34,13 @@ def _np_argwhere(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.argwhere(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Choose")
-def _np_choose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_choose(backend_module: object, *args: object, **kwargs: object) -> object:
     """Construct an array from an index array and a list of arrays to choose from.
 
     Args:
@@ -49,13 +48,13 @@ def _np_choose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.choose(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ColumnStack")
-def _np_column_stack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_column_stack(backend_module: object, *args: object, **kwargs: object) -> object:
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
@@ -63,13 +62,13 @@ def _np_column_stack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.column_stack(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Compress")
-def _np_compress(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_compress(backend_module: object, *args: object, **kwargs: object) -> object:
     """Return selected slices of an array along given axis.
 
     Args:
@@ -77,13 +76,13 @@ def _np_compress(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.compress(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Delete")
-def _np_delete_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_delete_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Delete via delete.
 
     Args:
@@ -91,13 +90,13 @@ def _np_delete_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.delete(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Extract")
-def _np_extract_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_extract_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Extract via extract.
 
     Args:
@@ -105,13 +104,13 @@ def _np_extract_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.extract(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flatnonzero")
-def _np_flatnonzero_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_flatnonzero_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Flatnonzero via flatnonzero.
 
     Args:
@@ -119,13 +118,13 @@ def _np_flatnonzero_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.flatnonzero(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flip")
-def _np_flip_op_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_flip_op_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Flip via flip.
 
     Args:
@@ -133,13 +132,13 @@ def _np_flip_op_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.flip(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fliplr")
-def _np_fliplr_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_fliplr_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Fliplr via fliplr.
 
     Args:
@@ -147,13 +146,13 @@ def _np_fliplr_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.fliplr(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flipud")
-def _np_flipud_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_flipud_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Flipud via flipud.
 
     Args:
@@ -161,13 +160,13 @@ def _np_flipud_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.flipud(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Reverse")
-def _np_flip_reverse_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_flip_reverse_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Reverse via flip.
 
     Args:
@@ -175,13 +174,13 @@ def _np_flip_reverse_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.flip(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Insert")
-def _np_insert_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_insert_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Insert via insert.
 
     Args:
@@ -189,13 +188,13 @@ def _np_insert_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.insert(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Nonzero")
-def _np_nonzero_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_nonzero_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Nonzero via nonzero.
 
     Args:
@@ -203,13 +202,13 @@ def _np_nonzero_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.nonzero(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Resize")
-def _np_resize_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_resize_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Resize via resize.
 
     Args:
@@ -217,13 +216,13 @@ def _np_resize_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.resize(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ExtractPatchesOptions")
-def _np_extractpatchesoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_extractpatchesoptions(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement ExtractPatchesOptions.
 
     Args:
@@ -240,7 +239,7 @@ def _np_extractpatchesoptions(backend_module: Any, *args: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("TensorArrayStack")
-def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorarraystack(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement TensorArrayStack.
 
     Args:
@@ -251,5 +250,5 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    handle = args[0]
+    handle: object = args[0]
     return backend_module.stack(handle)

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module state_lowering.py."""
 
-from typing import Any
-
 """State Lowering pass."""
 
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -20,9 +18,9 @@ def state_lowering_pass(graph: IRGraph) -> bool:
     Returns:
         bool: True if the graph was modified, False otherwise.
     """
-    modified = False
+    modified: object = False
 
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
 
     for node in sorted_nodes:
         if node.op_type == "Input" and node.attributes.get("is_state", False):
@@ -30,12 +28,12 @@ def state_lowering_pass(graph: IRGraph) -> bool:
             node.attributes["variable_name"] = node.attributes.get("name", node.id)
             if "name" in node.attributes:
                 del node.attributes["name"]
-            modified = True
+            modified: object = True
         elif node.op_type == "Output" and node.attributes.get("is_state", False):
             node.op_type = "AssignVariable"
             node.attributes["variable_name"] = node.attributes.get("name", node.id)
             if "name" in node.attributes:
                 del node.attributes["name"]
-            modified = True
+            modified: object = True
 
     return modified

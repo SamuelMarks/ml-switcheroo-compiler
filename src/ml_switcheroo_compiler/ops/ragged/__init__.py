@@ -5,8 +5,6 @@ This module provides operations for working with ragged tensors, which are
 tensors with non-uniform shapes across one or more dimensions.
 """
 
-from typing import Any
-
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -22,9 +20,9 @@ class RaggedGather(OpDef):
     `indices` tensor, resulting in a ragged tensor structure.
     """
 
-    op_name = "RaggedGather"
+    op_name: object = "RaggedGather"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -45,9 +43,9 @@ class RaggedTensorToDense(OpDef):
     the variable-length dimensions with a default value.
     """
 
-    op_name = "RaggedTensorToDense"
+    op_name: object = "RaggedTensorToDense"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
@@ -61,12 +59,12 @@ class RaggedTensorToDense(OpDef):
 
 
 def ragged_tensor_to_dense(
-    rt_input: "Tensor",  # type: ignore
-    default_value: Any = None,
-    row_partition_tensors: Any = None,
-    row_partition_types: Any = None,
-    shape: Any = None,
-) -> "Tensor":  # type: ignore
+    rt_input: "Tensor",
+    default_value: object = None,
+    row_partition_tensors: object = None,
+    row_partition_types: object = None,
+    shape: object = None,
+) -> "Tensor":
     """Convert a ragged tensor representation into a regular dense tensor.
 
     Pads the variable-length dimensions of the input ragged tensor with the
@@ -85,8 +83,8 @@ def ragged_tensor_to_dense(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             "RaggedTensorToDense",
             rt_input.data,
             default_value=default_value,
@@ -98,7 +96,7 @@ def ragged_tensor_to_dense(
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node(  # type: ignore
+    return _emit_shape_node(
         "RaggedTensorToDense",
         [rt_input],
         {
@@ -120,9 +118,9 @@ class RaggedAdd(OpDef):
     have compatible shapes.
     """
 
-    op_name = "RaggedAdd"
+    op_name: object = "RaggedAdd"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged addition operation.
 
         Args:
@@ -143,9 +141,9 @@ class RaggedMatMul(OpDef):
     inputs may be a ragged tensor.
     """
 
-    op_name = "RaggedMatMul"
+    op_name: object = "RaggedMatMul"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
@@ -166,9 +164,9 @@ class RaggedDynamicBroadcast(OpDef):
     dimension information.
     """
 
-    op_name = "RaggedDynamicBroadcast"
+    op_name: object = "RaggedDynamicBroadcast"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
@@ -189,9 +187,9 @@ class RaggedConstant(OpDef):
     nested python list or similar constant structure.
     """
 
-    op_name = "RaggedConstant"
+    op_name: object = "RaggedConstant"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged constant operation.
 
         Args:
@@ -212,9 +210,9 @@ class RaggedCrossHashed(OpDef):
     hashes the results for efficiency.
     """
 
-    op_name = "RaggedCrossHashed"
+    op_name: object = "RaggedCrossHashed"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
@@ -235,9 +233,9 @@ class RaggedRange(OpDef):
     based on specified starts, limits, and deltas.
     """
 
-    op_name = "RaggedRange"
+    op_name: object = "RaggedRange"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged range operation.
 
         Args:
@@ -258,9 +256,9 @@ class RaggedRowSplitsToSegmentIds(OpDef):
     and converts it into an equivalent segment IDs tensor.
     """
 
-    op_name = "RaggedRowSplitsToSegmentIds"
+    op_name: object = "RaggedRowSplitsToSegmentIds"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
@@ -281,9 +279,9 @@ class RaggedSegmentIdsToRowSplits(OpDef):
     and converts it into an equivalent row splits tensor.
     """
 
-    op_name = "RaggedSegmentIdsToRowSplits"
+    op_name: object = "RaggedSegmentIdsToRowSplits"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
@@ -304,9 +302,9 @@ class RaggedStack(OpDef):
     to create a higher-rank ragged tensor.
     """
 
-    op_name = "RaggedStack"
+    op_name: object = "RaggedStack"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged stack operation.
 
         Args:
@@ -327,9 +325,9 @@ class RaggedStackDynamicPartitions(OpDef):
     them dynamically based on the given partitions.
     """
 
-    op_name = "RaggedStackDynamicPartitions"
+    op_name: object = "RaggedStackDynamicPartitions"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
@@ -368,9 +366,9 @@ __all__ = [
 class BooleanMask(OpDef):
     """Boolean mask operation."""
 
-    op_name = "BooleanMask"
+    op_name: object = "BooleanMask"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -387,9 +385,9 @@ class BooleanMask(OpDef):
 class MapFlatValues(OpDef):
     """Map flat values operation."""
 
-    op_name = "MapFlatValues"
+    op_name: object = "MapFlatValues"
 
-    def infer_shape(self, op: Any, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, op: object, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module dce.py."""
 
-from typing import Any
-
 """Dead Code Elimination pass."""
 
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -18,7 +16,7 @@ def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
     Returns:
         set: Result.
     """
-    side_effect_ops = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
+    side_effect_ops: object = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
     return {node.id for node in graph.nodes.values() if node.op_type in side_effect_ops}
 
 
@@ -32,8 +30,8 @@ def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str
     Returns:
         set: Result.
     """
-    reachable = set(initial_reachable)
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    reachable: object = set(initial_reachable)
+    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
     for node in reversed(sorted_nodes):
         if node.id in reachable:
             for inp in node.inputs:
@@ -50,10 +48,10 @@ def dce_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
-    initial_reachable = set(graph.outputs) | _find_side_effect_nodes(graph)
-    reachable = _build_reachable_set(graph, initial_reachable)
+    initial_reachable: object = set(graph.outputs) | _find_side_effect_nodes(graph)
+    reachable: object = _build_reachable_set(graph, initial_reachable)
 
-    nodes_to_remove = []
+    nodes_to_remove: object = []
     for nid in graph.nodes:
         if nid not in reachable:
             nodes_to_remove.append(nid)

@@ -229,11 +229,11 @@ class WGSLEmitter:
         elif isinstance(node, WGSLAssign):
             return f"{self.emit(node.target)} = {self.emit(node.value)};"
         elif isinstance(node, WGSLDecl):
-            type_str = f": {node.type_annotation}" if node.type_annotation else ""
-            val_str = f" = {self.emit(node.value)}" if node.value else ""
+            type_str: object = f": {node.type_annotation}" if node.type_annotation else ""
+            val_str: object = f" = {self.emit(node.value)}" if node.value else ""
             return f"{node.kind} {node.name}{type_str}{val_str};"
         elif isinstance(node, WGSLIf):
-            lines = [f"if ({self.emit(node.condition)}) {{"]
+            lines: object = [f"if ({self.emit(node.condition)}) {{"]
             self.indent += 2
             for stmt in node.body:
                 lines.append(" " * self.indent + self.emit(stmt))
@@ -241,7 +241,7 @@ class WGSLEmitter:
             lines.append(" " * self.indent + "}")
             return "\n".join(lines)
         elif isinstance(node, WGSLFor):
-            lines = [f"for ({self.emit(node.init)} {self.emit(node.cond)}; {self.emit(node.step)}) {{"]
+            lines: object = [f"for ({self.emit(node.init)} {self.emit(node.cond)}; {self.emit(node.step)}) {{"]
             self.indent += 2
             for stmt in node.body:
                 lines.append(" " * self.indent + self.emit(stmt))
@@ -249,10 +249,10 @@ class WGSLEmitter:
             lines.append(" " * self.indent + "}")
             return "\n".join(lines)
         elif isinstance(node, WGSLFunction):
-            lines = []
+            lines: object = []
             for attr in node.attrs:
                 lines.append(attr)
-            params_str = ", ".join(node.params)
+            params_str: object = ", ".join(node.params)
             lines.append(f"fn {node.name}({params_str}) {{")
             self.indent += 2
             for stmt in node.body:

@@ -3,7 +3,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Union
+from typing import Union
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
@@ -21,17 +21,17 @@ from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPro
 class ArrayAt:
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor: "Tensor[Any]", indices: object) -> None:
+    def __init__(self, tensor: "Tensor[object]", indices: object) -> None:
         """Initialize ArrayAt.
 
         Args:
-            tensor (Tensor[Any]): The tensor to update
+            tensor (Tensor[object]): The tensor to update
             indices (object): The indices to update at
         """
         self.tensor = tensor
         self.indices = indices
 
-    def add(self, value: object) -> "Tensor[Any]":
+    def add(self, value: object) -> "Tensor[object]":
         """Add value at indices.
 
         Args:
@@ -42,7 +42,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def multiply(self, value: object) -> "Tensor[Any]":
+    def multiply(self, value: object) -> "Tensor[object]":
         """Multiply value at indices.
 
         Args:
@@ -53,7 +53,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def set(self, value: object) -> "Tensor[Any]":
+    def set(self, value: object) -> "Tensor[object]":
         """Set value at indices.
 
         Args:
@@ -64,7 +64,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def maximum(self, value: object) -> "Tensor[Any]":
+    def maximum(self, value: object) -> "Tensor[object]":
         """Maximum value at indices.
 
         Args:
@@ -75,7 +75,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def minimum(self, value: object) -> "Tensor[Any]":
+    def minimum(self, value: object) -> "Tensor[object]":
         """Minimum value at indices.
 
         Args:
@@ -90,11 +90,11 @@ class ArrayAt:
 class ArrayAtIndexer:
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor: "Tensor[Any]") -> None:
+    def __init__(self, tensor: "Tensor[object]") -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
-            tensor (Tensor[Any]): The tensor to index
+            tensor (Tensor[object]): The tensor to index
         """
         self.tensor = tensor
 
@@ -127,12 +127,12 @@ class TensorConfig:
         if isinstance(self.dtype, str):
             object.__setattr__(self, "dtype", DType(self.dtype))
         if isinstance(self.device, str):
-            object.__setattr__(self, "device", Device(self.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            object.__setattr__(self, "device", Device(self.device))
 
 
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
-T_Payload = TypeVar("T_Payload")
+T_Payload: object = TypeVar("T_Payload")
 
 
 class Tensor(
@@ -168,7 +168,7 @@ class Tensor(
             Returns: object: Result.
             """
             try:
-                return int(s)  # type: ignore
+                return int(s)
             except (ValueError, TypeError):
                 return str(s)
 
@@ -178,7 +178,7 @@ class Tensor(
         self._requires_grad = config.requires_grad
         self.config = config
 
-    def eval(self) -> "Tensor[Any]":
+    def eval(self) -> "Tensor[object]":
         """Trigger evaluation of a lazy tensor.
 
         Returns:
@@ -188,7 +188,7 @@ class Tensor(
             return self
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph:
-            graph = global_tracing_state.active_graph
+            graph: object = global_tracing_state.active_graph
             if self.data.id not in graph.outputs:
                 graph.outputs.append(self.data.id)
         return self
@@ -204,7 +204,7 @@ class Tensor(
 
         get_util("backward")(self, *args, **kwargs)
 
-    def view(self, *shape: int) -> "Tensor[Any]":
+    def view(self, *shape: int) -> "Tensor[object]":
         """Return a new tensor with the same data but different size.
 
         Args:
@@ -213,7 +213,7 @@ class Tensor(
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        flat_shape = []
+        flat_shape: object = []
         for s in shape:
             if isinstance(s, (list, tuple)):
                 flat_shape.extend(s)
@@ -221,10 +221,10 @@ class Tensor(
                 flat_shape.append(s)
         from ml_switcheroo_compiler.ops.registry import get_frontend
 
-        res: Tensor[Any] = get_frontend("reshape")(self, tuple(flat_shape))
+        res: Tensor[object] = get_frontend("reshape")(self, tuple(flat_shape))
         return res
 
-    def contiguous(self) -> "Tensor[Any]":
+    def contiguous(self) -> "Tensor[object]":
         """Return a contiguous in memory tensor.
 
         Returns:
@@ -232,13 +232,13 @@ class Tensor(
         """
         return self
 
-    def detach(self) -> "Tensor[Any]":
+    def detach(self) -> "Tensor[object]":
         """Return a new Tensor, detached from the current graph.
 
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return Tensor[Any](self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return Tensor[object](self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
 
 
 class Variable(Tensor[T_Payload]):
@@ -254,11 +254,11 @@ class Variable(Tensor[T_Payload]):
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value: "Tensor[Any]") -> "Variable[Any]":
+    def assign(self, value: "Tensor[object]") -> "Variable[object]":
         """Assign a new value to the variable.
 
         Args:
-            value (Tensor[Any]): The new value.
+            value (Tensor[object]): The new value.
 
         Returns:
             Variable: The updated variable.
@@ -266,7 +266,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()
+            backend: object = get_active_backend()
             self._data = backend.execute_op("Assign", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -275,11 +275,11 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value: "Tensor[Any]") -> "Variable[Any]":
+    def assign_add(self, value: "Tensor[object]") -> "Variable[object]":
         """Add a value to the variable in-place.
 
         Args:
-            value (Tensor[Any]): The value to add.
+            value (Tensor[object]): The value to add.
 
         Returns:
             Variable: The updated variable.
@@ -287,7 +287,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()
+            backend: object = get_active_backend()
             self._data = backend.execute_op("AssignAdd", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -296,11 +296,11 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value: "Tensor[Any]") -> "Variable[Any]":
+    def assign_sub(self, value: "Tensor[object]") -> "Variable[object]":
         """Subtract a value from the variable in-place.
 
         Args:
-            value (Tensor[Any]): The value to subtract.
+            value (Tensor[object]): The value to subtract.
 
         Returns:
             Variable: The updated variable.
@@ -308,7 +308,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()
+            backend: object = get_active_backend()
             self._data = backend.execute_op("AssignSub", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -329,7 +329,7 @@ class Parameter(Variable[T_Payload]):
             config (TensorConfig): The tensor configuration.
         """
         # Override config.trainable to True for Parameter
-        config = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
+        config: object = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
         super().__init__(data, config)
 
     def __index__(self) -> int:
@@ -338,4 +338,4 @@ class Parameter(Variable[T_Payload]):
         Returns:
             int: The integer value.
         """
-        return int(self.numpy())  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return int(self.numpy())

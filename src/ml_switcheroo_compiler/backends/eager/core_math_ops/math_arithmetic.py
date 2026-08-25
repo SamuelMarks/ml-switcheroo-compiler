@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("TrueDivide")
-def _true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _true_divide(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _true_divide operation.
 
     Args:
@@ -20,12 +18,12 @@ def _true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
+    func: object = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fmod")
-def _fmod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _fmod(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _fmod operation.
 
     Args:
@@ -36,12 +34,12 @@ def _fmod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
+    func: object = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("AccumulateN")
-def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _accumulate_n(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _accumulate_n operation.
 
     Args:
@@ -52,19 +50,19 @@ def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
+    inputs: object = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
         import numpy as np
 
         return np.zeros(())
-    res = inputs[0]
+    res: object = inputs[0]
     for i in range(1, len(inputs)):
-        res = res + inputs[i]
+        res: object = res + inputs[i]
     return res
 
 
 @global_eager_registry.register("AssignAdd")
-def _assign_add(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
+def _assign_add(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
     """Evaluate _assign_add operation.
 
     Args:
@@ -80,7 +78,7 @@ def _assign_add(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any
 
 
 @global_eager_registry.register("AssignSub")
-def _assign_sub(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
+def _assign_sub(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
     """Evaluate _assign_sub operation.
 
     Args:
@@ -96,7 +94,7 @@ def _assign_sub(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any
 
 
 @global_eager_registry.register("AddN")
-def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _add_n(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _add_n operation.
 
     Args:
@@ -107,19 +105,19 @@ def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
+    inputs: object = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
         import numpy as np
 
         return np.zeros(())
-    res = inputs[0]
+    res: object = inputs[0]
     for i in range(1, len(inputs)):
-        res = res + inputs[i]
+        res: object = res + inputs[i]
     return res
 
 
 @global_eager_registry.register("Modf")
-def _modf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _modf(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _modf operation.
 
     Args:
@@ -134,7 +132,7 @@ def _modf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("RavelMultiIndex")
-def _ravelmultiindex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _ravelmultiindex(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _ravelmultiindex operation.
 
     Args:
@@ -149,7 +147,7 @@ def _ravelmultiindex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ScatterMul")
-def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_scattermul(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_scattermul operation.
 
     Args:
@@ -160,7 +158,7 @@ def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
+    func: object = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -169,7 +167,7 @@ def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("StringSubstr")
-def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_stringsubstr(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_stringsubstr operation.
 
     Args:
@@ -180,7 +178,7 @@ def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
+    func: object = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -189,7 +187,7 @@ def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TensorScatterSub")
-def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tensorscattersub(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_tensorscattersub operation.
 
     Args:
@@ -200,7 +198,7 @@ def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
+    func: object = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -209,7 +207,7 @@ def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TruncateDiv")
-def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_truncatediv(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_truncatediv operation.
 
     Args:
@@ -220,7 +218,7 @@ def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
+    func: object = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -229,7 +227,7 @@ def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TruncateMod")
-def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_truncatemod(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_truncatemod operation.
 
     Args:
@@ -240,7 +238,7 @@ def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
+    func: object = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -249,7 +247,7 @@ def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Xdivy")
-def _np_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_xdivy(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_xdivy operation.
 
     Args:
@@ -260,7 +258,7 @@ def _np_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
+    func: object = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

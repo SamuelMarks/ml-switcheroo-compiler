@@ -3,10 +3,12 @@
 
 from typing import Any
 
+from ml_switcheroo_compiler.ir.core import IRGraph
+
 try:
     import dask.array as da
 except ImportError:
-    da = None  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    da = None
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -18,11 +20,11 @@ from ml_switcheroo_compiler.ir.core import IRNode
 class DaskGenerator(PythonStringGenerator):
     """Generate Dask python code from IR."""
 
-    def __init__(self, graph: Any) -> None:
+    def __init__(self, graph: IRGraph) -> None:
         """Init.
 
         Args:
-            graph (object): The graph parameter.
+            graph (IRGraph): The graph parameter.
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
@@ -39,9 +41,9 @@ class DaskGenerator(PythonStringGenerator):
         """Get helper functions.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
-        res = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        res: list[str] = []
         return res
 
     _import_header = "import dask.array as da"
@@ -59,7 +61,3 @@ class DaskGenerator(PythonStringGenerator):
             str: Generated code.
         """
         return super().generic_visit(node, input_vars, **kwargs)
-
-
-if da is not None:
-    register_backend("dask")(DaskGenerator)

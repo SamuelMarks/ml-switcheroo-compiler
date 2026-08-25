@@ -2,7 +2,7 @@
 """StableHLO edge code generator."""
 
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 class StableHLOCodeGenerator(BaseGenerator):
     """StableHLO Code Generator for emitting MLIR text format from IR Graph."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[object]] = None) -> None:
         """Initialize StableHLOCodeGenerator.
 
         Args:
@@ -25,7 +25,7 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         import yaml
 
-        yaml_path = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
+        yaml_path: object = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
         with open(yaml_path) as f:
             self.schema = yaml.safe_load(f)
 
@@ -39,14 +39,14 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: StableHLO tensor type representation.
         """
-        dt_map = self.schema.get("types", {})
-        dt = dt_map.get(str(dtype).lower(), "f32")
+        dt_map: object = self.schema.get("types", {})
+        dt: object = dt_map.get(str(dtype).lower(), "f32")
         if not shape:
             return f"tensor<{dt}>"
-        shape_str = "x".join(str(s) for s in shape)
+        shape_str: object = "x".join(str(s) for s in shape)
         return f"tensor<{shape_str}x{dt}>"
 
-    def _get_node_type(self, node: Any) -> str:
+    def _get_node_type(self, node: object) -> str:
         """Extract the type mapping for a given node.
 
         Args:
@@ -55,11 +55,11 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: StableHLO tensor type string.
         """
-        meta_shape = getattr(node, "shape_metadata", ()) or ()
-        meta_dtype = getattr(node, "attributes", {}).get("dtype", getattr(node, "dtype", "float32"))
+        meta_shape: object = getattr(node, "shape_metadata", ()) or ()
+        meta_dtype: object = getattr(node, "attributes", {}).get("dtype", getattr(node, "dtype", "float32"))
         return self._map_type(meta_shape, meta_dtype)
 
-    def _resolve_input_types(self, node: Any, out_type: str) -> list[str]:
+    def _resolve_input_types(self, node: object, out_type: str) -> list[str]:
         """Resolve the input types for a given node.
 
         Args:
@@ -69,16 +69,16 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             list[str]: A list of input type strings.
         """
-        in_types = []
+        in_types: object = []
         for inp in getattr(node, "inputs", []):
-            in_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None)
+            in_node: object = next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None)
             if in_node:
                 in_types.append(self._get_node_type(in_node))
             else:
                 in_types.append(out_type)
         return in_types
 
-    def _emit_constant(self, node: Any, nid: str) -> str:
+    def _emit_constant(self, node: object, nid: str) -> str:
         """Emit a StableHLO constant operation.
 
         Args:
@@ -88,16 +88,16 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: The generated variable name for the constant.
         """
-        val = node.attributes.get("value", 0.0)
-        meta_shape = getattr(node, "shape_metadata", ()) or ()
-        t_type = self._get_node_type(node)
-        res_var = f"%v_{nid.replace('-', '_')}"
+        val: object = node.attributes.get("value", 0.0)
+        meta_shape: object = getattr(node, "shape_metadata", ()) or ()
+        t_type: object = self._get_node_type(node)
+        res_var: object = f"%v_{nid.replace('-', '_')}"
         self.var_map[nid] = res_var
-        dense_val = f"dense<{val}>" if meta_shape else str(val)
+        dense_val: object = f"dense<{val}>" if meta_shape else str(val)
         self.add_line(f'  {res_var} = "stablehlo.constant"() {{value = {dense_val} : {t_type}}} : () -> {t_type}')
         return res_var
 
-    def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Process a node and return its generated code name.
 
         Args:
@@ -108,12 +108,12 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: Variable name of the evaluated node.
         """
-        op_type = getattr(node, "op_type", "")
-        nid = getattr(node, "id", str(uuid.uuid4()))
+        op_type: object = getattr(node, "op_type", "")
+        nid: object = getattr(node, "id", str(uuid.uuid4()))
 
         if op_type == "Input":
-            arg_idx = len(self.var_map)
-            arg_name = f"%arg{arg_idx}"
+            arg_idx: object = len(self.var_map)
+            arg_name: object = f"%arg{arg_idx}"
             self.var_map[nid] = arg_name
             return arg_name
 
@@ -129,29 +129,29 @@ class StableHLOCodeGenerator(BaseGenerator):
             """get_stablehlo_op_name function.
 
             Args:
-            op_type (Any): The op_type parameter.
+            op_type (object): The op_type parameter.
 
             Returns:
-            Any: Result.
+            object: Result.
             """
-            op_def = OPS_REGISTRY.get(op_type, {})
-            variants = op_def.get("variants", {})
+            op_def: object = OPS_REGISTRY.get(op_type, {})
+            variants: object = op_def.get("variants", {})
             if "edge_stablehlo" in variants:
-                mapping = variants["edge_stablehlo"]
-                gen = mapping.get("opcode") or mapping.get("generator")
+                mapping: object = variants["edge_stablehlo"]
+                gen: object = mapping.get("opcode") or mapping.get("generator")
                 if gen:
-                    return gen  # type: ignore
-            return self.schema.get("operations", {}).get("fallback", "stablehlo.custom_call")  # type: ignore
+                    return gen
+            return self.schema.get("operations", {}).get("fallback", "stablehlo.custom_call")
 
-        hlo_op = get_stablehlo_op_name(op_type)
-        res_var = f"%v_{nid.replace('-', '_')}"
+        hlo_op: object = get_stablehlo_op_name(op_type)
+        res_var: object = f"%v_{nid.replace('-', '_')}"
         self.var_map[nid] = res_var
-        out_type = self._get_node_type(node)
-        in_vars_mapped = [self.var_map.get(inp, inp) for inp in getattr(node, "inputs", [])]
-        in_types = self._resolve_input_types(node, out_type)
+        out_type: object = self._get_node_type(node)
+        in_vars_mapped: object = [self.var_map.get(inp, inp) for inp in getattr(node, "inputs", [])]
+        in_types: object = self._resolve_input_types(node, out_type)
 
-        inputs_str = ", ".join(in_vars_mapped)
-        types_signature = f"({', '.join(in_types)}) -> {out_type}"
+        inputs_str: object = ", ".join(in_vars_mapped)
+        types_signature: object = f"({', '.join(in_types)}) -> {out_type}"
 
         if hlo_op == "stablehlo.custom_call":
             self.add_line(f'  {res_var} = "stablehlo.custom_call"({inputs_str}) {{call_target_name = "{op_type}"}} : {types_signature}')
@@ -160,19 +160,19 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         return res_var
 
-    def _build_func_args(self, input_nodes: list[Any]) -> list[str]:
+    def _build_func_args(self, input_nodes: list[object]) -> list[str]:
         """Build the list of function arguments for the generated MLIR module.
 
         Args:
-            input_nodes (list[Any]): List of input IR nodes.
+            input_nodes (list[object]): List of input IR nodes.
 
         Returns:
             list[str]: A list of argument strings for the MLIR function.
         """
-        func_args = []
+        func_args: object = []
         for idx, node in enumerate(input_nodes):
-            t_type = self._get_node_type(node)
-            arg_name = f"%arg{idx}"
+            t_type: object = self._get_node_type(node)
+            arg_name: object = f"%arg{idx}"
             self.var_map[getattr(node, "id", "")] = arg_name
             func_args.append(f"{arg_name}: {t_type}")
         return func_args
@@ -186,9 +186,9 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             list[str]: A list of return type strings for the MLIR function.
         """
-        out_types = []
+        out_types: object = []
         for out_id in output_ids:
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            out_node: object = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
             if out_node:
                 out_types.append(self._get_node_type(out_node))
             else:
@@ -231,14 +231,14 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: Generated StableHLO MLIR text.
         """
-        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        func_args = self._build_func_args(input_nodes)
+        input_nodes: object = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        func_args: object = self._build_func_args(input_nodes)
 
-        output_ids = getattr(self.graph, "outputs", []) or []
-        out_types = self._build_out_types(output_ids)
+        output_ids: object = getattr(self.graph, "outputs", []) or []
+        out_types: object = self._build_out_types(output_ids)
 
-        args_str = ", ".join(func_args)
-        returns_str = self._get_returns_str(out_types)
+        args_str: object = ", ".join(func_args)
+        returns_str: object = self._get_returns_str(out_types)
 
         self.code.clear()
         self.add_line("module @jit_fun {")
@@ -248,9 +248,9 @@ class StableHLOCodeGenerator(BaseGenerator):
             if getattr(node, "op_type", "") != "Input":
                 self.generic_visit(node, [])
 
-        out_vars = [self.var_map.get(out_id, out_id) for out_id in output_ids]
-        ret_vars_str = self._get_ret_vars_str(out_vars)
-        ret_types_str = f" : {returns_str}" if returns_str else ""
+        out_vars: object = [self.var_map.get(out_id, out_id) for out_id in output_ids]
+        ret_vars_str: object = self._get_ret_vars_str(out_vars)
+        ret_types_str: object = f" : {returns_str}" if returns_str else ""
         self.add_line(f"    return {ret_vars_str}{ret_types_str}")
 
         self.add_line("  }")
@@ -269,13 +269,13 @@ class StableHLOCodeGenerator(BaseGenerator):
         # Generate MLIR text to populate variables mapping etc.
         self.generate()
 
-        encoder = MLIRBytecodeEncoder()
+        encoder: object = MLIRBytecodeEncoder()
         encoder.add_dialect("stablehlo")
         encoder.add_dialect("func")
 
         # Walk through sorted nodes and add them
         for node in self.sorted_nodes:
-            op_type = getattr(node, "op_type", "")
+            op_type: object = getattr(node, "op_type", "")
             if op_type == "Input":
                 continue
 
@@ -285,15 +285,15 @@ class StableHLOCodeGenerator(BaseGenerator):
 
             from ml_switcheroo_compiler.backends.edge.config_models import StablehloSchemaConfig
 
-            path = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
+            path: object = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
             with open(path) as f:
-                data = yaml.safe_load(f)
-                schema = StablehloSchemaConfig(**data)
+                data: object = yaml.safe_load(f)
+                schema: object = StablehloSchemaConfig(**data)
 
-            hlo_op = schema.op_mapping.get(op_type, schema.operations["fallback"])
+            hlo_op: object = schema.op_mapping.get(op_type, schema.operations["fallback"])
 
-            in_vars = getattr(node, "inputs", [])
-            out_vars = [getattr(node, "id", "")]
+            in_vars: object = getattr(node, "inputs", [])
+            out_vars: object = [getattr(node, "id", "")]
             encoder.add_op(hlo_op, in_vars, out_vars)
 
         with open(file_path, "wb") as f:

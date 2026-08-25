@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts: tuple[Any, ...], r_parts: tuple[Any, ...], state: Tensor) -> Any:  # type: ignore
+def _compute_gru_gates(x_parts: tuple[object, ...], r_parts: tuple[object, ...], state: Tensor) -> object:
     """Evaluate _compute_gru_gates operation.
 
     Args:
@@ -28,19 +28,19 @@ def _compute_gru_gates(x_parts: tuple[Any, ...], r_parts: tuple[Any, ...], state
     """
     x_z, x_r, x_h = x_parts
     recurrent_z, recurrent_r, recurrent_h = r_parts
-    z = _sigmoid(add(x_z, recurrent_z))
-    r = _sigmoid(add(x_r, recurrent_r))
-    hh = tanh(add(x_h, multiply(r, recurrent_h)))
+    z: object = _sigmoid(add(x_z, recurrent_z))
+    r: object = _sigmoid(add(x_r, recurrent_r))
+    hh: object = tanh(add(x_h, multiply(r, recurrent_h)))
     return add(multiply(z, state), multiply(subtract(1.0, z), hh))
 
 
 def gru_cell(
-    inputs: Tensor,  # type: ignore
-    state: Tensor,  # type: ignore
-    kernel: Tensor,  # type: ignore
-    recurrent_kernel: Tensor,  # type: ignore
-    bias: Optional[Tensor] = None,  # type: ignore
-) -> Any:
+    inputs: Tensor,
+    state: Tensor,
+    kernel: Tensor,
+    recurrent_kernel: Tensor,
+    bias: Optional[Tensor] = None,
+) -> object:
     """Fused GRU cell math.
 
     Args:
@@ -53,16 +53,16 @@ def gru_cell(
     Returns:
         tuple: Result.
     """
-    matrix_x = matmul(inputs, kernel)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_x: object = matmul(inputs, kernel)
     if bias is not None:
-        matrix_x = add(matrix_x, bias)
+        matrix_x: object = add(matrix_x, bias)
 
-    matrix_inner = matmul(state, recurrent_kernel)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_inner: object = matmul(state, recurrent_kernel)
 
-    x_parts = split(matrix_x, 3, axis=-1)
-    r_parts = split(matrix_inner, 3, axis=-1)
+    x_parts: object = split(matrix_x, 3, axis=-1)
+    r_parts: object = split(matrix_inner, 3, axis=-1)
 
-    h_new = _compute_gru_gates(x_parts, r_parts, state)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    h_new: object = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new
 
 
@@ -70,9 +70,9 @@ def gru_cell(
 class Gru(OpDef):
     """Gru operation."""
 
-    op_name = "Gru"
+    op_name: object = "Gru"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -85,7 +85,7 @@ class Gru(OpDef):
         return args[0] if args else ()
 
 
-def gru(*args: Any, **kwargs: Any) -> Any:
+def gru(*args: object, **kwargs: object) -> object:
     """GRU layer.
 
     Args:
@@ -96,16 +96,16 @@ def gru(*args: Any, **kwargs: Any) -> Any:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend = get_active_backend()
+        backend: object = get_active_backend()
         return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
 
-    t_args = [a for a in args if isinstance(a, Tensor)]
-    out_shape = getattr(t_args[0], "shape", ()) if t_args else ()
-    out_dtype = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
+    t_args: object = [a for a in args if isinstance(a, Tensor)]
+    out_shape: object = getattr(t_args[0], "shape", ()) if t_args else ()
+    out_dtype: object = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
     return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)
 
 
-def _sigmoid(x: Any) -> Any:
+def _sigmoid(x: object) -> object:
     """Evaluate _sigmoid operation.
 
     Args:

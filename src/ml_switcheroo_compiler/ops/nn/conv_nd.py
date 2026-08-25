@@ -3,7 +3,7 @@
 
 import typing
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Union
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -18,11 +18,11 @@ from .conv_utils import GenericConvConfig
 
 
 def conv_transpose(
-    lhs: Tensor,  # type: ignore
-    rhs: Tensor,  # type: ignore
+    lhs: Tensor,
+    rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> Any:
+) -> object:
     """Convolution transpose.
 
     Args:
@@ -34,11 +34,11 @@ def conv_transpose(
     Returns:
         Tensor: The result of the convolution.
     """
-    op_name = "ConvTranspose"
+    op_name: object = "ConvTranspose"
 
     if config.eager_mode:
-        backend = get_active_backend()
-        data = backend.execute_op(
+        backend: object = get_active_backend()
+        data: object = backend.execute_op(
             op_name,
             getattr(lhs, "data", lhs),
             getattr(rhs, "data", rhs),
@@ -51,10 +51,10 @@ def conv_transpose(
 
 
 def conv(
-    inputs: Tensor,  # type: ignore
-    kernel: Tensor,  # type: ignore
+    inputs: Tensor,
+    kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-) -> Any:
+) -> object:
     """Evaluate conv operation.
 
     Args:
@@ -68,7 +68,7 @@ def conv(
     Raises:
         ValueError: An exception.
     """
-    conf = config if config is not None else GenericConvConfig()
+    conf: object = config if config is not None else GenericConvConfig()
     """Provide generic convolution.
 
     Args:
@@ -82,7 +82,7 @@ def conv(
     Returns:
         Tensor: Convolution output.
     """
-    spatial_rank = len(inputs.shape) - 2
+    spatial_rank: object = len(inputs.shape) - 2
     if spatial_rank == 1:
         return conv1d(
             inputs,
@@ -115,10 +115,10 @@ def conv(
 
 
 def depthwise_conv(
-    inputs: Tensor,  # type: ignore
-    kernel: Tensor,  # type: ignore
+    inputs: Tensor,
+    kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-) -> Any:
+) -> object:
     """Evaluate depthwise_conv operation.
 
     Args:
@@ -132,7 +132,7 @@ def depthwise_conv(
     Raises:
         ValueError: An exception.
     """
-    conf = config if config is not None else GenericConvConfig()
+    conf: object = config if config is not None else GenericConvConfig()
     """Provide generic depthwise convolution.
 
     Args:
@@ -146,7 +146,7 @@ def depthwise_conv(
     Returns:
         Tensor: Convolution output.
     """
-    spatial_rank = len(inputs.shape) - 2
+    spatial_rank: object = len(inputs.shape) - 2
     if spatial_rank == 1:
         return depthwise_conv1d(
             inputs,
@@ -171,11 +171,11 @@ def depthwise_conv(
 
 
 def separable_conv(
-    inputs: Tensor,  # type: ignore
-    depthwise_kernel: Tensor,  # type: ignore
-    pointwise_kernel: Tensor,  # type: ignore
+    inputs: Tensor,
+    depthwise_kernel: Tensor,
+    pointwise_kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
-) -> Any:
+) -> object:
     """Evaluate separable_conv operation.
 
     Args:
@@ -190,7 +190,7 @@ def separable_conv(
     Raises:
         ValueError: An exception.
     """
-    conf = config if config is not None else GenericConvConfig()
+    conf: object = config if config is not None else GenericConvConfig()
     """Provide generic separable convolution.
 
     Args:
@@ -205,7 +205,7 @@ def separable_conv(
     Returns:
         Tensor: Convolution output.
     """
-    spatial_rank = len(inputs.shape) - 2
+    spatial_rank: object = len(inputs.shape) - 2
     if spatial_rank == 1:
         return separable_conv1d(
             inputs,

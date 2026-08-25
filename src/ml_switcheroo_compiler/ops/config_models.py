@@ -1,6 +1,6 @@
 """Pydantic models for ops registry configuration files."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -14,7 +14,7 @@ class VariantConfig(BaseModel):
     scalar_expr: Optional[str] = None
     simd_expr: Optional[str] = None
     template: Optional[str] = None
-    model_config = {"extra": "allow"}  # Allow other backend specific configurations
+    model_config: object = {"extra": "allow"}  # Allow other backend specific configurations
 
 
 class OpArgConfig(BaseModel):
@@ -30,9 +30,9 @@ class OpRegistryConfig(BaseModel):
 
     description: Optional[str] = None
     operation: Optional[str] = None
-    std_args: Optional[list[Any]] = None  # Just let it be Any for now, sometimes it's dict, sometimes string
+    std_args: Optional[list[object]] = None  # Just let it be object for now, sometimes it's dict, sometimes string
     variants: dict[str, VariantConfig] = Field(default_factory=dict)
-    model_config = {"extra": "allow"}
+    model_config: object = {"extra": "allow"}
 
 
 class OpsRegistry(RootModel[dict[str, OpRegistryConfig]]):
@@ -40,14 +40,14 @@ class OpsRegistry(RootModel[dict[str, OpRegistryConfig]]):
 
     root: dict[str, OpRegistryConfig]
 
-    def dict(self, *args: Any, **kwargs: Any) -> Any:
+    def dict(self, *args: object, **kwargs: object) -> object:
         """Return dict representation."""
         return super().model_dump(*args, **kwargs)
 
-    def items(self) -> Any:
+    def items(self) -> object:
         """Return items from the underlying dictionary."""
         return self.root.items()
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: object = None) -> object:
         """Get op config by key."""
         return self.root.get(key, default)

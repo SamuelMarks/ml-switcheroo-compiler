@@ -3,13 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _allclose(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _allclose operation.
 
     Args:
@@ -20,13 +18,13 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    a = args[0]
-    b = args[1]
-    rtol = kwargs.get("rtol", 1e-05)
-    atol = kwargs.get("atol", 1e-08)
-    equal_nan = kwargs.get("equal_nan", False)
+    a: object = args[0]
+    b: object = args[1]
+    rtol: object = kwargs.get("rtol", 1e-05)
+    atol: object = kwargs.get("atol", 1e-08)
+    equal_nan: object = kwargs.get("equal_nan", False)
 
-    def _val(x: Any) -> Any:
+    def _val(x: object) -> object:
         """Evaluate _val operation.
 
         Args:
@@ -35,7 +33,7 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         Returns:
             tuple[int, ...]: Result.
         """
-        x_data = getattr(x, "data", x)
+        x_data: object = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(x_data.item):
             return x_data.item()
         if hasattr(x_data, "tolist"):
@@ -50,7 +48,7 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
+def _array_equiv(backend_module: object, a1: object, a2: object, **kwargs: object) -> object:
     """Evaluate _array_equiv operation.
 
     Args:
@@ -66,7 +64,7 @@ def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
+def _assert(backend_module: object, condition: object, data: object, summarize: int = 3, **kwargs: object) -> object:
     """Evaluate _assert operation.
 
     Args:
@@ -83,7 +81,7 @@ def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, 
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _promotetypes(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _promotetypes operation.
 
     Args:
@@ -98,7 +96,7 @@ def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _resulttype(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _resulttype operation.
 
     Args:

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("ArgPartition")
-def _np_argpartition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_argpartition(backend_module: object, *args: object, **kwargs: object) -> object:
     """Perform an indirect partition along the given axis.
 
     Args:
@@ -21,13 +20,13 @@ def _np_argpartition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.argpartition(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Lexsort")
-def _np_lexsort_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_lexsort_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Lexsort via lexsort.
 
     Args:
@@ -35,13 +34,13 @@ def _np_lexsort_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Median")
-def _np_median_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_median_(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement Median via median.
 
     Args:
@@ -49,6 +48,6 @@ def _np_median_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The computed result.
+    Returns: object: The computed result.
     """
     return backend_module.median(*args, **kwargs)

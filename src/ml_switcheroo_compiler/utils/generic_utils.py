@@ -15,7 +15,6 @@ import time
 import urllib.request
 import zipfile
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.core import config
 
@@ -62,7 +61,7 @@ class ProgbarConfig:
     width: int = 30
     verbose: int = 1
     interval: float = 0.05
-    stateful_metrics: list[Any] | None = None
+    stateful_metrics: list[object] | None = None
     unit_name: str = "step"
 
 
@@ -146,19 +145,19 @@ def get_file(
     Returns:
         str: Result.
     """
-    conf = config if config is not None else GetFileConfig()
-    untar = conf.archive_config.untar
-    cache_subdir = conf.cache_config.cache_subdir
-    extract = conf.archive_config.extract
-    cache_dir = conf.cache_config.cache_dir
+    conf: object = config if config is not None else GetFileConfig()
+    untar: object = conf.archive_config.untar
+    cache_subdir: object = conf.cache_config.cache_subdir
+    extract: object = conf.archive_config.extract
+    cache_dir: object = conf.cache_config.cache_dir
 
     if cache_dir is None:
-        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")
+        cache_dir: object = os.path.join(os.path.expanduser("~"), ".keras")
 
-    datadir = os.path.join(cache_dir, cache_subdir)
+    datadir: object = os.path.join(cache_dir, cache_subdir)
     os.makedirs(datadir, exist_ok=True)
 
-    fpath = os.path.join(datadir, fname)
+    fpath: object = os.path.join(datadir, fname)
 
     if _validate_cache(fpath):
         return fpath
@@ -198,14 +197,14 @@ class Progbar:
             target (object): The target parameter.
             config (object): The config parameter.
         """
-        conf = config if config is not None else ProgbarConfig()
+        conf: object = config if config is not None else ProgbarConfig()
 
         self.target = target
         self.config = conf
 
         self.stateful_metrics = set(conf.stateful_metrics) if conf.stateful_metrics else set()
-        self._values = {}  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        self._values_order = []  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self._values = {}
+        self._values_order = []
         self._seen_so_far = 0
         self._last_update = 0.0
 
@@ -219,7 +218,7 @@ class Progbar:
             last_update=0.0,
         )
 
-    def _update_values(self, current: int, values: list[Any]) -> None:
+    def _update_values(self, current: int, values: list[object]) -> None:
         """Evaluate _update_values operation.
 
         Args:
@@ -288,7 +287,7 @@ class Progbar:
         """
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
-    def update(self, current: int, values: list[Any] | None = None, finalize: bool | None = None) -> None:
+    def update(self, current: int, values: list[object] | None = None, finalize: bool | None = None) -> None:
         """Update the progress bar.
 
         Args:
@@ -296,12 +295,12 @@ class Progbar:
             values (object): The values parameter.
             finalize (object): The finalize parameter.
         """
-        values = values or []
+        values: object = values or []
         self._update_values(current, values)
         self._seen_so_far = current
 
-        now = time.time()
-        should_finalize = self._should_finalize(current, finalize)
+        now: object = time.time()
+        should_finalize: object = self._should_finalize(current, finalize)
 
         if self._should_update(now, should_finalize):
             self._last_update = now
@@ -312,7 +311,7 @@ class Progbar:
 class FeatureSpace:
     """FeatureSpace utility class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:
@@ -326,7 +325,7 @@ class FeatureSpace:
 class Config:
     """Config utility class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:
@@ -340,7 +339,7 @@ class Config:
 class CustomObjectScope:
     """Scope for custom objects."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:
@@ -358,7 +357,7 @@ class CustomObjectScope:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit.
 
         Args:
@@ -372,7 +371,7 @@ class CustomObjectScope:
 class PyDataset:
     """PyDataset utility class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:
@@ -386,7 +385,7 @@ class PyDataset:
 class Sequence:
     """Sequence utility class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:
@@ -397,7 +396,7 @@ class Sequence:
         self.kwargs = kwargs
 
 
-def clear_session(*args: Any, **kwargs: Any) -> None:
+def clear_session(*args: object, **kwargs: object) -> None:
     """Clear the Keras session.
 
     Args:
@@ -407,7 +406,7 @@ def clear_session(*args: Any, **kwargs: Any) -> None:
     config.clear_cache()
 
 
-def custom_object_scope(*args: Any, **kwargs: Any) -> Any:
+def custom_object_scope(*args: object, **kwargs: object) -> object:
     """Create a custom object scope.
 
     Args:
@@ -420,7 +419,7 @@ def custom_object_scope(*args: Any, **kwargs: Any) -> Any:
     return CustomObjectScope(*args, **kwargs)
 
 
-def deserialize_keras_object(*args: Any, **kwargs: Any) -> Any:
+def deserialize_keras_object(*args: object, **kwargs: object) -> object:
     """Deserialize a Keras object.
 
     Args:
@@ -433,7 +432,7 @@ def deserialize_keras_object(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-def disable_interactive_logging(*args: Any, **kwargs: Any) -> None:
+def disable_interactive_logging(*args: object, **kwargs: object) -> None:
     """Disable interactive logging.
 
     Args:
@@ -443,7 +442,7 @@ def disable_interactive_logging(*args: Any, **kwargs: Any) -> None:
     config._state.env.interactive_logging = False
 
 
-def enable_interactive_logging(*args: Any, **kwargs: Any) -> None:
+def enable_interactive_logging(*args: object, **kwargs: object) -> None:
     """Enable interactive logging.
 
     Args:
@@ -453,7 +452,7 @@ def enable_interactive_logging(*args: Any, **kwargs: Any) -> None:
     config._state.env.interactive_logging = True
 
 
-def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
+def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:
     """Get custom objects.
 
     Args:
@@ -466,7 +465,7 @@ def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
     return {}
 
 
-def get_registered_name(*args: Any, **kwargs: Any) -> str:
+def get_registered_name(*args: object, **kwargs: object) -> str:
     """Get registered name.
 
     Args:
@@ -479,7 +478,7 @@ def get_registered_name(*args: Any, **kwargs: Any) -> str:
     return ""
 
 
-def get_registered_object(*args: Any, **kwargs: Any) -> Any:
+def get_registered_object(*args: object, **kwargs: object) -> object:
     """Get registered object.
 
     Args:
@@ -492,7 +491,7 @@ def get_registered_object(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-def is_interactive_logging_enabled(*args: Any, **kwargs: Any) -> bool:
+def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
     """Check if interactive logging is enabled.
 
     Args:
@@ -505,7 +504,7 @@ def is_interactive_logging_enabled(*args: Any, **kwargs: Any) -> bool:
     return False
 
 
-def is_keras_tensor(*args: Any, **kwargs: Any) -> bool:
+def is_keras_tensor(*args: object, **kwargs: object) -> bool:
     """Check if an object is a Keras tensor.
 
     Args:
@@ -518,7 +517,7 @@ def is_keras_tensor(*args: Any, **kwargs: Any) -> bool:
     return False
 
 
-def register_keras_serializable(*args: Any, **kwargs: Any) -> Any:
+def register_keras_serializable(*args: object, **kwargs: object) -> object:
     """Register an object with Keras serialization.
 
     Args:
@@ -529,20 +528,20 @@ def register_keras_serializable(*args: Any, **kwargs: Any) -> Any:
         The decorator.
     """
 
-    def decorator(cls: Any) -> Any:
+    def decorator(cls: object) -> object:
         """Register the annotated class in the keras registry.
 
         Args:
             cls (object): The class to register.
 
-        Returns: Any: The original class.
+        Returns: object: The original class.
         """
         return cls
 
     return decorator
 
 
-def serialize_keras_object(*args: Any, **kwargs: Any) -> Any:
+def serialize_keras_object(*args: object, **kwargs: object) -> object:
     """Serialize a Keras object.
 
     Args:
@@ -555,7 +554,7 @@ def serialize_keras_object(*args: Any, **kwargs: Any) -> Any:
     return None
 
 
-def standardize_dtype(*args: Any, **kwargs: Any) -> Any:
+def standardize_dtype(*args: object, **kwargs: object) -> object:
     """Standardize a dtype.
 
     Args:
@@ -571,7 +570,7 @@ def standardize_dtype(*args: Any, **kwargs: Any) -> Any:
 class bounding_boxes:
     """Bounding boxes utilities namespace."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize.
 
         Args:

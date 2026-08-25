@@ -1,6 +1,6 @@
 """Pydantic models for edge generator configuration."""
 
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class WgslTemplateConfig(BaseModel):
     workgroup_size: Optional[list[int]] = None
     body: Optional[str] = None
     global_code: Optional[str] = None
-    model_config = {"extra": "allow"}
+    model_config: object = {"extra": "allow"}
 
 
 class WgslTemplatesConfig(BaseModel):
@@ -20,9 +20,9 @@ class WgslTemplatesConfig(BaseModel):
     templates: dict[str, WgslTemplateConfig]
     js_orchestration: dict[str, str] = {}
 
-    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+    def model_dump(self, *args: object, **kwargs: object) -> object:
         """Return dict representation."""
-        res = super().model_dump(*args, **kwargs)
+        res: object = super().model_dump(*args, **kwargs)
         return res
 
 
@@ -62,8 +62,8 @@ class StablehloSchemaConfig(BaseModel):
 
     types: dict[str, str]
     operations: dict[str, str]
-    bytecode: dict[str, Any]
-    control_flow: dict[str, Any]
+    bytecode: dict[str, object]
+    control_flow: dict[str, object]
     op_mapping: dict[str, str]
 
 

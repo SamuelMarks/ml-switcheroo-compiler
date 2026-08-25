@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module __init__.py."""
 
-from typing import Any
-
 """Serialization package."""
 import json
 import os
@@ -10,7 +8,7 @@ import pickle
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Callable, Optional, TypeVar
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 
@@ -25,7 +23,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import _extract_numpy_weights, concatenate_arrays, get_npz_bytes, is_numpy_array, load_npz, to_numpy
 
 
-def graph_to_json(graph: Any) -> str:
+def graph_to_json(graph: IRGraph) -> str:
     """Convert graph to JSON.
 
     Args:
@@ -34,7 +32,7 @@ def graph_to_json(graph: Any) -> str:
     Returns:
         str: Result.
     """
-    return graph.to_json()  # type: ignore
+    return graph.to_json()
 
 
 T = TypeVar("T")
@@ -58,13 +56,13 @@ def _infer_weight_format(filepath: str) -> str:
     return "pickle"
 
 
-def _get_format_handler(fmt: str) -> Any:
+def _get_format_handler(fmt: str) -> object:
     """Get the appropriate weight format handler based on the format string.
 
     Args:
         fmt (str): The format string representing the serialization format.
 
-    Returns: Any: An instance of the corresponding weight format handler.
+    Returns: object: An instance of the corresponding weight format handler.
     """
     if fmt == "h5":
         return H5WeightFormat()
@@ -75,7 +73,7 @@ def _get_format_handler(fmt: str) -> Any:
     return PickleWeightFormat()
 
 
-def _save_as_h5(weights_np: dict[str, Any], filepath: str) -> None:
+def _save_as_h5(weights_np: dict[str, object], filepath: str) -> None:
     """Save the given weights dictionary to an HDF5 file.
 
     Args:
@@ -85,7 +83,7 @@ def _save_as_h5(weights_np: dict[str, Any], filepath: str) -> None:
     H5WeightFormat().save(weights_np, filepath)
 
 
-def _save_as_safetensors(weights_np: dict[str, Any], filepath: str) -> None:
+def _save_as_safetensors(weights_np: dict[str, object], filepath: str) -> None:
     """Save the given weights dictionary to a safetensors file.
 
     Args:
@@ -95,7 +93,7 @@ def _save_as_safetensors(weights_np: dict[str, Any], filepath: str) -> None:
     SafetensorsWeightFormat().save(weights_np, filepath)
 
 
-def _load_h5_weights(filepath: str) -> dict[str, Any]:
+def _load_h5_weights(filepath: str) -> dict[str, object]:
     """Load weights from an HDF5 file.
 
     Args:
@@ -107,7 +105,7 @@ def _load_h5_weights(filepath: str) -> dict[str, Any]:
     return H5WeightFormat().load(filepath)
 
 
-def _load_safetensors_weights(filepath: str) -> dict[str, Any]:
+def _load_safetensors_weights(filepath: str) -> dict[str, object]:
     """Load weights from a safetensors file.
 
     Args:
@@ -119,7 +117,7 @@ def _load_safetensors_weights(filepath: str) -> dict[str, Any]:
     return SafetensorsWeightFormat().load(filepath)
 
 
-def _load_npz_weights(filepath: str) -> dict[str, Any]:
+def _load_npz_weights(filepath: str) -> dict[str, object]:
     """Load weights from an NPZ (numpy zip) file.
 
     Args:
@@ -131,7 +129,7 @@ def _load_npz_weights(filepath: str) -> dict[str, Any]:
     return NpzWeightFormat().load(filepath)
 
 
-def _load_pickle_weights(filepath: str) -> dict[str, Any]:
+def _load_pickle_weights(filepath: str) -> dict[str, object]:
     """Load weights from a pickle file.
 
     Args:
@@ -143,7 +141,7 @@ def _load_pickle_weights(filepath: str) -> dict[str, Any]:
     return PickleWeightFormat().load(filepath)
 
 
-def _validate_and_map_weights(weights_dict: dict[str, Any], target_model: Any = None) -> dict[str, Any]:
+def _validate_and_map_weights(weights_dict: dict[str, object], target_model: object = None) -> dict[str, object]:
     """Validate the loaded weights and map them to the target model if provided.
 
     Args:
@@ -156,7 +154,7 @@ def _validate_and_map_weights(weights_dict: dict[str, Any], target_model: Any = 
     return weights_dict
 
 
-def load_weights(filepath: str, target_model: Any = None) -> dict[str, Any]:
+def load_weights(filepath: str, target_model: object = None) -> dict[str, object]:
     """Load weights from a specified file path and map them to a target model.
 
     Args:
@@ -166,13 +164,13 @@ def load_weights(filepath: str, target_model: Any = None) -> dict[str, Any]:
     Returns:
         dict: Result.
     """
-    fmt = _infer_weight_format(filepath)
-    handler = _get_format_handler(fmt)
-    weights = handler.load(filepath)
+    fmt: object = _infer_weight_format(filepath)
+    handler: object = _get_format_handler(fmt)
+    weights: object = handler.load(filepath)
     return _validate_and_map_weights(weights, target_model)
 
 
-def save_weights(model: Any, filepath: str, overwrite: bool = True, **kwargs: Any) -> None:
+def save_weights(model: object, filepath: str, overwrite: bool = True, **kwargs: object) -> None:
     """Save the weights of a given model to a specified file path.
 
     Args:
@@ -214,29 +212,29 @@ def export_model_topology(graph: IRGraph, filepath: str) -> None:
         graph (IRGraph): The graph parameter.
         filepath (str): The filepath parameter.
     """
-    json_str = graph_to_json(graph)
+    json_str: object = graph_to_json(graph)
     with open(filepath, "w") as f:
         f.write(json_str)
 
 
-def _extract_model_weights(model: Any) -> dict[str, Any]:
+def _extract_model_weights(model: object) -> dict[str, object]:
     """Extract weights from a model and convert them to numpy arrays.
 
     Args:
         model (object): The target model to extract weights from.
 
     Returns:
-        dict[str, Any]: A dictionary containing the extracted weights.
+        dict[str, object]: A dictionary containing the extracted weights.
     """
-    weights_store = {}
+    weights_store: object = {}
     if hasattr(model, "weights"):
         for i, w in enumerate(model.weights):
-            name = getattr(w, "name", f"weight_{i}")
+            name: object = getattr(w, "name", f"weight_{i}")
             weights_store[name] = to_numpy(w)
     return weights_store
 
 
-def _extract_optimizer_state(model: Any, state_store: dict[str, Any]) -> None:
+def _extract_optimizer_state(model: object, state_store: dict[str, object]) -> None:
     """Extract optimizer momentums and variables into a flat numpy dictionary.
 
     Args:
@@ -246,15 +244,15 @@ def _extract_optimizer_state(model: Any, state_store: dict[str, Any]) -> None:
     if hasattr(model, "optimizer"):
         if hasattr(model.optimizer, "variables"):
             for i, w in enumerate(model.optimizer.variables):
-                name = getattr(w, "name", f"opt_state_{i}")
+                name: object = getattr(w, "name", f"opt_state_{i}")
                 state_store[name] = to_numpy(w)
         if hasattr(model.optimizer, "momentums"):
             for i, w in enumerate(model.optimizer.momentums):
-                name = getattr(w, "name", f"momentum_{i}")
+                name: object = getattr(w, "name", f"momentum_{i}")
                 state_store[name] = to_numpy(w)
 
 
-def _extract_non_trainable_state(model: Any, state_store: dict[str, Any], weights_store: dict[str, Any]) -> None:
+def _extract_non_trainable_state(model: object, state_store: dict[str, object], weights_store: dict[str, object]) -> None:
     """Extract batch normalization statistics and non-trainable state.
 
     Args:
@@ -264,12 +262,12 @@ def _extract_non_trainable_state(model: Any, state_store: dict[str, Any], weight
     """
     if hasattr(model, "non_trainable_variables"):
         for i, w in enumerate(model.non_trainable_variables):
-            name = getattr(w, "name", f"non_trainable_{i}")
+            name: object = getattr(w, "name", f"non_trainable_{i}")
             if name not in weights_store:
                 state_store[name] = to_numpy(w)
 
 
-def _extract_ema_state(model: Any, state_store: dict[str, Any]) -> None:
+def _extract_ema_state(model: object, state_store: dict[str, object]) -> None:
     """Extract Exponential Moving Average (EMA) variables from the model.
 
     Args:
@@ -278,44 +276,44 @@ def _extract_ema_state(model: Any, state_store: dict[str, Any]) -> None:
     """
     if hasattr(model, "ema_variables"):
         for i, w in enumerate(model.ema_variables):
-            name = getattr(w, "name", f"ema_{i}")
+            name: object = getattr(w, "name", f"ema_{i}")
             state_store[name] = to_numpy(w)
 
 
-def _extract_model_state(model: Any, weights_store: dict[str, Any]) -> dict[str, Any]:
+def _extract_model_state(model: object, weights_store: dict[str, object]) -> dict[str, object]:
     """Extract optimizer state and non-trainable variables from a model.
 
     Args:
         model (object): The target model to extract state from.
-        weights_store (dict[str, Any]): A dictionary of already extracted weights.
+        weights_store (dict[str, object]): A dictionary of already extracted weights.
 
     Returns:
-        dict[str, Any]: A dictionary containing the extracted model state.
+        dict[str, object]: A dictionary containing the extracted model state.
     """
-    state_store: dict[str, Any] = {}
+    state_store: dict[str, object] = {}
     _extract_optimizer_state(model, state_store)
     _extract_non_trainable_state(model, state_store, weights_store)
     _extract_ema_state(model, state_store)
     return state_store
 
 
-def _compile_model_metadata(model: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+def _compile_model_metadata(model: object) -> tuple[dict[str, object], dict[str, object]]:
     """Compile model configuration and metadata into dictionaries.
 
     Args:
         model (object): The model to extract configuration and metadata from.
 
     Returns:
-        tuple[dict[str, Any], dict[str, Any]]: A tuple containing the configuration dictionary and the metadata dictionary.
+        tuple[dict[str, object], dict[str, object]]: A tuple containing the configuration dictionary and the metadata dictionary.
     """
-    config_dict = {}
+    config_dict: object = {}
     if hasattr(model, "get_config"):
-        config_dict = model.get_config()
-    metadata = {"keras_version": "3.0.0", "date_saved": "2026-06-22"}
+        config_dict: object = model.get_config()
+    metadata: object = {"keras_version": "3.0.0", "date_saved": "2026-06-22"}
     return config_dict, metadata
 
 
-def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, Any]) -> None:
+def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, object]) -> None:
     """Write HDF5 data from a dictionary store into a zip file.
 
     Args:
@@ -323,7 +321,7 @@ def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, Any]) 
         filename (str): The filename parameter.
         store (dict): The store parameter.
     """
-    zinfo = zipfile.ZipInfo(filename)
+    zinfo: object = zipfile.ZipInfo(filename)
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
     os.close(tmp_fd)
     _save_as_h5(store, tmp_path)
@@ -338,17 +336,17 @@ class KerasSerializationContext:
 
     Attributes:
         filepath (str): The destination file path.
-        config_dict (dict[str, Any]): The model configuration dictionary.
-        metadata (dict[str, Any]): The model metadata.
-        weights_store (dict[str, Any]): The dictionary of extracted model weights.
-        state_store (dict[str, Any]): The dictionary of extracted model state.
+        config_dict (dict[str, object]): The model configuration dictionary.
+        metadata (dict[str, object]): The model metadata.
+        weights_store (dict[str, object]): The dictionary of extracted model weights.
+        state_store (dict[str, object]): The dictionary of extracted model state.
     """
 
     filepath: str
-    config_dict: dict[str, Any]
-    metadata: dict[str, Any]
-    weights_store: dict[str, Any]
-    state_store: dict[str, Any]
+    config_dict: dict[str, object]
+    metadata: dict[str, object]
+    weights_store: dict[str, object]
+    state_store: dict[str, object]
 
 
 def _write_keras_zip(ctx: KerasSerializationContext) -> None:
@@ -366,7 +364,7 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
             _write_h5_to_zip(zf, "optimizer.weights.h5", ctx.state_store)
 
 
-def save_model(model: Any, filepath: str, overwrite: bool = True, zipped: Any = None, **kwargs: Any) -> None:
+def save_model(model: object, filepath: str, overwrite: bool = True, zipped: object = None, **kwargs: object) -> None:
     """Save the model to a .keras zip format, including state and weights.
 
     Args:
@@ -377,13 +375,13 @@ def save_model(model: Any, filepath: str, overwrite: bool = True, zipped: Any = 
         **kwargs (object): Keyword args.
     """
     config_dict, metadata = _compile_model_metadata(model)
-    weights_store = _extract_model_weights(model)
-    state_store = _extract_model_state(model, weights_store)
-    ctx = KerasSerializationContext(filepath, config_dict, metadata, weights_store, state_store)
+    weights_store: object = _extract_model_weights(model)
+    state_store: object = _extract_model_state(model, weights_store)
+    ctx: object = KerasSerializationContext(filepath, config_dict, metadata, weights_store, state_store)
     _write_keras_zip(ctx)
 
 
-def load_model(filepath: str, custom_objects: Any = None, compile: bool = True, safe_mode: bool = True, **kwargs: Any) -> Any:
+def load_model(filepath: str, custom_objects: object = None, compile: bool = True, safe_mode: bool = True, **kwargs: object) -> object:
     """Load model.
 
     Args:
@@ -401,12 +399,12 @@ def load_model(filepath: str, custom_objects: Any = None, compile: bool = True, 
         import zipfile
 
         with zipfile.ZipFile(filepath, "r") as zf:
-            config = json.loads(zf.read("config.json").decode("utf-8"))
+            config: object = json.loads(zf.read("config.json").decode("utf-8"))
 
         class LoadedModel:
             """LoadedModel operation class."""
 
-            def __init__(self, cfg: dict[str, Any]) -> None:
+            def __init__(self, cfg: dict[str, object]) -> None:
                 """__init__ method for LoadedModel.
 
                 Args:
@@ -422,7 +420,7 @@ def load_model(filepath: str, custom_objects: Any = None, compile: bool = True, 
 
             def __init__(self) -> None:
                 """__init__ method for FallbackModel."""
-                self.config = {}  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                self.config = {}
                 self.fallback = True
 
         return FallbackModel()
@@ -459,7 +457,7 @@ class custom_object_scope:
     Provides a scope in which custom objects are available for serialization and deserialization.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """__init__ method for custom_object_scope.
 
         Args:
@@ -476,7 +474,7 @@ class custom_object_scope:
         """
         return self
 
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+    def __exit__(self, *args: object, **kwargs: object) -> None:
         """__exit__ method for custom_object_scope.
 
         Args:
@@ -488,7 +486,7 @@ class custom_object_scope:
 class CustomObjectScope:
     """Alias for custom_object_scope to maintain compatibility."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         """__init__ method for CustomObjectScope.
 
         Args:
@@ -506,7 +504,7 @@ class CustomObjectScope:
         """
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """__exit__ method for CustomObjectScope.
 
         Args:
@@ -530,24 +528,24 @@ class KerasFileEditor:
         self.filepath = filepath
 
 
-def deserialize_keras_object(*args: Any, **kwargs: Any) -> Any:
+def deserialize_keras_object(*args: object, **kwargs: object) -> object:
     """Deserialize a given Keras object from its configuration.
 
     Args:
         *args (object): Variable length argument list.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The deserialized Keras object instance.
+    Returns: object: The deserialized Keras object instance.
     """
     if args and isinstance(args[0], dict):
         return args[0]
     return kwargs
 
 
-_CUSTOM_OBJECTS = {}  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+_CUSTOM_OBJECTS = {}
 
 
-def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
+def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:
     """Get the dictionary of currently registered custom objects.
 
     Args:
@@ -555,12 +553,12 @@ def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
         **kwargs (object): Arbitrary keyword arguments.
 
     Returns:
-        dict[str, Any]: A dictionary containing custom objects.
+        dict[str, object]: A dictionary containing custom objects.
     """
     return _CUSTOM_OBJECTS
 
 
-def get_registered_name(*args: Any, **kwargs: Any) -> str:
+def get_registered_name(*args: object, **kwargs: object) -> str:
     """Get the registered name for a given class or function.
 
     Args:
@@ -571,31 +569,31 @@ def get_registered_name(*args: Any, **kwargs: Any) -> str:
         str: The registered name of the object.
     """
     if args and hasattr(args[0], "__name__"):
-        return args[0].__name__  # type: ignore
+        return args[0].__name__
     return "CustomObject"
 
 
-def get_registered_object(*args: Any, **kwargs: Any) -> Any:
+def get_registered_object(*args: object, **kwargs: object) -> object:
     """Get the class or function registered under a specific name.
 
     Args:
         *args (object): Variable length argument list.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The registered class or function object.
+    Returns: object: The registered class or function object.
     """
-    name = args[0] if args else kwargs.get("name")
+    name: object = args[0] if args else kwargs.get("name")
     return _CUSTOM_OBJECTS.get(name)
 
 
-def serialize_keras_object(*args: Any, **kwargs: Any) -> Any:
+def serialize_keras_object(*args: object, **kwargs: object) -> object:
     """Serialize a Keras object into its configuration format.
 
     Args:
         *args (object): Variable length argument list.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: Any: The serialized representation of the object.
+    Returns: object: The serialized representation of the object.
     """
     if args and hasattr(args[0], "get_config"):
         return args[0].get_config()
@@ -610,7 +608,7 @@ class TrackableResource:
 
     def __init__(self) -> None:
         """__init__ method for TrackableResource."""
-        self.resource_id: Any = None
+        self.resource_id = None
         self.tracked: bool = False
 
 
@@ -619,7 +617,7 @@ class PythonState:
 
     def __init__(self) -> None:
         """__init__ method for PythonState."""
-        self.state = {}  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self.state = {}
 
 
 class MaxShardSizePolicy:
@@ -685,14 +683,14 @@ def read_fingerprint(path: str) -> str:
     """
     import os
 
-    fp_path = os.path.join(path, "fingerprint.pb")
+    fp_path: object = os.path.join(path, "fingerprint.pb")
     if os.path.exists(fp_path):
         with open(fp_path) as f:
             return f.read()
     return "fingerprint"
 
 
-def load_variable(path: str, name: str) -> "Tensor":  # type: ignore
+def load_variable(path: str, name: str) -> "Tensor":
     """Load variable from V2 checkpoint.
 
     Args:
@@ -707,12 +705,12 @@ def load_variable(path: str, name: str) -> "Tensor":  # type: ignore
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    backend_cls = BackendRegistry.get("numpy")
-    var_path = os.path.join(path, f"{name}.npy")
+    backend_cls: object = BackendRegistry.get("numpy")
+    var_path: object = os.path.join(path, f"{name}.npy")
     if os.path.exists(var_path):
-        data = backend_cls.load(var_path)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        data: object = backend_cls.load(var_path)
     else:
-        data = backend_cls.zeros((1,))
+        data: object = backend_cls.zeros((1,))
     return Tensor(data, TensorConfig(data.shape, str(getattr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
 
 

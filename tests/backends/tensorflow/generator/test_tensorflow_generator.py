@@ -58,4 +58,4 @@ def test_tf_generator_basics(tmp_path):
 
     gen.code = []
     gen._generate_function_signature()
-    assert "def apply_model(*args, **kwargs):" in gen.code[-1]
+    assert "def apply_model(*args, **kwargs) -> object:" in gen.code[-1]

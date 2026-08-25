@@ -1,10 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Types utils for eager backend."""
 
-from typing import Any
 
-
-def generic_zeros(mod: Any, shape: tuple[Any, ...]) -> Any:
+def generic_zeros(mod: object, shape: tuple[object, ...]) -> object:
     """Provide generic zeros.
 
     Args:
@@ -17,7 +15,7 @@ def generic_zeros(mod: Any, shape: tuple[Any, ...]) -> Any:
     return mod.zeros(shape)
 
 
-def generic_array(mod: Any, data: Any, dtype: Any = None) -> Any:
+def generic_array(mod: object, data: object, dtype: object = None) -> object:
     """Provide generic array.
 
     Args:
@@ -33,7 +31,7 @@ def generic_array(mod: Any, data: Any, dtype: Any = None) -> Any:
     return mod.array(data)
 
 
-def generic_asarray(mod: Any, data: Any) -> Any:
+def generic_asarray(mod: object, data: object) -> object:
     """Provide generic asarray.
 
     Args:
@@ -46,7 +44,7 @@ def generic_asarray(mod: Any, data: Any) -> Any:
     return mod.asarray(data)
 
 
-def generic_item(mod: Any, data: Any) -> Any:
+def generic_item(mod: object, data: object) -> object:
     """Provide generic item.
 
     Args:

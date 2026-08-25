@@ -93,5 +93,5 @@ def test_tensorflow_generator_methods(tmp_path) -> None:
     gen.code = []
     gen._generate_function_signature()
     assert "@tf.function" in gen.code[0]
-    assert "def apply_model(*args, **kwargs):" in gen.code[1]
+    assert "def apply_model(*args, **kwargs) -> object:" in gen.code[1]
     assert gen.indent_level == 1

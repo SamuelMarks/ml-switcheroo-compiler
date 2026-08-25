@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Time distributed wrapper operations."""
-from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
@@ -15,7 +14,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, regis
 class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
-    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -32,9 +31,9 @@ class TimeDistributed(OpDef):
 
 @dispatch_eager("TimeDistributed")
 def time_distributed(
-    x: Tensor,  # type: ignore
-    **kwargs: Any,
-) -> Any:
+    x: Tensor,
+    **kwargs: object,
+) -> object:
     """TimeDistributed operation.
 
     Args:

@@ -4,8 +4,6 @@
 Bitcast, and Frexp
 """
 
-from typing import Any
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -15,7 +13,7 @@ from .base import UnaryMathOp
 class Cast(OpDef):
     """Provide an operation that casts an input array to a specified data type."""
 
-    def infer_shape(self, x: Any, dtype: Any = None, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -38,9 +36,9 @@ class Bitcast(Cast):
 class CanCast(OpDef):
     """CanCast operation."""
 
-    op_name = "CanCast"
+    op_name: object = "CanCast"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -58,7 +56,7 @@ class CanCast(OpDef):
 class Frexp(OpDef):
     """Provide an operation that decomposes a floating-point array into mantissa and exponent."""
 
-    def infer_shape(self, x: Any, dtype: Any = None, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
@@ -76,38 +74,38 @@ class Frexp(OpDef):
 class Erf(UnaryMathOp):
     """Compute the error function element-wise."""
 
-    op_name = "Erf"
-    np_op_name = "erf"
+    op_name: object = "Erf"
+    np_op_name: object = "erf"
 
 
 @register_op("BesselI0e")
 class BesselI0e(UnaryMathOp):
     """Provide an operation class for computing the exponentially scaled modified Bessel function of order 0."""
 
-    op_name = "BesselI0e"
+    op_name: object = "BesselI0e"
 
 
 @register_op("BesselI1e")
 class BesselI1e(UnaryMathOp):
     """Provide an operation class for computing the exponentially scaled modified Bessel function of order 1."""
 
-    op_name = "BesselI1e"
+    op_name: object = "BesselI1e"
 
 
 @register_op("Erfc")
 class Erfc(UnaryMathOp):
     """Compute the complementary error function element-wise."""
 
-    op_name = "Erfc"
-    np_op_name = "erfc"
+    op_name: object = "Erfc"
+    np_op_name: object = "erfc"
 
 
 @register_op("Erfinv")
 class Erfinv(UnaryMathOp):
     """Compute the inverse error function element-wise."""
 
-    op_name = "Erfinv"
-    np_op_name = "erfinv"
+    op_name: object = "Erfinv"
+    np_op_name: object = "erfinv"
 
 
 @register_op("Lgamma")
@@ -117,69 +115,69 @@ class Lgamma(UnaryMathOp):
     wise
     """
 
-    op_name = "Lgamma"
-    np_op_name = "lgamma"
+    op_name: object = "Lgamma"
+    np_op_name: object = "lgamma"
 
 
 @register_op("Digamma")
 class Digamma(UnaryMathOp):
     """Compute the digamma function element-wise."""
 
-    op_name = "Digamma"
-    np_op_name = "digamma"
+    op_name: object = "Digamma"
+    np_op_name: object = "digamma"
 
 
 @register_op("Mvlgamma")
 class Mvlgamma(UnaryMathOp):
     """Compute the multivariate log-gamma function with dimension p element-wise."""
 
-    op_name = "Mvlgamma"
+    op_name: object = "Mvlgamma"
 
 
 @register_op("SpecialGamma")
 class SpecialGamma(UnaryMathOp):
     """Compute the gamma function element-wise."""
 
-    op_name = "SpecialGamma"
-    np_op_name = "gamma"
+    op_name: object = "SpecialGamma"
+    np_op_name: object = "gamma"
 
 
 @register_op("BesselI0")
 class BesselI0(UnaryMathOp):
     """Modify Bessel function of order 0."""
 
-    op_name = "BesselI0"
-    np_op_name = "i0"
+    op_name: object = "BesselI0"
+    np_op_name: object = "i0"
 
 
 @register_op("BesselI1")
 class BesselI1(UnaryMathOp):
     """Modify Bessel function of order 1."""
 
-    op_name = "BesselI1"
+    op_name: object = "BesselI1"
 
 
 @register_op("Erfcinv")
 class Erfcinv(UnaryMathOp):
     """Inverse complementary error function."""
 
-    op_name = "Erfcinv"
+    op_name: object = "Erfcinv"
 
 
 @register_op("Ndtri")
 class Ndtri(UnaryMathOp):
     """Inverse standard normal CDF."""
 
-    op_name = "Ndtri"
+    op_name: object = "Ndtri"
 
 
 @register_op("Lbeta")
 class Lbeta(OpDef):
     """Log of the absolute value of the beta function."""
 
-    op_name = "Lbeta"
+    op_name: object = "Lbeta"
 
-    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -189,7 +187,7 @@ class Lbeta(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = getattr(x, "shape", ())
+        shape: object = getattr(x, "shape", ())
         if len(shape) > 0:
             return shape[:-1]
         return ()
@@ -199,116 +197,116 @@ class Lbeta(OpDef):
 class BesselJ0(UnaryMathOp):
     """BesselJ0 operation."""
 
-    op_name = "BesselJ0"
+    op_name: object = "BesselJ0"
 
 
 @register_op("BesselJ1")
 class BesselJ1(UnaryMathOp):
     """BesselJ1 operation."""
 
-    op_name = "BesselJ1"
+    op_name: object = "BesselJ1"
 
 
 @register_op("BesselK0")
 class BesselK0(UnaryMathOp):
     """BesselK0 operation."""
 
-    op_name = "BesselK0"
+    op_name: object = "BesselK0"
 
 
 @register_op("BesselK0e")
 class BesselK0e(UnaryMathOp):
     """BesselK0e operation."""
 
-    op_name = "BesselK0e"
+    op_name: object = "BesselK0e"
 
 
 @register_op("BesselK1")
 class BesselK1(UnaryMathOp):
     """BesselK1 operation."""
 
-    op_name = "BesselK1"
+    op_name: object = "BesselK1"
 
 
 @register_op("BesselK1e")
 class BesselK1e(UnaryMathOp):
     """BesselK1e operation."""
 
-    op_name = "BesselK1e"
+    op_name: object = "BesselK1e"
 
 
 @register_op("BesselY0")
 class BesselY0(UnaryMathOp):
     """BesselY0 operation."""
 
-    op_name = "BesselY0"
+    op_name: object = "BesselY0"
 
 
 @register_op("BesselY1")
 class BesselY1(UnaryMathOp):
     """BesselY1 operation."""
 
-    op_name = "BesselY1"
+    op_name: object = "BesselY1"
 
 
 @register_op("Dawsn")
 class Dawsn(UnaryMathOp):
     """Dawsn operation."""
 
-    op_name = "Dawsn"
+    op_name: object = "Dawsn"
 
 
 @register_op("Expint")
 class Expint(UnaryMathOp):
     """Expint operation."""
 
-    op_name = "Expint"
+    op_name: object = "Expint"
 
 
 @register_op("FresnelCos")
 class FresnelCos(UnaryMathOp):
     """FresnelCos operation."""
 
-    op_name = "FresnelCos"
+    op_name: object = "FresnelCos"
 
 
 @register_op("FresnelSin")
 class FresnelSin(UnaryMathOp):
     """FresnelSin operation."""
 
-    op_name = "FresnelSin"
+    op_name: object = "FresnelSin"
 
 
 @register_op("Spence")
 class Spence(UnaryMathOp):
     """Spence operation."""
 
-    op_name = "Spence"
+    op_name: object = "Spence"
 
 
 @register_op("ModifiedBesselI0")
 class ModifiedBesselI0(UnaryMathOp):
     """ModifiedBesselI0 operation."""
 
-    op_name = "ModifiedBesselI0"
+    op_name: object = "ModifiedBesselI0"
 
 
 @register_op("ModifiedBesselI1")
 class ModifiedBesselI1(UnaryMathOp):
     """ModifiedBesselI1 operation."""
 
-    op_name = "ModifiedBesselI1"
+    op_name: object = "ModifiedBesselI1"
 
 
 @register_op("ModifiedBesselK0")
 class ModifiedBesselK0(UnaryMathOp):
     """ModifiedBesselK0 operation."""
 
-    op_name = "ModifiedBesselK0"
+    op_name: object = "ModifiedBesselK0"
 
 
 @register_op("ModifiedBesselK1")
 class ModifiedBesselK1(UnaryMathOp):
     """ModifiedBesselK1 operation."""
 
-    op_name = "ModifiedBesselK1"
+    op_name: object = "ModifiedBesselK1"

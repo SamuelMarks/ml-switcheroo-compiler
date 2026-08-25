@@ -2,7 +2,7 @@
 """NLP operations."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -56,7 +56,7 @@ class NLPOpsConfig:
     name: Optional[str] = None
 
 
-def all_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
+def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Generate all candidates for sampling operations.
 
     Args:
@@ -67,16 +67,16 @@ def all_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
         A tuple containing the number of sampled candidates, true expected counts,
         and sampled expected counts.
     """
-    num_sampled_tensor = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
-    true_expected_count = Tensor(
+    num_sampled_tensor: object = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
+    true_expected_count: object = Tensor(
         None,
         TensorConfig(true_classes.shape, "float32", "cpu"),
     )
-    sampled_expected_count = Tensor(None, TensorConfig((config.sampling.num_sampled,), "float32", "cpu"))
+    sampled_expected_count: object = Tensor(None, TensorConfig((config.sampling.num_sampled,), "float32", "cpu"))
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes: Any, sampled_candidates: Any, config: NLPOpsConfig) -> Any:
+def compute_accidental_hits(true_classes: object, sampled_candidates: object, config: NLPOpsConfig) -> object:
     """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
@@ -90,9 +90,9 @@ def compute_accidental_hits(true_classes: Any, sampled_candidates: Any, config: 
     Returns:
         A tuple containing the indices, ids, and weights for accidental hits.
     """
-    indices = Tensor([0], TensorConfig((1,), "int32", "cpu"))
-    ids = Tensor([0], TensorConfig((1,), "int32", "cpu"))
-    weights = Tensor([-1e30], TensorConfig((1,), "float32", "cpu"))
+    indices: object = Tensor([0], TensorConfig((1,), "int32", "cpu"))
+    ids: object = Tensor([0], TensorConfig((1,), "int32", "cpu"))
+    weights: object = Tensor([-1e30], TensorConfig((1,), "float32", "cpu"))
     return indices, ids, weights
 
 
@@ -106,7 +106,7 @@ class VocabConfig:
 
     vocab_file: str = ""
     num_reserved_ids: int = 0
-    unigrams: tuple[Any, ...] = ()
+    unigrams: tuple[object, ...] = ()
 
 
 @dataclass
@@ -138,10 +138,10 @@ class SamplerConfig:
 
 
 def fixed_unigram_candidate_sampler(
-    true_classes: Any,
+    true_classes: object,
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
-) -> Any:
+) -> object:
     """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
@@ -158,7 +158,7 @@ def fixed_unigram_candidate_sampler(
     return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
+def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
@@ -174,7 +174,7 @@ def learned_unigram_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -
     return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
+def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
@@ -189,7 +189,7 @@ def log_uniform_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> An
     return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
+def uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
@@ -216,18 +216,18 @@ class NCELossConfig:
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: Optional[Any] = None
+    sampled_values: Optional[object] = None
     remove_accidental_hits: bool = False
     name: str = "nce_loss"
 
 
 def nce_loss(
-    weights: Any,
-    biases: Any,
-    labels: Any,
-    inputs: Any,
+    weights: object,
+    biases: object,
+    labels: object,
+    inputs: object,
     config: NCELossConfig,
-) -> Any:
+) -> object:
     """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
@@ -257,19 +257,19 @@ class SampledSoftmaxConfig:
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: Optional[Any] = None
+    sampled_values: Optional[object] = None
     remove_accidental_hits: bool = True
     seed: Optional[int] = None
     name: str = "sampled_softmax_loss"
 
 
 def sampled_softmax_loss(
-    weights: Any,
-    biases: Any,
-    labels: Any,
-    inputs: Any,
+    weights: object,
+    biases: object,
+    labels: object,
+    inputs: object,
     config: SampledSoftmaxConfig,
-) -> Any:
+) -> object:
     """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
@@ -289,12 +289,12 @@ def sampled_softmax_loss(
 
 
 def ctc_beam_search_decoder(
-    inputs: Any,
-    sequence_length: Any,
-    beam_width: Any = 100,
-    top_paths: Any = 1,
-    merge_repeated: Any = True,
-) -> Any:
+    inputs: object,
+    sequence_length: object,
+    beam_width: object = 100,
+    top_paths: object = 1,
+    merge_repeated: object = True,
+) -> object:
     """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -314,11 +314,11 @@ def ctc_beam_search_decoder(
 
 
 def ctc_greedy_decoder(
-    inputs: Any,
-    sequence_length: Any,
-    merge_repeated: Any = True,
-    blank_index: Any = None,
-) -> Any:
+    inputs: object,
+    sequence_length: object,
+    merge_repeated: object = True,
+    blank_index: object = None,
+) -> object:
     """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -345,18 +345,18 @@ class CTCLossOptions:
     """
 
     logits_time_major: bool = True
-    unique: Optional[Any] = None
+    unique: Optional[object] = None
     blank_index: Optional[int] = None
     name: Optional[str] = None
 
 
 def ctc_loss(
-    labels: Tensor,  # type: ignore
-    logits: Tensor,  # type: ignore
-    label_length: Tensor,  # type: ignore
-    logit_length: Tensor,  # type: ignore
+    labels: Tensor,
+    logits: Tensor,
+    label_length: Tensor,
+    logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
-) -> Any:
+) -> object:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
@@ -375,8 +375,8 @@ def ctc_loss(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend = get_active_backend()
-        data = backend.execute_op("CtcLoss", labels.data, logits.data, label_length.data, logit_length.data)
+        backend: object = get_active_backend()
+        data: object = backend.execute_op("CtcLoss", labels.data, logits.data, label_length.data, logit_length.data)
         return CoreTensor(data, TensorConfig(getattr(data, "shape", (1,)), logits.dtype, logits.device))
     from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
@@ -389,7 +389,7 @@ def ctc_loss(
     )
 
 
-def ctc_unique_labels(labels: Any, name: Any = None) -> Any:
+def ctc_unique_labels(labels: object, name: object = None) -> object:
     """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
@@ -435,9 +435,9 @@ __all__ = [
 class CtcLoss(OpDef):
     """Operator definition for Connectionist Temporal Classification (CTC) Loss."""
 
-    op_name = "CtcLoss"
+    op_name: object = "CtcLoss"
 
-    def infer_shape(self, labels: Any, logits: Any, label_length: Any, logit_length: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, labels: object, logits: object, label_length: object, logit_length: object, **kwargs: object) -> object:
         """Infers the output shape for the CTC loss operation.
 
         Args:
@@ -451,10 +451,10 @@ class CtcLoss(OpDef):
             A tuple representing the inferred output shape.
         """
         # logits: (T, N, C) if time_major else (N, T, C)
-        time_major = kwargs.get("logits_time_major", True)
+        time_major: object = kwargs.get("logits_time_major", True)
         if hasattr(logits, "shape"):
             if len(logits.shape) == 3:
-                batch = logits.shape[1] if time_major else logits.shape[0]
+                batch: object = logits.shape[1] if time_major else logits.shape[0]
                 return (batch,)
             elif len(logits.shape) == 2:
                 return (1,)

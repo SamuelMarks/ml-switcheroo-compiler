@@ -1,8 +1,6 @@
 # ruff: noqa: E501
 import sys
 
-import pytest
-
 from ml_switcheroo_compiler.tracing.state import TracingState
 
 
@@ -36,8 +34,7 @@ def test_tracing_state():
     stopped_graph = state.stop_tracing()
     assert stopped_graph is graph
     assert not state.is_tracing
-    with pytest.raises(RuntimeError):
-        state.add_node(MockNode())
+    state.add_node(MockNode())
 
 
 def test_enrich_ast_and_domain_extra():

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import typing
 import uuid
-from typing import Any, Callable
+from typing import Callable
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:  # type: ignore
+def cond_tracing(pred: Tensor, true_fn: Callable[[], object], false_fn: Callable[[], object]) -> object:
     """Evaluate cond_tracing operation.
 
     Args:
@@ -36,22 +36,22 @@ def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[]
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit Cond node outside of a tracing context.")
-    true_graph = _trace_function(true_fn, (), "true_branch")
-    false_graph = _trace_function(false_fn, (), "false_branch")
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    true_graph: object = _trace_function(true_fn, (), "true_branch")
+    false_graph: object = _trace_function(false_fn, (), "false_branch")
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="If",
-        inputs=[pred.data.id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[pred.data.id],
         attributes={"then_branch": true_graph, "else_branch": false_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=(), dtype="float32")  # type: ignore
+    proxy: object = ProxyTensor(id=out_id, shape=(), dtype="float32")
     return Tensor(proxy, TensorConfig((), DType.Float32, pred.device))
 
 
-def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:  # type: ignore
+def while_loop_tracing(cond_fn: Callable[[object], Tensor], body_fn: Callable[[object], object], init_val: object) -> object:
     """Evaluate while_loop_tracing operation.
 
     Args:
@@ -66,11 +66,11 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit While node outside of a tracing context.")
-    args: tuple[Any, ...] = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)
-    cond_graph = _trace_function(cond_fn, args, "cond")
-    body_graph = _trace_function(body_fn, args, "body")
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    args: tuple[object, ...] = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)
+    cond_graph: object = _trace_function(cond_fn, args, "cond")
+    body_graph: object = _trace_function(body_fn, args, "body")
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="Loop",
         inputs=[a.data.id for a in args],
@@ -79,12 +79,12 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
     )
     global_tracing_state.add_node(node)
     if isinstance(init_val, Tensor):
-        proxy = ProxyTensor(id=out_id, shape=init_val.shape, dtype=init_val.dtype.value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(proxy, TensorConfig(init_val.shape, init_val.dtype, init_val.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        proxy: object = ProxyTensor(id=out_id, shape=init_val.shape, dtype=init_val.dtype.value)
+        return Tensor(proxy, TensorConfig(init_val.shape, init_val.dtype, init_val.device))
     return init_val
 
 
-def _flatten_inputs(obj: Any) -> list[str]:
+def _flatten_inputs(obj: object) -> list[str]:
     """Evaluate _flatten_inputs operation.
 
     Args:
@@ -94,16 +94,16 @@ def _flatten_inputs(obj: Any) -> list[str]:
             tuple[int, ...]: Result.
     """
     if isinstance(obj, Tensor):
-        return [obj.data.id]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return [obj.data.id]
     elif isinstance(obj, (list, tuple)):
-        res = []
+        res: object = []
         for item in obj:
             res.extend(_flatten_inputs(item))
         return res
     return []
 
 
-def scan_tracing(f: Callable[..., Any], init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
+def scan_tracing(f: Callable[..., object], init: object, xs: object, length: int | None = None) -> tuple[object, object]:
     """Evaluate scan_tracing operation.
 
     Args:
@@ -119,13 +119,13 @@ def scan_tracing(f: Callable[..., Any], init: Any, xs: Any, length: int | None =
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit Scan node outside of a tracing context.")
-    x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
-    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs.dtype.value)  # type: ignore
-    proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
-    body_graph = _trace_function(f, (init, proxy_x_tensor), "scan_body")
-    init_ids = _flatten_inputs(init)
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    x_shape: object = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
+    proxy_x: object = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs.dtype.value)
+    proxy_x_tensor: object = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
+    body_graph: object = _trace_function(f, (init, proxy_x_tensor), "scan_body")
+    init_ids: object = _flatten_inputs(init)
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="Scan",
         inputs=init_ids + [xs.data.id],
@@ -133,12 +133,12 @@ def scan_tracing(f: Callable[..., Any], init: Any, xs: Any, length: int | None =
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=xs.shape, dtype=xs.dtype.value)  # type: ignore
-    out_tensor = Tensor(proxy, TensorConfig(xs.shape, xs.dtype, xs.device))
+    proxy: object = ProxyTensor(id=out_id, shape=xs.shape, dtype=xs.dtype.value)
+    out_tensor: object = Tensor(proxy, TensorConfig(xs.shape, xs.dtype, xs.device))
     return init, out_tensor
 
 
-def map_fn_tracing(fn: Callable[..., Any], elems: Tensor, dtype: DType | None = None) -> Any:  # type: ignore
+def map_fn_tracing(fn: Callable[..., object], elems: Tensor, dtype: DType | None = None) -> object:
     """Evaluate map_fn_tracing operation.
 
     Args:
@@ -153,26 +153,26 @@ def map_fn_tracing(fn: Callable[..., Any], elems: Tensor, dtype: DType | None = 
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit Map node outside of a tracing context.")
-    x_shape = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
-    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=elems.dtype.value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    body_graph = _trace_function(fn, (proxy_x_tensor,), "map_body")
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    x_shape: object = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
+    proxy_x: object = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=elems.dtype.value)
+    proxy_x_tensor: object = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
+    body_graph: object = _trace_function(fn, (proxy_x_tensor,), "map_body")
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="Map",
-        inputs=[elems.data.id],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[elems.data.id],
         attributes={"body": body_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    out_dtype = dtype if dtype is not None else elems.dtype
-    out_shape = (elems.shape[0],)
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)  # type: ignore
+    out_dtype: object = dtype if dtype is not None else elems.dtype
+    out_shape: object = (elems.shape[0],)
+    proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, elems.device))
 
 
-def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Callable[..., Any]:
+def pmap_tracing(func: Callable[..., object], axis_name: str | None = None) -> Callable[..., object]:
     """Evaluate pmap_tracing operation.
 
     Args:
@@ -183,7 +183,7 @@ def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Call
         Callable: Result.
     """
 
-    def wrapped(*args: Any) -> Any:
+    def wrapped(*args: object) -> object:
         """Evaluate wrapped operation.
 
         Args:
@@ -196,17 +196,17 @@ def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Call
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError("Cannot emit Pmap outside of a tracing context.")
-        proxy_args = []
+        proxy_args: object = []
         for a in args:
             if isinstance(a, Tensor):
-                new_shape = a.shape[1:] if len(a.shape) > 0 else ()
-                proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-                proxy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+                new_shape: object = a.shape[1:] if len(a.shape) > 0 else ()
+                proxy: object = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
+                proxy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
             else:
                 proxy_args.append(a)
-        body_graph = _trace_function(func, tuple(proxy_args), "pmap_body")
-        out_id = str(uuid.uuid4())
-        node = LogicalNode(
+        body_graph: object = _trace_function(func, tuple(proxy_args), "pmap_body")
+        out_id: object = str(uuid.uuid4())
+        node: object = LogicalNode(
             id=out_id,
             op_type="Pmap",
             inputs=[str(getattr(getattr(a, "data", None), "id", "")) for a in args if isinstance(a, Tensor)],
@@ -214,14 +214,14 @@ def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Call
             shape_metadata=(),
         )
         global_tracing_state.add_node(node)
-        arg = args[0]
-        proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
+        arg: object = args[0]
+        proxy: object = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
         return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
 
     return wrapped
 
 
-def stop_gradient_tracing(x: Any) -> Any:
+def stop_gradient_tracing(x: object) -> object:
     """Evaluate stop_gradient_tracing operation.
 
     Args:
@@ -233,20 +233,20 @@ def stop_gradient_tracing(x: Any) -> Any:
     if not global_tracing_state.is_tracing:
         return x
     if isinstance(x, Tensor) and isinstance(x.data, ProxyTensor):
-        out_id = str(uuid.uuid4())
-        node = IRNode(id=out_id, op_type="StopGradient", inputs=[x.data.id], shape_metadata=x.shape)
+        out_id: object = str(uuid.uuid4())
+        node: object = IRNode(id=out_id, op_type="StopGradient", inputs=[x.data.id], shape_metadata=x.shape)
         global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype.value)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        return Tensor(proxy, TensorConfig(x.shape, x.dtype, x.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        proxy: object = ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype.value)
+        return Tensor(proxy, TensorConfig(x.shape, x.dtype, x.device))
     if isinstance(x, ProxyTensor):
-        out_id = str(uuid.uuid4())
-        node = IRNode(id=out_id, op_type="StopGradient", inputs=[x.id], shape_metadata=x.shape)
+        out_id: object = str(uuid.uuid4())
+        node: object = IRNode(id=out_id, op_type="StopGradient", inputs=[x.id], shape_metadata=x.shape)
         global_tracing_state.add_node(node)
         return ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype)
     return x
 
 
-def assert_value_tracing(condition: Any, message: str = "") -> None:
+def assert_value_tracing(condition: object, message: str = "") -> None:
     """Evaluate assert_value_tracing operation.
 
     Args:
@@ -259,9 +259,9 @@ def assert_value_tracing(condition: Any, message: str = "") -> None:
     if not global_tracing_state.is_tracing:
         record_assertion(condition, message)
         return
-    inp_id = condition.data.id if isinstance(condition, Tensor) else condition.id  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
+    inp_id: object = condition.data.id if isinstance(condition, Tensor) else condition.id
+    out_id: object = str(uuid.uuid4())
+    node: object = LogicalNode(
         id=out_id,
         op_type="Assert",
         inputs=[inp_id],

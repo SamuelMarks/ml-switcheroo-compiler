@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Binary operations package."""
 
-from typing import Any
-
 import ml_switcheroo_compiler.ops.binary.math as _math
 import ml_switcheroo_compiler.ops.binary.special as _special
 
@@ -11,203 +9,203 @@ import ml_switcheroo_compiler.ops.binary.special as _special
 from ml_switcheroo_compiler.ops.base import get_op
 
 _ = _special
-_ = _math  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+_ = _math
 try:
-    add: Any = get_op("Add")()
+    add: object = get_op("Add")()
 except KeyError:
-    add = None
+    add: object = None
 try:
-    allclose: Any = get_op("Allclose")()
+    allclose: object = get_op("Allclose")()
 except KeyError:
-    allclose = None
+    allclose: object = None
 try:
-    atan2: Any = get_op("Atan2")()
+    atan2: object = get_op("Atan2")()
 except KeyError:
-    atan2 = None
+    atan2: object = None
 try:
-    bitwise_and: Any = get_op("BitwiseAnd")()
+    bitwise_and: object = get_op("BitwiseAnd")()
 except KeyError:
-    bitwise_and = None
+    bitwise_and: object = None
 try:
-    bitwise_or: Any = get_op("BitwiseOr")()
+    bitwise_or: object = get_op("BitwiseOr")()
 except KeyError:
-    bitwise_or = None
+    bitwise_or: object = None
 try:
-    bitwise_xor: Any = get_op("BitwiseXor")()
+    bitwise_xor: object = get_op("BitwiseXor")()
 except KeyError:
-    bitwise_xor = None
+    bitwise_xor: object = None
 try:
-    copysign: Any = get_op("Copysign")()
+    copysign: object = get_op("Copysign")()
 except KeyError:
-    copysign = None
+    copysign: object = None
 try:
-    divide: Any = get_op("Divide")()
+    divide: object = get_op("Divide")()
 except KeyError:
-    divide = None
+    divide: object = None
 try:
-    divmod: Any = get_op("Divmod")()
+    divmod: object = get_op("Divmod")()
 except KeyError:
-    divmod = None
+    divmod: object = None
 try:
-    equal: Any = get_op("Equal")()
+    equal: object = get_op("Equal")()
 except KeyError:
-    equal = None
+    equal: object = None
 try:
-    float_power: Any = get_op("FloatPower")()
+    float_power: object = get_op("FloatPower")()
 except KeyError:
-    float_power = None
+    float_power: object = None
 try:
-    floor_divide: Any = get_op("FloorDivide")()
+    floor_divide: object = get_op("FloorDivide")()
 except KeyError:
-    floor_divide = None
+    floor_divide: object = None
 try:
-    fmax: Any = get_op("Fmax")()
+    fmax: object = get_op("Fmax")()
 except KeyError:
-    fmax = None
+    fmax: object = None
 try:
-    fmin: Any = get_op("Fmin")()
+    fmin: object = get_op("Fmin")()
 except KeyError:
-    fmin = None
+    fmin: object = None
 try:
-    fmod: Any = get_op("Fmod")()
+    fmod: object = get_op("Fmod")()
 except KeyError:
-    fmod = None
+    fmod: object = None
 try:
-    gcd: Any = get_op("Gcd")()
+    gcd: object = get_op("Gcd")()
 except KeyError:
-    gcd = None
+    gcd: object = None
 try:
-    greater: Any = get_op("Greater")()
+    greater: object = get_op("Greater")()
 except KeyError:
-    greater = None
+    greater: object = None
 try:
-    greater_equal: Any = get_op("GreaterEqual")()
+    greater_equal: object = get_op("GreaterEqual")()
 except KeyError:
-    greater_equal = None
+    greater_equal: object = None
 try:
-    heaviside: Any = get_op("Heaviside")()
+    heaviside: object = get_op("Heaviside")()
 except KeyError:
-    heaviside = None
+    heaviside: object = None
 try:
-    hypot: Any = get_op("Hypot")()
+    hypot: object = get_op("Hypot")()
 except KeyError:
-    hypot = None
+    hypot: object = None
 try:
-    isclose: Any = get_op("Isclose")()
+    isclose: object = get_op("Isclose")()
 except KeyError:
-    isclose = None
+    isclose: object = None
 try:
-    lcm: Any = get_op("Lcm")()
+    lcm: object = get_op("Lcm")()
 except KeyError:
-    lcm = None
+    lcm: object = None
 try:
-    ldexp: Any = get_op("Ldexp")()
+    ldexp: object = get_op("Ldexp")()
 except KeyError:
-    ldexp = None
+    ldexp: object = None
 try:
-    left_shift: Any = get_op("LeftShift")()
+    left_shift: object = get_op("LeftShift")()
 except KeyError:
-    left_shift = None
+    left_shift: object = None
 try:
-    less: Any = get_op("Less")()
+    less: object = get_op("Less")()
 except KeyError:
-    less = None
+    less: object = None
 try:
-    less_equal: Any = get_op("LessEqual")()
+    less_equal: object = get_op("LessEqual")()
 except KeyError:
-    less_equal = None
+    less_equal: object = None
 try:
-    logaddexp: Any = get_op("Logaddexp")()
+    logaddexp: object = get_op("Logaddexp")()
 except KeyError:
-    logaddexp = None
+    logaddexp: object = None
 try:
-    logaddexp2: Any = get_op("Logaddexp2")()
+    logaddexp2: object = get_op("Logaddexp2")()
 except KeyError:
-    logaddexp2 = None
+    logaddexp2: object = None
 try:
-    logical_and: Any = get_op("LogicalAnd")()
+    logical_and: object = get_op("LogicalAnd")()
 except KeyError:
-    logical_and = None
+    logical_and: object = None
 try:
-    logical_or: Any = get_op("LogicalOr")()
+    logical_or: object = get_op("LogicalOr")()
 except KeyError:
-    logical_or = None
+    logical_or: object = None
 try:
-    logical_xor: Any = get_op("LogicalXor")()
+    logical_xor: object = get_op("LogicalXor")()
 except KeyError:
-    logical_xor = None
+    logical_xor: object = None
 try:
-    maximum: Any = get_op("Maximum")()
+    maximum: object = get_op("Maximum")()
 except KeyError:
-    maximum = None
+    maximum: object = None
 try:
-    minimum: Any = get_op("Minimum")()
+    minimum: object = get_op("Minimum")()
 except KeyError:
-    minimum = None
+    minimum: object = None
 try:
-    mod: Any = get_op("Mod")()
+    mod: object = get_op("Mod")()
 except KeyError:
-    mod = None
+    mod: object = None
 try:
-    multiply: Any = get_op("Multiply")()
+    multiply: object = get_op("Multiply")()
 except KeyError:
-    multiply = None
+    multiply: object = None
 try:
-    nextafter: Any = get_op("Nextafter")()
+    nextafter: object = get_op("Nextafter")()
 except KeyError:
-    nextafter = None
+    nextafter: object = None
 try:
-    not_equal: Any = get_op("NotEqual")()
+    not_equal: object = get_op("NotEqual")()
 except KeyError:
-    not_equal = None
+    not_equal: object = None
 try:
-    power: Any = get_op("Power")()
+    power: object = get_op("Power")()
 except KeyError:
-    power = None
+    power: object = None
 try:
-    remainder: Any = get_op("Remainder")()
+    remainder: object = get_op("Remainder")()
 except KeyError:
-    remainder = None
-rem = remainder
+    remainder: object = None
+rem: object = remainder
 try:
-    right_shift: Any = get_op("RightShift")()
+    right_shift: object = get_op("RightShift")()
 except KeyError:
-    right_shift = None
+    right_shift: object = None
 try:
-    subtract: Any = get_op("Subtract")()
+    subtract: object = get_op("Subtract")()
 except KeyError:
-    subtract = None
+    subtract: object = None
 try:
-    true_divide: Any = get_op("TrueDivide")()
+    true_divide: object = get_op("TrueDivide")()
 except KeyError:
-    true_divide = None
+    true_divide: object = None
 try:
-    xlogy: Any = get_op("Xlogy")()
+    xlogy: object = get_op("Xlogy")()
 except KeyError:
-    xlogy = None
+    xlogy: object = None
 try:
-    igamma: Any = get_op("Igamma")()
+    igamma: object = get_op("Igamma")()
 except KeyError:
-    igamma = None
+    igamma: object = None
 try:
-    igammac: Any = get_op("Igammac")()
+    igammac: object = get_op("Igammac")()
 except KeyError:
-    igammac = None
+    igammac: object = None
 try:
-    zeta: Any = get_op("Zeta")()
+    zeta: object = get_op("Zeta")()
 except KeyError:
-    zeta = None
+    zeta: object = None
 try:
-    polygamma: Any = get_op("Polygamma")()
+    polygamma: object = get_op("Polygamma")()
 except KeyError:
-    polygamma = None
+    polygamma: object = None
 try:
-    betainc: Any = get_op("Betainc")()
+    betainc: object = get_op("Betainc")()
 except KeyError:
-    betainc = None
+    betainc: object = None
 
 
-def divide_no_nan(x: Any, y: Any) -> Any:
+def divide_no_nan(x: object, y: object) -> object:
     """Divide no nan.
 
     Args:
@@ -223,7 +221,7 @@ def divide_no_nan(x: Any, y: Any) -> Any:
     return where(equal(y, 0.0), zeros_like(x), divide(x, y))
 
 
-def polar(abs: Any, angle: Any) -> Any:
+def polar(abs: object, angle: object) -> object:
     """Polar.
 
     Args:
@@ -235,11 +233,11 @@ def polar(abs: Any, angle: Any) -> Any:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     return backend.execute_op("Polar", getattr(abs, "data", abs), getattr(angle, "data", angle))
 
 
-def view_as_complex(x: Any) -> Any:
+def view_as_complex(x: object) -> object:
     """View as complex.
 
     Args:
@@ -250,11 +248,11 @@ def view_as_complex(x: Any) -> Any:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     return backend.execute_op("ViewAsComplex", getattr(x, "data", x))
 
 
-def view_as_real(x: Any) -> Any:
+def view_as_real(x: object) -> object:
     """View as real.
 
     Args:
@@ -265,101 +263,101 @@ def view_as_real(x: Any) -> Any:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
+    backend: object = get_active_backend()
     return backend.execute_op("ViewAsReal", getattr(x, "data", x))
 
 
 try:
-    truncatediv: Any = get_op("TruncateDiv")()
+    truncatediv: object = get_op("TruncateDiv")()
 except KeyError:
-    truncatediv = None
+    truncatediv: object = None
 try:
-    truncatemod: Any = get_op("TruncateMod")()
+    truncatemod: object = get_op("TruncateMod")()
 except KeyError:
-    truncatemod = None
-
-
-try:
-    multiply_no_nan: Any = get_op("MultiplyNoNan")()
-except KeyError:
-    multiply_no_nan = None
-try:
-    scalar_mul: Any = get_op("ScalarMul")()
-except KeyError:
-    scalar_mul = None
-try:
-    squared_difference: Any = get_op("SquaredDifference")()
-except KeyError:
-    squared_difference = None
-try:
-    xdivy: Any = get_op("Xdivy")()
-except KeyError:
-    xdivy = None
-try:
-    xlog1py: Any = get_op("Xlog1py")()
-except KeyError:
-    xlog1py = None
-try:
-    clip: Any = get_op("Clip")()
-except KeyError:
-    clip = None
+    truncatemod: object = None
 
 
 try:
-    chebyshev_polynomial_t: Any = get_op("ChebyshevPolynomialT")()
+    multiply_no_nan: object = get_op("MultiplyNoNan")()
 except KeyError:
-    chebyshev_polynomial_t = None
+    multiply_no_nan: object = None
+try:
+    scalar_mul: object = get_op("ScalarMul")()
+except KeyError:
+    scalar_mul: object = None
+try:
+    squared_difference: object = get_op("SquaredDifference")()
+except KeyError:
+    squared_difference: object = None
+try:
+    xdivy: object = get_op("Xdivy")()
+except KeyError:
+    xdivy: object = None
+try:
+    xlog1py: object = get_op("Xlog1py")()
+except KeyError:
+    xlog1py: object = None
+try:
+    clip: object = get_op("Clip")()
+except KeyError:
+    clip: object = None
 
 
 try:
-    chebyshev_polynomial_u: Any = get_op("ChebyshevPolynomialU")()
+    chebyshev_polynomial_t: object = get_op("ChebyshevPolynomialT")()
 except KeyError:
-    chebyshev_polynomial_u = None
+    chebyshev_polynomial_t: object = None
 
 
 try:
-    shifted_chebyshev_polynomial_t: Any = get_op("ShiftedChebyshevPolynomialT")()
+    chebyshev_polynomial_u: object = get_op("ChebyshevPolynomialU")()
 except KeyError:
-    shifted_chebyshev_polynomial_t = None
+    chebyshev_polynomial_u: object = None
 
 
 try:
-    shifted_chebyshev_polynomial_u: Any = get_op("ShiftedChebyshevPolynomialU")()
+    shifted_chebyshev_polynomial_t: object = get_op("ShiftedChebyshevPolynomialT")()
 except KeyError:
-    shifted_chebyshev_polynomial_u = None
+    shifted_chebyshev_polynomial_t: object = None
 
 
 try:
-    shifted_chebyshev_polynomial_v: Any = get_op("ShiftedChebyshevPolynomialV")()
+    shifted_chebyshev_polynomial_u: object = get_op("ShiftedChebyshevPolynomialU")()
 except KeyError:
-    shifted_chebyshev_polynomial_v = None
+    shifted_chebyshev_polynomial_u: object = None
 
 
 try:
-    shifted_chebyshev_polynomial_w: Any = get_op("ShiftedChebyshevPolynomialW")()
+    shifted_chebyshev_polynomial_v: object = get_op("ShiftedChebyshevPolynomialV")()
 except KeyError:
-    shifted_chebyshev_polynomial_w = None
+    shifted_chebyshev_polynomial_v: object = None
 
 
 try:
-    hermite_polynomial_h: Any = get_op("HermitePolynomialH")()
+    shifted_chebyshev_polynomial_w: object = get_op("ShiftedChebyshevPolynomialW")()
 except KeyError:
-    hermite_polynomial_h = None
+    shifted_chebyshev_polynomial_w: object = None
 
 
 try:
-    hermite_polynomial_he: Any = get_op("HermitePolynomialHe")()
+    hermite_polynomial_h: object = get_op("HermitePolynomialH")()
 except KeyError:
-    hermite_polynomial_he = None
+    hermite_polynomial_h: object = None
 
 
 try:
-    laguerre_polynomial_l: Any = get_op("LaguerrePolynomialL")()
+    hermite_polynomial_he: object = get_op("HermitePolynomialHe")()
 except KeyError:
-    laguerre_polynomial_l = None
+    hermite_polynomial_he: object = None
 
 
 try:
-    legendre_polynomial_p: Any = get_op("LegendrePolynomialP")()
+    laguerre_polynomial_l: object = get_op("LaguerrePolynomialL")()
 except KeyError:
-    legendre_polynomial_p = None
+    laguerre_polynomial_l: object = None
+
+
+try:
+    legendre_polynomial_p: object = get_op("LegendrePolynomialP")()
+except KeyError:
+    legendre_polynomial_p: object = None

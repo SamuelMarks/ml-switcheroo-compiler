@@ -2,7 +2,7 @@
 """Common autodiff rules definitions."""
 
 import enum
-from typing import Any, Callable
+from typing import Callable
 
 
 class UnconnectedGradients(enum.Enum):
@@ -12,7 +12,7 @@ class UnconnectedGradients(enum.Enum):
     ZERO = "zero"
 
 
-def make_zero_vjp(name: str) -> Callable[..., Any]:
+def make_zero_vjp(name: str) -> Callable[..., object]:
     """Create a VJP function that returns zero gradients for a given operation.
 
     Args:
@@ -22,12 +22,12 @@ def make_zero_vjp(name: str) -> Callable[..., Any]:
         Callable: The generated VJP function.
     """
 
-    def vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
+    def vjp(graph: object, node: object, cotangent: str) -> tuple[object, ...]:
         """Return zero gradients for all inputs.
 
         Args:
-            graph (Any): The IR graph.
-            node (Any): The node.
+            graph (object): The IR graph.
+            node (object): The node.
             cotangent (str): The cotangent ID.
 
         Returns:
@@ -38,7 +38,7 @@ def make_zero_vjp(name: str) -> Callable[..., Any]:
     return vjp
 
 
-def make_zero_jvp(name: str) -> Callable[..., Any]:
+def make_zero_jvp(name: str) -> Callable[..., object]:
     """Create a JVP function that returns zero gradients for a given operation.
 
     Args:
@@ -48,12 +48,12 @@ def make_zero_jvp(name: str) -> Callable[..., Any]:
         Callable: The generated JVP function.
     """
 
-    def jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
+    def jvp(graph: object, node: object, tangents: tuple[object, ...]) -> str:
         """Return None to represent a zero tangent.
 
         Args:
-            graph (Any): The IR graph.
-            node (Any): The node.
+            graph (object): The IR graph.
+            node (object): The node.
             tangents (tuple): The input tangents.
 
         Returns:

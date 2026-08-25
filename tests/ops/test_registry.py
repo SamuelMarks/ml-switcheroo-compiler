@@ -135,11 +135,10 @@ def test_registry_remaining():
 
 def test_registry_yaml_missing():
     """test_registry_yaml_missing."""
-    import copy
 
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
-    orig = copy.deepcopy(_YAML_REGISTRY)
+    orig = _YAML_REGISTRY.copy()
     _YAML_REGISTRY.clear()
 
     from unittest.mock import patch

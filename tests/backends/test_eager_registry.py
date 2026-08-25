@@ -105,3 +105,38 @@ def test_load_vision_formats_missing():
 
     with patch("os.path.exists", return_value=False):
         assert _load_vision_formats() == {}
+
+
+def test_dynamic_fallback():
+
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+    class DummyObj:
+        def my_op(self, *args):
+            return 42
+
+    assert global_eager_registry.dispatch("My_Op", DummyObj()) == 42
+
+    class DummyBackend:
+        def my_backend_op(self, *args, **kwargs):
+            return 43
+
+        def subtract(self, *args, **kwargs):
+            return 44
+
+    assert global_eager_registry.dispatch("My_Backend_Op", 1, backend_module=DummyBackend()) == 43
+    assert global_eager_registry.dispatch("sub", DummyBackend(), backend_module=DummyBackend()) == 44
+
+
+def test_custom_vjp_and_tuple():
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+    assert global_eager_registry.dispatch("CustomVJP", None, 1) == 1
+    assert global_eager_registry.dispatch("CustomVJP", None, 1, 2) == (1, 2)
+
+    def my_bwd(res, *args):
+        return sum(args)
+
+    assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
+
+    assert global_eager_registry.dispatch("TupleGetItem", None, (10, 20), index=1) == 20

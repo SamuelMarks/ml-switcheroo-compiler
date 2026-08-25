@@ -1,7 +1,6 @@
 """Options for grad."""
 
 from dataclasses import dataclass, field
-from typing import Any
 
 DEFAULT_GRAD_EPSILON = 1e-3
 
@@ -10,10 +9,10 @@ DEFAULT_GRAD_EPSILON = 1e-3
 class GradOptions:
     """Options for gradient compilation."""
 
-    argnums: Any = 0
+    argnums: object = 0
     has_aux: bool = False
     holistic: bool = False
-    reduce_axes: Any = field(default_factory=tuple)
+    reduce_axes: object = field(default_factory=tuple)
     return_value: bool = False
 
 
@@ -31,7 +30,7 @@ class GradCheckOptions:
 class JitOptions:
     """Options for JIT compilation."""
 
-    static_argnums: Any = field(default_factory=tuple)
-    device: Any = None
-    backend: Any = None
+    static_argnums: object = field(default_factory=tuple)
+    device: object = None
+    backend: object = None
     inline: bool = False

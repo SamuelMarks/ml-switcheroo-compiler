@@ -1,18 +1,20 @@
-def test_fusion_branch_177():
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+def test_operator_fusion_memory_aware():
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.transforms.passes.operator_fusion import MemoryAwareCostModel
 
-    from ml_switcheroo_compiler.transforms.passes.operator_fusion import PatternMatchingEngine
+    config = {"max_fusion_memory_bytes": 1024, "memory_sizes": {"float32": 4}}
+    cost = MemoryAwareCostModel(config)
 
-    graph = LogicalGraph()
-    graph.nodes["node1"] = LogicalNode(id="node1", op_type="A", inputs=[])
-    graph.nodes["node2"] = LogicalNode(id="node2", op_type="B", inputs=["node1"])
+    node = IRNode("mul1", "Multiply", ["a", "b"], {}, shape_metadata=[1024])
+    node.attributes["dtype"] = "float32"
+    assert cost.is_fusion_valid({"mul1": node}) is False
 
-    class MockEngine(PatternMatchingEngine):
-        def _try_match_rules(self, graph, node_id, new_nodes, id_map):
-            if node_id == "node1":
-                # Pretend we matched something that also replaced node2
-                new_nodes["node2"] = LogicalNode(id="node2", op_type="C", inputs=[])
-                return True
-            return False
+    node2 = IRNode("mul2", "Multiply", ["a", "b"], {}, shape_metadata=[10])
+    node2.attributes["dtype"] = "float32"
+    assert cost.is_fusion_valid({"mul2": node2}) is True
 
-    MockEngine(rules=[]).apply_passes(graph)
+    node3 = IRNode("mul3", "Multiply", ["a", "b"], {}, shape_metadata=["symbolic"])
+    assert cost.is_fusion_valid({"mul3": node3}) is True
+
+    cost2 = MemoryAwareCostModel(None)
+    assert cost2.is_fusion_valid({"mul1": node}) is True

@@ -6,8 +6,6 @@ various element-wise binary mathematical operations (e.g., Add, Subtract, Multip
 Divide) using NumPy for evaluation
 """
 
-from typing import Any
-
 # Simple broadcasting
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
@@ -23,7 +21,7 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -42,35 +40,35 @@ class BinaryMathOp(OpDef):
 class Add(BinaryMathOp):
     """Binary operation for element-wise addition of two operands."""
 
-    op_name = "Add"
+    op_name: object = "Add"
 
 
 @register_op("Subtract")
 class Subtract(BinaryMathOp):
     """Binary operation for element-wise subtraction of the second operand from the first."""
 
-    op_name = "Subtract"
+    op_name: object = "Subtract"
 
 
 @register_op("Multiply")
 class Multiply(BinaryMathOp):
     """Binary operation for element-wise multiplication of two operands."""
 
-    op_name = "Multiply"
+    op_name: object = "Multiply"
 
 
 @register_op("Divide")
 class Divide(BinaryMathOp):
     """Binary operation for element-wise division of the first operand by the second."""
 
-    op_name = "Divide"
+    op_name: object = "Divide"
 
 
 @register_op("TrueDivide")
 class TrueDivide(Divide):
     """Binary operation for element-wise true division of the first operand by the second."""
 
-    op_name = "TrueDivide"
+    op_name: object = "TrueDivide"
 
 
 @register_op("Power")
@@ -80,45 +78,45 @@ class Power(BinaryMathOp):
     of the second
     """
 
-    op_name = "Power"
+    op_name: object = "Power"
 
 
 @register_op("Maximum")
 class Maximum(BinaryMathOp):
     """Binary operation for element-wise maximum of two operands."""
 
-    op_name = "Maximum"
+    op_name: object = "Maximum"
 
 
 @register_op("Minimum")
 class Minimum(BinaryMathOp):
     """Binary operation for element-wise minimum of two operands."""
 
-    op_name = "Minimum"
+    op_name: object = "Minimum"
 
 
 @register_op("BitwiseAnd")
 class BitwiseAnd(BinaryMathOp):
     """Binary operation for element-wise bitwise AND of two integer operands."""
 
-    op_name = "BitwiseAnd"
-    np_op_name = "bitwise_and"
+    op_name: object = "BitwiseAnd"
+    np_op_name: object = "bitwise_and"
 
 
 @register_op("BitwiseOr")
 class BitwiseOr(BinaryMathOp):
     """Binary operation for element-wise bitwise OR of two integer operands."""
 
-    op_name = "BitwiseOr"
-    np_op_name = "bitwise_or"
+    op_name: object = "BitwiseOr"
+    np_op_name: object = "bitwise_or"
 
 
 @register_op("BitwiseXor")
 class BitwiseXor(BinaryMathOp):
     """Binary operation for element-wise bitwise XOR of two integer operands."""
 
-    op_name = "BitwiseXor"
-    np_op_name = "bitwise_xor"
+    op_name: object = "BitwiseXor"
+    np_op_name: object = "bitwise_xor"
 
 
 @register_op("Copysign")
@@ -128,40 +126,40 @@ class Copysign(BinaryMathOp):
     element-wise
     """
 
-    op_name = "Copysign"
-    np_op_name = "copysign"
+    op_name: object = "Copysign"
+    np_op_name: object = "copysign"
 
 
 @register_op("FloatPower")
 class FloatPower(BinaryMathOp):
     """Binary operation for element-wise exponentiation raised to non-integer powers."""
 
-    op_name = "FloatPower"
-    np_op_name = "float_power"
+    op_name: object = "FloatPower"
+    np_op_name: object = "float_power"
 
 
 @register_op("FloorDivide")
 class FloorDivide(BinaryMathOp):
     """Binary operation for element-wise floor division of the first operand by the second."""
 
-    op_name = "FloorDivide"
-    np_op_name = "floor_divide"
+    op_name: object = "FloorDivide"
+    np_op_name: object = "floor_divide"
 
 
 @register_op("Fmax")
 class Fmax(BinaryMathOp):
     """Binary operation for element-wise maximum of two operands, ignoring NaNs."""
 
-    op_name = "Fmax"
-    np_op_name = "fmax"
+    op_name: object = "Fmax"
+    np_op_name: object = "fmax"
 
 
 @register_op("Fmin")
 class Fmin(BinaryMathOp):
     """Binary operation for element-wise minimum of two operands, ignoring NaNs."""
 
-    op_name = "Fmin"
-    np_op_name = "fmin"
+    op_name: object = "Fmin"
+    np_op_name: object = "fmin"
 
 
 @register_op("Fmod")
@@ -173,88 +171,88 @@ class Fmod(BinaryMathOp):
     C library
     """
 
-    op_name = "Fmod"
-    np_op_name = "fmod"
+    op_name: object = "Fmod"
+    np_op_name: object = "fmod"
 
 
 @register_op("Gcd")
 class Gcd(BinaryMathOp):
     """Binary operation for element-wise greatest common divisor of two integer operands."""
 
-    op_name = "Gcd"
-    np_op_name = "gcd"
+    op_name: object = "Gcd"
+    np_op_name: object = "gcd"
 
 
 @register_op("Greater")
 class Greater(BinaryMathOp):
     """Binary operation for element-wise greater-than comparison of two operands."""
 
-    op_name = "Greater"
-    np_op_name = "greater"
+    op_name: object = "Greater"
+    np_op_name: object = "greater"
 
 
 @register_op("GreaterEqual")
 class GreaterEqual(BinaryMathOp):
     """Binary operation for element-wise greater-than-or-equal comparison of two operands."""
 
-    op_name = "GreaterEqual"
-    np_op_name = "greater_equal"
+    op_name: object = "GreaterEqual"
+    np_op_name: object = "greater_equal"
 
 
 @register_op("Heaviside")
 class Heaviside(BinaryMathOp):
     """Binary operation for element-wise Heaviside step function."""
 
-    op_name = "Heaviside"
-    np_op_name = "heaviside"
+    op_name: object = "Heaviside"
+    np_op_name: object = "heaviside"
 
 
 @register_op("Hypot")
 class Hypot(BinaryMathOp):
     """Binary operation for element-wise hypotenuse calculation (sqrt(x1**2 + x2**2))."""
 
-    op_name = "Hypot"
-    np_op_name = "hypot"
+    op_name: object = "Hypot"
+    np_op_name: object = "hypot"
 
 
 @register_op("Lcm")
 class Lcm(BinaryMathOp):
     """Binary operation for element-wise least common multiple of two integer operands."""
 
-    op_name = "Lcm"
-    np_op_name = "lcm"
+    op_name: object = "Lcm"
+    np_op_name: object = "lcm"
 
 
 @register_op("Ldexp")
 class Ldexp(BinaryMathOp):
     """Binary operation for element-wise calculation of x * 2**y."""
 
-    op_name = "Ldexp"
-    np_op_name = "ldexp"
+    op_name: object = "Ldexp"
+    np_op_name: object = "ldexp"
 
 
 @register_op("LeftShift")
 class LeftShift(BinaryMathOp):
     """Binary operation for element-wise left shift of the first operand by the second."""
 
-    op_name = "LeftShift"
-    np_op_name = "left_shift"
+    op_name: object = "LeftShift"
+    np_op_name: object = "left_shift"
 
 
 @register_op("Less")
 class Less(BinaryMathOp):
     """Binary operation for element-wise less-than comparison of two operands."""
 
-    op_name = "Less"
-    np_op_name = "less"
+    op_name: object = "Less"
+    np_op_name: object = "less"
 
 
 @register_op("LessEqual")
 class LessEqual(BinaryMathOp):
     """Binary operation for element-wise less-than-or-equal comparison of two operands."""
 
-    op_name = "LessEqual"
-    np_op_name = "less_equal"
+    op_name: object = "LessEqual"
+    np_op_name: object = "less_equal"
 
 
 @register_op("Logaddexp")
@@ -264,8 +262,8 @@ class Logaddexp(BinaryMathOp):
     (log(exp(x) + exp(y)))
     """
 
-    op_name = "Logaddexp"
-    np_op_name = "logaddexp"
+    op_name: object = "Logaddexp"
+    np_op_name: object = "logaddexp"
 
 
 @register_op("Logaddexp2")
@@ -275,40 +273,40 @@ class Logaddexp2(BinaryMathOp):
     (log2(2**x + 2**y))
     """
 
-    op_name = "Logaddexp2"
-    np_op_name = "logaddexp2"
+    op_name: object = "Logaddexp2"
+    np_op_name: object = "logaddexp2"
 
 
 @register_op("LogicalAnd")
 class LogicalAnd(BinaryMathOp):
     """Binary operation for element-wise logical AND of two operands."""
 
-    op_name = "LogicalAnd"
-    np_op_name = "logical_and"
+    op_name: object = "LogicalAnd"
+    np_op_name: object = "logical_and"
 
 
 @register_op("LogicalOr")
 class LogicalOr(BinaryMathOp):
     """Binary operation for element-wise logical OR of two operands."""
 
-    op_name = "LogicalOr"
-    np_op_name = "logical_or"
+    op_name: object = "LogicalOr"
+    np_op_name: object = "logical_or"
 
 
 @register_op("LogicalXor")
 class LogicalXor(BinaryMathOp):
     """Binary operation for element-wise logical XOR of two operands."""
 
-    op_name = "LogicalXor"
-    np_op_name = "logical_xor"
+    op_name: object = "LogicalXor"
+    np_op_name: object = "logical_xor"
 
 
 @register_op("Mod")
 class Mod(BinaryMathOp):
     """Binary operation for element-wise modulo of two operands."""
 
-    op_name = "Mod"
-    np_op_name = "mod"
+    op_name: object = "Mod"
+    np_op_name: object = "mod"
 
 
 @register_op("Nextafter")
@@ -318,57 +316,57 @@ class Nextafter(BinaryMathOp):
     first operand toward the second
     """
 
-    op_name = "Nextafter"
-    np_op_name = "nextafter"
+    op_name: object = "Nextafter"
+    np_op_name: object = "nextafter"
 
 
 @register_op("NotEqual")
 class NotEqual(BinaryMathOp):
     """Binary operation for element-wise not-equal comparison of two operands."""
 
-    op_name = "NotEqual"
-    np_op_name = "not_equal"
+    op_name: object = "NotEqual"
+    np_op_name: object = "not_equal"
 
 
 @register_op("Remainder")
 class Remainder(BinaryMathOp):
     """Binary operation for element-wise remainder of division."""
 
-    op_name = "Remainder"
-    np_op_name = "remainder"
+    op_name: object = "Remainder"
+    np_op_name: object = "remainder"
 
 
 @register_op("Rem")
 class Rem(BinaryMathOp):
     """Binary operation for element-wise floating-point remainder."""
 
-    op_name = "Rem"
-    np_op_name = "fmod"
+    op_name: object = "Rem"
+    np_op_name: object = "fmod"
 
 
 @register_op("RightShift")
 class RightShift(BinaryMathOp):
     """Binary operation for element-wise right shift of the first operand by the second."""
 
-    op_name = "RightShift"
-    np_op_name = "right_shift"
+    op_name: object = "RightShift"
+    np_op_name: object = "right_shift"
 
 
 @register_op("Equal")
 class Equal(BinaryMathOp):
     """Binary operation for element-wise equality comparison of two operands."""
 
-    op_name = "Equal"
-    np_op_name = "equal"
+    op_name: object = "Equal"
+    np_op_name: object = "equal"
 
 
 @register_op("Diff")
 class Diff(OpDef):
     """Diff operation."""
 
-    op_name = "Diff"
+    op_name: object = "Diff"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -386,9 +384,9 @@ class Diff(OpDef):
 class Digitize(OpDef):
     """Digitize operation."""
 
-    op_name = "Digitize"
+    op_name: object = "Digitize"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -408,9 +406,9 @@ class Digitize(OpDef):
 class ArrayEquiv(OpDef):
     """ArrayEquiv operation."""
 
-    op_name = "ArrayEquiv"
+    op_name: object = "ArrayEquiv"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -427,51 +425,51 @@ class ArrayEquiv(OpDef):
 class Xlogy(BinaryMathOp):
     """Provide an operation class for computing x * log(y)."""
 
-    op_name = "Xlogy"
+    op_name: object = "Xlogy"
 
 
 @register_op("Igamma")
 class Igamma(BinaryMathOp):
     """Provide an operation class for computing the regularized lower incomplete gamma function."""
 
-    op_name = "Igamma"
+    op_name: object = "Igamma"
 
 
 @register_op("Igammac")
 class Igammac(BinaryMathOp):
     """Provide an operation class for computing the regularized upper incomplete gamma function."""
 
-    op_name = "Igammac"
+    op_name: object = "Igammac"
 
 
 @register_op("Zeta")
 class Zeta(BinaryMathOp):
     """Provide an operation class for computing the Hurwitz zeta function."""
 
-    op_name = "Zeta"
+    op_name: object = "Zeta"
 
 
 @register_op("BesselJn")
 class BesselJn(BinaryMathOp):
     """Provide an operation class for computing the Bessel function of the first kind of real order and complex argument."""
 
-    op_name = "BesselJn"
+    op_name: object = "BesselJn"
 
 
 @register_op("Polygamma")
 class Polygamma(BinaryMathOp):
     """Provide an operation class for computing the polygamma function."""
 
-    op_name = "Polygamma"
+    op_name: object = "Polygamma"
 
 
 @register_op("Betainc")
 class Betainc(OpDef):
     """Regularized incomplete beta function."""
 
-    op_name = "Betainc"
+    op_name: object = "Betainc"
 
-    def infer_shape(self, a: Any, b: Any, x: Any = None, **kwargs: Any) -> Any:
+    def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -483,9 +481,9 @@ class Betainc(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape_a = getattr(a, "shape", ())
-        shape_b = getattr(b, "shape", ())
-        shape_x = getattr(x, "shape", ()) if x is not None else ()
+        shape_a: object = getattr(a, "shape", ())
+        shape_b: object = getattr(b, "shape", ())
+        shape_x: object = getattr(x, "shape", ()) if x is not None else ()
         return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)
 
 
@@ -493,71 +491,71 @@ class Betainc(OpDef):
 class DivideNoNan(BinaryMathOp):
     """DivideNoNan operation."""
 
-    op_name = "DivideNoNan"
+    op_name: object = "DivideNoNan"
 
 
 @register_op("MultiplyNoNan")
 class MultiplyNoNan(BinaryMathOp):
     """MultiplyNoNan operation."""
 
-    op_name = "MultiplyNoNan"
+    op_name: object = "MultiplyNoNan"
 
 
 @register_op("SquaredDifference")
 class SquaredDifference(BinaryMathOp):
     """SquaredDifference operation."""
 
-    op_name = "SquaredDifference"
+    op_name: object = "SquaredDifference"
 
 
 @register_op("Xdivy")
 class Xdivy(BinaryMathOp):
     """Xdivy operation."""
 
-    op_name = "Xdivy"
+    op_name: object = "Xdivy"
 
 
 @register_op("Xlog1py")
 class Xlog1py(BinaryMathOp):
     """Xlog1py operation."""
 
-    op_name = "Xlog1py"
+    op_name: object = "Xlog1py"
 
 
 @register_op("TruncateDiv")
 class TruncateDiv(BinaryMathOp):
     """Binary operation for element-wise truncated division."""
 
-    op_name = "TruncateDiv"
+    op_name: object = "TruncateDiv"
 
 
 @register_op("TruncateMod")
 class TruncateMod(BinaryMathOp):
     """Binary operation for element-wise truncated modulo."""
 
-    op_name = "TruncateMod"
+    op_name: object = "TruncateMod"
 
 
 @register_op("Polyadd")
 class Polyadd(BinaryMathOp):
     """Polyadd operator definition."""
 
-    op_name = "Polyadd"
+    op_name: object = "Polyadd"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -567,22 +565,22 @@ class Polyadd(BinaryMathOp):
 class Polysub(BinaryMathOp):
     """Polysub operator definition."""
 
-    op_name = "Polysub"
+    op_name: object = "Polysub"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -592,22 +590,22 @@ class Polysub(BinaryMathOp):
 class Polymul(BinaryMathOp):
     """Polymul operator definition."""
 
-    op_name = "Polymul"
+    op_name: object = "Polymul"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -617,22 +615,22 @@ class Polymul(BinaryMathOp):
 class Polydiv(BinaryMathOp):
     """Polydiv operator definition."""
 
-    op_name = "Polydiv"
+    op_name: object = "Polydiv"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -642,22 +640,22 @@ class Polydiv(BinaryMathOp):
 class Polyval(BinaryMathOp):
     """Polyval operator definition."""
 
-    op_name = "Polyval"
+    op_name: object = "Polyval"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -667,22 +665,22 @@ class Polyval(BinaryMathOp):
 class Poly(BinaryMathOp):
     """Poly operator definition."""
 
-    op_name = "Poly"
+    op_name: object = "Poly"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -692,22 +690,22 @@ class Poly(BinaryMathOp):
 class Polyder(BinaryMathOp):
     """Polyder operator definition."""
 
-    op_name = "Polyder"
+    op_name: object = "Polyder"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -717,22 +715,22 @@ class Polyder(BinaryMathOp):
 class Polyfit(BinaryMathOp):
     """Polyfit operator definition."""
 
-    op_name = "Polyfit"
+    op_name: object = "Polyfit"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -742,22 +740,22 @@ class Polyfit(BinaryMathOp):
 class Polyint(BinaryMathOp):
     """Polyint operator definition."""
 
-    op_name = "Polyint"
+    op_name: object = "Polyint"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -767,22 +765,22 @@ class Polyint(BinaryMathOp):
 class Roots(BinaryMathOp):
     """Roots operator definition."""
 
-    op_name = "Roots"
+    op_name: object = "Roots"
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: Any: Computed shape.
+        Returns: object: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
                 from collections import namedtuple
 
-                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                ShapeHolder: object = namedtuple("ShapeHolder", ["shape"])
                 return ShapeHolder(getattr(args[0], "shape", ()))
             return args[0]
         return ()
@@ -792,35 +790,35 @@ class Roots(BinaryMathOp):
 class IgammaGradA(BinaryMathOp):
     """Provide an operation class for computing the gradient of the regularized lower incomplete gamma function with respect to a."""
 
-    op_name = "IgammaGradA"
+    op_name: object = "IgammaGradA"
 
 
 @register_op("RandomGammaGrad")
 class RandomGammaGrad(BinaryMathOp):
     """Provide an operation class for computing the gradient of random_gamma with respect to alpha."""
 
-    op_name = "RandomGammaGrad"
+    op_name: object = "RandomGammaGrad"
 
 
 @register_op("SortKeyVal")
 class SortKeyVal(BinaryMathOp):
     """Sort keys and values."""
 
-    op_name = "SortKeyVal"
+    op_name: object = "SortKeyVal"
 
 
 @register_op("Atan2")
 class Atan2(BinaryMathOp):
     """Binary operation for element-wise arctangent of y/x."""
 
-    op_name = "Atan2"
+    op_name: object = "Atan2"
 
 
 @register_op("Clip")
 class Clip(OpDef):
     """Operator Clip."""
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
@@ -835,7 +833,7 @@ class Clip(OpDef):
         return ()
 
 
-def clip(x: Any, min_val: Any = None, max_val: Any = None, **kwargs: Any) -> Any:
+def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: object) -> object:
     """Clip values in a tensor.
 
     Args:
@@ -860,7 +858,7 @@ def clip(x: Any, min_val: Any = None, max_val: Any = None, **kwargs: Any) -> Any
     return emit_ir_node(None, "Clip", [x], getattr(x, "shape_metadata", None), kwargs)
 
 
-def rem(*args: Any, **kwargs: Any) -> Any:
+def rem(*args: object, **kwargs: object) -> object:
     """Evaluate rem operation.
 
     Args:
@@ -879,73 +877,73 @@ def rem(*args: Any, **kwargs: Any) -> Any:
 class ChebyshevPolynomialT(BinaryMathOp):
     """ChebyshevPolynomialT operation."""
 
-    op_name = "ChebyshevPolynomialT"
+    op_name: object = "ChebyshevPolynomialT"
 
 
 @register_op("ChebyshevPolynomialU")
 class ChebyshevPolynomialU(BinaryMathOp):
     """ChebyshevPolynomialU operation."""
 
-    op_name = "ChebyshevPolynomialU"
+    op_name: object = "ChebyshevPolynomialU"
 
 
 @register_op("ShiftedChebyshevPolynomialT")
 class ShiftedChebyshevPolynomialT(BinaryMathOp):
     """ShiftedChebyshevPolynomialT operation."""
 
-    op_name = "ShiftedChebyshevPolynomialT"
+    op_name: object = "ShiftedChebyshevPolynomialT"
 
 
 @register_op("ShiftedChebyshevPolynomialU")
 class ShiftedChebyshevPolynomialU(BinaryMathOp):
     """ShiftedChebyshevPolynomialU operation."""
 
-    op_name = "ShiftedChebyshevPolynomialU"
+    op_name: object = "ShiftedChebyshevPolynomialU"
 
 
 @register_op("ShiftedChebyshevPolynomialV")
 class ShiftedChebyshevPolynomialV(BinaryMathOp):
     """ShiftedChebyshevPolynomialV operation."""
 
-    op_name = "ShiftedChebyshevPolynomialV"
+    op_name: object = "ShiftedChebyshevPolynomialV"
 
 
 @register_op("ShiftedChebyshevPolynomialW")
 class ShiftedChebyshevPolynomialW(BinaryMathOp):
     """ShiftedChebyshevPolynomialW operation."""
 
-    op_name = "ShiftedChebyshevPolynomialW"
+    op_name: object = "ShiftedChebyshevPolynomialW"
 
 
 @register_op("HermitePolynomialH")
 class HermitePolynomialH(BinaryMathOp):
     """HermitePolynomialH operation."""
 
-    op_name = "HermitePolynomialH"
+    op_name: object = "HermitePolynomialH"
 
 
 @register_op("HermitePolynomialHe")
 class HermitePolynomialHe(BinaryMathOp):
     """HermitePolynomialHe operation."""
 
-    op_name = "HermitePolynomialHe"
+    op_name: object = "HermitePolynomialHe"
 
 
 @register_op("LaguerrePolynomialL")
 class LaguerrePolynomialL(BinaryMathOp):
     """LaguerrePolynomialL operation."""
 
-    op_name = "LaguerrePolynomialL"
+    op_name: object = "LaguerrePolynomialL"
 
 
 @register_op("LegendrePolynomialP")
 class LegendrePolynomialP(BinaryMathOp):
     """LegendrePolynomialP operation."""
 
-    op_name = "LegendrePolynomialP"
+    op_name: object = "LegendrePolynomialP"
 
 
-def igamma_grad_a(*args: Any, **kwargs: Any) -> Any:
+def igamma_grad_a(*args: object, **kwargs: object) -> object:
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
@@ -960,7 +958,7 @@ def igamma_grad_a(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
-def random_gamma_grad(*args: Any, **kwargs: Any) -> Any:
+def random_gamma_grad(*args: object, **kwargs: object) -> object:
     """Compute the derivative of a Gamma random variable.
 
     Args:
@@ -975,7 +973,7 @@ def random_gamma_grad(*args: Any, **kwargs: Any) -> Any:
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
-def sort_key_val(*args: Any, **kwargs: Any) -> Any:
+def sort_key_val(*args: object, **kwargs: object) -> object:
     """Sort keys and values.
 
     Args:

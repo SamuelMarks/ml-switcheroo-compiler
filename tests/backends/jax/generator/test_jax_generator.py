@@ -79,7 +79,7 @@ def test_jax_generator_generate_full() -> object:
         assert "jnp.zeros({shape})" in gen._format_zeros_like("zeros", {})
         assert "jnp.full({shape}, {fill_value})" in gen._format_full({})
         code = gen.generate()
-        assert "def apply_model(params, *args, **kwargs):" in code
+        assert "def apply_model(params, *args, **kwargs) -> object:" in code
         assert "import jax" in code
         gen._emit_constant_assignment("var_a", "1")
         assert "var_a = jnp.array(1)" in "\n".join(gen.code)
@@ -244,7 +244,7 @@ def test_jax_generator():
     gen.code = []
     gen._generate_function_signature()
     assert gen.indent_level == 1
-    assert "def apply_model(params, *args, **kwargs):" in gen.code[0]
+    assert "def apply_model(params, *args, **kwargs) -> object:" in gen.code[0]
 
 
 def test_jax_generator_imports():

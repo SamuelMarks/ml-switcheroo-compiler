@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
-def _apply_causal_mask(backend_module: Any, scores: Any) -> Any:
+def _apply_causal_mask(backend_module: typing.Any, scores: typing.Any) -> object:
     """Apply a causal mask to attention scores.
 
     Args:
@@ -19,13 +19,13 @@ def _apply_causal_mask(backend_module: Any, scores: Any) -> Any:
             tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "triu") and hasattr(backend_module, "ones") and hasattr(backend_module, "where"):
-        causal_mask = backend_module.triu(backend_module.ones(scores.shape[-2:]), 1)
+        causal_mask: typing.Any = backend_module.triu(backend_module.ones(scores.shape[-2:]), 1)
         return backend_module.where(causal_mask > 0, float("-inf"), scores)
     return scores
 
 
 @global_eager_registry.register("Geometric")
-def _geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _geometric(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _geometric operation.
 
     Args:
@@ -40,7 +40,7 @@ def _geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Indices")
-def _indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _indices(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _indices operation.
 
     Args:
@@ -55,7 +55,7 @@ def _indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("MaskIndices")
-def _maskindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _maskindices(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _maskindices operation.
 
     Args:
@@ -70,7 +70,7 @@ def _maskindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tri")
-def _tri(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _tri(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _tri operation.
 
     Args:
@@ -85,7 +85,7 @@ def _tri(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tril")
-def _tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _tril(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _tril operation.
 
     Args:
@@ -100,7 +100,7 @@ def _tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TrimZeros")
-def _trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _trimzeros(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _trimzeros operation.
 
     Args:
@@ -115,7 +115,7 @@ def _trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Triu")
-def _triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _triu(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _triu operation.
 
     Args:
@@ -130,7 +130,7 @@ def _triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("FillDiagonal")
-def _fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _fill_diagonal(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _fill_diagonal operation.
 
     Args:
@@ -141,19 +141,19 @@ def _fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "fill_diagonal", None)
+    func: typing.Any = getattr(backend_module, "fill_diagonal", None)
     if func:
         return func(*args, **kwargs)
     (x, val) = (args[0], args[1])
     import numpy as np
 
-    x_np = np.array(x, copy=True)
+    x_np: typing.Any = np.array(x, copy=True)
     np.fill_diagonal(x_np, val, **kwargs)
     return backend_module.array(x_np) if hasattr(backend_module, "array") else x_np
 
 
 @global_eager_registry.register("BandPart")
-def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_bandpart(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_bandpart operation.
 
     Args:
@@ -167,7 +167,7 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Raises:
         ValueError: An exception.
     """
-    func = getattr(backend_module, "bandpart", getattr(backend_module, "bandpart", None))
+    func: typing.Any = getattr(backend_module, "bandpart", getattr(backend_module, "bandpart", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -176,7 +176,7 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Geometric")
-def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_geometric(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_geometric operation.
 
     Args:
@@ -187,7 +187,7 @@ def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
+    func: typing.Any = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -196,7 +196,7 @@ def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Triangular")
-def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_triangular(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_triangular operation.
 
     Args:
@@ -207,7 +207,7 @@ def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
+    func: typing.Any = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -216,7 +216,7 @@ def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("Tridiagonal")
-def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_tridiagonal(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_tridiagonal operation.
 
     Args:
@@ -227,7 +227,7 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
+    func: typing.Any = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -236,7 +236,7 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TrilIndices")
-def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_trilindices(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_trilindices operation.
 
     Args:
@@ -247,7 +247,7 @@ def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
+    func: typing.Any = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -256,7 +256,7 @@ def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TrilIndicesFrom")
-def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_trilindicesfrom(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_trilindicesfrom operation.
 
     Args:
@@ -267,7 +267,7 @@ def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
+    func: typing.Any = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -276,7 +276,7 @@ def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TrimZeros")
-def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_trimzeros(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_trimzeros operation.
 
     Args:
@@ -287,7 +287,7 @@ def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
+    func: typing.Any = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -296,7 +296,7 @@ def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TriuIndices")
-def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_triuindices(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_triuindices operation.
 
     Args:
@@ -307,7 +307,7 @@ def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
+    func: typing.Any = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -316,7 +316,7 @@ def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("TriuIndicesFrom")
-def _np_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_triuindicesfrom(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
     """Evaluate _np_triuindicesfrom operation.
 
     Args:
@@ -327,7 +327,7 @@ def _np_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
+    func: typing.Any = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

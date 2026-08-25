@@ -2,7 +2,7 @@
 """Export API."""
 
 import os
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 import yaml
 
@@ -14,18 +14,18 @@ class ExportArchive:
 
     def __init__(self) -> None:
         """Initialize."""
-        self.trackables: dict[int, Any] = {}
-        self.endpoints: dict[str, Callable[..., Any]] = {}
-        self.collections: dict[str, Any] = {}
+        self.trackables: dict[int, object] = {}
+        self.endpoints: dict[str, Callable[..., object]] = {}
+        self.collections: dict[str, object] = {}
 
-        yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
+        yaml_path: object = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 self.schema = yaml.safe_load(f)
         else:
             self.schema = {"types": {}, "operations": {}}
 
-    def track(self, resource: Any) -> None:
+    def track(self, resource: object) -> None:
         """Track a resource.
 
         Args:
@@ -33,7 +33,7 @@ class ExportArchive:
         """
         self.trackables[id(resource)] = resource
 
-    def add_endpoint(self, name: str, fn: Callable[..., Any], **kwargs: Any) -> None:
+    def add_endpoint(self, name: str, fn: Callable[..., object], **kwargs: object) -> None:
         """Add an endpoint.
 
         Args:
@@ -51,29 +51,29 @@ class ExportArchive:
         """Map IR op_type to TF NodeDef op."""
         return str(self.schema.get("operations", {}).get(op_type, self.schema.get("operations", {}).get("fallback", "Placeholder")))
 
-    def _build_signature_def(self, name: str, graph: Any = None) -> ProtobufWriter:
+    def _build_signature_def(self, name: str, graph: object = None) -> ProtobufWriter:
         """Build a SignatureDef protobuf message.
 
         Args:
             name (str): The name parameter.
-            graph (Any, optional): The IR graph to inspect.
+            graph (object, optional): The IR graph to inspect.
 
         Returns:
             ProtobufWriter: Result.
         """
-        sig = ProtobufWriter()
+        sig: object = ProtobufWriter()
         sig.add_string(3, name)  # method_name
 
         if graph is not None:
             # Dynamically build inputs
-            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
+            input_nodes: object = [n for n in graph.nodes.values() if n.op_type == "Input"]
             for i, node in enumerate(input_nodes):
-                inp_tensor = ProtobufWriter()
+                inp_tensor: object = ProtobufWriter()
                 inp_tensor.add_string(1, node.id)  # name
                 inp_tensor.add_varint(2, self._get_tf_dtype(getattr(node, "dtype", "float32")))  # dtype
                 # Note: Adding shape TensorShapeProto would go here (field 3)
 
-                inp_map = ProtobufWriter()
+                inp_map: object = ProtobufWriter()
                 inp_map.add_string(1, f"input_{i}")  # Logical name
                 inp_map.add_message(2, inp_tensor)
                 sig.add_message(1, inp_map)  # inputs
@@ -81,24 +81,24 @@ class ExportArchive:
             # Dynamically build outputs
             if hasattr(graph, "outputs") and graph.outputs:
                 for i, out_id in enumerate(graph.outputs):
-                    out_node = graph.nodes.get(out_id)
-                    dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
+                    out_node: object = graph.nodes.get(out_id)
+                    dtype: object = getattr(out_node, "dtype", "float32") if out_node else "float32"
 
-                    out_tensor = ProtobufWriter()
+                    out_tensor: object = ProtobufWriter()
                     out_tensor.add_string(1, out_id)  # name
                     out_tensor.add_varint(2, self._get_tf_dtype(dtype))  # dtype
 
-                    out_map = ProtobufWriter()
+                    out_map: object = ProtobufWriter()
                     out_map.add_string(1, f"output_{i}")  # Logical name
                     out_map.add_message(2, out_tensor)
                     sig.add_message(2, out_map)  # outputs
         else:
             # Dummy fallback if no graph provided
-            inp_tensor = ProtobufWriter()
+            inp_tensor: object = ProtobufWriter()
             inp_tensor.add_string(1, "input")
             inp_tensor.add_varint(2, 1)  # DT_FLOAT
 
-            inp_map = ProtobufWriter()
+            inp_map: object = ProtobufWriter()
             inp_map.add_string(1, "x")
             inp_map.add_message(2, inp_tensor)
 
@@ -106,24 +106,24 @@ class ExportArchive:
 
         return sig
 
-    def _build_graph_def(self, graph: Any = None) -> ProtobufWriter:
+    def _build_graph_def(self, graph: object = None) -> ProtobufWriter:
         """Build a GraphDef protobuf message.
 
         Args:
-            graph (Any, optional): The IR graph to serialize.
+            graph (object, optional): The IR graph to serialize.
 
         Returns:
             ProtobufWriter: Result.
         """
-        graph_def = ProtobufWriter()
+        graph_def: object = ProtobufWriter()
 
         if graph is not None:
             from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
-            sorted_nodes = DAGTopologicalSorter.sort(graph)
+            sorted_nodes: object = DAGTopologicalSorter.sort(graph)
 
             for node in sorted_nodes:
-                node_def = ProtobufWriter()
+                node_def: object = ProtobufWriter()
                 node_def.add_string(1, node.id)  # name
                 node_def.add_string(2, self._get_tf_op(node.op_type))  # op
 
@@ -134,34 +134,34 @@ class ExportArchive:
                 graph_def.add_message(1, node_def)
         else:
             # Dummy node just to be compliant
-            dummy_node = ProtobufWriter()
+            dummy_node: object = ProtobufWriter()
             dummy_node.add_string(1, "dummy_node")
             dummy_node.add_string(2, "Placeholder")
             graph_def.add_message(1, dummy_node)
 
         # versions
-        versions = ProtobufWriter()
+        versions: object = ProtobufWriter()
         versions.add_varint(1, 1)  # producer
         graph_def.add_message(4, versions)
         return graph_def
 
-    def _build_saved_model(self, graph: Any = None) -> bytes:
+    def _build_saved_model(self, graph: object = None) -> bytes:
         """Build the SavedModel protobuf bytes.
 
         Args:
-            graph (Any, optional): The IR graph.
+            graph (object, optional): The IR graph.
 
         Returns:
             bytes: Result.
         """
-        saved_model = ProtobufWriter()
+        saved_model: object = ProtobufWriter()
         saved_model.add_varint(1, 1)  # saved_model_schema_version
 
-        meta_graph = ProtobufWriter()
+        meta_graph: object = ProtobufWriter()
         meta_graph.add_message(2, self._build_graph_def(graph))  # graph_def
 
         for name in self.endpoints:
-            sig_map = ProtobufWriter()
+            sig_map: object = ProtobufWriter()
             sig_map.add_string(1, name)
             sig_map.add_message(2, self._build_signature_def(name, graph))
             meta_graph.add_message(5, sig_map)  # signature_def
@@ -169,7 +169,7 @@ class ExportArchive:
         saved_model.add_message(2, meta_graph)  # meta_graphs
         return saved_model.get_bytes()
 
-    def write_out(self, filepath: str, options: Optional[Any] = None, graph: Any = None) -> None:
+    def write_out(self, filepath: str, options: Optional[object] = None, graph: object = None) -> None:
         """Write the archive to a directory.
 
         Args:
@@ -180,7 +180,7 @@ class ExportArchive:
         os.makedirs(filepath, exist_ok=True)
 
         # Serialize weights/variables
-        var_dir = os.path.join(filepath, "variables")
+        var_dir: object = os.path.join(filepath, "variables")
         os.makedirs(var_dir, exist_ok=True)
 
         with open(os.path.join(var_dir, "variables.data-00000-of-00001"), "wb") as f:
@@ -198,7 +198,7 @@ class ExportArchive:
         with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
             f.write(self._build_saved_model(graph))
 
-    def add_variable_collection(self, name: str, variables: Any) -> None:
+    def add_variable_collection(self, name: str, variables: object) -> None:
         """Add a variable collection.
 
         Args:

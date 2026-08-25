@@ -2,7 +2,7 @@
 """Vision operations for the numpy backend."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
@@ -38,14 +38,14 @@ class InterpolationConfig:
         W: Original width.
     """
 
-    images: Any
-    src_y: Any
-    src_x: Any
+    images: object
+    src_y: object
+    src_x: object
     H: int
     W: int
 
 
-def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
+def _calculate_bilinear_coords(np: object, cfg: ResizeConfig) -> tuple[object, ...]:
     """Calculate coords for bilinear resize.
 
     Args:
@@ -55,19 +55,19 @@ def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
     Returns:
         tuple: src_y, src_x.
     """
-    y = np.arange(cfg.new_H, dtype=np.float32)
-    x = np.arange(cfg.new_W, dtype=np.float32)
+    y: object = np.arange(cfg.new_H, dtype=np.float32)
+    x: object = np.arange(cfg.new_W, dtype=np.float32)
 
     if cfg.align_corners:
-        y_scale = (cfg.H - 1) / (cfg.new_H - 1) if cfg.new_H > 1 else 0
-        x_scale = (cfg.W - 1) / (cfg.new_W - 1) if cfg.new_W > 1 else 0
-        src_y = y * y_scale
-        src_x = x * x_scale
+        y_scale: object = (cfg.H - 1) / (cfg.new_H - 1) if cfg.new_H > 1 else 0
+        x_scale: object = (cfg.W - 1) / (cfg.new_W - 1) if cfg.new_W > 1 else 0
+        src_y: object = y * y_scale
+        src_x: object = x * x_scale
     else:
-        y_scale = cfg.H / cfg.new_H
-        x_scale = cfg.W / cfg.new_W
-        src_y = (y + 0.5) * y_scale - 0.5
-        src_x = (x + 0.5) * x_scale - 0.5
+        y_scale: object = cfg.H / cfg.new_H
+        x_scale: object = cfg.W / cfg.new_W
+        src_y: object = (y + 0.5) * y_scale - 0.5
+        src_x: object = (x + 0.5) * x_scale - 0.5
 
     return np.clip(src_y, 0, cfg.H - 1), np.clip(src_x, 0, cfg.W - 1)
 
@@ -76,13 +76,13 @@ def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
 class BilinearCoords:
     """Coordinates for bilinear interpolation."""
 
-    y0: Any
-    y1: Any
-    x0: Any
-    x1: Any
+    y0: object
+    y1: object
+    x0: object
+    x1: object
 
 
-def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tuple[Any, ...]:
+def _compute_bilinear_pixels(np: object, images: object, coords: BilinearCoords) -> tuple[object, ...]:
     """Fetch pixels for bilinear interpolation.
 
     Args:
@@ -94,14 +94,14 @@ def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tu
         tuple: Pixels Ia, Ib, Ic, Id.
     """
     y0, y1, x0, x1 = coords.y0, coords.y1, coords.x0, coords.x1
-    Ia = images[:, y0[:, None], x0[None, :], :]
-    Ib = images[:, y1[:, None], x0[None, :], :]
-    Ic = images[:, y0[:, None], x1[None, :], :]
-    Id = images[:, y1[:, None], x1[None, :], :]
+    Ia: object = images[:, y0[:, None], x0[None, :], :]
+    Ib: object = images[:, y1[:, None], x0[None, :], :]
+    Ic: object = images[:, y0[:, None], x1[None, :], :]
+    Id: object = images[:, y1[:, None], x1[None, :], :]
     return Ia, Ib, Ic, Id
 
 
-def _compute_bilinear_weights(dy: Any, dx: Any) -> tuple[Any, ...]:
+def _compute_bilinear_weights(dy: object, dx: object) -> tuple[object, ...]:
     """Evaluate _compute_bilinear_weights operation.
 
     Args:
@@ -111,14 +111,14 @@ def _compute_bilinear_weights(dy: Any, dx: Any) -> tuple[Any, ...]:
     Returns:
         tuple: Result.
     """
-    wa = (1 - dy[:, None, None]) * (1 - dx[None, :, None])
-    wb = (dy[:, None, None]) * (1 - dx[None, :, None])
-    wc = (1 - dy[:, None, None]) * (dx[None, :, None])
-    wd = (dy[:, None, None]) * (dx[None, :, None])
+    wa: object = (1 - dy[:, None, None]) * (1 - dx[None, :, None])
+    wb: object = (dy[:, None, None]) * (1 - dx[None, :, None])
+    wc: object = (1 - dy[:, None, None]) * (dx[None, :, None])
+    wd: object = (dy[:, None, None]) * (dx[None, :, None])
     return wa, wb, wc, wd
 
 
-def _apply_bilinear_interpolation(np: Any, cfg: InterpolationConfig) -> Any:
+def _apply_bilinear_interpolation(np: object, cfg: InterpolationConfig) -> object:
     """Apply bilinear interpolation.
 
     Args:
@@ -128,22 +128,22 @@ def _apply_bilinear_interpolation(np: Any, cfg: InterpolationConfig) -> Any:
     Returns:
             tuple[int, ...]: Result.
     """
-    y0 = np.floor(cfg.src_y).astype(np.int32)
-    y1 = np.clip(y0 + 1, 0, cfg.H - 1)
-    x0 = np.floor(cfg.src_x).astype(np.int32)
-    x1 = np.clip(x0 + 1, 0, cfg.W - 1)
+    y0: object = np.floor(cfg.src_y).astype(np.int32)
+    y1: object = np.clip(y0 + 1, 0, cfg.H - 1)
+    x0: object = np.floor(cfg.src_x).astype(np.int32)
+    x1: object = np.clip(x0 + 1, 0, cfg.W - 1)
 
-    dy = cfg.src_y - y0
-    dx = cfg.src_x - x0
+    dy: object = cfg.src_y - y0
+    dx: object = cfg.src_x - x0
 
-    pixels = _compute_bilinear_pixels(np, cfg.images, BilinearCoords(y0, y1, x0, x1))
-    weights = _compute_bilinear_weights(dy, dx)
+    pixels: object = _compute_bilinear_pixels(np, cfg.images, BilinearCoords(y0, y1, x0, x1))
+    weights: object = _compute_bilinear_weights(dy, dx)
 
     return (pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]).astype(cfg.images.dtype)
 
 
 @numpy_eager_registry.register("ResizeBilinear")
-def resize_bilinear(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
+def resize_bilinear(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
     """Resize images using bilinear interpolation.
 
     Args:
@@ -155,24 +155,24 @@ def resize_bilinear(np_mod: Any, images: Any, size: tuple[int, int], align_corne
     Returns:
             tuple[int, ...]: Result.
     """
-    images = np_mod.asarray(images)
-    rank = len(images.shape)
+    images: object = np_mod.asarray(images)
+    rank: object = len(images.shape)
     if rank == 3:
-        images = np_mod.expand_dims(images, 0)
+        images: object = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = images.shape
-    resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
+    shape: object = images.shape
+    resize_cfg: object = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
     src_y, src_x = _calculate_bilinear_coords(np_mod, resize_cfg)
 
-    interp_cfg = InterpolationConfig(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
-    out = _apply_bilinear_interpolation(np_mod, interp_cfg)
+    interp_cfg: object = InterpolationConfig(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
+    out: object = _apply_bilinear_interpolation(np_mod, interp_cfg)
 
     return out[0] if rank == 3 else out
 
 
-def _calculate_nearest_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
+def _calculate_nearest_coords(np: object, cfg: ResizeConfig) -> tuple[object, ...]:
     """Calculate coords for nearest resize.
 
     Args:
@@ -182,25 +182,25 @@ def _calculate_nearest_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
     Returns:
         tuple: src_y, src_x.
     """
-    y = np.arange(cfg.new_H, dtype=np.float32)
-    x = np.arange(cfg.new_W, dtype=np.float32)
+    y: object = np.arange(cfg.new_H, dtype=np.float32)
+    x: object = np.arange(cfg.new_W, dtype=np.float32)
 
     if cfg.align_corners:
-        y_scale = (cfg.H - 1) / (cfg.new_H - 1) if cfg.new_H > 1 else 0
-        x_scale = (cfg.W - 1) / (cfg.new_W - 1) if cfg.new_W > 1 else 0
-        src_y = np.round(y * y_scale).astype(np.int32)
-        src_x = np.round(x * x_scale).astype(np.int32)
+        y_scale: object = (cfg.H - 1) / (cfg.new_H - 1) if cfg.new_H > 1 else 0
+        x_scale: object = (cfg.W - 1) / (cfg.new_W - 1) if cfg.new_W > 1 else 0
+        src_y: object = np.round(y * y_scale).astype(np.int32)
+        src_x: object = np.round(x * x_scale).astype(np.int32)
     else:
-        y_scale = cfg.H / cfg.new_H
-        x_scale = cfg.W / cfg.new_W
-        src_y = np.floor(y * y_scale).astype(np.int32)
-        src_x = np.floor(x * x_scale).astype(np.int32)
+        y_scale: object = cfg.H / cfg.new_H
+        x_scale: object = cfg.W / cfg.new_W
+        src_y: object = np.floor(y * y_scale).astype(np.int32)
+        src_x: object = np.floor(x * x_scale).astype(np.int32)
 
     return np.clip(src_y, 0, cfg.H - 1), np.clip(src_x, 0, cfg.W - 1)
 
 
 @numpy_eager_registry.register("ResizeNearest")
-def resize_nearest(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
+def resize_nearest(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
     """Resize images using nearest-neighbor interpolation.
 
     Args:
@@ -212,24 +212,24 @@ def resize_nearest(np_mod: Any, images: Any, size: tuple[int, int], align_corner
     Returns:
             tuple[int, ...]: Result.
     """
-    images = np_mod.asarray(images)
-    rank = len(images.shape)
+    images: object = np_mod.asarray(images)
+    rank: object = len(images.shape)
     if rank == 3:
-        images = np_mod.expand_dims(images, 0)
+        images: object = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = images.shape
-    resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
+    shape: object = images.shape
+    resize_cfg: object = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
     src_y, src_x = _calculate_nearest_coords(np_mod, resize_cfg)
 
-    out = images[:, src_y[:, None], src_x[None, :], :]
+    out: object = images[:, src_y[:, None], src_x[None, :], :]
 
     return out[0] if rank == 3 else out
 
 
 @numpy_eager_registry.register("ResizeBicubic")
-def resize_bicubic(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
+def resize_bicubic(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
     """Resize images using bicubic interpolation.
 
     Args:
@@ -245,7 +245,7 @@ def resize_bicubic(np_mod: Any, images: Any, size: tuple[int, int], align_corner
 
 
 @numpy_eager_registry.register("ResizeLanczos3")
-def resize_lanczos3(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
+def resize_lanczos3(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
     """Resize images using Lanczos3 interpolation.
 
     Args:
@@ -261,7 +261,7 @@ def resize_lanczos3(np_mod: Any, images: Any, size: tuple[int, int], align_corne
 
 
 @numpy_eager_registry.register("RandomFlip")
-def random_flip_numpy(np_mod: Any, images: Any, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:
+def random_flip_numpy(np_mod: object, images: object, mode: object = "horizontal_and_vertical", seed: object = None, **kwargs: object) -> object:
     """Generate random flip.
 
     Args:
@@ -274,23 +274,23 @@ def random_flip_numpy(np_mod: Any, images: Any, mode: Any = "horizontal_and_vert
     Returns:
             tuple[int, ...]: Result.
     """
-    np = np_mod
-    x = np.asarray(images)
-    rank = len(x.shape)
+    np: object = np_mod
+    x: object = np.asarray(images)
+    rank: object = len(x.shape)
     if rank == 3:
-        x = np.expand_dims(x, 0)
+        x: object = np.expand_dims(x, 0)
     elif rank != 4:
         return x
 
-    rng = np.random.default_rng(seed)
-    out = np.copy(x)
+    rng: object = np.random.default_rng(seed)
+    out: object = np.copy(x)
 
     if mode in ("horizontal", "horizontal_and_vertical"):
-        mask_h = rng.random(size=(x.shape[0],)) > 0.5
+        mask_h: object = rng.random(size=(x.shape[0],)) > 0.5
         out[mask_h] = out[mask_h, :, ::-1, :]
 
     if mode in ("vertical", "horizontal_and_vertical"):
-        mask_v = rng.random(size=(x.shape[0],)) > 0.5
+        mask_v: object = rng.random(size=(x.shape[0],)) > 0.5
         out[mask_v] = out[mask_v, ::-1, :, :]
 
     if rank == 3:
@@ -298,7 +298,7 @@ def random_flip_numpy(np_mod: Any, images: Any, mode: Any = "horizontal_and_vert
     return out
 
 
-def _compute_rotation_coords(np: Any, H: int, W: int, angle: float) -> tuple[Any, ...]:
+def _compute_rotation_coords(np: object, H: int, W: int, angle: float) -> tuple[object, ...]:
     """Evaluate _compute_rotation_coords operation.
 
     Args:
@@ -310,14 +310,14 @@ def _compute_rotation_coords(np: Any, H: int, W: int, angle: float) -> tuple[Any
     Returns:
         tuple: Result.
     """
-    cos_a = np.cos(angle)
-    sin_a = np.sin(angle)
+    cos_a: object = np.cos(angle)
+    sin_a: object = np.sin(angle)
     cx, cy = (W - 1) / 2.0, (H - 1) / 2.0
     y_coords, x_coords = np.mgrid[0:H, 0:W].astype(np.float32)
-    x_shifted = x_coords - cx
-    y_shifted = y_coords - cy
-    src_x = x_shifted * cos_a + y_shifted * sin_a + cx
-    src_y = -x_shifted * sin_a + y_shifted * cos_a + cy
+    x_shifted: object = x_coords - cx
+    y_shifted: object = y_coords - cy
+    src_x: object = x_shifted * cos_a + y_shifted * sin_a + cx
+    src_y: object = -x_shifted * sin_a + y_shifted * cos_a + cy
     return src_x, src_y
 
 
@@ -333,14 +333,14 @@ class RotationInterpolationConfig:
         fill_value: Fill value.
     """
 
-    img: Any
-    src_x: Any
-    src_y: Any
+    img: object
+    src_x: object
+    src_y: object
     fill_mode: str
     fill_value: float
 
 
-def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: int) -> tuple[Any, ...]:
+def _get_rotation_coords(np: object, src_x_clip: object, src_y_clip: object, W: int, H: int) -> tuple[object, ...]:
     """Get the bounding coordinates for rotation interpolation.
 
     Args:
@@ -353,14 +353,14 @@ def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: i
     Returns:
         tuple: (x0, x1, y0, y1) coordinates.
     """
-    x0 = np.floor(src_x_clip).astype(np.int32)
-    x1 = np.clip(x0 + 1, 0, W - 1)
-    y0 = np.floor(src_y_clip).astype(np.int32)
-    y1 = np.clip(y0 + 1, 0, H - 1)
+    x0: object = np.floor(src_x_clip).astype(np.int32)
+    x1: object = np.clip(x0 + 1, 0, W - 1)
+    y0: object = np.floor(src_y_clip).astype(np.int32)
+    y1: object = np.clip(y0 + 1, 0, H - 1)
     return x0, x1, y0, y1
 
 
-def _gather_rotation_pixels(img: Any, coords: tuple[Any, ...]) -> tuple[Any, ...]:
+def _gather_rotation_pixels(img: object, coords: tuple[object, ...]) -> tuple[object, ...]:
     """Gather pixels for rotation.
 
     Args:
@@ -376,7 +376,7 @@ def _gather_rotation_pixels(img: Any, coords: tuple[Any, ...]) -> tuple[Any, ...
     return Ia, Ib, Ic, Id
 
 
-def _compute_rotation_weights(dx: Any, dy: Any) -> tuple[Any, ...]:
+def _compute_rotation_weights(dx: object, dy: object) -> tuple[object, ...]:
     """Evaluate _compute_rotation_weights operation.
 
     Args:
@@ -386,14 +386,14 @@ def _compute_rotation_weights(dx: Any, dy: Any) -> tuple[Any, ...]:
     Returns:
         tuple: Result.
     """
-    wa = (1 - dy)[..., None] * (1 - dx)[..., None]
-    wb = dy[..., None] * (1 - dx)[..., None]
-    wc = (1 - dy)[..., None] * dx[..., None]
-    wd = dy[..., None] * dx[..., None]
+    wa: object = (1 - dy)[..., None] * (1 - dx)[..., None]
+    wb: object = dy[..., None] * (1 - dx)[..., None]
+    wc: object = (1 - dy)[..., None] * dx[..., None]
+    wd: object = dy[..., None] * dx[..., None]
     return wa, wb, wc, wd
 
 
-def _interpolate_rotation(np: Any, cfg: RotationInterpolationConfig) -> Any:
+def _interpolate_rotation(np: object, cfg: RotationInterpolationConfig) -> object:
     """Interpolate rotated image.
 
     Args:
@@ -404,24 +404,24 @@ def _interpolate_rotation(np: Any, cfg: RotationInterpolationConfig) -> Any:
             tuple[int, ...]: Result.
     """
     H, W, _ = cfg.img.shape
-    src_x_clip = np.clip(cfg.src_x, 0, W - 1)
-    src_y_clip = np.clip(cfg.src_y, 0, H - 1)
+    src_x_clip: object = np.clip(cfg.src_x, 0, W - 1)
+    src_y_clip: object = np.clip(cfg.src_y, 0, H - 1)
 
-    coords = _get_rotation_coords(np, src_x_clip, src_y_clip, W, H)
-    dx = src_x_clip - coords[0]
-    dy = src_y_clip - coords[2]
+    coords: object = _get_rotation_coords(np, src_x_clip, src_y_clip, W, H)
+    dx: object = src_x_clip - coords[0]
+    dy: object = src_y_clip - coords[2]
 
-    pixels = _gather_rotation_pixels(cfg.img, coords)
-    weights = _compute_rotation_weights(dx, dy)
+    pixels: object = _gather_rotation_pixels(cfg.img, coords)
+    weights: object = _compute_rotation_weights(dx, dy)
 
-    interp = pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]
-    valid_mask = (cfg.src_x >= 0) & (cfg.src_x <= W - 1) & (cfg.src_y >= 0) & (cfg.src_y <= H - 1)
+    interp: object = pixels[0] * weights[0] + pixels[1] * weights[1] + pixels[2] * weights[2] + pixels[3] * weights[3]
+    valid_mask: object = (cfg.src_x >= 0) & (cfg.src_x <= W - 1) & (cfg.src_y >= 0) & (cfg.src_y <= H - 1)
     if cfg.fill_mode == "constant":
         interp[~valid_mask] = cfg.fill_value
     return interp.astype(cfg.img.dtype)
 
 
-def _apply_random_rotation_single(np: Any, img: Any, angle: float, fill_mode: str, fill_value: float) -> Any:
+def _apply_random_rotation_single(np: object, img: object, angle: float, fill_mode: str, fill_value: float) -> object:
     """Apply random rotation to a single image.
 
     Args:
@@ -436,7 +436,7 @@ def _apply_random_rotation_single(np: Any, img: Any, angle: float, fill_mode: st
     """
     H, W, _ = img.shape
     src_x, src_y = _compute_rotation_coords(np, H, W, angle)
-    cfg = RotationInterpolationConfig(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
+    cfg: object = RotationInterpolationConfig(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
     return _interpolate_rotation(np, cfg)
 
 
@@ -450,7 +450,7 @@ class TransformOptions:
     fill_value: float = 0.0
 
 
-def _apply_rotation_to_batch(np: Any, x: Any, rng: Any, angles: tuple[float, float], options: TransformOptions) -> Any:
+def _apply_rotation_to_batch(np: object, x: object, rng: object, angles: tuple[float, float], options: TransformOptions) -> object:
     """Apply rotation to batch of images.
 
     Args:
@@ -464,15 +464,15 @@ def _apply_rotation_to_batch(np: Any, x: Any, rng: Any, angles: tuple[float, flo
             tuple[int, ...]: Result.
     """
     B = x.shape[0]
-    out = np.zeros_like(x)
+    out: object = np.zeros_like(x)
     for i in range(B):
-        angle = rng.uniform(angles[0], angles[1]) * 2 * np.pi
+        angle: object = rng.uniform(angles[0], angles[1]) * 2 * np.pi
         out[i] = _apply_random_rotation_single(np, x[i], angle, options.fill_mode, options.fill_value)
     return out
 
 
 @numpy_eager_registry.register("RandomRotation")
-def random_rotation_numpy(np_mod: Any, images: Any, factor: float, options: Optional[TransformOptions] = None, **kwargs: Any) -> Any:
+def random_rotation_numpy(np_mod: object, images: object, factor: float, options: Optional[TransformOptions] = None, **kwargs: object) -> object:
     """Generate random rotation.
 
     Args:
@@ -485,23 +485,23 @@ def random_rotation_numpy(np_mod: Any, images: Any, factor: float, options: Opti
     Returns:
             tuple[int, ...]: Result.
     """
-    options = options or TransformOptions()
-    np = np_mod
-    x = np.asarray(images)
-    rank = len(x.shape)
+    options: object = options or TransformOptions()
+    np: object = np_mod
+    x: object = np.asarray(images)
+    rank: object = len(x.shape)
     if rank == 3:
-        x = np.expand_dims(x, 0)
+        x: object = np.expand_dims(x, 0)
     elif rank != 4:
         return x
 
-    rng = np.random.default_rng(options.seed)
+    rng: object = np.random.default_rng(options.seed)
 
     if isinstance(factor, (tuple, list)):
         lower, upper = factor
     else:
         lower, upper = -factor, factor
 
-    out = _apply_rotation_to_batch(np, x, rng, (lower, upper), options)
+    out: object = _apply_rotation_to_batch(np, x, rng, (lower, upper), options)
 
     if rank == 3:
         return out[0]

@@ -2,7 +2,7 @@
 """Math Ops."""
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 from .math_misc_ext import _get_np_arg, _get_sc
 
 
-def _poly_recurrence(n: Any, x: Any, p0: float, p1_func: Any, p_next_func: Any) -> Any:  # noqa: D417
+def _poly_recurrence(n: object, x: object, p0: float, p1_func: object, p_next_func: object) -> object:  # noqa: D417
     """Evaluate _poly_recurrence logic eagerly backed by NumPy.
 
     Args:
@@ -27,10 +27,10 @@ def _poly_recurrence(n: Any, x: Any, p0: float, p1_func: Any, p_next_func: Any) 
     """
     import numpy as np
 
-    n = np.asarray(n, dtype=int)
-    x = np.asarray(x)
+    n: object = np.asarray(n, dtype=int)
+    x: object = np.asarray(x)
     n_b, x_b = np.broadcast_arrays(n, x)
-    max_n: Any = np.max(n_b)
+    max_n: object = np.max(n_b)
 
     if max_n < 0:
         return np.zeros_like(x_b)
@@ -43,12 +43,12 @@ def _poly_recurrence(n: Any, x: Any, p0: float, p1_func: Any, p_next_func: Any) 
         T.append(p_next_func(i - 1, x_b, T[-1], T[-2]))
 
     T = np.stack(T)
-    indices = np.indices(n_b.shape)
+    indices: object = np.indices(n_b.shape)
     return T[tuple([n_b] + list(indices))]
 
 
 @numpy_eager_registry.register("chebyshev_polynomial_t")
-def _np_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_chebyshev_polynomial_t(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_chebyshev_polynomial_t operation.
 
     Args:
@@ -69,7 +69,7 @@ def _np_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("chebyshev_polynomial_u")
-def _np_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_chebyshev_polynomial_u(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_chebyshev_polynomial_u operation.
 
     Args:
@@ -90,7 +90,7 @@ def _np_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("hermite_polynomial_h")
-def _np_hermite_polynomial_h(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_hermite_polynomial_h(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_hermite_polynomial_h operation.
 
     Args:
@@ -111,7 +111,7 @@ def _np_hermite_polynomial_h(backend_module: Any, *args: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("hermite_polynomial_he")
-def _np_hermite_polynomial_he(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_hermite_polynomial_he(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_hermite_polynomial_he operation.
 
     Args:
@@ -132,7 +132,7 @@ def _np_hermite_polynomial_he(backend_module: Any, *args: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("laguerre_polynomial_l")
-def _np_laguerre_polynomial_l(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_laguerre_polynomial_l(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_laguerre_polynomial_l operation.
 
     Args:
@@ -153,7 +153,7 @@ def _np_laguerre_polynomial_l(backend_module: Any, *args: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("legendre_polynomial_p")
-def _np_legendre_polynomial_p(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_legendre_polynomial_p(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate _np_legendre_polynomial_p operation.
 
     Args:
@@ -174,7 +174,7 @@ def _np_legendre_polynomial_p(backend_module: Any, *args: Any, **kwargs: Any) ->
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_t")
-def _np_shifted_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_shifted_chebyshev_polynomial_t(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement shifted_chebyshev_polynomial_t.
 
     Args:
@@ -185,7 +185,7 @@ def _np_shifted_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
+    sc: object = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
         return None
@@ -193,7 +193,7 @@ def _np_shifted_chebyshev_polynomial_t(backend_module: Any, *args: Any, **kwargs
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_u")
-def _np_shifted_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_shifted_chebyshev_polynomial_u(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement shifted_chebyshev_polynomial_u.
 
     Args:
@@ -204,7 +204,7 @@ def _np_shifted_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
+    sc: object = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
         return None
@@ -212,7 +212,7 @@ def _np_shifted_chebyshev_polynomial_u(backend_module: Any, *args: Any, **kwargs
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_v")
-def _np_shifted_chebyshev_polynomial_v(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_shifted_chebyshev_polynomial_v(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement shifted_chebyshev_polynomial_v.
 
     Args:
@@ -223,19 +223,19 @@ def _np_shifted_chebyshev_polynomial_v(backend_module: Any, *args: Any, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
+    sc: object = _get_sc()
     # V_n(x) = U_n(x) - U_{n-1}(x) / 2
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
         return None
-    n_int = np.asarray(n, dtype=int)
-    u_n = sc.eval_sh_chebyu(n_int, x)
-    u_nm1 = sc.eval_sh_chebyu(n_int - 1, x)
+    n_int: object = np.asarray(n, dtype=int)
+    u_n: object = sc.eval_sh_chebyu(n_int, x)
+    u_nm1: object = sc.eval_sh_chebyu(n_int - 1, x)
     return u_n - u_nm1 / 2.0
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_w")
-def _np_shifted_chebyshev_polynomial_w(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_shifted_chebyshev_polynomial_w(backend_module: object, *args: object, **kwargs: object) -> object:
     """Implement shifted_chebyshev_polynomial_w.
 
     Args:
@@ -246,12 +246,12 @@ def _np_shifted_chebyshev_polynomial_w(backend_module: Any, *args: Any, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    sc = _get_sc()
+    sc: object = _get_sc()
     # W_n(x) = U_n(x) + U_{n-1}(x) / 2
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
         return None
-    n_int = np.asarray(n, dtype=int)
-    u_n = sc.eval_sh_chebyu(n_int, x)
-    u_nm1 = sc.eval_sh_chebyu(n_int - 1, x)
+    n_int: object = np.asarray(n, dtype=int)
+    u_n: object = sc.eval_sh_chebyu(n_int, x)
+    u_nm1: object = sc.eval_sh_chebyu(n_int - 1, x)
     return u_n + u_nm1 / 2.0

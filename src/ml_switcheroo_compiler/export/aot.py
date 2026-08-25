@@ -2,7 +2,6 @@
 """Ahead-of-Time compilation hooks for frontend integrations."""
 
 from collections.abc import Callable
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
@@ -14,10 +13,10 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 
 # Cache for compiled artifacts
-_COMPILATION_CACHE: dict[str, Callable[..., Any]] = {}
+_COMPILATION_CACHE: dict[str, Callable[..., object]] = {}
 
 
-def _fallback_eager(fn: Callable[..., Any], args: tuple[Any, ...], kw: dict[str, Any]) -> Any:
+def _fallback_eager(fn: Callable[..., object], args: tuple[object, ...], kw: dict[str, object]) -> object:
     """Execute function eagerly as a fallback.
 
     Args:
@@ -25,9 +24,9 @@ def _fallback_eager(fn: Callable[..., Any], args: tuple[Any, ...], kw: dict[str,
         args: Positional arguments.
         kw: Keyword arguments.
 
-    Returns: Any: Result of eager evaluation.
+    Returns: object: Result of eager evaluation.
     """
-    was_eager = config.eager_mode
+    was_eager: object = config.eager_mode
     config.eager_mode = True
     try:
         return fn(*args, **kw)
@@ -35,7 +34,7 @@ def _fallback_eager(fn: Callable[..., Any], args: tuple[Any, ...], kw: dict[str,
         config.eager_mode = was_eager
 
 
-def _build_signature_key(fn: Callable[..., Any], backend: str, args: tuple[Any, ...]) -> str:
+def _build_signature_key(fn: Callable[..., object], backend: str, args: tuple[object, ...]) -> str:
     """Build a cache key for the compilation signature.
 
     Args:
@@ -46,7 +45,7 @@ def _build_signature_key(fn: Callable[..., Any], backend: str, args: tuple[Any, 
     Returns:
         str: Result.
     """
-    sig_parts = []
+    sig_parts: object = []
     for a in args:
         if hasattr(a, "shape") and hasattr(a, "dtype"):
             sig_parts.append(f"T({getattr(a, 'shape', ())},{getattr(a, 'dtype', '')})")
@@ -55,7 +54,7 @@ def _build_signature_key(fn: Callable[..., Any], backend: str, args: tuple[Any, 
     return f"{id(fn)}_{backend}_" + "_".join(sig_parts)
 
 
-def _prepare_proxy_args(args: tuple[Any, ...]) -> list[Any]:
+def _prepare_proxy_args(args: tuple[object, ...]) -> list[object]:
     """Prepare proxy arguments for tracing.
 
     Args:
@@ -64,29 +63,29 @@ def _prepare_proxy_args(args: tuple[Any, ...]) -> list[Any]:
     Returns:
         list: Result.
     """
-    proxy_args = []
+    proxy_args: object = []
     for i, a in enumerate(args):
         if hasattr(a, "shape") and hasattr(a, "dtype"):
-            arg_id = f"arg_{i}"
-            shape = getattr(a, "shape", ())
-            proxy = ProxyTensor(id=arg_id, shape=shape, dtype=str(getattr(a, "dtype", "")))  # type: ignore
-            dtype = getattr(a, "dtype", DType.Float32)
-            device = getattr(a, "device", "cpu")
+            arg_id: object = f"arg_{i}"
+            shape: object = getattr(a, "shape", ())
+            proxy: object = ProxyTensor(id=arg_id, shape=shape, dtype=str(getattr(a, "dtype", "")))
+            dtype: object = getattr(a, "dtype", DType.Float32)
+            device: object = getattr(a, "device", "cpu")
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
             TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)
 
             # Overwrite id to match
-            last_node = list(global_tracing_state.active_graph.nodes.values())[-1]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            old_id = last_node.id
-            del global_tracing_state.active_graph.nodes[old_id]  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            last_node: object = list(global_tracing_state.active_graph.nodes.values())[-1]
+            old_id: object = last_node.id
+            del global_tracing_state.active_graph.nodes[old_id]
             last_node.id = arg_id
-            global_tracing_state.active_graph.nodes[arg_id] = last_node  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            global_tracing_state.active_graph.nodes[arg_id] = last_node
         else:
             proxy_args.append(a)
     return proxy_args
 
 
-def _capture_outputs(out: Any) -> None:
+def _capture_outputs(out: object) -> None:
     """Capture outputs in the active tracing graph.
 
     Args:
@@ -94,20 +93,20 @@ def _capture_outputs(out: Any) -> None:
     """
     if isinstance(out, Tensor):
         out_id, _ = TracingNodeBuilder.extract_from_tensor(out)
-        out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", [out_id], {}, getattr(out, "shape", ()))
-        global_tracing_state.active_graph.outputs.append(out_node_id)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_node_id: object = TracingNodeBuilder.create_tracing_logical_node("Output", [out_id], {}, getattr(out, "shape", ()))
+        global_tracing_state.active_graph.outputs.append(out_node_id)
     elif isinstance(out, (list, tuple)):
-        out_ids = []
+        out_ids: object = []
         for x in out:
             if isinstance(x, Tensor):
                 oid, _ = TracingNodeBuilder.extract_from_tensor(x)
                 out_ids.append(oid)
         if out_ids:
-            out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", out_ids, {}, ())
-            global_tracing_state.active_graph.outputs.append(out_node_id)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            out_node_id: object = TracingNodeBuilder.create_tracing_logical_node("Output", out_ids, {}, ())
+            global_tracing_state.active_graph.outputs.append(out_node_id)
 
 
-def _get_namespace(backend: str, generator_cls: type) -> dict[str, Any]:
+def _get_namespace(backend: str, generator_cls: type) -> dict[str, object]:
     """Get the namespace for executing generated code.
 
     Args:
@@ -117,7 +116,7 @@ def _get_namespace(backend: str, generator_cls: type) -> dict[str, Any]:
     Returns:
         dict: Result.
     """
-    namespace = {}
+    namespace: object = {}
     if hasattr(generator_cls, "get_module"):
         namespace[backend] = generator_cls.get_module()
     elif backend == "numpy":
@@ -127,7 +126,7 @@ def _get_namespace(backend: str, generator_cls: type) -> dict[str, Any]:
     return namespace
 
 
-def compile_function(fn: Callable[..., Any], backend: str = "numpy", **kwargs: Any) -> Callable[..., Any]:
+def compile_function(fn: Callable[..., object], backend: str = "numpy", **kwargs: object) -> Callable[..., object]:
     """Compiles a function functionally, intended for torch.compile integrations.
 
     Args:
@@ -139,35 +138,35 @@ def compile_function(fn: Callable[..., Any], backend: str = "numpy", **kwargs: A
         Callable: The compiled function.
     """
 
-    def compiled_wrapper(*args: Any, **kw: Any) -> Any:
+    def compiled_wrapper(*args: object, **kw: object) -> object:
         """Wrap that traces and compiles the function on first call.
 
         Args:
             *args (object): Positional arguments for the function.
             **kw (object): Keyword arguments for the function.
 
-        Returns: Any: The result of the compiled (or eager) function.
+        Returns: object: The result of the compiled (or eager) function.
         """
-        key = _build_signature_key(fn, backend, args)
+        key: object = _build_signature_key(fn, backend, args)
         if key in _COMPILATION_CACHE:
             return _COMPILATION_CACHE[key](*args, **kw)
 
-        tape = TracerTape()
+        tape: object = TracerTape()
         tape.start_tracing()
-        proxy_args = _prepare_proxy_args(args)
+        proxy_args: object = _prepare_proxy_args(args)
 
         try:
-            out = fn(*proxy_args, **kw)
+            out: object = fn(*proxy_args, **kw)
             _capture_outputs(out)
         except Exception:
             tape.stop_tracing()
             return _fallback_eager(fn, args, kw)
 
-        graph = tape.stop_tracing()
+        graph: object = tape.stop_tracing()
         if not graph or not graph.outputs:
             return _fallback_eager(fn, args, kw)
 
-        pm = PassManager()
+        pm: object = PassManager()
         from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
         from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
         from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
@@ -182,57 +181,57 @@ def compile_function(fn: Callable[..., Any], backend: str = "numpy", **kwargs: A
         pm.add_pass(rematerialization_pass)
         pm.add_pass(dce_pass)
 
-        graph = pm.run(graph)
+        graph: object = pm.run(graph)
 
         try:
-            generator_cls = BackendRegistry.get(backend)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+            generator_cls: object = BackendRegistry.get(backend)
         except ValueError:
             return _fallback_eager(fn, args, kw)
 
         if hasattr(generator_cls, "compile_aot"):
-            compiled_fn = generator_cls.compile_aot(graph, **kwargs)
+            compiled_fn: object = generator_cls.compile_aot(graph, **kwargs)
             _COMPILATION_CACHE[key] = compiled_fn
             return compiled_fn(*args, **kw)
 
-        generator = generator_cls(graph)
-        code = generator.generate()
-        namespace = _get_namespace(backend, generator_cls)
+        generator: object = generator_cls(graph)
+        code: object = generator.generate()
+        namespace: object = _get_namespace(backend, generator_cls)
 
         try:
             exec(code, namespace)  # noqa: S102
             if "apply_model" in namespace:
 
-                def apply_wrapper(*w_args: Any, **w_kw: Any) -> Any:
+                def apply_wrapper(*w_args: object, **w_kw: object) -> object:
                     """Wrap to invoke the generated apply_model function.
 
                     Args:
                         *w_args (object): Positional arguments.
                         **w_kw (object): Keyword arguments.
 
-                    Returns: Any: The result.
+                    Returns: object: The result.
                     """
                     return namespace["apply_model"]({}, *w_args, **w_kw)
 
-                compiled_fn = apply_wrapper
+                compiled_fn: object = apply_wrapper
             elif "evaluate" in namespace:
 
-                def eval_wrapper(*w_args: Any, **w_kw: Any) -> Any:
+                def eval_wrapper(*w_args: object, **w_kw: object) -> object:
                     """Wrap to invoke the generated evaluate function.
 
                     Args:
                         *w_args (object): Positional arguments.
                         **w_kw (object): Keyword arguments.
 
-                    Returns: Any: The result.
+                    Returns: object: The result.
                     """
-                    numpy_args = [a.data if isinstance(a, Tensor) else a for a in w_args]
+                    numpy_args: object = [a.data if isinstance(a, Tensor) else a for a in w_args]
                     return namespace["evaluate"](numpy_args)
 
-                compiled_fn = eval_wrapper
+                compiled_fn: object = eval_wrapper
             else:
                 return _fallback_eager(fn, args, kw)
 
-            res = compiled_fn(*args, **kw)
+            res: object = compiled_fn(*args, **kw)
             _COMPILATION_CACHE[key] = compiled_fn
             return res
         except Exception:
