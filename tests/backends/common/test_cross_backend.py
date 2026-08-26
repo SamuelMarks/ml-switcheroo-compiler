@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 "Core abstractions and logic definitions for test_generator_coverage_keras_mlx_numpy.py."
 
 
-def test_keras_generator_coverage() -> object:
+def test_keras_generator_coverage():
     """Test the keras generator coverage behavior.
 
     Returns:
@@ -28,7 +28,7 @@ def test_keras_generator_coverage() -> object:
         pass
 
 
-def test_keras_generator_full() -> object:
+def test_keras_generator_full():
     """Test the keras generator full behavior.
 
     Returns:
@@ -63,7 +63,7 @@ def test_keras_generator_full() -> object:
         pass
 
 
-def test_keras_eager_coverage() -> object:
+def test_keras_eager_coverage():
     import pytest
 
     with pytest.raises(Exception):
@@ -88,7 +88,7 @@ def test_keras_eager_coverage() -> object:
             pass
 
 
-def test_mlx_generator_coverage() -> object:
+def test_mlx_generator_coverage():
     """Test the mlx generator coverage behavior.
 
     Returns:
@@ -122,7 +122,7 @@ def test_mlx_generator_coverage() -> object:
         pass
 
 
-def test_numpy_generator_coverage() -> object:
+def test_numpy_generator_coverage():
     """Test the numpy generator coverage behavior.
 
     Returns:
@@ -148,7 +148,7 @@ def test_numpy_generator_coverage() -> object:
         pass
 
 
-def test_keras_generator_body_return() -> object:
+def test_keras_generator_body_return():
     """Test body return."""
     from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
@@ -158,7 +158,7 @@ def test_keras_generator_body_return() -> object:
     assert "x" in gen.keras_output_vars
 
 
-def test_keras_generator_body_return2() -> object:
+def test_keras_generator_body_return2():
     """Test body return 2."""
     from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
@@ -168,7 +168,7 @@ def test_keras_generator_body_return2() -> object:
     assert "x" in gen.keras_output_vars
 
 
-def test_mlx_eager_scatter_nd() -> object:
+def test_mlx_eager_scatter_nd():
     """Test scatter."""
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_scatter_nd
 

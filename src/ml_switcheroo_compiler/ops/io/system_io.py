@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def set_default_stream(stream: object) -> None:
+def set_default_stream(stream) -> None:
     """Set the default stream for the active backend.
 
     Args:
@@ -29,7 +29,7 @@ def set_default_stream(stream: object) -> None:
         try:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend_cls: object = get_active_backend()
+            backend_cls = get_active_backend()
             if hasattr(backend_cls, "set_default_stream"):
                 backend_cls.set_default_stream(stream)
         except ImportError:
@@ -49,7 +49,7 @@ def set_memory_limit(limit: int) -> None:
         try:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend_cls: object = get_active_backend()
+            backend_cls = get_active_backend()
             if hasattr(backend_cls, "set_memory_limit"):
                 backend_cls.set_memory_limit(limit)
         except ImportError:
@@ -69,7 +69,7 @@ def set_wired_limit(limit: int) -> None:
         try:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend_cls: object = get_active_backend()
+            backend_cls = get_active_backend()
             if hasattr(backend_cls, "set_wired_limit"):
                 backend_cls.set_wired_limit(limit)
         except ImportError:

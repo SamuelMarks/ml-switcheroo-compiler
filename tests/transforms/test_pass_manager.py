@@ -36,7 +36,7 @@ def test_dag_cycle() -> None:
     """Test the dag cycle behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that DAGTopologicalSorter detects cycles and raises a CompilationError.\n\n    This test constructs a cyclic graph (A -> B -> A) and asserts that attempting\n    to topologically sort it results in a CompilationError with the appropriate\n    error message\n\n    Returns:\n    None\n    "
@@ -55,7 +55,7 @@ def test_check_cycles() -> None:
     """Test the check cycles behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that IRValidator.check_cycles detects cycles in the IRGraph.\n\n    This test constructs a cyclic graph (A -> B -> A) and asserts that calling\n    IRValidator.check_cycles raises a CompilationError with the appropriate error\n    message\n\n    Returns:\n    None\n    "
@@ -74,7 +74,7 @@ def test_check_shapes() -> None:
     """Test the check shapes behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that IRValidator.check_shapes validates the presence of shape metadata.\n\n    This test ensures that a CompilationError is raised when a node is missing\n    shape metadata, and that validation passes successfully once valid shape\n    metadata is provided\n\n    Returns:\n    None\n    "
@@ -94,7 +94,7 @@ def test_graph_hash() -> None:
     """Test the graph hash behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the consistency and sensitivity of the _graph_hash utility function.\n\n    This test ensures that structurally identical graphs produce the same hash,\n    and that modifying a node's inputs results in a different hash\n\n    Returns:\n    None\n    "
@@ -118,7 +118,7 @@ def test_pass_manager_run() -> None:
     """Test the pass manager run behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that PassManager.run executes registered passes on an IRGraph.\n\n    This test registers a simple dummy pass with the PassManager, runs it on\n    a valid graph, and asserts that the pass was successfully executed\n\n    Returns:\n    None\n    "
@@ -153,7 +153,7 @@ def test_pass_manager_run_until_converged() -> None:
     """Test the pass manager run until converged behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that PassManager.run_until_converged executes passes until no changes.\n\n    occur\n\n    This test registers a pass that modifies the graph a finite number of times\n    and verifies that the PassManager continues execution until the graph converges\n    (i.e., no further modifications are made and the graph hash remains stable)\n\n    Returns:\n    None\n    "
@@ -192,7 +192,7 @@ def test_pass_manager_run_until_converged_max_iters() -> None:
     """Test the pass manager run until converged max iters behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that PassManager.run_until_converged respects the max_iterations limit.\n\n    This test registers a pass that continuously modifies the graph and verifies\n    that the PassManager terminates execution once the specified maximum number\n    of iterations is reached, preventing infinite loops\n\n    Returns:\n    None\n    "

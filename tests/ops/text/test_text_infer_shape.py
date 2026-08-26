@@ -28,7 +28,7 @@ def test_text_infer_shape() -> None:
     """Test the text infer shape behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test text ops infer_shape."

@@ -39,7 +39,7 @@ def test_cover_misc() -> None:
         for module in [misc, shape_misc, unary_logical, dist_ops, frontend_utils, activations, io_ops, dot_ops, binary_math, slicing, random_core]:
             for attr in dir(module):
                 val = getattr(module, attr)
-                if callable(val) and attr not in ["dispatch_op", "Any", "object"]:
+                if callable(val) and attr not in ["dispatch_op", "object", "object"]:
                     try:
                         val()
                     except Exception:

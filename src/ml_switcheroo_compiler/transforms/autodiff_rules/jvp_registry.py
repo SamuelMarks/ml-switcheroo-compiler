@@ -10,10 +10,10 @@ operations.
 from typing import Callable
 
 # Registry mapping op_name to JVP function
-_JVP_REGISTRY: dict[str, Callable[..., object]] = {}
+_JVP_REGISTRY = {}
 
 
-def register_jvp(op_name: str) -> Callable[..., object]:
+def register_jvp(op_name: str):
     """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical.
 
     Args:
@@ -23,7 +23,7 @@ def register_jvp(op_name: str) -> Callable[..., object]:
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., object]) -> Callable[..., object]:
+    def decorator(func):
         """Evaluate decorator operation.
 
         Args:
@@ -33,7 +33,7 @@ def register_jvp(op_name: str) -> Callable[..., object]:
             Callable: Result.
         """
         if op_name in _JVP_REGISTRY:
-            msg: object = f"JVP for operation '{op_name}' is already registered."
+            msg = f"JVP for operation '{op_name}' is already registered."
             raise ValueError(msg)
         _JVP_REGISTRY[op_name] = func
         return func
@@ -44,7 +44,7 @@ def register_jvp(op_name: str) -> Callable[..., object]:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
 
-def get_jvp(op_name: str) -> Callable[..., object]:
+def get_jvp(op_name: str):
     """Get the JVP rule.
 
     Args:
@@ -56,7 +56,7 @@ def get_jvp(op_name: str) -> Callable[..., object]:
     Raises:
         ValueError: An exception.
     """
-    data_jvp: object = get_jvp_from_data(op_name)
+    data_jvp = get_jvp_from_data(op_name)
     if data_jvp:
         return data_jvp
     if op_name not in _JVP_REGISTRY:

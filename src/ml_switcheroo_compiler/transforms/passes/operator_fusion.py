@@ -35,7 +35,7 @@ def _match_node_inputs(
     graph: IRGraph,
     node: IRNode,
     pattern: NodePattern,
-    capture_map: dict[str, object],
+    capture_map,
 ) -> bool:
     """Match the inputs of a node against a pattern.
 
@@ -48,11 +48,11 @@ def _match_node_inputs(
     Returns:
         bool: Result.
     """
-    p_inputs: object = pattern.inputs or []
+    p_inputs = pattern.inputs or []
     if len(node.inputs) != len(p_inputs):
         return False
     for i, inp_pat in enumerate(p_inputs):
-        inp_id: object = node.inputs[i]
+        inp_id = node.inputs[i]
         if not match_pattern(graph, inp_id, inp_pat, capture_map):
             return False
     return True
@@ -60,9 +60,9 @@ def _match_node_inputs(
 
 def match_pattern(
     graph: IRGraph,
-    node_id: object,
+    node_id,
     pattern: NodePattern,
-    capture_map: dict[str, object],
+    capture_map,
 ) -> bool:
     """Recursively match a pattern starting from a specific node ID or value in the graph.
 
@@ -81,7 +81,7 @@ def match_pattern(
         if pattern.capture is not None:
             capture_map[pattern.capture] = node_id
         return True
-    node: object = graph.nodes.get(node_id)
+    node = graph.nodes.get(node_id)
     if not node or (pattern.op_type is not None and node.op_type != pattern.op_type):
         return False
     if pattern.capture is not None:
@@ -104,7 +104,7 @@ class FusionRule:
         self.name = name
         self.pattern = pattern
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -119,7 +119,7 @@ class FusionRule:
 class PatternMatchingEngine:
     """Engine that applies fusion rules over a graph."""
 
-    def __init__(self, rules: list[FusionRule], cost_model: object | None = None) -> None:
+    def __init__(self, rules: list[FusionRule], cost_model=None) -> None:
         """Initialize PatternMatchingEngine.
 
         Args:
@@ -129,7 +129,7 @@ class PatternMatchingEngine:
         self.rules = rules
         self.cost_model = cost_model
 
-    def _try_match_rules(self, graph: IRGraph, node_id: str, new_nodes: dict[str, object], id_map: dict[str, object]) -> bool:
+    def _try_match_rules(self, graph: IRGraph, node_id: str, new_nodes, id_map) -> bool:
         """Try applying matching rules to a single node.
 
         Args:
@@ -142,9 +142,9 @@ class PatternMatchingEngine:
             bool: Result.
         """
         for rule in self.rules:
-            capture_map: dict[str, object] = {}
+            capture_map = {}
             if match_pattern(graph, node_id, rule.pattern, capture_map):
-                replacements: object = rule.apply(graph, capture_map)
+                replacements = rule.apply(graph, capture_map)
                 if replacements:
                     if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
                         continue
@@ -164,14 +164,14 @@ class PatternMatchingEngine:
         Returns:
             bool: True if the graph was modified.
         """
-        optimized: object = False
+        optimized = False
         new_nodes: dict[str, IRNode] = {}
         id_map: dict[str, str] = {}
 
         for node_id, node in graph.nodes.items():
-            matched_rule: object = self._try_match_rules(graph, node_id, new_nodes, id_map)
+            matched_rule = self._try_match_rules(graph, node_id, new_nodes, id_map)
             if matched_rule:
-                optimized: object = True
+                optimized = True
             else:
                 if node_id not in new_nodes:
                     new_nodes[node_id] = node
@@ -197,7 +197,7 @@ class PatternMatchingEngine:
         return optimized
 
 
-def _load_pass_config() -> object:
+def _load_pass_config():
     """Load pass configuration from YAML file.
 
     Returns:
@@ -209,10 +209,10 @@ def _load_pass_config() -> object:
 
     from ml_switcheroo_compiler.transforms.passes.config_models import PassConfig
 
-    yaml_path: object = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            res: object = yaml.safe_load(f)
+            res = yaml.safe_load(f)
             return PassConfig(**res)
     # Return a default empty config or fail.
     from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
@@ -234,7 +234,7 @@ class YamlFusionRule(FusionRule):
             config (FusionPatternConfig): Rule config.
         """
         self.config = config
-        pattern: object = self._build_pattern(config.pattern)
+        pattern = self._build_pattern(config.pattern)
         super().__init__(name, pattern)
 
     def _build_pattern(self, p: NodePatternConfig) -> NodePattern:
@@ -246,12 +246,12 @@ class YamlFusionRule(FusionRule):
         Returns:
             NodePattern: Built pattern.
         """
-        inputs: object = None
+        inputs = None
         if p.inputs is not None:
-            inputs: object = [self._build_pattern(ip) for ip in p.inputs]
+            inputs = [self._build_pattern(ip) for ip in p.inputs]
         return NodePattern(op_type=p.op_type, capture=p.capture, inputs=inputs)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match) -> dict[str, IRNode] | None:
         """Apply fusion rule.
 
         Args:
@@ -263,20 +263,20 @@ class YamlFusionRule(FusionRule):
         """
         from ml_switcheroo_compiler.ir.core import clone_logical_node
 
-        replacement: object = self.config.replacement
-        target: object = match.get(replacement.capture_to_replace)
+        replacement = self.config.replacement
+        target = match.get(replacement.capture_to_replace)
         if not isinstance(target, IRNode):
             return None
 
-        new_inputs: object = []
+        new_inputs = []
         for inp in replacement.inputs:
-            val: object = match.get(inp)
+            val = match.get(inp)
             if isinstance(val, IRNode):
                 new_inputs.append(val.id)
             else:
                 new_inputs.append(val)
 
-        new_node: object = clone_logical_node(target, inputs=new_inputs)
+        new_node = clone_logical_node(target, inputs=new_inputs)
         new_node.op_type = replacement.op_type
         return {target.id: new_node}
 
@@ -284,31 +284,31 @@ class YamlFusionRule(FusionRule):
 class MemoryAwareCostModel:
     """A memory-aware cost model for validating operator fusion."""
 
-    def __init__(self, config: object) -> None:
+    def __init__(self, config) -> None:
         """Initialize the memory-aware cost model."""
         self.config = config
 
-    def is_fusion_valid(self, replacements: object) -> bool:
+    def is_fusion_valid(self, replacements) -> bool:
         """Check if fusion is valid by checking max memory thresholds."""
         if not self.config:
             return True
 
-        max_memory: object = self.config.get("max_fusion_memory_bytes", 1024 * 1024 * 512)  # 512MB default
-        total_mem: object = 0
+        max_memory = self.config.get("max_fusion_memory_bytes", 1024 * 1024 * 512)  # 512MB default
+        total_mem = 0
 
         for node in replacements.values():
-            shape: object = getattr(node, "shape_metadata", None)
+            shape = getattr(node, "shape_metadata", None)
             if shape and not getattr(node, "is_dynamic_shape", False):
                 # Check for symbolic dimensions
                 if any(isinstance(d, str) for d in shape):
                     continue  # Skip memory check for symbolic shapes
 
-                elements: object = 1
+                elements = 1
                 for dim in shape:
                     elements *= max(1, int(dim))
 
-                dtype: object = node.attributes.get("dtype", "float32")
-                dtype_size: object = int(self.config.get("memory_sizes", {}).get(dtype, 4))
+                dtype = node.attributes.get("dtype", "float32")
+                dtype_size = int(self.config.get("memory_sizes", {}).get(dtype, 4))
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)
@@ -329,7 +329,7 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
 
     rules: list[FusionRule] = []
     # Load YAML rules
-    config: object = _load_pass_config()
+    config = _load_pass_config()
     if config.fusion_patterns:
         for name, rule_config in config.fusion_patterns.items():
             rules.append(YamlFusionRule(name, rule_config))
@@ -339,13 +339,13 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
 
     import yaml
 
-    cost_model_config: object = None
-    cost_yaml_path: object = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+    cost_model_config = None
+    cost_yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
     if os.path.exists(cost_yaml_path):
         with open(cost_yaml_path) as f:
-            cost_model_config: object = yaml.safe_load(f)
+            cost_model_config = yaml.safe_load(f)
 
-    engine: object = PatternMatchingEngine(rules, MemoryAwareCostModel(cost_model_config) if cost_model_config else None)
+    engine = PatternMatchingEngine(rules, MemoryAwareCostModel(cost_model_config) if cost_model_config else None)
     if engine.apply_passes(graph):
         dce_pass(graph)
     return graph

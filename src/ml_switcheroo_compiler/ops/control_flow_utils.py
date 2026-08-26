@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 
-def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list[str], list[object]]:
+def _wrap_proxy_inputs(args, subgraph):
     """Evaluate _wrap_proxy_inputs operation.
 
     Args:
@@ -34,16 +34,16 @@ def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list
     Returns:
             tuple[int, ...]: Result.
     """
-    proxy_args: object = []
-    input_ids: object = []
+    proxy_args = []
+    input_ids = []
     for _i, arg in enumerate(args):
         if isinstance(arg, tuple):
             sub_ids, sub_args = _wrap_proxy_inputs(arg, subgraph)
             input_ids.extend(sub_ids)
             proxy_args.append(tuple(sub_args))
         elif isinstance(arg, Tensor):
-            in_id: object = str(uuid.uuid4())
-            node: object = LogicalNode(
+            in_id = str(uuid.uuid4())
+            node = LogicalNode(
                 id=in_id,
                 op_type="Input",
                 inputs=[],
@@ -51,16 +51,16 @@ def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list
             )
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
-            proxy: object = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
+            proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
             proxy.concrete_value = arg.data
-            proxy_tensor: object = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
+            proxy_tensor = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
             proxy_args.append(proxy_tensor)
         else:
             proxy_args.append(arg)
     return input_ids, proxy_args
 
 
-def _get_tensor_ids(obj: object) -> list[str]:
+def _get_tensor_ids(obj) -> list[str]:
     """Evaluate _get_tensor_ids operation.
 
     Args:
@@ -75,16 +75,16 @@ def _get_tensor_ids(obj: object) -> list[str]:
     if isinstance(obj, Tensor):
         return [obj.data.id]
     if isinstance(obj, (tuple, list)):
-        ids: object = []
+        ids = []
         for o in obj:
             ids.extend(_get_tensor_ids(o))
         return ids
 
-    msg: object = "Control flow functions must return a Tensor or a tuple of Tensors."
+    msg = "Control flow functions must return a Tensor or a tuple of Tensors."
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
+def _process_trace_outputs(out, subgraph: IRBlock) -> str:
     """Evaluate _process_trace_outputs operation.
 
     Args:
@@ -94,9 +94,9 @@ def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
     Returns:
         str: Result.
     """
-    out_ids: object = _get_tensor_ids(out)
+    out_ids = _get_tensor_ids(out)
 
-    out_node: object = LogicalNode(
+    out_node = LogicalNode(
         id=str(uuid.uuid4()),
         op_type="Output",
         inputs=out_ids,
@@ -106,7 +106,7 @@ def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
     return out_node.id
 
 
-def _trace_function(func: Callable[..., object], args: tuple[Tensor, ...], name: str) -> IRBlock:
+def _trace_function(func, args: tuple[Tensor, ...], name: str) -> IRBlock:
     """Trace a Python function's execution into an IRBlock.
 
     Args:
@@ -119,19 +119,19 @@ def _trace_function(func: Callable[..., object], args: tuple[Tensor, ...], name:
     """
     from ml_switcheroo_compiler.core.config import config as compiler_config
 
-    prev_graph: object = global_tracing_state.active_graph
-    is_tracing: object = global_tracing_state.is_tracing
-    prev_eager: object = compiler_config.eager_mode
+    prev_graph = global_tracing_state.active_graph
+    is_tracing = global_tracing_state.is_tracing
+    prev_eager = compiler_config.eager_mode
 
     compiler_config.eager_mode = False
     increment_trace_count(func)
 
-    subgraph: object = global_tracing_state.start_tracing(name=name)
+    subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
 
     try:
-        out: object = func(*proxy_args)
-        out_node_id: object = _process_trace_outputs(out, subgraph)
+        out = func(*proxy_args)
+        out_node_id = _process_trace_outputs(out, subgraph)
     finally:
         global_tracing_state.stop_tracing()
         global_tracing_state.active_graph = prev_graph

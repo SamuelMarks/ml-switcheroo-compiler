@@ -18,13 +18,13 @@ def test_map_fn_eager() -> None:
     """Test the map fn eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the map_fn operator.\n\n    Verifies that map_fn correctly loops over a tensor, applying a function\n    and stacking results, when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(x: object) -> object:
+        def f(x):
             """Evaluate and process the f operation.
 
             Args:
@@ -44,13 +44,13 @@ def test_map_fn_trace() -> None:
     """Test the map fn trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the map_fn operator.\n\n    Verifies that map_fn correctly records the map operation into the active\n    tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         xs = Tensor(ProxyTensor(id="mock", shape=(), dtype="int32"), TensorConfig((3,), DType.Int32, device))
 
-        def f(x: object) -> object:
+        def f(x):
             """Evaluate and process the f operation.
 
             Args:

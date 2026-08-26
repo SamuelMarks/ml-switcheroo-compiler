@@ -43,7 +43,7 @@ def test_vision_transforms():
 "Core abstractions and logic definitions for test_rotation_eager.py."
 
 
-def test_random_rotation_eager_direct() -> object:
+def test_random_rotation_eager_direct():
     """Test the random rotation eager direct behavior.
 
     Returns:
@@ -61,7 +61,7 @@ def test_random_rotation_eager_direct() -> object:
         pass
 
 
-def test_random_rotation_eager_nearest() -> object:
+def test_random_rotation_eager_nearest():
     """Test the random rotation eager nearest behavior.
 
     Returns:

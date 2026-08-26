@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.tree_util import TreeDef, tree_all, tree_flatten, tr
 "Core abstractions and logic definitions for test_tree_util_extra_new.py."
 
 
-def test_tree_util_extra() -> object:
+def test_tree_util_extra():
     """Test the tree util extra behavior.
 
     Returns:
@@ -36,7 +36,7 @@ def test_tree_flatten_unflatten() -> None:
     """Test the tree flatten unflatten behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test tree_flatten_unflatten."
@@ -65,7 +65,7 @@ def test_tree_map() -> None:
     """Test the tree map behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test tree_map."
@@ -192,7 +192,7 @@ def test_tree_def_hash_eq() -> None:
     """Test the tree def hash eq behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test tree def hash and eq."

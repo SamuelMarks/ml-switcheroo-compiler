@@ -12,7 +12,7 @@ class RawOp(OpDef):
     where applicable.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape dynamically or fallback to unknown.
 
         Args:
@@ -29,25 +29,25 @@ class RawOp(OpDef):
 class RawSwitch(RawOp):
     """Dynamic control flow RawSwitch."""
 
-    op_name: object = "RawSwitch"
+    op_name = "RawSwitch"
 
 
 @register_op("RawMerge")
 class RawMerge(RawOp):
     """Dynamic control flow RawMerge."""
 
-    op_name: object = "RawMerge"
+    op_name = "RawMerge"
 
 
 @register_op("RawConv2D")
 class RawConv2D(RawOp):
     """Raw Conv2D mapping."""
 
-    op_name: object = "RawConv2D"
+    op_name = "RawConv2D"
 
 
 @register_op("RawMatMul")
 class RawMatMul(RawOp):
     """Raw MatMul mapping."""
 
-    op_name: object = "RawMatMul"
+    op_name = "RawMatMul"

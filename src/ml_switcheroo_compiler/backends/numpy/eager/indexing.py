@@ -11,10 +11,8 @@ from dataclasses import dataclass
 class IndexTarget:
     """Index target container."""
 
-    operand: object
-    update: object
-    index: object
 
+import threading
 
 import numpy as np
 
@@ -30,14 +28,14 @@ class IndexingContext:
     """Configuration class for indexing context."""
 
     axis: int = 0
-    start_index: object = None
-    limit_index: object = None
-    slice_size: object = None
+    start_index: np.ndarray = None
+    limit_index: np.ndarray = None
+    slice_size: int = None
     stride: int = 1
     keepdims: bool = True
 
 
-def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
+def _dynamic_update_slice(x, update, start_indices):
     """Evaluate _dynamic_update_slice operation.
 
     Args:
@@ -48,9 +46,9 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
     Returns:
             tuple[int, ...]: Result.
     """
-    out: object = np.copy(x)
+    out: np.ndarray = np.copy(x)
 
-    def _to_int(v: object) -> int:
+    def _to_int(v) -> int:
         """Evaluate _to_int operation.
 
         Args:
@@ -60,18 +58,18 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
             int: Result.
         """
         if hasattr(v, "data"):
-            v: object = v.data
+            v: np.ndarray = v.data
         if hasattr(v, "item"):
             return int(v.item())
         return int(v)
 
-    slices: object = tuple(slice(_to_int(start), _to_int(start) + size) for (start, size) in zip(start_indices, update.shape))
+    slices: tuple = tuple(slice(_to_int(start), _to_int(start) + size) for (start, size) in zip(start_indices, update.shape))
     out[slices] = update
     return out
 
 
 @numpy_eager_registry.register("DynamicUpdateSlice")
-def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dynamic_update_slice(backend_module, *args, **kwargs):
     """Evaluate _np_dynamic_update_slice operation.
 
     Args:
@@ -86,7 +84,7 @@ def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: ob
 
 
 @numpy_eager_registry.register("Unstack")
-def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object) -> object:
+def _np_unstack(backend_module, x, axis: int = 0, *args, **kwargs):
     """Evaluate _np_unstack operation.
 
     Args:
@@ -103,7 +101,7 @@ def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: obje
 
 
 @numpy_eager_registry.register("DynamicSlice")
-def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, slice_sizes: object) -> object:
+def _np_dynamic_slice(backend_module, x, start_indices, slice_sizes):
     """Evaluate _np_dynamic_slice operation.
 
     Args:
@@ -115,12 +113,12 @@ def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, 
     Returns:
             tuple[int, ...]: Result.
     """
-    slices: object = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
+    slices: tuple = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
     return x[slices]
 
 
 @numpy_eager_registry.register("DynamicSliceInDim")
-def _np_dynamic_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_dynamic_slice_in_dim(backend_module, operand, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_dynamic_slice_in_dim operation.
 
     Args:
@@ -133,15 +131,15 @@ def _np_dynamic_slice_in_dim(backend_module: object, operand: object, context: I
     Returns:
             tuple[int, ...]: Result.
     """
-    operand: object = np.asarray(operand)
-    start_index: object = np.asarray(context.start_index).item()
-    sl: object = [slice(None)] * operand.ndim
+    operand: np.ndarray = np.asarray(operand)
+    start_index: np.ndarray = np.asarray(context.start_index).item()
+    sl: list = [slice(None)] * operand.ndim
     sl[context.axis] = slice(start_index, start_index + context.slice_size)
     return operand[tuple(sl)]
 
 
 @numpy_eager_registry.register("DynamicUpdateSliceInDim")
-def _np_dynamic_update_slice_in_dim(backend_module: object, operand: object, update: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_dynamic_update_slice_in_dim(backend_module, operand, update, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_dynamic_update_slice_in_dim operation.
 
     Args:
@@ -155,17 +153,17 @@ def _np_dynamic_update_slice_in_dim(backend_module: object, operand: object, upd
     Returns:
             tuple[int, ...]: Result.
     """
-    operand: object = np.copy(np.asarray(operand))
-    start_index: object = np.asarray(context.start_index).item()
-    slice_size: object = np.asarray(update).shape[context.axis]
-    sl: object = [slice(None)] * operand.ndim
+    operand: np.ndarray = np.copy(np.asarray(operand))
+    start_index: np.ndarray = np.asarray(context.start_index).item()
+    slice_size: np.ndarray = np.asarray(update).shape[context.axis]
+    sl: list = [slice(None)] * operand.ndim
     sl[context.axis] = slice(start_index, start_index + slice_size)
     operand[tuple(sl)] = update
     return operand
 
 
 @numpy_eager_registry.register("DynamicIndexInDim")
-def _np_dynamic_index_in_dim(backend_module: object, operand: object, index: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_dynamic_index_in_dim(backend_module, operand, index, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_dynamic_index_in_dim operation.
 
     Args:
@@ -179,20 +177,20 @@ def _np_dynamic_index_in_dim(backend_module: object, operand: object, index: obj
     Returns:
             tuple[int, ...]: Result.
     """
-    operand: object = np.asarray(operand)
-    idx: object = np.asarray(index).item()
+    operand: np.ndarray = np.asarray(operand)
+    idx: np.ndarray = np.asarray(index).item()
     if context.keepdims:
-        sl: object = [slice(None)] * operand.ndim
+        sl: list = [slice(None)] * operand.ndim
         sl[context.axis] = slice(idx, idx + 1)
         return operand[tuple(sl)]
     else:
-        sl: object = [slice(None)] * operand.ndim
+        sl: list = [slice(None)] * operand.ndim
         sl[context.axis] = idx
         return operand[tuple(sl)]
 
 
 @numpy_eager_registry.register("DynamicUpdateIndexInDim")
-def _np_dynamic_update_index_in_dim(backend_module: object, target: IndexTarget, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_dynamic_update_index_in_dim(backend_module, target: IndexTarget, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_dynamic_update_index_in_dim operation.
 
     Args:
@@ -206,16 +204,16 @@ def _np_dynamic_update_index_in_dim(backend_module: object, target: IndexTarget,
             tuple[int, ...]: Result.
     """
     operand, update, index = target.operand, target.update, target.index
-    operand: object = np.copy(np.asarray(operand))
-    idx: object = np.asarray(index).item()
-    sl: object = [slice(None)] * operand.ndim
+    operand: np.ndarray = np.copy(np.asarray(operand))
+    idx: np.ndarray = np.asarray(index).item()
+    sl: list = [slice(None)] * operand.ndim
     sl[context.axis] = idx
     operand[tuple(sl)] = update
     return operand
 
 
 @numpy_eager_registry.register("SliceInDim")
-def _np_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_slice_in_dim(backend_module, operand, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_slice_in_dim operation.
 
     Args:
@@ -228,14 +226,14 @@ def _np_slice_in_dim(backend_module: object, operand: object, context: IndexingC
     Returns:
             tuple[int, ...]: Result.
     """
-    operand: object = np.asarray(operand)
-    sl: object = [slice(None)] * operand.ndim
+    operand: np.ndarray = np.asarray(operand)
+    sl: list = [slice(None)] * operand.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return operand[tuple(sl)]
 
 
 @numpy_eager_registry.register("Slice")
-def _np_slice(backend_module: object, x: object, context: IndexingContext) -> object:
+def _np_slice(backend_module, x, context: IndexingContext):
     """Evaluate _np_slice operation.
 
     Args:
@@ -246,13 +244,13 @@ def _np_slice(backend_module: object, x: object, context: IndexingContext) -> ob
     Returns:
             tuple[int, ...]: Result.
     """
-    sl: object = [slice(None)] * x.ndim
+    sl: list = [slice(None)] * x.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return x[tuple(sl)]
 
 
 @numpy_eager_registry.register("GetItem")
-def _np_getitem(backend_module: object, x: object, key: str) -> object:
+def _np_getitem(backend_module, x, key: str):
     """Evaluate _np_getitem operation.
 
     Args:
@@ -263,12 +261,12 @@ def _np_getitem(backend_module: object, x: object, key: str) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: object = _safe_parse_key(key)
+    parsed_key: np.ndarray = _safe_parse_key(key)
     return x[parsed_key]
 
 
 @numpy_eager_registry.register("SetItem")
-def _np_setitem(backend_module: object, x: object, value: object, key: str) -> object:
+def _np_setitem(backend_module, x, value, key: str):
     """Evaluate _np_setitem operation.
 
     Args:
@@ -280,14 +278,14 @@ def _np_setitem(backend_module: object, x: object, value: object, key: str) -> o
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: object = _safe_parse_key(key)
-    out: object = np.copy(np.asarray(x))
+    parsed_key: np.ndarray = _safe_parse_key(key)
+    out: np.ndarray = np.copy(np.asarray(x))
     out[parsed_key] = np.asarray(value)
     return out
 
 
 @numpy_eager_registry.register("IndexInDim")
-def _eager_indexindim(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eager_indexindim(backend_module, *args, **kwargs):
     """Evaluate _eager_indexindim operation.
 
     Args:
@@ -305,7 +303,7 @@ def _eager_indexindim(backend_module: object, *args: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("Gather")
-def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+def gather_eager(np_mod, *args, **kwargs):
     """gather_eager function.
 
     Args:
@@ -316,18 +314,18 @@ def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    t: object = args[0]
-    dim: object = args[1] if len(args) > 1 else kwargs.get("dim")
-    index: object = args[2] if len(args) > 2 else kwargs.get("index")
+    t: threading.Thread = args[0]
+    dim: int = args[1] if len(args) > 1 else kwargs.get("dim")
+    index: np.ndarray = args[2] if len(args) > 2 else kwargs.get("index")
     if hasattr(t, "numpy"):
-        t: object = t.numpy()
+        t: threading.Thread = t.numpy()
     if hasattr(index, "numpy"):
-        index: object = index.numpy()
+        index: np.ndarray = index.numpy()
     return np_mod.take_along_axis(t, index, axis=dim)
 
 
 @numpy_eager_registry.register("Stack")
-def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+def stack_eager(np_mod, *args, **kwargs):
     """stack_eager function.
 
     Args:
@@ -338,9 +336,9 @@ def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    tensors: object = args[0] if len(args) > 0 else kwargs.get("tensors")
-    dim: object = args[1] if len(args) > 1 else kwargs.get("dim", 0)
+    tensors: list = args[0] if len(args) > 0 else kwargs.get("tensors")
+    dim: int = args[1] if len(args) > 1 else kwargs.get("dim", 0)
     if "axis" in kwargs:
-        dim: object = kwargs["axis"]
-    arrays: object = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
+        dim: int = kwargs["axis"]
+    arrays: list = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
     return np_mod.stack(arrays, axis=dim)

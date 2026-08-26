@@ -5,7 +5,7 @@ import ast
 from typing import Callable
 
 
-def _eval_constant(node: ast.AST) -> object:
+def _eval_constant(node: ast.AST):
     """Evaluate _eval_constant operation.
 
     Args:
@@ -19,7 +19,7 @@ def _eval_constant(node: ast.AST) -> object:
     return getattr(node, "value", None)
 
 
-def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> slice:
+def _eval_slice_call(node: ast.AST, _eval_fn) -> slice:
     """Evaluate _eval_slice_call operation.
 
     Args:
@@ -32,7 +32,7 @@ def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> sl
     return slice(*[_eval_fn(a) for a in getattr(node, "args", [])])
 
 
-def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_array_call(node: ast.AST, _eval_fn):
     """Evaluate _eval_array_call operation.
 
     Args:
@@ -56,13 +56,13 @@ def _is_np_array_call(node: ast.AST) -> bool:
     Returns:
         True if the node represents a call to `np.array`, False otherwise.
     """
-    func: object = getattr(node, "func", None)
+    func = getattr(node, "func", None)
     if isinstance(func, ast.Attribute):
         return getattr(getattr(func, "value", None), "id", "") == "np" and getattr(func, "attr", "") == "array"
     return False
 
 
-def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_call(node: ast.AST, _eval_fn):
     """Evaluate _eval_call operation.
 
     Args:
@@ -72,7 +72,7 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    func: object = getattr(node, "func", None)
+    func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
         if getattr(func, "id", "") == "slice":
             return _eval_slice_call(node, _eval_fn)
@@ -83,7 +83,7 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
     raise ValueError("Unsupported Call")
 
 
-def _eval_name(node: ast.AST) -> object:
+def _eval_name(node: ast.AST):
     """Evaluate _eval_name operation.
 
     Args:
@@ -92,7 +92,7 @@ def _eval_name(node: ast.AST) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    node_id: object = getattr(node, "id", "")
+    node_id = getattr(node, "id", "")
     if node_id == "Ellipsis":
         return Ellipsis
     if node_id == "None":
@@ -100,7 +100,7 @@ def _eval_name(node: ast.AST) -> object:
     raise ValueError("Unsupported Name")
 
 
-def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_unary_op(node: ast.AST, _eval_fn):
     """Evaluate _eval_unary_op operation.
 
     Args:
@@ -111,13 +111,13 @@ def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> obje
             tuple[int, ...]: Result.
     """
     if isinstance(getattr(node, "op", None), ast.USub):
-        val: object = _eval_fn(getattr(node, "operand", None))
+        val = _eval_fn(getattr(node, "operand", None))
         if isinstance(val, (int, float)):
             return -val
     raise ValueError("Unsupported UnaryOp")
 
 
-def _get_node_evaluators() -> dict[type, Callable[..., object]]:
+def _get_node_evaluators():
     """Get the dictionary mapping AST node types to evaluation functions.
 
     Returns:
@@ -133,7 +133,7 @@ def _get_node_evaluators() -> dict[type, Callable[..., object]]:
     }
 
 
-def _safe_parse_key(key_str: str) -> object:
+def _safe_parse_key(key_str: str):
     """Safely parse a stringified indexing key.
 
     Args:
@@ -142,10 +142,10 @@ def _safe_parse_key(key_str: str) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    tree: object = ast.parse(key_str, mode="eval").body
-    evaluators: object = _get_node_evaluators()
+    tree = ast.parse(key_str, mode="eval").body
+    evaluators = _get_node_evaluators()
 
-    def _eval(node: ast.AST) -> object:
+    def _eval(node: ast.AST):
         """Evaluate _eval operation.
 
         Args:
@@ -154,9 +154,9 @@ def _safe_parse_key(key_str: str) -> object:
         Returns:
             tuple[int, ...]: Result.
         """
-        node_type: object = type(node)
+        node_type = type(node)
         if node_type in evaluators:
-            eval_fn: object = evaluators[node_type]
+            eval_fn = evaluators[node_type]
             return eval_fn(node, _eval)
         raise ValueError(f"Unsupported AST node: {node_type}")
 

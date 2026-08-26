@@ -40,7 +40,7 @@ class Options:
         self.autotune_algorithm: Optional[AutotuneAlgorithm] = None
         self.deterministic: Optional[bool] = None
         self.experimental_optimization: dict[str, bool] = {}
-        self.experimental_distribute: dict[str, object] = {"auto_shard_policy": AutoShardPolicy.AUTO}
+        self.experimental_distribute = {"auto_shard_policy": AutoShardPolicy.AUTO}
         self.threading: dict[str, int] = {}
 
 
@@ -92,7 +92,7 @@ class Dataset:
         return cls(*tensors)
 
     @classmethod
-    def from_list(cls, elements: list[object]) -> "Dataset":
+    def from_list(cls, elements) -> "Dataset":
         """Create a dataset from a list of elements.
 
         Args:
@@ -101,7 +101,7 @@ class Dataset:
         Returns:
             Dataset: A dataset.
         """
-        ds: object = cls()
+        ds = cls()
         ds._elements = elements
         ds.length = len(elements)
         ds._indices = list(range(ds.length))
@@ -177,7 +177,7 @@ class Dataset:
         self._drop_remainder = drop_remainder
         return self
 
-    def map_and_batch(self, map_func: Callable[..., object], batch_size: int, num_parallel_batches: object = None, drop_remainder: object = False) -> "Dataset":
+    def map_and_batch(self, map_func, batch_size: int, num_parallel_batches=None, drop_remainder=False) -> "Dataset":
         """Fused map and batch operation.
 
         Args:
@@ -196,10 +196,10 @@ class Dataset:
 
     def group_by_window(
         self,
-        key_func: Callable[..., object],
-        reduce_func: Callable[..., object],
+        key_func,
+        reduce_func,
         window_size: int,
-        window_shift: object = None,
+        window_shift=None,
         window_stride: int = 1,
     ) -> "Dataset":
         """Group elements by window.
@@ -216,7 +216,7 @@ class Dataset:
         """
         return self
 
-    def rejection_resample(self, class_func: Callable[..., object], target_dist: list[float], initial_dist: object = None, seed: object = None) -> "Dataset":
+    def rejection_resample(self, class_func, target_dist: list[float], initial_dist=None, seed=None) -> "Dataset":
         """Resample dataset by rejection.
 
         Args:
@@ -232,11 +232,11 @@ class Dataset:
 
     def parallel_interleave(
         self,
-        map_func: Callable[..., object],
+        map_func,
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
-        prefetch_input_elements: object = None,
+        prefetch_input_elements=None,
     ) -> "Dataset":
         """Interleave elements from multiple datasets in parallel.
 
@@ -252,7 +252,7 @@ class Dataset:
         """
         return self
 
-    def prefetch_to_device(self, device: str, buffer_size: object = None) -> "Dataset":
+    def prefetch_to_device(self, device: str, buffer_size=None) -> "Dataset":
         """Prefetch elements to a specific device.
 
         Args:
@@ -264,7 +264,7 @@ class Dataset:
         """
         return self
 
-    def shuffle(self, buffer_size: int, seed: object = None, reshuffle_each_iteration: object = None) -> "Dataset":
+    def shuffle(self, buffer_size: int, seed=None, reshuffle_each_iteration=None) -> "Dataset":
         """Shuffle the dataset.
 
         Args:
@@ -303,7 +303,7 @@ class Dataset:
         self._prefetch_buffer = buffer_size
         return self
 
-    def snapshot(self, path: str, compression: object = None, reader_func: object = None, shard_func: object = None) -> "Dataset":
+    def snapshot(self, path: str, compression=None, reader_func=None, shard_func=None) -> "Dataset":
         """Snapshot the dataset.
 
         Args:
@@ -317,7 +317,7 @@ class Dataset:
         """
         return self
 
-    def save(self, path: str, compression: object = None, shard_func: object = None) -> "Dataset":
+    def save(self, path: str, compression=None, shard_func=None) -> "Dataset":
         """Save dataset to disk.
 
         Args:
@@ -331,7 +331,7 @@ class Dataset:
         return self
 
     @classmethod
-    def load(cls, path: str, element_spec: object = None, compression: object = None, reader_func: object = None) -> "Dataset":
+    def load(cls, path: str, element_spec=None, compression=None, reader_func=None) -> "Dataset":
         """Load dataset from disk.
 
         Args:
@@ -356,32 +356,32 @@ class Dataset:
             yield tuple()
             return
 
-        indices: object = self._indices.copy()
+        indices = self._indices.copy()
         if self._shuffle:
             if hasattr(self, "_seed") and self._seed is not None:
                 random.seed(self._seed)
             random.shuffle(indices)
 
-        num_batches: object = math.ceil(self.length / self._batch_size)
+        num_batches = math.ceil(self.length / self._batch_size)
         if getattr(self, "_drop_remainder", False):
-            num_batches: object = self.length // self._batch_size
+            num_batches = self.length // self._batch_size
 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
 
         for i in range(num_batches):
-            start: object = i * self._batch_size
-            end: object = min(start + self._batch_size, self.length)
-            batch_indices: object = indices[start:end]
+            start = i * self._batch_size
+            end = min(start + self._batch_size, self.length)
+            batch_indices = indices[start:end]
 
             # Using DType.Int32 for indices
-            batch_idx_tensor: object = Tensor(
+            batch_idx_tensor = Tensor(
                 backend.array(batch_indices, dtype="int32"),
                 TensorConfig((len(batch_indices),), DType.Int32, self.tensors[0].device),
             )
 
-            batch_tensors: object = []
+            batch_tensors = []
             with ConfigContext(eager_mode=True):
                 for t in self.tensors:
                     from ml_switcheroo_compiler.ops.shape.indexing import take
@@ -413,13 +413,13 @@ class NumpyIterator:
         """
         return self
 
-    def __next__(self) -> tuple[object, ...]:
+    def __next__(self):
         """Next.
 
         Returns:
             tuple[object, ...]: Batch arrays.
         """
-        batch: object = next(self._iterator)
+        batch = next(self._iterator)
         return tuple(t.data for t in batch) if len(batch) > 0 else ()
 
 
@@ -442,13 +442,13 @@ class ArrayIterator:
         """
         return self
 
-    def __next__(self) -> tuple[object, ...]:
+    def __next__(self):
         """Next.
 
         Returns:
             tuple[object, ...]: Batch native arrays.
         """
-        batch: object = next(self._iterator)
+        batch = next(self._iterator)
         return tuple(t.data for t in batch) if len(batch) > 0 else ()
 
 
@@ -458,15 +458,15 @@ class CsvDataset(Dataset):
     def __init__(
         self,
         filenames: Union[str, list[str]],
-        record_defaults: object = None,
-        compression_type: object = None,
-        buffer_size: object = None,
+        record_defaults=None,
+        compression_type=None,
+        buffer_size=None,
         header: bool = False,
         field_delim: str = ",",
         use_quote_delim: bool = True,
         na_value: str = "",
-        select_cols: object = None,
-        exclude_cols: object = None,
+        select_cols=None,
+        exclude_cols=None,
     ) -> None:
         """Init.
 
@@ -507,9 +507,9 @@ class TFRecordReader(Dataset):
     def __init__(
         self,
         filenames: Union[str, list[str]],
-        compression_type: object = None,
-        buffer_size: object = None,
-        num_parallel_reads: object = None,
+        compression_type=None,
+        buffer_size=None,
+        num_parallel_reads=None,
     ) -> None:
         """Init.
 
@@ -525,7 +525,7 @@ class TFRecordReader(Dataset):
 class ImageDataset(Dataset):
     """Dataset for image ingestion and on-the-fly resizing/preprocessing."""
 
-    def __init__(self, *tensors: Tensor, target_size: object = None, normalize: object = False) -> None:
+    def __init__(self, *tensors: Tensor, target_size=None, normalize=False) -> None:
         """Init.
 
         Args:
@@ -550,13 +550,13 @@ class ImageDataset(Dataset):
         from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample_bilinear
 
         for batch in super().__iter__():
-            processed_batch: object = []
+            processed_batch = []
             with ConfigContext(eager_mode=True):
                 for t in batch:
                     if self.target_size is not None and len(t.shape) == 4:
-                        t: object = upsample_bilinear(t, size=self.target_size)
+                        t = upsample_bilinear(t, size=self.target_size)
                     if self.normalize:
-                        t: object = true_divide(t, 255.0)
+                        t = true_divide(t, 255.0)
                     processed_batch.append(t)
             yield tuple(processed_batch)
 
@@ -581,7 +581,7 @@ class AudioDataset(Dataset):
 class TextDataset(Dataset):
     """Dataset for text pipelines."""
 
-    def __init__(self, *tensors: Tensor, vocab_size: object = None) -> None:
+    def __init__(self, *tensors: Tensor, vocab_size=None) -> None:
         """Init.
 
         Args:
@@ -598,7 +598,7 @@ class TextDataset(Dataset):
 class NumpyDataset(Dataset):
     """High-performance batch generation from compiled numpy arrays."""
 
-    def __init__(self, *arrays: object) -> None:
+    def __init__(self, *arrays) -> None:
         """Init.
 
         Args:
@@ -608,9 +608,9 @@ class NumpyDataset(Dataset):
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
         from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
-        tensors: object = []
+        tensors = []
         for arr in arrays:
-            shape: object = getattr(arr, "shape", ())
-            dtype: object = resolve_dtype(arr, None)
+            shape = getattr(arr, "shape", ())
+            dtype = resolve_dtype(arr, None)
             tensors.append(Tensor(arr, TensorConfig(shape, dtype, Device(DeviceType.CPU))))
         super().__init__(*tensors)

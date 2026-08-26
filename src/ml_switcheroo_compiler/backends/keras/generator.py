@@ -2,6 +2,7 @@
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
+from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -25,7 +26,7 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string for the Keras Input tensor.
         """
-        shape_str: object = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
+        shape_str: str = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
         return f"{var_name} = keras.Input(shape={shape_str}, name='{node.id}')"
 
     @staticmethod
@@ -33,14 +34,14 @@ class KerasSignatureBuilder:
         """Construct the `keras.Model` return block connecting inputs to outputs.
 
         Args:
-            input_vars (list): List of model input variable names.
-            output_vars (list): List of model output variable names.
+            input_vars (list[str]): List of model input variable names.
+            output_vars (list[str]): List of model output variable names.
 
         Returns:
             str: The code string that builds and returns the model.
         """
-        inputs_str: object = ", ".join(input_vars)
-        outputs_str: object = ", ".join(output_vars)
+        inputs_str: str = ", ".join(input_vars)
+        outputs_str: str = ", ".join(output_vars)
         return f"return keras.Model(inputs=[{inputs_str}], outputs=[{outputs_str}])"
 
 
@@ -48,45 +49,45 @@ class KerasTensorManipulator:
     """Help for tensor manipulations."""
 
     @staticmethod
-    def format_zeros_like(op: str, kwargs: object) -> str:
+    def format_zeros_like(op: str, kwargs: dict[str, Any]) -> str:
         """Evaluate format_zeros_like operation.
 
         Args:
-        op (str): The op parameter.
-        kwargs (object): The kwargs parameter.
+            op (str): The op parameter.
+            kwargs (dict[str, Any]): The kwargs parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
-        res: object = f"keras.ops.{op}({{shape}})"
+        res: str = f"keras.ops.{op}({{shape}})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
     @staticmethod
-    def format_full(kwargs: object) -> str:
+    def format_full(kwargs: dict[str, Any]) -> str:
         """Evaluate format_full operation.
 
         Args:
-        kwargs (object): The kwargs parameter.
+            kwargs (dict[str, Any]): The kwargs parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
-        res: object = "keras.ops.full({shape}, {fill_value})"
+        res: str = "keras.ops.full({shape}, {fill_value})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
     @staticmethod
-    def format_transpose(kwargs: object) -> str:
+    def format_transpose(kwargs: dict[str, Any]) -> str:
         """Evaluate format_transpose operation.
 
         Args:
-        kwargs (object): The kwargs parameter.
+            kwargs (dict[str, Any]): The kwargs parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
         if "axes" in kwargs:
             return "keras.ops.transpose({0}, {axes})"
@@ -98,7 +99,7 @@ class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
         """Load a serialized object.
 
         Args:
@@ -107,7 +108,8 @@ class KerasCodeGenerator(BaseGenerator):
             fix_imports (bool): Fix imports.
             encoding (str): The encoding.
 
-        Returns: object: The loaded object.
+        Returns:
+            Any: The loaded object.
         """
         import pickle
 
@@ -115,12 +117,12 @@ class KerasCodeGenerator(BaseGenerator):
             return pickle.load(f)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save an array to a file.
 
         Args:
             file (str): The file path.
-            arr (object): The array data.
+            arr (Any): The array data.
             allow_pickle (bool): Allow pickle.
             fix_imports (bool): Fix imports.
         """
@@ -130,34 +132,34 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Save multiple arrays into a single file.
 
         Args:
             file (str): The file path.
-            *args (object): Positional array arguments.
-            **kwds (object): Keyword array arguments.
+            *args (Any): Positional array arguments.
+            **kwds (Any): Keyword array arguments.
         """
         import pickle
 
-        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, Any] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with open(file, "wb") as f:
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Save multiple arrays into a single compressed file.
 
         Args:
             file (str): The file path.
-            *args (object): Positional array arguments.
-            **kwds (object): Keyword array arguments.
+            *args (Any): Positional array arguments.
+            **kwds (Any): Keyword array arguments.
         """
         import gzip
         import pickle
 
-        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data: dict[str, Any] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
@@ -170,38 +172,38 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras"
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the generator.
 
         Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
         """
         super().__init__(*args, **kwargs)
         self.visitors.extend([*get_shared_ast_visitors(generator=self), KerasVisionVisitor(), KerasAudioVisitor()])
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
-    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ConvTranspose(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Visit a ConvTranspose node.
 
         Args:
-            node (object): The IR node.
+            node (IRNode): The IR node.
             input_vars (list[str]): The inputs.
-            **kwargs (object): Additional kwargs.
+            **kwargs (Any): Additional kwargs.
 
         Returns:
             str: The generated code string.
         """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
-    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Visit a RaggedDot node.
 
         Args:
-            node (object): The IR node.
+            node (IRNode): The IR node.
             input_vars (list[str]): The inputs.
-            **kwargs (object): Additional kwargs.
+            **kwargs (Any): Additional kwargs.
 
         Returns:
             str: The generated code string.
@@ -209,13 +211,17 @@ class KerasCodeGenerator(BaseGenerator):
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string."""
+        """Generate code using strict AST construction (CST) from a base NumPy string.
+
+        Returns:
+            str: Transpiled code.
+        """
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen: object = NumpyGenerator(self.graph)
-        base_code: object = gen.generate()
-        return transpile_source(base_code, target_framework="keras")
+        gen: NumpyGenerator = NumpyGenerator(self.graph)
+        base_code: str = gen.generate()
+        return str(transpile_source(base_code, target_framework="keras"))
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
@@ -225,16 +231,16 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
-            kwargs (dict): The kwargs.
+            kwargs (dict[str, Any]): The kwargs.
 
         Returns:
             dict[str, str]: The ops map.
         """
-        ops: object = super().get_ops_map(kwargs)
+        ops: dict[str, str] = super().get_ops_map(kwargs)
         ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kwargs)
         ops["Ones"] = KerasTensorManipulator.format_zeros_like("ones", kwargs)
         ops["Full"] = KerasTensorManipulator.format_full(kwargs)
@@ -257,7 +263,7 @@ class KerasCodeGenerator(BaseGenerator):
         """Evaluate _emit_body_return operation.
 
         Args:
-            returns (list): The returns parameter.
+            returns (list[str]): The returns parameter.
         """
         self.keras_output_vars.extend(returns)
 
@@ -275,7 +281,7 @@ class KerasCodeGenerator(BaseGenerator):
         """Evaluate _generate_file_header operation.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
         return [self.header.strip()]
 
@@ -283,15 +289,15 @@ class KerasCodeGenerator(BaseGenerator):
         """Evaluate _resolve_imports operation.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
         import yaml
 
-        tmpl_path: object = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
+        tmpl_path: str = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
         with open(tmpl_path) as f:
-            data: object = yaml.safe_load(f)
+            data: dict[str, Any] = yaml.safe_load(f)
 
-        lines: object = ["import keras\n"]
+        lines: list[str] = ["import keras\n"]
         if "imports" in data and data["imports"]:
             lines.extend(data["imports"].split("\n"))
         if "functions" in data and data["functions"]:
@@ -302,7 +308,7 @@ class KerasCodeGenerator(BaseGenerator):
     def _generate_function_signature(self) -> None:
         """Generate the model function signature."""
         self.indent_level = 0
-        self.add_line("def get_model() -> object:")
+        self.add_line("def get_model() -> Any:")
         self.keras_input_vars = []
         self.keras_output_vars = []
         self.indent_level += 1

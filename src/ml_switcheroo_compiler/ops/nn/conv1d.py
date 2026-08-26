@@ -21,7 +21,7 @@ class ConvHyperparams:
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID"
 
 
-def conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
+def conv1d(lhs: Tensor, rhs: Tensor, config_obj=None, **kwargs):
     """1D Convolution.
 
     Args:
@@ -34,7 +34,7 @@ def conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None,
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj: object = _build_conv_config(kwargs, ((0, 2, 1), (2, 1, 0), (0, 2, 1)))
+        config_obj = _build_conv_config(kwargs, ((0, 2, 1), (2, 1, 0), (0, 2, 1)))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 
@@ -44,7 +44,7 @@ def conv1d_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> object:
+):
     """1D convolution transpose.
 
     Args:
@@ -56,12 +56,12 @@ def conv1d_transpose(
     Returns:
         Tensor: Result.
     """
-    conv_transpose: object = get_op("ConvTranspose")()
+    conv_transpose = get_op("ConvTranspose")()
 
     return conv_transpose(lhs, rhs, strides, padding)
 
 
-def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
+def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj=None, **kwargs):
     """1D Depthwise Convolution.
 
     Args:
@@ -73,7 +73,7 @@ def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[objec
     Returns:
         Tensor: Result.
     """
-    dimension_numbers: object = ((0, 2, 1), (2, 1, 0), (0, 2, 1))
+    dimension_numbers = ((0, 2, 1), (2, 1, 0), (0, 2, 1))
     rhs_reshaped, config_obj = _prepare_depthwise_conv(lhs, rhs, 1, dimension_numbers, config_obj, **kwargs)
     return conv_general_dilated(lhs, rhs_reshaped, config_obj)
 
@@ -82,9 +82,9 @@ def separable_conv1d(
     lhs: Tensor,
     depthwise_filter: Tensor,
     pointwise_filter: Tensor,
-    config: object = None,
-    **kwargs: object,
-) -> object:
+    config=None,
+    **kwargs,
+):
     """1D Separable Convolution.
 
     Args:
@@ -97,9 +97,9 @@ def separable_conv1d(
     Returns:
         Tensor: Result.
     """
-    config: object = config or ConvHyperparams()
+    config = config or ConvHyperparams()
     strides, padding = config.strides, config.padding
     kwargs["strides"] = strides
     kwargs["padding"] = padding
-    depthwise_out: object = depthwise_conv1d(lhs, depthwise_filter, None, **kwargs)
+    depthwise_out = depthwise_conv1d(lhs, depthwise_filter, None, **kwargs)
     return conv1d(depthwise_out, pointwise_filter, None, strides=1, padding="VALID")

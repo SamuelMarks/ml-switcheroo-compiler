@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 "Core abstractions and logic definitions for test_registry_coverage.py."
 
 
-def test_registry_import_error() -> object:
+def test_registry_import_error():
     """Test the registry import error behavior.
 
     Returns:
@@ -25,7 +25,7 @@ def test_registry_import_error() -> object:
         pass
 
 
-def test_registry_torch_alias() -> object:
+def test_registry_torch_alias():
     """Test the registry torch alias behavior.
 
     Returns:

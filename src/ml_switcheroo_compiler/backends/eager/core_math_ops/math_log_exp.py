@@ -3,114 +3,116 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Expm1")
-def _expm1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _expm1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _expm1 operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    x: object = args[0]
+    x = args[0]
     if hasattr(backend_module, "expm1"):
         return backend_module.expm1(x)
     return backend_module.exp(x) - 1.0
 
 
 @global_eager_registry.register("FloatPower")
-def _float_power(backend_module: object, *args: object, **kwargs: object) -> object:
+def _float_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _float_power operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
+    func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Frexp")
-def _frexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _frexp operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import math
 
-    func: object = getattr(backend_module, "frexp", getattr(math, "frexp", None))
+    func = getattr(backend_module, "frexp", getattr(math, "frexp", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Ldexp")
-def _ldexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ldexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ldexp operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import math
 
-    func: object = getattr(backend_module, "ldexp", getattr(math, "ldexp", None))
+    func = getattr(backend_module, "ldexp", getattr(math, "ldexp", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Slogdet")
-def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
+def _slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _slogdet operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "slogdet"):
         return func.slogdet(*args, **kwargs)
     if hasattr(backend_module, "slogdet"):
         return backend_module.slogdet(*args, **kwargs)
 
-    x: object = args[0]
+    x = args[0]
     return backend_module.linalg.slogdet(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Xlog1py")
-def _np_xlog1py(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_xlog1py operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
+    func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -119,18 +121,18 @@ def _np_xlog1py(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Xlogy")
-def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_xlogy operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
+    func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

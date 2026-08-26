@@ -40,7 +40,7 @@ def stateless_random_uniform(
     minval: float = 0.0,
     maxval: float = 1.0,
     dtype: str = "float32",
-) -> object:
+):
     """Generate random values from a uniform distribution without maintaining state.
 
     Args:
@@ -57,10 +57,10 @@ def stateless_random_uniform(
     from ml_switcheroo_compiler.ops.creation import full
     from ml_switcheroo_compiler.random.continuous.uniform import uniform
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = uniform(seed, tuple(shape), dtype_enum)
-    res: object = multiply(res, full(shape, maxval - minval, dtype_enum))
-    res: object = add(res, full(shape, minval, dtype_enum))
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = uniform(seed, tuple(shape), dtype_enum)
+    res = multiply(res, full(shape, maxval - minval, dtype_enum))
+    res = add(res, full(shape, minval, dtype_enum))
     return res
 
 
@@ -70,7 +70,7 @@ def stateless_random_normal(
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str = "float32",
-) -> object:
+):
     """Generate random values from a normal distribution without maintaining state.
 
     Args:
@@ -87,10 +87,10 @@ def stateless_random_normal(
     from ml_switcheroo_compiler.ops.creation import full
     from ml_switcheroo_compiler.random.continuous.normal import normal
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = normal(seed, tuple(shape), dtype_enum)
-    res: object = multiply(res, full(shape, stddev, dtype_enum))
-    res: object = add(res, full(shape, mean, dtype_enum))
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = normal(seed, tuple(shape), dtype_enum)
+    res = multiply(res, full(shape, stddev, dtype_enum))
+    res = add(res, full(shape, mean, dtype_enum))
     return res
 
 
@@ -100,7 +100,7 @@ def stateless_random_binomial(
     counts: Union[float, Tensor],
     probabilities: Union[float, Tensor],
     dtype: str = "int32",
-) -> object:
+):
     """Generate random values from a binomial distribution without maintaining state.
 
     Args:
@@ -115,8 +115,8 @@ def stateless_random_binomial(
     """
     from ml_switcheroo_compiler.random.distributions_discrete import binomial
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = binomial(seed, counts, probabilities, tuple(shape), dtype_enum)
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = binomial(seed, counts, probabilities, tuple(shape), dtype_enum)
     return res
 
 
@@ -126,7 +126,7 @@ def stateless_truncated_normal(
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str = "float32",
-) -> object:
+):
     """Generate random values from a truncated normal distribution without maintaining state.
 
     Args:
@@ -145,12 +145,12 @@ def stateless_truncated_normal(
         truncated_normal,
     )
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    lower: object = -2.0
-    upper: object = 2.0
-    res: object = truncated_normal(seed, lower, upper, tuple(shape), dtype_enum)
-    res: object = multiply(res, full(shape, stddev, dtype_enum))
-    res: object = add(res, full(shape, mean, dtype_enum))
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    lower = -2.0
+    upper = 2.0
+    res = truncated_normal(seed, lower, upper, tuple(shape), dtype_enum)
+    res = multiply(res, full(shape, stddev, dtype_enum))
+    res = add(res, full(shape, mean, dtype_enum))
     return res
 
 
@@ -159,7 +159,7 @@ def stateless_categorical(
     num_samples: int,
     seed: Tensor,
     dtype: str = "int32",
-) -> object:
+):
     """Generate random values from a categorical distribution without maintaining state.
 
     Args:
@@ -174,13 +174,13 @@ def stateless_categorical(
     from ml_switcheroo_compiler.ops import cast
     from ml_switcheroo_compiler.random.distributions_discrete import categorical
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
 
-    batch_shape: object = logits.shape[:-1] if logits.shape else ()
-    shape: object = tuple(batch_shape) + (num_samples,)
+    batch_shape = logits.shape[:-1] if logits.shape else ()
+    shape = tuple(batch_shape) + (num_samples,)
 
-    res: object = categorical(seed, logits, axis=-1, shape=shape)
-    res: object = cast(res, dtype_enum)
+    res = categorical(seed, logits, axis=-1, shape=shape)
+    res = cast(res, dtype_enum)
     return res
 
 
@@ -189,7 +189,7 @@ def stateless_gamma(
     seed: Tensor,
     alpha: Tensor,
     dtype: str = "float32",
-) -> object:
+):
     """Generate random values from a gamma distribution without maintaining state.
 
     Args:
@@ -203,8 +203,8 @@ def stateless_gamma(
     """
     from ml_switcheroo_compiler.random.continuous.gamma import gamma
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = gamma(seed, alpha, tuple(shape), dtype_enum)
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = gamma(seed, alpha, tuple(shape), dtype_enum)
     return res
 
 
@@ -214,7 +214,7 @@ def stateless_beta(
     alpha: Tensor,
     beta_param: Tensor,
     dtype: str = "float32",
-) -> object:
+):
     """Generate random values from a beta distribution without maintaining state.
 
     Args:
@@ -229,8 +229,8 @@ def stateless_beta(
     """
     from ml_switcheroo_compiler.random.continuous.beta import beta
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
     return res
 
 
@@ -238,7 +238,7 @@ def stateless_shuffle(
     x: Tensor,
     seed: Tensor,
     axis: int = 0,
-) -> object:
+):
     """Shuffles the input tensor randomly along a given axis without maintaining state.
 
     Args:
@@ -251,7 +251,7 @@ def stateless_shuffle(
     """
     from ml_switcheroo_compiler.random.transformations import shuffle
 
-    res: object = shuffle(seed, x, axis=axis)
+    res = shuffle(seed, x, axis=axis)
     return res
 
 
@@ -270,7 +270,7 @@ class RandomGenerationConfig:
     name: Optional[str] = None
 
 
-def stateless_parameterized_truncated_normal(shape: object, seed: object, config: Optional[RandomGenerationConfig] = None) -> object:
+def stateless_parameterized_truncated_normal(shape, seed, config: Optional[RandomGenerationConfig] = None):
     """Generate random values from a truncated normal distribution with custom config.
 
     Args:
@@ -305,7 +305,7 @@ class Generator:
     produce deterministic random numbers based on an initial seed.
     """
 
-    def __init__(self, copy_from: object = None, state: object = None, alg: object = None) -> None:
+    def __init__(self, copy_from=None, state=None, alg=None) -> None:
         """Initialize the random number generator.
 
         Args:
@@ -316,7 +316,7 @@ class Generator:
         self.state = state
 
     @classmethod
-    def from_seed(cls, seed: object, alg: object = None) -> "Generator":
+    def from_seed(cls, seed, alg=None) -> "Generator":
         """Create a Generator instance from a given seed.
 
         Args:
@@ -328,7 +328,7 @@ class Generator:
         """
         return cls(state=seed, alg=alg)
 
-    def normal(self, shape: object, config: Optional[NormalConfig] = None, dtype: object = "float32", name: object = None) -> object:
+    def normal(self, shape, config: Optional[NormalConfig] = None, dtype="float32", name=None):
         """Draws samples from a normal distribution using the generator's state.
 
         Args:
@@ -340,7 +340,7 @@ class Generator:
         Returns:
             Tensor: Result.
         """
-        config: object = config or NormalConfig()
+        config = config or NormalConfig()
         from ml_switcheroo_compiler.core.config import config as core_config
 
         if core_config.eager_mode:
@@ -349,10 +349,10 @@ class Generator:
             return get_active_backend().execute_op("Normal", shape, config=config, dtype=dtype, name=name)
         from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-        out1: object = _emit_shape_node("Normal", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, shape, dtype)
+        out1 = _emit_shape_node("Normal", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, shape, dtype)
         return out1
 
-    def uniform(self, shape: object, config: Optional[UniformConfig] = None, dtype: object = "float32", name: object = None) -> object:
+    def uniform(self, shape, config: Optional[UniformConfig] = None, dtype="float32", name=None):
         """Draws samples from a uniform distribution using the generator's state.
 
         Args:
@@ -364,7 +364,7 @@ class Generator:
         Returns:
             Tensor: Result.
         """
-        config: object = config or UniformConfig()
+        config = config or UniformConfig()
         from ml_switcheroo_compiler.core.config import config as core_config
 
         if core_config.eager_mode:
@@ -373,11 +373,11 @@ class Generator:
             return get_active_backend().execute_op("Uniform", shape, config=config, dtype=dtype, name=name)
         from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-        out1: object = _emit_shape_node("Uniform", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, shape, dtype)
+        out1 = _emit_shape_node("Uniform", [], {"shape": shape, "config": config, "dtype": dtype, "name": name}, shape, dtype)
         return out1
 
 
-def create_rng_state(seed: object, alg: object = None) -> object:
+def create_rng_state(seed, alg=None):
     """Create a random number generator state from a seed.
 
     Args:
@@ -395,17 +395,17 @@ def create_rng_state(seed: object, alg: object = None) -> object:
 _GLOBAL_GENERATOR_STATE = {"generator": None}
 
 
-def get_global_generator() -> object:
+def get_global_generator():
     """Retrieve the globally registered random number generator.
 
-    Returns: object: The global Generator instance.
+    Returns: Tensor: The global Generator instance.
     """
     if _GLOBAL_GENERATOR_STATE["generator"] is None:
         _GLOBAL_GENERATOR_STATE["generator"] = Generator.from_seed(0)
     return _GLOBAL_GENERATOR_STATE["generator"]
 
 
-def set_global_generator(generator: object) -> None:
+def set_global_generator(generator) -> None:
     """Register a globally accessible random number generator.
 
     Args:
@@ -414,7 +414,7 @@ def set_global_generator(generator: object) -> None:
     _GLOBAL_GENERATOR_STATE["generator"] = generator
 
 
-def index_shuffle(index: object, seed: object, max_index: object) -> object:
+def index_shuffle(index, seed, max_index):
     """Shuffles an index safely within the defined bounds.
 
     Args:
@@ -422,24 +422,24 @@ def index_shuffle(index: object, seed: object, max_index: object) -> object:
         seed (object): The random seed.
         max_index (object): The maximum allowed index.
 
-    Returns: object: The resulting shuffled index.
+    Returns: Tensor: The resulting shuffled index.
     """
     return index
 
 
-def stateless_fold_in(seed: object, data: object) -> object:
+def stateless_fold_in(seed, data):
     """Folds new data into an existing seed to produce a combined seed.
 
     Args:
         seed (object): The original seed value.
         data (object): The additional data to mix into the seed.
 
-    Returns: object: The combined seed.
+    Returns: Tensor: The combined seed.
     """
     return seed
 
 
-def stateless_split(seed: object, num: object = 2) -> object:
+def stateless_split(seed, num=2):
     """Split a single seed into multiple independent seeds.
 
     Args:
@@ -457,7 +457,7 @@ def stateless_split(seed: object, num: object = 2) -> object:
         return get_active_backend().execute_op("StatelessSplit", seed, num=num)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out1: object = _emit_shape_node("StatelessSplit", [seed], {"num": num}, (num, 2), "int64")
+    out1 = _emit_shape_node("StatelessSplit", [seed], {"num": num}, (num, 2), "int64")
     return out1
 
 
@@ -466,7 +466,7 @@ def stateless_poisson(
     seed: Tensor,
     lam: Tensor,
     dtype: str = "int32",
-) -> object:
+):
     """Generate random values from a poisson distribution without maintaining state.
 
     Args:
@@ -480,6 +480,6 @@ def stateless_poisson(
     """
     from ml_switcheroo_compiler.random.distributions_discrete import poisson
 
-    dtype_enum: object = DType(dtype) if isinstance(dtype, str) else dtype
-    res: object = poisson(seed, lam, tuple(shape), dtype_enum)
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    res = poisson(seed, lam, tuple(shape), dtype_enum)
     return res

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.nn.conv_utils import _calc_same_pad, _calc_valid
 "Core abstractions and logic definitions for test_nn_conv_utils_extra.py."
 
 
-def test_conv_utils_extra() -> object:
+def test_conv_utils_extra():
     """Test the conv utils extra behavior.
 
     Returns:
@@ -32,7 +32,7 @@ def test_conv_utils_extra() -> object:
         pass
 
 
-def test_prepare_depthwise_conv_extra() -> object:
+def test_prepare_depthwise_conv_extra():
     """Test the prepare depthwise conv extra behavior.
 
     Returns:

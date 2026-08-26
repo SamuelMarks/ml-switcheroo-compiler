@@ -4,7 +4,7 @@
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def test_ir_node_sharding() -> object:
+def test_ir_node_sharding():
     """Test the ir node sharding behavior.
 
     Returns:

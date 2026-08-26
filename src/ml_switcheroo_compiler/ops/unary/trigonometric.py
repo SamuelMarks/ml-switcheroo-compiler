@@ -12,90 +12,90 @@ from .base import UnaryMathOp
 class Sin(UnaryMathOp):
     """Compute the trigonometric sine element-wise."""
 
-    op_name: object = "Sin"
+    op_name = "Sin"
 
 
 @register_op("Cos")
 class Cos(UnaryMathOp):
     """Compute the trigonometric cosine element-wise."""
 
-    op_name: object = "Cos"
+    op_name = "Cos"
 
 
 @register_op("Acos")
 class Acos(UnaryMathOp):
     """Compute the inverse cosine (arccosine) element-wise."""
 
-    op_name: object = "Acos"
-    np_op_name: object = "arccos"
+    op_name = "Acos"
+    np_op_name = "arccos"
 
 
 @register_op("Asin")
 class Asin(UnaryMathOp):
     """Compute the inverse sine (arcsine) element-wise."""
 
-    op_name: object = "Asin"
-    np_op_name: object = "arcsin"
+    op_name = "Asin"
+    np_op_name = "arcsin"
 
 
 @register_op("Atan")
 class Atan(UnaryMathOp):
     """Compute the inverse tangent (arctangent) element-wise."""
 
-    op_name: object = "Atan"
-    np_op_name: object = "arctan"
+    op_name = "Atan"
+    np_op_name = "arctan"
 
 
 @register_op("Deg2Rad")
 class Deg2Rad(UnaryMathOp):
     """Convert angles from degrees to radians element-wise."""
 
-    op_name: object = "Deg2Rad"
-    np_op_name: object = "deg2rad"
+    op_name = "Deg2Rad"
+    np_op_name = "deg2rad"
 
 
 @register_op("Rad2Deg")
 class Rad2Deg(UnaryMathOp):
     """Convert angles from radians to degrees element-wise."""
 
-    op_name: object = "Rad2Deg"
-    np_op_name: object = "rad2deg"
+    op_name = "Rad2Deg"
+    np_op_name = "rad2deg"
 
 
 @register_op("Degrees")
 class Degrees(UnaryMathOp):
     """Convert angles from radians to degrees element-wise."""
 
-    op_name: object = "Degrees"
-    np_op_name: object = "degrees"
+    op_name = "Degrees"
+    np_op_name = "degrees"
 
 
 @register_op("Radians")
 class Radians(UnaryMathOp):
     """Convert angles from degrees to radians element-wise."""
 
-    op_name: object = "Radians"
-    np_op_name: object = "radians"
+    op_name = "Radians"
+    np_op_name = "radians"
 
 
 @register_op("Sinc")
 class Sinc(UnaryMathOp):
     """Compute the normalized sinc function element-wise."""
 
-    op_name: object = "Sinc"
-    np_op_name: object = "sinc"
+    op_name = "Sinc"
+    np_op_name = "sinc"
 
 
 @register_op("Tan")
 class Tan(UnaryMathOp):
     """Compute the trigonometric tangent element-wise."""
 
-    op_name: object = "Tan"
-    np_op_name: object = "tan"
+    op_name = "Tan"
+    np_op_name = "tan"
 
 
 @register_op("Angle")
 class Angle(UnaryMathOp):
     """Compute the angle of the complex argument."""
 
-    op_name: object = "Angle"
+    op_name = "Angle"

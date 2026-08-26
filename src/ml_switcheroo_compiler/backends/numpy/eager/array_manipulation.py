@@ -1,12 +1,16 @@
 """Numpy Shape Ops Extra."""
 
+import threading
+
+import numpy as np
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 
 
 @numpy_eager_registry.register("Resize")
-def _np_resize(backend_module: object, x: object, shape: object, *args: object, **kwargs: object) -> object:
+def _np_resize(backend_module, x, shape, *args, **kwargs):
     """Eager fallback for _np_resize.
 
     Args:
@@ -19,16 +23,14 @@ def _np_resize(backend_module: object, x: object, shape: object, *args: object, 
     Returns:
             tuple[int, ...]: Result.
     """
-    import numpy as np
-
     from ml_switcheroo_compiler.backends.numpy.eager.vision import resize_bilinear
 
-    x: object = np.asarray(x)
+    x: np.ndarray = np.asarray(x)
     return resize_bilinear(backend_module, x, tuple(np.asarray(shape).tolist()))
 
 
 @numpy_eager_registry.register("BandPart")
-def _np_band_part(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_band_part(backend_module, *args, **kwargs):
     """Evaluate _np_band_part operation.
 
     Args:
@@ -43,7 +45,7 @@ def _np_band_part(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("Diag")
-def _np_diag(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diag(backend_module, *args, **kwargs):
     """Eager fallback for _np_diag.
 
     Args:
@@ -59,7 +61,7 @@ def _np_diag(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Unstack")
-def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object) -> object:
+def _np_unstack(backend_module, x, axis: int = 0, *args, **kwargs):
     """Evaluate _np_unstack operation.
 
     Args:
@@ -76,7 +78,7 @@ def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: obje
 
 
 @numpy_eager_registry.register("Reshape")
-def _np_reshape(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_reshape(backend_module, x, *args, **kwargs):
     """Evaluate _np_reshape operation.
 
     Args:
@@ -88,12 +90,12 @@ def _np_reshape(backend_module: object, x: object, *args: object, **kwargs: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape"))
+    shape: list = args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape"))
     return backend_module.reshape(x, shape)
 
 
 @numpy_eager_registry.register("Squeeze")
-def _np_squeeze(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_squeeze(backend_module, x, *args, **kwargs):
     """Evaluate _np_squeeze operation.
 
     Args:
@@ -105,12 +107,12 @@ def _np_squeeze(backend_module: object, x: object, *args: object, **kwargs: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: object = kwargs.get("dim", args[0] if len(args) > 0 else None)
+    axis: int = kwargs.get("dim", args[0] if len(args) > 0 else None)
     return backend_module.squeeze(x, axis=axis)
 
 
 @numpy_eager_registry.register("Transpose")
-def _np_transpose(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_transpose(backend_module, x, *args, **kwargs):
     """Evaluate _np_transpose operation.
 
     Args:
@@ -122,12 +124,12 @@ def _np_transpose(backend_module: object, x: object, *args: object, **kwargs: ob
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: object = kwargs.get("axes", kwargs.get("dims", args[0] if len(args) > 0 else None))
+    axes: list = kwargs.get("axes", kwargs.get("dims", args[0] if len(args) > 0 else None))
     return backend_module.transpose(x, axes=axes)
 
 
 @numpy_eager_registry.register("Rot90")
-def _np_rot90(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rot90(backend_module, *args, **kwargs):
     """Evaluate _np_rot90 operation.
 
     Args:
@@ -142,7 +144,7 @@ def _np_rot90(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Gather")
-def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+def gather_eager(np_mod, *args, **kwargs):
     """Eager gather implementation.
 
     Args:
@@ -153,18 +155,18 @@ def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    t: object = args[0]
-    dim: object = args[1] if len(args) > 1 else kwargs.get("dim")
-    index: object = args[2] if len(args) > 2 else kwargs.get("index")
+    t: threading.Thread = args[0]
+    dim: int = args[1] if len(args) > 1 else kwargs.get("dim")
+    index: np.ndarray = args[2] if len(args) > 2 else kwargs.get("index")
     if hasattr(t, "numpy"):
-        t: object = t.numpy()
+        t: threading.Thread = t.numpy()
     if hasattr(index, "numpy"):
-        index: object = index.numpy()
+        index: np.ndarray = index.numpy()
     return np_mod.take_along_axis(t, index, axis=dim)
 
 
 @numpy_eager_registry.register("Stack")
-def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+def stack_eager(np_mod, *args, **kwargs):
     """Eager stack implementation.
 
     Args:
@@ -175,16 +177,16 @@ def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    tensors: object = args[0] if len(args) > 0 else kwargs.get("tensors")
-    dim: object = args[1] if len(args) > 1 else kwargs.get("dim", 0)
+    tensors: list = args[0] if len(args) > 0 else kwargs.get("tensors")
+    dim: int = args[1] if len(args) > 1 else kwargs.get("dim", 0)
     if "axis" in kwargs:
-        dim: object = kwargs["axis"]
-    arrays: object = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
+        dim: int = kwargs["axis"]
+    arrays: list = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
     return np_mod.stack(arrays, axis=dim)
 
 
 @numpy_eager_registry.register("Tile")
-def _np_tile(backend_module: object, x: object, reps: object, *args: object, **kwargs: object) -> object:
+def _np_tile(backend_module, x, reps, *args, **kwargs):
     """Evaluate _np_tile operation.
 
     Args:
@@ -201,7 +203,7 @@ def _np_tile(backend_module: object, x: object, reps: object, *args: object, **k
 
 
 @numpy_eager_registry.register("Permute")
-def _np_permute(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_permute(backend_module, x, *args, **kwargs):
     """Evaluate _np_permute operation.
 
     Args:
@@ -213,12 +215,12 @@ def _np_permute(backend_module: object, x: object, *args: object, **kwargs: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    dims: object = kwargs.get("dims", args[0] if len(args) > 0 else None)
+    dims: list = kwargs.get("dims", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=dims)
 
 
 @numpy_eager_registry.register("Triu")
-def _np_triu(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_triu(backend_module, *args, **kwargs):
     """Eager fallback for _np_triu.
 
     Args:
@@ -234,7 +236,7 @@ def _np_triu(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Tril")
-def _np_tril(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tril(backend_module, *args, **kwargs):
     """Eager fallback for _np_tril.
 
     Args:
@@ -250,7 +252,7 @@ def _np_tril(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("ExpandDims")
-def _np_expand_dims(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_expand_dims(backend_module, x, *args, **kwargs):
     """Evaluate _np_expand_dims operation.
 
     Args:
@@ -262,12 +264,12 @@ def _np_expand_dims(backend_module: object, x: object, *args: object, **kwargs: 
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: object = args[0] if len(args) > 0 else kwargs.get("axis")
+    axis: int = args[0] if len(args) > 0 else kwargs.get("axis")
     return backend_module.expand_dims(x, axis=axis)
 
 
 @numpy_eager_registry.register("Atleast1d")
-def _np_atleast_1d(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_1d(backend_module, x, *args, **kwargs):
     """Evaluate _np_atleast_1d operation.
 
     Args:
@@ -283,7 +285,7 @@ def _np_atleast_1d(backend_module: object, x: object, *args: object, **kwargs: o
 
 
 @numpy_eager_registry.register("Atleast2d")
-def _np_atleast_2d(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_2d(backend_module, x, *args, **kwargs):
     """Evaluate _np_atleast_2d operation.
 
     Args:
@@ -299,7 +301,7 @@ def _np_atleast_2d(backend_module: object, x: object, *args: object, **kwargs: o
 
 
 @numpy_eager_registry.register("Atleast3d")
-def _np_atleast_3d(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_3d(backend_module, x, *args, **kwargs):
     """Evaluate _np_atleast_3d operation.
 
     Args:
@@ -315,7 +317,7 @@ def _np_atleast_3d(backend_module: object, x: object, *args: object, **kwargs: o
 
 
 @numpy_eager_registry.register("Append")
-def _np_append(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_append(backend_module, *args, **kwargs):
     """Eager fallback for _np_append.
 
     Args:
@@ -330,7 +332,7 @@ def _np_append(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("ColumnStack")
-def _np_column_stack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_column_stack(backend_module, *args, **kwargs):
     """Eager fallback for _np_column_stack.
 
     Args:
@@ -341,12 +343,12 @@ def _np_column_stack(backend_module: object, *args: object, **kwargs: object) ->
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: object = args[0] if len(args) > 0 else kwargs.get("tup")
+    tup: tuple = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.column_stack(tup)
 
 
 @numpy_eager_registry.register("Dsplit")
-def _np_dsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dsplit(backend_module, *args, **kwargs):
     """Eager fallback for _np_dsplit.
 
     Args:
@@ -361,7 +363,7 @@ def _np_dsplit(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Dstack")
-def _np_dstack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dstack(backend_module, *args, **kwargs):
     """Eager fallback for _np_dstack.
 
     Args:
@@ -372,12 +374,12 @@ def _np_dstack(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: object = args[0] if len(args) > 0 else kwargs.get("tup")
+    tup: tuple = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.dstack(tup)
 
 
 @numpy_eager_registry.register("Hsplit")
-def _np_hsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_hsplit(backend_module, *args, **kwargs):
     """Eager fallback for _np_hsplit.
 
     Args:
@@ -392,7 +394,7 @@ def _np_hsplit(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Hstack")
-def _np_hstack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_hstack(backend_module, *args, **kwargs):
     """Eager fallback for _np_hstack.
 
     Args:
@@ -403,12 +405,12 @@ def _np_hstack(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: object = args[0] if len(args) > 0 else kwargs.get("tup")
+    tup: tuple = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.hstack(tup)
 
 
 @numpy_eager_registry.register("Vsplit")
-def _np_vsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_vsplit(backend_module, *args, **kwargs):
     """Eager fallback for _np_vsplit.
 
     Args:
@@ -423,7 +425,7 @@ def _np_vsplit(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Vstack")
-def _np_vstack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_vstack(backend_module, *args, **kwargs):
     """Eager fallback for _np_vstack.
 
     Args:
@@ -434,12 +436,12 @@ def _np_vstack(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: object = args[0] if len(args) > 0 else kwargs.get("tup")
+    tup: tuple = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.vstack(tup)
 
 
 @numpy_eager_registry.register("Moveaxis")
-def _np_moveaxis(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_moveaxis(backend_module, *args, **kwargs):
     """Eager fallback for _np_moveaxis.
 
     Args:
@@ -454,7 +456,7 @@ def _np_moveaxis(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Swapaxes")
-def _np_swapaxes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_swapaxes(backend_module, *args, **kwargs):
     """Eager fallback for _np_swapaxes.
 
     Args:
@@ -469,7 +471,7 @@ def _np_swapaxes(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Roll")
-def _np_roll(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_roll(backend_module, *args, **kwargs):
     """Eager fallback for _np_roll.
 
     Args:
@@ -484,7 +486,7 @@ def _np_roll(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Block")
-def _np_block(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_block(backend_module, *args, **kwargs):
     """Eager fallback for _np_block.
 
     Args:
@@ -499,7 +501,7 @@ def _np_block(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Delete")
-def _np_delete(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_delete(backend_module, *args, **kwargs):
     """Eager fallback for _np_delete.
 
     Args:
@@ -514,7 +516,7 @@ def _np_delete(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("DiagIndices")
-def _np_diag_indices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diag_indices(backend_module, *args, **kwargs):
     """Eager fallback for _np_diag_indices.
 
     Args:
@@ -529,7 +531,7 @@ def _np_diag_indices(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("DiagIndicesFrom")
-def _np_diag_indices_from(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diag_indices_from(backend_module, *args, **kwargs):
     """Eager fallback for _np_diag_indices_from.
 
     Args:
@@ -544,7 +546,7 @@ def _np_diag_indices_from(backend_module: object, *args: object, **kwargs: objec
 
 
 @numpy_eager_registry.register("Diagflat")
-def _np_diagflat(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diagflat(backend_module, *args, **kwargs):
     """Eager fallback for _np_diagflat.
 
     Args:
@@ -559,7 +561,7 @@ def _np_diagflat(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("FillDiagonal")
-def _np_fill_diagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fill_diagonal(backend_module, *args, **kwargs):
     """Eager fallback for _np_fill_diagonal.
 
     Args:
@@ -570,15 +572,15 @@ def _np_fill_diagonal(backend_module: object, *args: object, **kwargs: object) -
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0] if len(args) > 0 else kwargs.get("a")
-    val: object = args[1] if len(args) > 1 else kwargs.get("val")
-    wrap: object = kwargs.get("wrap", False)
+    a: np.ndarray = args[0] if len(args) > 0 else kwargs.get("a")
+    val: np.ndarray = args[1] if len(args) > 1 else kwargs.get("val")
+    wrap: bool = kwargs.get("wrap", False)
     backend_module.fill_diagonal(a, val, wrap=wrap)
     return a
 
 
 @numpy_eager_registry.register("Insert")
-def _np_insert(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_insert(backend_module, *args, **kwargs):
     """Eager fallback for _np_insert.
 
     Args:

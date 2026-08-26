@@ -25,7 +25,7 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
     Returns:
         Tensor: Result.
     """
-    norms: object = []
+    norms = []
     for p in parameters:
         if norm_type == float("inf"):
             norms.append(reduce_max(abs_op(p)))
@@ -37,7 +37,7 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
     if norm_type == float("inf"):
         return reduce_max(stack(norms))
 
-    total_norm: object = reduce_sum(stack(norms))
+    total_norm = reduce_sum(stack(norms))
     if norm_type == 2.0:
         return sqrt(total_norm)
 
@@ -55,11 +55,11 @@ def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tens
     Returns:
         list: Result.
     """
-    max_norm_t: object = max_norm
-    clip_coef: object = divide(max_norm_t, add(total_norm, 1e-6))
-    clip_coef_clamped: object = minimum(1.0, clip_coef)
+    max_norm_t = max_norm
+    clip_coef = divide(max_norm_t, add(total_norm, 1e-6))
+    clip_coef_clamped = minimum(1.0, clip_coef)
 
-    clipped_params: object = []
+    clipped_params = []
     for p in parameters:
         clipped_params.append(multiply(p, clip_coef_clamped))
     return clipped_params
@@ -88,17 +88,17 @@ def clip_grad_norm(
     Returns:
         A tuple of (clipped_parameters, total_norm).
     """
-    is_single_tensor: object = isinstance(parameters, Tensor)
+    is_single_tensor = isinstance(parameters, Tensor)
     if is_single_tensor:
-        parameters: object = [parameters]
+        parameters = [parameters]
     else:
-        parameters: object = list(parameters)
+        parameters = list(parameters)
 
     if len(parameters) == 0:
         return [], 0.0
 
-    total_norm: object = _compute_global_norm(parameters, norm_type)
-    clipped_params: object = _scale_gradients(parameters, max_norm, total_norm)
+    total_norm = _compute_global_norm(parameters, norm_type)
+    clipped_params = _scale_gradients(parameters, max_norm, total_norm)
 
     if is_single_tensor:
         return clipped_params[0], total_norm

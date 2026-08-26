@@ -13,7 +13,7 @@ class BandPart(OpDef):
     Extracts a central band of a tensor.
     """
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input, **kwargs):
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Diag(OpDef):
     Extracts a diagonal or constructs a diagonal array.
     """
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input, **kwargs):
         """Infer shape.
 
         Args:
@@ -58,7 +58,7 @@ class Matmul(OpDef):
     Computes the matrix product of two arrays
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -77,7 +77,7 @@ class Matmul(OpDef):
         return None
 
 
-def _has_valid_shape(obj: object) -> bool:
+def _has_valid_shape(obj) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
@@ -96,7 +96,7 @@ class MatrixPower(OpDef):
     Computes the matrix power of a square matrix.
     """
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infer shape.
 
         Args:
@@ -118,7 +118,7 @@ class MatrixPower(OpDef):
             a (object): The input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: object: The evaluated output resulting from this operation.
+        Returns: Tensor: The evaluated output resulting from this operation.
         """
         if hasattr(a, "shape"):
             return a.shape
@@ -129,9 +129,9 @@ class MatrixPower(OpDef):
 class Trace(OpDef):
     """Trace operator."""
 
-    op_name: object = "Trace"
+    op_name = "Trace"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infer shape.
 
         Args:
@@ -141,9 +141,9 @@ class Trace(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape: object = list(a.shape)
-        axis1: object = kwargs.get("axis1", 0)
-        axis2: object = kwargs.get("axis2", 1)
+        shape = list(a.shape)
+        axis1 = kwargs.get("axis1", 0)
+        axis2 = kwargs.get("axis2", 1)
         if len(shape) >= 2:
             shape.pop(max(axis1, axis2))
             shape.pop(min(axis1, axis2))
@@ -154,9 +154,9 @@ class Trace(OpDef):
 class MatrixRank(OpDef):
     """MatrixRank operator."""
 
-    op_name: object = "MatrixRank"
+    op_name = "MatrixRank"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infer shape.
 
         Args:
@@ -166,7 +166,7 @@ class MatrixRank(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape: object = list(a.shape)
+        shape = list(a.shape)
         if len(shape) >= 2:
             shape.pop()
             shape.pop()
@@ -177,9 +177,9 @@ class MatrixRank(OpDef):
 class MatrixTranspose(OpDef):
     """MatrixTranspose operator."""
 
-    op_name: object = "MatrixTranspose"
+    op_name = "MatrixTranspose"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infer shape.
 
         Args:
@@ -189,7 +189,7 @@ class MatrixTranspose(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape: object = list(a.shape)
+        shape = list(a.shape)
         if len(shape) >= 2:
             shape[-1], shape[-2] = shape[-2], shape[-1]
         return tuple(shape)
@@ -199,9 +199,9 @@ class MatrixTranspose(OpDef):
 class Adjoint(OpDef):
     """Adjoint operator."""
 
-    op_name: object = "Adjoint"
+    op_name = "Adjoint"
 
-    def infer_shape(self, matrix: object, **kwargs: object) -> object:
+    def infer_shape(self, matrix, **kwargs):
         """Infer shape.
 
         Args:
@@ -211,7 +211,7 @@ class Adjoint(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape: object = list(matrix.shape)
+        shape = list(matrix.shape)
         if len(shape) >= 2:
             shape[-1], shape[-2] = shape[-2], shape[-1]
         return tuple(shape)
@@ -221,9 +221,9 @@ class Adjoint(OpDef):
 class Diagonal(OpDef):
     """Diagonal operator definition."""
 
-    op_name: object = "Diagonal"
+    op_name = "Diagonal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -240,9 +240,9 @@ class Diagonal(OpDef):
 class EinsumPath(OpDef):
     """EinsumPath operator definition."""
 
-    op_name: object = "EinsumPath"
+    op_name = "EinsumPath"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -260,9 +260,9 @@ class EinsumPath(OpDef):
 class MultiDot(OpDef):
     """MultiDot operator definition."""
 
-    op_name: object = "MultiDot"
+    op_name = "MultiDot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:

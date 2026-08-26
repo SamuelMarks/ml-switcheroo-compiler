@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
 
-def hadamard_transform(x: Tensor, scale: float = 1.0) -> object:
+def hadamard_transform(x: Tensor, scale: float = 1.0):
     """Apply the Walsh-Hadamard Transform to the last dimension of the input tensor.
 
     Args:
@@ -21,24 +21,24 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> object:
     Returns:
         Tensor: The transformed tensor.
     """
-    h: object = 1
-    n: object = x.shape[-1]
-    res: object = x
+    h = 1
+    n = x.shape[-1]
+    res = x
     while h < n:
-        res: object = reshape(res, list(res.shape[:-1]) + [-1, 2, h])
+        res = reshape(res, list(res.shape[:-1]) + [-1, 2, h])
 
-        x_part: object = _slicing.slice(res, axis=-2, start=0, end=1)
-        y_part: object = _slicing.slice(res, axis=-2, start=1, end=2)
+        x_part = _slicing.slice(res, axis=-2, start=0, end=1)
+        y_part = _slicing.slice(res, axis=-2, start=1, end=2)
 
-        res_plus: object = _math.add(x_part, y_part)
-        res_minus: object = _math.subtract(x_part, y_part)
+        res_plus = _math.add(x_part, y_part)
+        res_minus = _math.subtract(x_part, y_part)
 
-        stacked: object = _joining.concatenate([res_plus, res_minus], axis=-2)
+        stacked = _joining.concatenate([res_plus, res_minus], axis=-2)
 
-        res: object = reshape(stacked, list(res.shape[:-3]) + [-1])
+        res = reshape(stacked, list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res: object = _math.multiply(res, array([scale], dtype="float32"))
+        res = _math.multiply(res, array([scale], dtype="float32"))
     return res
 
 

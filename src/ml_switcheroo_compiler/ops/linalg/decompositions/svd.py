@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Svd(OpDef):
     """Svd Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -28,17 +28,17 @@ class Svd(OpDef):
         """
         if not args:
             return ()
-        a_shape: object = args[0].shape
-        full_matrices: object = kwargs.get("full_matrices", True)
+        a_shape = args[0].shape
+        full_matrices = kwargs.get("full_matrices", True)
         m, n = a_shape[-2], a_shape[-1]
-        k: object = min(m, n)
-        s_shape: object = a_shape[:-2] + (k,)
+        k = min(m, n)
+        s_shape = a_shape[:-2] + (k,)
         if full_matrices:
-            u_shape: object = a_shape[:-2] + (m, m)
-            vh_shape: object = a_shape[:-2] + (n, n)
+            u_shape = a_shape[:-2] + (m, m)
+            vh_shape = a_shape[:-2] + (n, n)
         else:
-            u_shape: object = a_shape[:-2] + (m, k)
-            vh_shape: object = a_shape[:-2] + (k, n)
+            u_shape = a_shape[:-2] + (m, k)
+            vh_shape = a_shape[:-2] + (k, n)
         if kwargs.get("compute_uv", True):
             return u_shape, s_shape, vh_shape
         return (s_shape,)
@@ -48,7 +48,7 @@ def svd(
     input: Tensor,
     full_matrices: bool = True,
     compute_uv: bool = True,
-) -> object:
+):
     """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:
@@ -62,8 +62,8 @@ def svd(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        res: object = backend.execute_op(
+        backend = get_active_backend()
+        res = backend.execute_op(
             "Svd",
             input.data,
             full_matrices=full_matrices,
@@ -78,14 +78,14 @@ def svd(
             Tensor(vh, TensorConfig(vh.shape, input.dtype, input.device)),
         )
     m, n = input.shape[-2], input.shape[-1]
-    k: object = min(m, n)
-    s_shape: object = input.shape[:-2] + (k,)
+    k = min(m, n)
+    s_shape = input.shape[:-2] + (k,)
     if full_matrices:
-        u_shape: object = input.shape[:-2] + (m, m)
-        vh_shape: object = input.shape[:-2] + (n, n)
+        u_shape = input.shape[:-2] + (m, m)
+        vh_shape = input.shape[:-2] + (n, n)
     else:
-        u_shape: object = input.shape[:-2] + (m, k)
-        vh_shape: object = input.shape[:-2] + (k, n)
+        u_shape = input.shape[:-2] + (m, k)
+        vh_shape = input.shape[:-2] + (k, n)
     if not compute_uv:
         return _emit_linalg_node(
             "Svd",

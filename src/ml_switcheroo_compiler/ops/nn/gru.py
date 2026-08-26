@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts: tuple[object, ...], r_parts: tuple[object, ...], state: Tensor) -> object:
+def _compute_gru_gates(x_parts, r_parts, state: Tensor):
     """Evaluate _compute_gru_gates operation.
 
     Args:
@@ -28,9 +28,9 @@ def _compute_gru_gates(x_parts: tuple[object, ...], r_parts: tuple[object, ...],
     """
     x_z, x_r, x_h = x_parts
     recurrent_z, recurrent_r, recurrent_h = r_parts
-    z: object = _sigmoid(add(x_z, recurrent_z))
-    r: object = _sigmoid(add(x_r, recurrent_r))
-    hh: object = tanh(add(x_h, multiply(r, recurrent_h)))
+    z = _sigmoid(add(x_z, recurrent_z))
+    r = _sigmoid(add(x_r, recurrent_r))
+    hh = tanh(add(x_h, multiply(r, recurrent_h)))
     return add(multiply(z, state), multiply(subtract(1.0, z), hh))
 
 
@@ -40,7 +40,7 @@ def gru_cell(
     kernel: Tensor,
     recurrent_kernel: Tensor,
     bias: Optional[Tensor] = None,
-) -> object:
+):
     """Fused GRU cell math.
 
     Args:
@@ -53,16 +53,16 @@ def gru_cell(
     Returns:
         tuple: Result.
     """
-    matrix_x: object = matmul(inputs, kernel)
+    matrix_x = matmul(inputs, kernel)
     if bias is not None:
-        matrix_x: object = add(matrix_x, bias)
+        matrix_x = add(matrix_x, bias)
 
-    matrix_inner: object = matmul(state, recurrent_kernel)
+    matrix_inner = matmul(state, recurrent_kernel)
 
-    x_parts: object = split(matrix_x, 3, axis=-1)
-    r_parts: object = split(matrix_inner, 3, axis=-1)
+    x_parts = split(matrix_x, 3, axis=-1)
+    r_parts = split(matrix_inner, 3, axis=-1)
 
-    h_new: object = _compute_gru_gates(x_parts, r_parts, state)
+    h_new = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new
 
 
@@ -70,9 +70,9 @@ def gru_cell(
 class Gru(OpDef):
     """Gru operation."""
 
-    op_name: object = "Gru"
+    op_name = "Gru"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -85,7 +85,7 @@ class Gru(OpDef):
         return args[0] if args else ()
 
 
-def gru(*args: object, **kwargs: object) -> object:
+def gru(*args, **kwargs):
     """GRU layer.
 
     Args:
@@ -96,16 +96,16 @@ def gru(*args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
 
-    t_args: object = [a for a in args if isinstance(a, Tensor)]
-    out_shape: object = getattr(t_args[0], "shape", ()) if t_args else ()
-    out_dtype: object = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
+    t_args = [a for a in args if isinstance(a, Tensor)]
+    out_shape = getattr(t_args[0], "shape", ()) if t_args else ()
+    out_dtype = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
     return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)
 
 
-def _sigmoid(x: object) -> object:
+def _sigmoid(x):
     """Evaluate _sigmoid operation.
 
     Args:

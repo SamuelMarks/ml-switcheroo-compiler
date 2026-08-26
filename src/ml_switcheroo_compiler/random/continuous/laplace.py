@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def laplace(*args: object, **kwargs: object) -> object:
+def laplace(*args, **kwargs):
     """Evaluate laplace operation.
 
     Args:

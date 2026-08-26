@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.registry import register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def eval(*args: object) -> None:
+def eval(*args) -> None:
     """Force the evaluation of the given tensors.
 
     Args:
@@ -20,7 +20,7 @@ def eval(*args: object) -> None:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     if hasattr(backend, "eval"):
         backend.eval(*args)
     else:
@@ -33,7 +33,7 @@ def synchronize() -> None:
     """Synchronize the default device."""
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     if hasattr(backend, "synchronize"):
         backend.synchronize()
 
@@ -46,7 +46,7 @@ def get_peak_memory() -> int:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     if hasattr(backend, "get_peak_memory"):
         return backend.get_peak_memory()
     return 0
@@ -63,7 +63,7 @@ __all__ = [
 class DeviceContextOp(OpDef):
     """Operation definition for setting or altering a generic device context."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -80,7 +80,7 @@ class DeviceContextOp(OpDef):
 class DeviceTransferOp(OpDef):
     """Operation definition for migrating data between logical devices (e.g., host-to-device)."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -93,7 +93,7 @@ class DeviceTransferOp(OpDef):
         return getattr(args[0], "shape", ())
 
 
-def device_transfer(input: Tensor, target_device: str, stream: object = None) -> object:
+def device_transfer(input: Tensor, target_device: str, stream=None):
     """Simulate data migration between devices for a tensor.
 
     Args:
@@ -104,5 +104,5 @@ def device_transfer(input: Tensor, target_device: str, stream: object = None) ->
     Returns:
         Tensor: The tensor on the new device context.
     """
-    attrs: object = {"target_device": target_device, "stream": stream}
+    attrs = {"target_device": target_device, "stream": stream}
     return _emit_shape_node("DeviceTransfer", [input], attrs, input.shape, input.dtype)

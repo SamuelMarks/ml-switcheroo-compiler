@@ -41,14 +41,14 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx: object = int(get_active_backend().asarray(index.data))
-            val: object = self._data[idx]
+            idx = int(get_active_backend().asarray(index.data))
+            val = self._data[idx]
             if val is None:
-                val: object = get_active_backend().execute_op("Zeros", self.element_shape)
+                val = get_active_backend().execute_op("Zeros", self.element_shape)
             return Tensor(val, TensorConfig(self.element_shape, self.dtype, Device(DeviceType.CPU)))
 
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type="TensorArrayRead",
             inputs=[self.id, index.data.id],
@@ -56,7 +56,7 @@ class TensorArray:
             shape_metadata=self.element_shape,
         )
         global_tracing_state.add_node(node)
-        proxy: object = ProxyTensor(id=out_id, shape=self.element_shape, dtype=self.dtype)
+        proxy = ProxyTensor(id=out_id, shape=self.element_shape, dtype=self.dtype)
         return Tensor(proxy, TensorConfig(self.element_shape, self.dtype, Device(DeviceType.CPU)))
 
     def write(self, index: Tensor, value: Tensor) -> "TensorArray":
@@ -72,12 +72,12 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx: object = int(get_active_backend().asarray(index.data))
+            idx = int(get_active_backend().asarray(index.data))
             self._data[idx] = value.data
             return self
 
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type="TensorArrayWrite",
             inputs=[self.id, index.data.id, value.data.id],
@@ -93,16 +93,16 @@ class TensorArray:
         Returns:
         Tensor: Result.
         """
-        out_shape: object = (self.size,) + self.element_shape
+        out_shape = (self.size,) + self.element_shape
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            arrs: object = [d if d is not None else get_active_backend().execute_op("Zeros", self.element_shape) for d in self._data]
-            res: object = get_active_backend().execute_op("Stack", arrs)
+            arrs = [d if d is not None else get_active_backend().execute_op("Zeros", self.element_shape) for d in self._data]
+            res = get_active_backend().execute_op("Stack", arrs)
             return Tensor(res, TensorConfig(out_shape, self.dtype, Device(DeviceType.CPU)))
 
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type="TensorArrayStack",
             inputs=[self.id],
@@ -110,5 +110,5 @@ class TensorArray:
             shape_metadata=out_shape,
         )
         global_tracing_state.add_node(node)
-        proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=self.dtype)
+        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=self.dtype)
         return Tensor(proxy, TensorConfig(out_shape, self.dtype, Device(DeviceType.CPU)))

@@ -7,7 +7,7 @@ import libcst as cst
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
+_CONFIG_PATH: str = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
 
 
@@ -19,7 +19,7 @@ def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
         return cst.Name(names[0])
     expr: cst.BaseExpression = cst.Name(names[0])
     for name in names[1:]:
-        expr: object = cst.Attribute(value=expr, attr=cst.Name(name))
+        expr = cst.Attribute(value=expr, attr=cst.Name(name))
     return expr
 
 
@@ -36,12 +36,12 @@ def emit_ir_to_ast(graph: IRGraph, target_framework: str) -> cst.Module:
     body: list[cst.SimpleStatementLine] = []
 
     for _node_id, node in graph.nodes.items():
-        op_type: object = getattr(node, "op_type", "")
+        op_type: str = getattr(node, "op_type", "")
         if op_type in _CONFIG.ir_to_ast_ops and target_framework in _CONFIG.ir_to_ast_ops[op_type]:
-            path: object = _CONFIG.ir_to_ast_ops[op_type][target_framework]
-            func_expr: object = _build_attribute_chain(path)
-            call: object = cst.Call(func=func_expr, args=[])
-            stmt: object = cst.SimpleStatementLine(body=[cst.Expr(value=call)])
+            path: list[str] = _CONFIG.ir_to_ast_ops[op_type][target_framework]
+            func_expr: cst.BaseExpression = _build_attribute_chain(path)
+            call: cst.Call = cst.Call(func=func_expr, args=[])
+            stmt: cst.SimpleStatementLine = cst.SimpleStatementLine(body=[cst.Expr(value=call)])
             body.append(stmt)
 
     return cst.Module(body=body)

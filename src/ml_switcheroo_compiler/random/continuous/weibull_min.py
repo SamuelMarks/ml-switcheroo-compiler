@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def weibull_min(*args: object, **kwargs: object) -> object:
+def weibull_min(*args, **kwargs):
     """Evaluate weibull_min operation.
 
     Args:

@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> object:
+def concatenate(tensors: Sequence[Tensor], axis: int = 0):
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
@@ -31,8 +31,8 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Concatenate", [getattr(t, "data", t) for t in tensors], axis=axis)
+        backend = get_active_backend()
+        data = backend.execute_op("Concatenate", [getattr(t, "data", t) for t in tensors], axis=axis)
         return Tensor(
             data,
             TensorConfig(
@@ -41,9 +41,9 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> object:
                 getattr(tensors[0], "device", None),
             ),
         )
-    inputs: object = list(tensors)
+    inputs = list(tensors)
     # shape calculation placeholder
-    out_shape: object = tuple(sum(t.shape[i] for t in tensors) if i == axis else tensors[0].shape[i] for i in range(len(tensors[0].shape)))
+    out_shape = tuple(sum(t.shape[i] for t in tensors) if i == axis else tensors[0].shape[i] for i in range(len(tensors[0].shape)))
     return _emit_shape_node(
         "Concatenate",
         inputs,
@@ -53,7 +53,7 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> object:
     )
 
 
-def stack(tensors: Sequence[Tensor], axis: int = 0) -> object:
+def stack(tensors: Sequence[Tensor], axis: int = 0):
     """Stack a sequence of tensors along a new dimension.
 
     Args:
@@ -63,19 +63,19 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> object:
     Returns:
         Tensor: Result.
     """
-    out_dtype: object = getattr(tensors[0], "dtype", "float32")
+    out_dtype = getattr(tensors[0], "dtype", "float32")
     if hasattr(out_dtype, "name"):
-        out_dtype_str: object = str(out_dtype.name).lower()
+        out_dtype_str = str(out_dtype.name).lower()
     elif hasattr(out_dtype, "__name__"):
-        out_dtype_str: object = str(out_dtype.__name__)
+        out_dtype_str = str(out_dtype.__name__)
     elif hasattr(out_dtype, "value"):
-        out_dtype_str: object = str(out_dtype.value).lower()
+        out_dtype_str = str(out_dtype.value).lower()
     else:
-        out_dtype_str: object = str(out_dtype).split(".")[-1].lower()
+        out_dtype_str = str(out_dtype).split(".")[-1].lower()
 
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Stack", [getattr(t, "data", t) for t in tensors], axis=axis)
+        backend = get_active_backend()
+        data = backend.execute_op("Stack", [getattr(t, "data", t) for t in tensors], axis=axis)
         return Tensor(
             data,
             TensorConfig(
@@ -84,14 +84,14 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> object:
                 getattr(tensors[0], "device", None),
             ),
         )
-    inputs: object = list(tensors)
+    inputs = list(tensors)
     # shape calculation placeholder
-    out_shape: object = inputs[0].shape
+    out_shape = inputs[0].shape
 
     try:
-        dt: object = DType(DType(out_dtype_str))
+        dt = DType(DType(out_dtype_str))
     except ValueError:
-        dt: object = DType.Float32
+        dt = DType.Float32
 
     return _emit_shape_node(
         "Stack",
@@ -102,7 +102,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> object:
     )
 
 
-def vstack(tup: Sequence[Tensor]) -> object:
+def vstack(tup: Sequence[Tensor]):
     """Stack arrays in sequence vertically (row wise).
 
     Args:
@@ -112,15 +112,15 @@ def vstack(tup: Sequence[Tensor]) -> object:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Vstack", [t.data for t in tup])
+        backend = get_active_backend()
+        data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
-    inputs: object = list(tup)
-    out_shape: object = get_op("Vstack").infer_shape([t.shape for t in inputs])
+    inputs = list(tup)
+    out_shape = get_op("Vstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def hstack(tup: Sequence[Tensor]) -> object:
+def hstack(tup: Sequence[Tensor]):
     """Stack arrays in sequence horizontally (column wise).
 
     Args:
@@ -130,15 +130,15 @@ def hstack(tup: Sequence[Tensor]) -> object:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Hstack", [t.data for t in tup])
+        backend = get_active_backend()
+        data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
-    inputs: object = list(tup)
-    out_shape: object = get_op("Hstack").infer_shape([t.shape for t in inputs])
+    inputs = list(tup)
+    out_shape = get_op("Hstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def dstack(tup: Sequence[Tensor]) -> object:
+def dstack(tup: Sequence[Tensor]):
     """Stack arrays in sequence depth wise (along third axis).
 
     Args:
@@ -148,15 +148,15 @@ def dstack(tup: Sequence[Tensor]) -> object:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Dstack", [t.data for t in tup])
+        backend = get_active_backend()
+        data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
-    inputs: object = list(tup)
-    out_shape: object = get_op("Dstack").infer_shape([t.shape for t in inputs])
+    inputs = list(tup)
+    out_shape = get_op("Dstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def append(arr: object, values: object, axis: int | None = None) -> object:
+def append(arr, values, axis: int | None = None):
     """Append values to the end of an array.
 
     Args:
@@ -169,24 +169,24 @@ def append(arr: object, values: object, axis: int | None = None) -> object:
         Tensor: A copy of arr with values appended to axis.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Append", getattr(arr, "data", arr), getattr(values, "data", values), axis=axis)
-        arr_dtype: object = getattr(arr, "dtype", getattr(values, "dtype", "float32"))
-        arr_device: object = getattr(arr, "device", None)
+        backend = get_active_backend()
+        data = backend.execute_op("Append", getattr(arr, "data", arr), getattr(values, "data", values), axis=axis)
+        arr_dtype = getattr(arr, "dtype", getattr(values, "dtype", "float32"))
+        arr_device = getattr(arr, "device", None)
         return Tensor(data, TensorConfig(data.shape, arr_dtype, arr_device))
 
-    arr_t: object = asarray(arr)
-    values_t: object = asarray(values)
+    arr_t = asarray(arr)
+    values_t = asarray(values)
 
     if axis is None:
-        arr_t: object = reshape(arr_t, (-1,))
-        values_t: object = reshape(values_t, (-1,))
-        axis: object = 0
+        arr_t = reshape(arr_t, (-1,))
+        values_t = reshape(values_t, (-1,))
+        axis = 0
 
     return concatenate([arr_t, values_t], axis=axis)
 
 
-def column_stack(tup: Sequence[object]) -> object:
+def column_stack(tup):
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
@@ -195,8 +195,8 @@ def column_stack(tup: Sequence[object]) -> object:
     Returns:
         Tensor: The array formed by stacking the given arrays.
     """
-    tensors: object = [asarray(t) for t in tup]
-    arrays: object = []
+    tensors = [asarray(t) for t in tup]
+    arrays = []
     for a in tensors:
         if len(a.shape) < MAGIC_VAL_2:
             arrays.append(reshape(a, (a.shape[0], 1)))

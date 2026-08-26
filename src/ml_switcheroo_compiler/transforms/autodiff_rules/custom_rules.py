@@ -51,7 +51,7 @@ for op_name in [
     register_jvp(op_name)(make_zero_jvp(op_name))
 
 
-def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: object, id_map: dict[str, str]) -> None:
+def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node, id_map: dict[str, str]) -> None:
     """Inline a subgraph into the main graph.
 
     Args:
@@ -64,20 +64,20 @@ def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: object, id_map: di
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
-    new_subgraph: object = LogicalGraph(name="cp_fwd_inline")
-    nodes_to_process: object = subgraph.nodes if isinstance(subgraph.nodes, list) else subgraph.nodes.values()
+    new_subgraph = LogicalGraph(name="cp_fwd_inline")
+    nodes_to_process = subgraph.nodes if isinstance(subgraph.nodes, list) else subgraph.nodes.values()
 
     for n in nodes_to_process:
         if n.op_type == "Input":
             continue
-        new_n: object = clone_logical_node(n)
+        new_n = clone_logical_node(n)
         new_n.id = id_map[n.id]
         new_n.inputs = [id_map.get(inp, inp) for inp in n.inputs]
         new_subgraph.nodes[new_n.id] = new_n
         graph.nodes[new_n.id] = new_n
 
 
-def _inline_grad_subgraph(graph: IRGraph, sg_grad: object, sg: object, node: object, cotangent_mapping: dict[str, str]) -> list[str]:
+def _inline_grad_subgraph(graph: IRGraph, sg_grad, sg, node, cotangent_mapping: dict[str, str]) -> list[str]:
     """Inline the gradient subgraph into the main graph.
 
     Args:
@@ -94,7 +94,7 @@ def _inline_grad_subgraph(graph: IRGraph, sg_grad: object, sg: object, node: obj
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
-    grad_id_map: object = {}
+    grad_id_map = {}
     for n in sg_grad.nodes.values():
         grad_id_map[n.id] = f"cp_bwd_{n.id}_{uuid.uuid4().hex[:6]}"
 
@@ -107,7 +107,7 @@ def _inline_grad_subgraph(graph: IRGraph, sg_grad: object, sg: object, node: obj
     for n in sg_grad.nodes.values():
         if n.op_type in ("Input", "Output") or n.id in cotangent_mapping.values():
             continue
-        new_n: object = clone_logical_node(n)
+        new_n = clone_logical_node(n)
         new_n.id = grad_id_map.get(n.id, n.id)
         new_n.inputs = [grad_id_map.get(inp, inp) for inp in n.inputs]
         graph.nodes[new_n.id] = new_n
@@ -116,7 +116,7 @@ def _inline_grad_subgraph(graph: IRGraph, sg_grad: object, sg: object, node: obj
 
 
 @register_vjp("Checkpoint")
-def checkpoint_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def checkpoint_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for Checkpoint operation.
 
     Args:
@@ -134,31 +134,31 @@ def checkpoint_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object
     from ml_switcheroo_compiler.ir.core import clone_logical_node
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 
-    subgraph: object = node.attributes["subgraph"]
-    nodes_list: object = subgraph.nodes if isinstance(subgraph.nodes, list) else subgraph.nodes.values()
+    subgraph = node.attributes["subgraph"]
+    nodes_list = subgraph.nodes if isinstance(subgraph.nodes, list) else subgraph.nodes.values()
 
-    id_map: object = {n.id: f"cp_fwd_{n.id}_{uuid.uuid4().hex[:6]}" for n in nodes_list}
+    id_map = {n.id: f"cp_fwd_{n.id}_{uuid.uuid4().hex[:6]}" for n in nodes_list}
     for in_id, orig_in_id in zip(subgraph.inputs, node.inputs):
         id_map[in_id] = orig_in_id
 
     _inline_subgraph(graph, subgraph, node, id_map)
 
-    sg: object = LogicalGraph(name="cp_sg")
+    sg = LogicalGraph(name="cp_sg")
     for n in nodes_list:
         sg.nodes[n.id] = clone_logical_node(n)
     sg.inputs = subgraph.inputs
     sg.outputs = subgraph.outputs
 
-    cotangent_mapping: object = {sg.outputs[0]: cotangent}
+    cotangent_mapping = {sg.outputs[0]: cotangent}
 
-    sg_grad: object = graph_grad(sg, wrt=sg.inputs, output_id=sg.outputs[0], cotangent_id=cotangent)
+    sg_grad = graph_grad(sg, wrt=sg.inputs, output_id=sg.outputs[0], cotangent_id=cotangent)
 
-    adjoints: object = _inline_grad_subgraph(graph, sg_grad, sg, node, cotangent_mapping)
+    adjoints = _inline_grad_subgraph(graph, sg_grad, sg, node, cotangent_mapping)
     return tuple(adjoints)
 
 
 @register_vjp("If")
-def _if_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def _if_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for If operation.
 
     Args:
@@ -175,7 +175,7 @@ def _if_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
 
 
 @register_vjp("Loop")
-def _loop_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def _loop_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for Loop operation.
 
     Args:
@@ -192,7 +192,7 @@ def _loop_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...
 
 
 @register_vjp("Scan")
-def _scan_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def _scan_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for Scan operation.
 
     Args:
@@ -209,7 +209,7 @@ def _scan_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...
 
 
 @register_vjp("AssociativeScan")
-def _assoc_scan_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def _assoc_scan_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for AssociativeScan operation.
 
     Args:
@@ -226,29 +226,29 @@ def _assoc_scan_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[objec
 
 
 @register_jvp("If")
-def _if_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
+def _if_jvp(graph: IRGraph, node, tangents) -> str:
     """JVP for If operation."""
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
 
     if "then_branch" in node.attributes and "else_branch" in node.attributes:
-        tb: object = node.attributes["then_branch"]
-        eb: object = node.attributes["else_branch"]
+        tb = node.attributes["then_branch"]
+        eb = node.attributes["else_branch"]
 
         # Determine primals passed into the subgraph based on inputs
-        primals: object = []
-        tangent_ids: object = []
+        primals = []
+        tangent_ids = []
         for i, in_id in enumerate(node.inputs):
             primals.append(in_id)
             if i < len(tangents):
                 tangent_ids.append(tangents[i])
 
-        then_jvp: object = jvp(tb, primals, tangent_ids, tb.outputs)
-        else_jvp: object = jvp(eb, primals, tangent_ids, eb.outputs)
+        then_jvp = jvp(tb, primals, tangent_ids, tb.outputs)
+        else_jvp = jvp(eb, primals, tangent_ids, eb.outputs)
 
         # Create a new If node that returns the tangents
-        new_id: object = f"{node.id}_jvp"
-        new_node: object = IRNode(id=new_id, op_type="If", inputs=node.inputs, attributes={"then_branch": then_jvp, "else_branch": else_jvp})
+        new_id = f"{node.id}_jvp"
+        new_node = IRNode(id=new_id, op_type="If", inputs=node.inputs, attributes={"then_branch": then_jvp, "else_branch": else_jvp})
         graph.nodes[new_id] = new_node
         return new_id
 
@@ -256,7 +256,7 @@ def _if_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
 
 
 @register_jvp("Loop")
-def _loop_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
+def _loop_jvp(graph: IRGraph, node, tangents) -> str:
     """JVP for Loop operation.
 
     Args:
@@ -271,7 +271,7 @@ def _loop_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
 
 
 @register_jvp("Scan")
-def _scan_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
+def _scan_jvp(graph: IRGraph, node, tangents) -> str:
     """JVP for Scan operation.
 
     Args:
@@ -286,7 +286,7 @@ def _scan_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
 
 
 @register_jvp("AssociativeScan")
-def _assoc_scan_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str:
+def _assoc_scan_jvp(graph: IRGraph, node, tangents) -> str:
     """JVP for AssociativeScan operation.
 
     Args:
@@ -301,7 +301,7 @@ def _assoc_scan_jvp(graph: IRGraph, node: object, tangents: list[object]) -> str
 
 
 @register_vjp("Recompute")
-def recompute_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def recompute_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for Recompute operation.
 
     Delegates to the original operation's VJP rule.
@@ -316,22 +316,22 @@ def recompute_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object,
     """
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
-    orig_op: object = node.attributes.get("original_op", "Unknown")
+    orig_op = node.attributes.get("original_op", "Unknown")
 
     # We must construct a dummy node that looks like the original node
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
-    dummy: object = clone_logical_node(node)
+    dummy = clone_logical_node(node)
     dummy.op_type = orig_op
     dummy.attributes = node.attributes.get("original_attrs", {})
 
-    vjp_func: object = get_vjp(orig_op)
-    res: tuple[object, ...] = vjp_func(graph, dummy, cotangent)
+    vjp_func = get_vjp(orig_op)
+    res = vjp_func(graph, dummy, cotangent)
     return res
 
 
 @register_vjp("CustomVJP")
-def custom_vjp_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object, ...]:
+def custom_vjp_vjp(graph: IRGraph, node, cotangent: str):
     """VJP for CustomVJP operation.
 
     Args:
@@ -346,10 +346,10 @@ def custom_vjp_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object
 
     from ml_switcheroo_ir import LogicalNode
 
-    bwd_fn: object = node.attributes["bwd_fn"]
+    bwd_fn = node.attributes["bwd_fn"]
 
-    bwd_node_id: object = f"cvjp_bwd_{uuid.uuid4().hex[:6]}"
-    bwd_node: object = LogicalNode(
+    bwd_node_id = f"cvjp_bwd_{uuid.uuid4().hex[:6]}"
+    bwd_node = LogicalNode(
         id=bwd_node_id,
         op_type="ProcessCustomVJPCall",
         inputs=[cotangent],
@@ -358,10 +358,10 @@ def custom_vjp_vjp(graph: IRGraph, node: object, cotangent: str) -> tuple[object
     )
     graph.nodes[bwd_node_id] = bwd_node
 
-    adjoints: object = []
+    adjoints = []
     for i in range(len(node.inputs)):
-        ext_id: object = f"cvjp_ext_{i}_{uuid.uuid4().hex[:6]}"
-        ext_node: object = LogicalNode(
+        ext_id = f"cvjp_ext_{i}_{uuid.uuid4().hex[:6]}"
+        ext_node = LogicalNode(
             id=ext_id,
             op_type="TupleGetItem",
             inputs=[bwd_node_id],

@@ -24,7 +24,7 @@ GroupNormConfig = namedtuple("GroupNormConfig", ["prefix", "module", "reshape", 
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
-from typing import Any, Optional
+from typing import Optional
 from ml_switcheroo_compiler.backends.tensorflow import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 from ml_switcheroo_compiler.backends.mlx import MLXCodeGenerator
@@ -39,7 +39,7 @@ def test_backends_coverage() -> None:
     """Test the backends coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute generators for all backends to ensure they don't error."
@@ -63,7 +63,7 @@ def test_registry_coverage() -> None:
     """Test the registry coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test registry functions properly."
@@ -90,7 +90,7 @@ def test_truncate_ops_generation() -> None:
     """Test the truncate ops generation behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test generation of TruncateDiv and TruncateMod ops."
@@ -123,7 +123,7 @@ def test_coverage_brute() -> None:
     """Test the coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute generator methods for edge cases."
@@ -183,7 +183,7 @@ def test_cupy_dask_kwargs_only_coverage() -> None:
     """Test the cupy dask kwargs only coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test cupy and dask missing branches."
@@ -208,7 +208,7 @@ def test_add_n_accumulate_n_generation() -> None:
     """Test the add n accumulate n generation behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test AddN and AccumulateN AST generation."
@@ -224,13 +224,13 @@ def test_add_n_accumulate_n_generation() -> None:
                 """
                 return "mock"
 
-            def visit(self, node: object, input_vars: object, **kwargs: object) -> object:
+            def visit(self, node, input_vars, **kwargs):
                 """Evaluate and process the visit operation.
 
                 Args:
                     node (object): Required parameter for node.
                     input_vars (object): Required parameter for input_vars.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -443,7 +443,7 @@ def test_generator_basic(generator_cls: type, expected: dict[str, str]) -> None:
         expected (dict): The expected parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests basic code generation for a simple computational graph.\n\n    Args:\n        generator_cls: The generator class to test.\n        expected: A dictionary of expected code snippets.\n    "
@@ -487,7 +487,7 @@ def test_generator_expand_shape(generator_cls: type, expected: dict[str, str]) -
         expected (dict): The expected parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests code generation for shape expansion operations.\n\n    Args:\n        generator_cls: The generator class to test.\n        expected: Expected code snippets.\n    "
@@ -511,7 +511,7 @@ def test_generator_unknown_op(generator_cls: type, expected: dict[str, str]) -> 
         expected (dict): The expected parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests generator fallback behavior for unknown operations.\n\n    Args:\n        generator_cls: The generator class to test.\n        expected: Expected code snippets.\n    "
@@ -535,7 +535,7 @@ def test_generator_no_output(generator_cls: type, expected: dict[str, str]) -> N
         expected (dict): The expected parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests generator behavior when there are no explicitly defined outputs.\n\n    Args:\n        generator_cls: The generator class to test.\n        expected: Expected code snippets.\n    "
@@ -552,7 +552,7 @@ def test_keras_generator_layer_map() -> None:
     """Test the keras generator layer map behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests Keras code generation for known layer operations."
@@ -576,7 +576,7 @@ def test_keras_generator_coverage() -> None:
     """Test the keras generator coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test keras generator coverage."
@@ -604,7 +604,7 @@ def test_keras_generator_coverage() -> None:
 class MockNode:
     """Mock Node."""
 
-    def __init__(self, id: str, op_type: str, inputs: list[str], attributes: dict[str, Any], shape_metadata: Optional[tuple[int, ...]]) -> None:
+    def __init__(self, id: str, op_type: str, inputs: list[str], attributes, shape_metadata: Optional[tuple[int, ...]]) -> None:
         """Init."""
         self.id = id
         self.op_type = op_type
@@ -617,7 +617,7 @@ def test_pytorch_generator_coverage() -> None:
     """Test the pytorch generator coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test pytorch generator coverage."
@@ -654,7 +654,7 @@ def test_pytorch_generator_generate() -> None:
     """Test the pytorch generator generate behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test full code generation."
@@ -680,7 +680,7 @@ def test_tensorflow_generator_ops_map_kwargs() -> None:
     """Test the tensorflow generator ops map kwargs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests kwargs replacement in ops_map operations."
@@ -702,7 +702,7 @@ def test_tensorflow_generator_generic_kwargs() -> None:
     """Test the tensorflow generator generic kwargs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests kwargs fallback for generic operations."
@@ -721,7 +721,7 @@ def test_tensorflow_generator_coverage_brute() -> None:
     """Test the tensorflow generator coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -738,7 +738,7 @@ def test_jax_generator_coverage_brute() -> None:
     """Test the jax generator coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -754,7 +754,7 @@ def test_mlx_generator_coverage_brute() -> None:
     """Test the mlx generator coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."

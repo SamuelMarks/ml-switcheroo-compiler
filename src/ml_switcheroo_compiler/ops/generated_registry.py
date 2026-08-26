@@ -3,11 +3,9 @@
 # AUTO-GENERATED FILE. DO NOT EDIT.
 # Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml
 
-from typing import Any
-
 __all__ = ["OPS_REGISTRY"]
 
-OPS_REGISTRY: dict[str, dict[str, Any]] = {
+OPS_REGISTRY: dict[str, dict[str, object]] = {
     "ALiBi": {
         "description": "Attention with Linear Biases (ALiBi) layer.",
         "operation": "ALiBi",

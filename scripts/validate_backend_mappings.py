@@ -4,13 +4,20 @@ import json
 import os
 import re
 import sys
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
 
 
 def get_snapshot_api_dict(prefix: str) -> dict[str, set[str]]:
-    """Get the api dict with allowed kwargs from a given snapshot."""
+    """Get the api dict with allowed kwargs from a given snapshot.
+
+    Args:
+        prefix (str): The prefix representing a specific backend framework.
+
+    Returns:
+        dict[str, set[str]]: A dictionary mapping API names to sets of allowed keyword arguments.
+    """
     prefix_to_fw: dict[str, str] = {"np": "numpy", "torch": "torch", "jnp": "jax", "jax": "jax", "keras": "keras", "mx": "mlx", "da": "dask", "cp": "cupy", "tf": "tensorflow", "numpy": "numpy", "tensorflow": "tensorflow", "mlx": "mlx", "dask": "dask", "cupy": "cupy", "pytorch": "torch"}
 
     fw: Optional[str] = prefix_to_fw.get(prefix)
@@ -29,7 +36,7 @@ def get_snapshot_api_dict(prefix: str) -> dict[str, set[str]]:
     latest_file: str = sorted(snapshot_files)[-1]
     try:
         with open(os.path.join(snapshot_dir, latest_file)) as f:
-            data: dict[str, Any] = json.loads(f.read())
+            data = json.loads(f.read())
     except Exception:
         return {}
 
@@ -46,7 +53,11 @@ def get_snapshot_api_dict(prefix: str) -> dict[str, set[str]]:
 
 
 def validate_mappings() -> list[str]:
-    """Validate mappings against snapshots."""
+    """Validate mappings against snapshots.
+
+    Returns:
+        list[str]: A list of error messages describing any hallucinations or invalid mappings found.
+    """
     errors: list[str] = []
     import glob
 
@@ -54,7 +65,7 @@ def validate_mappings() -> list[str]:
 
     for filepath in files_to_check:
         with open(filepath) as f:
-            data: dict[str, Any] = yaml.safe_load(f)
+            data = yaml.safe_load(f)
 
         backend_name: str = data.get("backend_name", "")
         api_dict: dict[str, set[str]] = get_snapshot_api_dict(backend_name)
@@ -89,7 +100,7 @@ def validate_mappings() -> list[str]:
                     else:
                         # Check kwargs
                         allowed_kwargs: set[str] = api_dict[name]
-                        kwarg_translations: dict[str, Any] = spec.get("kwarg_translations", {})
+                        kwarg_translations = spec.get("kwarg_translations", {})
                         for _k_name, translated in kwarg_translations.items():
                             if isinstance(translated, dict):
                                 target_name: Optional[str] = translated.get("target_name")
@@ -102,7 +113,11 @@ def validate_mappings() -> list[str]:
 
 
 def main() -> int:
-    """Run validation."""
+    """Run validation.
+
+    Returns:
+        int: Exit code (0 for success, 1 for failure).
+    """
     errors: list[str] = validate_mappings()
     if errors:
         print("Backend Grounding Validation Failed! Hallucinations detected:")

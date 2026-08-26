@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Fromfunction")
-def _np_fromfunction_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fromfunction_(backend_module, *args, **kwargs):
     """Implement Fromfunction via fromfunction.
 
     Args:
@@ -20,13 +20,13 @@ def _np_fromfunction_(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.fromfunction(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fromiter")
-def _np_fromiter_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fromiter_(backend_module, *args, **kwargs):
     """Implement Fromiter via fromiter.
 
     Args:
@@ -34,13 +34,13 @@ def _np_fromiter_(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.fromiter(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Frompyfunc")
-def _np_frompyfunc_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_frompyfunc_(backend_module, *args, **kwargs):
     """Implement Frompyfunc via frompyfunc.
 
     Args:
@@ -48,13 +48,13 @@ def _np_frompyfunc_(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.frompyfunc(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Geomspace")
-def _np_geomspace_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_geomspace_(backend_module, *args, **kwargs):
     """Implement Geomspace via geomspace.
 
     Args:
@@ -62,13 +62,13 @@ def _np_geomspace_(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.geomspace(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Zeros")
-def _np_zeros_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_zeros_(backend_module, *args, **kwargs):
     """Implement Zeros via zeros.
 
     Args:
@@ -76,13 +76,13 @@ def _np_zeros_(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.zeros(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ones")
-def _np_ones_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_ones_(backend_module, *args, **kwargs):
     """Implement Ones via ones.
 
     Args:
@@ -90,13 +90,13 @@ def _np_ones_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.ones(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Empty")
-def _np_empty_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_empty_(backend_module, *args, **kwargs):
     """Implement Empty via empty.
 
     Args:
@@ -104,13 +104,13 @@ def _np_empty_(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.empty(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Full")
-def _np_full_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_full_(backend_module, *args, **kwargs):
     """Implement Full via full.
 
     Args:
@@ -118,13 +118,13 @@ def _np_full_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.full(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ZerosLike")
-def _np_zeros_like_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_zeros_like_(backend_module, *args, **kwargs):
     """Implement ZerosLike via zeros_like.
 
     Args:
@@ -132,13 +132,13 @@ def _np_zeros_like_(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.zeros_like(*args, **kwargs)
 
 
 @numpy_eager_registry.register("OnesLike")
-def _np_ones_like_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_ones_like_(backend_module, *args, **kwargs):
     """Implement OnesLike via ones_like.
 
     Args:
@@ -146,13 +146,13 @@ def _np_ones_like_(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.ones_like(*args, **kwargs)
 
 
 @numpy_eager_registry.register("EmptyLike")
-def _np_empty_like_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_empty_like_(backend_module, *args, **kwargs):
     """Implement EmptyLike via empty_like.
 
     Args:
@@ -160,13 +160,13 @@ def _np_empty_like_(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.empty_like(*args, **kwargs)
 
 
 @numpy_eager_registry.register("FullLike")
-def _np_full_like_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_full_like_(backend_module, *args, **kwargs):
     """Implement FullLike via full_like.
 
     Args:
@@ -174,13 +174,13 @@ def _np_full_like_(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.full_like(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Arange")
-def _np_arange_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_arange_(backend_module, *args, **kwargs):
     """Implement Arange via arange.
 
     Args:
@@ -188,13 +188,13 @@ def _np_arange_(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.arange(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorIdentity")
-def _np_linearoperatoridentity(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatoridentity(backend_module, *args, **kwargs):
     """Implement LinearOperatorIdentity.
 
     Args:
@@ -211,7 +211,7 @@ def _np_linearoperatoridentity(backend_module: object, *args: object, **kwargs: 
 
 
 @numpy_eager_registry.register("LinearOperatorScaledIdentity")
-def _np_linearoperatorscaledidentity(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorscaledidentity(backend_module, *args, **kwargs):
     """Implement LinearOperatorScaledIdentity.
 
     Args:
@@ -228,7 +228,7 @@ def _np_linearoperatorscaledidentity(backend_module: object, *args: object, **kw
 
 
 @numpy_eager_registry.register("LinearOperatorZeros")
-def _np_linearoperatorzeros(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorzeros(backend_module, *args, **kwargs):
     """Implement LinearOperatorZeros.
 
     Args:
@@ -245,7 +245,7 @@ def _np_linearoperatorzeros(backend_module: object, *args: object, **kwargs: obj
 
 
 @numpy_eager_registry.register("FromDlpack")
-def _np_fromdlpack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fromdlpack(backend_module, *args, **kwargs):
     """Evaluate _np_fromdlpack operation.
 
     Args:
@@ -262,7 +262,7 @@ def _np_fromdlpack(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("Frombuffer")
-def _np_frombuffer(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_frombuffer(backend_module, *args, **kwargs):
     """Evaluate _np_frombuffer operation.
 
     Args:

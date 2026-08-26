@@ -19,17 +19,17 @@ class NormConfig:
         epsilon (float): Small value to avoid division by zero.
     """
 
-    weight: object = None
-    bias: object = None
+    weight = None
+    bias = None
     epsilon: float = 1e-5
 
 
 def group_mean(
-    x: object,
+    x,
     groups: int,
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
-) -> object:
+):
     """Compute the mean over groups.
 
     Args:
@@ -45,11 +45,11 @@ def group_mean(
 
 
 def group_variance(
-    x: object,
+    x,
     groups: int,
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
-) -> object:
+):
     """Compute the variance over groups.
 
     Args:
@@ -65,11 +65,11 @@ def group_variance(
 
 
 def group_norm(
-    x: object,
+    x,
     groups: int,
     config: typing.Optional[NormConfig] = None,
     axis: typing.Union[int, tuple[int, ...]] = -1,
-) -> object:
+):
     """Compute the group normalization.
 
     Args:
@@ -78,18 +78,18 @@ def group_norm(
         config (Optional[NormConfig]): Normalization configuration.
         axis (Union[int, tuple[int, ...]]): Axis to normalize over.
 
-    Returns: object: Normalized tensor.
+    Returns: Tensor: Normalized tensor.
     """
     if config is None:
-        config: object = NormConfig()
+        config = NormConfig()
     return get_op("GroupNorm")()(x, groups=groups, weight=config.weight, bias=config.bias, axis=axis, epsilon=config.epsilon)
 
 
 def spectral_normalization(
-    w: object,
-    u: object,
+    w,
+    u,
     num_iters: int = 1,
-) -> tuple[object, object]:
+):
     """Compute the spectral normalization.
 
     Args:

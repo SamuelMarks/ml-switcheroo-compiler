@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Indices(OpDef):
     """Return an array representing the indices of a grid."""
 
-    op_name: object = "Indices"
+    op_name = "Indices"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -22,8 +22,8 @@ class Indices(OpDef):
         """
         if not args:
             return ()
-        dimensions: object = args[0]
-        dim_len: object = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
+        dimensions = args[0]
+        dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
         return (dim_len, *dimensions) if dim_len > 0 else ()
 
 
@@ -31,9 +31,9 @@ class Indices(OpDef):
 class Ix(OpDef):
     """Construct an open mesh from multiple sequences."""
 
-    op_name: object = "Ix"
+    op_name = "Ix"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -43,13 +43,13 @@ class Ix(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        nd: object = len(args)
+        nd = len(args)
         if nd == 0:
             return ()
         # ix_ returns a tuple of ndarrays, each having ndim == nd. We return shape of the first output.
         # Actually it returns a tuple of arrays, the Op should maybe return a tuple of shapes,
         # but since we can only return one shape, let's return the shape of the first one.
-        shape: object = [1] * nd
+        shape = [1] * nd
         if hasattr(args[0], "shape") and len(args[0].shape) > 0:
             shape[0] = args[0].shape[0]
         return tuple(shape)
@@ -59,9 +59,9 @@ class Ix(OpDef):
 class MaskIndices(OpDef):
     """Return the indices to access (n, n) arrays."""
 
-    op_name: object = "MaskIndices"
+    op_name = "MaskIndices"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -78,9 +78,9 @@ class MaskIndices(OpDef):
 class Mgrid(OpDef):
     """nd_grid instance which returns a dense multi-dimensional 'meshgrid'."""
 
-    op_name: object = "Mgrid"
+    op_name = "Mgrid"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -97,9 +97,9 @@ class Mgrid(OpDef):
 class Ogrid(OpDef):
     """nd_grid instance which returns an open multi-dimensional 'meshgrid'."""
 
-    op_name: object = "Ogrid"
+    op_name = "Ogrid"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -116,9 +116,9 @@ class Ogrid(OpDef):
 class R(OpDef):
     """Translate slice objects to concatenation along the first axis."""
 
-    op_name: object = "R"
+    op_name = "R"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -131,7 +131,7 @@ class R(OpDef):
         return (None,)
 
 
-def mgrid(*args: object, **kwargs: object) -> object:
+def mgrid(*args, **kwargs):
     """nd_grid instance which returns a dense multi-dimensional 'meshgrid'.
 
     Args:
@@ -146,7 +146,7 @@ def mgrid(*args: object, **kwargs: object) -> object:
     return dispatch_op("Mgrid", *args, **kwargs)
 
 
-def ogrid(*args: object, **kwargs: object) -> object:
+def ogrid(*args, **kwargs):
     """nd_grid instance which returns an open multi-dimensional 'meshgrid'.
 
     Args:
@@ -161,7 +161,7 @@ def ogrid(*args: object, **kwargs: object) -> object:
     return dispatch_op("Ogrid", *args, **kwargs)
 
 
-def r_(*args: object, **kwargs: object) -> object:
+def r_(*args, **kwargs):
     """Translate slice objects to concatenation along the first axis.
 
     Args:
@@ -176,7 +176,7 @@ def r_(*args: object, **kwargs: object) -> object:
     return dispatch_op("R", *args, **kwargs)
 
 
-def indices(*args: object, **kwargs: object) -> object:
+def indices(*args, **kwargs):
     """Return an array representing the indices of a grid.
 
     Args:
@@ -191,7 +191,7 @@ def indices(*args: object, **kwargs: object) -> object:
     return dispatch_op("Indices", *args, **kwargs)
 
 
-def ix_(*args: object, **kwargs: object) -> object:
+def ix_(*args, **kwargs):
     """Construct an open mesh from multiple sequences.
 
     Args:
@@ -206,7 +206,7 @@ def ix_(*args: object, **kwargs: object) -> object:
     return dispatch_op("Ix", *args, **kwargs)
 
 
-def mask_indices(*args: object, **kwargs: object) -> object:
+def mask_indices(*args, **kwargs):
     """Return the indices to access (n, n) arrays.
 
     Args:

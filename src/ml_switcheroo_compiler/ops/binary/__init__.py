@@ -11,201 +11,201 @@ from ml_switcheroo_compiler.ops.base import get_op
 _ = _special
 _ = _math
 try:
-    add: object = get_op("Add")()
+    add = get_op("Add")()
 except KeyError:
-    add: object = None
+    add = None
 try:
-    allclose: object = get_op("Allclose")()
+    allclose = get_op("Allclose")()
 except KeyError:
-    allclose: object = None
+    allclose = None
 try:
-    atan2: object = get_op("Atan2")()
+    atan2 = get_op("Atan2")()
 except KeyError:
-    atan2: object = None
+    atan2 = None
 try:
-    bitwise_and: object = get_op("BitwiseAnd")()
+    bitwise_and = get_op("BitwiseAnd")()
 except KeyError:
-    bitwise_and: object = None
+    bitwise_and = None
 try:
-    bitwise_or: object = get_op("BitwiseOr")()
+    bitwise_or = get_op("BitwiseOr")()
 except KeyError:
-    bitwise_or: object = None
+    bitwise_or = None
 try:
-    bitwise_xor: object = get_op("BitwiseXor")()
+    bitwise_xor = get_op("BitwiseXor")()
 except KeyError:
-    bitwise_xor: object = None
+    bitwise_xor = None
 try:
-    copysign: object = get_op("Copysign")()
+    copysign = get_op("Copysign")()
 except KeyError:
-    copysign: object = None
+    copysign = None
 try:
-    divide: object = get_op("Divide")()
+    divide = get_op("Divide")()
 except KeyError:
-    divide: object = None
+    divide = None
 try:
-    divmod: object = get_op("Divmod")()
+    divmod = get_op("Divmod")()
 except KeyError:
-    divmod: object = None
+    divmod = None
 try:
-    equal: object = get_op("Equal")()
+    equal = get_op("Equal")()
 except KeyError:
-    equal: object = None
+    equal = None
 try:
-    float_power: object = get_op("FloatPower")()
+    float_power = get_op("FloatPower")()
 except KeyError:
-    float_power: object = None
+    float_power = None
 try:
-    floor_divide: object = get_op("FloorDivide")()
+    floor_divide = get_op("FloorDivide")()
 except KeyError:
-    floor_divide: object = None
+    floor_divide = None
 try:
-    fmax: object = get_op("Fmax")()
+    fmax = get_op("Fmax")()
 except KeyError:
-    fmax: object = None
+    fmax = None
 try:
-    fmin: object = get_op("Fmin")()
+    fmin = get_op("Fmin")()
 except KeyError:
-    fmin: object = None
+    fmin = None
 try:
-    fmod: object = get_op("Fmod")()
+    fmod = get_op("Fmod")()
 except KeyError:
-    fmod: object = None
+    fmod = None
 try:
-    gcd: object = get_op("Gcd")()
+    gcd = get_op("Gcd")()
 except KeyError:
-    gcd: object = None
+    gcd = None
 try:
-    greater: object = get_op("Greater")()
+    greater = get_op("Greater")()
 except KeyError:
-    greater: object = None
+    greater = None
 try:
-    greater_equal: object = get_op("GreaterEqual")()
+    greater_equal = get_op("GreaterEqual")()
 except KeyError:
-    greater_equal: object = None
+    greater_equal = None
 try:
-    heaviside: object = get_op("Heaviside")()
+    heaviside = get_op("Heaviside")()
 except KeyError:
-    heaviside: object = None
+    heaviside = None
 try:
-    hypot: object = get_op("Hypot")()
+    hypot = get_op("Hypot")()
 except KeyError:
-    hypot: object = None
+    hypot = None
 try:
-    isclose: object = get_op("Isclose")()
+    isclose = get_op("Isclose")()
 except KeyError:
-    isclose: object = None
+    isclose = None
 try:
-    lcm: object = get_op("Lcm")()
+    lcm = get_op("Lcm")()
 except KeyError:
-    lcm: object = None
+    lcm = None
 try:
-    ldexp: object = get_op("Ldexp")()
+    ldexp = get_op("Ldexp")()
 except KeyError:
-    ldexp: object = None
+    ldexp = None
 try:
-    left_shift: object = get_op("LeftShift")()
+    left_shift = get_op("LeftShift")()
 except KeyError:
-    left_shift: object = None
+    left_shift = None
 try:
-    less: object = get_op("Less")()
+    less = get_op("Less")()
 except KeyError:
-    less: object = None
+    less = None
 try:
-    less_equal: object = get_op("LessEqual")()
+    less_equal = get_op("LessEqual")()
 except KeyError:
-    less_equal: object = None
+    less_equal = None
 try:
-    logaddexp: object = get_op("Logaddexp")()
+    logaddexp = get_op("Logaddexp")()
 except KeyError:
-    logaddexp: object = None
+    logaddexp = None
 try:
-    logaddexp2: object = get_op("Logaddexp2")()
+    logaddexp2 = get_op("Logaddexp2")()
 except KeyError:
-    logaddexp2: object = None
+    logaddexp2 = None
 try:
-    logical_and: object = get_op("LogicalAnd")()
+    logical_and = get_op("LogicalAnd")()
 except KeyError:
-    logical_and: object = None
+    logical_and = None
 try:
-    logical_or: object = get_op("LogicalOr")()
+    logical_or = get_op("LogicalOr")()
 except KeyError:
-    logical_or: object = None
+    logical_or = None
 try:
-    logical_xor: object = get_op("LogicalXor")()
+    logical_xor = get_op("LogicalXor")()
 except KeyError:
-    logical_xor: object = None
+    logical_xor = None
 try:
-    maximum: object = get_op("Maximum")()
+    maximum = get_op("Maximum")()
 except KeyError:
-    maximum: object = None
+    maximum = None
 try:
-    minimum: object = get_op("Minimum")()
+    minimum = get_op("Minimum")()
 except KeyError:
-    minimum: object = None
+    minimum = None
 try:
-    mod: object = get_op("Mod")()
+    mod = get_op("Mod")()
 except KeyError:
-    mod: object = None
+    mod = None
 try:
-    multiply: object = get_op("Multiply")()
+    multiply = get_op("Multiply")()
 except KeyError:
-    multiply: object = None
+    multiply = None
 try:
-    nextafter: object = get_op("Nextafter")()
+    nextafter = get_op("Nextafter")()
 except KeyError:
-    nextafter: object = None
+    nextafter = None
 try:
-    not_equal: object = get_op("NotEqual")()
+    not_equal = get_op("NotEqual")()
 except KeyError:
-    not_equal: object = None
+    not_equal = None
 try:
-    power: object = get_op("Power")()
+    power = get_op("Power")()
 except KeyError:
-    power: object = None
+    power = None
 try:
-    remainder: object = get_op("Remainder")()
+    remainder = get_op("Remainder")()
 except KeyError:
-    remainder: object = None
-rem: object = remainder
+    remainder = None
+rem = remainder
 try:
-    right_shift: object = get_op("RightShift")()
+    right_shift = get_op("RightShift")()
 except KeyError:
-    right_shift: object = None
+    right_shift = None
 try:
-    subtract: object = get_op("Subtract")()
+    subtract = get_op("Subtract")()
 except KeyError:
-    subtract: object = None
+    subtract = None
 try:
-    true_divide: object = get_op("TrueDivide")()
+    true_divide = get_op("TrueDivide")()
 except KeyError:
-    true_divide: object = None
+    true_divide = None
 try:
-    xlogy: object = get_op("Xlogy")()
+    xlogy = get_op("Xlogy")()
 except KeyError:
-    xlogy: object = None
+    xlogy = None
 try:
-    igamma: object = get_op("Igamma")()
+    igamma = get_op("Igamma")()
 except KeyError:
-    igamma: object = None
+    igamma = None
 try:
-    igammac: object = get_op("Igammac")()
+    igammac = get_op("Igammac")()
 except KeyError:
-    igammac: object = None
+    igammac = None
 try:
-    zeta: object = get_op("Zeta")()
+    zeta = get_op("Zeta")()
 except KeyError:
-    zeta: object = None
+    zeta = None
 try:
-    polygamma: object = get_op("Polygamma")()
+    polygamma = get_op("Polygamma")()
 except KeyError:
-    polygamma: object = None
+    polygamma = None
 try:
-    betainc: object = get_op("Betainc")()
+    betainc = get_op("Betainc")()
 except KeyError:
-    betainc: object = None
+    betainc = None
 
 
-def divide_no_nan(x: object, y: object) -> object:
+def divide_no_nan(x, y):
     """Divide no nan.
 
     Args:
@@ -221,7 +221,7 @@ def divide_no_nan(x: object, y: object) -> object:
     return where(equal(y, 0.0), zeros_like(x), divide(x, y))
 
 
-def polar(abs: object, angle: object) -> object:
+def polar(abs, angle):
     """Polar.
 
     Args:
@@ -233,11 +233,11 @@ def polar(abs: object, angle: object) -> object:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     return backend.execute_op("Polar", getattr(abs, "data", abs), getattr(angle, "data", angle))
 
 
-def view_as_complex(x: object) -> object:
+def view_as_complex(x):
     """View as complex.
 
     Args:
@@ -248,11 +248,11 @@ def view_as_complex(x: object) -> object:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     return backend.execute_op("ViewAsComplex", getattr(x, "data", x))
 
 
-def view_as_real(x: object) -> object:
+def view_as_real(x):
     """View as real.
 
     Args:
@@ -263,101 +263,101 @@ def view_as_real(x: object) -> object:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     return backend.execute_op("ViewAsReal", getattr(x, "data", x))
 
 
 try:
-    truncatediv: object = get_op("TruncateDiv")()
+    truncatediv = get_op("TruncateDiv")()
 except KeyError:
-    truncatediv: object = None
+    truncatediv = None
 try:
-    truncatemod: object = get_op("TruncateMod")()
+    truncatemod = get_op("TruncateMod")()
 except KeyError:
-    truncatemod: object = None
-
-
-try:
-    multiply_no_nan: object = get_op("MultiplyNoNan")()
-except KeyError:
-    multiply_no_nan: object = None
-try:
-    scalar_mul: object = get_op("ScalarMul")()
-except KeyError:
-    scalar_mul: object = None
-try:
-    squared_difference: object = get_op("SquaredDifference")()
-except KeyError:
-    squared_difference: object = None
-try:
-    xdivy: object = get_op("Xdivy")()
-except KeyError:
-    xdivy: object = None
-try:
-    xlog1py: object = get_op("Xlog1py")()
-except KeyError:
-    xlog1py: object = None
-try:
-    clip: object = get_op("Clip")()
-except KeyError:
-    clip: object = None
+    truncatemod = None
 
 
 try:
-    chebyshev_polynomial_t: object = get_op("ChebyshevPolynomialT")()
+    multiply_no_nan = get_op("MultiplyNoNan")()
 except KeyError:
-    chebyshev_polynomial_t: object = None
+    multiply_no_nan = None
+try:
+    scalar_mul = get_op("ScalarMul")()
+except KeyError:
+    scalar_mul = None
+try:
+    squared_difference = get_op("SquaredDifference")()
+except KeyError:
+    squared_difference = None
+try:
+    xdivy = get_op("Xdivy")()
+except KeyError:
+    xdivy = None
+try:
+    xlog1py = get_op("Xlog1py")()
+except KeyError:
+    xlog1py = None
+try:
+    clip = get_op("Clip")()
+except KeyError:
+    clip = None
 
 
 try:
-    chebyshev_polynomial_u: object = get_op("ChebyshevPolynomialU")()
+    chebyshev_polynomial_t = get_op("ChebyshevPolynomialT")()
 except KeyError:
-    chebyshev_polynomial_u: object = None
+    chebyshev_polynomial_t = None
 
 
 try:
-    shifted_chebyshev_polynomial_t: object = get_op("ShiftedChebyshevPolynomialT")()
+    chebyshev_polynomial_u = get_op("ChebyshevPolynomialU")()
 except KeyError:
-    shifted_chebyshev_polynomial_t: object = None
+    chebyshev_polynomial_u = None
 
 
 try:
-    shifted_chebyshev_polynomial_u: object = get_op("ShiftedChebyshevPolynomialU")()
+    shifted_chebyshev_polynomial_t = get_op("ShiftedChebyshevPolynomialT")()
 except KeyError:
-    shifted_chebyshev_polynomial_u: object = None
+    shifted_chebyshev_polynomial_t = None
 
 
 try:
-    shifted_chebyshev_polynomial_v: object = get_op("ShiftedChebyshevPolynomialV")()
+    shifted_chebyshev_polynomial_u = get_op("ShiftedChebyshevPolynomialU")()
 except KeyError:
-    shifted_chebyshev_polynomial_v: object = None
+    shifted_chebyshev_polynomial_u = None
 
 
 try:
-    shifted_chebyshev_polynomial_w: object = get_op("ShiftedChebyshevPolynomialW")()
+    shifted_chebyshev_polynomial_v = get_op("ShiftedChebyshevPolynomialV")()
 except KeyError:
-    shifted_chebyshev_polynomial_w: object = None
+    shifted_chebyshev_polynomial_v = None
 
 
 try:
-    hermite_polynomial_h: object = get_op("HermitePolynomialH")()
+    shifted_chebyshev_polynomial_w = get_op("ShiftedChebyshevPolynomialW")()
 except KeyError:
-    hermite_polynomial_h: object = None
+    shifted_chebyshev_polynomial_w = None
 
 
 try:
-    hermite_polynomial_he: object = get_op("HermitePolynomialHe")()
+    hermite_polynomial_h = get_op("HermitePolynomialH")()
 except KeyError:
-    hermite_polynomial_he: object = None
+    hermite_polynomial_h = None
 
 
 try:
-    laguerre_polynomial_l: object = get_op("LaguerrePolynomialL")()
+    hermite_polynomial_he = get_op("HermitePolynomialHe")()
 except KeyError:
-    laguerre_polynomial_l: object = None
+    hermite_polynomial_he = None
 
 
 try:
-    legendre_polynomial_p: object = get_op("LegendrePolynomialP")()
+    laguerre_polynomial_l = get_op("LaguerrePolynomialL")()
 except KeyError:
-    legendre_polynomial_p: object = None
+    laguerre_polynomial_l = None
+
+
+try:
+    legendre_polynomial_p = get_op("LegendrePolynomialP")()
+except KeyError:
+    legendre_polynomial_p = None

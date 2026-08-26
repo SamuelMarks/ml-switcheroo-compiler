@@ -22,7 +22,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedG
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
-def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
+def checkpoint(fun):
     """Gradient checkpointing / rematerialization.
 
     Args:
@@ -32,7 +32,7 @@ def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
         Callable[..., object]: The checkpointed function.
     """
 
-    def wrapper(*args: object, **kwargs: object) -> object:
+    def wrapper(*args, **kwargs):
         """Evaluate wrapper operation.
 
         Args:
@@ -57,29 +57,29 @@ def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
         from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        tensor_args: object = [a for a in args if isinstance(a, Tensor)]
-        fwd_block: object = _trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
+        tensor_args = [a for a in args if isinstance(a, Tensor)]
+        fwd_block = _trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
 
         # Infer output metadata from the traced block
-        out_node_id: object = fwd_block.outputs[0]
-        nodes_dict: object = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
-        out_node: object = nodes_dict[out_node_id]
-        real_out_node: object = nodes_dict[out_node.inputs[0]]
+        out_node_id = fwd_block.outputs[0]
+        nodes_dict = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
+        out_node = nodes_dict[out_node_id]
+        real_out_node = nodes_dict[out_node.inputs[0]]
 
-        shape: object = real_out_node.shape_metadata
+        shape = real_out_node.shape_metadata
         # Try to infer dtype. Proxy tensors typically just use float32 as default if not specified
-        dtype: object = "float32"
+        dtype = "float32"
         if hasattr(real_out_node, "attributes") and "dtype" in real_out_node.attributes:
-            dtype: object = real_out_node.attributes["dtype"]
+            dtype = real_out_node.attributes["dtype"]
         elif tensor_args:
-            dtype: object = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
+            dtype = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
 
-        device: object = "cpu"
+        device = "cpu"
         if tensor_args:
-            device: object = getattr(tensor_args[0], "device", "cpu")
+            device = getattr(tensor_args[0], "device", "cpu")
 
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type="Checkpoint",
             inputs=[a.data.id for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
@@ -88,13 +88,13 @@ def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
         )
         global_tracing_state.add_node(node)
 
-        proxy: object = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
+        proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
         return Tensor(proxy, TensorConfig(shape, DType(dtype), device))
 
     return wrapper
 
 
-def remat(fun: Callable[..., object]) -> Callable[..., object]:
+def remat(fun):
     """Gradient checkpointing / rematerialization alias.
 
     Args:
@@ -106,7 +106,7 @@ def remat(fun: Callable[..., object]) -> Callable[..., object]:
     return checkpoint(fun)
 
 
-def recompute_grad(fun: Callable[..., object]) -> Callable[..., object]:
+def recompute_grad(fun):
     """Gradient checkpointing / rematerialization.
 
     Args:

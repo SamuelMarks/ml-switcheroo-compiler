@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 
 
-def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) -> object:
+def dispatch(module_name: str, func_name: str, *args, **kwargs):
     """Dynamically dispatch a function to the active backend.
 
     Args:
@@ -14,15 +14,15 @@ def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) 
         *args (object): Positional arguments for the function.
         **kwargs (object): Keyword arguments for the function.
 
-    Returns: object: The result of the function execution.
+    Returns: Tensor: The result of the function execution.
 
     Raises:
         ValueError: If not supported in the active backend or in tracing mode.
     """
     if core_config.eager_mode:
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         if hasattr(backend.module, module_name):
-            submodule: object = getattr(backend.module, module_name)
+            submodule = getattr(backend.module, module_name)
             if hasattr(submodule, func_name):
                 return getattr(submodule, func_name)(*args, **kwargs)
         raise ValueError(f"{func_name} is not supported in the active backend.")
@@ -30,9 +30,9 @@ def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     try:
-        op_def: object = get_op(func_name)
-        out_shape: object = op_def.infer_shape(*args, **kwargs)
+        op_def = get_op(func_name)
+        out_shape = op_def.infer_shape(*args, **kwargs)
     except Exception:
-        out_shape: object = ()
-    out_dtype: object = getattr(args[0], "dtype", "float32") if args else "float32"
+        out_shape = ()
+    out_dtype = getattr(args[0], "dtype", "float32") if args else "float32"
     return _emit_shape_node(func_name, list(args), kwargs, out_shape, out_dtype)

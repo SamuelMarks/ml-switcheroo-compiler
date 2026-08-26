@@ -32,25 +32,25 @@ def lstm_cell(
     h, c = state
 
     # Check dimensions
-    z: object = add(matmul(inputs, kernel), matmul(h, recurrent_kernel))
+    z = add(matmul(inputs, kernel), matmul(h, recurrent_kernel))
     if bias is not None:
-        z: object = add(z, bias)
+        z = add(z, bias)
 
     # Split z into i, f, c_bar, o
     i, f, c_bar, o = split(z, 4, axis=-1)
 
-    i: object = _sigmoid(i)
-    f: object = _sigmoid(f)
-    c_bar: object = tanh(c_bar)
-    o: object = _sigmoid(o)
+    i = _sigmoid(i)
+    f = _sigmoid(f)
+    c_bar = tanh(c_bar)
+    o = _sigmoid(o)
 
-    c_new: object = add(multiply(f, c), multiply(i, c_bar))
-    h_new: object = multiply(o, tanh(c_new))
+    c_new = add(multiply(f, c), multiply(i, c_bar))
+    h_new = multiply(o, tanh(c_new))
 
     return h_new, (h_new, c_new)
 
 
-def _sigmoid(x: object) -> object:
+def _sigmoid(x):
     """Evaluate _sigmoid operation.
 
     Args:

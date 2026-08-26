@@ -19,9 +19,9 @@ from .rnn_utils import (
     scan,
 )
 
-rnn_step: object = simple_rnn_cell
-lstm_step: object = lstm_cell
-gru_step: object = gru_cell
+rnn_step = simple_rnn_cell
+lstm_step = lstm_cell
+gru_step = gru_cell
 
 __all__ = [
     "BidirectionalConfig",

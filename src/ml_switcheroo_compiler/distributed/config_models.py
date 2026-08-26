@@ -44,14 +44,14 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def dict(self, *args: object, **kwargs: object) -> object:
+    def dict(self, *args, **kwargs):
         """Return dict representation."""
         return super().model_dump(*args, **kwargs)
 
-    def items(self) -> object:
+    def items(self):
         """Return items from the underlying dictionary."""
         return self.root.items()
 
-    def get(self, key: str, default: object = None) -> object:
+    def get(self, key: str, default=None):
         """Get topology config by key."""
         return self.root.get(key, default)

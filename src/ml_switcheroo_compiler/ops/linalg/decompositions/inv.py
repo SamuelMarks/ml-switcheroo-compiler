@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Inv(OpDef):
     """Inv Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Inv(OpDef):
 class InvEx(OpDef):
     """InvEx Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -50,19 +50,19 @@ class InvEx(OpDef):
 class TriInv(OpDef):
     """TriInv Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: object: The shape.
+        Returns: Tensor: The shape.
         """
         return ()
 
 
-def inv(input: Tensor) -> object:
+def inv(input: Tensor):
     """Compute the multiplicative inverse of a square matrix.
 
     Args:
@@ -74,13 +74,13 @@ def inv(input: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Inv", input.data)
+        backend = get_active_backend()
+        data = backend.execute_op("Inv", input.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     return _emit_linalg_node("Inv", [input], {}, [input.shape], [input.dtype])
 
 
-def inv_ex(input: Tensor, check_errors: bool = False) -> object:
+def inv_ex(input: Tensor, check_errors: bool = False):
     """Compute the multiplicative inverse of a square matrix with info tensor.
 
     Args:
@@ -93,7 +93,7 @@ def inv_ex(input: Tensor, check_errors: bool = False) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         inv_out, info = backend.execute_op("InvEx", input.data, check_errors=check_errors)
         return (
             Tensor(inv_out, TensorConfig(inv_out.shape, input.dtype, input.device)),
@@ -102,7 +102,7 @@ def inv_ex(input: Tensor, check_errors: bool = False) -> object:
     return _emit_linalg_node("InvEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])
 
 
-def pinv(input: Tensor, rcond: float = 1e-15) -> object:
+def pinv(input: Tensor, rcond: float = 1e-15):
     """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
@@ -115,13 +115,13 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Pinv", input.data, rcond=rcond)
+        backend = get_active_backend()
+        data = backend.execute_op("Pinv", input.data, rcond=rcond)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [input.shape], [input.dtype])
 
 
-def tri_inv(a: Tensor, lower: bool = False) -> object:
+def tri_inv(a: Tensor, lower: bool = False):
     """Compute the inverse of a triangular matrix.
 
     Args:
@@ -134,8 +134,8 @@ def tri_inv(a: Tensor, lower: bool = False) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("TriInv", a.data, lower=lower)
+        backend = get_active_backend()
+        data = backend.execute_op("TriInv", a.data, lower=lower)
         return Tensor(data, TensorConfig(a.shape, a.dtype, a.device))
     return _emit_linalg_node(
         "TriInv",

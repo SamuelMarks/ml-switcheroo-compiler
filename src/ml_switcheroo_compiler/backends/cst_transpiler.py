@@ -2,7 +2,7 @@
 """Module cst_transpiler.py."""
 
 import os
-from typing import Any, cast
+from typing import cast
 
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
 

@@ -25,10 +25,10 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 def _emit_shape_node(
     op_type: str,
     inputs: Sequence[Tensor],
-    attrs: dict[str, object],
-    out_shape: tuple[object, ...],
+    attrs,
+    out_shape,
     out_dtype: DType,
-) -> object:
+):
     """Emit a logical shape node to the tracer and returns a new Tensor.
 
     Args:
@@ -41,11 +41,11 @@ def _emit_shape_node(
     Returns:
         Tensor: Result.
     """
-    out_id: object = str(uuid.uuid4())
+    out_id = str(uuid.uuid4())
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=input_ids,
@@ -54,10 +54,10 @@ def _emit_shape_node(
     )
     global_tracing_state.add_node(node)
 
-    dtype_val: object = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
+    dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
 
-    proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
-    device: object = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
+    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+    device = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
 
 

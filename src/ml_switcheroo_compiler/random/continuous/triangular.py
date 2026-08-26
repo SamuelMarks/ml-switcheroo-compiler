@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def triangular(*args: object, **kwargs: object) -> object:
+def triangular(*args, **kwargs):
     """Evaluate triangular operation.
 
     Args:

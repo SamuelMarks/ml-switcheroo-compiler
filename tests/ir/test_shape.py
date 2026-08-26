@@ -25,7 +25,7 @@ def test_broadcast_shapes() -> None:
     """Test the broadcast shapes behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that `broadcast_shapes` correctly computes the broadcasted shape of two.\n\n    inputs\n\n    This test covers:\n    - Identical shapes\n    - Broadcasting a 1D shape to a 2D shape\n    - Broadcasting with unit dimensions\n    - Broadcasting with empty shapes (scalars)\n    - Incompatible shape broadcasting (raises ValueError)\n    - Symbolic dimension broadcasting and mismatch detection\n\n    Returns:\n    None\n    "
@@ -46,7 +46,7 @@ def test_matmul_shape() -> None:
     """Test the matmul shape behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that `matmul_shape` correctly computes the output shape of a matrix.\n\n    multiplication\n\n    This test covers:\n    - 1D vector dot products\n    - 2D matrix multiplications\n    - Batched matrix multiplications\n    - Mismatched batch dimensions\n    - Invalid empty shapes\n    - Incompatible inner dimensions\n\n    Returns:\n    None\n    "
@@ -70,7 +70,7 @@ def test_matmul_inner_mismatch_batched() -> None:
     """Test the matmul inner mismatch batched behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that `matmul_shape` raises a ValueError when inner dimensions mismatch in.\n\n    batched multiplication\n\n    This test ensures that an explicit error message regarding incompatible inner\n    dimensions is raised when attempting to multiply batched matrices with\n    mismatched\n    contracting dimensions\n\n    Returns:\n    None\n    "
@@ -84,7 +84,7 @@ def test_matmul_shape_1d() -> None:
     """Test the matmul shape 1d behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that `matmul_shape` correctly handles 1D vector operands.\n\n    This test covers:\n    - Vector-vector multiplication (resulting in a scalar shape)\n    - Vector-matrix multiplication\n    - Matrix-vector multiplication\n\n    Returns:\n    None\n    "
@@ -99,7 +99,7 @@ def test_normalize_axis() -> None:
     """Test the normalize axis behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that `normalize_axis` correctly normalizes axis indices.\n\n    This test covers:\n    - Single integer axis normalization (both positive and negative indices)\n    - Out-of-bounds integer axis validation (raises ValueError)\n    - Tuple of axes normalization (both positive and negative indices)\n    - Out-of-bounds tuple axis validation (raises ValueError)\n    - Invalid axis type validation (raises TypeError)\n\n    Returns:\n    None\n    "
@@ -128,7 +128,7 @@ def test_symint() -> None:
     """Test the symint behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test SymInt."
@@ -157,7 +157,7 @@ def test_symbolic_solver() -> None:
     """Test the symbolic solver behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test SymbolicSolver."
@@ -173,7 +173,7 @@ def test_shape_tracker() -> None:
     """Test the shape tracker behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test ShapeTracker."
@@ -202,7 +202,7 @@ def test_symint_hash() -> None:
     """Test the symint hash behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test symint hash."

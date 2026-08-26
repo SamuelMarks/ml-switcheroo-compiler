@@ -2,18 +2,19 @@
 """Core abstractions and logic definitions for utils.py."""
 
 import typing
+from typing import Any, Optional
 
 
-def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
+def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
     """Convert tensor to numpy array.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        x (object): The x parameter.
+        np_mod (Any): The np_mod parameter.
+        x (Any): The x parameter.
         name (str): The name parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if hasattr(x, "numpy"):
         return x.numpy()
@@ -22,17 +23,17 @@ def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
     return np_mod.asarray(x)
 
 
-def _from_numpy_array(backend_module: object, out: object, name: str, original_tensor: object = None) -> object:
+def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor: Any = None) -> Any:
     """Convert numpy array back to backend tensor.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        out (object): The out parameter.
+        backend_module (Any): The backend_module parameter.
+        out (Any): The out parameter.
         name (str): The name parameter.
-        original_tensor (object): The original_tensor parameter.
+        original_tensor (Any): The original_tensor parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if name == "torch":
         return _torch_from_numpy(out, original_tensor)
@@ -45,68 +46,68 @@ def _from_numpy_array(backend_module: object, out: object, name: str, original_t
     return backend_module.array(out)
 
 
-def _torch_from_numpy(out: object, original_tensor: object = None) -> object:
+def _torch_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     """Convert to torch tensor.
 
     Args:
-        out (object): The out parameter.
-        original_tensor (object): The original_tensor parameter.
+        out (Any): The out parameter.
+        original_tensor (Any): The original_tensor parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return out
 
 
-def _mlx_from_numpy(out: object, original_tensor: object = None) -> object:
+def _mlx_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     """Convert to mlx tensor.
 
     Args:
-        out (object): The out parameter.
-        original_tensor (object): The original_tensor parameter.
+        out (Any): The out parameter.
+        original_tensor (Any): The original_tensor parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return out
 
 
-def _jax_from_numpy(out: object, original_tensor: object = None) -> object:
+def _jax_from_numpy(out: Any, original_tensor: Any = None) -> Any:
     """Convert to jax tensor.
 
     Args:
-        out (object): The out parameter.
-        original_tensor (object): The original_tensor parameter.
+        out (Any): The out parameter.
+        original_tensor (Any): The original_tensor parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return out
 
 
-def _to_channels_last(np_mod: object, imgs: object, data_format: typing.Optional[str]) -> object:
+def _to_channels_last(np_mod: Any, imgs: Any, data_format: Optional[str]) -> Any:
     """Transpose images from channels_first to channels_last if needed.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        imgs (object): The imgs parameter.
-        data_format (object): The data_format parameter.
+        np_mod (Any): The np_mod parameter.
+        imgs (Any): The imgs parameter.
+        data_format (Optional[str]): The data_format parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return imgs
 
 
-def _from_channels_last(np_mod: object, out: object, data_format: typing.Optional[str]) -> object:
+def _from_channels_last(np_mod: Any, out: Any, data_format: Optional[str]) -> Any:
     """Transpose images from channels_last to channels_first if needed.
 
     Args:
-        np_mod (object): The np_mod parameter.
-        out (object): The out parameter.
-        data_format (object): The data_format parameter.
+        np_mod (Any): The np_mod parameter.
+        out (Any): The out parameter.
+        data_format (Optional[str]): The data_format parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return out

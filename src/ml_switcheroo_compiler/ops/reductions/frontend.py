@@ -39,7 +39,7 @@ from .frontend_stats import (
 from .frontend_utils import reduce_window
 
 
-def sum(a: object, axis: object = None, keepdims: bool = False) -> object:
+def sum(a, axis=None, keepdims: bool = False):
     """Sum.
 
     Args:
@@ -51,12 +51,12 @@ def sum(a: object, axis: object = None, keepdims: bool = False) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        data = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Sum", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def max(a: object, axis: object = None, keepdims: bool = False) -> object:
+def max(a, axis=None, keepdims: bool = False):
     """Max.
 
     Args:
@@ -68,12 +68,12 @@ def max(a: object, axis: object = None, keepdims: bool = False) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        data = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Max", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def min(a: object, axis: object = None, keepdims: bool = False) -> object:
+def min(a, axis=None, keepdims: bool = False):
     """Min.
 
     Args:
@@ -85,7 +85,7 @@ def min(a: object, axis: object = None, keepdims: bool = False) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
+        data = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     return _emit_shape_node("Min", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 

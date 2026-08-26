@@ -9,7 +9,7 @@ def test_symint_eq() -> None:
     """Test the symint eq behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test symint eq branch."

@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
 
-def matrix_power(input: Tensor, n: int) -> object:
+def matrix_power(input: Tensor, n: int):
     """Raise a square matrix to the integer power `n`.
 
     Args:
@@ -26,8 +26,8 @@ def matrix_power(input: Tensor, n: int) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
+        backend = get_active_backend()
+        data = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
         return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
     return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
 
@@ -45,7 +45,7 @@ def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None
     """
     if axis is None:
         return tuple(1 for _ in x_shape) if keepdims else ()
-    axes: object = (axis,) if isinstance(axis, int) else axis
+    axes = (axis,) if isinstance(axis, int) else axis
     return compute_reduction_shape(x_shape, axes, keepdims)
 
 
@@ -54,7 +54,7 @@ def norm(
     ord: int | str | None = None,
     axis: int | tuple[int, ...] | None = None,
     keepdims: bool = False,
-) -> object:
+):
     """Matrix or vector norm.
 
     Args:
@@ -66,20 +66,20 @@ def norm(
     Returns:
         Tensor: Result.
     """
-    out_shape: object = _norm_out_shape(x.shape, axis, keepdims)
+    out_shape = _norm_out_shape(x.shape, axis, keepdims)
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
+        backend = get_active_backend()
+        data = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
 
         return Tensor(data, TensorConfig(out_shape, getattr(x, "dtype", None), getattr(x, "device", None)))
 
     return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
 
 
-def matrix_exponential(a: Tensor) -> object:
+def matrix_exponential(a: Tensor):
     """Evaluate matrix_exponential operation.
 
     Args:
@@ -91,13 +91,13 @@ def matrix_exponential(a: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
+        backend = get_active_backend()
+        data = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
         return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
     return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
 
 
-def matrix_exp(a: Tensor) -> object:
+def matrix_exp(a: Tensor):
     """Evaluate matrix_exp operation.
 
     Args:
@@ -113,7 +113,7 @@ def _power_iteration_eager(
     input: Tensor,
     num_iters: int,
     u: Tensor | None,
-) -> object:
+):
     """Execute power iteration eagerly.
 
     Args:
@@ -126,7 +126,7 @@ def _power_iteration_eager(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend: object = get_active_backend()
+    backend = get_active_backend()
 
     v_data, u_data, sigma_data = backend.execute_op(
         "PowerIteration",
@@ -146,7 +146,7 @@ def power_iteration(
     input: Tensor,
     num_iters: int = 1,
     u: Tensor | None = None,
-) -> object:
+):
     """Compute the dominant singular value and vectors using power iteration.
 
     Args:
@@ -160,14 +160,14 @@ def power_iteration(
     if config.eager_mode:
         return _power_iteration_eager(input, num_iters, u)
 
-    inputs: object = [input]
+    inputs = [input]
     if u is not None:
         inputs.append(u)
 
-    in_shape: object = input.shape
-    v_shape: object = in_shape[:-2] + (in_shape[-1],)
-    u_shape: object = in_shape[:-2] + (in_shape[-2],)
-    sigma_shape: object = in_shape[:-2]
+    in_shape = input.shape
+    v_shape = in_shape[:-2] + (in_shape[-1],)
+    u_shape = in_shape[:-2] + (in_shape[-2],)
+    sigma_shape = in_shape[:-2]
 
     return _emit_linalg_node(
         "PowerIteration",

@@ -11,9 +11,9 @@ from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-def _load_strategy_config() -> dict[str, object]:
+def _load_strategy_config():
     """Load the strategy configuration from YAML."""
-    yaml_path: object = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             from typing import cast
@@ -22,9 +22,9 @@ def _load_strategy_config() -> dict[str, object]:
     return {}
 
 
-def _load_webrtc_topology() -> dict[str, object]:
+def _load_webrtc_topology():
     """Load the WebRTC topology configuration for browser edge targets."""
-    yaml_path: object = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             from typing import cast
@@ -36,7 +36,7 @@ def _load_webrtc_topology() -> dict[str, object]:
 class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
-    def __init__(self, cluster_resolver: object = None) -> None:
+    def __init__(self, cluster_resolver=None) -> None:
         """Initialize ParameterServerStrategy.
 
         Args:
@@ -55,8 +55,8 @@ class ParameterServerStrategy(Distribution):
         Returns:
             bool: True if mutated.
         """
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("pull")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("pull")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -64,14 +64,14 @@ class ParameterServerStrategy(Distribution):
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        modified: object = False
-        new_nodes: object = dict(graph.nodes)
+        modified = False
+        new_nodes = dict(graph.nodes)
 
         for node in list(graph.nodes.values()):
             if node.op_type == "Constant":
                 # Inject a Recv node for weights
-                recv_id: object = f"{node.id}_recv"
-                recv_node: object = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"src_rank": 0, "tag": 0, "async_pull": self.config.get("async_pull", True)})
+                recv_id = f"{node.id}_recv"
+                recv_node = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"src_rank": 0, "tag": 0, "async_pull": self.config.get("async_pull", True)})
                 new_nodes[recv_id] = recv_node
 
                 # Rewire consumers
@@ -79,7 +79,7 @@ class ParameterServerStrategy(Distribution):
                     if node.id in consumer.inputs:
                         consumer.inputs = [recv_id if inp == node.id else inp for inp in consumer.inputs]
 
-                modified: object = True
+                modified = True
 
         if modified:
             graph.nodes = new_nodes
@@ -95,8 +95,8 @@ class ParameterServerStrategy(Distribution):
         Returns:
             bool: True if mutated.
         """
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("push")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("push")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -104,15 +104,15 @@ class ParameterServerStrategy(Distribution):
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        modified: object = False
-        new_nodes: object = dict(graph.nodes)
+        modified = False
+        new_nodes = dict(graph.nodes)
 
         for node in list(graph.nodes.values()):
             if node.op_type == "Grad":
-                send_id: object = f"{node.id}_send"
-                send_node: object = IRNode(id=send_id, op_type="Send", inputs=[node.id], attributes={"dst_rank": 0, "tag": 0, "method": self.config.get("gradient_push_method", "async")})
+                send_id = f"{node.id}_send"
+                send_node = IRNode(id=send_id, op_type="Send", inputs=[node.id], attributes={"dst_rank": 0, "tag": 0, "method": self.config.get("gradient_push_method", "async")})
                 new_nodes[send_id] = send_node
-                modified: object = True
+                modified = True
 
         if modified:
             graph.nodes = new_nodes
@@ -123,7 +123,7 @@ class ParameterServerStrategy(Distribution):
 class MultiWorkerMirroredStrategy(Distribution):
     """Multi-worker mirrored strategy."""
 
-    def __init__(self, cluster_resolver: object = None, target_env: str = "host") -> None:
+    def __init__(self, cluster_resolver=None, target_env: str = "host") -> None:
         """Initialize MultiWorkerMirroredStrategy.
 
         Args:
@@ -150,8 +150,8 @@ class MultiWorkerMirroredStrategy(Distribution):
         Returns:
             bool: True if the graph was mutated.
         """
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("sync")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("sync")
         if hook_name and hasattr(backend, hook_name):
             from typing import cast
 
@@ -159,15 +159,15 @@ class MultiWorkerMirroredStrategy(Distribution):
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        modified: object = False
-        new_nodes: object = dict(graph.nodes)
+        modified = False
+        new_nodes = dict(graph.nodes)
 
         for node in list(graph.nodes.values()):
             if node.op_type == "Grad":
-                ar_id: object = f"{node.id}_all_reduce"
-                ar_node: object = IRNode(id=ar_id, op_type="AllReduce", inputs=[node.id], attributes={"algorithm": self.config.get("all_reduce_algorithm", "ring")})
+                ar_id = f"{node.id}_all_reduce"
+                ar_node = IRNode(id=ar_id, op_type="AllReduce", inputs=[node.id], attributes={"algorithm": self.config.get("all_reduce_algorithm", "ring")})
                 new_nodes[ar_id] = ar_node
-                modified: object = True
+                modified = True
 
                 # Rewire consumers of Grad to AllReduce
                 for consumer in list(graph.nodes.values()):
@@ -188,18 +188,18 @@ class CentralStorageStrategy(Distribution):
         super().__init__()
         self.config = _load_strategy_config().get("CentralStorageStrategy", {})
 
-    def fetch(self, *args: object, **kwargs: object) -> object:
+    def fetch(self, *args, **kwargs):
         """Fetch variables from central storage."""
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("fetch")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("fetch")
         if hook_name and hasattr(backend, hook_name):
             return getattr(backend, hook_name)(*args, **kwargs)
         return None
 
-    def update(self, *args: object, **kwargs: object) -> object:
+    def update(self, *args, **kwargs):
         """Update variables in central storage."""
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("update")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("update")
         if hook_name and hasattr(backend, hook_name):
             return getattr(backend, hook_name)(*args, **kwargs)
         return None
@@ -208,7 +208,7 @@ class CentralStorageStrategy(Distribution):
 class TPUStrategy(Distribution):
     """TPU strategy."""
 
-    def __init__(self, tpu_cluster_resolver: object = None) -> None:
+    def __init__(self, tpu_cluster_resolver=None) -> None:
         """Initialize TPUStrategy.
 
         Args:
@@ -218,10 +218,10 @@ class TPUStrategy(Distribution):
         self.tpu_cluster_resolver = tpu_cluster_resolver
         self.config = _load_strategy_config().get("TPUStrategy", {})
 
-    def sync(self, *args: object, **kwargs: object) -> object:
+    def sync(self, *args, **kwargs):
         """Synchronize across TPU cores."""
-        backend: object = registry.get_active_backend()
-        hook_name: object = self.config.get("registry_hooks", {}).get("sync")
+        backend = registry.get_active_backend()
+        hook_name = self.config.get("registry_hooks", {}).get("sync")
         if hook_name and hasattr(backend, hook_name):
             return getattr(backend, hook_name)(self.tpu_cluster_resolver, *args, **kwargs)
         return None
@@ -230,7 +230,7 @@ class TPUStrategy(Distribution):
 class PreemptionCheckpointHandler:
     """Handle asynchronous checkpointing for preemptible instances."""
 
-    def __init__(self, cluster_resolver: object, checkpoint_dir: str) -> None:
+    def __init__(self, cluster_resolver, checkpoint_dir: str) -> None:
         """Initialize PreemptionCheckpointHandler.
 
         Args:
@@ -244,7 +244,7 @@ class PreemptionCheckpointHandler:
 class Server:
     """Distributed execution server."""
 
-    def __init__(self, server_def: object, job_name: object = None, task_index: object = None) -> None:
+    def __init__(self, server_def, job_name=None, task_index=None) -> None:
         """Initialize Server.
 
         Args:
@@ -260,7 +260,7 @@ class Server:
         self._running = False
         import queue
 
-        self.inbox: queue.Queue[object] = queue.Queue()
+        self.inbox = queue.Queue()
 
     def start(self) -> None:
         """Start the server."""
@@ -270,7 +270,7 @@ class Server:
         import ml_switcheroo_compiler.backends.registry as registry
 
         try:
-            backend: object = registry.get_active_backend()
+            backend = registry.get_active_backend()
             if hasattr(backend, "start_server"):
                 backend.start_server(self)
                 return
@@ -302,26 +302,26 @@ class Server:
                     conn, _ = self._server.accept()
                     with conn:
                         # Protocol: [Header Length: 4 bytes] -> [Header JSON] -> [Payload Length: 8 bytes] -> [Payload Bytes]
-                        header_len_b: object = conn.recv(4)
+                        header_len_b = conn.recv(4)
                         if not header_len_b:
                             continue
-                        header_len: object = int.from_bytes(header_len_b, "big")
-                        header_str: object = conn.recv(header_len).decode("utf-8")
-                        header: object = json.loads(header_str)
+                        header_len = int.from_bytes(header_len_b, "big")
+                        header_str = conn.recv(header_len).decode("utf-8")
+                        header = json.loads(header_str)
 
-                        action: object = header.get("action")
+                        action = header.get("action")
                         print("ACTION IS", action)
-                        tensor_id: object = header.get("tensor_id", "")
+                        tensor_id = header.get("tensor_id", "")
 
                         if action == "pull":
                             # Return requested tensor (mocked via inbox fetch for now)
                             try:
                                 # In a real implementation this would fetch from a state store
                                 # but for this structure we just return a dummy array indicating presence
-                                dummy: object = np.zeros((1,), dtype=np.float32)
-                                bio: object = io.BytesIO()
+                                dummy = np.zeros((1,), dtype=np.float32)
+                                bio = io.BytesIO()
                                 np.save(bio, dummy, allow_pickle=False)
-                                data: object = bio.getvalue()
+                                data = bio.getvalue()
                                 conn.sendall(len(data).to_bytes(8, "big"))
                                 conn.sendall(data)
                             except Exception as e:
@@ -329,15 +329,15 @@ class Server:
                                 pass
 
                         elif action in ("push", "send"):
-                            data_len: object = int.from_bytes(conn.recv(8), "big")
+                            data_len = int.from_bytes(conn.recv(8), "big")
                             payload: bytearray = bytearray()
                             while len(payload) < data_len:
-                                chunk: object = conn.recv(min(4096, data_len - len(payload)))
+                                chunk = conn.recv(min(4096, data_len - len(payload)))
                                 if not chunk:
                                     break
                                 payload.extend(chunk)
-                            bio: object = io.BytesIO(bytes(payload))
-                            arr: object = np.load(bio, allow_pickle=False)
+                            bio = io.BytesIO(bytes(payload))
+                            arr = np.load(bio, allow_pickle=False)
                             self.inbox.put((tensor_id, arr))
             except Exception as e:
                 import warnings
@@ -349,7 +349,7 @@ class Server:
         import ml_switcheroo_compiler.backends.registry as registry
 
         try:
-            backend: object = registry.get_active_backend()
+            backend = registry.get_active_backend()
             if hasattr(backend, "join_server"):
                 backend.join_server(self)
                 return
@@ -391,7 +391,7 @@ class TFConfigClusterResolver:
         import os
 
         self.cluster = {}
-        tf_config: object = os.environ.get("TF_CONFIG")
+        tf_config = os.environ.get("TF_CONFIG")
         if tf_config:
             try:
                 self.cluster = json.loads(tf_config).get("cluster", {})
@@ -410,10 +410,10 @@ class KubernetesClusterResolver:
         import socket
 
         self.cluster = {}
-        master_addr: object = os.environ.get("MASTER_ADDR", "localhost")
-        master_port: object = os.environ.get("MASTER_PORT", "8080")
+        master_addr = os.environ.get("MASTER_ADDR", "localhost")
+        master_port = os.environ.get("MASTER_PORT", "8080")
 
-        service_name: object = os.environ.get("KUBERNETES_SERVICE_NAME")
+        service_name = os.environ.get("KUBERNETES_SERVICE_NAME")
         if service_name:
             try:
                 _, _, ips = socket.gethostbyname_ex(service_name)
@@ -435,25 +435,25 @@ class SlurmClusterResolver:
         import re
 
         self.cluster = {}
-        nodelist: object = os.environ.get("SLURM_JOB_NODELIST", "")
+        nodelist = os.environ.get("SLURM_JOB_NODELIST", "")
         if not nodelist:
             return
 
-        nodes: object = []
-        match: object = re.match(r"([a-zA-Z0-9_-]+)\[(.*)\]", nodelist)
+        nodes = []
+        match = re.match(r"([a-zA-Z0-9_-]+)\[(.*)\]", nodelist)
         if match:
-            prefix: object = match.group(1)
-            ranges: object = match.group(2).split(",")
+            prefix = match.group(1)
+            ranges = match.group(2).split(",")
             for r in ranges:
                 if "-" in r:
                     start, end = r.split("-")
-                    width: object = len(start)
+                    width = len(start)
                     for i in range(int(start), int(end) + 1):
                         nodes.append(f"{prefix}{str(i).zfill(width)}")
                 else:
                     nodes.append(f"{prefix}{r}")
         else:
-            nodes: object = nodelist.split(",")
+            nodes = nodelist.split(",")
 
         self.cluster = {"worker": nodes}
 
@@ -461,7 +461,7 @@ class SlurmClusterResolver:
 class PerWorkerValue:
     """Represents a value that varies across workers."""
 
-    def __init__(self, values: list[object]) -> None:
+    def __init__(self, values) -> None:
         """Initialize PerWorkerValue.
 
         Args:
@@ -497,12 +497,12 @@ class PipelineParallelismStrategy(Distribution):
 
         from ml_switcheroo_compiler.distributed.config_models import PipelineTopologiesConfig
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "pipeline_topologies.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "pipeline_topologies.yaml")
         with open(yaml_path) as f:
-            raw_topologies: object = yaml.safe_load(f)
-            topologies: object = PipelineTopologiesConfig(root=raw_topologies)
+            raw_topologies = yaml.safe_load(f)
+            topologies = PipelineTopologiesConfig(root=raw_topologies)
 
-        config: object = topologies.get(topology_name) or topologies.get("default")
+        config = topologies.get(topology_name) or topologies.get("default")
 
         # Pydantic models use dot notation
         self.num_microbatches = num_microbatches if num_microbatches is not None else config.microbatch_splitting.num_microbatches
@@ -518,22 +518,22 @@ class PipelineParallelismStrategy(Distribution):
             graph (object): The partitioned IR graph with Send/Recv nodes.
             num_stages (int): Number of pipeline stages.
         """
-        stages_nodes: object = self.split_into_stages(graph, num_stages)
+        stages_nodes = self.split_into_stages(graph, num_stages)
         self.insert_send_recv(graph, stages_nodes)
 
         from copy import deepcopy
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        microbatches: object = self.num_microbatches
-        new_nodes: object = {}
+        microbatches = self.num_microbatches
+        new_nodes = {}
         for mb in range(microbatches):
             for stage_idx in range(num_stages):
                 for node_id in stages_nodes[stage_idx]:
                     if node_id not in graph.nodes:
                         continue
-                    n: object = graph.nodes[node_id]
-                    new_n: object = deepcopy(n)
+                    n = graph.nodes[node_id]
+                    new_n = deepcopy(n)
                     new_n.id = f"{n.id}_mb{mb}"
                     new_n.inputs = [f"{inp}_mb{mb}" if inp in graph.nodes else inp for inp in n.inputs]
 
@@ -542,10 +542,10 @@ class PipelineParallelismStrategy(Distribution):
                         # Insert a Sync node to force F_mb -> F_{mb-1} sync and B_mb -> F_mb sync.
                         # As a simplified topology, we just enforce the sequential mb dependency for the first node of each stage
                         if node_id == stages_nodes[stage_idx][0]:
-                            sync_id: object = f"sync_{stage_idx}_mb{mb}"
-                            prev_node: object = f"{stages_nodes[stage_idx][-1]}_mb{mb - 1}"
+                            sync_id = f"sync_{stage_idx}_mb{mb}"
+                            prev_node = f"{stages_nodes[stage_idx][-1]}_mb{mb - 1}"
                             if sync_id not in new_nodes:
-                                sync_node: object = IRNode(id=sync_id, op_type="Sync", inputs=[prev_node], attributes={})
+                                sync_node = IRNode(id=sync_id, op_type="Sync", inputs=[prev_node], attributes={})
                                 new_nodes[sync_id] = sync_node
                             new_n.inputs.append(sync_id)
 
@@ -554,7 +554,7 @@ class PipelineParallelismStrategy(Distribution):
         graph.nodes = new_nodes
         graph.outputs = [f"{out}_mb{microbatches - 1}" for out in graph.outputs]
 
-    def split_into_stages(self, graph: IRGraph, num_stages: int) -> list[list[object]]:
+    def split_into_stages(self, graph: IRGraph, num_stages: int):
         """Split a graph into multiple pipeline stages.
 
         Args:
@@ -570,9 +570,9 @@ class PipelineParallelismStrategy(Distribution):
         if num_stages <= 0:
             raise ValueError("Number of stages must be positive.")
 
-        nodes: object = list(graph.nodes.keys())
-        stages: object = []
-        chunk_size: object = max(1, len(nodes) // num_stages)
+        nodes = list(graph.nodes.keys())
+        stages = []
+        chunk_size = max(1, len(nodes) // num_stages)
         for i in range(num_stages):
             if i == num_stages - 1:
                 stages.append(nodes[i * chunk_size :])
@@ -580,7 +580,7 @@ class PipelineParallelismStrategy(Distribution):
                 stages.append(nodes[i * chunk_size : (i + 1) * chunk_size])
         return stages
 
-    def insert_send_recv(self, graph: IRGraph, stages: list[list[object]]) -> None:
+    def insert_send_recv(self, graph: IRGraph, stages) -> None:
         """Implement actual Send and Recv IR node insertion across stage boundaries.
 
         Args:
@@ -589,32 +589,32 @@ class PipelineParallelismStrategy(Distribution):
         """
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        node_to_stage: object = {}
+        node_to_stage = {}
         for stage_idx, stage_nodes in enumerate(stages):
             for node_id in stage_nodes:
                 node_to_stage[node_id] = stage_idx
 
-        new_nodes: object = {}
+        new_nodes = {}
 
         for node_id, node in list(graph.nodes.items()):
             new_nodes[node_id] = node
-            new_inputs: object = list(node.inputs)
-            modified: object = False
+            new_inputs = list(node.inputs)
+            modified = False
             for i, inp_id in enumerate(list(node.inputs)):
                 if inp_id in node_to_stage and node_id in node_to_stage:
                     if node_to_stage[inp_id] != node_to_stage[node_id]:
-                        send_id: object = f"{inp_id}_send_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
-                        recv_id: object = f"{inp_id}_recv_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
+                        send_id = f"{inp_id}_send_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
+                        recv_id = f"{inp_id}_recv_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
 
                         if send_id not in new_nodes:
-                            send_node: object = IRNode(id=send_id, op_type="Send", inputs=[inp_id], attributes={"target_stage": node_to_stage[node_id]})
-                            recv_node: object = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"source_stage": node_to_stage[inp_id], "target_stage": node_to_stage[node_id]})
+                            send_node = IRNode(id=send_id, op_type="Send", inputs=[inp_id], attributes={"target_stage": node_to_stage[node_id]})
+                            recv_node = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"source_stage": node_to_stage[inp_id], "target_stage": node_to_stage[node_id]})
 
                             new_nodes[send_id] = send_node
                             new_nodes[recv_id] = recv_node
 
                         new_inputs[i] = recv_id
-                        modified: object = True
+                        modified = True
 
             if modified:
                 node.inputs = new_inputs
@@ -635,20 +635,20 @@ class PipelineParallelismStrategy(Distribution):
         if self.num_microbatches <= 1:
             return
 
-        inputs: object = [n for n in graph.nodes.values() if n.op_type == "Input"]
-        compute_nodes: object = {nid: n for nid, n in graph.nodes.items() if n.op_type != "Input"}
+        inputs = [n for n in graph.nodes.values() if n.op_type == "Input"]
+        compute_nodes = {nid: n for nid, n in graph.nodes.items() if n.op_type != "Input"}
 
         graph.nodes = {n.id: n for n in inputs}
 
-        body_graph: object = IRGraph()
-        body_inputs: object = []
+        body_graph = IRGraph()
+        body_inputs = []
         for inp in inputs:
-            body_in: object = IRNode(id=f"{inp.id}_b", op_type="Input")
+            body_in = IRNode(id=f"{inp.id}_b", op_type="Input")
             body_graph.nodes[body_in.id] = body_in
             body_inputs.append(body_in)
 
-            slice_id: object = f"{inp.id}_slice"
-            slice_node: object = IRNode(id=slice_id, op_type="Slice", inputs=[body_in.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})
+            slice_id = f"{inp.id}_slice"
+            slice_node = IRNode(id=slice_id, op_type="Slice", inputs=[body_in.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})
             body_graph.nodes[slice_id] = slice_node
 
             for n in compute_nodes.values():
@@ -662,21 +662,21 @@ class PipelineParallelismStrategy(Distribution):
         body_graph.inputs = [i.id for i in body_inputs]
         body_graph.outputs = graph.outputs
 
-        cond_graph: object = IRGraph()
-        cond_in: object = IRNode(id="idx_cond", op_type="Input")
-        cond_cmp: object = IRNode(id="cond_cmp", op_type="Less", inputs=["idx_cond", "max_iters"], attributes={})
+        cond_graph = IRGraph()
+        cond_in = IRNode(id="idx_cond", op_type="Input")
+        cond_cmp = IRNode(id="cond_cmp", op_type="Less", inputs=["idx_cond", "max_iters"], attributes={})
         cond_graph.nodes = {"idx_cond": cond_in, "cond_cmp": cond_cmp}
         cond_graph.inputs = ["idx_cond"]
         cond_graph.outputs = ["cond_cmp"]
 
-        loop_node: object = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=[i.id for i in inputs], attributes={"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph})
+        loop_node = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=[i.id for i in inputs], attributes={"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph})
         graph.nodes[loop_node.id] = loop_node
 
         if graph.outputs:
-            new_outputs: object = []
+            new_outputs = []
             for out_id in graph.outputs:
-                concat_id: object = f"{out_id}_concat"
-                concat_node: object = IRNode(id=concat_id, op_type="Concat", inputs=[loop_node.id], attributes={"axis": 0, "num_chunks": self.num_microbatches, "original_out": out_id})
+                concat_id = f"{out_id}_concat"
+                concat_node = IRNode(id=concat_id, op_type="Concat", inputs=[loop_node.id], attributes={"axis": 0, "num_chunks": self.num_microbatches, "original_out": out_id})
                 graph.nodes[concat_id] = concat_node
                 new_outputs.append(concat_id)
             graph.outputs = new_outputs
@@ -690,8 +690,8 @@ class PipelineParallelismStrategy(Distribution):
         Returns:
             list: Result.
         """
-        schedule: object = []
-        num_stages: object = max(2, len(graph.nodes) // 10) if graph.nodes else 2
+        schedule = []
+        num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
         # 1F1B Warmup phase
         for i in range(num_stages - 1):
@@ -723,7 +723,7 @@ class PipelineParallelismStrategy(Distribution):
         if not graph.nodes:
             return False
 
-        num_stages: object = max(2, len(graph.nodes) // 10) if graph.nodes else 2
+        num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
         # 1. Unroll pipeline and inject cross-stage Syncs
         self.unroll_pipeline(graph, num_stages)
@@ -735,7 +735,7 @@ class PipelineParallelismStrategy(Distribution):
         self.generate_microbatch_loop(graph)
 
         # 4. Generate interleaved execution schedule
-        schedule: object = self.generate_1f1b_schedule(graph)
+        schedule = self.generate_1f1b_schedule(graph)
 
         # Emit schedule metadata into graph attributes for the executor
         if not hasattr(graph, "attributes"):
@@ -759,17 +759,17 @@ class PipelineParallelismStrategy(Distribution):
         """
         from ml_switcheroo_compiler.ir.core import IRNode
 
-        grad_nodes: object = [n for n in graph.nodes.values() if n.op_type == "Grad"]
+        grad_nodes = [n for n in graph.nodes.values() if n.op_type == "Grad"]
         for g in grad_nodes:
-            accum_id: object = f"{g.id}_accum"
-            accum_node: object = IRNode(id=accum_id, op_type="Add", inputs=[g.id, f"{g.id}_state"], attributes={"is_gradient_accumulation": True})
+            accum_id = f"{g.id}_accum"
+            accum_node = IRNode(id=accum_id, op_type="Add", inputs=[g.id, f"{g.id}_state"], attributes={"is_gradient_accumulation": True})
             graph.nodes[accum_id] = accum_node
 
 
 class MeshShardingStrategy(Distribution):
     """1D/2D Mesh Sharding Strategy for SPMD Graph Partitioning and Lowering."""
 
-    def __init__(self, mesh: object = None, layout_map: object = None) -> None:
+    def __init__(self, mesh=None, layout_map=None) -> None:
         """Initialize MeshShardingStrategy.
 
         Args:
@@ -794,13 +794,13 @@ class MeshShardingStrategy(Distribution):
                 continue
 
             for inp_id in node.inputs:
-                inp_node: object = graph.nodes.get(inp_id)
+                inp_node = graph.nodes.get(inp_id)
                 if inp_node and getattr(inp_node, "sharding", None) is not None:
                     node.sharding = inp_node.sharding
                     break
 
             if self.layout_map:
-                spec: object = self.layout_map.get(node.id)
+                spec = self.layout_map.get(node.id)
                 if spec:
                     node.sharding = spec
 

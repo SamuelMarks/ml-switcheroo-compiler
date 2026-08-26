@@ -17,11 +17,11 @@ def memory_profiler(graph: LogicalGraph) -> int:
     Returns:
         int: Estimated peak memory usage in bytes.
     """
-    total_mem: object = 0
+    total_mem = 0
     for node in graph.nodes.values():
         if hasattr(node, "shape_metadata") and node.shape_metadata is not None:
             try:
-                mem: object = int(math.prod(node.shape_metadata)) * 4  # Assume float32
+                mem = int(math.prod(node.shape_metadata)) * 4  # Assume float32
                 total_mem += mem
             except TypeError:
                 total_mem += 4

@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import block_masked_mm
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_block_masked_mm_shape() -> object:
+def test_block_masked_mm_shape():
     """Test the block masked mm shape behavior.
 
     Returns:
@@ -33,7 +33,7 @@ def test_block_masked_mm_shape() -> object:
         pass
 
 
-def test_block_masked_mm_eager() -> object:
+def test_block_masked_mm_eager():
     """Test the block masked mm eager behavior.
 
     Returns:

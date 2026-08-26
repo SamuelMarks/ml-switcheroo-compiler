@@ -55,7 +55,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F4
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args, **kwargs):
     """Evaluate execute_op operation.
 
     Args:
@@ -70,16 +70,16 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     Raises:
         UnimplementedMathError: An exception.
     """
-    func_registry: object = numpy_eager_registry.get(op_type)
+    func_registry = numpy_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
-    func_registry: object = global_eager_registry.get(op_type)
+    func_registry = global_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
     try:
-        s1: object = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
-        snake: object = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        func: object = getattr(np, snake)
+        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+        snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+        func = getattr(np, snake)
     except AttributeError:
         try:
             raise AttributeError()
@@ -89,13 +89,13 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
             except AttributeError:
                 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
-                msg: object = f"Operation {op_type} is not implemented in interpreter."
+                msg = f"Operation {op_type} is not implemented in interpreter."
                 raise UnimplementedMathError(msg) from None
     return func(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Repeat")
-def repeat(np: object, *args: object, **kwargs: object) -> object:
+def repeat(np, *args, **kwargs):
     """Repeat.
 
     Args:
@@ -110,7 +110,7 @@ def repeat(np: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Searchsorted")
-def searchsorted(np: object, *args: object, **kwargs: object) -> object:
+def searchsorted(np, *args, **kwargs):
     """Searchsorted.
 
     Args:
@@ -126,13 +126,13 @@ def searchsorted(np: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod: object,
-    x: object,
+    np_mod,
+    x,
     num_or_size_splits: typing.Union[int, list[int], tuple[int, ...]],
     axis: int = 0,
-    *args: object,
-    **kwargs: object,
-) -> list[object]:
+    *args,
+    **kwargs,
+):
     """Split array.
 
     Args:
@@ -150,7 +150,7 @@ def split(
 
 
 @numpy_eager_registry.register("Squeeze")
-def squeeze(np_mod: object, x: object, axis: typing.Optional[int] = None, *args: object, **kwargs: object) -> object:
+def squeeze(np_mod, x, axis: typing.Optional[int] = None, *args, **kwargs):
     """Squeeze array.
 
     Args:
@@ -167,7 +167,7 @@ def squeeze(np_mod: object, x: object, axis: typing.Optional[int] = None, *args:
 
 
 @numpy_eager_registry.register("Stack")
-def stack(np_mod: object, arrays: object, axis: int = 0, *args: object, **kwargs: object) -> object:
+def stack(np_mod, arrays, axis: int = 0, *args, **kwargs):
     """Stack arrays.
 
     Args:
@@ -184,7 +184,7 @@ def stack(np_mod: object, arrays: object, axis: int = 0, *args: object, **kwargs
 
 
 @numpy_eager_registry.register("Unstack")
-def unstack(np_mod: object, x: object, axis: int = 0, *args: object, **kwargs: object) -> object:
+def unstack(np_mod, x, axis: int = 0, *args, **kwargs):
     """Unstack array.
 
     Args:
@@ -199,14 +199,14 @@ def unstack(np_mod: object, x: object, axis: int = 0, *args: object, **kwargs: o
     """
     # unstack is basically split into 1-sized chunks along axis and squeezed
     if hasattr(x, "shape"):
-        num_splits: object = x.shape[axis]
-        splits: object = np_mod.split(x, num_splits, axis=axis)
+        num_splits = x.shape[axis]
+        splits = np_mod.split(x, num_splits, axis=axis)
         return tuple(np_mod.squeeze(s, axis=axis) for s in splits)
     return tuple(x)
 
 
 @numpy_eager_registry.register("AllGather")
-def all_gather(np_mod: object, tensor: object, *args: object, **kwargs: object) -> object:
+def all_gather(np_mod, tensor, *args, **kwargs):
     """Simulate AllGather in eager mode.
 
     Args:
@@ -215,14 +215,14 @@ def all_gather(np_mod: object, tensor: object, *args: object, **kwargs: object) 
         *args (object): Additional args.
         **kwargs (object): Additional kwargs.
 
-    Returns: object: The gathered tensor (in a simulated single-node env, just expanded).
+    Returns: np.ndarray: The gathered tensor (in a simulated single-node env, just expanded).
     """
-    axis: object = kwargs.get("axis", 0)
+    axis = kwargs.get("axis", 0)
     return np_mod.expand_dims(tensor, axis=axis)
 
 
 @numpy_eager_registry.register("AllReduce")
-def all_reduce(np_mod: object, tensor: object, *args: object, **kwargs: object) -> object:
+def all_reduce(np_mod, tensor, *args, **kwargs):
     """Simulate AllReduce in eager mode.
 
     Args:
@@ -231,13 +231,13 @@ def all_reduce(np_mod: object, tensor: object, *args: object, **kwargs: object) 
         *args (object): Additional args.
         **kwargs (object): Additional kwargs.
 
-    Returns: object: The reduced tensor.
+    Returns: np.ndarray: The reduced tensor.
     """
     return tensor
 
 
 @numpy_eager_registry.register("ReduceScatter")
-def reduce_scatter(np_mod: object, tensor: object, *args: object, **kwargs: object) -> object:
+def reduce_scatter(np_mod, tensor, *args, **kwargs):
     """Simulate ReduceScatter in eager mode.
 
     Args:
@@ -246,13 +246,13 @@ def reduce_scatter(np_mod: object, tensor: object, *args: object, **kwargs: obje
         *args (object): Additional args.
         **kwargs (object): Additional kwargs.
 
-    Returns: object: The scattered tensor.
+    Returns: np.ndarray: The scattered tensor.
     """
     return tensor
 
 
 @numpy_eager_registry.register("AllToAll")
-def all_to_all(np_mod: object, tensor: object, *args: object, **kwargs: object) -> object:
+def all_to_all(np_mod, tensor, *args, **kwargs):
     """Simulate AllToAll in eager mode.
 
     Args:
@@ -261,13 +261,13 @@ def all_to_all(np_mod: object, tensor: object, *args: object, **kwargs: object) 
         *args (object): Additional args.
         **kwargs (object): Additional kwargs.
 
-    Returns: object: The result tensor.
+    Returns: np.ndarray: The result tensor.
     """
     return tensor
 
 
 @numpy_eager_registry.register("Equal")
-def equal(np_mod: object, x: object, y: object, *args: object, **kwargs: object) -> object:
+def equal(np_mod, x, y, *args, **kwargs):
     """Check if x and y are equal.
 
     Args:
@@ -277,7 +277,7 @@ def equal(np_mod: object, x: object, y: object, *args: object, **kwargs: object)
         *args (object): Additional arguments.
         **kwargs (object): Additional keyword arguments.
 
-    Returns: object: A boolean array where x == y.
+    Returns: np.ndarray: A boolean array where x == y.
     """
     try:
         return np_mod.equal(x, y)

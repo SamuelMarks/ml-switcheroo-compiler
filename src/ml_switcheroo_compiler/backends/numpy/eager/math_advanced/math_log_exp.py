@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Xlogy")
-def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_xlogy(backend_module, *args, **kwargs):
     """Evaluate _np_xlogy operation.
 
     Args:
@@ -28,7 +28,7 @@ def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Logsumexp")
-def _np_logsumexp(backend_module: object, a: object, axis: object = None, keepdims: bool = False, **kwargs: object) -> object:  # noqa: D417
+def _np_logsumexp(backend_module, a, axis=None, keepdims: bool = False, **kwargs):  # noqa: D417
     """Evaluate _np_logsumexp logic eagerly backed by NumPy.
 
     Args:
@@ -43,19 +43,19 @@ def _np_logsumexp(backend_module: object, a: object, axis: object = None, keepdi
     """
     import numpy as np
 
-    a: object = np.array(a)
-    a_max: object = np.amax(a, axis=axis, keepdims=True)
+    a = np.array(a)
+    a_max = np.amax(a, axis=axis, keepdims=True)
     if not keepdims:
-        a_max_s: object = np.squeeze(a_max, axis=axis)
+        a_max_s = np.squeeze(a_max, axis=axis)
     else:
-        a_max_s: object = a_max
-    out: object = np.log(np.sum(np.exp(a - a_max), axis=axis, keepdims=keepdims))
+        a_max_s = a_max
+    out = np.log(np.sum(np.exp(a - a_max), axis=axis, keepdims=keepdims))
     out += a_max_s
     return out
 
 
 @numpy_eager_registry.register("Log1P")
-def _np_log1p2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log1p2(backend_module, *args, **kwargs):
     """Evaluate _np_log1p2 operation.
 
     Args:
@@ -70,7 +70,7 @@ def _np_log1p2(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Unsqueeze")
-def _np_expand_dims_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_expand_dims_(backend_module, *args, **kwargs):
     """Implement Unsqueeze via expand_dims.
 
     Args:
@@ -78,13 +78,13 @@ def _np_expand_dims_(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.expand_dims(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LogSoftmax")
-def _np_log_softmax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log_softmax(backend_module, *args, **kwargs):
     """Evaluate _np_log_softmax operation.
 
     Args:
@@ -95,9 +95,9 @@ def _np_log_softmax(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = _get_np_arg(args, 0)
+    a = _get_np_arg(args, 0)
     if a is None:
         return None
-    axis: object = kwargs.get("axis", -1)
-    c: object = np.max(a, axis=axis, keepdims=True)
+    axis = kwargs.get("axis", -1)
+    c = np.max(a, axis=axis, keepdims=True)
     return a - c - np.log(np.sum(np.exp(a - c), axis=axis, keepdims=True))

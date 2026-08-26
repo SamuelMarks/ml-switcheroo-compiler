@@ -14,7 +14,7 @@ def test_reductions_frontend_coverage_brute() -> None:
     """Test the reductions frontend coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -33,7 +33,7 @@ def test_remaining_segment_ops() -> None:
     """Test the remaining segment ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         data = Tensor(ProxyTensor(id="data_id", shape=(3,), dtype=DType("float32")), TensorConfig((3,), DType("float32"), None))

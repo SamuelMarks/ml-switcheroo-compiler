@@ -13,18 +13,18 @@ def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _correlate operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "correlate", None)
+    func = getattr(backend_module, "correlate", None)
     if func:
         return func(*args, **kwargs)
     (a, v) = (args[0], args[1])
-    mode: Any = kwargs.get("mode", "valid")
+    mode = kwargs.get("mode", "valid")
     return backend_module.correlate(backend_module.asarray(a), backend_module.asarray(v), mode=mode)
 
 
@@ -33,14 +33,14 @@ def _np_windowhann(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_windowhann operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
+    func = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

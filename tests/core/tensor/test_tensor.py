@@ -13,7 +13,7 @@ def test_tensor_coverage() -> None:
     """Test the tensor coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."

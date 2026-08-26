@@ -25,7 +25,7 @@ def test_mlx_parity_coverage() -> None:
         """Test the mlx parity coverage behavior.
 
         Returns:
-            Any: The inferred shape or computed result.
+            object: The inferred shape or computed result.
         """
         try:
             "Tests the MLX specific API parity."
@@ -46,7 +46,7 @@ def test_mlx_parity_coverage() -> None:
                 export_function()
                 assert isinstance(exporter(), FunctionExporter)
 
-                def f(x: object) -> object:
+                def f(x):
                     """Evaluate and process the f operation.
 
                     Args:
@@ -71,7 +71,7 @@ def test_device_dunders() -> None:
     """Test the device dunders behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests Device dunder methods."
@@ -94,13 +94,13 @@ def test_grad_coverage_extra() -> None:
     """Test the grad coverage extra behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests extra grad methods."
         try:
 
-            def f(x: object) -> object:
+            def f(x):
                 """Evaluate and process the f operation.
 
                 Args:

@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 @numpy_eager_registry.register("Load")
-def _np_load(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_load(backend_module, *args, **kwargs):
     """Evaluate _np_load operation.
 
     Args:
@@ -25,15 +25,15 @@ def _np_load(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     from ml_switcheroo_compiler.ops.io import _fallback_load
 
-    filepath: object = args[0] if args else kwargs.get("file", "")
-    res: object = _fallback_load(filepath)
+    filepath = args[0] if args else kwargs.get("file", "")
+    res = _fallback_load(filepath)
     if res is not None:
         return res
     raise ValueError(f"Format not supported or file not found for load: {filepath}")
 
 
 @numpy_eager_registry.register("Save")
-def _np_save(backend_module: object, *args: object, **kwargs: object) -> None:
+def _np_save(backend_module, *args, **kwargs) -> None:
     """Evaluate _np_save operation.
 
     Args:
@@ -50,7 +50,7 @@ def _np_save(backend_module: object, *args: object, **kwargs: object) -> None:
 
 
 @numpy_eager_registry.register("SaveGguf")
-def _np_save_gguf(backend_module: object, *args: object, **kwargs: object) -> None:
+def _np_save_gguf(backend_module, *args, **kwargs) -> None:
     """Evaluate _np_save_gguf operation.
 
     Args:
@@ -65,7 +65,7 @@ def _np_save_gguf(backend_module: object, *args: object, **kwargs: object) -> No
 
 
 @numpy_eager_registry.register("Savez")
-def _np_savez(backend_module: object, *args: object, **kwargs: object) -> None:
+def _np_savez(backend_module, *args, **kwargs) -> None:
     """Evaluate _np_savez operation.
 
     Args:
@@ -76,12 +76,12 @@ def _np_savez(backend_module: object, *args: object, **kwargs: object) -> None:
     if len(args) > 0:
         np.savez(args[0], *args[1:], **kwargs)
     else:
-        kw: object = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
+        kw = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
         np.savez(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
 
 
 @numpy_eager_registry.register("SavezCompressed")
-def _np_savez_compressed(backend_module: object, *args: object, **kwargs: object) -> None:
+def _np_savez_compressed(backend_module, *args, **kwargs) -> None:
     """Evaluate _np_savez_compressed operation.
 
     Args:
@@ -92,12 +92,12 @@ def _np_savez_compressed(backend_module: object, *args: object, **kwargs: object
     if len(args) > 0:
         np.savez_compressed(args[0], *args[1:], **kwargs)
     else:
-        kw: object = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
+        kw = {k: v for k, v in kwargs.items() if k not in ("filepath", "file")}
         np.savez_compressed(kwargs.get("filepath", kwargs.get("file", "out.npz")), **kw)
 
 
 @numpy_eager_registry.register("ReadFile")
-def _np_read_file(backend_module: object, filename: object, **kwargs: object) -> object:
+def _np_read_file(backend_module, filename, **kwargs):
     """Evaluate _np_read_file operation.
 
     Args:
@@ -110,7 +110,7 @@ def _np_read_file(backend_module: object, filename: object, **kwargs: object) ->
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    fname: object = filename.data if hasattr(filename, "data") else filename
+    fname = filename.data if hasattr(filename, "data") else filename
     if not isinstance(fname, str):
         return Tensor(None, TensorConfig((), DType("float32"), Device(DeviceType.CPU)))
     with open(fname, "rb") as f:
@@ -118,7 +118,7 @@ def _np_read_file(backend_module: object, filename: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("WriteFile")
-def _np_write_file(backend_module: object, filename: object, contents: object, **kwargs: object) -> None:
+def _np_write_file(backend_module, filename, contents, **kwargs) -> None:
     """Evaluate _np_write_file operation.
 
     Args:
@@ -127,15 +127,15 @@ def _np_write_file(backend_module: object, filename: object, contents: object, *
         contents (object): The contents parameter.
         **kwargs (object): Keyword args.
     """
-    fname: object = filename.data if hasattr(filename, "data") else filename
-    data: object = contents.data if hasattr(contents, "data") else contents
+    fname = filename.data if hasattr(filename, "data") else filename
+    data = contents.data if hasattr(contents, "data") else contents
     if isinstance(fname, str) and isinstance(data, bytes):
         with open(fname, "wb") as f:
             f.write(data)
 
 
 @numpy_eager_registry.register("DecodeImage")
-def _np_decode_image(backend_module: object, contents: object, **kwargs: object) -> object:
+def _np_decode_image(backend_module, contents, **kwargs):
     """Evaluate _np_decode_image operation.
 
     Args:
@@ -148,12 +148,12 @@ def _np_decode_image(backend_module: object, contents: object, **kwargs: object)
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    dtype: object = kwargs.get("dtype", "uint8")
+    dtype = kwargs.get("dtype", "uint8")
     return Tensor(None, TensorConfig((), dtype, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv(backend_module: object, records: object, **kwargs: object) -> list[object]:
+def _np_decode_csv(backend_module, records, **kwargs):
     """Evaluate _np_decode_csv operation.
 
     Args:
@@ -166,12 +166,12 @@ def _np_decode_csv(backend_module: object, records: object, **kwargs: object) ->
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    record_defaults: object = kwargs.get("record_defaults", [])
+    record_defaults = kwargs.get("record_defaults", [])
     return [Tensor(None, TensorConfig((), DType("float32"), Device(DeviceType.CPU))) for _ in record_defaults]
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example(backend_module: object, serialized: object, **kwargs: object) -> dict[str, object]:
+def _np_parse_example(backend_module, serialized, **kwargs):
     """Evaluate _np_parse_example operation.
 
     Args:
@@ -184,12 +184,12 @@ def _np_parse_example(backend_module: object, serialized: object, **kwargs: obje
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    features: object = kwargs.get("features", {})
+    features = kwargs.get("features", {})
     return {k: Tensor(None, TensorConfig((), DType("float32"), Device(DeviceType.CPU))) for k in features}
 
 
 @numpy_eager_registry.register("SerializeTensor")
-def _np_serialize_tensor(backend_module: object, tensor: object, **kwargs: object) -> object:
+def _np_serialize_tensor(backend_module, tensor, **kwargs):
     """Evaluate _np_serialize_tensor operation.
 
     Args:
@@ -206,7 +206,7 @@ def _np_serialize_tensor(backend_module: object, tensor: object, **kwargs: objec
 
 
 @numpy_eager_registry.register("ParseTensor")
-def _np_parse_tensor(backend_module: object, serialized: object, **kwargs: object) -> object:
+def _np_parse_tensor(backend_module, serialized, **kwargs):
     """Evaluate _np_parse_tensor operation.
 
     Args:
@@ -219,12 +219,12 @@ def _np_parse_tensor(backend_module: object, serialized: object, **kwargs: objec
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    out_type: object = kwargs.get("out_type", "float32")
+    out_type = kwargs.get("out_type", "float32")
     return Tensor(None, TensorConfig((), out_type, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("EncodeBase64")
-def _np_encode_base64(backend_module: object, input: object, **kwargs: object) -> object:
+def _np_encode_base64(backend_module, input, **kwargs):
     """Evaluate _np_encode_base64 operation.
 
     Args:
@@ -240,14 +240,14 @@ def _np_encode_base64(backend_module: object, input: object, **kwargs: object) -
 
     if input is None:
         return None
-    data: object = getattr(input, "data", input)
-    pad: object = kwargs.get("pad", False)
-    res: object = _eager_base64("encode", data, pad)
+    data = getattr(input, "data", input)
+    pad = kwargs.get("pad", False)
+    res = _eager_base64("encode", data, pad)
     return Tensor(res, TensorConfig(getattr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("DecodeBase64")
-def _np_decode_base64(backend_module: object, input: object, **kwargs: object) -> object:
+def _np_decode_base64(backend_module, input, **kwargs):
     """Evaluate _np_decode_base64 operation.
 
     Args:
@@ -263,13 +263,13 @@ def _np_decode_base64(backend_module: object, input: object, **kwargs: object) -
 
     if input is None:
         return None
-    data: object = getattr(input, "data", input)
-    res: object = _eager_base64("decode", data, False)
+    data = getattr(input, "data", input)
+    res = _eager_base64("decode", data, False)
     return Tensor(res, TensorConfig(getattr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("ParseSequenceExample")
-def _np_parse_sequence_example(backend_module: object, serialized: object, **kwargs: object) -> tuple[object, ...]:
+def _np_parse_sequence_example(backend_module, serialized, **kwargs):
     """Evaluate _np_parse_sequence_example operation.
 
     Args:

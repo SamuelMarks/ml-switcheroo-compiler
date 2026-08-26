@@ -14,7 +14,7 @@ from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTor
 class PyTorchVisionVisitor:
     """Handle vision ops for PyTorch."""
 
-    handled_ops: object = {
+    handled_ops = {
         "ElasticTransform",
         "PerspectiveTransform",
         "ExtractBoundingBoxes",
@@ -37,7 +37,7 @@ class PyTorchVisionVisitor:
         "MedianFilter": lambda vars: f"torchaudio.functional.median_filter({vars[0]})",
     }
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node, input_vars: list[str], **kwargs) -> str:
         """Process a vision operation node and produce corresponding PyTorch code.
 
         Args:
@@ -48,22 +48,22 @@ class PyTorchVisionVisitor:
         Returns:
             str: The generated PyTorch code for the given node.
         """
-        op_type: object = getattr(node, "op_type", "")
-        handler: object = self._handlers.get(op_type)
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
         return handler(input_vars) if handler else ""
 
 
 class PyTorchAudioVisitor:
     """Handle audio ops for PyTorch."""
 
-    handled_ops: object = {"Istft", "MelFilterbank", "Mfcc"}
+    handled_ops = {"Istft", "MelFilterbank", "Mfcc"}
     _handlers = {
         "Istft": lambda vars: f"torch.istft({vars[0]})",
         "MelFilterbank": lambda vars: f"torchaudio.functional.melscale_fbanks({vars[0]})",
         "Mfcc": lambda vars: f"torchaudio.transforms.MFCC()({vars[0]})",
     }
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node, input_vars: list[str], **kwargs) -> str:
         """Process an audio operation node and produce corresponding PyTorch code.
 
         Args:
@@ -74,8 +74,8 @@ class PyTorchAudioVisitor:
         Returns:
             str: The generated PyTorch code for the given node.
         """
-        op_type: object = getattr(node, "op_type", "")
-        handler: object = self._handlers.get(op_type)
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
         return handler(input_vars) if handler else ""
 
 
@@ -96,7 +96,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         self.audio_visitor = PyTorchAudioVisitor()
         self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor()])
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node, input_vars: list[str], **kwargs) -> str:
         """Process an IR node and produce the corresponding PyTorch code string.
 
         Args:
@@ -107,14 +107,14 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code string.
         """
-        op_type: object = getattr(node, "op_type", "")
+        op_type = getattr(node, "op_type", "")
         if op_type in self.vision_visitor.handled_ops:
             return self.vision_visitor.visit(node, input_vars, **kwargs)
         if op_type in self.audio_visitor.handled_ops:
             return self.audio_visitor.visit(node, input_vars, **kwargs)
         return super().visit(node, input_vars, **kwargs)
 
-    def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_PowerIteration(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate PyTorch code for a power iteration operation.
 
         Args:
@@ -125,11 +125,11 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code for power iteration.
         """
-        num_iters: object = node.attributes.get("num_iters", 1)
-        u_var: object = input_vars[1] if len(input_vars) > 1 else "None"
+        num_iters = node.attributes.get("num_iters", 1)
+        u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate PyTorch code for a ragged dot product operation.
 
         Args:
@@ -142,7 +142,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return f"pt_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Einsum(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate PyTorch code for an Einstein summation operation.
 
         Args:
@@ -153,8 +153,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code using torch.einsum.
         """
-        args_str: object = ", ".join(input_vars)
-        eq: object = kwargs.get("equation", "")
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
         return f"torch.einsum('{eq}', {args_str})"
 
     def generate(self) -> str:
@@ -162,8 +162,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen: object = NumpyGenerator(self.graph)
-        base_code: object = gen.generate()
+        gen = NumpyGenerator(self.graph)
+        base_code = gen.generate()
         return transpile_source(base_code, target_framework="pytorch")
 
     def get_fallback_prefix(self) -> str:
@@ -190,15 +190,15 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return "keepdim"
 
-    def _get_math_ops(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def _get_math_ops(self, kwargs) -> dict[str, str]:
         """Get math ops."""
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
-    def _get_creation_ops(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def _get_creation_ops(self, kwargs) -> dict[str, str]:
         """Get creation ops."""
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
-    def _get_array_ops(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def _get_array_ops(self, kwargs) -> dict[str, str]:
         """Get array ops."""
         return {k: v.ast_template for k, v in __import__("ml_switcheroo_compiler.backends.mapping_loader", fromlist=["load_backend_mappings"]).load_backend_mappings("pytorch").operations.items() if v.ast_template}
 
@@ -217,9 +217,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             list[str]: A list of string code lines to be emitted before the main class.
         """
-        tmpl_path: object = os.path.join(os.path.dirname(__file__), "pytorch_prefix.py.tmpl")
+        tmpl_path = os.path.join(os.path.dirname(__file__), "pytorch_prefix.py.tmpl")
         with open(tmpl_path) as f:
-            pt_prefix_template: object = f.read()
+            pt_prefix_template = f.read()
         return ["import torch", "import torch.nn as nn", *pt_prefix_template.splitlines()]
 
     def _emit_init_body(self) -> bool:
@@ -228,17 +228,17 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             bool: True if any parameters were registered in the module, False otherwise.
         """
-        has_params: object = False
+        has_params = False
         for node in self.sorted_nodes:
             if node.op_type == "Constant":
-                val_repr: object = self.emit_constant(node)
-                var_name: object = self.assign_var_name(node.id, "const")
+                val_repr = self.emit_constant(node)
+                var_name = self.assign_var_name(node.id, "const")
                 self.add_line(f"self.register_parameter('{var_name}', nn.Parameter(torch.tensor({val_repr})))")
-                has_params: object = True
+                has_params = True
         return has_params
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII"):
         """Load.
 
         Args:
@@ -255,7 +255,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return torch.load(filepath, weights_only=not allow_pickle)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -269,7 +269,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         torch.save(arr, file)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args, **kwds) -> None:
         """Savez.
 
         Args:
@@ -279,12 +279,12 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         torch.save(data, file)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args, **kwds) -> None:
         """Savez compressed.
 
         Args:
@@ -294,6 +294,6 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        data: object = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         torch.save(data, file)

@@ -18,14 +18,14 @@ from ml_switcheroo_compiler.ops.kernels import (
 
 
 @patch("ml_switcheroo_compiler.ops.kernels._emit_shape_node")
-def test_cuda_kernel_tracing(mock_emit: object) -> None:
+def test_cuda_kernel_tracing(mock_emit) -> None:
     """Test the cuda kernel tracing behavior.
 
     Args:
         mock_emit (object): The mock_emit parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test cuda_kernel tracing.\n\n    Args:\n        mock_emit (object): Mocked _emit_shape_node function.\n    "
@@ -48,14 +48,14 @@ def test_cuda_kernel_tracing(mock_emit: object) -> None:
 
 
 @patch("ml_switcheroo_compiler.ops.kernels._emit_shape_node")
-def test_metal_kernel_tracing(mock_emit: object) -> None:
+def test_metal_kernel_tracing(mock_emit) -> None:
     """Test the metal kernel tracing behavior.
 
     Args:
         mock_emit (object): The mock_emit parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test metal_kernel tracing.\n\n    Args:\n        mock_emit (object): Mocked _emit_shape_node function.\n    "
@@ -78,14 +78,14 @@ def test_metal_kernel_tracing(mock_emit: object) -> None:
 
 
 @patch("ml_switcheroo_compiler.ops.kernels._emit_shape_node")
-def test_precompiled_cuda_kernel_tracing(mock_emit: object) -> None:
+def test_precompiled_cuda_kernel_tracing(mock_emit) -> None:
     """Test the precompiled cuda kernel tracing behavior.
 
     Args:
         mock_emit (object): The mock_emit parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test precompiled_cuda_kernel tracing.\n\n    Args:\n        mock_emit (object): Mocked _emit_shape_node function.\n    "
@@ -108,14 +108,14 @@ def test_precompiled_cuda_kernel_tracing(mock_emit: object) -> None:
 
 
 @patch("ml_switcheroo_compiler.backends.numpy.generator.NumpyGenerator.execute_op")
-def test_cuda_kernel_eager(mock_execute_op: object) -> None:
+def test_cuda_kernel_eager(mock_execute_op) -> None:
     """Test the cuda kernel eager behavior.
 
     Args:
         mock_execute_op (object): The mock_execute_op parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test cuda_kernel eager execution.\n\n    Args:\n        mock_execute_op (object): Mocked execute_op function.\n    "
@@ -138,14 +138,14 @@ def test_cuda_kernel_eager(mock_execute_op: object) -> None:
 
 
 @patch("ml_switcheroo_compiler.backends.numpy.generator.NumpyGenerator.execute_op")
-def test_metal_kernel_eager(mock_execute_op: object) -> None:
+def test_metal_kernel_eager(mock_execute_op) -> None:
     """Test the metal kernel eager behavior.
 
     Args:
         mock_execute_op (object): The mock_execute_op parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test metal_kernel eager execution.\n\n    Args:\n        mock_execute_op (object): Mocked execute_op function.\n    "
@@ -168,14 +168,14 @@ def test_metal_kernel_eager(mock_execute_op: object) -> None:
 
 
 @patch("ml_switcheroo_compiler.backends.numpy.generator.NumpyGenerator.execute_op")
-def test_precompiled_cuda_kernel_eager(mock_execute_op: object) -> None:
+def test_precompiled_cuda_kernel_eager(mock_execute_op) -> None:
     """Test the precompiled cuda kernel eager behavior.
 
     Args:
         mock_execute_op (object): The mock_execute_op parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test precompiled_cuda_kernel eager execution.\n\n    Args:\n        mock_execute_op (object): Mocked execute_op function.\n    "
@@ -201,7 +201,7 @@ def test_op_defs() -> None:
     """Test the op defs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test custom kernel OpDefs."

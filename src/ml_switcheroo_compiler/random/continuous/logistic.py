@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def logistic(*args: object, **kwargs: object) -> object:
+def logistic(*args, **kwargs):
     """Evaluate logistic operation.
 
     Args:

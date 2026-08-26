@@ -2,7 +2,7 @@
 """Backend utilities."""
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args, **kwargs):
     """Execute an eager operation using the TensorFlow backend.
 
     Args:
@@ -11,7 +11,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         *args (object): Positional arguments for the operation.
         **kwargs (object): Keyword arguments for the operation.
 
-    Returns: object: The result of the operation execution.
+    Returns: Tensor: The result of the operation execution.
 
     Raises:
         BackendNotSupportedError: If the operation is not supported by the TensorFlow backend.
@@ -20,16 +20,16 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    func: object = global_eager_registry.get(op_type)
+    func = global_eager_registry.get(op_type)
     if func is not None:
         return func(cls, *args, **kwargs)
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
 
-    schema: object = load_backend_mappings("tensorflow")
+    schema = load_backend_mappings("tensorflow")
     if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
         import sys
 
-        func: object = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
+        func = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
         if func is not None:
             return func(*args, **kwargs)
 

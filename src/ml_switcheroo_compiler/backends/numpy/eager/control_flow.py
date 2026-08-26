@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AssociativeScan")
-def _np_associative_scan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_associative_scan(backend_module, *args, **kwargs):
     """Evaluate _np_associative_scan operation.
 
     Args:
@@ -20,28 +20,28 @@ def _np_associative_scan(backend_module: object, *args: object, **kwargs: object
     """
     if len(args) < 2:
         return args[0]
-    fn: object = args[0]
-    elems: object = args[1]
-    axis: object = kwargs.get("axis", 0)
+    fn: np.ndarray = args[0]
+    elems: list = args[1]
+    axis: int = kwargs.get("axis", 0)
 
-    elems_arr: object = np.asarray(elems)
-    out: object = np.empty_like(elems_arr)
+    elems_arr: np.ndarray = np.asarray(elems)
+    out: np.ndarray = np.empty_like(elems_arr)
 
-    elems_arr: object = np.moveaxis(elems_arr, axis, 0)
-    out: object = np.moveaxis(out, axis, 0)
+    elems_arr: np.ndarray = np.moveaxis(elems_arr, axis, 0)
+    out: np.ndarray = np.moveaxis(out, axis, 0)
 
-    acc: object = elems_arr[0]
+    acc: np.ndarray = elems_arr[0]
     out[0] = acc
     for i in range(1, elems_arr.shape[0]):
-        acc: object = fn(acc, elems_arr[i])
+        acc: np.ndarray = fn(acc, elems_arr[i])
         out[i] = acc
 
-    out: object = np.moveaxis(out, 0, axis)
+    out: np.ndarray = np.moveaxis(out, 0, axis)
     return out
 
 
 @numpy_eager_registry.register("StopGradient")
-def _stop_gradient(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _stop_gradient(backend_module, x, *args, **kwargs):
     """Evaluate _stop_gradient operation.
 
     Args:

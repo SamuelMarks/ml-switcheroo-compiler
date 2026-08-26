@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, ite
 "Core abstractions and logic definitions for test_tensorflow_generator_coverage.py."
 
 
-def test_tensorflow_generator_coverage() -> object:
+def test_tensorflow_generator_coverage():
     """Test the tensorflow generator coverage behavior.
 
     Returns:

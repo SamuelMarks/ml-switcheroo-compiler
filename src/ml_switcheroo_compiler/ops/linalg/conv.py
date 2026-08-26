@@ -23,17 +23,13 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class ConvLocalHyperparams:
     """ConvLocalHyperparams."""
 
-    window_strides: object
-    padding: object
-    filter_shape: object
-
 
 @dispatch_eager("ConvGeneralDilated")
 def conv_general_dilated(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvConfig,
-) -> object:
+):
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
@@ -44,14 +40,14 @@ def conv_general_dilated(
     Returns:
         Tensor: Result.
     """
-    inputs: object = [lhs, rhs]
-    attributes: object = {
+    inputs = [lhs, rhs]
+    attributes = {
         "config": config,
     }
 
-    op: object = ConvGeneralDilated()
+    op = ConvGeneralDilated()
 
-    cfg: object = ConvConfig(
+    cfg = ConvConfig(
         config.window_strides,
         config.padding,
         config.lhs_dilation,
@@ -59,7 +55,7 @@ def conv_general_dilated(
         config.dimension_numbers,
         config.feature_group_count,
     )
-    out_shape: object = op.infer_shape(lhs, rhs, cfg)
+    out_shape = op.infer_shape(lhs, rhs, cfg)
 
     return _emit_linalg_node("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype])
 
@@ -69,8 +65,8 @@ def conv_general_dilated_local(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvLocalHyperparams,
-    **kwargs: object,
-) -> object:
+    **kwargs,
+):
     """ConvGeneralDilatedLocal.
 
     Args:
@@ -83,20 +79,20 @@ def conv_general_dilated_local(
         Tensor: Result.
     """
     window_strides, padding, filter_shape = config.window_strides, config.padding, config.filter_shape
-    inputs: object = [lhs, rhs]
-    attributes: object = {
+    inputs = [lhs, rhs]
+    attributes = {
         "window_strides": window_strides,
         "padding": padding,
         "filter_shape": filter_shape,
         **kwargs,
     }
 
-    out_shape: object = ConvGeneralDilatedLocal().infer_shape(lhs, rhs, **attributes)
+    out_shape = ConvGeneralDilatedLocal().infer_shape(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedLocal", inputs, attributes, [out_shape], [lhs.dtype])
 
 
 @dispatch_eager("ConvGeneralDilatedPatches")
-def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strides: object, padding: object, **kwargs: object) -> object:
+def conv_general_dilated_patches(lhs: Tensor, filter_shape, window_strides, padding, **kwargs):
     """ConvGeneralDilatedPatches.
 
     Args:
@@ -109,20 +105,20 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strid
     Returns:
         Tensor: Result.
     """
-    inputs: object = [lhs]
-    attributes: object = {
+    inputs = [lhs]
+    attributes = {
         "filter_shape": filter_shape,
         "window_strides": window_strides,
         "padding": padding,
         **kwargs,
     }
 
-    out_shape: object = ConvGeneralDilatedPatches().infer_shape(lhs, **attributes)
+    out_shape = ConvGeneralDilatedPatches().infer_shape(lhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedPatches", inputs, attributes, [out_shape], [lhs.dtype])
 
 
 @dispatch_eager("ConvWithGeneralPadding")
-def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: object, padding: object, **kwargs: object) -> object:
+def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides, padding, **kwargs):
     """ConvWithGeneralPadding.
 
     Args:
@@ -135,8 +131,8 @@ def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: object, 
     Returns:
         Tensor: Result.
     """
-    inputs: object = [lhs, rhs]
-    attributes: object = {"window_strides": window_strides, "padding": padding, **kwargs}
+    inputs = [lhs, rhs]
+    attributes = {"window_strides": window_strides, "padding": padding, **kwargs}
 
-    out_shape: object = ConvWithGeneralPadding().infer_shape(lhs, rhs, **attributes)
+    out_shape = ConvWithGeneralPadding().infer_shape(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvWithGeneralPadding", inputs, attributes, [out_shape], [lhs.dtype])

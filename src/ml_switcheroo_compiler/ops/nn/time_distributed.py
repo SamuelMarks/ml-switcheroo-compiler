@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, regis
 class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -32,8 +32,8 @@ class TimeDistributed(OpDef):
 @dispatch_eager("TimeDistributed")
 def time_distributed(
     x: Tensor,
-    **kwargs: object,
-) -> object:
+    **kwargs,
+):
     """TimeDistributed operation.
 
     Args:

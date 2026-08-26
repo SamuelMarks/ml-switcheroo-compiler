@@ -10,7 +10,7 @@ class GroupMean(OpDef):
 
     op_name: str = "GroupMean"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -29,7 +29,7 @@ class GroupVariance(OpDef):
 
     op_name: str = "GroupVariance"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -48,7 +48,7 @@ class GroupNorm(OpDef):
 
     op_name: str = "GroupNorm"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:

@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gau
 
 
 @numpy_eager_registry.register("RandomGaussianBlur")
-def _np_random_gaussian_blur(backend_module: object, images: object, kernel_size: object, sigma: object, **kwargs: object) -> object:
+def _np_random_gaussian_blur(backend_module, images, kernel_size, sigma, **kwargs):
     """Evaluate _np_random_gaussian_blur operation.
 
     Args:
@@ -23,7 +23,7 @@ def _np_random_gaussian_blur(backend_module: object, images: object, kernel_size
 
 
 @numpy_eager_registry.register("RandomSharpness")
-def _np_random_sharpness(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
+def _np_random_sharpness(backend_module, images, factor, **kwargs):
     """Evaluate _np_random_sharpness operation.
 
     Args:

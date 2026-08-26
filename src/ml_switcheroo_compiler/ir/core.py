@@ -15,7 +15,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.core.dtype import DType
 
 
-def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
+def clone_logical_node(node: LogicalNode, **kwargs) -> LogicalNode:
     """Clones a LogicalNode, allowing overrides via kwargs.
 
     Args:
@@ -25,10 +25,10 @@ def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
     Returns:
         LogicalNode: Result.
     """
-    attributes: object = dict(node.attributes)
-    inputs: object = list(node.inputs)
+    attributes = dict(node.attributes)
+    inputs = list(node.inputs)
 
-    clone_kwargs: object = {
+    clone_kwargs = {
         "id": node.id,
         "op_type": node.op_type,
         "domain": node.domain,
@@ -74,10 +74,10 @@ class IRNode(LogicalNode):
             ValueError: If the shape is dynamic or not available.
         """
         if self.shape_metadata is None or not isinstance(self.shape_metadata, (tuple, list)):
-            msg: object = "Shape metadata is not available or not a sequence."
+            msg = "Shape metadata is not available or not a sequence."
             raise ValueError(msg)
         if self.is_dynamic_shape:
-            msg: object = f"Cannot get static shape from dynamic node shape: {self.shape_metadata}"
+            msg = f"Cannot get static shape from dynamic node shape: {self.shape_metadata}"
             raise ValueError(msg)
         return tuple(int(dim) for dim in self.shape_metadata)
 
@@ -94,7 +94,7 @@ class IRNode(LogicalNode):
 
 
 # Re-export base IR classes
-IRGraph: object = LogicalGraph
+IRGraph = LogicalGraph
 
 
 @dataclass
@@ -109,7 +109,7 @@ class TensorSpec:
 
     shape: Sequence[int | str]
     dtype: DType
-    sparsity: dict[str, object] | None = None
+    sparsity = None
 
     @property
     def is_dynamic(self) -> bool:
@@ -131,7 +131,7 @@ class TensorSpec:
             ValueError: If the shape contains dynamic dimensions.
         """
         if self.is_dynamic:
-            msg: object = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
+            msg = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
             raise ValueError(msg)
         return tuple(int(dim) for dim in self.shape)
 
@@ -166,7 +166,7 @@ class IRBlock:
 class ZeroTangent(IRNode):
     """Represents a mathematically zero tangent (e.g. gradient wrt integer or unconnected)."""
 
-    def __init__(self, id: str, shape_metadata: object = None, **kwargs: object):
+    def __init__(self, id: str, shape_metadata=None, **kwargs):
         """__init__ function.
 
         Args:
@@ -197,7 +197,7 @@ class ZeroTangent(IRNode):
 class NoTangent(IRNode):
     """Represents a structurally missing or non-differentiable tangent path."""
 
-    def __init__(self, id: str, **kwargs: object):
+    def __init__(self, id: str, **kwargs):
         """__init__ function.
 
         Args:

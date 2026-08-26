@@ -11,9 +11,9 @@ from .conv3d import conv3d, conv3d_transpose
 from .conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
 from .conv_utils import GenericConvConfig
 
-conv_transpose1d: object = conv1d_transpose
-conv_transpose2d: object = conv2d_transpose
-conv_transpose3d: object = conv3d_transpose
+conv_transpose1d = conv1d_transpose
+conv_transpose2d = conv2d_transpose
+conv_transpose3d = conv3d_transpose
 
 __all__ = [
     "GenericConvConfig",

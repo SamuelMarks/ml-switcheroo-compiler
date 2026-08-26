@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def sobol_sample(dim: int, num_results: int, skip: int = 0) -> object:
+def sobol_sample(dim: int, num_results: int, skip: int = 0):
     """Sobol sequence generator.
 
     Args:
@@ -28,21 +28,21 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> object:
     Raises:
         RuntimeError: An exception.
     """
-    dtype: object = DType("float32")
-    out_shape: object = (num_results, dim)
-    device: object = config.default_device
+    dtype = DType("float32")
+    out_shape = (num_results, dim)
+    device = config.default_device
 
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("SobolSample", dim, num_results, skip)
+        backend = get_active_backend()
+        data = backend.execute_op("SobolSample", dim, num_results, skip)
         return Tensor(data, TensorConfig(out_shape, dtype, device))
 
     if not global_tracing_state.is_tracing:
-        msg: object = "Cannot emit node outside tracing context."
+        msg = "Cannot emit node outside tracing context."
         raise RuntimeError(msg)
 
-    out_id: object = str(uuid.uuid4())
-    node: object = LogicalNode(
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
         id=out_id,
         op_type="SobolSample",
         inputs=[],
@@ -51,5 +51,5 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> object:
     )
     global_tracing_state.add_node(node)
 
-    proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype.value)
+    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype.value)
     return Tensor(proxy, TensorConfig(out_shape, dtype, device))

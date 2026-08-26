@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Cholesky(OpDef):
     """Cholesky Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -29,7 +29,7 @@ class Cholesky(OpDef):
         return ()
 
 
-def cholesky(input: Tensor) -> object:
+def cholesky(input: Tensor):
     """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
@@ -41,8 +41,8 @@ def cholesky(input: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Cholesky", input.data)
+        backend = get_active_backend()
+        data = backend.execute_op("Cholesky", input.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     return _emit_linalg_node("Cholesky", [input], {}, [input.shape], [input.dtype])
 
@@ -51,7 +51,7 @@ def cholesky(input: Tensor) -> object:
 class CholeskyEx(OpDef):
     """CholeskyEx Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -64,7 +64,7 @@ class CholeskyEx(OpDef):
         return ()
 
 
-def cholesky_ex(input: Tensor, check_errors: bool = False) -> object:
+def cholesky_ex(input: Tensor, check_errors: bool = False):
     """Compute the Cholesky decomposition with an info tensor.
 
     Args:
@@ -77,7 +77,7 @@ def cholesky_ex(input: Tensor, check_errors: bool = False) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         L, info = backend.execute_op("CholeskyEx", input.data, check_errors=check_errors)
         return (
             Tensor(L, TensorConfig(L.shape, input.dtype, input.device)),

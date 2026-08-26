@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class TensorArrayRead(OpDef):
     """Tensor array read."""
 
-    op_name: object = "TensorArrayRead"
+    op_name = "TensorArrayRead"
 
-    def infer_shape(self, handle: object, index: object, **kwargs: object) -> object:
+    def infer_shape(self, handle, index, **kwargs):
         """Infer shape.
 
         Args:
@@ -29,9 +29,9 @@ class TensorArrayRead(OpDef):
 class TensorArrayWrite(OpDef):
     """Tensor array write."""
 
-    op_name: object = "TensorArrayWrite"
+    op_name = "TensorArrayWrite"
 
-    def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
+    def infer_shape(self, handle, index, value, **kwargs):
         """Infer shape.
 
         Args:
@@ -50,9 +50,9 @@ class TensorArrayWrite(OpDef):
 class TensorArrayStack(OpDef):
     """Tensor array stack."""
 
-    op_name: object = "TensorArrayStack"
+    op_name = "TensorArrayStack"
 
-    def infer_shape(self, handle: object, **kwargs: object) -> object:
+    def infer_shape(self, handle, **kwargs):
         """Infer shape.
 
         Args:
@@ -63,8 +63,8 @@ class TensorArrayStack(OpDef):
             tuple[int, ...]: Result.
         """
         # Adds a dimension
-        elem_shape: object = getattr(handle, "element_shape", ())
-        size: object = getattr(handle, "size", None)
+        elem_shape = getattr(handle, "element_shape", ())
+        size = getattr(handle, "size", None)
         if size is not None and isinstance(size, int):
             return (size,) + elem_shape
         return (None,) + elem_shape

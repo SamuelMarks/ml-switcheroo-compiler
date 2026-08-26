@@ -21,9 +21,9 @@ from ml_switcheroo_compiler.ops.unary import cos, exp, sin
 class RopeOp(OpDef):
     """Rotary Positional Encoding operation."""
 
-    op_name: object = "Rope"
+    op_name = "Rope"
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input, **kwargs):
         """Infer shape.
 
         Args:
@@ -41,7 +41,7 @@ def rope(
     axis: int,
     base: float = 10000.0,
     offset: int = 0,
-) -> object:
+):
     """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
@@ -54,7 +54,7 @@ def rope(
         The tensor with RoPE applied.
     """
     if config.eager_mode:
-        data: object = get_active_backend().execute_op(
+        data = get_active_backend().execute_op(
             "Rope",
             getattr(input, "data", input),
             axis=axis,
@@ -69,8 +69,8 @@ def sinusoidal_positional_encoding(
     seq_len: int,
     axis: int,
     base: float = 10000.0,
-    dtype: object = None,
-) -> object:
+    dtype=None,
+):
     """Generate sinusoidal positional encodings.
 
     Args:
@@ -82,18 +82,18 @@ def sinusoidal_positional_encoding(
     Returns:
         A tensor of shape (seq_len, axis) containing the encodings.
     """
-    position: object = arange(seq_len)
-    div_term: object = exp(multiply(arange(0, axis, 2), -math.log(base) / axis))
-    pe_sin: object = sin(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
-    pe_cos: object = cos(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
+    position = arange(seq_len)
+    div_term = exp(multiply(arange(0, axis, 2), -math.log(base) / axis))
+    pe_sin = sin(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
+    pe_cos = cos(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
     return concatenate([pe_sin, pe_cos], axis=-1)
 
 
 def alibi_mask(
     seq_len: int,
     num_heads: int,
-    dtype: object = None,
-) -> object:
+    dtype=None,
+):
     """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:
@@ -106,11 +106,11 @@ def alibi_mask(
     """
     # Create mask of shape (num_heads, seq_len, seq_len)
     # ALiBi biases attention scores by a linear penalty based on distance.
-    positions: object = arange(seq_len)
+    positions = arange(seq_len)
     # compute distances: [seq_len, seq_len]
     _ = subtract(expand_dims(positions, 0), expand_dims(positions, 1))
 
-    closest_power_of_2: object = 2 ** math.floor(math.log2(num_heads))
+    closest_power_of_2 = 2 ** math.floor(math.log2(num_heads))
     _ = 2 ** (-(2 ** -(math.log2(closest_power_of_2) - 3)))
 
     # We will return the base dist tensor for now.
@@ -121,9 +121,9 @@ def alibi_mask(
 class ScaledDotProductAttention(OpDef):
     """ScaledDotProductAttention OpDef."""
 
-    op_name: object = "ScaledDotProductAttention"
+    op_name = "ScaledDotProductAttention"
 
-    def infer_shape(self, query: object, key: object, value: object, **kwargs: object) -> object:
+    def infer_shape(self, query, key, value, **kwargs):
         """Infer shape.
 
         Args:

@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Hashing")
-def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs: object) -> object:
+def _np_hashing(backend_module, inputs, num_bins: int, **kwargs):
     """Evaluate _np_hashing operation.
 
     Args:
@@ -23,7 +23,7 @@ def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs:
 
 
 @numpy_eager_registry.register("IntegerLookup")
-def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_integer_lookup(backend_module, inputs, **kwargs):
     """Evaluate _np_integer_lookup operation.
 
     Args:
@@ -38,7 +38,7 @@ def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object)
 
 
 @numpy_eager_registry.register("Lookup")
-def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwargs: object) -> object:
+def _np_lookup(backend_module, inputs, vocabulary, **kwargs):
     """Evaluate _np_lookup operation.
 
     Args:
@@ -50,17 +50,17 @@ def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwa
     Returns:
             tuple[int, ...]: Result.
     """
-    inputs: object = np.asarray(inputs)
-    vocab: object = np.asarray(vocabulary)
+    inputs: np.ndarray = np.asarray(inputs)
+    vocab: np.ndarray = np.asarray(vocabulary)
     # basic mapping fallback
-    res: object = np.zeros_like(inputs, dtype=np.int32)
+    res: np.ndarray = np.zeros_like(inputs, dtype=np.int32)
     for i, v in enumerate(vocab):
         res[inputs == v] = i
     return res
 
 
 @numpy_eager_registry.register("StringLookup")
-def _np_string_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_string_lookup(backend_module, inputs, **kwargs):
     """Evaluate _np_string_lookup operation.
 
     Args:

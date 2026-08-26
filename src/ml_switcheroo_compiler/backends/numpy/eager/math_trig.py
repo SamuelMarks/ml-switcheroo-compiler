@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Sin")
-def _np_sin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_sin(backend_module, *args, **kwargs):
     """Evaluate _np_sin operation.
 
     Args:
@@ -20,7 +20,7 @@ def _np_sin(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Cos")
-def _np_cos(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cos(backend_module, *args, **kwargs):
     """Evaluate _np_cos operation.
 
     Args:
@@ -35,7 +35,7 @@ def _np_cos(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Acos")
-def _np_acos(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_acos(backend_module, *args, **kwargs):
     """Evaluate _np_acos operation.
 
     Args:
@@ -50,7 +50,7 @@ def _np_acos(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Acosh")
-def _np_acosh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_acosh(backend_module, *args, **kwargs):
     """Evaluate _np_acosh operation.
 
     Args:
@@ -65,7 +65,7 @@ def _np_acosh(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Asin")
-def _np_asin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_asin(backend_module, *args, **kwargs):
     """Evaluate _np_asin operation.
 
     Args:
@@ -80,7 +80,7 @@ def _np_asin(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Asinh")
-def _np_asinh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_asinh(backend_module, *args, **kwargs):
     """Evaluate _np_asinh operation.
 
     Args:
@@ -95,7 +95,7 @@ def _np_asinh(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Atan")
-def _np_atan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atan(backend_module, *args, **kwargs):
     """Evaluate _np_atan operation.
 
     Args:
@@ -110,7 +110,7 @@ def _np_atan(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Atanh")
-def _np_atanh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atanh(backend_module, *args, **kwargs):
     """Evaluate _np_atanh operation.
 
     Args:
@@ -125,7 +125,7 @@ def _np_atanh(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Atan2")
-def _np_atan2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atan2(backend_module, *args, **kwargs):
     """Evaluate _np_atan2 operation.
 
     Args:
@@ -140,7 +140,7 @@ def _np_atan2(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Deg2Rad")
-def _np_deg2rad(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_deg2rad(backend_module, *args, **kwargs):
     """Evaluate _np_deg2rad operation.
 
     Args:
@@ -155,7 +155,7 @@ def _np_deg2rad(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Rad2Deg")
-def _np_rad2deg(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rad2deg(backend_module, *args, **kwargs):
     """Evaluate _np_rad2deg operation.
 
     Args:

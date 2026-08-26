@@ -119,10 +119,10 @@ def test_grad_branches():
 
     fn = overwrite_with_gradient(1, 2)
 
-    def _overwrite_fwd(t: object, g: object):
+    def _overwrite_fwd(t, g):
         return (t, g)
 
-    def _overwrite_bwd(g: object, g_in: object):
+    def _overwrite_bwd(g, g_in):
         return (g, None)
 
     assert _overwrite_fwd(1, 2) == (1, 2)
@@ -170,7 +170,7 @@ def test_grad_overwrite_bwd():
 def test_custom_vjp_function_none() -> None:
     """Test the correctness and edge cases of the custom vjp function none functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x
 
     cg = CustomVJPFunction(f)
@@ -180,7 +180,7 @@ def test_custom_vjp_function_none() -> None:
 def test_value_and_grad_wrt_vars() -> None:
     """Test the correctness and edge cases of the value and grad wrt vars functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x
 
     wrapped = value_and_grad_wrt_vars(f)
@@ -192,7 +192,7 @@ def test_value_and_grad_wrt_vars() -> None:
 def test_custom_jvp() -> None:
     """Test the correctness and edge cases of the custom jvp functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x
 
     assert custom_jvp(f) == f
@@ -202,7 +202,7 @@ def test_register_gradient() -> None:
     """Test the correctness and edge cases of the register gradient functionality."""
     dec = RegisterGradient("my_op")
 
-    def f(*args: object) -> object:
+    def f(*args):
         pass
 
     dec(f)
@@ -211,7 +211,7 @@ def test_register_gradient() -> None:
 def test_checkpoint_remat() -> None:
     """Test the correctness and edge cases of the checkpoint remat functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x
 
     assert callable(checkpoint(f))
@@ -222,10 +222,10 @@ def test_checkpoint_remat() -> None:
 def test_jvp_vjp_hvp() -> None:
     """Test the correctness and edge cases of the jvp vjp hvp functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x * 2
 
-    def f_aux(x: object) -> object:
+    def f_aux(x):
         return (x * 2, {"a": 1})
 
     (val, tan) = jvp(f_aux, (1.0,), (0.5,), has_aux=True)
@@ -272,7 +272,7 @@ def test_jvp_vjp_hvp() -> None:
 def test_ir_grad() -> None:
     """Test the correctness and edge cases of the ir grad functionality."""
 
-    def f(x: object) -> object:
+    def f(x):
         return x
 
     ir_grad(f)

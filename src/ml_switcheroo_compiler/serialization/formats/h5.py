@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, Weig
 class H5WeightFormat(WeightLoader, WeightSaver):
     """H5 weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, object]:
+    def load(self, filepath: str):
         """Load h5 weights.
 
         Args:
@@ -20,14 +20,14 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         if hasattr(backend, "load_h5"):
             return backend.load_h5(filepath)
 
-        result: object = {}
+        result = {}
         with h5py.File(filepath, "r") as f:
 
-            def _visit(name: str, node: object) -> None:
+            def _visit(name: str, node) -> None:
                 """Visit h5py items to extract datasets.
 
                 Args:
@@ -40,7 +40,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
             f.visititems(_visit)
         return result
 
-    def save(self, weights_np: dict[str, object], filepath: str) -> None:
+    def save(self, weights_np, filepath: str) -> None:
         """Save h5 weights.
 
         Args:
@@ -52,7 +52,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         if hasattr(backend, "save_h5"):
             backend.save_h5(weights_np, filepath)
             return
@@ -60,9 +60,9 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         with h5py.File(filepath, "w") as f:
             for k, v in weights_np.items():
                 if hasattr(v, "numpy"):
-                    v: object = v.numpy()
+                    v = v.numpy()
                 elif hasattr(v, "data") and hasattr(v.data, "numpy"):
-                    v: object = v.data.numpy()
+                    v = v.data.numpy()
                 elif hasattr(v, "tolist"):
-                    v: object = v.tolist()
+                    v = v.tolist()
                 f.create_dataset(k, data=v)

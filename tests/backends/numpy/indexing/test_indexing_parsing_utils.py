@@ -1,7 +1,6 @@
 """Tests for numpy eager indexing parsing utils."""
 
 import ast
-from typing import Any
 
 import numpy as np
 import pytest
@@ -43,7 +42,7 @@ def test_eval_slice_call() -> None:
         keywords=[],
     )
 
-    def dummy_eval(n: ast.AST) -> Any:
+    def dummy_eval(n: ast.AST):
         return getattr(n, "value", None)
 
     s = _eval_slice_call(node, dummy_eval)
@@ -65,7 +64,7 @@ def test_eval_array_call() -> None:
         keywords=[],
     )
 
-    def dummy_eval(n: ast.AST) -> Any:
+    def dummy_eval(n: ast.AST):
         return getattr(n, "value", None)
 
     arr = _eval_array_call(node, dummy_eval)
@@ -97,7 +96,7 @@ def test_eval_call() -> None:
         None
     """
 
-    def dummy_eval(n: ast.AST) -> Any:
+    def dummy_eval(n: ast.AST):
         return getattr(n, "value", None)
 
     node_slice = ast.Call(func=ast.Name(id="slice", ctx=ast.Load()), args=[ast.Constant(value=1)], keywords=[])
@@ -142,7 +141,7 @@ def test_eval_unary_op() -> None:
         None
     """
 
-    def dummy_eval(n: ast.AST) -> Any:
+    def dummy_eval(n: ast.AST):
         return getattr(n, "value", None)
 
     node = ast.UnaryOp(op=ast.USub(), operand=ast.Constant(value=5))

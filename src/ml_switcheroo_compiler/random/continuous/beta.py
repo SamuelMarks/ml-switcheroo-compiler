@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def beta(key: object, a: object, b: object, shape: object = None, dtype: object = None) -> object:
+def beta(key, a, b, shape=None, dtype=None):
     """Sample beta random values from a given key.
 
     Args:
@@ -24,6 +24,6 @@ def beta(key: object, a: object, b: object, shape: object = None, dtype: object 
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape: object = ()
-    dtype: object = dtype or dtypes.DType.Float32
+        shape = ()
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("Beta", [key, a, b], shape, dtype)

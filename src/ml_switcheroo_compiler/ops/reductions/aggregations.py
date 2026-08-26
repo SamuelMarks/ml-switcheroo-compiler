@@ -17,7 +17,7 @@ class Sum(ReductionOp):
     Computes the sum of elements across specified dimensions of an input tensor
     """
 
-    op_name: object = "Sum"
+    op_name = "Sum"
 
 
 @register_op("Max")
@@ -28,7 +28,7 @@ class Max(ReductionOp):
     tensor
     """
 
-    op_name: object = "Max"
+    op_name = "Max"
 
 
 @register_op("Min")
@@ -39,7 +39,7 @@ class Min(ReductionOp):
     tensor
     """
 
-    op_name: object = "Min"
+    op_name = "Min"
 
 
 @register_op("Prod")
@@ -49,8 +49,8 @@ class Prod(ReductionOp):
     Computes the product of elements across specified dimensions of an input tensor
     """
 
-    op_name: object = "Prod"
-    np_op_name: object = "prod"
+    op_name = "Prod"
+    np_op_name = "prod"
 
 
 @register_op("Argmax")
@@ -61,8 +61,8 @@ class Argmax(ReductionOp):
     input tensor
     """
 
-    op_name: object = "Argmax"
-    np_op_name: object = "argmax"
+    op_name = "Argmax"
+    np_op_name = "argmax"
 
 
 @register_op("Argmin")
@@ -73,8 +73,8 @@ class Argmin(ReductionOp):
     input tensor
     """
 
-    op_name: object = "Argmin"
-    np_op_name: object = "argmin"
+    op_name = "Argmin"
+    np_op_name = "argmin"
 
 
 @register_op("Logsumexp")
@@ -85,8 +85,8 @@ class Logsumexp(ReductionOp):
     dimensions
     """
 
-    op_name: object = "Logsumexp"
-    np_op_name: object = "logsumexp"
+    op_name = "Logsumexp"
+    np_op_name = "logsumexp"
 
 
 @register_op("CountNonzero")
@@ -97,8 +97,8 @@ class CountNonzero(ReductionOp):
     tensor
     """
 
-    op_name: object = "CountNonzero"
-    np_op_name: object = "count_nonzero"
+    op_name = "CountNonzero"
+    np_op_name = "count_nonzero"
 
 
 @register_op("Norm")
@@ -108,8 +108,8 @@ class Norm(ReductionOp):
     Computes the norm of elements across specified dimensions of an input tensor
     """
 
-    op_name: object = "Norm"
-    np_op_name: object = "norm"
+    op_name = "Norm"
+    np_op_name = "norm"
 
 
 @register_op("Cumsum")
@@ -120,14 +120,14 @@ class Cumsum(ReductionOp):
     tensor
     """
 
-    op_name: object = "Cumsum"
-    np_op_name: object = "cumsum"
+    op_name = "Cumsum"
+    np_op_name = "cumsum"
 
 
 class NaryMathOp(OpDef):
     """Define base class for N-ary mathematical operations (operations taking a list of tensors)."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -137,7 +137,7 @@ class NaryMathOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        inputs: object = args[0] if len(args) > 0 else kwargs.get("inputs")
+        inputs = args[0] if len(args) > 0 else kwargs.get("inputs")
         # Assume all inputs have the same shape
         if isinstance(inputs, (list, tuple)) and len(inputs) > 0:
             return getattr(inputs[0], "shape", ())
@@ -148,62 +148,62 @@ class NaryMathOp(OpDef):
 class AddN(NaryMathOp):
     """AddN operation."""
 
-    op_name: object = "AddN"
+    op_name = "AddN"
 
 
 @register_op("AccumulateN")
 class AccumulateN(NaryMathOp):
     """AccumulateN operation."""
 
-    op_name: object = "AccumulateN"
+    op_name = "AccumulateN"
 
 
 @register_op("CumulativeLogsumexp")
 class CumulativeLogsumexp(ReductionOp):
     """Cumulative log-sum-exp reduction operation."""
 
-    op_name: object = "CumulativeLogsumexp"
+    op_name = "CumulativeLogsumexp"
 
 
 @register_op("ReduceEuclideanNorm")
 class ReduceEuclideanNorm(ReductionOp):
     """ReduceEuclideanNorm operation."""
 
-    op_name: object = "ReduceEuclideanNorm"
+    op_name = "ReduceEuclideanNorm"
 
 
 @register_op("Cummax")
 class Cummax(ReductionOp):
     """Cummax."""
 
-    op_name: object = "Cummax"
+    op_name = "Cummax"
 
 
 @register_op("Cummin")
 class Cummin(ReductionOp):
     """Cummin."""
 
-    op_name: object = "Cummin"
+    op_name = "Cummin"
 
 
 @register_op("Cumprod")
 class Cumprod(ReductionOp):
     """Cumprod."""
 
-    op_name: object = "Cumprod"
-    np_op_name: object = "cumprod"
+    op_name = "Cumprod"
+    np_op_name = "cumprod"
 
 
 @register_op("Cumlogsumexp")
 class Cumlogsumexp(ReductionOp):
     """Cumlogsumexp."""
 
-    op_name: object = "Cumlogsumexp"
+    op_name = "Cumlogsumexp"
 
 
 @register_op("Logcumsumexp")
 class Logcumsumexp(ReductionOp):
     """Logcumsumexp operation."""
 
-    op_name: object = "Logcumsumexp"
-    np_op_name: object = "logcumsumexp"  # fake numpy op, backend should handle
+    op_name = "Logcumsumexp"
+    np_op_name = "logcumsumexp"  # fake numpy op, backend should handle

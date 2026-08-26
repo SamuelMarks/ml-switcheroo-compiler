@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("All")
-def _np_all(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_all(backend_module, *args, **kwargs):
     """Evaluate _np_all operation.
 
     Args:
@@ -20,7 +20,7 @@ def _np_all(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("CountNonzero")
-def _np_count_nonzero(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_count_nonzero(backend_module, *args, **kwargs):
     """Evaluate _np_count_nonzero operation.
 
     Args:

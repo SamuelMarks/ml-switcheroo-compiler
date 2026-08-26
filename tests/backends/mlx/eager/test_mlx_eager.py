@@ -9,7 +9,7 @@ import pytest
 from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 
 
-def test_mlx_eager_coverage_part1() -> object:
+def test_mlx_eager_coverage_part1():
     """Test the mlx eager coverage part1 behavior.
 
     Returns:
@@ -50,7 +50,7 @@ def test_mlx_eager_coverage_part1() -> object:
         pass
 
 
-def test_mlx_eager_coverage_part2() -> object:
+def test_mlx_eager_coverage_part2():
     """Test the mlx eager coverage part2 behavior.
 
     Returns:

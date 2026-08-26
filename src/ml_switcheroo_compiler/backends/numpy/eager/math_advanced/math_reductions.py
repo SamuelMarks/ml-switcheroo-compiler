@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Pmean")
-def _np_pmean(backend_module: object, x: object, axis_name: object, *args: object, **kwargs: object) -> object:
+def _np_pmean(backend_module, x, axis_name, *args, **kwargs):
     """Evaluate _np_pmean operation.
 
     Args:
@@ -30,7 +30,7 @@ def _np_pmean(backend_module: object, x: object, axis_name: object, *args: objec
 
 
 @numpy_eager_registry.register("Psum")
-def _np_psum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_psum(backend_module, *args, **kwargs):
     """Evaluate _np_psum operation.
 
     Args:
@@ -44,13 +44,13 @@ def _np_psum(backend_module: object, *args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
     if _tcp_dist_ctx.world_size > 1:
-        tensor: object = backend_module.array(args[0])
+        tensor = backend_module.array(args[0])
         return _tcp_dist_ctx.all_reduce_ring(tensor, op_type="sum", backend_module=backend_module)
     return backend_module.array(args[0])
 
 
 @numpy_eager_registry.register("ReducePrecision")
-def _np_reduce_precision(backend_module: object, x: object, exponent_bits: int, mantissa_bits: int) -> object:
+def _np_reduce_precision(backend_module, x, exponent_bits: int, mantissa_bits: int):
     """Reduce the precision of a tensor to a specified number of exponent and mantissa bits.
 
     Args:
@@ -59,13 +59,13 @@ def _np_reduce_precision(backend_module: object, x: object, exponent_bits: int, 
         exponent_bits (int): The exponent_bits parameter.
         mantissa_bits (int): The mantissa_bits parameter.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.asarray(x).astype(np.float16).astype(np.asarray(x).dtype)
 
 
 @numpy_eager_registry.register("SparseReduceMax")
-def _np_sparsereducemax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_sparsereducemax(backend_module, *args, **kwargs):
     """Implement SparseReduceMax.
 
     Args:

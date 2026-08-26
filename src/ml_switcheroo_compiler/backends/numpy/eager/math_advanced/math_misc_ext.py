@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("TruncateDiv")
-def _np_truncate_div(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_truncate_div(backend_module, *args, **kwargs):
     """Evaluate _np_truncate_div operation.
 
     Args:
@@ -28,7 +28,7 @@ def _np_truncate_div(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("TruncateMod")
-def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_truncate_mod(backend_module, *args, **kwargs):
     """Evaluate _np_truncate_mod operation.
 
     Args:
@@ -44,7 +44,7 @@ def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("Betainc")
-def _np_betainc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_betainc(backend_module, *args, **kwargs):
     """Evaluate _np_betainc operation.
 
     Args:
@@ -64,7 +64,7 @@ def _np_betainc(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Trapz")
-def _np_trapz(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trapz(backend_module, *args, **kwargs):
     """Integrate along the given axis using the composite trapezoidal rule.
 
     Args:
@@ -72,13 +72,13 @@ def _np_trapz(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.trapz(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Uint")
-def _np_uint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_uint(backend_module, *args, **kwargs):
     """Cast or create an array as unsigned integers of default width.
 
     Args:
@@ -86,13 +86,13 @@ def _np_uint(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.array(args[0], dtype=np.uint, **kwargs)
 
 
 @numpy_eager_registry.register("Uint8")
-def _np_uint8(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_uint8(backend_module, *args, **kwargs):
     """Cast or create an array as 8-bit unsigned integers.
 
     Args:
@@ -100,13 +100,13 @@ def _np_uint8(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.array(args[0], dtype=np.uint8, **kwargs)
 
 
 @numpy_eager_registry.register("UnravelIndex")
-def _np_unravelindex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_unravelindex(backend_module, *args, **kwargs):
     """Convert a flat index or array of flat indices into a tuple of coordinate arrays.
 
     Args:
@@ -114,13 +114,13 @@ def _np_unravelindex(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.unravel_index(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Unwrap")
-def _np_unwrap(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_unwrap(backend_module, *args, **kwargs):
     """Unwrap by changing deltas between values to 2*pi complement.
 
     Args:
@@ -128,13 +128,13 @@ def _np_unwrap(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.unwrap(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Vectorize")
-def _np_vectorize(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_vectorize(backend_module, *args, **kwargs):
     """Return a vectorized function which takes a nested sequence of objects or numpy arrays as inputs.
 
     Args:
@@ -142,13 +142,13 @@ def _np_vectorize(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.vectorize(args[0], **kwargs)(*args[1:])
 
 
 @numpy_eager_registry.register("Average")
-def _np_average(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_average(backend_module, *args, **kwargs):
     """Evaluate _np_average operation.
 
     Args:
@@ -163,7 +163,7 @@ def _np_average(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Block")
-def _np_block(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_block(backend_module, *args, **kwargs):
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
@@ -171,13 +171,13 @@ def _np_block(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.block(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Atleast1d")
-def _np_atleast_1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_1d(backend_module, *args, **kwargs):
     """Convert inputs to arrays with at least one dimension.
 
     Args:
@@ -185,13 +185,13 @@ def _np_atleast_1d(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.atleast_1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Atleast2d")
-def _np_atleast_2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_2d(backend_module, *args, **kwargs):
     """View inputs as arrays with at least two dimensions.
 
     Args:
@@ -199,13 +199,13 @@ def _np_atleast_2d(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.atleast_2d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Atleast3d")
-def _np_atleast_3d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_atleast_3d(backend_module, *args, **kwargs):
     """View inputs as arrays with at least three dimensions.
 
     Args:
@@ -213,13 +213,13 @@ def _np_atleast_3d(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.atleast_3d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ApplyOverAxes")
-def _np_apply_over_axes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_apply_over_axes(backend_module, *args, **kwargs):
     """Apply a function repeatedly over multiple axes.
 
     Args:
@@ -227,13 +227,13 @@ def _np_apply_over_axes(backend_module: object, *args: object, **kwargs: object)
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.apply_over_axes(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CorrCoef")
-def _np_corrcoef(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_corrcoef(backend_module, *args, **kwargs):
     """Return Pearson product-moment correlation coefficients.
 
     Args:
@@ -241,13 +241,13 @@ def _np_corrcoef(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.corrcoef(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Cov")
-def _np_cov(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cov(backend_module, *args, **kwargs):
     """Estimate a covariance matrix, given data and weights.
 
     Args:
@@ -255,13 +255,13 @@ def _np_cov(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.cov(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ArrayRepr")
-def _np_array_repr_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_array_repr_(backend_module, *args, **kwargs):
     """Implement ArrayRepr via array_repr.
 
     Args:
@@ -269,13 +269,13 @@ def _np_array_repr_(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.array_repr(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ArrayStr")
-def _np_array_str_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_array_str_(backend_module, *args, **kwargs):
     """Implement ArrayStr via array_str.
 
     Args:
@@ -283,13 +283,13 @@ def _np_array_str_(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.array_str(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diff")
-def _np_diff_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diff_(backend_module, *args, **kwargs):
     """Implement Diff via diff.
 
     Args:
@@ -297,13 +297,13 @@ def _np_diff_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.diff(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Digitize")
-def _np_digitize_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_digitize_(backend_module, *args, **kwargs):
     """Implement Digitize via digitize.
 
     Args:
@@ -311,13 +311,13 @@ def _np_digitize_(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.digitize(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ediff1d")
-def _np_ediff1d_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_ediff1d_(backend_module, *args, **kwargs):
     """Implement Ediff1d via ediff1d.
 
     Args:
@@ -325,13 +325,13 @@ def _np_ediff1d_(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.ediff1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("EinsumPath")
-def _np_einsum_path_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_einsum_path_(backend_module, *args, **kwargs):
     """Implement EinsumPath via einsum_path.
 
     Args:
@@ -339,13 +339,13 @@ def _np_einsum_path_(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.einsum_path(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fabs")
-def _np_fabs_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fabs_(backend_module, *args, **kwargs):
     """Implement Fabs via fabs.
 
     Args:
@@ -353,13 +353,13 @@ def _np_fabs_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.fabs(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Interp")
-def _np_interp_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_interp_(backend_module, *args, **kwargs):
     """Implement Interp via interp.
 
     Args:
@@ -367,13 +367,13 @@ def _np_interp_(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.interp(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Iterable")
-def _np_iterable_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_iterable_(backend_module, *args, **kwargs):
     """Implement Iterable via iterable.
 
     Args:
@@ -381,13 +381,13 @@ def _np_iterable_(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.iterable(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ix")
-def _np_ix__(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_ix__(backend_module, *args, **kwargs):
     """Implement Ix via ix_.
 
     Args:
@@ -395,13 +395,13 @@ def _np_ix__(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.ix_(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Kron")
-def _np_kron_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_kron_(backend_module, *args, **kwargs):
     """Implement Kron via kron.
 
     Args:
@@ -409,13 +409,13 @@ def _np_kron_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.kron(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Load")
-def _np_load_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_load_(backend_module, *args, **kwargs):
     """Implement Load via load.
 
     Args:
@@ -423,13 +423,13 @@ def _np_load_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.load(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Modf")
-def _np_modf_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_modf_(backend_module, *args, **kwargs):
     """Implement Modf via modf.
 
     Args:
@@ -437,13 +437,13 @@ def _np_modf_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.modf(*args, **kwargs)
 
 
 @numpy_eager_registry.register("RavelMultiIndex")
-def _np_ravel_multi_index_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_ravel_multi_index_(backend_module, *args, **kwargs):
     """Implement RavelMultiIndex via ravel_multi_index.
 
     Args:
@@ -451,13 +451,13 @@ def _np_ravel_multi_index_(backend_module: object, *args: object, **kwargs: obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.ravel_multi_index(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Trapezoid")
-def _np_trapz_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trapz_(backend_module, *args, **kwargs):
     """Implement Trapezoid via trapz.
 
     Args:
@@ -465,13 +465,13 @@ def _np_trapz_(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.trapz(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Callable")
-def _np_callable(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_callable(backend_module, *args, **kwargs):
     """Implement Callable.
 
     Args:
@@ -488,7 +488,7 @@ def _np_callable(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("DebugInfs")
-def _np_debuginfs(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_debuginfs(backend_module, *args, **kwargs):
     """Implement DebugInfs.
 
     Args:
@@ -502,14 +502,14 @@ def _np_debuginfs(backend_module: object, *args: object, **kwargs: object) -> ob
     Raises:
         ValueError: An exception.
     """
-    x: object = args[0]
+    x = args[0]
     if backend_module.any(backend_module.isinf(x)):
         raise ValueError("Infinity found in tensor.")
     return x
 
 
 @numpy_eager_registry.register("DebugNans")
-def _np_debugnans(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_debugnans(backend_module, *args, **kwargs):
     """Implement DebugNans.
 
     Args:
@@ -523,13 +523,13 @@ def _np_debugnans(backend_module: object, *args: object, **kwargs: object) -> ob
     Raises:
         ValueError: An exception.
     """
-    x: object = args[0]
+    x = args[0]
     if backend_module.any(backend_module.isnan(x)):
         raise ValueError("NaN found in tensor.")
     return x
 
 
-def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers: tuple[object, ...]) -> str:
+def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers) -> str:
     """Evaluate _build_dot_general_einsum_str operation.
 
     Args:
@@ -541,9 +541,9 @@ def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_number
         str: Result.
     """
     ((lhs_cont, rhs_cont), (lhs_batch, rhs_batch)) = dimension_numbers
-    batch_chars: object = [chr(ord("a") + i) for i in range(len(lhs_batch))]
-    cont_chars: object = [chr(ord("a") + len(lhs_batch) + i) for i in range(len(lhs_cont))]
-    current_char: object = ord("a") + len(lhs_batch) + len(lhs_cont)
+    batch_chars = [chr(ord("a") + i) for i in range(len(lhs_batch))]
+    cont_chars = [chr(ord("a") + len(lhs_batch) + i) for i in range(len(lhs_cont))]
+    current_char = ord("a") + len(lhs_batch) + len(lhs_cont)
     (lhs_str, rhs_str) = ([""] * lhs_ndim, [""] * rhs_ndim)
     for i, (lb, rb) in enumerate(zip(lhs_batch, rhs_batch)):
         lhs_str[lb] = rhs_str[rb] = batch_chars[i]
@@ -560,12 +560,12 @@ def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_number
             rhs_str[i] = chr(current_char)
             out_rhs.append(chr(current_char))
             current_char += 1
-    out_str: object = "".join(batch_chars) + "".join(out_lhs) + "".join(out_rhs)
+    out_str = "".join(batch_chars) + "".join(out_lhs) + "".join(out_rhs)
     return "".join(lhs_str) + "," + "".join(rhs_str) + "->" + out_str
 
 
 @numpy_eager_registry.register("DotGeneral")
-def _np_dotgeneral(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dotgeneral(backend_module, *args, **kwargs):
     """Implement DotGeneral.
 
     Args:
@@ -577,13 +577,13 @@ def _np_dotgeneral(backend_module: object, *args: object, **kwargs: object) -> o
             tuple[int, ...]: Result.
     """
     (lhs, rhs) = (np.asarray(args[0]), np.asarray(args[1]))
-    dimension_numbers: object = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ())))
-    einsum_str: object = _build_dot_general_einsum_str(lhs.ndim, rhs.ndim, dimension_numbers)
+    dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ())))
+    einsum_str = _build_dot_general_einsum_str(lhs.ndim, rhs.ndim, dimension_numbers)
     return np.einsum(einsum_str, lhs, rhs)
 
 
 @numpy_eager_registry.register("RaggedDot")
-def _np_raggeddot(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_raggeddot(backend_module, *args, **kwargs):
     """Implement RaggedDot.
 
     Args:
@@ -598,7 +598,7 @@ def _np_raggeddot(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("Tensor")
-def _np_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tensor(backend_module, *args, **kwargs):
     """Implement Tensor.
 
     Args:
@@ -615,7 +615,7 @@ def _np_tensor(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Rem")
-def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rem(backend_module, *args, **kwargs):
     """Evaluate _np_rem operation.
 
     Args:
@@ -626,15 +626,15 @@ def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = _get_np_arg(args, 0)
-    b: object = _get_np_arg(args, 1)
+    a = _get_np_arg(args, 0)
+    b = _get_np_arg(args, 1)
     if a is None or b is None:
         return None
     return np.remainder(a, b)
 
 
 @numpy_eager_registry.register("serialize_tensor")
-def _np_serialize_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_serialize_tensor(backend_module, *args, **kwargs):
     """Evaluate _np_serialize_tensor operation.
 
     Args:
@@ -649,7 +649,7 @@ def _np_serialize_tensor(backend_module: object, *args: object, **kwargs: object
 
 
 @numpy_eager_registry.register("Descriptive")
-def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_descriptive(backend_module, *args, **kwargs):
     """Evaluate _np_descriptive operation.
 
     Args:
@@ -660,14 +660,14 @@ def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = _get_np_arg(args, 0)
+    a = _get_np_arg(args, 0)
     if a is None:
         return None
     return {"mean": np.mean(a), "std": np.std(a), "min": np.min(a), "max": np.max(a)}
 
 
 @numpy_eager_registry.register("Key")
-def _np_key(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_key(backend_module, *args, **kwargs):
     """Evaluate _np_key operation.
 
     Args:
@@ -683,7 +683,7 @@ def _np_key(backend_module: object, *args: object, **kwargs: object) -> object:
     return np.array([0, 0], dtype=np.uint32)
 
 
-def _get_np_arg(arg: Sequence[object], i: int) -> np.ndarray | None:
+def _get_np_arg(arg, i: int) -> np.ndarray | None:
     """Get numpy arg.
 
     Args:
@@ -696,7 +696,7 @@ def _get_np_arg(arg: Sequence[object], i: int) -> np.ndarray | None:
     return np.asarray(arg[i]) if len(arg) > i else None
 
 
-def _get_sc() -> object:
+def _get_sc():
     """_get_sc function.
 
     Returns:
@@ -711,7 +711,7 @@ def _get_sc() -> object:
 
 
 @numpy_eager_registry.register("Clip")
-def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_clip(backend_module, *args, **kwargs):
     """Evaluate _np_clip operation.
 
     Args:
@@ -722,16 +722,16 @@ def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = _get_np_arg(args, 0)
+    a = _get_np_arg(args, 0)
     if a is None:
         return None
-    a_min: object = kwargs.get("a_min", _get_np_arg(args, 1))
-    a_max: object = kwargs.get("a_max", _get_np_arg(args, 2))
+    a_min = kwargs.get("a_min", _get_np_arg(args, 1))
+    a_max = kwargs.get("a_max", _get_np_arg(args, 2))
     return np.clip(a, a_min, a_max)
 
 
 @numpy_eager_registry.register("OneHot")
-def _np_one_hot(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_one_hot(backend_module, *args, **kwargs):
     """Evaluate _np_one_hot operation.
 
     Args:
@@ -742,25 +742,25 @@ def _np_one_hot(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    indices: object = _get_np_arg(args, 0)
-    depth: object = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None)
+    indices = _get_np_arg(args, 0)
+    depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None)
     if indices is None or depth is None:
         return None
-    on_value: object = kwargs.get("on_value", 1)
-    off_value: object = kwargs.get("off_value", 0)
-    axis: object = kwargs.get("axis", -1)
-    dtype: object = kwargs.get("dtype", float)
-    depth_int: object = int(np.asarray(depth).item())
-    out: object = np.eye(depth_int, dtype=dtype)[indices]
+    on_value = kwargs.get("on_value", 1)
+    off_value = kwargs.get("off_value", 0)
+    axis = kwargs.get("axis", -1)
+    dtype = kwargs.get("dtype", float)
+    depth_int = int(np.asarray(depth).item())
+    out = np.eye(depth_int, dtype=dtype)[indices]
     if axis != -1:
-        out: object = np.moveaxis(out, -1, axis)
-    out: object = out * (on_value - off_value) + off_value
-    out: object = out.astype(dtype)
+        out = np.moveaxis(out, -1, axis)
+    out = out * (on_value - off_value) + off_value
+    out = out.astype(dtype)
     return out
 
 
 @numpy_eager_registry.register("SerializeTensor")
-def _np_serialize_tensor_camel(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_serialize_tensor_camel(backend_module, *args, **kwargs):
     """Evaluate _np_serialize_tensor_camel operation.
 
     Args:
@@ -787,7 +787,7 @@ def _np_serialize_tensor_camel(backend_module: object, *args: object, **kwargs: 
 
 
 @numpy_eager_registry.register("rem")
-def _np_rem_2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rem_2(backend_module, *args, **kwargs):
     """Evaluate _np_rem operation.
 
     Args:
@@ -805,7 +805,7 @@ def _np_rem_2(backend_module: object, *args: object, **kwargs: object) -> object
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "rem"):
-            cls_or_func: object = _ops.rem
+            cls_or_func = _ops.rem
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
     except Exception:
@@ -816,7 +816,7 @@ def _np_rem_2(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("descriptive")
-def _np_descriptive_2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_descriptive_2(backend_module, *args, **kwargs):
     """Evaluate _np_descriptive operation.
 
     Args:
@@ -834,19 +834,19 @@ def _np_descriptive_2(backend_module: object, *args: object, **kwargs: object) -
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "descriptive"):
-            cls_or_func: object = _ops.descriptive
+            cls_or_func = _ops.descriptive
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
     except Exception:
         pass
     if hasattr(backend_module, "descriptive"):
         return backend_module.descriptive(*args, **kwargs)
-    arr: object = np.asarray(args[0]) if args else np.zeros((1,))
+    arr = np.asarray(args[0]) if args else np.zeros((1,))
     return np.array([np.mean(arr), np.var(arr), np.std(arr)])
 
 
 @numpy_eager_registry.register("Rem")
-def _np_rem_3(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rem_3(backend_module, *args, **kwargs):
     """_np_rem_3 function.
 
     Args:
@@ -864,8 +864,8 @@ def _np_rem_3(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
         object: Result.
     """
-    a: object = _get_np_arg(args, 0)
-    b: object = _get_np_arg(args, 1)
+    a = _get_np_arg(args, 0)
+    b = _get_np_arg(args, 1)
     if a is None or b is None:
         return None
     return np.remainder(a, b)

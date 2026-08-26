@@ -27,7 +27,7 @@ from .utils import _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _g
 
 
 @register_util("backward")
-def backward(tensor: object, *args: object, **kwargs: object) -> None:
+def backward(tensor, *args, **kwargs) -> None:
     """Triggers the reverse-mode auto-differentiation.
 
     Args:
@@ -50,15 +50,15 @@ def backward(tensor: object, *args: object, **kwargs: object) -> None:
     _check_scalar(tensor)
 
     # 3. Extract the active graph
-    graph: object = global_tracing_state.active_graph
+    graph = global_tracing_state.active_graph
 
     # 4. Find all active variables/tensors in memory that require gradients and are in the graph
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
     # 5. Extract target loss node ID
-    loss_id: object = getattr(tensor.data, "id", None)
+    loss_id = getattr(tensor.data, "id", None)
     if loss_id is None:
-        loss_id: object = str(tensor.data)
+        loss_id = str(tensor.data)
 
     if not wrt_ids:
         # No variables require gradients
@@ -68,22 +68,22 @@ def backward(tensor: object, *args: object, **kwargs: object) -> None:
     # 6. Run the graph-level gradient generator
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 
-    grad_graph: object = graph_grad(graph, wrt_ids, loss_id)
+    grad_graph = graph_grad(graph, wrt_ids, loss_id)
 
     # 7. Map input node IDs to their concrete values for evaluate_graph
-    inputs_dict: object = _get_inputs_dict(graph)
+    inputs_dict = _get_inputs_dict(graph)
 
     # 8. Evaluate the constructed gradient graph using evaluate_graph
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    outputs_dict: object = evaluate_graph(grad_graph, inputs_dict)
+    outputs_dict = evaluate_graph(grad_graph, inputs_dict)
 
     # 9. Traverse the wrt list and assign computed NumPy gradient arrays to .grad attributes
     for i in range(len(wrt_ids)):
-        grad_node_id: object = grad_graph.outputs[i]
+        grad_node_id = grad_graph.outputs[i]
         if grad_node_id in outputs_dict:
-            grad_val: object = outputs_dict[grad_node_id]
-            t: object = wrt_tensors[i]
+            grad_val = outputs_dict[grad_node_id]
+            t = wrt_tensors[i]
             t.grad = grad_val
 
 
@@ -99,7 +99,7 @@ def RegisterGradient(op_type: str) -> typing.Callable:
     return register_vjp(op_type)
 
 
-def overwrite_with_gradient(tensor: object, gradient: object) -> object:
+def overwrite_with_gradient(tensor, gradient):
     """Overwrite the gradient of the tensor in the backward pass.
 
     During the forward pass, this returns the `tensor` unchanged.
@@ -109,22 +109,22 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
         tensor (object): The input tensor.
         gradient (object): The gradient value to use in the backward pass.
 
-    Returns: object: The tensor with the overridden backward pass gradient.
+    Returns: Tensor: The tensor with the overridden backward pass gradient.
     """
 
     @custom_vjp
-    def _overwrite(t: object, g: object) -> object:
+    def _overwrite(t, g):
         """Overwrite the gradient during the backward pass.
 
         Args:
             t (object): The primal tensor.
             g (object): The gradient to overwrite with.
 
-        Returns: object: The primal tensor unchanged.
+        Returns: Tensor: The primal tensor unchanged.
         """
         return t
 
-    def _overwrite_fwd(t: object, g: object) -> tuple[object, object]:
+    def _overwrite_fwd(t, g):
         """Forward pass for overwriting a gradient.
 
         Args:
@@ -136,7 +136,7 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
         """
         return t, g
 
-    def _overwrite_bwd(g: object, g_in: object) -> tuple[object, object]:
+    def _overwrite_bwd(g, g_in):
         """Backward pass for overwriting a gradient.
 
         Args:
@@ -152,7 +152,7 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
     return _overwrite(tensor, gradient)
 
 
-def ir_grad(fun: Callable[..., object], options: object = None) -> Callable[..., object]:
+def ir_grad(fun, options=None):
     """Return a gradient wrapper.
 
     Args:
@@ -162,9 +162,9 @@ def ir_grad(fun: Callable[..., object], options: object = None) -> Callable[...,
     Returns:
         Callable: The wrapper function.
     """
-    options: object = options or GradOptions()
+    options = options or GradOptions()
 
-    def wrapped(*args: object, **kwargs: object) -> object:
+    def wrapped(*args, **kwargs):
         """Evaluate wrapped operation.
 
         Args:
@@ -180,7 +180,7 @@ def ir_grad(fun: Callable[..., object], options: object = None) -> Callable[...,
     return wrapped
 
 
-def grad(fun: Callable[..., object], options: object = None) -> Callable[..., object]:
+def grad(fun, options=None):
     """Return a gradient wrapper.
 
     Args:
@@ -190,9 +190,9 @@ def grad(fun: Callable[..., object], options: object = None) -> Callable[..., ob
     Returns:
         Callable: The wrapper function.
     """
-    options: object = options or GradOptions()
+    options = options or GradOptions()
 
-    def wrapped(*args: object, **kwargs: object) -> object:
+    def wrapped(*args, **kwargs):
         """Evaluate wrapped operation.
 
         Args:
@@ -210,7 +210,7 @@ def grad(fun: Callable[..., object], options: object = None) -> Callable[..., ob
     return wrapped
 
 
-def value_and_grad(fun: Callable[..., object], options: object = None) -> Callable[..., object]:
+def value_and_grad(fun, options=None):
     """Return a gradient wrapper.
 
     Args:
@@ -220,9 +220,9 @@ def value_and_grad(fun: Callable[..., object], options: object = None) -> Callab
     Returns:
         Callable: The wrapper function.
     """
-    options: object = options or GradOptions()
+    options = options or GradOptions()
 
-    def wrapped(*args: object, **kwargs: object) -> object:
+    def wrapped(*args, **kwargs):
         """Evaluate wrapped operation.
 
         Args:
@@ -240,7 +240,7 @@ def value_and_grad(fun: Callable[..., object], options: object = None) -> Callab
     return wrapped
 
 
-def hook_gradient(tensor: object, hook: Callable[[object], object]) -> object:
+def hook_gradient(tensor, hook):
     """Register a custom gradient hook on a tensor.
 
     During the forward pass, this returns the `tensor` unchanged.
@@ -256,7 +256,7 @@ def hook_gradient(tensor: object, hook: Callable[[object], object]) -> object:
     """
 
     @custom_vjp
-    def _hook_op(t: object) -> object:
+    def _hook_op(t):
         """Apply the hook op.
 
         Args:
@@ -267,7 +267,7 @@ def hook_gradient(tensor: object, hook: Callable[[object], object]) -> object:
         """
         return t
 
-    def _hook_fwd(t: object) -> tuple[object, object]:
+    def _hook_fwd(t):
         """Forward pass for the hook.
 
         Args:
@@ -278,7 +278,7 @@ def hook_gradient(tensor: object, hook: Callable[[object], object]) -> object:
         """
         return t, t
 
-    def _hook_bwd(res: object, g_in: object) -> tuple[object]:
+    def _hook_bwd(res, g_in):
         """Backward pass for the hook.
 
         Args:
@@ -288,9 +288,9 @@ def hook_gradient(tensor: object, hook: Callable[[object], object]) -> object:
         Returns:
             tuple[object]: The processed gradient.
         """
-        out_g: object = hook(g_in)
+        out_g = hook(g_in)
         if out_g is None:
-            out_g: object = g_in
+            out_g = g_in
         return (out_g,)
 
     _hook_op.defvjp(_hook_fwd, _hook_bwd)

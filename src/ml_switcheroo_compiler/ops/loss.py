@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis, where
 from ml_switcheroo_compiler.ops.unary import abs, log, square
 
 
-def l1_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def l1_loss(y_true: Tensor, y_pred: Tensor):
     """L1 Loss.
 
     Args:
@@ -36,7 +36,7 @@ def l1_loss(y_true: Tensor, y_pred: Tensor) -> object:
     return mean(abs(subtract(y_true, y_pred)))
 
 
-def mse_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def mse_loss(y_true: Tensor, y_pred: Tensor):
     """Mean Squared Error Loss.
 
     Args:
@@ -49,7 +49,7 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> object:
     return mean(square(subtract(y_true, y_pred)))
 
 
-def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> object:
+def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0):
     """Huber Loss.
 
     Args:
@@ -60,19 +60,19 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> object:
     Returns:
         Tensor: Result.
     """
-    error: object = subtract(y_true, y_pred)
-    abs_error: object = abs(error)
+    error = subtract(y_true, y_pred)
+    abs_error = abs(error)
 
     # 0.5 * x^2
-    quadratic: object = multiply(0.5, square(error))
+    quadratic = multiply(0.5, square(error))
     # delta * (|x| - 0.5 * delta)
-    linear: object = multiply(delta, subtract(abs_error, 0.5 * delta))
+    linear = multiply(delta, subtract(abs_error, 0.5 * delta))
 
-    loss: object = where(less_equal(abs_error, delta), quadratic, linear)
+    loss = where(less_equal(abs_error, delta), quadratic, linear)
     return mean(loss)
 
 
-def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> object:
+def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0):
     """Smooth L1 Loss (similar to Huber with beta).
 
     Args:
@@ -86,17 +86,17 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> object:
     if beta < 1e-5:
         return l1_loss(y_true, y_pred)
 
-    error: object = subtract(y_true, y_pred)
-    abs_error: object = abs(error)
+    error = subtract(y_true, y_pred)
+    abs_error = abs(error)
 
-    quadratic: object = divide(multiply(0.5, square(error)), beta)
-    linear: object = subtract(abs_error, 0.5 * beta)
+    quadratic = divide(multiply(0.5, square(error)), beta)
+    linear = subtract(abs_error, 0.5 * beta)
 
-    loss: object = where(less_equal(abs_error, beta), quadratic, linear)
+    loss = where(less_equal(abs_error, beta), quadratic, linear)
     return mean(loss)
 
 
-def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> object:
+def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1):
     """Cosine Similarity Loss.
 
     Args:
@@ -107,15 +107,15 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> ob
     Returns:
         Tensor: Result.
     """
-    y_true_norm: object = l2_normalize(y_true, axis=axis)
-    y_pred_norm: object = l2_normalize(y_pred, axis=axis)
+    y_true_norm = l2_normalize(y_true, axis=axis)
+    y_pred_norm = l2_normalize(y_pred, axis=axis)
 
-    cos_sim: object = sum(multiply(y_true_norm, y_pred_norm), axis=axis)
+    cos_sim = sum(multiply(y_true_norm, y_pred_norm), axis=axis)
     # Loss is typically 1 - cosine_similarity
     return mean(subtract(1.0, cos_sim))
 
 
-def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def kl_div_loss(y_true: Tensor, y_pred: Tensor):
     """Kullback-Leibler divergence loss.
 
     Args:
@@ -126,14 +126,14 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> object:
         Tensor: Result.
     """
     # only compute where y_true > 0 to avoid log(0)
-    safe_y_true: object = where(greater(y_true, 0.0), y_true, ones_like(y_true))
-    true_log: object = multiply(y_true, log(safe_y_true))
+    safe_y_true = where(greater(y_true, 0.0), y_true, ones_like(y_true))
+    true_log = multiply(y_true, log(safe_y_true))
 
-    kl: object = subtract(true_log, multiply(y_true, y_pred))
+    kl = subtract(true_log, multiply(y_true, y_pred))
     return mean(kl)
 
 
-def hinge_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def hinge_loss(y_true: Tensor, y_pred: Tensor):
     """Hinge loss. y_true should be -1 or 1.
 
     Args:
@@ -143,11 +143,11 @@ def hinge_loss(y_true: Tensor, y_pred: Tensor) -> object:
     Returns:
         Tensor: Result.
     """
-    margin: object = subtract(1.0, multiply(y_true, y_pred))
+    margin = subtract(1.0, multiply(y_true, y_pred))
     return mean(maximum(0.0, margin))
 
 
-def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> object:
+def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6):
     """Gaussian Negative Log Likelihood loss.
 
     Args:
@@ -160,16 +160,16 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
         Tensor: Result.
     """
     # 0.5 * (log(max(var, eps)) + (y_true - y_pred)^2 / max(var, eps)) + const
-    var_safe: object = maximum(var, eps)
+    var_safe = maximum(var, eps)
 
-    term1: object = log(var_safe)
-    term2: object = divide(square(subtract(y_true, y_pred)), var_safe)
+    term1 = log(var_safe)
+    term2 = divide(square(subtract(y_true, y_pred)), var_safe)
 
-    loss: object = multiply(0.5, add(term1, term2))
+    loss = multiply(0.5, add(term1, term2))
     return mean(loss)
 
 
-def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def log_cosh_loss(y_true: Tensor, y_pred: Tensor):
     """Log-Cosh loss.
 
     Args:
@@ -182,18 +182,18 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> object:
     # log(cosh(y_pred - y_true))
     # We can use the approximation: x + softplus(-2x) - log(2)
     # or just use log(cosh(x)) if cosh is safe.
-    error: object = subtract(y_pred, y_true)
+    error = subtract(y_pred, y_true)
 
     # More numerically stable: log(cosh(x)) = |x| + softplus(-2|x|) - log(2)
-    abs_error: object = abs(error)
-    stable_logcosh: object = subtract(
+    abs_error = abs(error)
+    stable_logcosh = subtract(
         add(abs_error, softplus(multiply(-2.0, abs_error))),
         0.6931471805599453,  # log(2)
     )
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> object:
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0):
     """Margin Ranking Loss.
 
     Args:
@@ -206,12 +206,12 @@ def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: 
         Tensor: Result.
     """
     # max(0, -target * (input1 - input2) + margin)
-    diff: object = subtract(input1, input2)
-    loss: object = add(multiply(multiply(-1.0, target), diff), margin)
+    diff = subtract(input1, input2)
+    loss = add(multiply(multiply(-1.0, target), diff), margin)
     return mean(maximum(0.0, loss))
 
 
-def nll_loss(y_pred: Tensor, y_true: Tensor) -> object:
+def nll_loss(y_pred: Tensor, y_true: Tensor):
     """Negative log likelihood loss.
 
     Args:
@@ -223,12 +223,12 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> object:
     """
     # Gather the log probs corresponding to target indices
     # y_true needs to be expanded
-    y_true_expanded: object = expand_dims(y_true, axis=-1)
-    gathered: object = take_along_axis(y_pred, y_true_expanded, axis=-1)
+    y_true_expanded = expand_dims(y_true, axis=-1)
+    gathered = take_along_axis(y_pred, y_true_expanded, axis=-1)
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> object:
+def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0):
     """Triplet margin loss.
 
     Args:
@@ -242,13 +242,13 @@ def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: flo
         Tensor: Result.
     """
     if p == 2.0:
-        d_pos: object = sum(square(subtract(anchor, positive)), axis=-1)
-        d_neg: object = sum(square(subtract(anchor, negative)), axis=-1)
+        d_pos = sum(square(subtract(anchor, positive)), axis=-1)
+        d_neg = sum(square(subtract(anchor, negative)), axis=-1)
     else:
-        d_pos: object = sum(abs(subtract(anchor, positive)), axis=-1)
-        d_neg: object = sum(abs(subtract(anchor, negative)), axis=-1)
+        d_pos = sum(abs(subtract(anchor, positive)), axis=-1)
+        d_neg = sum(abs(subtract(anchor, negative)), axis=-1)
 
-    loss: object = maximum(0.0, add(subtract(d_pos, d_neg), margin))
+    loss = maximum(0.0, add(subtract(d_pos, d_neg), margin))
     return mean(loss)
 
 
@@ -278,7 +278,7 @@ __all__ = [
 ]
 
 
-def msle_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def msle_loss(y_true: Tensor, y_pred: Tensor):
     """Mean Squared Logarithmic Error.
 
     Args:
@@ -289,14 +289,14 @@ def msle_loss(y_true: Tensor, y_pred: Tensor) -> object:
         Tensor: Result.
     """
     # mean(square(log(y_pred + 1) - log(y_true + 1)))
-    safe_pred: object = maximum(y_pred, 0.0)
-    safe_true: object = maximum(y_true, 0.0)
-    log_pred: object = log(add(safe_pred, 1.0))
-    log_true: object = log(add(safe_true, 1.0))
+    safe_pred = maximum(y_pred, 0.0)
+    safe_true = maximum(y_true, 0.0)
+    log_pred = log(add(safe_pred, 1.0))
+    log_true = log(add(safe_true, 1.0))
     return mean(square(subtract(log_pred, log_true)))
 
 
-def mape_loss(y_true: Tensor, y_pred: Tensor) -> object:
+def mape_loss(y_true: Tensor, y_pred: Tensor):
     """Mean Absolute Percentage Error.
 
     Args:
@@ -307,18 +307,18 @@ def mape_loss(y_true: Tensor, y_pred: Tensor) -> object:
         Tensor: Result.
     """
     # mean(abs((y_true - y_pred) / max(y_true, eps))) * 100
-    eps: object = 1e-7
-    diff: object = abs(subtract(y_true, y_pred))
-    safe_true: object = maximum(abs(y_true), eps)
+    eps = 1e-7
+    diff = abs(subtract(y_true, y_pred))
+    safe_true = maximum(abs(y_true), eps)
     return multiply(mean(divide(diff, safe_true)), 100.0)
 
 
 # Aliases
-msle: object = msle_loss
-mape: object = mape_loss
-kullback_leibler_divergence: object = kl_div_loss
-kld: object = kl_div_loss
-logcosh: object = log_cosh_loss
+msle = msle_loss
+mape = mape_loss
+kullback_leibler_divergence = kl_div_loss
+kld = kl_div_loss
+logcosh = log_cosh_loss
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -327,9 +327,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class CircleLoss(OpDef):
     """CircleLoss operation."""
 
-    op_name: object = "CircleLoss"
+    op_name = "CircleLoss"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -346,9 +346,9 @@ class CircleLoss(OpDef):
 class CategoricalGeneralizedCrossEntropy(OpDef):
     """CategoricalGeneralizedCrossEntropy operation."""
 
-    op_name: object = "CategoricalGeneralizedCrossEntropy"
+    op_name = "CategoricalGeneralizedCrossEntropy"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -361,7 +361,7 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
         return ()
 
 
-def ctc_loss(*args: object, **kwargs: object) -> object:
+def ctc_loss(*args, **kwargs):
     """ctc_loss function.
 
     Args:
@@ -376,7 +376,7 @@ def ctc_loss(*args: object, **kwargs: object) -> object:
     return get_op("CtcLoss")()(*args, **kwargs)
 
 
-def circle_loss(*args: object, **kwargs: object) -> object:
+def circle_loss(*args, **kwargs):
     """circle_loss function.
 
     Args:
@@ -391,7 +391,7 @@ def circle_loss(*args: object, **kwargs: object) -> object:
     return get_op("CircleLoss")()(*args, **kwargs)
 
 
-def categorical_generalized_cross_entropy(*args: object, **kwargs: object) -> object:
+def categorical_generalized_cross_entropy(*args, **kwargs):
     """categorical_generalized_cross_entropy function.
 
     Args:

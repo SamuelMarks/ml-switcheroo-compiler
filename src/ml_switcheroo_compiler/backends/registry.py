@@ -98,7 +98,7 @@ _LOADERS = {
     "edge_wasm_simd": _load_edge_wasm_simd,
 }
 
-BackendName: object = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
+BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
 
 
 class BackendRegistry:
@@ -176,11 +176,11 @@ class BackendRegistry:
             ValueError: If the specified backend is not found or cannot be loaded.
         """
         cls._try_load_lazy(name)
-        resolved_name: object = cls._resolve_alias(name)
+        resolved_name = cls._resolve_alias(name)
 
         if resolved_name not in cls._registry:
-            keys: object = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())
-            msg: object = f"Backend '{name}' not found. Available: {keys}"
+            keys = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())
+            msg = f"Backend '{name}' not found. Available: {keys}"
             raise ValueError(msg)
         return cls._registry[resolved_name]
 

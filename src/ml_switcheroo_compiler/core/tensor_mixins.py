@@ -42,7 +42,7 @@ class TensorPropertiesMixin:
         """
         # if there are strings in shape (unknown dims), return a ProxyTensor?
         # for eager evaluation, size should evaluate natively.
-        prod: object = 1
+        prod = 1
         for s in self._shape:
             if isinstance(s, str):
                 return None
@@ -87,7 +87,7 @@ class TensorPropertiesMixin:
         return self._requires_grad
 
     @property
-    def data(self) -> object:
+    def data(self):
         """Get the underlying data payload.
 
         Returns:
@@ -99,7 +99,7 @@ class TensorPropertiesMixin:
 class TensorConversionMixin:
     """Tensor conversion mixin."""
 
-    def numpy(self) -> object:
+    def numpy(self):
         """Convert the tensor to a NumPy array.
 
         Returns:
@@ -112,7 +112,7 @@ class TensorConversionMixin:
         except Exception:
             return get_active_backend().asarray(self._data)
 
-    def __array__(self, dtype: object = None) -> object:
+    def __array__(self, dtype=None):
         """Array.
 
         Args:
@@ -123,12 +123,12 @@ class TensorConversionMixin:
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
 
         if hasattr(self.data, "id"):
-            data: object = backend.zeros(self.shape)
+            data = backend.zeros(self.shape)
         else:
-            data: object = self.data
+            data = self.data
 
         try:
             return backend.array(data, dtype=dtype) if dtype is not None else backend.asarray(data)
@@ -143,7 +143,7 @@ class TensorConversionMixin:
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
 
         if self.eval().__class__.__name__ == "Tensor":
             return backend.item(self.eval().data)
@@ -182,10 +182,10 @@ class TensorConversionMixin:
         Raises:
             ValueError: If the tensor has more than one element.
         """
-        arr: object = self.__array__()
+        arr = self.__array__()
         if getattr(arr, "size", 1) == 1:
             return bool(getattr(arr, "item", lambda: arr)())
-        msg: object = "The truth value of an array with more than one element is ambiguous."
+        msg = "The truth value of an array with more than one element is ambiguous."
         raise ValueError(
             msg,
         )
@@ -198,7 +198,7 @@ class TensorConversionMixin:
         """
         return self.shape[0] if self.shape else 0
 
-    def __iter__(self) -> object:
+    def __iter__(self):
         """Iterate over the first dimension of the tensor.
 
         Yields:
@@ -207,8 +207,8 @@ class TensorConversionMixin:
         Raises:
             TypeError: If the tensor is 0-dimensional.
         """
-        arr: object = self.__array__()
-        shape: object = getattr(arr, "shape", [0])
+        arr = self.__array__()
+        shape = getattr(arr, "shape", [0])
         if not shape:
             raise TypeError("iteration over a 0-d tensor")
         for i in range(shape[0]):
@@ -220,7 +220,7 @@ class TensorConversionMixin:
 class TensorIndexingMixin:
     """Tensor indexing mixin."""
 
-    def __getitem__(self, key: object) -> "Tensor":
+    def __getitem__(self, key) -> "Tensor":
         """Retrieve elements from the tensor.
 
         Args:
@@ -233,19 +233,19 @@ class TensorIndexingMixin:
             IndexError: If the index is out of bounds or invalid.
             RuntimeError: If tracing but not in an active tracing context.
         """
-        arr: object = self.__array__()
+        arr = self.__array__()
         if hasattr(key, "data"):
-            key: object = key.data
+            key = key.data
         elif isinstance(key, tuple):
-            key: object = tuple(getattr(k, "data", k) for k in key)
+            key = tuple(getattr(k, "data", k) for k in key)
 
         try:
-            res: object = arr[tuple(key) if isinstance(key, list) else key]
-            res_shape: object = getattr(res, "shape", ())
+            res = arr[tuple(key) if isinstance(key, list) else key]
+            res_shape = getattr(res, "shape", ())
         except IndexError as e:
             if config.eager_mode:
                 raise
-            res_shape: object = ()
+            res_shape = ()
             # If we are in dummy mode, we might want to still raise if it's clearly out of bounds
             # like too many indices for a known shape. But if the key has a ProxyTensor, NumPy
             # will raise IndexError: only integers... We want to let it pass and build a node,
@@ -260,10 +260,10 @@ class TensorIndexingMixin:
 
             return Tensor(res, TensorConfig(res_shape, self.dtype, self.device))
 
-        nid: object = f"getitem_{uuid.uuid4().hex[:6]}"
-        input_id: object = getattr(self.data, "id", "const")
+        nid = f"getitem_{uuid.uuid4().hex[:6]}"
+        input_id = getattr(self.data, "id", "const")
 
-        node: object = LogicalNode(
+        node = LogicalNode(
             id=nid,
             op_type="GetItem",
             inputs=[input_id],
@@ -279,7 +279,7 @@ class TensorIndexingMixin:
 
         return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
 
-    def __setitem__(self, key: object, value: object) -> None:
+    def __setitem__(self, key, value) -> None:
         """Set elements in the tensor (only supported in eager mode).
 
         Args:
@@ -290,10 +290,10 @@ class TensorIndexingMixin:
             TypeError: If attempted during tracing.
         """
         if config.eager_mode:
-            val: object = getattr(value, "data", value)
+            val = getattr(value, "data", value)
             self.data[key] = val
         else:
-            msg: object = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
+            msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
             raise TypeError(msg)
 
     @property

@@ -1,8 +1,8 @@
 """Tests for the build_registry script."""
 
 import os
-import runpy
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import yaml
@@ -50,4 +50,6 @@ def test_build_registry_main(monkeypatch: pytest.MonkeyPatch) -> None:
     Args:
         monkeypatch (pytest.MonkeyPatch): Pytest fixture for monkeypatching.
     """
-    runpy.run_path("scripts/build_registry.py", run_name="__main__")
+    with patch("scripts.build_registry.build") as mock_build:
+        br.main()
+        mock_build.assert_called_once()

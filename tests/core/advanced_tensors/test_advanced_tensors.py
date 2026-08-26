@@ -14,7 +14,7 @@ def test_sparse_tensor() -> None:
     """Test the sparse tensor behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test SparseTensor."
     indices = Tensor(np.array([[0, 0], [1, 2]]), TensorConfig((2, 2), "int32", None))
@@ -27,7 +27,7 @@ def test_ragged_tensor() -> None:
     """Test the ragged tensor behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test RaggedTensor."
     values = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), "float32", None))
@@ -40,7 +40,7 @@ def test_tensor_array_eager() -> None:
     """Test the tensor array eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test TensorArray eager."
     with ConfigContext(eager_mode=True):

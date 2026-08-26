@@ -31,7 +31,7 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
+    def __call__(self, *args, **kwargs):
         """Universal dispatcher for the operation.
 
         Args:
@@ -43,7 +43,7 @@ class OpDef:
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -72,7 +72,7 @@ class OpDef:
         """
         ...
 
-    def eager_eval(self, *args: object, **kwargs: object) -> object:
+    def eager_eval(self, *args, **kwargs):
         """Evaluate eager_eval operation.
 
         Args:
@@ -84,16 +84,16 @@ class OpDef:
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         return backend.execute_op(self.op_type, *args, **kwargs)
 
 
 def emit_ir_node(
-    graph: object,
+    graph,
     op_type: str,
     inputs: list[str],
-    shape_metadata: object = None,
-    attributes: dict[str, object] | None = None,
+    shape_metadata=None,
+    attributes=None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 
@@ -107,8 +107,8 @@ def emit_ir_node(
     Returns:
         str: Result.
     """
-    nid: object = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
-    node: object = LogicalNode(
+    nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
+    node = LogicalNode(
         id=nid,
         op_type=op_type,
         inputs=inputs,
@@ -124,7 +124,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str) -> Callable[..., object]:
+def dispatch_eager(op_name: str):
     """Evaluate dispatch_eager operation.
 
     Args:
@@ -134,7 +134,7 @@ def dispatch_eager(op_name: str) -> Callable[..., object]:
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., object]) -> Callable[..., object]:
+    def decorator(func):
         """Evaluate decorator operation.
 
         Args:
@@ -145,7 +145,7 @@ def dispatch_eager(op_name: str) -> Callable[..., object]:
         """
 
         @functools.wraps(func)
-        def wrapper(*args: object, **kwargs: object) -> object:
+        def wrapper(*args, **kwargs):
             """Evaluate wrapper operation.
 
             Args:
@@ -158,12 +158,12 @@ def dispatch_eager(op_name: str) -> Callable[..., object]:
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-                backend: object = get_active_backend()
-                raw_args: object = [a.data if isinstance(a, Tensor) else a for a in args]
-                data: object = backend.execute_op(op_name, *raw_args, **kwargs)
-                first_tensor: object = next((a for a in args if isinstance(a, Tensor)), None)
-                device: object = first_tensor.device if first_tensor is not None else None
-                dtype: object = first_tensor.dtype if first_tensor is not None else None
+                backend = get_active_backend()
+                raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
+                data = backend.execute_op(op_name, *raw_args, **kwargs)
+                first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
+                device = first_tensor.device if first_tensor is not None else None
+                dtype = first_tensor.dtype if first_tensor is not None else None
                 if isinstance(data, tuple):
                     return tuple(
                         Tensor(

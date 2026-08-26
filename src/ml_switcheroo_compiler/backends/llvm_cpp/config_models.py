@@ -10,7 +10,7 @@ class CppTemplateConfig(BaseModel):
 
     body: Optional[str] = None
     includes: Optional[list[str]] = None
-    model_config: object = {"extra": "allow"}
+    model_config = {"extra": "allow"}
 
 
 class CppTemplatesConfig(BaseModel):
@@ -18,6 +18,6 @@ class CppTemplatesConfig(BaseModel):
 
     templates: dict[str, CppTemplateConfig]
 
-    def model_dump(self, *args: object, **kwargs: object) -> object:
+    def model_dump(self, *args, **kwargs):
         """Return dict representation."""
         return super().model_dump(*args, **kwargs)

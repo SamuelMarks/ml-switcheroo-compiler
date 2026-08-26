@@ -27,8 +27,8 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
     Returns:
         str: Result.
     """
-    new_id: object = f"cast_{uuid.uuid4().hex[:6]}"
-    new_node: object = LogicalNode(
+    new_id = f"cast_{uuid.uuid4().hex[:6]}"
+    new_node = LogicalNode(
         id=new_id,
         op_type="Cast",
         inputs=[input_id],
@@ -66,8 +66,8 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
     Returns:
         bool: A boolean indicating the result of the check.
     """
-    modified: object = False
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    modified = False
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     dtype_inference_pass(graph)
 
@@ -76,19 +76,19 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
             continue
 
         in1, in2 = node.inputs
-        dt1: object = graph.nodes[in1].attributes.get("dtype")
-        dt2: object = graph.nodes[in2].attributes.get("dtype")
+        dt1 = graph.nodes[in1].attributes.get("dtype")
+        dt2 = graph.nodes[in2].attributes.get("dtype")
 
-        target_dt: object = _needs_cast(dt1, dt2)
+        target_dt = _needs_cast(dt1, dt2)
         if target_dt is None:
             continue
 
         if dt1 != target_dt:
             node.inputs[0] = _inject_cast_node(graph, in1, target_dt)
-            modified: object = True
+            modified = True
 
         if dt2 != target_dt:
             node.inputs[1] = _inject_cast_node(graph, in2, target_dt)
-            modified: object = True
+            modified = True
 
     return modified

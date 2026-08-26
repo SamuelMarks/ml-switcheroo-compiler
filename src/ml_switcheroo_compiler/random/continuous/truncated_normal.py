@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def truncated_normal(key: object, lower: object, upper: object, shape: object = (), dtype: object = None) -> object:
+def truncated_normal(key, lower, upper, shape=(), dtype=None):
     """Return an initializer that generates arrays from a truncated normal distribution.
 
     Args:
@@ -23,5 +23,5 @@ def truncated_normal(key: object, lower: object, upper: object, shape: object = 
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = dtype or dtypes.DType.Float32
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomTruncatedNormal", [key], shape, dtype, {"lower": lower, "upper": upper})

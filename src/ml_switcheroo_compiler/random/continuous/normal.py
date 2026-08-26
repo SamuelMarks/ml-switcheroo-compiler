@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def normal(key: object, shape: object = (), dtype: object = None) -> object:
+def normal(key, shape=(), dtype=None):
     """Sample standard normal random values from a given key.
 
     Args:
@@ -21,5 +21,5 @@ def normal(key: object, shape: object = (), dtype: object = None) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = dtype or dtypes.DType.Float32
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomNormal", [key], shape, dtype)

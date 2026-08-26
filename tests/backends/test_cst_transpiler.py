@@ -78,12 +78,12 @@ def test_transpile_source_import() -> None:
 
     transformer = CSTTransformer("jax")
     dummy_names = [cst.ImportAlias(name=cst.Name("foo"))]
-    node = cst.ImportFrom(module=cst.Integer("1"), names=dummy_names)  # type: ignore
+    node = cst.ImportFrom(module=cst.Integer("1"), names=dummy_names)
     assert transformer.leave_ImportFrom(node, node) is node
 
     # Test _get_base_name fallback (Line 79)
     # create a mock Attribute with a non-Name/non-Attribute value
-    mock_attr = cst.Attribute(value=cst.Integer("1"), attr=cst.Name("core"))  # type: ignore
+    mock_attr = cst.Attribute(value=cst.Integer("1"), attr=cst.Name("core"))
     node_attr = cst.ImportFrom(module=mock_attr, names=dummy_names)
     assert transformer.leave_ImportFrom(node_attr, node_attr) is node_attr
 

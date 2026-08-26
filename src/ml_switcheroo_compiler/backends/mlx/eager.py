@@ -11,24 +11,24 @@ import mlx.core as mx
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, mlx_eager_registry
 
 
-def _get_mlx_func(op_type: str) -> object:
+def _get_mlx_func(op_type: str):
     """Retrieve the corresponding MLX function for a given operation type.
 
     Args:
         op_type (str): The name of the operation.
 
-    Returns: object: The MLX function if found, otherwise None.
+    Returns: mx.array: The MLX function if found, otherwise None.
     """
     import re
 
-    s1: object = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
-    snake: object = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+    s1: str = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+    snake: str = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
     if snake == "mul":
-        snake: object = "multiply"
+        snake: str = "multiply"
     elif snake == "sub":
-        snake: object = "subtract"
+        snake: str = "subtract"
     elif snake == "div":
-        snake: object = "divide"
+        snake: str = "divide"
     for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
         if mod is not None and hasattr(mod, snake):
             return getattr(mod, snake)
@@ -36,7 +36,7 @@ def _get_mlx_func(op_type: str) -> object:
 
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args, **kwargs):
     """Evaluate execute_op operation.
 
     Args:
@@ -52,13 +52,13 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         BackendNotSupportedError: An exception.
     """
     try:
-        func_registry: object = mlx_eager_registry.get(op_type)
+        func_registry = mlx_eager_registry.get(op_type)
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
-        func_registry: object = global_eager_registry.get(op_type)
+        func_registry = global_eager_registry.get(op_type)
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
-        func: object = _get_mlx_func(op_type)
+        func = _get_mlx_func(op_type)
         if func is None:
             raise AttributeError(f"No attribute found for {op_type}")
         return func(*args, **kwargs)
@@ -69,7 +69,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 
 
 @mlx_eager_registry.register("Cast")
-def _mlx_cast(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_cast(backend_module, *args, **kwargs):
     """Evaluate _mlx_cast operation.
 
     Args:
@@ -80,16 +80,16 @@ def _mlx_cast(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: object = args[0]
-    dtype_val: object = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dtype: object = _resolve_dtype(backend_module, dtype_val)
+    tensor: str = args[0]
+    dtype_val: float = kwargs.get("dtype") if "dtype" in kwargs else args[1]
+    dtype: str = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return tensor
     return tensor.astype(dtype)
 
 
 @mlx_eager_registry.register("RaggedTensorToDense")
-def _mlx_ragged_tensor_to_dense(backend_module: object, rt_input: object, **kwargs: object) -> object:
+def _mlx_ragged_tensor_to_dense(backend_module, rt_input, **kwargs):
     """Convert a ragged tensor to dense using MLX (stubbed).
 
     Args:
@@ -97,13 +97,13 @@ def _mlx_ragged_tensor_to_dense(backend_module: object, rt_input: object, **kwar
         rt_input (object): The input ragged tensor.
         **kwargs (object): Keyword arguments.
 
-    Returns: object: The input tensor unchanged.
+    Returns: mx.array: The input tensor unchanged.
     """
     return rt_input
 
 
 @mlx_eager_registry.register("TakeAlongAxis")
-def _mlx_take_along_axis(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_take_along_axis(backend_module, *args, **kwargs):
     """Evaluate _mlx_take_along_axis operation.
 
     Args:
@@ -118,7 +118,7 @@ def _mlx_take_along_axis(backend_module: object, *args: object, **kwargs: object
 
 
 @mlx_eager_registry.register("Take")
-def _mlx_take(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_take(backend_module, *args, **kwargs):
     """Evaluate _mlx_take operation.
 
     Args:
@@ -133,7 +133,7 @@ def _mlx_take(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @mlx_eager_registry.register("TensorScatterUpdate")
-def _mlx_tensor_scatter_update(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_tensor_scatter_update(backend_module, *args, **kwargs):
     """Evaluate _mlx_tensor_scatter_update operation.
 
     Args:
@@ -145,14 +145,14 @@ def _mlx_tensor_scatter_update(backend_module: object, *args: object, **kwargs: 
             tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res: str = backend_module.array(tensor)
+    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
     res[idx] = updates
     return res
 
 
 @mlx_eager_registry.register("TensorScatterAdd")
-def _mlx_tensor_scatter_add(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_tensor_scatter_add(backend_module, *args, **kwargs):
     """Implement TensorScatterAdd.
 
     Args:
@@ -164,14 +164,14 @@ def _mlx_tensor_scatter_add(backend_module: object, *args: object, **kwargs: obj
             tuple[int, ...]: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res: str = backend_module.array(tensor)
+    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
     res[idx] = res[idx] + updates
     return res
 
 
 @mlx_eager_registry.register("TensorScatterMax")
-def _mlx_tensor_scatter_max(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_tensor_scatter_max(backend_module, *args, **kwargs):
     """Implement TensorScatterMax.
 
     Args:
@@ -185,14 +185,14 @@ def _mlx_tensor_scatter_max(backend_module: object, *args: object, **kwargs: obj
     import mlx.core as mx
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res: str = backend_module.array(tensor)
+    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
     res[idx] = mx.maximum(res[idx], updates)
     return res
 
 
 @mlx_eager_registry.register("TensorScatterMin")
-def _mlx_tensor_scatter_min(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_tensor_scatter_min(backend_module, *args, **kwargs):
     """Implement TensorScatterMin.
 
     Args:
@@ -206,14 +206,14 @@ def _mlx_tensor_scatter_min(backend_module: object, *args: object, **kwargs: obj
     import mlx.core as mx
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res: str = backend_module.array(tensor)
+    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
     res[idx] = mx.minimum(res[idx], updates)
     return res
 
 
 @mlx_eager_registry.register("ScatterNd")
-def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_scatter_nd(backend_module, *args, **kwargs):
     """Evaluate _mlx_scatter_nd operation.
 
     Args:
@@ -224,24 +224,24 @@ def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    indices: object = args[0]
-    updates: object = args[1]
-    shape: object = args[2] if len(args) > 2 else kwargs.get("shape")
+    indices = args[0]
+    updates = args[1]
+    shape: tuple = args[2] if len(args) > 2 else kwargs.get("shape")
     if hasattr(shape, "data"):
-        shape: object = shape.data
+        shape: tuple = shape.data
     if hasattr(shape, "tolist"):
-        shape: object = shape.tolist()
+        shape: tuple = shape.tolist()
     if isinstance(shape, tuple):
-        shape: object = list(shape)
+        shape: tuple = list(shape)
     # Implement native MLX ScatterNd logic using array indexing
-    res: object = backend_module.zeros(shape, dtype=updates.dtype)
-    idx: object = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res: str = backend_module.zeros(shape, dtype=updates.dtype)
+    idx: tuple = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
     res[idx] = updates
     return res
 
 
 @mlx_eager_registry.register("Reshape")
-def _mlx_reshape(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_reshape(backend_module, *args, **kwargs):
     """Evaluate _mlx_reshape operation.
 
     Args:
@@ -252,13 +252,13 @@ def _mlx_reshape(backend_module: object, *args: object, **kwargs: object) -> obj
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
+    shape: tuple = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
     if hasattr(shape, "data"):
-        shape: object = shape.data
+        shape: tuple = shape.data
     if hasattr(shape, "tolist"):
-        shape: object = shape.tolist()
+        shape: tuple = shape.tolist()
     if isinstance(shape, tuple):
-        shape: object = list(shape)
+        shape: tuple = list(shape)
     return backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape)
 
 
@@ -269,19 +269,19 @@ _MLX_DTYPE_FALLBACK_MAP = {
 }
 
 
-def _resolve_dtype(backend_module: object, dtype_val: object) -> object:
+def _resolve_dtype(backend_module, dtype_val):
     """Resolve a given dtype object or string to a valid MLX dtype.
 
     Args:
         backend_module (object): The MLX backend module.
         dtype_val (object): The requested dtype.
 
-    Returns: object: The resolved MLX dtype.
+    Returns: mx.array: The resolved MLX dtype.
     """
     if dtype_val is None:
         return None
-    dtype_str: object = str(dtype_val).split(".")[-1]
-    dtype: object = getattr(backend_module, dtype_str, dtype_val)
+    dtype_str: str = str(dtype_val).split(".")[-1]
+    dtype: str = getattr(backend_module, dtype_str, dtype_val)
     if isinstance(dtype, str) and not hasattr(backend_module, dtype_str):
         for k, v in _MLX_DTYPE_FALLBACK_MAP.items():
             if k in dtype:
@@ -290,7 +290,7 @@ def _resolve_dtype(backend_module: object, dtype_val: object) -> object:
 
 
 @mlx_eager_registry.register("Zeros")
-def _mlx_zeros(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_zeros(backend_module, *args, **kwargs):
     """Evaluate _mlx_zeros operation.
 
     Args:
@@ -301,15 +301,15 @@ def _mlx_zeros(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: object = shape.data
-    dtype_val: object = kwargs.get("dtype", None)
-    dtype: object = _resolve_dtype(backend_module, dtype_val)
+        shape: tuple = shape.data
+    dtype_val: float = kwargs.get("dtype", None)
+    dtype: str = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return backend_module.zeros(shape)
     if isinstance(shape, (int, float)):
-        shape: object = (int(shape),)
+        shape: tuple = (int(shape),)
     try:
         return backend_module.zeros(shape, dtype=dtype)
     except TypeError:
@@ -317,7 +317,7 @@ def _mlx_zeros(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @mlx_eager_registry.register("Ones")
-def _mlx_ones(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_ones(backend_module, *args, **kwargs):
     """Evaluate _mlx_ones operation.
 
     Args:
@@ -328,15 +328,15 @@ def _mlx_ones(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: object = shape.data
-    dtype_val: object = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype: object = _resolve_dtype(backend_module, dtype_val)
+        shape: tuple = shape.data
+    dtype_val: float = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype: str = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return backend_module.ones(shape)
     if isinstance(shape, (int, float)):
-        shape: object = (int(shape),)
+        shape: tuple = (int(shape),)
     try:
         return backend_module.ones(shape, dtype=dtype)
     except TypeError:
@@ -344,7 +344,7 @@ def _mlx_ones(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @mlx_eager_registry.register("Full")
-def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_full(backend_module, *args, **kwargs):
     """Evaluate _mlx_full operation.
 
     Args:
@@ -355,16 +355,16 @@ def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
+    shape: tuple = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
-        shape: object = shape.data
-    fill_value: object = kwargs.get("fill_value", args[1] if len(args) > 1 else 0)
-    dtype_val: object = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype: object = _resolve_dtype(backend_module, dtype_val)
+        shape: tuple = shape.data
+    fill_value: float = kwargs.get("fill_value", args[1] if len(args) > 1 else 0)
+    dtype_val: float = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype: str = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return backend_module.full(shape, fill_value)
     if isinstance(shape, (int, float)):
-        shape: object = (int(shape),)
+        shape: tuple = (int(shape),)
     try:
         return backend_module.full(shape, fill_value, dtype=dtype)
     except TypeError:
@@ -372,7 +372,7 @@ def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @mlx_eager_registry.register("Partition")
-def _parse_partition_k(k: object) -> int:
+def _parse_partition_k(k) -> int:
     """Parse k parameter for partition.
 
     Args:
@@ -388,7 +388,7 @@ def _parse_partition_k(k: object) -> int:
     return int(k)
 
 
-def _mlx_partition(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_partition(backend_module, *args, **kwargs):
     """Evaluate _mlx_partition operation.
 
     Args:
@@ -399,24 +399,24 @@ def _mlx_partition(backend_module: object, *args: object, **kwargs: object) -> o
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0]
-    k_raw: object = kwargs.get("k", args[1] if len(args) > 1 else 1)
-    k: object = _parse_partition_k(k_raw)
-    return_indices: object = kwargs.get("return_indices", None)
-    kth: object = max(0, a.shape[-1] - k)
+    a = args[0]
+    k_raw: dict = kwargs.get("k", args[1] if len(args) > 1 else 1)
+    k: int = _parse_partition_k(k_raw)
+    return_indices = kwargs.get("return_indices", None)
+    kth: int = max(0, a.shape[-1] - k)
     if return_indices is False:
         if hasattr(backend_module, "topk"):
             return backend_module.topk(a, k)
         return backend_module.partition(a, kth, axis=-1)[..., -k:]
-    indices: object = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
+    indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
     if return_indices is True:
         return indices
-    values: object = backend_module.take_along_axis(a, indices, axis=-1)
+    values = backend_module.take_along_axis(a, indices, axis=-1)
     return (values, indices)
 
 
 @mlx_eager_registry.register("NanToNum")
-def _mlx_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_nan_to_num(backend_module, *args, **kwargs):
     """Evaluate _mlx_nan_to_num operation.
 
     Args:
@@ -427,22 +427,22 @@ def _mlx_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    valid_kwargs: object = {}
+    valid_kwargs: dict = {}
     for key in ("nan", "posinf", "neginf"):
         if key in kwargs:
-            val: object = kwargs[key]
+            val: float = kwargs[key]
             if hasattr(val, "item"):
-                val: object = float(val.item())
+                val: float = float(val.item())
             elif hasattr(val, "data") and hasattr(val.data, "item"):
-                val: object = float(val.data.item())
+                val: float = float(val.data.item())
             elif val is not None:
-                val: object = float(val)
+                val: float = float(val)
             valid_kwargs[key] = val
     return backend_module.nan_to_num(*args, **valid_kwargs)
 
 
 @mlx_eager_registry.register("Cummax")
-def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_cummax(backend_module, *args, **kwargs):
     """Evaluate _mlx_cummax operation.
 
     Args:
@@ -453,15 +453,15 @@ def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = kwargs.pop("dtype", None)
-    res: object = backend_module.cummax(*args, **kwargs)
+    dtype: str = kwargs.pop("dtype", None)
+    res: str = backend_module.cummax(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: object = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cummin")
-def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_cummin(backend_module, *args, **kwargs):
     """Evaluate _mlx_cummin operation.
 
     Args:
@@ -472,15 +472,15 @@ def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = kwargs.pop("dtype", None)
-    res: object = backend_module.cummin(*args, **kwargs)
+    dtype: str = kwargs.pop("dtype", None)
+    res: str = backend_module.cummin(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: object = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cumprod")
-def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_cumprod(backend_module, *args, **kwargs):
     """Evaluate _mlx_cumprod operation.
 
     Args:
@@ -491,15 +491,15 @@ def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> obj
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = kwargs.pop("dtype", None)
-    res: object = backend_module.cumprod(*args, **kwargs)
+    dtype: str = kwargs.pop("dtype", None)
+    res: str = backend_module.cumprod(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res: object = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
+        res: str = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Slice")
-def _mlx_slice(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_slice(backend_module, *args, **kwargs):
     """Evaluate _mlx_slice operation.
 
     Args:
@@ -510,18 +510,18 @@ def _mlx_slice(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0]
-    dim: object = kwargs.get("dim")
-    start: object = kwargs.get("start")
-    end: object = kwargs.get("end")
-    step: object = kwargs.get("step", 1)
-    sl: object = [builtins.slice(None)] * len(a.shape)
+    a = args[0]
+    dim: int = kwargs.get("dim")
+    start = kwargs.get("start")
+    end = kwargs.get("end")
+    step = kwargs.get("step", 1)
+    sl: list = [builtins.slice(None)] * len(a.shape)
     sl[dim] = builtins.slice(start, end, step)
     return a[tuple(sl)]
 
 
 @mlx_eager_registry.register("Eye")
-def _mlx_eye(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_eye(backend_module, *args, **kwargs):
     """Evaluate _mlx_eye operation.
 
     Args:
@@ -532,19 +532,19 @@ def _mlx_eye(backend_module: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    n_arg: object = args[0]
+    n_arg = args[0]
     if hasattr(n_arg, "data"):
-        n_arg: object = n_arg.data
-    m_arg: object = args[1] if len(args) > 1 else None
+        n_arg = n_arg.data
+    m_arg = args[1] if len(args) > 1 else None
     if hasattr(m_arg, "data"):
-        m_arg: object = m_arg.data
-    m_val: object = int(m_arg) if m_arg is not None else int(n_arg)
-    k_val: object = int(kwargs.get("k", 0))
+        m_arg = m_arg.data
+    m_val: float = int(m_arg) if m_arg is not None else int(n_arg)
+    k_val: float = int(kwargs.get("k", 0))
     return backend_module.eye(n=int(n_arg), m=m_val, k=k_val, dtype=getattr(backend_module, kwargs.get("dtype", "float32")))
 
 
 @mlx_eager_registry.register("Rope")
-def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
+def _mlx_rope(backend_module, x, **kwargs):
     """Apply Rotary Positional Encoding using MLX.
 
     Args:
@@ -555,16 +555,16 @@ def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    dim: object = kwargs.get("dim")
-    base: object = kwargs.get("base", 10000.0)
-    offset: object = kwargs.get("offset", 0)
-    traditional: object = kwargs.get("traditional", False)
-    scale: object = kwargs.get("scale", 1.0)
+    dim: int = kwargs.get("dim")
+    base: float = kwargs.get("base", 10000.0)
+    offset: int = kwargs.get("offset", 0)
+    traditional: bool = kwargs.get("traditional", False)
+    scale: float = kwargs.get("scale", 1.0)
     return mx.fast.rope(x, dim, traditional=traditional, base=base, scale=scale, offset=offset)
 
 
 @mlx_eager_registry.register("Variance")
-def _mlx_variance(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mlx_variance(backend_module, *args, **kwargs):
     """Evaluate _mlx_variance operation.
 
     Args:
@@ -580,7 +580,7 @@ def _mlx_variance(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @mlx_eager_registry.register("AllReduce")
-def _mlx_all_reduce(backend_module: object, tensor: object, **kwargs: object) -> object:
+def _mlx_all_reduce(backend_module, tensor, **kwargs):
     """Implement AllReduce for MLX eager mode.
 
     Args:
@@ -588,7 +588,7 @@ def _mlx_all_reduce(backend_module: object, tensor: object, **kwargs: object) ->
         tensor (object): The input tensor.
         **kwargs (object): Keyword args.
 
-    Returns: object: The reduced tensor.
+    Returns: mx.array: The reduced tensor.
     """
     import mlx.core as mx
 
@@ -598,7 +598,7 @@ def _mlx_all_reduce(backend_module: object, tensor: object, **kwargs: object) ->
 
 
 @mlx_eager_registry.register("AllGather")
-def _mlx_all_gather(backend_module: object, tensor: object, **kwargs: object) -> object:
+def _mlx_all_gather(backend_module, tensor, **kwargs):
     """Implement AllGather for MLX eager mode.
 
     Args:
@@ -606,7 +606,7 @@ def _mlx_all_gather(backend_module: object, tensor: object, **kwargs: object) ->
         tensor (object): The input tensor.
         **kwargs (object): Keyword args.
 
-    Returns: object: The gathered tensor.
+    Returns: mx.array: The gathered tensor.
     """
     import mlx.core as mx
 
@@ -616,7 +616,7 @@ def _mlx_all_gather(backend_module: object, tensor: object, **kwargs: object) ->
 
 
 @mlx_eager_registry.register("AllToAll")
-def _mlx_all_to_all(backend_module: object, tensor: object, **kwargs: object) -> object:
+def _mlx_all_to_all(backend_module, tensor, **kwargs):
     """Implement AllToAll for MLX eager mode.
 
     Args:
@@ -624,7 +624,7 @@ def _mlx_all_to_all(backend_module: object, tensor: object, **kwargs: object) ->
         tensor (object): The input tensor.
         **kwargs (object): Keyword args.
 
-    Returns: object: The distributed tensor.
+    Returns: mx.array: The distributed tensor.
     """
     import mlx.core as mx
 
@@ -634,7 +634,7 @@ def _mlx_all_to_all(backend_module: object, tensor: object, **kwargs: object) ->
 
 
 @mlx_eager_registry.register("ReduceScatter")
-def _mlx_reduce_scatter(backend_module: object, tensor: object, **kwargs: object) -> object:
+def _mlx_reduce_scatter(backend_module, tensor, **kwargs):
     """Implement ReduceScatter for MLX eager mode.
 
     Args:
@@ -642,7 +642,7 @@ def _mlx_reduce_scatter(backend_module: object, tensor: object, **kwargs: object
         tensor (object): The input tensor.
         **kwargs (object): Keyword args.
 
-    Returns: object: The scattered tensor.
+    Returns: mx.array: The scattered tensor.
     """
     import mlx.core as mx
 

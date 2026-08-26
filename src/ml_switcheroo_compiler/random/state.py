@@ -23,7 +23,7 @@ def _emit_random_node(
     inputs: list[Tensor],
     shape: tuple[int, ...],
     dtype: dtypes.DType,
-    attributes: dict[str, object] | None = None,
+    attributes=None,
 ) -> Tensor:
     """Evaluate _emit_random_node operation.
 
@@ -38,16 +38,16 @@ def _emit_random_node(
         Tensor: Result.
     """
     if config.eager_mode:
-        attrs: object = dict(attributes) if attributes is not None else {}
+        attrs = dict(attributes) if attributes is not None else {}
         if "shape" not in attrs:
             attrs["shape"] = shape
         if "dtype" not in attrs:
             attrs["dtype"] = getattr(dtype, "value", dtype)
-        res: object = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
+        res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
         return Tensor(res, TensorConfig(shape, dtype, config.default_device))
 
-    out_id: object = str(uuid.uuid4())
-    node: object = LogicalNode(
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=[getattr(inp.data, "id", str(id(inp))) for inp in inputs],
@@ -55,11 +55,11 @@ def _emit_random_node(
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
-    proxy: object = ProxyTensor(id=out_id, shape=shape, dtype=getattr(dtype, "value", str(dtype)))
+    proxy = ProxyTensor(id=out_id, shape=shape, dtype=getattr(dtype, "value", str(dtype)))
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def _dispatch_random_eager(func_name: str, op_name: str, *args: object, **kwargs: object) -> object:
+def _dispatch_random_eager(func_name: str, op_name: str, *args, **kwargs):
     """Help to dispatch random functions in eager mode.
 
     Args:
@@ -71,11 +71,11 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: object, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    backend: object = get_active_backend()
+    backend = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)
 
 
-def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
+def _dispatch_random(func_name: str, *args, **kwargs):
     """Evaluate _dispatch_random operation.
 
     Args:
@@ -86,11 +86,11 @@ def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    op_name: object = "".join(word.capitalize() for word in func_name.split("_"))
+    op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
         return _dispatch_random_eager(func_name, op_name, *args, **kwargs)
 
-    op_cls: object = get_op(op_name)
+    op_cls = get_op(op_name)
     if op_cls:
         return op_cls()(*args, **kwargs)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -98,7 +98,7 @@ def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
     return _emit_shape_node(op_name, list(args), kwargs, (), "float32")
 
 
-def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> object:
+def rng_uniform(a, b, shape, dtype=None):
     """Generate uniform random values.
 
     Args:
@@ -107,21 +107,21 @@ def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> ob
         shape (object): Shape.
         dtype (object): Data type.
 
-    Returns: object: Random values.
+    Returns: Tensor: Random values.
     """
     return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)
 
 
-def _get_numpy_rng(*args: object, **kwargs: object) -> object:
+def _get_numpy_rng(*args, **kwargs):
     """Get the NumPy RNG instance from the numpy backend.
 
     Args:
         *args (object): Positional arguments.
         **kwargs (object): Keyword arguments.
 
-    Returns: object: The NumPy RNG instance.
+    Returns: Tensor: The NumPy RNG instance.
     """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    backend_cls: object = BackendRegistry.get("numpy")
+    backend_cls = BackendRegistry.get("numpy")
     return backend_cls.get_numpy_rng(*args, **kwargs)

@@ -15,12 +15,12 @@ def _psum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _psum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.array(args[0])
 
@@ -30,12 +30,12 @@ def _pmean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pmean operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.array(args[0])
 
@@ -45,20 +45,20 @@ def _segment_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _segment_sum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if len(args) < 2:
         return backend_module.asarray(args[0]) if args else None
-    data: Any = backend_module.asarray(args[0])
-    segment_ids: Any = backend_module.asarray(args[1])
-    num_segments: Any = kwargs.get("num_segments", args[2] if len(args) > 2 else backend_module.max(segment_ids) + 1)
+    data = backend_module.asarray(args[0])
+    segment_ids = backend_module.asarray(args[1])
+    num_segments = kwargs.get("num_segments", args[2] if len(args) > 2 else backend_module.max(segment_ids) + 1)
 
-    out: Any = backend_module.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+    out = backend_module.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
     backend_module.add.at(out, segment_ids, data)
     return backend_module.asarray(out)
 
@@ -67,18 +67,18 @@ def _apply_softmax(backend_module: Any, scores: Any) -> Any:
     """Apply softmax to attention scores.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        scores (object): The scores parameter.
+        backend_module (Any): The backend_module parameter.
+        scores (Any): The scores parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if hasattr(backend_module, "softmax"):
         return backend_module.softmax(scores, axis=-1)
     if hasattr(backend_module, "nn") and hasattr(backend_module.nn, "softmax"):
         return backend_module.nn.softmax(scores, axis=-1)
     if hasattr(backend_module, "exp") and hasattr(backend_module, "sum") and hasattr(backend_module, "max"):
-        exps: Any = backend_module.exp(scores - backend_module.max(scores, axis=-1, keepdims=True))
+        exps = backend_module.exp(scores - backend_module.max(scores, axis=-1, keepdims=True))
         return exps / backend_module.sum(exps, axis=-1, keepdims=True)
     return scores
 
@@ -88,14 +88,14 @@ def _fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmax operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "fmax", getattr(backend_module, "maximum", None))
+    func = getattr(backend_module, "fmax", getattr(backend_module, "maximum", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -104,14 +104,14 @@ def _fmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmin operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "fmin", getattr(backend_module, "minimum", None))
+    func = getattr(backend_module, "fmin", getattr(backend_module, "minimum", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -120,13 +120,13 @@ def _adaptive_max_pool2d(backend_module: Any, operand: Any, output_size: Any, **
     """Evaluate _adaptive_max_pool2d operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -136,13 +136,13 @@ def _adaptive_max_pool3d(backend_module: Any, operand: Any, output_size: Any, **
     """Evaluate _adaptive_max_pool3d operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -152,15 +152,15 @@ def _adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_size:
     """Evaluate _adaptive_max_pool3d_indices operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    res: Any = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
+    res = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
     return (res, res)
 
 
@@ -169,16 +169,16 @@ def _adaptive_log_softmax_with_loss(backend_module: Any, input: Any, target: Any
     """Evaluate _adaptive_log_softmax_with_loss operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        input (object): The input parameter.
-        target (object): The target parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        input (Any): The input parameter.
+        target (Any): The target parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    loss: Any = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
+    loss = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
     return (target, loss)
 
 
@@ -187,14 +187,14 @@ def _householder_product(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _householder_product operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "householder_product"):
         return func.householder_product(*args, **kwargs)
     if hasattr(backend_module, "householder_product"):
@@ -202,24 +202,24 @@ def _householder_product(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     v, tau = backend_module.asarray(args[0]), backend_module.asarray(args[1])
     m, n = v.shape[-2:]
-    k: Any = tau.shape[-1]
+    k = tau.shape[-1]
 
-    batch_shape: Any = v.shape[:-2]
-    identity: Any = backend_module.broadcast_to(backend_module.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
-    q: Any = identity.copy()
+    batch_shape = v.shape[:-2]
+    identity = backend_module.broadcast_to(backend_module.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
+    q = identity.copy()
 
     for i in range(k):
-        v_i: Any = v[..., :, i].copy()
+        v_i = v[..., :, i].copy()
         v_i[..., :i] = 0
         v_i[..., i] = 1
 
-        v_i_expanded: Any = v_i[..., backend_module.newaxis]
-        v_i_h: Any = backend_module.conjugate(v_i_expanded.swapaxes(-1, -2))
+        v_i_expanded = v_i[..., backend_module.newaxis]
+        v_i_h = backend_module.conjugate(v_i_expanded.swapaxes(-1, -2))
 
-        tau_i: Any = tau[..., i, backend_module.newaxis, backend_module.newaxis]
+        tau_i = tau[..., i, backend_module.newaxis, backend_module.newaxis]
 
-        h_i: Any = identity - tau_i * (v_i_expanded @ v_i_h)
-        q: Any = q @ h_i
+        h_i = identity - tau_i * (v_i_expanded @ v_i_h)
+        q = q @ h_i
 
     return q[..., :n]
 
@@ -229,14 +229,14 @@ def _cummax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cummax operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "maximum", None)
+    func = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
 
@@ -248,14 +248,14 @@ def _cummin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cummin operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "minimum", None)
+    func = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
 
@@ -267,19 +267,19 @@ def _cumlogsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cumlogsumexp operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "cumlogsumexp", None)
+    func = getattr(backend_module, "cumlogsumexp", None)
     if func:
         return func(*args, **kwargs)
 
-    x: Any = backend_module.asarray(args[0])
-    axis: Any = kwargs.get("axis", 0)
+    x = backend_module.asarray(args[0])
+    axis = kwargs.get("axis", 0)
 
     return backend_module.ufunc.accumulate(backend_module.logaddexp, x, axis=axis)
 
@@ -289,12 +289,12 @@ def _cumulative_logsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """Evaluate _cumulative_logsumexp operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return _cumlogsumexp(backend_module, *args, **kwargs)
 
@@ -304,12 +304,12 @@ def _psumscatter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _psumscatter operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "psum_scatter"):
         return backend_module.lax.psum_scatter(*args, **kwargs)
@@ -321,14 +321,14 @@ def _np_fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fmax operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
+    func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -341,14 +341,14 @@ def _np_scattermax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_scattermax operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
+    func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -361,14 +361,14 @@ def _np_scattermin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_scattermin operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
+    func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -381,14 +381,14 @@ def _np_weibullmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_weibullmin operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
+    func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -401,14 +401,14 @@ def _np_windowhamming(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_windowhamming operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: Any = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
+    func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

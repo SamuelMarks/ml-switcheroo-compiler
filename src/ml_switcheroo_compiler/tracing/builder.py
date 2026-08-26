@@ -16,7 +16,7 @@ class TracingNodeBuilder:
     """Build tracing nodes."""
 
     @staticmethod
-    def create_constant_node(val: object, shape: tuple[object, ...]) -> str:
+    def create_constant_node(val, shape) -> str:
         """Create a constant node in the active tracing graph.
 
         Args:
@@ -26,8 +26,8 @@ class TracingNodeBuilder:
         Returns:
             str: The unique identifier of the created node.
         """
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type="Constant",
             attributes={"value": val},
@@ -37,7 +37,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def extract_from_tensor(a: object) -> tuple[str, tuple]:
+    def extract_from_tensor(a) -> tuple[str, tuple]:
         """Extract the node identifier and shape metadata from a tensor or proxy.
 
         Args:
@@ -48,17 +48,17 @@ class TracingNodeBuilder:
         """
         if hasattr(a.data, "id"):
             return a.data.id, a.shape
-        data_id: object = id(a.data)
+        data_id = id(a.data)
         if hasattr(global_tracing_state, "constant_cache") and data_id in global_tracing_state.constant_cache:
             return global_tracing_state.constant_cache[data_id], a.shape
-        val: object = getattr(a.data, "tolist", lambda a=a: a.data)()
-        out_id: object = TracingNodeBuilder.create_constant_node(val, a.shape)
+        val = getattr(a.data, "tolist", lambda a=a: a.data)()
+        out_id = TracingNodeBuilder.create_constant_node(val, a.shape)
         if hasattr(global_tracing_state, "constant_cache"):
             global_tracing_state.constant_cache[data_id] = out_id
         return out_id, a.shape
 
     @staticmethod
-    def extract_from_constant(a: object) -> object:
+    def extract_from_constant(a):
         """Extract the node identifier and shape metadata from a constant value.
 
         Args:
@@ -81,15 +81,15 @@ class TracingNodeBuilder:
 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        arr: object = backend.array(a)
-        val: object = getattr(arr, "tolist", lambda arr=arr: arr)()
-        shape: object = getattr(arr, "shape", ())
-        out_id: object = TracingNodeBuilder.create_constant_node(val, shape)
+        backend = get_active_backend()
+        arr = backend.array(a)
+        val = getattr(arr, "tolist", lambda arr=arr: arr)()
+        shape = getattr(arr, "shape", ())
+        out_id = TracingNodeBuilder.create_constant_node(val, shape)
         return out_id, shape
 
     @staticmethod
-    def extract_proxy_inputs(args: tuple[object, ...]) -> tuple[list[str], list[tuple], object]:
+    def extract_proxy_inputs(args):
         """Extract proxy node IDs and shapes from a list of arguments.
 
         Args:
@@ -98,13 +98,13 @@ class TracingNodeBuilder:
         Returns:
             tuple: A tuple containing lists of node IDs, shapes, and the first tensor found.
         """
-        input_ids: object = []
-        shapes: object = []
-        first_tensor: object = None
+        input_ids = []
+        shapes = []
+        first_tensor = None
 
         for a in args:
             if isinstance(a, Tensor):
-                first_tensor: object = a if first_tensor is None else first_tensor
+                first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif hasattr(a, "id"):
                 out_id, shape = a.id, getattr(a, "shape", ())
@@ -117,7 +117,7 @@ class TracingNodeBuilder:
         return input_ids, shapes, first_tensor
 
     @staticmethod
-    def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs: dict[str, object], out_shape: tuple[object, ...]) -> str:
+    def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs, out_shape) -> str:
         """Create and add a new logical node to the active tracing graph.
 
         Args:
@@ -129,8 +129,8 @@ class TracingNodeBuilder:
         Returns:
             str: The unique identifier of the created node.
         """
-        out_id: object = str(uuid.uuid4())
-        node: object = LogicalNode(
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
             id=out_id,
             op_type=op_type,
             inputs=input_ids,
@@ -141,7 +141,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def emit_tracing_node(op_type: str, *args: object, **kwargs: object) -> object:
+    def emit_tracing_node(op_type: str, *args, **kwargs):
         """Emit a new tracing node and return its corresponding tensor.
 
         Args:
@@ -149,15 +149,15 @@ class TracingNodeBuilder:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: The newly created proxy tensor.
+        Returns: Tensor: The newly created proxy tensor.
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
-        out_shape: object = infer_shape(op_type, *shapes, **kwargs)
+        out_shape = infer_shape(op_type, *shapes, **kwargs)
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
-        out_id: object = TracingNodeBuilder.create_tracing_logical_node(op_type, input_ids, kwargs, out_shape)
+        out_id = TracingNodeBuilder.create_tracing_logical_node(op_type, input_ids, kwargs, out_shape)
 
-        dtype_val: object = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
-        proxy: object = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+        dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
+        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
         return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))

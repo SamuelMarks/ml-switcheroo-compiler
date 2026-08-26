@@ -21,14 +21,14 @@ def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     Returns:
         LogicalGraph: A new graph with ambiguities resolved.
     """
-    new_graph: object = LogicalGraph(
+    new_graph = LogicalGraph(
         name=f"{graph.name}_rewritten",
         outputs=list(graph.outputs),
         mesh=graph.mesh,
     )
 
     for node in topological_sort(graph):
-        new_node: object = clone_logical_node(node)
+        new_node = clone_logical_node(node)
 
         # Rewrite 1: Resolve -1 in Reshape operations
         if node.op_type == "Reshape" and node.shape_metadata is not None:

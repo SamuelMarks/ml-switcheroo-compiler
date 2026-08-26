@@ -55,7 +55,7 @@ class CupyGenerator(PythonStringGenerator):
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs: Extra attributes.
+            **kwargs (Any): Extra attributes.
 
         Returns:
             str: Generated code.

@@ -139,7 +139,7 @@ class SymInt:
         """
         return hash(self.expr)
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other) -> bool:
         """Evaluate __eq__ operation.
 
         Args:
@@ -170,14 +170,14 @@ class SymbolicSolver:
         if isinstance(expr1, int) and isinstance(expr2, int):
             return expr1 == expr2
 
-        sym1: object = expr1.expr if isinstance(expr1, SymInt) else str(expr1)
-        sym2: object = expr2.expr if isinstance(expr2, SymInt) else str(expr2)
+        sym1 = expr1.expr if isinstance(expr1, SymInt) else str(expr1)
+        sym2 = expr2.expr if isinstance(expr2, SymInt) else str(expr2)
 
         # Naive string comparison for now since we can't use sympy
         return sym1 == sym2
 
 
-def _to_str_shape(shape: tuple[object, ...]) -> tuple[object, ...]:
+def _to_str_shape(shape):
     """Convert shape to string representation.
 
     Args:
@@ -189,7 +189,7 @@ def _to_str_shape(shape: tuple[object, ...]) -> tuple[object, ...]:
     return tuple(str(x) if isinstance(x, SymInt) else x for x in shape)
 
 
-def _from_str_shape(shape: tuple[object, ...]) -> tuple[object, ...]:
+def _from_str_shape(shape):
     """Convert shape from string representation.
 
     Args:
@@ -198,7 +198,7 @@ def _from_str_shape(shape: tuple[object, ...]) -> tuple[object, ...]:
     Returns:
         tuple: The integer or SymInt shape.
     """
-    out_shape: object = []
+    out_shape = []
     for dim in shape:
         if isinstance(dim, str) and not dim.isdigit():
             out_shape.append(SymInt(dim))
@@ -223,9 +223,9 @@ class ShapeTracker:
         if not inputs:
             return ()
 
-        shape: object = _to_str_shape(inputs[0].shape)
+        shape = _to_str_shape(inputs[0].shape)
         for i in range(1, len(inputs)):
-            shape: object = broadcast_shapes(shape, _to_str_shape(inputs[i].shape))
+            shape = broadcast_shapes(shape, _to_str_shape(inputs[i].shape))
 
         return _from_str_shape(shape)
 
@@ -243,15 +243,15 @@ class ShapeTracker:
             input1 (TensorSpec): The input1 parameter.
             input2 (TensorSpec): The input2 parameter.
         """
-        s1: object = _to_str_shape(input1.shape)
-        s2: object = _to_str_shape(input2.shape)
+        s1 = _to_str_shape(input1.shape)
+        s2 = _to_str_shape(input2.shape)
 
-        out_shape_str: object = matmul_shape(s1, s2)
+        out_shape_str = matmul_shape(s1, s2)
 
         return _from_str_shape(out_shape_str)
 
 
-ShapeType: object = tuple[Union[int, str], ...]
+ShapeType = tuple[Union[int, str], ...]
 
 
 def _broadcast_dim(a: int | str, b: int | str) -> int | str:
@@ -274,9 +274,9 @@ def _broadcast_dim(a: int | str, b: int | str) -> int | str:
     if b == 1:
         return a
     if isinstance(a, str) or isinstance(b, str):
-        msg: object = f"Cannot broadcast symbolic dimensions {a} and {b}"
+        msg = f"Cannot broadcast symbolic dimensions {a} and {b}"
         raise ShapeMismatchError(msg)
-    msg: object = f"Incompatible dimensions for broadcasting: {a} and {b}"
+    msg = f"Incompatible dimensions for broadcasting: {a} and {b}"
     raise ShapeMismatchError(msg)
 
 
@@ -290,9 +290,9 @@ def broadcast_shapes(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     Returns:
         ShapeType: The broadcasted shape.
     """
-    max_len: object = max(len(shape_a), len(shape_b))
-    pad_a: object = (1,) * (max_len - len(shape_a)) + shape_a
-    pad_b: object = (1,) * (max_len - len(shape_b)) + shape_b
+    max_len = max(len(shape_a), len(shape_b))
+    pad_a = (1,) * (max_len - len(shape_a)) + shape_a
+    pad_b = (1,) * (max_len - len(shape_b)) + shape_b
     return tuple(_broadcast_dim(a, b) for a, b in zip(pad_a, pad_b))
 
 
@@ -310,7 +310,7 @@ def _matmul_shape_1d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
         ValueError: If the shapes are incompatible.
     """
     if shape_a[0] != shape_b[0]:
-        msg: object = f"Incompatible 1D dot product shapes: {shape_a}, {shape_b}"
+        msg = f"Incompatible 1D dot product shapes: {shape_a}, {shape_b}"
         raise ValueError(
             msg,
         )
@@ -331,12 +331,12 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
         ShapeMismatchError: If the shapes are incompatible.
     """
     if shape_a[1] != shape_b[0]:
-        msg: object = f"Incompatible 2D matmul shapes: {shape_a}, {shape_b}"
+        msg = f"Incompatible 2D matmul shapes: {shape_a}, {shape_b}"
         raise ShapeMismatchError(msg)
     return (shape_a[0], shape_b[1])
 
 
-def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[object, ...]:
+def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType):
     """Evaluate _get_matmul_dims operation.
 
     Args:
@@ -346,10 +346,10 @@ def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[object, ..
     Returns:
         tuple: Result.
     """
-    m_dim: object = shape_a[-2] if len(shape_a) > 1 else 1
-    k_dim_a: object = shape_a[-1]
-    k_dim_b: object = shape_b[-2] if len(shape_b) > 1 else shape_b[-1]
-    n_dim: object = shape_b[-1] if len(shape_b) > 1 else 1
+    m_dim = shape_a[-2] if len(shape_a) > 1 else 1
+    k_dim_a = shape_a[-1]
+    k_dim_b = shape_b[-2] if len(shape_b) > 1 else shape_b[-1]
+    n_dim = shape_b[-1] if len(shape_b) > 1 else 1
     return m_dim, k_dim_a, k_dim_b, n_dim
 
 
@@ -378,17 +378,17 @@ def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     Raises:
         ShapeMismatchError: If the inner dimensions are incompatible.
     """
-    batch_a: object = _get_batch_dims(shape_a)
-    batch_b: object = _get_batch_dims(shape_b)
-    out_batch: object = broadcast_shapes(batch_a, batch_b)
+    batch_a = _get_batch_dims(shape_a)
+    batch_b = _get_batch_dims(shape_b)
+    out_batch = broadcast_shapes(batch_a, batch_b)
 
     m_dim, k_dim_a, k_dim_b, n_dim = _get_matmul_dims(shape_a, shape_b)
 
     if k_dim_a != k_dim_b:
-        msg: object = f"Incompatible inner dimensions for matmul: {k_dim_a} and {k_dim_b}"
+        msg = f"Incompatible inner dimensions for matmul: {k_dim_a} and {k_dim_b}"
         raise ShapeMismatchError(msg)
 
-    out_shape: object = list(out_batch)
+    out_shape = list(out_batch)
     if len(shape_a) > 1:
         out_shape.append(m_dim)
     if len(shape_b) > 1:
@@ -411,7 +411,7 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
         ShapeMismatchError: If shapes are incompatible or scalars.
     """
     if len(shape_a) == 0 or len(shape_b) == 0:
-        msg: object = "Scalars cannot be matrix multiplied."
+        msg = "Scalars cannot be matrix multiplied."
         raise ShapeMismatchError(msg)
 
     # 1D dot product
@@ -440,7 +440,7 @@ def _normalize_single_axis(axis: int, ndim: int) -> int:
         ShapeMismatchError: If axis is out of bounds.
     """
     if axis < -ndim or axis >= ndim:
-        msg: object = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
+        msg = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
         raise ShapeMismatchError(msg)
     if axis < 0:
         return axis + ndim
@@ -467,5 +467,5 @@ def normalize_axis(
         return _normalize_single_axis(axis, ndim)
     if isinstance(axis, (tuple, list)):
         return tuple(_normalize_single_axis(ax, ndim) for ax in axis)
-    msg: object = f"Invalid type for axis: {type(axis)}"
+    msg = f"Invalid type for axis: {type(axis)}"
     raise TypeError(msg)

@@ -9,7 +9,7 @@ def test_divmod_infer_shape_fallback() -> None:
     """Test the divmod infer shape fallback behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -23,7 +23,7 @@ def test_isclose_infer_shape_fallback() -> None:
     """Test the isclose infer shape fallback behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -37,7 +37,7 @@ def test_atan2_infer_shape_fallback() -> None:
     """Test the atan2 infer shape fallback behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."

@@ -195,7 +195,7 @@ def test_io_ops_coverage(tmp_path):
 
     # tf examples (dummies)
     mod._np_parse_example(bk, b"")
-    mod._np_parse_example(bk, serialized=b"", features={"f": object()})
+    mod._np_parse_example(bk, serialized=b"", features={"f": "dummy"})
 
     # sequence example
     mod._np_parse_sequence_example(bk, b"")

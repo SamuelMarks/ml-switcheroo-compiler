@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Solve(OpDef):
     """Solve Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Solve(OpDef):
 class SolveEx(OpDef):
     """SolveEx Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -46,7 +46,7 @@ class SolveEx(OpDef):
         return ()
 
 
-def solve(a: Tensor, b: Tensor) -> object:
+def solve(a: Tensor, b: Tensor):
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
@@ -59,8 +59,8 @@ def solve(a: Tensor, b: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(
+        backend = get_active_backend()
+        data = backend.execute_op(
             "Solve",
             (a.data if hasattr(a, "device") else a),
             (b.data if hasattr(b, "device") else b),
@@ -69,7 +69,7 @@ def solve(a: Tensor, b: Tensor) -> object:
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
-def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> object:
+def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False):
     """Solves a linear matrix equation with info tensor.
 
     Args:
@@ -83,7 +83,7 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         sol, info = backend.execute_op(
             "SolveEx",
             (a.data if hasattr(a, "device") else a),
@@ -102,7 +102,7 @@ def solve_triangular(
     b: Tensor,
     lower: bool = False,
     unit_diagonal: bool = False,
-) -> object:
+):
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
@@ -117,8 +117,8 @@ def solve_triangular(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(
+        backend = get_active_backend()
+        data = backend.execute_op(
             "TriangularSolve",
             a.data,
             b.data,

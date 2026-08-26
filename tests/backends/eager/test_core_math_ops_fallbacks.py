@@ -375,6 +375,8 @@ def disabled_test_core_math_ops_missing_coverage_new():
     mod._np_gamma(empty_backend, x=None)
 
     original_scipy = sys.modules.get("scipy.special")
+    import types
+
     dummy_scipy_special = types.ModuleType("scipy.special")
 
     original_scipy_base = sys.modules.get("scipy")

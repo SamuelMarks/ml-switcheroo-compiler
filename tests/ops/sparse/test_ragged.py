@@ -26,7 +26,7 @@ def test_sparse_ops() -> None:
     """Test the sparse ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse ops shape inference."
@@ -61,7 +61,7 @@ def test_ragged_ops() -> None:
     """Test the ragged ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test ragged ops shape inference."
@@ -86,7 +86,7 @@ def test_sparse_bincount() -> None:
     """Test the sparse bincount behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_bincount."
@@ -102,7 +102,7 @@ def test_sparse_reduce_max() -> None:
     """Test the sparse reduce max behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_reduce_max."
@@ -118,7 +118,7 @@ def test_sparse_reduce_sum() -> None:
     """Test the sparse reduce sum behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_reduce_sum."
@@ -134,7 +134,7 @@ def test_sparse_segment_mean() -> None:
     """Test the sparse segment mean behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_segment_mean."
@@ -150,7 +150,7 @@ def test_sparse_segment_sqrt_n() -> None:
     """Test the sparse segment sqrt n behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_segment_sqrt_n."
@@ -166,7 +166,7 @@ def test_sparse_segment_sum() -> None:
     """Test the sparse segment sum behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test sparse_segment_sum."
@@ -182,7 +182,7 @@ def test_ragged_dot() -> None:
     """Test the ragged dot behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test ragged_dot."

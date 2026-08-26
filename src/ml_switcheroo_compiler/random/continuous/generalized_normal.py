@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def generalized_normal(*args: object, **kwargs: object) -> object:
+def generalized_normal(*args, **kwargs):
     """Evaluate generalized_normal operation.
 
     Args:

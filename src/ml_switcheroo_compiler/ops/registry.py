@@ -6,8 +6,8 @@ import os
 import yaml
 
 _REGISTRY: dict[str, type] = {}
-_YAML_REGISTRY: dict[str, object] = {}
-_UTIL_REGISTRY: dict[str, object] = {}
+_YAML_REGISTRY = {}
+_UTIL_REGISTRY = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -21,16 +21,16 @@ def _load_yaml_registry(force: bool = False) -> None:
     """
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 from ml_switcheroo_compiler.ops.config_models import OpsRegistry
 
-                raw_yaml: object = yaml.safe_load(f)
+                raw_yaml = yaml.safe_load(f)
                 _YAML_REGISTRY = OpsRegistry(root=raw_yaml).model_dump()
 
 
-def register_op(name: str) -> object:
+def register_op(name: str):
     """Decorator to register a custom operation."""
 
     def decorator(cls: type) -> type:
@@ -51,10 +51,10 @@ def register_op(name: str) -> object:
     return decorator
 
 
-def register_util(name: str) -> object:
+def register_util(name: str):
     """Decorator to register a util."""
 
-    def decorator(func: object) -> object:
+    def decorator(func):
         """Decorator function.
 
         Args:
@@ -69,7 +69,7 @@ def register_util(name: str) -> object:
     return decorator
 
 
-def get_util(name: str) -> object:
+def get_util(name: str):
     """Get a util."""
     if name not in _UTIL_REGISTRY:
         raise KeyError(f"Util {name} not found")
@@ -87,19 +87,19 @@ def get_op(op_name: str) -> type:
         from ml_switcheroo_compiler.ops.base import OpDef
 
         # Create dynamic OpDef class from yaml
-        op_data: object = _YAML_REGISTRY[op_name]
+        op_data = _YAML_REGISTRY[op_name]
 
         # Build dynamic class
         class DynamicOpDef(OpDef):
             """DynamicOpDef class."""
 
-            op_type: object = op_name
-            op_name_class: object = op_name
+            op_type = op_name
+            op_name_class = op_name
             # attach data
             _yaml_data = op_data
 
             @classmethod
-            def get_yaml_data(cls: object) -> object:
+            def get_yaml_data(cls):
                 """get_yaml_data function.
 
                 Args:
@@ -110,7 +110,7 @@ def get_op(op_name: str) -> type:
                 """
                 return cls._yaml_data
 
-            def infer_shape(self, *args: object, **kwargs: object) -> object:
+            def infer_shape(self, *args, **kwargs):
                 """Infer shape precisely using heuristics.
 
                 Args:
@@ -121,15 +121,15 @@ def get_op(op_name: str) -> type:
                 Returns:
                     object: Result shape tuple.
                 """
-                inputs: object = kwargs.get("inputs", [])
+                inputs = kwargs.get("inputs", [])
 
                 if not inputs:
                     if len(args) > 0 and isinstance(args[0], (list, tuple)):
-                        inputs: object = args[0]
+                        inputs = args[0]
                     else:
-                        inputs: object = list(args)
+                        inputs = list(args)
 
-                shapes: object = []
+                shapes = []
                 for inp in inputs:
                     if hasattr(inp, "shape_metadata") and inp.shape_metadata is not None:
                         shapes.append(tuple(inp.shape_metadata))
@@ -159,9 +159,7 @@ def get_op(op_name: str) -> type:
         _REGISTRY[op_name] = DynamicOpDef
         return DynamicOpDef
 
-    if op_name == "NonExistentOp":
-        raise KeyError(f"Operation '{op_name}' not found")
-    raise ValueError(f"Operation '{op_name}' not found")
+    raise KeyError(f"Operation '{op_name}' not found")
 
 
 def get_all_ops() -> dict[str, type]:
@@ -174,7 +172,7 @@ def get_all_ops() -> dict[str, type]:
 
 
 # Alias for backwards compatibility
-get_op_class: object = get_op
+get_op_class = get_op
 
 # Initialize on load
 _load_yaml_registry()
@@ -184,7 +182,7 @@ _load_yaml_registry()
 class _RegistryShim:
     """_RegistryShim class."""
 
-    def __init__(self, data: object) -> None:
+    def __init__(self, data) -> None:
         """__init__ function.
 
         Args:
@@ -196,7 +194,7 @@ class _RegistryShim:
         """
         self.operations = data
 
-    def get_generator_mapping(self, prefix: str, op_name: str) -> object:
+    def get_generator_mapping(self, prefix: str, op_name: str):
         """get_generator_mapping function.
 
         Args:
@@ -207,20 +205,20 @@ class _RegistryShim:
         Returns:
         object: Result.
         """
-        op: object = self.operations.get(op_name, {})
+        op = self.operations.get(op_name, {})
         if not op:
             return None
-        variants: object = op.get("variants", {})
-        backend: object = variants.get(prefix, {})
+        variants = op.get("variants", {})
+        backend = variants.get(prefix, {})
         return backend.get("generator")
 
 
-backend_mapping_registry: object = _RegistryShim(_YAML_REGISTRY)
+backend_mapping_registry = _RegistryShim(_YAML_REGISTRY)
 _OP_REGISTRY = _REGISTRY
-_FRONTEND_REGISTRY: dict[str, object] = {}
+_FRONTEND_REGISTRY = {}
 
 
-def get_backend_mapping(op_name: str) -> dict[str, object]:
+def get_backend_mapping(op_name: str):
     """get_backend_mapping function.
 
     Args:
@@ -229,7 +227,7 @@ def get_backend_mapping(op_name: str) -> dict[str, object]:
     Returns:
         object: Result.
     """
-    op: object = _YAML_REGISTRY.get(op_name)
+    op = _YAML_REGISTRY.get(op_name)
     if op:
         return dict(op.get("variants", {}))
     return {}
@@ -239,7 +237,7 @@ def get_backend_mapping(op_name: str) -> dict[str, object]:
 _FRONTENDS = {}
 
 
-def register_frontend(name: str) -> object:
+def register_frontend(name: str):
     """register_frontend function.
 
     Args:
@@ -249,7 +247,7 @@ def register_frontend(name: str) -> object:
         object: Result.
     """
 
-    def decorator(cls: object) -> object:
+    def decorator(cls):
         """Decorator function.
 
         Args:
@@ -264,7 +262,7 @@ def register_frontend(name: str) -> object:
     return decorator
 
 
-def get_frontend(name: str) -> object:
+def get_frontend(name: str):
     """get_frontend function.
 
     Args:
@@ -282,7 +280,7 @@ def get_frontend(name: str) -> object:
 class _RegistryShimFix:
     """_RegistryShimFix class."""
 
-    def __init__(self, data: object) -> None:
+    def __init__(self, data) -> None:
         """__init__ function.
 
         Args:
@@ -294,7 +292,7 @@ class _RegistryShimFix:
         """
         self.operations = data
 
-    def get_generator_mapping(self, prefix: str, op_name: str) -> object:
+    def get_generator_mapping(self, prefix: str, op_name: str):
         """get_generator_mapping function.
 
         Args:
@@ -305,14 +303,14 @@ class _RegistryShimFix:
         Returns:
         object: Result.
         """
-        op: object = self.operations.get(op_name, {})
+        op = self.operations.get(op_name, {})
         if not op:
             return None
-        variants: object = op.get("variants", {})
-        backend: object = variants.get(prefix, {})
+        variants = op.get("variants", {})
+        backend = variants.get(prefix, {})
         return backend.get("generator")
 
-    def get_eager_mapping(self, prefix: str, op_name: str) -> object:
+    def get_eager_mapping(self, prefix: str, op_name: str):
         """get_eager_mapping function.
 
         Args:
@@ -323,14 +321,14 @@ class _RegistryShimFix:
         Returns:
         object: Result.
         """
-        op: object = self.operations.get(op_name, {})
+        op = self.operations.get(op_name, {})
         if not op:
             return None
-        variants: object = op.get("variants", {})
-        backend: object = variants.get(prefix, {})
+        variants = op.get("variants", {})
+        backend = variants.get(prefix, {})
         return backend.get("eager")
 
-    def get_op(self, op_name: str) -> object:
+    def get_op(self, op_name: str):
         """get_op function.
 
         Args:
@@ -343,5 +341,5 @@ class _RegistryShimFix:
         return self.operations.get(op_name)
 
 
-backend_mapping_registry: object = _RegistryShimFix(_YAML_REGISTRY)
+backend_mapping_registry = _RegistryShimFix(_YAML_REGISTRY)
 from ml_switcheroo_compiler.ops.base import OpDef

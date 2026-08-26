@@ -17,7 +17,7 @@ def graph_to_json(graph: IRGraph) -> str:
     Returns:
         str: The JSON string representation of the graph.
     """
-    data: object = {"nodes": {}}
+    data = {"nodes": {}}
     for node_id, node in graph.nodes.items():
         data["nodes"][node_id] = {
             "op": node.op_type,
@@ -35,10 +35,10 @@ def json_to_graph(json_str: str) -> IRGraph:
     Returns:
         IRGraph: The deserialized IRGraph.
     """
-    data: object = json.loads(json_str)
-    graph: object = IRGraph()
+    data = json.loads(json_str)
+    graph = IRGraph()
     for node_id, node_data in data.get("nodes", {}).items():
-        node: object = IRNode(
+        node = IRNode(
             id=node_id,
             op_type=node_data.get("op", ""),
             inputs=node_data.get("inputs", []),

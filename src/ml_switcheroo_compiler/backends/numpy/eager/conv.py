@@ -30,9 +30,6 @@ class ConvDimSpecs:
 class ConvExecutionState:
     """Configuration class for conv execution state."""
 
-    lhs_pad: "np.ndarray[object, object]"
-    rhs_c: "np.ndarray[object, object]"
-    out: "np.ndarray[object, object]"
     config: ConvConfig
     spatial_dims: int
 
@@ -75,7 +72,7 @@ def _get_conv_defaults(spatial_dims: int) -> tuple[str, str]:
     return ("NCDHW", "OIDHW")
 
 
-def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: int, dimension_numbers: object) -> ConvDimSpecs:
+def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: int, dimension_numbers) -> ConvDimSpecs:
     """Parse dimension numbers for convolution.
 
     Args:
@@ -88,9 +85,9 @@ def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: in
         ConvDimSpecs: Result.
     """
     if dimension_numbers is None:
-        lhs_spec: object = (0, 1) + tuple(range(2, lhs_ndim))
-        rhs_spec: object = (0, 1) + tuple(range(2, rhs_ndim))
-        out_spec: object = (0, 1) + tuple(range(2, lhs_ndim))
+        lhs_spec: tuple = (0, 1) + tuple(range(2, lhs_ndim))
+        rhs_spec: tuple = (0, 1) + tuple(range(2, rhs_ndim))
+        out_spec: tuple = (0, 1) + tuple(range(2, lhs_ndim))
         return ConvDimSpecs(spatial_dims, lhs_spec, rhs_spec, out_spec)
     if isinstance(dimension_numbers, tuple) and len(dimension_numbers) == MAGIC_VAL_3:
         (lhs_spec, rhs_spec, out_spec) = dimension_numbers
@@ -126,15 +123,15 @@ def _calculate_same_padding(
     Returns:
         object: Result.
     """
-    spatial_dims: object = len(lhs_shape) - 2
-    pad_list: object = []
+    spatial_dims: int = len(lhs_shape) - 2
+    pad_list: list = []
     for i in range(spatial_dims):
-        in_size: object = lhs_shape[2 + i]
-        filter_size: object = (rhs_shape[2 + i] - 1) * rhs_dilation[i] + 1
-        out_size: object = int(np.ceil(float(in_size) / window_strides[i]))
-        pad_total: object = max((out_size - 1) * window_strides[i] + filter_size - in_size, 0)
-        pad_front: object = pad_total // 2
-        pad_back: object = pad_total - pad_front
+        in_size: int = lhs_shape[2 + i]
+        filter_size: int = (rhs_shape[2 + i] - 1) * rhs_dilation[i] + 1
+        out_size: int = int(np.ceil(float(in_size) / window_strides[i]))
+        pad_total: int = max((out_size - 1) * window_strides[i] + filter_size - in_size, 0)
+        pad_front: int = pad_total // 2
+        pad_back: np.ndarray = pad_total - pad_front
         pad_list.append((pad_front, pad_back))
     return pad_list
 
@@ -150,8 +147,8 @@ def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_
     Returns:
         list: Result.
     """
-    spatial_dims: object = len(lhs_shape) - 2
-    padding: object = config.padding
+    spatial_dims: int = len(lhs_shape) - 2
+    padding: str = config.padding
     if not isinstance(padding, str):
         if padding is None:
             return [(0, 0)] * spatial_dims
@@ -159,12 +156,12 @@ def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_
     if padding == "VALID":
         return [(0, 0)] * spatial_dims
     if padding == "SAME":
-        rhs_dilation: object = config.rhs_dilation if config.rhs_dilation is not None else [1] * spatial_dims
+        rhs_dilation: np.ndarray = config.rhs_dilation if config.rhs_dilation is not None else [1] * spatial_dims
         return _calculate_same_padding(lhs_shape, rhs_shape, rhs_dilation, config.window_strides)
     return [(0, 0)] * spatial_dims
 
 
-def _apply_conv_dilation(tensor: "np.ndarray[object, object]", dilation: list[int], spatial_dims: int) -> "np.ndarray[object, object]":
+def _apply_conv_dilation(tensor, dilation: list[int], spatial_dims: int):
     """Apply dilation to a convolution tensor.
 
     Args:
@@ -177,11 +174,11 @@ def _apply_conv_dilation(tensor: "np.ndarray[object, object]", dilation: list[in
     """
     if not any(d > 1 for d in dilation):
         return tensor
-    new_shape: object = list(tensor.shape)
+    new_shape: list = list(tensor.shape)
     for i, d in enumerate(dilation):
         new_shape[2 + i] = (tensor.shape[2 + i] - 1) * d + 1
-    dilated: object = np.zeros(new_shape, dtype=tensor.dtype)
-    slices: object = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
+    dilated: np.ndarray = np.zeros(new_shape, dtype=tensor.dtype)
+    slices: tuple = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
     dilated[tuple(slices)] = tensor
     return dilated
 
@@ -197,7 +194,7 @@ class PatchConfig:
     feature_group_count: int
 
 
-def _compute_conv_patch_group(lhs_patch: "np.ndarray[object, object]", rhs_c: "np.ndarray[object, object]", config: PatchConfig, g: int) -> "np.ndarray[object, object]":
+def _compute_conv_patch_group(lhs_patch, rhs_c, config: PatchConfig, g: int):
     """Evaluate _compute_conv_patch_group operation.
 
     Args:
@@ -209,14 +206,14 @@ def _compute_conv_patch_group(lhs_patch: "np.ndarray[object, object]", rhs_c: "n
     Returns:
         object: Result.
     """
-    group_in_c: object = config.group_in_c
-    group_out_c: object = config.group_out_c
-    lp_g: object = lhs_patch[:, g * group_in_c : (g + 1) * group_in_c, ...]
-    rc_g: object = rhs_c[g * group_out_c : (g + 1) * group_out_c, :, ...]
+    group_in_c: int = config.group_in_c
+    group_out_c: int = config.group_out_c
+    lp_g: np.ndarray = lhs_patch[:, g * group_in_c : (g + 1) * group_in_c, ...]
+    rc_g: np.ndarray = rhs_c[g * group_out_c : (g + 1) * group_out_c, :, ...]
     return np.tensordot(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs))
 
 
-def _compute_single_patch_grouped(lhs_patch: "np.ndarray[object, object]", rhs_c: "np.ndarray[object, object]", out: "np.ndarray[object, object]", spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
+def _compute_single_patch_grouped(lhs_patch, rhs_c, out, spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
     """Evaluate _compute_single_patch_grouped operation.
 
     Args:
@@ -227,8 +224,8 @@ def _compute_single_patch_grouped(lhs_patch: "np.ndarray[object, object]", rhs_c
         config (PatchConfig): The config parameter.
     """
     for g in range(config.feature_group_count):
-        res: object = _compute_conv_patch_group(lhs_patch, rhs_c, config, g)
-        s_c: object = slice(g * config.group_out_c, (g + 1) * config.group_out_c)
+        res: np.ndarray = _compute_conv_patch_group(lhs_patch, rhs_c, config, g)
+        s_c: slice = slice(g * config.group_out_c, (g + 1) * config.group_out_c)
         out[tuple([slice(None), s_c] + list(spatial_indices))] = res
 
 
@@ -243,10 +240,10 @@ def _get_patch_slices(spatial_indices: tuple[int, ...], window_strides: Union[tu
     Returns:
         object: Result.
     """
-    slices: object = [slice(None), slice(None)]
+    slices: tuple = [slice(None), slice(None)]
     for i, idx in enumerate(spatial_indices):
-        start: object = idx * window_strides[i]
-        end: object = start + rhs_shape[2 + i]
+        start: int = idx * window_strides[i]
+        end: int = start + rhs_shape[2 + i]
         slices.append(slice(start, end))
     return tuple(slices)
 
@@ -258,14 +255,14 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         state (ConvExecutionState): The state parameter.
         spatial_indices (tuple): The spatial_indices parameter.
     """
-    slices: object = _get_patch_slices(spatial_indices, state.config.window_strides, state.rhs_c.shape)
-    lhs_patch: object = state.lhs_pad[slices]
-    axes_lhs: object = [1] + list(range(2, 2 + state.spatial_dims))
-    axes_rhs: object = [1] + list(range(2, 2 + state.spatial_dims))
+    slices: tuple = _get_patch_slices(spatial_indices, state.config.window_strides, state.rhs_c.shape)
+    lhs_patch: np.ndarray = state.lhs_pad[slices]
+    axes_lhs: list = [1] + list(range(2, 2 + state.spatial_dims))
+    axes_rhs: list = [1] + list(range(2, 2 + state.spatial_dims))
     if state.config.feature_group_count > 1:
-        in_channels: object = lhs_patch.shape[1]
-        out_channels: object = state.rhs_c.shape[0]
-        patch_config: object = PatchConfig(
+        in_channels: int = lhs_patch.shape[1]
+        out_channels: int = state.rhs_c.shape[0]
+        patch_config: PatchConfig = PatchConfig(
             axes_lhs=axes_lhs,
             axes_rhs=axes_rhs,
             group_in_c=in_channels // state.config.feature_group_count,
@@ -274,11 +271,11 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         )
         _compute_single_patch_grouped(lhs_patch, state.rhs_c, state.out, spatial_indices, patch_config)
     else:
-        res: object = np.tensordot(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
+        res: np.ndarray = np.tensordot(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
         state.out[tuple([slice(None), slice(None)] + list(spatial_indices))] = res
 
 
-def _compute_conv_patches(lhs_pad: "np.ndarray[object, object]", rhs_c: "np.ndarray[object, object]", out: "np.ndarray[object, object]", config: ConvConfig) -> None:
+def _compute_conv_patches(lhs_pad, rhs_c, out, config: ConvConfig) -> None:
     """Evaluate _compute_conv_patches operation.
 
     Args:
@@ -287,14 +284,14 @@ def _compute_conv_patches(lhs_pad: "np.ndarray[object, object]", rhs_c: "np.ndar
         out (object): The out parameter.
         config (ConvConfig): The config parameter.
     """
-    spatial_dims: object = len(lhs_pad.shape) - 2
-    out_spatial: object = out.shape[2:]
+    spatial_dims: int = len(lhs_pad.shape) - 2
+    out_spatial: tuple = out.shape[2:]
     for spatial_indices in itertools.product(*[range(d) for d in out_spatial]):
-        state: object = ConvExecutionState(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
+        state: ConvExecutionState = ConvExecutionState(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
         _compute_single_patch(state, spatial_indices)
 
 
-def _apply_conv_padding_helper(lhs_c: "np.ndarray[object, object]", rhs_c: "np.ndarray[object, object]", config: ConvConfig) -> "np.ndarray[object, object]":
+def _apply_conv_padding_helper(lhs_c, rhs_c, config: ConvConfig):
     """Evaluate _apply_conv_padding_helper operation.
 
     Args:
@@ -305,12 +302,12 @@ def _apply_conv_padding_helper(lhs_c: "np.ndarray[object, object]", rhs_c: "np.n
     Returns:
         object: Result.
     """
-    pad_list: object = _calculate_conv_padding(config, lhs_c.shape, rhs_c.shape)
-    pad_width: object = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
+    pad_list: list = _calculate_conv_padding(config, lhs_c.shape, rhs_c.shape)
+    pad_width: tuple = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
     return np.pad(lhs_c, pad_width, mode="constant", constant_values=0)
 
 
-def _preprocess_conv_tensors(lhs: "np.ndarray[object, object]", rhs: "np.ndarray[object, object]", config: ConvConfig, specs: ConvDimSpecs) -> tuple["np.ndarray[object, object]", "np.ndarray[object, object]"]:
+def _preprocess_conv_tensors(lhs, rhs, config: ConvConfig, specs: ConvDimSpecs):
     """Evaluate _preprocess_conv_tensors operation.
 
     Args:
@@ -322,22 +319,22 @@ def _preprocess_conv_tensors(lhs: "np.ndarray[object, object]", rhs: "np.ndarray
     Returns:
         tuple: Result.
     """
-    lhs_c: object = np.transpose(lhs, specs.lhs_spec)
-    rhs_c: object = np.transpose(rhs, specs.rhs_spec)
+    lhs_c: np.ndarray = np.transpose(lhs, specs.lhs_spec)
+    rhs_c: np.ndarray = np.transpose(rhs, specs.rhs_spec)
     if config.feature_group_count > 1:
-        in_channels: object = lhs_c.shape[1]
-        expected_rhs_in: object = in_channels // config.feature_group_count
+        in_channels: int = lhs_c.shape[1]
+        expected_rhs_in: np.ndarray = in_channels // config.feature_group_count
         if rhs_c.shape[1] != expected_rhs_in:
             if rhs_c.shape[1] == in_channels:
-                permutation: object = (1, 0) + tuple(range(2, rhs_c.ndim))
-                rhs_c: object = np.transpose(rhs_c, permutation)
-                new_shape: object = (rhs_c.shape[0] * rhs_c.shape[1] // expected_rhs_in, expected_rhs_in) + rhs_c.shape[2:]
-                rhs_c: object = np.reshape(rhs_c, new_shape)
-    lhs_dilation: object = config.lhs_dilation if config.lhs_dilation is not None else [1] * specs.spatial_dims
-    rhs_dilation: object = config.rhs_dilation if config.rhs_dilation is not None else [1] * specs.spatial_dims
-    lhs_dilated: object = _apply_conv_dilation(lhs_c, lhs_dilation, specs.spatial_dims)
-    rhs_c: object = _apply_conv_dilation(rhs_c, rhs_dilation, specs.spatial_dims)
-    lhs_pad: object = _apply_conv_padding_helper(lhs_dilated, rhs_c, config)
+                permutation: np.ndarray = (1, 0) + tuple(range(2, rhs_c.ndim))
+                rhs_c: np.ndarray = np.transpose(rhs_c, permutation)
+                new_shape: list = (rhs_c.shape[0] * rhs_c.shape[1] // expected_rhs_in, expected_rhs_in) + rhs_c.shape[2:]
+                rhs_c: np.ndarray = np.reshape(rhs_c, new_shape)
+    lhs_dilation: np.ndarray = config.lhs_dilation if config.lhs_dilation is not None else [1] * specs.spatial_dims
+    rhs_dilation: np.ndarray = config.rhs_dilation if config.rhs_dilation is not None else [1] * specs.spatial_dims
+    lhs_dilated: np.ndarray = _apply_conv_dilation(lhs_c, lhs_dilation, specs.spatial_dims)
+    rhs_c: slice = _apply_conv_dilation(rhs_c, rhs_dilation, specs.spatial_dims)
+    lhs_pad: np.ndarray = _apply_conv_padding_helper(lhs_dilated, rhs_c, config)
     return (lhs_pad, rhs_c)
 
 
@@ -358,7 +355,7 @@ def _compute_out_shape(
     Returns:
         object: Result.
     """
-    out_spatial: object = [(lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1 for i in range(spatial_dims)]
+    out_spatial: tuple = [(lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1 for i in range(spatial_dims)]
     return [lhs_pad_shape[0], rhs_c_shape[0]] + out_spatial
 
 
@@ -371,13 +368,13 @@ def _get_inv_out_spec(out_spec: tuple[int, ...]) -> list[int]:
     Returns:
         object: Result.
     """
-    inv_out_spec: object = [0] * len(out_spec)
+    inv_out_spec: tuple = [0] * len(out_spec)
     for i, p in enumerate(out_spec):
         inv_out_spec[p] = i
     return inv_out_spec
 
 
-def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs: object) -> object:
+def _conv_general_dilated(lhs, rhs, config: ConvConfig, **kwargs):
     """Evaluate.
 
     Args:
@@ -389,20 +386,20 @@ def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs
     Returns:
         object: Result.
     """
-    lhs_arr: object = np.asarray(lhs)
-    rhs_arr: object = np.asarray(rhs)
-    spatial_dims: object = lhs_arr.ndim - 2
-    specs: object = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)
+    lhs_arr: np.ndarray = np.asarray(lhs)
+    rhs_arr: np.ndarray = np.asarray(rhs)
+    spatial_dims: int = lhs_arr.ndim - 2
+    specs: list = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)
     (lhs_pad, rhs_c) = _preprocess_conv_tensors(lhs_arr, rhs_arr, config, specs)
-    out_shape: object = _compute_out_shape(lhs_pad.shape, rhs_c.shape, spatial_dims, config.window_strides)
-    out: object = np.zeros(out_shape, dtype=lhs_arr.dtype)
+    out_shape: list = _compute_out_shape(lhs_pad.shape, rhs_c.shape, spatial_dims, config.window_strides)
+    out: np.ndarray = np.zeros(out_shape, dtype=lhs_arr.dtype)
     _compute_conv_patches(lhs_pad, rhs_c, out, config)
-    inv_out_spec: object = _get_inv_out_spec(specs.out_spec)
+    inv_out_spec: tuple = _get_inv_out_spec(specs.out_spec)
     return np.transpose(out, inv_out_spec)
 
 
 @numpy_eager_registry.register("ConvGeneralDilated")
-def _np_conv_general_dilated(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_conv_general_dilated(backend_module, *args, **kwargs):
     """Evaluate _np_conv_general_dilated operation.
 
     Args:
@@ -417,12 +414,12 @@ def _np_conv_general_dilated(backend_module: object, *args: object, **kwargs: ob
 
     if len(args) == 4:
         lhs, rhs, window_strides, padding = args
-        config: object = ConvConfig(window_strides=window_strides, padding=padding)
+        config: ConvConfig = ConvConfig(window_strides=window_strides, padding=padding)
         return _conv_general_dilated(lhs, rhs, config, **kwargs)
     return _conv_general_dilated(*args, **kwargs)
 
 
-def _calculate_conv_transpose_padding(spatial_in: tuple[object, ...], spatial_k: tuple[object, ...], strides: tuple[object, ...], padding: str) -> tuple[object, ...]:
+def _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding: str):
     """Calculate output spatial shapes and paddings for transposed convolution.
 
     Args:
@@ -434,22 +431,22 @@ def _calculate_conv_transpose_padding(spatial_in: tuple[object, ...], spatial_k:
     Returns:
         tuple: Result.
     """
-    out_spatial: object = []
-    pads: object = []
+    out_spatial: tuple = []
+    pads: list = []
     for s_in, k, st in zip(spatial_in, spatial_k, strides):
         if padding == "VALID":
-            s_out: object = (s_in - 1) * st + k
+            s_out: np.ndarray = (s_in - 1) * st + k
         else:
-            s_out: object = s_in * st
+            s_out: np.ndarray = s_in * st
         out_spatial.append(s_out)
-        total_pad: object = s_out - s_in * st + st + k - 2
-        pad_r: object = total_pad // 2
-        pad_l: object = total_pad - pad_r
+        total_pad: int = s_out - s_in * st + st + k - 2
+        pad_r: int = total_pad // 2
+        pad_l: int = total_pad - pad_r
         pads.append((pad_l, pad_r))
     return out_spatial, pads
 
 
-def _build_conv_transpose_config(spatial_in: tuple[object, ...], spatial_k: tuple[object, ...], strides: tuple[object, ...], pads: list[object]) -> tuple[object, ...]:
+def _build_conv_transpose_config(spatial_in, spatial_k, strides, pads):
     """Build the configuration and reversed slices for ConvTranspose.
 
     Args:
@@ -463,13 +460,13 @@ def _build_conv_transpose_config(spatial_in: tuple[object, ...], spatial_k: tupl
     """
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
-    slices: object = (slice(None), slice(None)) + tuple(slice(None, None, -1) for _ in spatial_k)
-    spatial_rank: object = len(spatial_in)
-    n_dims: object = spatial_rank + 2
-    lhs_spec: object = (0, 1) + tuple(range(2, n_dims))
-    rhs_spec: object = (0, 1) + tuple(range(2, n_dims))
-    out_spec: object = lhs_spec
-    config_obj: object = ConvConfig(
+    slices: tuple = (slice(None), slice(None)) + tuple(slice(None, None, -1) for _ in spatial_k)
+    spatial_rank: int = len(spatial_in)
+    n_dims: int = spatial_rank + 2
+    lhs_spec: tuple = (0, 1) + tuple(range(2, n_dims))
+    rhs_spec: tuple = (0, 1) + tuple(range(2, n_dims))
+    out_spec: tuple = lhs_spec
+    config_obj: ConvConfig = ConvConfig(
         window_strides=(1,) * spatial_rank,
         padding=pads,
         lhs_dilation=strides,
@@ -480,7 +477,7 @@ def _build_conv_transpose_config(spatial_in: tuple[object, ...], spatial_k: tupl
 
 
 @numpy_eager_registry.register("ConvTranspose")
-def _np_conv_transpose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_conv_transpose(backend_module, *args, **kwargs):
     """Evaluate _np_conv_transpose operation.
 
     Args:
@@ -491,15 +488,15 @@ def _np_conv_transpose(backend_module: object, *args: object, **kwargs: object) 
     Returns:
         object: Result.
     """
-    lhs: object = np.asarray(args[0])
-    rhs: object = np.asarray(args[1])
-    strides: object = args[2] if len(args) > 2 else kwargs.get("strides", 1)
-    padding: object = args[3] if len(args) > 3 else kwargs.get("padding", "VALID")
-    spatial_in: object = lhs.shape[2:]
-    spatial_k: object = rhs.shape[2:]
+    lhs: np.ndarray = np.asarray(args[0])
+    rhs: np.ndarray = np.asarray(args[1])
+    strides: list = args[2] if len(args) > 2 else kwargs.get("strides", 1)
+    padding: str = args[3] if len(args) > 3 else kwargs.get("padding", "VALID")
+    spatial_in: np.ndarray = lhs.shape[2:]
+    spatial_k: np.ndarray = rhs.shape[2:]
     if isinstance(strides, int):
-        strides: object = (strides,) * len(spatial_in)
+        strides: list = (strides,) * len(spatial_in)
     out_spatial, pads = _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding)
     slices, config_obj = _build_conv_transpose_config(spatial_in, spatial_k, strides, pads)
-    rhs_rev: object = rhs[slices]
+    rhs_rev: np.ndarray = rhs[slices]
     return _np_conv_general_dilated(backend_module, lhs, rhs_rev, config_obj)

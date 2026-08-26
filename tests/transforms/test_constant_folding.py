@@ -14,7 +14,7 @@ def test_constant_folding_coverage_brute() -> None:
     """Test the constant folding coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -45,7 +45,7 @@ def test_constant_folding_coverage_brute_2() -> None:
     """Test the constant folding coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -69,14 +69,14 @@ def test_constant_folding_coverage_brute_2() -> None:
         pass
 
 
-def test_constant_folding_numel_branch(monkeypatch: object) -> None:
+def test_constant_folding_numel_branch(monkeypatch) -> None:
     """Test the constant folding numel branch behavior.
 
     Args:
         monkeypatch (object): The monkeypatch parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -98,7 +98,7 @@ def test_constant_folding_numel_branch(monkeypatch: object) -> None:
                     """
                     return 1
 
-            def mock_eval(g: object, inputs: dict) -> dict:
+            def mock_eval(g, inputs: dict) -> dict:
                 """Evaluate and process the mock eval operation.
 
                 Args:
@@ -127,7 +127,7 @@ def test_constant_folding() -> None:
     """Test the constant folding behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         g = LogicalGraph(outputs=["n1"])
@@ -146,7 +146,7 @@ def test_constant_folding_unsupported_op() -> None:
     """Test the constant folding unsupported op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         g = LogicalGraph(outputs=["n1"])
@@ -162,7 +162,7 @@ def test_constant_folding_scalar_unwrap() -> None:
     """Test the constant folding scalar unwrap behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         g = LogicalGraph(outputs=["n1"])
@@ -183,7 +183,7 @@ def test_constant_folding_2() -> None:
     """Test the constant folding behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that the constant folding pass correctly folds an 'Add' operation.\n\n    This test constructs a logical graph with two 'Constant' nodes feeding into\n    an 'Add' node. It asserts that after running the constant folding pass,\n    the 'Add' node is replaced by a 'Constant' node containing the sum of the\n    two inputs\n\n    Returns:\n    None\n    "
@@ -203,7 +203,7 @@ def test_constant_folding_unsupported_op_2() -> None:
     """Test the constant folding unsupported op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that the constant folding pass ignores unsupported operations.\n\n    This test constructs a logical graph with an 'UnknownOp' node that has a\n    'Constant' input. It asserts that the constant folding pass does not modify\n    the unsupported operation\n\n    Returns:\n    None\n    "
@@ -220,7 +220,7 @@ def test_constant_folding_scalar_unwrap_2() -> None:
     """Test the constant folding scalar unwrap behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that constant folding unwraps scalar numpy arrays to Python scalars.\n\n    This test constructs a logical graph with two integer 'Constant' nodes feeding\n    into an 'Add' node. It asserts that after constant folding, the resulting\n    'Constant' node's value is unwrapped from a numpy array into a standard\n    Python scalar type\n\n    Returns:\n    None\n    "
@@ -238,14 +238,14 @@ def test_constant_folding_scalar_unwrap_2() -> None:
 "Core abstractions and logic definitions for test_constant_folding_coverage2.py."
 
 
-def test_constant_folding_numel_branch_2(monkeypatch: object) -> None:
+def test_constant_folding_numel_branch_2(monkeypatch) -> None:
     """Test the constant folding numel branch behavior.
 
     Args:
         monkeypatch (object): The monkeypatch parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -267,7 +267,7 @@ def test_constant_folding_numel_branch_2(monkeypatch: object) -> None:
                     """
                     return 1
 
-            def mock_eval(g: object, inputs: dict) -> dict:
+            def mock_eval(g, inputs: dict) -> dict:
                 """Evaluate and process the mock eval operation.
 
                 Args:

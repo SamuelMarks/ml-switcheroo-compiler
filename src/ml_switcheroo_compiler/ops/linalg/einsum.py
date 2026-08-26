@@ -22,17 +22,17 @@ class EinsumLexer:
         Returns:
             tuple[int, ...]: Result.
         """
-        equation: object = equation.replace(" ", "")
+        equation = equation.replace(" ", "")
         if "->" in equation:
             in_subs, out_sub = equation.split("->")
         else:
-            in_subs: object = equation
+            in_subs = equation
             counts: dict[str, int] = {}
             for char in in_subs.replace(",", "").replace(".", ""):
                 counts[char] = counts.get(char, 0) + 1
-            out_sub: object = "".join(sorted([c for c, count in counts.items() if count == 1]))
+            out_sub = "".join(sorted([c for c, count in counts.items() if count == 1]))
             if "..." in in_subs:
-                out_sub: object = "..." + out_sub
+                out_sub = "..." + out_sub
         return in_subs, out_sub
 
 
@@ -50,7 +50,7 @@ class EinsumValidator:
         Raises:
             ValueError: An exception.
         """
-        in_parts: object = in_subs.split(",")
+        in_parts = in_subs.split(",")
         if len(in_parts) != len(shapes):
             raise ValueError(f"Equation expected {len(in_parts)} inputs but got {len(shapes)}")
 
@@ -141,8 +141,8 @@ class EinsumPlanner:
         Raises:
             ValueError: An exception.
         """
-        num_named: object = left_len + right_len
-        num_bcast: object = shape_len - num_named
+        num_named = left_len + right_len
+        num_bcast = shape_len - num_named
         if num_bcast < 0:
             raise ValueError(f"Shape {shape} cannot match subscript {part}")
         return num_bcast
@@ -163,7 +163,7 @@ class EinsumPlanner:
         """
         if broadcast_shape is None:
             return bcast_dims
-        new_shape: object = []
+        new_shape = []
         for s1, s2 in zip(broadcast_shape, bcast_dims):
             if s1 != s2 and s1 != 1 and s2 != 1:
                 raise ValueError("Ellipsis shapes cannot be broadcast")
@@ -183,17 +183,17 @@ class EinsumPlanner:
             tuple[int, ...]: Result.
         """
         EinsumPlanner._validate_ellipsis_count(part, shape)
-        parts_str: object = part.split("...")
-        left_part: object = parts_str[0]
-        right_part: object = parts_str[1]
+        parts_str = part.split("...")
+        left_part = parts_str[0]
+        right_part = parts_str[1]
 
-        num_bcast: object = EinsumPlanner._count_hidden_dims(len(left_part), len(right_part), len(shape), part, shape)
+        num_bcast = EinsumPlanner._count_hidden_dims(len(left_part), len(right_part), len(shape), part, shape)
 
-        bcast_dims: object = shape[len(left_part) : len(left_part) + num_bcast]
-        broadcast_shape: object = EinsumPlanner._combine_broadcast_shapes(broadcast_shape, bcast_dims)
+        bcast_dims = shape[len(left_part) : len(left_part) + num_bcast]
+        broadcast_shape = EinsumPlanner._combine_broadcast_shapes(broadcast_shape, bcast_dims)
 
-        named_shape: object = shape[: len(left_part)] + shape[len(left_part) + num_bcast :]
-        part_chars: object = left_part + right_part
+        named_shape = shape[: len(left_part)] + shape[len(left_part) + num_bcast :]
+        part_chars = left_part + right_part
         return part_chars, named_shape, broadcast_shape
 
     @staticmethod
@@ -205,7 +205,7 @@ class EinsumPlanner:
             shape (tuple): The shape parameter.
             axis_map (dict): The axis_map parameter.
         """
-        parsed_part: object = ParsedEquationPart(part, shape)
+        parsed_part = ParsedEquationPart(part, shape)
         parsed_part.validate_length()
         parsed_part.validate_characters()
         parsed_part.process_axis_map(axis_map)
@@ -243,13 +243,13 @@ class EinsumPlanner:
         Returns:
             tuple[int, ...]: Result.
         """
-        in_parts: object = in_subs.split(",")
+        in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
         broadcast_shape: Optional[tuple[int, ...]] = None
 
         for part, shape in zip(in_parts, shapes):
             if "..." in part:
-                broadcast_shape: object = EinsumPlanner._parse_ellipsis_part(part, shape, axis_map, broadcast_shape)
+                broadcast_shape = EinsumPlanner._parse_ellipsis_part(part, shape, axis_map, broadcast_shape)
             else:
                 EinsumPlanner._parse_named_part(part, shape, axis_map)
 
@@ -295,7 +295,7 @@ class EinsumPlanner:
         Returns:
             tuple[int, ...]: Result.
         """
-        out_shape: object = []
+        out_shape = []
         for char in out_sub:
             if char not in axis_map:
                 continue
@@ -324,11 +324,11 @@ class EinsumPlanner:
         if out_sub.count("...") > 1:
             raise ValueError("Multiple ellipses in output subscript")
 
-        parts: object = out_sub.split("...")
+        parts = out_sub.split("...")
         if len(parts) == MAGIC_VAL_2:
-            out_shape: object = EinsumPlanner._compute_output_shape_with_ellipsis(parts, axis_map, broadcast_shape)
+            out_shape = EinsumPlanner._compute_output_shape_with_ellipsis(parts, axis_map, broadcast_shape)
         else:
-            out_shape: object = EinsumPlanner._resolve_chars(out_sub, axis_map)
+            out_shape = EinsumPlanner._resolve_chars(out_sub, axis_map)
 
         return tuple(out_shape)
 
@@ -373,7 +373,7 @@ class EinsumEquationParser:
         Returns:
             list: Result.
         """
-        out_shape: object = []
+        out_shape = []
         for char in out_sub:
             if char not in axis_map:
                 continue
@@ -423,7 +423,7 @@ class Einsum(OpDef):
     """
 
     @staticmethod
-    def _extract_equation(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[str, tuple[object, ...]]:
+    def _extract_equation(args, kwargs):
         """Evaluate _extract_equation operation.
 
         Args:
@@ -436,7 +436,7 @@ class Einsum(OpDef):
         Raises:
             ValueError: An exception.
         """
-        equation: object = kwargs.get("equation", kwargs.get("subscripts"))
+        equation = kwargs.get("equation", kwargs.get("subscripts"))
         if isinstance(equation, str):
             return equation, args
         if args and isinstance(args[0], str):
@@ -444,7 +444,7 @@ class Einsum(OpDef):
         raise ValueError("Einsum requires an 'equation' string attribute.")
 
     @staticmethod
-    def _extract_shapes(args: tuple[object, ...]) -> Optional[list[tuple[int, ...]]]:
+    def _extract_shapes(args) -> Optional[list[tuple[int, ...]]]:
         """Evaluate _extract_shapes operation.
 
         Args:
@@ -466,9 +466,9 @@ class Einsum(OpDef):
 
     def infer_shape(
         self,
-        *args: object,
-        **kwargs: object,
-    ) -> object:
+        *args,
+        **kwargs,
+    ):
         """Infer the output shape of the operation.
 
         Args:
@@ -479,7 +479,7 @@ class Einsum(OpDef):
             tuple[int, ...]: Result.
         """
         equation, remaining_args = self._extract_equation(args, kwargs)
-        shapes: object = self._extract_shapes(remaining_args)
+        shapes = self._extract_shapes(remaining_args)
         if shapes is None:
             return ()
 

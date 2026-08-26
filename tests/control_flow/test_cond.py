@@ -18,7 +18,7 @@ def test_cond_eager() -> None:
     """Test the cond eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the conditional operator.\n\n    Verifies that cond correctly evaluates the predicate and executes the\n    corresponding branch function (true or false) when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
@@ -34,13 +34,13 @@ def test_cond_trace() -> None:
     """Test the cond trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the conditional operator.\n\n    Verifies that cond correctly records the conditional operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
-        def true_fn() -> object:
+        def true_fn():
             """True fn.
 
             Returns:
@@ -48,7 +48,7 @@ def test_cond_trace() -> None:
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
-        def false_fn() -> object:
+        def false_fn():
             """False fn.
 
             Returns:

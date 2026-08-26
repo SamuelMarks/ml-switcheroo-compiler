@@ -5,10 +5,10 @@ from typing import Callable
 
 # Fallback to the OpDef's infer_shape method if it still has it
 
-_SHAPE_INFERENCE_REGISTRY: dict[str, Callable[..., object]] = {}
+_SHAPE_INFERENCE_REGISTRY = {}
 
 
-def register_shape_inference(op_type: str) -> Callable[..., object]:
+def register_shape_inference(op_type: str):
     """Decorate to register a shape inference function for an op.
 
     Args:
@@ -18,7 +18,7 @@ def register_shape_inference(op_type: str) -> Callable[..., object]:
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., object]) -> Callable[..., object]:
+    def decorator(func):
         """Evaluate decorator operation.
 
         Args:
@@ -33,7 +33,7 @@ def register_shape_inference(op_type: str) -> Callable[..., object]:
     return decorator
 
 
-def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
+def infer_shape(op_type: str, *args, **kwargs):
     """Infer shape using the registered function.
 
     Args:
@@ -49,7 +49,7 @@ def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
 
     from ml_switcheroo_compiler.ops.registry import get_op
 
-    op_cls: object = get_op(op_type)
+    op_cls = get_op(op_type)
     if hasattr(op_cls, "infer_shape") and callable(op_cls.infer_shape):
         return op_cls().infer_shape(*args, **kwargs)
     return ()

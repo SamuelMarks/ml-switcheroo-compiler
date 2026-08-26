@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class SobolSample(OpDef):
     """Sobol sequence generator."""
 
-    op_name: object = "SobolSample"
+    op_name = "SobolSample"
 
-    def infer_shape(self, dim: int, num_results: int, skip: int = 0, **kwargs: object) -> object:
+    def infer_shape(self, dim: int, num_results: int, skip: int = 0, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -25,7 +25,7 @@ class SobolSample(OpDef):
         return (num_results, dim)
 
 
-def generate_sobol(dim: int, num_results: int, skip: int = 0) -> object:
+def generate_sobol(dim: int, num_results: int, skip: int = 0):
     """Generate a Sobol sequence mathematically.
 
     Args:

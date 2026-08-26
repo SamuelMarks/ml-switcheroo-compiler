@@ -3,41 +3,43 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Signbit")
-def _signbit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _signbit operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "signbit", None)
+    func = getattr(backend_module, "signbit", None)
     if func:
         return func(*args, **kwargs)
-    x: object = args[0]
+    x = args[0]
     return x < 0
 
 
 @global_eager_registry.register("Packbits")
-def _np_packbits(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_packbits operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
+    func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -46,18 +48,18 @@ def _np_packbits(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_unpackbits operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
+    func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

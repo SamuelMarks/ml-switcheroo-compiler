@@ -3,84 +3,86 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: object, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argpartition operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
-        kth (object): The kth parameter.
+        backend_module (Any): The backend_module parameter.
+        a (Any): The a parameter.
+        kth (Any): The kth parameter.
         axis (int): The axis parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.argsort(a, axis=axis) if hasattr(backend_module, "argsort") else a
 
 
 @global_eager_registry.register("Median")
-def _median(backend_module: object, *args: object, **kwargs: object) -> object:
+def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _median operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.median(*args, **kwargs)
 
 
 @global_eager_registry.register("Percentile")
-def _percentile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _percentile operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.percentile(*args, **kwargs)
 
 
 @global_eager_registry.register("Quantile")
-def _quantile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _quantile operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.quantile(*args, **kwargs)
 
 
 @global_eager_registry.register("Partition")
-def _np_partition(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_partition operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
+    func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

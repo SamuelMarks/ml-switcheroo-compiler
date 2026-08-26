@@ -19,8 +19,8 @@ class All(ReductionOp):
     tensor
     """
 
-    op_name: object = "All"
-    np_op_name: object = "all"
+    op_name = "All"
+    np_op_name = "all"
 
 
 @register_op("Any")
@@ -31,5 +31,5 @@ class AnyOp(ReductionOp):
     tensor
     """
 
-    op_name: object = "Any"
-    np_op_name: object = "any"
+    op_name = "Any"
+    np_op_name = "any"

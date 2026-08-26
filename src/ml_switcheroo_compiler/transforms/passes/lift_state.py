@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def flatten_state_dict(state_dict: dict[str, object], prefix: str = "") -> dict[str, object]:
+def flatten_state_dict(state_dict, prefix: str = ""):
     """Flatten a nested state dictionary (like flax.nnx.State) into a flat map.
 
     Args:
@@ -16,9 +16,9 @@ def flatten_state_dict(state_dict: dict[str, object], prefix: str = "") -> dict[
     Returns:
         Dict[str, object]: Flattened state map
     """
-    flat: object = {}
+    flat = {}
     for k, v in state_dict.items():
-        new_key: object = f"{prefix}.{k}" if prefix else k
+        new_key = f"{prefix}.{k}" if prefix else k
         if isinstance(v, dict):
             flat.update(flatten_state_dict(v, new_key))
         else:
@@ -26,7 +26,7 @@ def flatten_state_dict(state_dict: dict[str, object], prefix: str = "") -> dict[
     return flat
 
 
-def unflatten_state_dict(flat_state: dict[str, object]) -> dict[str, object]:
+def unflatten_state_dict(flat_state):
     """Unflatten a state dict back to nested structure.
 
     Args:
@@ -35,19 +35,19 @@ def unflatten_state_dict(flat_state: dict[str, object]) -> dict[str, object]:
     Returns:
         Dict[str, object]: Nested state dict
     """
-    nested: dict[str, object] = {}
+    nested = {}
     for k, v in flat_state.items():
-        parts: object = k.split(".")
-        d: object = nested
+        parts = k.split(".")
+        d = nested
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
-            d: object = d[part]
+            d = d[part]
         d[parts[-1]] = v
     return nested
 
 
-def _get_nodes(block: object) -> Iterable[IRNode]:
+def _get_nodes(block) -> Iterable[IRNode]:
     """Evaluate _get_nodes operation.
 
     Args:
@@ -56,13 +56,13 @@ def _get_nodes(block: object) -> Iterable[IRNode]:
     Returns:
             tuple[int, ...]: Result.
     """
-    nodes: object = getattr(block, "nodes", [])
+    nodes = getattr(block, "nodes", [])
     if isinstance(nodes, dict):
         return nodes.values()
     return nodes
 
 
-def _lift_node(node: IRNode, block: object) -> bool:
+def _lift_node(node: IRNode, block) -> bool:
     """Evaluate _lift_node operation.
 
     Args:
@@ -93,7 +93,7 @@ def _lift_node(node: IRNode, block: object) -> bool:
     return False
 
 
-def _lift_block_ir(block: object) -> bool:
+def _lift_block_ir(block) -> bool:
     """Evaluate _lift_block_ir operation.
 
     Args:
@@ -102,12 +102,12 @@ def _lift_block_ir(block: object) -> bool:
     Returns:
         bool: Result.
     """
-    mod: object = False
+    mod = False
     for node in _get_nodes(block):
-        mod: object = _lift_node(node, block) or mod
+        mod = _lift_node(node, block) or mod
         for attr_val in node.attributes.values():
             if hasattr(attr_val, "nodes"):
-                mod: object = _lift_block_ir(attr_val) or mod
+                mod = _lift_block_ir(attr_val) or mod
     return mod
 
 

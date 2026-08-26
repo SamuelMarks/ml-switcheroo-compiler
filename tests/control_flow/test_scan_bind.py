@@ -4,7 +4,7 @@
 from ml_switcheroo_compiler.ops.control_flow import scan_bind
 
 
-def test_scan_bind_coverage() -> object:
+def test_scan_bind_coverage():
     """Test the scan bind coverage behavior.
 
     Returns:

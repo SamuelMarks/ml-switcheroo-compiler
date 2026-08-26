@@ -40,7 +40,7 @@ class PTQPass:
 
         import yaml
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 self.rules = yaml.safe_load(f)
@@ -56,23 +56,23 @@ class PTQPass:
         Returns:
             IRGraph: Result.
         """
-        optimized: object = False
-        new_nodes: object = {}
+        optimized = False
+        new_nodes = {}
 
-        q_scale: object = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
-        sym_rules: object = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
-        q_zp: object = sym_rules.get("q_zero_point", 0)
-        lowering_map: object = self.rules.get("lowering_map", {})
+        q_scale = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
+        lowering_map = self.rules.get("lowering_map", {})
 
         for node_id, node in graph.nodes.items():
             if node.op_type in lowering_map:
-                new_attrs: object = dict(node.attributes)
+                new_attrs = dict(node.attributes)
                 new_attrs["dtype"] = self.config.target_dtype.name
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
-                new_node: object = clone_logical_node(node, op_type=lowering_map[node.op_type], attributes=new_attrs)
+                new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], attributes=new_attrs)
                 new_nodes[node_id] = new_node
-                optimized: object = True
+                optimized = True
             else:
                 new_nodes[node_id] = node
 
@@ -107,19 +107,19 @@ class PTQCalibrationPass:
         Returns:
             bool: Result.
         """
-        modified: object = False
-        new_nodes: object = dict(graph.nodes)
+        modified = False
+        new_nodes = dict(graph.nodes)
         for node_id, node in graph.nodes.items():
             if node.op_type in ["MatMul", "Conv2D", "Dot", "ConvGeneralDilated"]:
-                new_attrs: object = dict(node.attributes)
+                new_attrs = dict(node.attributes)
                 new_attrs["calibration_method"] = self.method
                 new_attrs["calibration_min"] = -1.0 if self.config.symmetric else 0.0
                 new_attrs["calibration_max"] = 1.0
                 if self.method == "histogram":
                     new_attrs["calibration_histogram"] = [0, 10, 20, 10, 0]
-                new_node: object = clone_logical_node(node, attributes=new_attrs)
+                new_node = clone_logical_node(node, attributes=new_attrs)
                 new_nodes[node_id] = new_node
-                modified: object = True
+                modified = True
 
         if modified:
             graph.nodes.clear()
@@ -141,7 +141,7 @@ class QATFakeQuantizePass:
 
         import yaml
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 self.rules = yaml.safe_load(f)
@@ -157,22 +157,22 @@ class QATFakeQuantizePass:
         Returns:
             bool: Result.
         """
-        modified: object = False
-        sorted_nodes: object = DAGTopologicalSorter.sort(graph)
-        new_nodes: object = dict(graph.nodes)
+        modified = False
+        sorted_nodes = DAGTopologicalSorter.sort(graph)
+        new_nodes = dict(graph.nodes)
 
-        q_scale: object = self.rules.get("QAT", {}).get("default_q_scale", 0.1)
-        sym_rules: object = self.rules.get("QAT", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
-        q_zp: object = sym_rules.get("q_zero_point", 0)
-        bits: object = sym_rules.get("bits", 8)
+        q_scale = self.rules.get("QAT", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("QAT", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
+        bits = sym_rules.get("bits", 8)
 
         for node in sorted_nodes:
             if node.op_type in ["MatMul", "Conv2D", "Dot", "ConvGeneralDilated"]:
-                new_inputs: object = []
+                new_inputs = []
                 for inp_id in node.inputs:
-                    fq_id: object = f"{inp_id}_fake_quant"
+                    fq_id = f"{inp_id}_fake_quant"
                     if fq_id not in new_nodes:
-                        fq_node: object = IRNode(
+                        fq_node = IRNode(
                             id=fq_id,
                             op_type="FakeQuantize",
                             inputs=[inp_id],
@@ -184,12 +184,12 @@ class QATFakeQuantizePass:
                             },
                         )
                         new_nodes[fq_id] = fq_node
-                        modified: object = True
+                        modified = True
                     new_inputs.append(fq_id)
                 if new_inputs != node.inputs:
-                    new_node: object = clone_logical_node(node, inputs=new_inputs)
+                    new_node = clone_logical_node(node, inputs=new_inputs)
                     new_nodes[node.id] = new_node
-                    modified: object = True
+                    modified = True
 
         if modified:
             graph.nodes.clear()
@@ -211,7 +211,7 @@ class IntegerQuantizationLoweringPass:
 
         import yaml
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 self.rules = yaml.safe_load(f)
@@ -227,39 +227,39 @@ class IntegerQuantizationLoweringPass:
         Returns:
             bool: Result.
         """
-        modified: object = False
-        new_nodes: object = {}
-        lowering_map: object = self.rules.get("lowering_map", {})
-        pass_through: object = self.rules.get("pass_through_nodes", [])
+        modified = False
+        new_nodes = {}
+        lowering_map = self.rules.get("lowering_map", {})
+        pass_through = self.rules.get("pass_through_nodes", [])
 
         # First pass: identify fake quant nodes to drop
-        fq_replacements: object = {}
+        fq_replacements = {}
         for node_id, node in graph.nodes.items():
             if node.op_type in pass_through:
                 fq_replacements[node_id] = node.inputs[0] if node.inputs else None
 
-        q_scale: object = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
-        sym_rules: object = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
-        q_zp: object = sym_rules.get("q_zero_point", 0)
+        q_scale = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
 
         for node_id, node in graph.nodes.items():
             if node_id in fq_replacements:
-                modified: object = True
+                modified = True
                 continue
 
             # Update inputs if they point to dropped fake quant nodes
-            new_inputs: object = [fq_replacements.get(inp, inp) for inp in node.inputs]
+            new_inputs = [fq_replacements.get(inp, inp) for inp in node.inputs]
             if new_inputs != node.inputs:
-                modified: object = True
+                modified = True
 
             if node.op_type in lowering_map and ("calibration_min" in node.attributes or any(inp in fq_replacements for inp in node.inputs)):
-                new_attrs: object = dict(node.attributes)
+                new_attrs = dict(node.attributes)
                 new_attrs["dtype"] = self.config.target_dtype.name
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
-                new_node: object = clone_logical_node(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)
+                new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)
                 new_nodes[node_id] = new_node
-                modified: object = True
+                modified = True
             else:
                 if new_inputs != node.inputs:
                     new_nodes[node_id] = clone_logical_node(node, inputs=new_inputs)
@@ -268,7 +268,7 @@ class IntegerQuantizationLoweringPass:
 
         if modified:
             # Re-map graph outputs if they were dropped
-            new_outputs: object = [fq_replacements.get(out, out) for out in graph.outputs]
+            new_outputs = [fq_replacements.get(out, out) for out in graph.outputs]
             graph.outputs = [o for o in new_outputs if o is not None]
             graph.nodes.clear()
             graph.nodes.update(new_nodes)

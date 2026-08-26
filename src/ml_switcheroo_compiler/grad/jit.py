@@ -26,18 +26,18 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 class JitOptions:
     """Options for JIT compilation."""
 
-    static_argnums: object = None
-    static_argnames: object = None
-    donate_argnums: object = None
-    donate_argnames: object = None
+    static_argnums = None
+    static_argnames = None
+    donate_argnums = None
+    donate_argnames = None
     keep_unused: bool = False
-    device: object = None
-    backend: object = None
+    device = None
+    backend = None
     inline: bool = False
-    abstracted_axes: object = None
+    abstracted_axes = None
 
 
-def jit(fun: Callable[..., object], options: object = None) -> Callable[..., object]:
+def jit(fun, options=None):
     """Return a JIT wrapper.
 
     Args:
@@ -47,9 +47,9 @@ def jit(fun: Callable[..., object], options: object = None) -> Callable[..., obj
     Returns:
         Callable[..., object]: The JIT wrapped function.
     """
-    options: object = options or JitOptions()
+    options = options or JitOptions()
 
-    def wrapped(*args: object, **kwargs: object) -> object:
+    def wrapped(*args, **kwargs):
         """Evaluate wrapped operation.
 
         Args:
@@ -74,7 +74,7 @@ def disable_jit() -> typing.Iterator[None]:
     yield
 
 
-def eval_shape(fun: Callable[..., object], *args: object, **kwargs: object) -> object:
+def eval_shape(fun, *args, **kwargs):
     """Evaluate eval_shape operation.
 
     Args:

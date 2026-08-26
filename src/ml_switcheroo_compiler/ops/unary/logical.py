@@ -14,87 +14,87 @@ from .base import UnaryMathOp
 class BitwiseNot(UnaryMathOp):
     """Compute bitwise NOT element-wise."""
 
-    op_name: object = "BitwiseNot"
-    np_op_name: object = "bitwise_not"
+    op_name = "BitwiseNot"
+    np_op_name = "bitwise_not"
 
 
 @register_op("Isfinite")
 class Isfinite(UnaryMathOp):
     """Tests element-wise for finiteness (not infinity or NaN)."""
 
-    op_name: object = "Isfinite"
-    np_op_name: object = "isfinite"
+    op_name = "Isfinite"
+    np_op_name = "isfinite"
 
 
 @register_op("Isinf")
 class Isinf(UnaryMathOp):
     """Tests element-wise for positive or negative infinity."""
 
-    op_name: object = "Isinf"
-    np_op_name: object = "isinf"
+    op_name = "Isinf"
+    np_op_name = "isinf"
 
 
 @register_op("Isnan")
 class Isnan(UnaryMathOp):
     """Tests element-wise for NaN (Not a Number)."""
 
-    op_name: object = "Isnan"
-    np_op_name: object = "isnan"
+    op_name = "Isnan"
+    np_op_name = "isnan"
 
 
 @register_op("Isneginf")
 class Isneginf(UnaryMathOp):
     """Tests element-wise for negative infinity."""
 
-    op_name: object = "Isneginf"
-    np_op_name: object = "isneginf"
+    op_name = "Isneginf"
+    np_op_name = "isneginf"
 
 
 @register_op("Isposinf")
 class Isposinf(UnaryMathOp):
     """Tests element-wise for positive infinity."""
 
-    op_name: object = "Isposinf"
-    np_op_name: object = "isposinf"
+    op_name = "Isposinf"
+    np_op_name = "isposinf"
 
 
 @register_op("LogicalNot")
 class LogicalNot(UnaryMathOp):
     """Compute the truth value of NOT x element-wise."""
 
-    op_name: object = "LogicalNot"
-    np_op_name: object = "logical_not"
+    op_name = "LogicalNot"
+    np_op_name = "logical_not"
 
 
 @register_op("BitwiseCount")
 class BitwiseCount(UnaryMathOp):
     """Compute the number of 1-bits in the binary representation of x."""
 
-    op_name: object = "BitwiseCount"
-    np_op_name: object = "bitwise_count"
+    op_name = "BitwiseCount"
+    np_op_name = "bitwise_count"
 
 
 @register_op("IsNonDecreasing")
 class IsNonDecreasing(UnaryMathOp):
     """IsNonDecreasing operation."""
 
-    op_name: object = "IsNonDecreasing"
+    op_name = "IsNonDecreasing"
 
 
 @register_op("IsStrictlyIncreasing")
 class IsStrictlyIncreasing(UnaryMathOp):
     """IsStrictlyIncreasing operation."""
 
-    op_name: object = "IsStrictlyIncreasing"
+    op_name = "IsStrictlyIncreasing"
 
 
 @register_op("Packbits")
 class Packbits(OpDef):
     """Packbits operator definition."""
 
-    op_name: object = "Packbits"
+    op_name = "Packbits"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -106,12 +106,12 @@ class Packbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res
 
 
@@ -119,9 +119,9 @@ class Packbits(OpDef):
 class Unpackbits(OpDef):
     """Unpackbits operator definition."""
 
-    op_name: object = "Unpackbits"
+    op_name = "Unpackbits"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -133,12 +133,12 @@ class Unpackbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res
 
 
@@ -146,54 +146,54 @@ class Unpackbits(OpDef):
 class Clz(UnaryMathOp):
     """Count leading zeros."""
 
-    op_name: object = "Clz"
+    op_name = "Clz"
 
 
 @register_op("PopulationCount")
 class PopulationCount(UnaryMathOp):
     """Population count."""
 
-    op_name: object = "PopulationCount"
+    op_name = "PopulationCount"
 
 
 @register_op("BitcastConvertType")
 class BitcastConvertType(UnaryMathOp):
     """Bitcast convert type."""
 
-    op_name: object = "BitcastConvertType"
+    op_name = "BitcastConvertType"
 
 
 @register_op("ReducePrecision")
 class ReducePrecision(UnaryMathOp):
     """Reduce precision."""
 
-    op_name: object = "ReducePrecision"
+    op_name = "ReducePrecision"
 
 
 @register_op("Iscomplex")
 class Iscomplex(UnaryMathOp):
     """Tests element-wise for complex type."""
 
-    op_name: object = "Iscomplex"
-    np_op_name: object = "iscomplex"
+    op_name = "Iscomplex"
+    np_op_name = "iscomplex"
 
 
 @register_op("Isreal")
 class Isreal(UnaryMathOp):
     """Tests element-wise for real type."""
 
-    op_name: object = "Isreal"
-    np_op_name: object = "isreal"
+    op_name = "Isreal"
+    np_op_name = "isreal"
 
 
 @register_op("Iscomplexobj")
 class Iscomplexobj(OpDef):
     """Tests element-wise for complex object type."""
 
-    op_name: object = "Iscomplexobj"
-    np_op_name: object = "iscomplexobj"
+    op_name = "Iscomplexobj"
+    np_op_name = "iscomplexobj"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Infer shape.
 
         Args:
@@ -210,10 +210,10 @@ class Iscomplexobj(OpDef):
 class Isrealobj(OpDef):
     """Tests element-wise for real object type."""
 
-    op_name: object = "Isrealobj"
-    np_op_name: object = "isrealobj"
+    op_name = "Isrealobj"
+    np_op_name = "isrealobj"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Infer shape.
 
         Args:
@@ -230,10 +230,10 @@ class Isrealobj(OpDef):
 class Issubdtype(OpDef):
     """Tests whether first argument is a typecode lower/equal in type hierarchy."""
 
-    op_name: object = "Issubdtype"
-    np_op_name: object = "issubdtype"
+    op_name = "Issubdtype"
+    np_op_name = "issubdtype"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -250,9 +250,9 @@ class Issubdtype(OpDef):
 class Isin(OpDef):
     """Calculate element in test_elements, broadcasting over element only."""
 
-    op_name: object = "Isin"
+    op_name = "Isin"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -262,11 +262,11 @@ class Isin(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        element: object = args[0] if len(args) > 0 else None
+        element = args[0] if len(args) > 0 else None
         return getattr(element, "shape", ())
 
 
-def _get_size_from_shape(obj: object) -> int | None:
+def _get_size_from_shape(obj) -> int | None:
     """Calculate the total number of elements from an object's shape.
 
     Args:
@@ -275,10 +275,10 @@ def _get_size_from_shape(obj: object) -> int | None:
     Returns:
         int | None: The size.
     """
-    shape: object = getattr(obj, "shape", ())
+    shape = getattr(obj, "shape", ())
     if not shape:
         return 1
-    size: object = 1
+    size = 1
     for s in shape:
         if s is None:
             return None
@@ -290,10 +290,10 @@ def _get_size_from_shape(obj: object) -> int | None:
 class Ediff1d(OpDef):
     """Differences between consecutive elements of an array."""
 
-    op_name: object = "Ediff1d"
-    np_op_name: object = "ediff1d"
+    op_name = "Ediff1d"
+    np_op_name = "ediff1d"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:  # noqa: C901, PLR0912
+    def infer_shape(self, *args, **kwargs):  # noqa: C901, PLR0912
         """Infer shape.
 
         Args:
@@ -303,26 +303,26 @@ class Ediff1d(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        ary: object = args[0] if len(args) > 0 else None
-        to_end: object = kwargs.get("to_end")
-        to_begin: object = kwargs.get("to_begin")
+        ary = args[0] if len(args) > 0 else None
+        to_end = kwargs.get("to_end")
+        to_begin = kwargs.get("to_begin")
 
-        size: object = _get_size_from_shape(ary)
+        size = _get_size_from_shape(ary)
         if size is not None:
             size -= 1
 
         if to_begin is not None:
-            s_b: object = _get_size_from_shape(to_begin)
-            size: object = size + s_b if size is not None and s_b is not None else None
+            s_b = _get_size_from_shape(to_begin)
+            size = size + s_b if size is not None and s_b is not None else None
 
         if to_end is not None:
-            s_e: object = _get_size_from_shape(to_end)
-            size: object = size + s_e if size is not None and s_e is not None else None
+            s_e = _get_size_from_shape(to_end)
+            size = size + s_e if size is not None and s_e is not None else None
 
         return (size,)
 
 
-def population_count(*args: object, **kwargs: object) -> object:
+def population_count(*args, **kwargs):
     """Calculate element-wise population count (a.k.a. popcount, bitsum, bitcount).
 
     Args:
@@ -337,7 +337,7 @@ def population_count(*args: object, **kwargs: object) -> object:
     return dispatch_op("PopulationCount", *args, **kwargs)
 
 
-def isin(*args: object, **kwargs: object) -> object:
+def isin(*args, **kwargs):
     """Calculate element in test_elements, broadcasting over element only.
 
     Args:
@@ -352,7 +352,7 @@ def isin(*args: object, **kwargs: object) -> object:
     return dispatch_op("Isin", *args, **kwargs)
 
 
-def iscomplex(*args: object, **kwargs: object) -> object:
+def iscomplex(*args, **kwargs):
     """Return a bool array, where True if input element is complex.
 
     Args:
@@ -367,7 +367,7 @@ def iscomplex(*args: object, **kwargs: object) -> object:
     return dispatch_op("Iscomplex", *args, **kwargs)
 
 
-def iscomplexobj(*args: object, **kwargs: object) -> object:
+def iscomplexobj(*args, **kwargs):
     """Check for a complex type or an array of complex numbers.
 
     Args:
@@ -382,7 +382,7 @@ def iscomplexobj(*args: object, **kwargs: object) -> object:
     return dispatch_op("Iscomplexobj", *args, **kwargs)
 
 
-def isreal(*args: object, **kwargs: object) -> object:
+def isreal(*args, **kwargs):
     """Return a bool array, where True if input element is real.
 
     Args:
@@ -397,7 +397,7 @@ def isreal(*args: object, **kwargs: object) -> object:
     return dispatch_op("Isreal", *args, **kwargs)
 
 
-def isrealobj(*args: object, **kwargs: object) -> object:
+def isrealobj(*args, **kwargs):
     """Return True if x is a not complex type or an array of complex numbers.
 
     Args:
@@ -412,7 +412,7 @@ def isrealobj(*args: object, **kwargs: object) -> object:
     return dispatch_op("Isrealobj", *args, **kwargs)
 
 
-def issubdtype(*args: object, **kwargs: object) -> object:
+def issubdtype(*args, **kwargs):
     """Return True if first argument is a typecode lower/equal in type hierarchy.
 
     Args:
@@ -427,7 +427,7 @@ def issubdtype(*args: object, **kwargs: object) -> object:
     return dispatch_op("Issubdtype", *args, **kwargs)
 
 
-def reduce_precision(*args: object, **kwargs: object) -> object:
+def reduce_precision(*args, **kwargs):
     """Reduce precision operation.
 
     Args:

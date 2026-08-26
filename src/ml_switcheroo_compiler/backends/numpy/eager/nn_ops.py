@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Dropout2d")
-def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dropout2d(backend_module, *args, **kwargs):
     """Evaluate _np_dropout2d operation.
 
     Args:
@@ -21,9 +21,9 @@ def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> ob
     Raises:
         ValueError: An exception.
     """
-    x: object = args[0]
-    p: object = kwargs.get("p", 0.5)
-    training: object = kwargs.get("training", True)
+    x = args[0]
+    p = kwargs.get("p", 0.5)
+    training = kwargs.get("training", True)
     if not training or p == 0.0:
         return x
 
@@ -33,12 +33,12 @@ def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> ob
         raise ValueError("Dropout2d requires a 4D tensor (N, C, H, W)")
 
     N, C, _, _ = x.shape
-    mask: object = np.random.binomial(1, 1.0 - p, size=(N, C, 1, 1)).astype(x.dtype)
+    mask = np.random.binomial(1, 1.0 - p, size=(N, C, 1, 1)).astype(x.dtype)
     return x * mask / (1.0 - p)
 
 
 @numpy_eager_registry.register("BlockMaskedMm")
-def _np_block_masked_mm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_block_masked_mm(backend_module, *args, **kwargs):
     """Evaluate _np_block_masked_mm operation.
 
     Args:

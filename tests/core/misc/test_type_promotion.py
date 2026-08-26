@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.type_promotion import promote_types
 "Core abstractions and logic definitions for test_type_promotion_coverage4.py."
 
 
-def test_type_promotion_complex128_downgrade() -> object:
+def test_type_promotion_complex128_downgrade():
     """Test the type promotion complex128 downgrade behavior.
 
     Returns:
@@ -32,7 +32,7 @@ def test_promote_types() -> None:
     """Test the promote types behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the type promotion logic for various combinations of DType values.\n\n    Verifies that identical types, mixed precision types, and mixed kind types\n    promote correctly according to the defined promotion rules. Also ensures\n    that promoting an invalid or unknown type raises a DTypePromotionError\n\n    Returns:\n    None\n    "
@@ -64,7 +64,7 @@ def test_type_promotion_coverage_brute() -> None:
     """Test the type promotion coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -78,7 +78,7 @@ def test_bool_promotion() -> None:
     """Test the bool promotion behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test boolean promotion."
@@ -90,7 +90,7 @@ def test_bool_promotion() -> None:
 "Core abstractions and logic definitions for test_type_promotion_coverage3.py."
 
 
-def test_promote_complex128_downcast() -> object:
+def test_promote_complex128_downcast():
     """Test the promote complex128 downcast behavior.
 
     Returns:
@@ -109,7 +109,7 @@ def test_type_promotion_129() -> None:
     """Test the type promotion 129 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test type promotion edge cases."
@@ -117,7 +117,7 @@ def test_type_promotion_129() -> None:
         class FakeType:
             """Configuration class for fake type."""
 
-            def __eq__(self, other: object) -> bool:
+            def __eq__(self, other) -> bool:
                 """Evaluate and process the eq operation.
 
                 Args:
@@ -147,7 +147,7 @@ def test_type_promotion_129() -> None:
 "Combined type promotion tests."
 
 
-def test_type_promotion_complex128_downgrade_2() -> object:
+def test_type_promotion_complex128_downgrade_2():
     """Test the type promotion complex128 downgrade behavior.
 
     Returns:
@@ -165,7 +165,7 @@ def test_type_promotion_coverage_brute_2() -> None:
     """Test the type promotion coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -179,7 +179,7 @@ def test_bool_promotion_2() -> None:
     """Test the bool promotion behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test boolean promotion."
@@ -188,7 +188,7 @@ def test_bool_promotion_2() -> None:
         pass
 
 
-def test_promote_complex128_downcast_2() -> object:
+def test_promote_complex128_downcast_2():
     """Test the promote complex128 downcast behavior.
 
     Returns:
@@ -204,7 +204,7 @@ def test_type_promotion_129_2() -> None:
     """Test the type promotion 129 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test type promotion edge cases."
@@ -212,7 +212,7 @@ def test_type_promotion_129_2() -> None:
         class FakeType:
             """Configuration class for fake type."""
 
-            def __eq__(self, other: object) -> bool:
+            def __eq__(self, other) -> bool:
                 """Evaluate and process the eq operation.
 
                 Args:

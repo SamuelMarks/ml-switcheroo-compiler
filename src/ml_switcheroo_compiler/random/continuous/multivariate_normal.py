@@ -16,12 +16,12 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 class MultivariateNormalOptions:
     """Options for multivariate normal."""
 
-    shape: object | None = None
-    dtype: object | None = None
+    shape = None
+    dtype = None
     method: str = "cholesky"
 
 
-def multivariate_normal(key: object, mean: object, cov: object, options: MultivariateNormalOptions | None = None) -> object:
+def multivariate_normal(key, mean, cov, options: MultivariateNormalOptions | None = None):
     """Sample from a multivariate normal distribution.
 
     Args:
@@ -33,14 +33,14 @@ def multivariate_normal(key: object, mean: object, cov: object, options: Multiva
     Returns:
             tuple[int, ...]: Result.
     """
-    options: object = options or MultivariateNormalOptions()
-    shape: object = options.shape
-    dtype: object = options.dtype
-    method: object = options.method
+    options = options or MultivariateNormalOptions()
+    shape = options.shape
+    dtype = options.dtype
+    method = options.method
 
-    dtype: object = dtype or dtypes.DType.Float32
-    out_shape: object = shape if shape is not None else ()
-    inputs: object = [key]
+    dtype = dtype or dtypes.DType.Float32
+    out_shape = shape if shape is not None else ()
+    inputs = [key]
     if isinstance(mean, Tensor):
         inputs.append(mean)
     if isinstance(cov, Tensor):

@@ -15,9 +15,9 @@ def encode_varint(value: int) -> bytes:
     """
     if value < 0:
         value += 1 << 64
-    res: object = bytearray()
+    res = bytearray()
     while True:
-        byte: object = value & 0x7F
+        byte = value & 0x7F
         value >>= 7
         if value:
             res.append(byte | 0x80)

@@ -20,15 +20,15 @@ def _get_dtype_size(dtype_str: str) -> int:
 
     import yaml
 
-    yaml_path: object = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            data: object = yaml.safe_load(f)
+            data = yaml.safe_load(f)
             return int(data.get("memory_sizes", {}).get(dtype_str, 4))
     return 4
 
 
-def _get_node_byte_size(node: IRNode) -> object:
+def _get_node_byte_size(node: IRNode):
     """Calculate the byte size of a node's output tensor, supporting symbolic shapes.
 
     Args:
@@ -37,27 +37,27 @@ def _get_node_byte_size(node: IRNode) -> object:
     Returns:
         int | str: The size in bytes (int) or a symbolic expression (str).
     """
-    dtype: object = node.attributes.get("dtype", "float32")
-    dtype_size: object = _get_dtype_size(dtype)
+    dtype = node.attributes.get("dtype", "float32")
+    dtype_size = _get_dtype_size(dtype)
 
-    shape: object = getattr(node, "shape_metadata", None)
+    shape = getattr(node, "shape_metadata", None)
     if shape is None:
         return str(dtype_size)
 
-    is_dynamic: object = getattr(node, "is_dynamic_shape", False)
+    is_dynamic = getattr(node, "is_dynamic_shape", False)
     # Check if any dim is a string (symbolic)
-    has_symbolic_dim: object = any(isinstance(d, str) for d in shape)
+    has_symbolic_dim = any(isinstance(d, str) for d in shape)
 
     if not is_dynamic and not has_symbolic_dim:
-        elements: object = 1
+        elements = 1
         for dim in shape:
             elements *= max(1, int(dim))
         return elements * dtype_size
 
     # Build symbolic math string
-    dims: object = [str(d) for d in shape]
+    dims = [str(d) for d in shape]
     if dims:
-        symbolic_math: object = " * ".join(dims) + f" * {dtype_size}"
+        symbolic_math = " * ".join(dims) + f" * {dtype_size}"
         return symbolic_math
     return str(dtype_size)
 
@@ -97,11 +97,11 @@ class GreedyOffsetAllocator:
         self.active_blocks = [b for b in self.active_blocks if b[2] >= current_time]
         self.active_blocks.sort(key=lambda x: x[0])
 
-        offset: object = 0
+        offset = 0
         for block in self.active_blocks:
             if block[0] - offset >= size:
                 break
-            offset: object = max(offset, block[1])
+            offset = max(offset, block[1])
 
         self.active_blocks.append((offset, offset + size, expire_time))
         return offset
@@ -140,7 +140,7 @@ def _compute_liveness(graph: IRGraph, sorted_nodes: list[IRNode]) -> dict[str, i
             if inp in last_use:
                 last_use[inp] = max(last_use[inp], i)
 
-    end_time: object = len(sorted_nodes)
+    end_time = len(sorted_nodes)
     for out_id in graph.outputs:
         if out_id in last_use:
             last_use[out_id] = end_time
@@ -166,10 +166,10 @@ def _try_reuse_buffer(node: IRNode, graph: IRGraph, size: int, i: int, last_use:
 
     for inp_id in node.inputs:
         if inp_id in graph.nodes:
-            inp_node: object = graph.nodes[inp_id]
+            inp_node = graph.nodes[inp_id]
             if last_use.get(inp_id, -1) == i:
-                inp_offset: object = inp_node.attributes.get("buffer_offset")
-                inp_size: object = inp_node.attributes.get("buffer_size", 0)
+                inp_offset = inp_node.attributes.get("buffer_offset")
+                inp_size = inp_node.attributes.get("buffer_size", 0)
                 if inp_offset is not None and int(inp_size) >= size:
                     return int(inp_offset)
     return -1
@@ -177,24 +177,24 @@ def _try_reuse_buffer(node: IRNode, graph: IRGraph, size: int, i: int, last_use:
 
 def buffer_allocation_pass(graph: IRGraph) -> bool:
     """In-place Buffer Allocation pass with dynamic shape support."""
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
     if not sorted_nodes:
         return False
 
-    last_use: object = _compute_liveness(graph, sorted_nodes)
-    allocator: object = GreedyOffsetAllocator()
-    modified: object = False
+    last_use = _compute_liveness(graph, sorted_nodes)
+    allocator = GreedyOffsetAllocator()
+    modified = False
 
     # Store dynamic schema configuration
     graph.attributes = getattr(graph, "attributes", {})
     graph.attributes["dynamic_memory_schema"] = {"dynamic_offsets": []}
 
     for i, node in enumerate(sorted_nodes):
-        size: object = _get_node_byte_size(node)
+        size = _get_node_byte_size(node)
 
         if isinstance(size, str):  # Dynamic
-            var_name: object = getattr(node, "id", f"node_{i}")
-            assigned_offset: object = allocator.allocate_dynamic(size, i, last_use.get(node.id, i), var_name)
+            var_name = getattr(node, "id", f"node_{i}")
+            assigned_offset = allocator.allocate_dynamic(size, i, last_use.get(node.id, i), var_name)
 
             # Record the dynamic offset computation request in the graph attributes
             graph.attributes["dynamic_memory_schema"]["dynamic_offsets"].append({"var_name": var_name, "symbolic_math": size, "node_id": node.id})
@@ -203,19 +203,19 @@ def buffer_allocation_pass(graph: IRGraph) -> bool:
                 node.attributes["buffer_offset_symbolic"] = assigned_offset
                 node.attributes["buffer_size_symbolic"] = size
                 node.attributes["buffer_id"] = 0
-                modified: object = True
+                modified = True
         else:  # Static
-            reused_offset: object = _try_reuse_buffer(node, graph, size, i, last_use)
+            reused_offset = _try_reuse_buffer(node, graph, size, i, last_use)
             if reused_offset >= 0:
-                static_assigned_offset: object = reused_offset
+                static_assigned_offset = reused_offset
                 allocator.allocate_at(static_assigned_offset, size, last_use.get(node.id, i))
             else:
-                static_assigned_offset: object = allocator.allocate_static(size, i, last_use.get(node.id, i))
+                static_assigned_offset = allocator.allocate_static(size, i, last_use.get(node.id, i))
 
             if node.attributes.get("buffer_offset") != static_assigned_offset:
                 node.attributes["buffer_offset"] = static_assigned_offset
                 node.attributes["buffer_size"] = size
                 node.attributes["buffer_id"] = 0
-                modified: object = True
+                modified = True
 
     return modified

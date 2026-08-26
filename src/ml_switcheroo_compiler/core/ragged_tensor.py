@@ -35,8 +35,8 @@ class RaggedTensor:
         # We approximate it by taking the number of rows from row_splits
         # and marking the next dimension as 'None' (symbolic) if possible,
         # or just delegating to values. For uniformity, returning a tuple
-        batch_size: object = max(0, len(self.row_splits) - 1)
-        val_shape: object = list(self.values.shape)
+        batch_size = max(0, len(self.row_splits) - 1)
+        val_shape = list(self.values.shape)
         if val_shape:
             val_shape[0] = -1
         return tuple([batch_size] + val_shape)

@@ -24,7 +24,7 @@ def arange(
     step: float = 1,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
@@ -37,17 +37,17 @@ def arange(
     Returns:
         Tensor: Result.
     """
-    dtype: object = dtype or config.default_float_dtype
-    device: object = device or config.default_device
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
     if stop is None:
-        stop: object = start
-        start: object = 0
+        stop = start
+        start = 0
 
-    size: object = max(math.ceil((stop - start) / step), 0)
-    shape: object = (size,)
+    size = max(math.ceil((stop - start) / step), 0)
+    shape = (size,)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op(
+        data = get_active_backend().execute_op(
             "Arange",
             start,
             stop,
@@ -69,7 +69,7 @@ def linspace(
     steps: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:
@@ -82,12 +82,12 @@ def linspace(
     Returns:
         Tensor: Result.
     """
-    dtype: object = dtype or config.default_float_dtype
-    device: object = device or config.default_device
-    shape: object = (steps,)
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    shape = (steps,)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op(
+        data = get_active_backend().execute_op(
             "Linspace",
             start,
             stop,

@@ -61,7 +61,7 @@ class ProgbarConfig:
     width: int = 30
     verbose: int = 1
     interval: float = 0.05
-    stateful_metrics: list[object] | None = None
+    stateful_metrics = None
     unit_name: str = "step"
 
 
@@ -145,19 +145,19 @@ def get_file(
     Returns:
         str: Result.
     """
-    conf: object = config if config is not None else GetFileConfig()
-    untar: object = conf.archive_config.untar
-    cache_subdir: object = conf.cache_config.cache_subdir
-    extract: object = conf.archive_config.extract
-    cache_dir: object = conf.cache_config.cache_dir
+    conf = config if config is not None else GetFileConfig()
+    untar = conf.archive_config.untar
+    cache_subdir = conf.cache_config.cache_subdir
+    extract = conf.archive_config.extract
+    cache_dir = conf.cache_config.cache_dir
 
     if cache_dir is None:
-        cache_dir: object = os.path.join(os.path.expanduser("~"), ".keras")
+        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")
 
-    datadir: object = os.path.join(cache_dir, cache_subdir)
+    datadir = os.path.join(cache_dir, cache_subdir)
     os.makedirs(datadir, exist_ok=True)
 
-    fpath: object = os.path.join(datadir, fname)
+    fpath = os.path.join(datadir, fname)
 
     if _validate_cache(fpath):
         return fpath
@@ -197,7 +197,7 @@ class Progbar:
             target (object): The target parameter.
             config (object): The config parameter.
         """
-        conf: object = config if config is not None else ProgbarConfig()
+        conf = config if config is not None else ProgbarConfig()
 
         self.target = target
         self.config = conf
@@ -218,7 +218,7 @@ class Progbar:
             last_update=0.0,
         )
 
-    def _update_values(self, current: int, values: list[object]) -> None:
+    def _update_values(self, current: int, values) -> None:
         """Evaluate _update_values operation.
 
         Args:
@@ -287,7 +287,7 @@ class Progbar:
         """
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
-    def update(self, current: int, values: list[object] | None = None, finalize: bool | None = None) -> None:
+    def update(self, current: int, values=None, finalize: bool | None = None) -> None:
         """Update the progress bar.
 
         Args:
@@ -295,12 +295,12 @@ class Progbar:
             values (object): The values parameter.
             finalize (object): The finalize parameter.
         """
-        values: object = values or []
+        values = values or []
         self._update_values(current, values)
         self._seen_so_far = current
 
-        now: object = time.time()
-        should_finalize: object = self._should_finalize(current, finalize)
+        now = time.time()
+        should_finalize = self._should_finalize(current, finalize)
 
         if self._should_update(now, should_finalize):
             self._last_update = now
@@ -311,7 +311,7 @@ class Progbar:
 class FeatureSpace:
     """FeatureSpace utility class."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
@@ -325,7 +325,7 @@ class FeatureSpace:
 class Config:
     """Config utility class."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
@@ -339,7 +339,7 @@ class Config:
 class CustomObjectScope:
     """Scope for custom objects."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
@@ -357,7 +357,7 @@ class CustomObjectScope:
         """
         return self
 
-    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit.
 
         Args:
@@ -371,7 +371,7 @@ class CustomObjectScope:
 class PyDataset:
     """PyDataset utility class."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
@@ -385,7 +385,7 @@ class PyDataset:
 class Sequence:
     """Sequence utility class."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
@@ -396,7 +396,7 @@ class Sequence:
         self.kwargs = kwargs
 
 
-def clear_session(*args: object, **kwargs: object) -> None:
+def clear_session(*args, **kwargs) -> None:
     """Clear the Keras session.
 
     Args:
@@ -406,7 +406,7 @@ def clear_session(*args: object, **kwargs: object) -> None:
     config.clear_cache()
 
 
-def custom_object_scope(*args: object, **kwargs: object) -> object:
+def custom_object_scope(*args, **kwargs):
     """Create a custom object scope.
 
     Args:
@@ -419,7 +419,7 @@ def custom_object_scope(*args: object, **kwargs: object) -> object:
     return CustomObjectScope(*args, **kwargs)
 
 
-def deserialize_keras_object(*args: object, **kwargs: object) -> object:
+def deserialize_keras_object(*args, **kwargs):
     """Deserialize a Keras object.
 
     Args:
@@ -432,7 +432,7 @@ def deserialize_keras_object(*args: object, **kwargs: object) -> object:
     return None
 
 
-def disable_interactive_logging(*args: object, **kwargs: object) -> None:
+def disable_interactive_logging(*args, **kwargs) -> None:
     """Disable interactive logging.
 
     Args:
@@ -442,7 +442,7 @@ def disable_interactive_logging(*args: object, **kwargs: object) -> None:
     config._state.env.interactive_logging = False
 
 
-def enable_interactive_logging(*args: object, **kwargs: object) -> None:
+def enable_interactive_logging(*args, **kwargs) -> None:
     """Enable interactive logging.
 
     Args:
@@ -452,7 +452,7 @@ def enable_interactive_logging(*args: object, **kwargs: object) -> None:
     config._state.env.interactive_logging = True
 
 
-def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:
+def get_custom_objects(*args, **kwargs):
     """Get custom objects.
 
     Args:
@@ -465,7 +465,7 @@ def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:
     return {}
 
 
-def get_registered_name(*args: object, **kwargs: object) -> str:
+def get_registered_name(*args, **kwargs) -> str:
     """Get registered name.
 
     Args:
@@ -478,7 +478,7 @@ def get_registered_name(*args: object, **kwargs: object) -> str:
     return ""
 
 
-def get_registered_object(*args: object, **kwargs: object) -> object:
+def get_registered_object(*args, **kwargs):
     """Get registered object.
 
     Args:
@@ -491,7 +491,7 @@ def get_registered_object(*args: object, **kwargs: object) -> object:
     return None
 
 
-def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
+def is_interactive_logging_enabled(*args, **kwargs) -> bool:
     """Check if interactive logging is enabled.
 
     Args:
@@ -504,7 +504,7 @@ def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
     return False
 
 
-def is_keras_tensor(*args: object, **kwargs: object) -> bool:
+def is_keras_tensor(*args, **kwargs) -> bool:
     """Check if an object is a Keras tensor.
 
     Args:
@@ -517,7 +517,7 @@ def is_keras_tensor(*args: object, **kwargs: object) -> bool:
     return False
 
 
-def register_keras_serializable(*args: object, **kwargs: object) -> object:
+def register_keras_serializable(*args, **kwargs):
     """Register an object with Keras serialization.
 
     Args:
@@ -528,20 +528,20 @@ def register_keras_serializable(*args: object, **kwargs: object) -> object:
         The decorator.
     """
 
-    def decorator(cls: object) -> object:
+    def decorator(cls):
         """Register the annotated class in the keras registry.
 
         Args:
             cls (object): The class to register.
 
-        Returns: object: The original class.
+        Returns: Tensor: The original class.
         """
         return cls
 
     return decorator
 
 
-def serialize_keras_object(*args: object, **kwargs: object) -> object:
+def serialize_keras_object(*args, **kwargs):
     """Serialize a Keras object.
 
     Args:
@@ -554,7 +554,7 @@ def serialize_keras_object(*args: object, **kwargs: object) -> object:
     return None
 
 
-def standardize_dtype(*args: object, **kwargs: object) -> object:
+def standardize_dtype(*args, **kwargs):
     """Standardize a dtype.
 
     Args:
@@ -570,7 +570,7 @@ def standardize_dtype(*args: object, **kwargs: object) -> object:
 class bounding_boxes:
     """Bounding boxes utilities namespace."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:

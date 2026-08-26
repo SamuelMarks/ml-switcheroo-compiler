@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def dirichlet(key: object, alpha: object, shape: object = None, dtype: object = None) -> object:
+def dirichlet(key, alpha, shape=None, dtype=None):
     """Sample dirichlet random values from a given key.
 
     Args:
@@ -23,6 +23,6 @@ def dirichlet(key: object, alpha: object, shape: object = None, dtype: object = 
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape: object = ()
-    dtype: object = dtype or dtypes.DType.Float32
+        shape = ()
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("Dirichlet", [key, alpha], shape, dtype)

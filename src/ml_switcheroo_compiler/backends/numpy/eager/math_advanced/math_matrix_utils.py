@@ -14,7 +14,7 @@ from .math_misc_ext import _get_np_arg
 
 
 @numpy_eager_registry.register("DiagIndices")
-def _np_diag_indices_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diag_indices_(backend_module, *args, **kwargs):
     """Implement DiagIndices via diag_indices.
 
     Args:
@@ -22,13 +22,13 @@ def _np_diag_indices_(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.diag_indices(*args, **kwargs)
 
 
 @numpy_eager_registry.register("DiagIndicesFrom")
-def _np_diag_indices_from_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diag_indices_from_(backend_module, *args, **kwargs):
     """Implement DiagIndicesFrom via diag_indices_from.
 
     Args:
@@ -36,13 +36,13 @@ def _np_diag_indices_from_(backend_module: object, *args: object, **kwargs: obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.diag_indices_from(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diagflat")
-def _np_diagflat_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diagflat_(backend_module, *args, **kwargs):
     """Implement Diagflat via diagflat.
 
     Args:
@@ -50,13 +50,13 @@ def _np_diagflat_(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.diagflat(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diagonal")
-def _np_diagonal_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_diagonal_(backend_module, *args, **kwargs):
     """Implement Diagonal via diagonal.
 
     Args:
@@ -64,13 +64,13 @@ def _np_diagonal_(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.diagonal(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Indices")
-def _np_indices_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_indices_(backend_module, *args, **kwargs):
     """Implement Indices via indices.
 
     Args:
@@ -78,13 +78,13 @@ def _np_indices_(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.indices(*args, **kwargs)
 
 
 @numpy_eager_registry.register("MaskIndices")
-def _np_mask_indices_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_mask_indices_(backend_module, *args, **kwargs):
     """Implement MaskIndices via mask_indices.
 
     Args:
@@ -92,13 +92,13 @@ def _np_mask_indices_(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.mask_indices(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorBlockDiag")
-def _np_linearoperatorblockdiag(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorblockdiag(backend_module, *args, **kwargs):
     """Implement LinearOperatorBlockDiag.
 
     Args:
@@ -115,7 +115,7 @@ def _np_linearoperatorblockdiag(backend_module: object, *args: object, **kwargs:
 
 
 @numpy_eager_registry.register("LinearOperatorDiag")
-def _np_linearoperatordiag(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatordiag(backend_module, *args, **kwargs):
     """Implement LinearOperatorDiag.
 
     Args:
@@ -132,7 +132,7 @@ def _np_linearoperatordiag(backend_module: object, *args: object, **kwargs: obje
 
 
 @numpy_eager_registry.register("confusion_matrix")
-def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_confusion_matrix(backend_module, *args, **kwargs):
     """Evaluate _np_confusion_matrix operation.
 
     Args:
@@ -150,23 +150,23 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "confusion_matrix"):
-            cls_or_func: object = _ops.confusion_matrix
+            cls_or_func = _ops.confusion_matrix
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
     except Exception:
         pass
     if hasattr(backend_module, "confusion_matrix"):
         return backend_module.confusion_matrix(*args, **kwargs)
-    y_true: object = np.asarray(args[0]).flatten()
-    y_pred: object = np.asarray(args[1]).flatten()
-    num_classes: object = kwargs.get("num_classes", args[2] if len(args) > 2 else None)
+    y_true = np.asarray(args[0]).flatten()
+    y_pred = np.asarray(args[1]).flatten()
+    num_classes = kwargs.get("num_classes", args[2] if len(args) > 2 else None)
     if num_classes is None:
-        num_classes: object = max(np.max(y_true), np.max(y_pred)) + 1
+        num_classes = max(np.max(y_true), np.max(y_pred)) + 1
     return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape(num_classes, num_classes)
 
 
 @numpy_eager_registry.register("distributions")
-def _np_distributions(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_distributions(backend_module, *args, **kwargs):
     """_np_distributions function.
 
     Args:
@@ -188,7 +188,7 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "distributions"):
-            cls_or_func: object = _ops.distributions
+            cls_or_func = _ops.distributions
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", object))):
                 return cls_or_func(*args, **kwargs)
     except Exception as e:
@@ -196,12 +196,12 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
         pass
     if hasattr(backend_module, "distributions"):
         return backend_module.distributions(*args, **kwargs)
-    arr: object = np.asarray(args[0]) if args else np.zeros((1,))
+    arr = np.asarray(args[0]) if args else np.zeros((1,))
     return np.array([np.mean(arr), np.var(arr)])
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix_cap(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_confusion_matrix_cap(backend_module, *args, **kwargs):
     """_np_confusion_matrix_cap function.
 
     Args:
@@ -219,8 +219,8 @@ def _np_confusion_matrix_cap(backend_module: object, *args: object, **kwargs: ob
     Returns:
         object: Result.
     """
-    a: object = _get_np_arg(args, 0)
-    b: object = _get_np_arg(args, 1)
+    a = _get_np_arg(args, 0)
+    b = _get_np_arg(args, 1)
     if a is None or b is None:
         return None
     return np.zeros((2, 2))

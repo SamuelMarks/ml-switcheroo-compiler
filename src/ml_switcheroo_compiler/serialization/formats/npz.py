@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.serialization.utils import parse_npz
 class NpzWeightFormat(WeightLoader, WeightSaver):
     """NPZ weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, object]:
+    def load(self, filepath: str):
         """Load npz weights.
 
         Args:
@@ -21,7 +21,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         """
         import ml_switcheroo_compiler.backends.registry as registry
 
-        backend: object = registry.get_active_backend()
+        backend = registry.get_active_backend()
         if hasattr(backend, "load_npz"):
             try:
                 return backend.load_npz(filepath)
@@ -32,7 +32,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
 
         return parse_npz(filepath)
 
-    def save(self, weights_np: dict[str, object], filepath: str) -> None:
+    def save(self, weights_np, filepath: str) -> None:
         """Save npz weights.
 
         Args:
@@ -46,7 +46,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
 
         import ml_switcheroo_compiler.backends.registry as registry
 
-        backend: object = registry.get_active_backend()
+        backend = registry.get_active_backend()
         if hasattr(backend, "save_npz"):
             backend.save_npz(weights_np, filepath)
             return

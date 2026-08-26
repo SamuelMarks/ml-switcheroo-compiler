@@ -53,7 +53,7 @@ def local_response_normalization(
     bias: float = 1.0,
     alpha: float = 1.0,
     beta: float = 0.5,
-) -> object:
+):
     """Local Response Normalization.
 
     Args:
@@ -66,15 +66,15 @@ def local_response_normalization(
     Returns:
         Tensor: Result.
     """
-    rank: object = len(operand.shape)
-    config: object = WindowConfig(
+    rank = len(operand.shape)
+    config = WindowConfig(
         window_dimensions=(1,) * (rank - 1) + (2 * depth_radius + 1,),
         window_strides=(1,) * rank,
         padding=[(0, 0)] * (rank - 1) + [(depth_radius, depth_radius)],
     )
 
-    sqr_sum: object = reduce_window(multiply(operand, operand), 0.0, "sum", config)
-    denom: object = add(full_like(operand, bias), multiply(sqr_sum, full_like(operand, alpha)))
+    sqr_sum = reduce_window(multiply(operand, operand), 0.0, "sum", config)
+    denom = add(full_like(operand, bias), multiply(sqr_sum, full_like(operand, alpha)))
     return divide(operand, power(denom, full_like(operand, beta)))
 
 
@@ -84,7 +84,7 @@ def batch_normalization(
     variance: Tensor,
     axis: Union[int, Sequence[int]],
     config: Optional[BatchNormConfig] = None,
-) -> object:
+):
     """Batch normalization.
 
     Args:
@@ -97,19 +97,19 @@ def batch_normalization(
     Returns:
         Tensor: Normalized tensor.
     """
-    conf: object = config if config is not None else BatchNormConfig()
-    eps_tensor: object = full_like(variance, conf.epsilon)
-    var_plus_eps: object = add(variance, eps_tensor)
-    half: object = full_like(var_plus_eps, 0.5)
-    stddev: object = power(var_plus_eps, half)
+    conf = config if config is not None else BatchNormConfig()
+    eps_tensor = full_like(variance, conf.epsilon)
+    var_plus_eps = add(variance, eps_tensor)
+    half = full_like(var_plus_eps, 0.5)
+    stddev = power(var_plus_eps, half)
 
-    x_minus_mean: object = subtract(x, mean)
-    normalized_x: object = divide(x_minus_mean, stddev)
+    x_minus_mean = subtract(x, mean)
+    normalized_x = divide(x_minus_mean, stddev)
 
     if conf.scale is not None:
-        normalized_x: object = multiply(normalized_x, conf.scale)
+        normalized_x = multiply(normalized_x, conf.scale)
     if conf.offset is not None:
-        normalized_x: object = add(normalized_x, conf.offset)
+        normalized_x = add(normalized_x, conf.offset)
 
     return normalized_x
 
@@ -118,7 +118,7 @@ def rms_normalization(
     x: Tensor,
     scale: Tensor,
     epsilon: float = 1e-3,
-) -> object:
+):
     """RMS normalization.
 
     Args:
@@ -129,13 +129,13 @@ def rms_normalization(
     Returns:
         Tensor: Normalized tensor.
     """
-    squared_x: object = multiply(x, x)
-    mean_sqr: object = mean(squared_x, axis=-1, keepdims=True)
-    eps_tensor: object = full_like(mean_sqr, epsilon)
-    mean_sqr_plus_eps: object = add(mean_sqr, eps_tensor)
-    half: object = full_like(mean_sqr_plus_eps, 0.5)
-    rms: object = power(mean_sqr_plus_eps, half)
-    normalized: object = divide(x, rms)
+    squared_x = multiply(x, x)
+    mean_sqr = mean(squared_x, axis=-1, keepdims=True)
+    eps_tensor = full_like(mean_sqr, epsilon)
+    mean_sqr_plus_eps = add(mean_sqr, eps_tensor)
+    half = full_like(mean_sqr_plus_eps, 0.5)
+    rms = power(mean_sqr_plus_eps, half)
+    normalized = divide(x, rms)
     return multiply(normalized, scale)
 
 
@@ -145,17 +145,17 @@ class BatchNormGlobalConfig:
 
     variance_epsilon: float = 1e-5
     scale_after_normalization: bool = True
-    name: object = None
+    name = None
 
 
 def batch_norm_with_global_normalization(
-    t: object,
-    m: object,
-    v: object,
-    beta: object,
-    gamma: object,
-    **kwargs: object,
-) -> object:
+    t,
+    m,
+    v,
+    beta,
+    gamma,
+    **kwargs,
+):
     """Batch normalization with global normalization.
 
     Args:
@@ -169,8 +169,8 @@ def batch_norm_with_global_normalization(
     Returns:
             tuple[int, ...]: Result.
     """
-    config: object = kwargs.get("config", BatchNormGlobalConfig())
-    bn_config: object = BatchNormConfig(
+    config = kwargs.get("config", BatchNormGlobalConfig())
+    bn_config = BatchNormConfig(
         offset=beta,
         scale=gamma if config.scale_after_normalization else None,
         epsilon=config.variance_epsilon,
@@ -184,7 +184,7 @@ def batch_norm_with_global_normalization(
     )
 
 
-def lrn(input: object, config: object = None, name: object = None) -> object:
+def lrn(input, config=None, name=None):
     """Evaluate lrn operation.
 
     Args:
@@ -195,18 +195,18 @@ def lrn(input: object, config: object = None, name: object = None) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    config: object = config or LRNConfig()
-    depth_radius: object = config.depth_radius
-    bias: object = config.bias
-    alpha: object = config.alpha
-    beta: object = config.beta
+    config = config or LRNConfig()
+    depth_radius = config.depth_radius
+    bias = config.bias
+    alpha = config.alpha
+    beta = config.beta
 
     """Local Response Normalization."""
 
     return local_response_normalization(input, depth_radius, bias, alpha, beta)
 
 
-def l2_normalize(x: object, axis: object = None, epsilon: object = 1e-12, name: object = None) -> object:
+def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
     """Normalize along dimension axis using an L2 norm.
 
     Args:
@@ -219,12 +219,12 @@ def l2_normalize(x: object, axis: object = None, epsilon: object = 1e-12, name: 
     Returns:
             tuple[int, ...]: Result.
     """
-    square_sum: object = sum(multiply(x, x), axis=axis, keepdims=True)
-    x_inv_norm: object = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
+    square_sum = sum(multiply(x, x), axis=axis, keepdims=True)
+    x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
     return multiply(x, x_inv_norm)
 
 
-def moments(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
+def moments(x, axes, shift=None, keepdims=False, name=None):
     """Calculate the mean and variance of x.
 
     Args:
@@ -240,7 +240,7 @@ def moments(x: object, axes: object, shift: object = None, keepdims: object = Fa
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
-def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shift: object, name: object = None) -> object:
+def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
@@ -267,10 +267,10 @@ def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shif
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-    out_id_mean: object = str(uuid.uuid4())
-    out_id_variance: object = str(uuid.uuid4())
+    out_id_mean = str(uuid.uuid4())
+    out_id_variance = str(uuid.uuid4())
 
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id_mean,
         op_type="NormalizeMoments",
         inputs=[getattr(counts, "id", counts), getattr(mean_ss, "id", mean_ss), getattr(variance_ss, "id", variance_ss), getattr(shift, "id", shift)],
@@ -279,8 +279,8 @@ def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shif
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean: object = ProxyTensor(id=out_id_mean, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
-    proxy_variance: object = ProxyTensor(id=out_id_variance, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
 
     return (
         Tensor(proxy_mean, TensorConfig(getattr(counts, "shape", ()), getattr(counts, "dtype", "float32"), "cpu")),
@@ -288,7 +288,7 @@ def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shif
     )
 
 
-def sufficient_statistics(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
+def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
@@ -315,12 +315,12 @@ def sufficient_statistics(x: object, axes: object, shift: object = None, keepdim
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-    out_id_counts: object = str(uuid.uuid4())
-    out_id_mean_ss: object = str(uuid.uuid4())
-    out_id_variance_ss: object = str(uuid.uuid4())
-    out_id_shift: object = str(uuid.uuid4())
+    out_id_counts = str(uuid.uuid4())
+    out_id_mean_ss = str(uuid.uuid4())
+    out_id_variance_ss = str(uuid.uuid4())
+    out_id_shift = str(uuid.uuid4())
 
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id_counts,
         op_type="SufficientStatistics",
         inputs=[getattr(x, "id", x), getattr(axes, "id", axes)],
@@ -329,7 +329,7 @@ def sufficient_statistics(x: object, axes: object, shift: object = None, keepdim
     )
     global_tracing_state.add_node(node)
 
-    config_tensor: object = TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")
+    config_tensor = TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")
     return (
         Tensor(ProxyTensor(id=out_id_counts, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
         Tensor(ProxyTensor(id=out_id_mean_ss, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
@@ -339,12 +339,12 @@ def sufficient_statistics(x: object, axes: object, shift: object = None, keepdim
 
 
 def weighted_moments(
-    x: object,
-    axes: object,
-    frequency_weights: object,
-    name: object = None,
-    keepdims: object = False,
-) -> object:
+    x,
+    axes,
+    frequency_weights,
+    name=None,
+    keepdims=False,
+):
     """Return the frequency-weighted mean and variance of x.
 
     Args:
@@ -371,10 +371,10 @@ def weighted_moments(
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-    out_id_mean: object = str(uuid.uuid4())
-    out_id_variance: object = str(uuid.uuid4())
+    out_id_mean = str(uuid.uuid4())
+    out_id_variance = str(uuid.uuid4())
 
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id_mean,
         op_type="WeightedMoments",
         inputs=[getattr(x, "id", x), getattr(axes, "id", axes), getattr(frequency_weights, "id", frequency_weights)],
@@ -383,8 +383,8 @@ def weighted_moments(
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean: object = ProxyTensor(id=out_id_mean, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
-    proxy_variance: object = ProxyTensor(id=out_id_variance, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
 
     return (
         Tensor(proxy_mean, TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")),
@@ -392,7 +392,7 @@ def weighted_moments(
     )
 
 
-def zero_fraction(value: object, name: object = None) -> object:
+def zero_fraction(value, name=None):
     """Return the fraction of zeros in value.
 
     Args:
@@ -411,7 +411,7 @@ def layer_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> object:
+):
     """Layer normalization.
 
     Args:
@@ -424,21 +424,21 @@ def layer_norm(
     Returns:
         Tensor: Normalized tensor.
     """
-    axis: object = tuple(range(len(x.shape) - len(normalized_shape), len(x.shape)))
-    x_mean: object = mean(x, axis=axis, keepdims=True)
-    squared_diff: object = multiply(subtract(x, x_mean), subtract(x, x_mean))
-    x_var: object = mean(squared_diff, axis=axis, keepdims=True)
+    axis = tuple(range(len(x.shape) - len(normalized_shape), len(x.shape)))
+    x_mean = mean(x, axis=axis, keepdims=True)
+    squared_diff = multiply(subtract(x, x_mean), subtract(x, x_mean))
+    x_var = mean(squared_diff, axis=axis, keepdims=True)
 
-    eps_tensor: object = full_like(x_var, epsilon)
-    var_plus_eps: object = add(x_var, eps_tensor)
-    half: object = full_like(var_plus_eps, 0.5)
-    stddev: object = power(var_plus_eps, half)
+    eps_tensor = full_like(x_var, epsilon)
+    var_plus_eps = add(x_var, eps_tensor)
+    half = full_like(var_plus_eps, 0.5)
+    stddev = power(var_plus_eps, half)
 
-    normalized_x: object = divide(subtract(x, x_mean), stddev)
+    normalized_x = divide(subtract(x, x_mean), stddev)
     if scale is not None:
-        normalized_x: object = multiply(normalized_x, scale)
+        normalized_x = multiply(normalized_x, scale)
     if offset is not None:
-        normalized_x: object = add(normalized_x, offset)
+        normalized_x = add(normalized_x, offset)
 
     return normalized_x
 
@@ -449,7 +449,7 @@ def group_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> object:
+):
     """Group normalization.
 
     Args:
@@ -470,20 +470,20 @@ def group_norm(
         raise ValueError("Number of channels must be divisible by number of groups")
 
     # Reshape and compute stats in one go
-    grouped_shape: object = (x.shape[0], num_groups, C // num_groups) + x.shape[2:]
-    x_grouped: object = reshape(x, grouped_shape)
-    axes: object = tuple(range(2, len(grouped_shape)))
+    grouped_shape = (x.shape[0], num_groups, C // num_groups) + x.shape[2:]
+    x_grouped = reshape(x, grouped_shape)
+    axes = tuple(range(2, len(grouped_shape)))
 
-    x_mean: object = mean(x_grouped, axis=axes, keepdims=True)
-    x_var: object = mean(multiply(subtract(x_grouped, x_mean), subtract(x_grouped, x_mean)), axis=axes, keepdims=True)
+    x_mean = mean(x_grouped, axis=axes, keepdims=True)
+    x_var = mean(multiply(subtract(x_grouped, x_mean), subtract(x_grouped, x_mean)), axis=axes, keepdims=True)
 
-    stddev: object = power(add(x_var, full_like(x_var, epsilon)), full_like(x_var, 0.5))
-    normalized: object = reshape(divide(subtract(x_grouped, x_mean), stddev), x.shape)
+    stddev = power(add(x_var, full_like(x_var, epsilon)), full_like(x_var, 0.5))
+    normalized = reshape(divide(subtract(x_grouped, x_mean), stddev), x.shape)
 
     if scale is not None:
-        normalized: object = multiply(normalized, reshape(scale, (1, C) + (1,) * (len(x.shape) - 2)))
+        normalized = multiply(normalized, reshape(scale, (1, C) + (1,) * (len(x.shape) - 2)))
     if offset is not None:
-        normalized: object = add(normalized, reshape(offset, (1, C) + (1,) * (len(x.shape) - 2)))
+        normalized = add(normalized, reshape(offset, (1, C) + (1,) * (len(x.shape) - 2)))
 
     return normalized
 
@@ -493,7 +493,7 @@ def instance_norm(
     scale: Optional[Tensor] = None,
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
-) -> object:
+):
     """Instance normalization.
 
     Args:
@@ -506,10 +506,10 @@ def instance_norm(
         Tensor: Normalized tensor.
     """
     # Instance norm is equivalent to group norm with num_groups = C
-    original_shape: object = x.shape
+    original_shape = x.shape
     C = original_shape[1]
     return group_norm(x, num_groups=C, scale=scale, offset=offset, epsilon=epsilon)
 
 
-batch_norm: object = batch_normalization
-rms_norm: object = rms_normalization
+batch_norm = batch_normalization
+rms_norm = rms_normalization

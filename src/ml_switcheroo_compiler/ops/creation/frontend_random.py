@@ -22,7 +22,7 @@ def rand(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return a tensor filled with random numbers from a uniform distribution.
 
     Args:
@@ -33,12 +33,12 @@ def rand(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype: object = dtype or config.default_float_dtype
-    device: object = device or config.default_device
-    shape: object = tuple(size)
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    shape = tuple(size)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Rand", *shape)
+        data = get_active_backend().execute_op("Rand", *shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Rand", shape, dtype)
 
@@ -47,7 +47,7 @@ def randn(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return a tensor filled with random numbers from a standard normal distribution.
 
     Args:
@@ -58,12 +58,12 @@ def randn(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype: object = dtype or config.default_float_dtype
-    device: object = device or config.default_device
-    shape: object = tuple(size)
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    shape = tuple(size)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Randn", *shape)
+        data = get_active_backend().execute_op("Randn", *shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randn", shape, dtype)
 
@@ -74,7 +74,7 @@ def randint(
     size: Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return a tensor filled with random integers from [low, high).
 
     Args:
@@ -87,12 +87,12 @@ def randint(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype: object = dtype or config.default_int_dtype
-    device: object = device or config.default_device
-    shape: object = tuple(size)
+    dtype = dtype or config.default_int_dtype
+    device = device or config.default_device
+    shape = tuple(size)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op("Randint", low, high, size=shape)
+        data = get_active_backend().execute_op("Randint", low, high, size=shape)
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randint", shape, dtype, {"low": low, "high": high})
 

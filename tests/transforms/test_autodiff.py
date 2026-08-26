@@ -325,7 +325,7 @@ def test_autodiff_coverage_brute() -> None:
     """Test the autodiff coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -338,7 +338,7 @@ def test_autodiff_coverage_brute() -> None:
             del _VJP_REGISTRY["FakeOp"]
 
         @register_vjp("FakeOp")
-        def fake_op_vjp(graph: object, node: object, adj_id: str) -> list[str]:
+        def fake_op_vjp(graph, node, adj_id: str) -> list[str]:
             """Evaluate and process the fake op vjp operation.
 
             Args:
@@ -357,7 +357,7 @@ def test_autodiff_coverage_brute() -> None:
             del _VJP_REGISTRY["FakeOp"]
 
         @register_vjp("FakeOp")
-        def fake_op_vjp2(graph: object, node: object, adj_id: str) -> list[str]:
+        def fake_op_vjp2(graph, node, adj_id: str) -> list[str]:
             """Evaluate and process the fake op vjp2 operation.
 
             Args:

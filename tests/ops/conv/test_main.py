@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 "Core abstractions and logic definitions for test_conv_extra.py."
 
 
-def test_conv_general_dilated_local_coverage() -> object:
+def test_conv_general_dilated_local_coverage():
     """Test the conv general dilated local coverage behavior.
 
     Returns:

@@ -9,7 +9,7 @@ DEFAULT_SCALE = 0.01
 DEFAULT_STDDEV = 0.01
 
 
-def zeros(key: object, shape: object, dtype: object = None) -> object:
+def zeros(key, shape, dtype=None):
     """Initialize an array with all zeros.
 
     Args:
@@ -17,12 +17,12 @@ def zeros(key: object, shape: object, dtype: object = None) -> object:
         shape (object): The target shape.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return ops.zeros(shape, dtype=dtype or dtypes.DType.Float32)
 
 
-def ones(key: object, shape: object, dtype: object = None) -> object:
+def ones(key, shape, dtype=None):
     """Initialize an array with all ones.
 
     Args:
@@ -30,22 +30,22 @@ def ones(key: object, shape: object, dtype: object = None) -> object:
         shape (object): The target shape.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return ops.ones(shape, dtype=dtype or dtypes.DType.Float32)
 
 
-def constant(value: object, dtype: object = None) -> object:
+def constant(value, dtype=None):
     """Return an initializer that generates arrays filled with a constant value.
 
     Args:
         value (object): The value parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -53,24 +53,24 @@ def constant(value: object, dtype: object = None) -> object:
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return ops.full(shape, value, dtype=dtype or dtypes.DType.Float32)
 
     return init
 
 
-def uniform(scale: object = DEFAULT_SCALE, dtype: object = None) -> object:
+def uniform(scale=DEFAULT_SCALE, dtype=None):
     """Return an initializer that generates arrays from a uniform distribution.
 
     Args:
         scale (object): The scale parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -78,24 +78,24 @@ def uniform(scale: object = DEFAULT_SCALE, dtype: object = None) -> object:
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return zeros(key, shape, dtype)
 
     return init
 
 
-def normal(stddev: object = DEFAULT_STDDEV, dtype: object = None) -> object:
+def normal(stddev=DEFAULT_STDDEV, dtype=None):
     """Return an initializer that generates arrays from a normal distribution.
 
     Args:
         stddev (object): The stddev parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -103,7 +103,7 @@ def normal(stddev: object = DEFAULT_STDDEV, dtype: object = None) -> object:
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return zeros(key, shape, dtype)
 
@@ -111,11 +111,11 @@ def normal(stddev: object = DEFAULT_STDDEV, dtype: object = None) -> object:
 
 
 def truncated_normal(
-    stddev: object = DEFAULT_STDDEV,
-    dtype: object = None,
-    lower: object = -2.0,
-    upper: object = 2.0,
-) -> object:
+    stddev=DEFAULT_STDDEV,
+    dtype=None,
+    lower=-2.0,
+    upper=2.0,
+):
     """Return an initializer that generates arrays from a truncated normal distribution.
 
     Args:
@@ -124,10 +124,10 @@ def truncated_normal(
         lower (object): The lower parameter for the operation.
         upper (object): The upper parameter for the operation.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -135,23 +135,23 @@ def truncated_normal(
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return zeros(key, shape, dtype)
 
     return init
 
 
-def variance_scaling(config: InitializerConfig) -> object:
+def variance_scaling(config: InitializerConfig):
     """Return an initializer that scales its variance based on weight shape.
 
     Args:
         config (InitializerConfig): The configuration for the initializer.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = None) -> object:
+    def init(key, shape, dtype=None):
         """Initialize the instance.
 
         Args:
@@ -159,21 +159,21 @@ def variance_scaling(config: InitializerConfig) -> object:
             shape (object): The shape parameter.
             dtype (object): The dtype parameter.
 
-        Returns: object: The inferred shape or computed result.
+        Returns: Tensor: The inferred shape or computed result.
         """
         if dtype is None:
-            dtype: object = config.dtype
+            dtype = config.dtype
         return zeros(key, shape, dtype)
 
     return init
 
 
 def glorot_uniform(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the Glorot (Xavier) uniform initialization.
 
     Args:
@@ -182,7 +182,7 @@ def glorot_uniform(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -198,11 +198,11 @@ def glorot_uniform(
 
 
 def glorot_normal(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the Glorot (Xavier) normal initialization.
 
     Args:
@@ -211,7 +211,7 @@ def glorot_normal(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -227,11 +227,11 @@ def glorot_normal(
 
 
 def lecun_uniform(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the LeCun uniform initialization.
 
     Args:
@@ -240,7 +240,7 @@ def lecun_uniform(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -256,11 +256,11 @@ def lecun_uniform(
 
 
 def lecun_normal(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the LeCun normal initialization.
 
     Args:
@@ -269,7 +269,7 @@ def lecun_normal(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -285,11 +285,11 @@ def lecun_normal(
 
 
 def he_uniform(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the He (Kaiming) uniform initialization.
 
     Args:
@@ -298,7 +298,7 @@ def he_uniform(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -314,11 +314,11 @@ def he_uniform(
 
 
 def he_normal(
-    in_axis: object = -2,
-    out_axis: object = -1,
-    batch_axis: object = (),
-    dtype: object = None,
-) -> object:
+    in_axis=-2,
+    out_axis=-1,
+    batch_axis=(),
+    dtype=None,
+):
     """Return an initializer for the He (Kaiming) normal initialization.
 
     Args:
@@ -327,7 +327,7 @@ def he_normal(
         batch_axis (object): The batch_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     return variance_scaling(
         InitializerConfig(
@@ -342,7 +342,7 @@ def he_normal(
     )
 
 
-def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = None) -> object:
+def orthogonal(scale=1.0, column_axis=-1, dtype=None):
     """Return an initializer that generates orthogonally initialized weight arrays.
 
     Args:
@@ -350,10 +350,10 @@ def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = No
         column_axis (object): The column_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -361,7 +361,7 @@ def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = No
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return zeros(key, shape, dtype)
 
@@ -369,10 +369,10 @@ def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = No
 
 
 def delta_orthogonal(
-    scale: object = 1.0,
-    column_axis: object = -1,
-    dtype: object = None,
-) -> object:
+    scale=1.0,
+    column_axis=-1,
+    dtype=None,
+):
     """Return an initializer that generates delta orthogonal arrays (useful for CNNs).
 
     Args:
@@ -380,10 +380,10 @@ def delta_orthogonal(
         column_axis (object): The column_axis parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
 
-    def init(key: object, shape: object, dtype: object = dtype) -> object:
+    def init(key, shape, dtype=dtype):
         """Initialize the tensor.
 
         Args:
@@ -391,7 +391,7 @@ def delta_orthogonal(
             shape (object): The shape of the tensor.
             dtype (object): The data type.
 
-        Returns: object: The initialized tensor.
+        Returns: Tensor: The initialized tensor.
         """
         return zeros(key, shape, dtype)
 

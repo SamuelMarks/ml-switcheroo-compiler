@@ -48,7 +48,7 @@ def test_proxy_tensor_math() -> None:
     """Test the proxy tensor math behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies mathematical and matrix multiplication operations on ProxyTensor objects.\n\n    This test checks element-wise operations (addition, subtraction, multiplication,\n    division, exponentiation), right-side operations with scalars, matrix\n    multiplication shape propagation, and error handling for invalid matrix\n    multiplication operands within an active tracing context\n\n    Returns:\n    None.\n    "
@@ -81,7 +81,7 @@ def test_proxy_tensor_outside_context() -> None:
     """Test the proxy tensor outside context behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that performing operations on ProxyTensor objects outside an active.\n\n    tracing\n\n    context raises a RuntimeError\n\n    This ensures that tracing operations are strictly bound to active tracer tape\n    sessions\n\n    Returns:\n    None.\n    "
@@ -101,7 +101,7 @@ def test_tracer_add_node_with_ast_ref() -> None:
     """Test the tracer add node with ast ref behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that AST references are correctly preserved when adding logical nodes to.\n\n    the tracer tape\n\n    This test ensures that metadata such as source AST references are successfully\n    propagated through the tracing process and stored in the final logical graph\n\n    Returns:\n    None.\n    "
@@ -119,7 +119,7 @@ def test_proxy_tensor_assign_operations() -> None:
     """Test the proxy tensor assign operations behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test assign, assign_add, and assign_sub on ProxyTensor."
@@ -152,7 +152,7 @@ def test_proxy_tensor_assign_errors() -> None:
     """Test the proxy tensor assign errors behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test proxy_tensor_assign_errors."
@@ -186,7 +186,7 @@ def test_proxy_tensor_assign_errors() -> None:
         pass
 
 
-def test_trace_counts() -> object:
+def test_trace_counts():
     """Test the trace counts behavior.
 
     Returns:
@@ -194,7 +194,7 @@ def test_trace_counts() -> object:
     """
     try:
 
-        def my_func() -> object:
+        def my_func():
             """Evaluate and process the my func operation.
 
             Returns:
@@ -209,7 +209,7 @@ def test_trace_counts() -> object:
         reset_trace_count(my_func)
         assert get_trace_count(my_func) == 0
 
-        def traced_fn() -> object:
+        def traced_fn():
             """Evaluate and process the traced fn operation.
 
             Returns:

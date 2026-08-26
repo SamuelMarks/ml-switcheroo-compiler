@@ -26,7 +26,7 @@ def eye(
     k: int = 0,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
@@ -39,13 +39,13 @@ def eye(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    dtype: object = dtype or config.default_float_dtype
-    device: object = device or config.default_device
-    m: object = m if m is not None else n
-    shape: object = (n, m)
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    m = m if m is not None else n
+    shape = (n, m)
 
     if config.eager_mode:
-        data: object = get_active_backend().execute_op(
+        data = get_active_backend().execute_op(
             "Eye",
             n,
             m,
@@ -60,7 +60,7 @@ def identity(
     n: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> object:
+):
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
@@ -74,7 +74,7 @@ def identity(
     return eye(n, n, 0, dtype, device)
 
 
-def _diag_eager(input: Tensor, diagonal: int, device: object, dtype: object) -> object:
+def _diag_eager(input: Tensor, diagonal: int, device, dtype):
     """Evaluate _diag_eager operation.
 
     Args:
@@ -86,14 +86,14 @@ def _diag_eager(input: Tensor, diagonal: int, device: object, dtype: object) -> 
     Returns:
         Tensor: Result.
     """
-    data: object = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
-    shape: object = data.shape if hasattr(data, "shape") else ()
+    data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
+    shape = data.shape if hasattr(data, "shape") else ()
     if dtype is None:
-        dtype: object = getattr(data, "dtype", DType.Float32)
+        dtype = getattr(data, "dtype", DType.Float32)
     return Tensor(data, TensorConfig(shape, dtype, device))
 
 
-def diag(input: Tensor, diagonal: int = 0) -> object:
+def diag(input: Tensor, diagonal: int = 0):
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:
@@ -107,26 +107,26 @@ def diag(input: Tensor, diagonal: int = 0) -> object:
         RuntimeError: An exception.
         ValueError: An exception.
     """
-    device: object = getattr(input, "device", None)
-    dtype: object = getattr(input, "dtype", None)
+    device = getattr(input, "device", None)
+    dtype = getattr(input, "dtype", None)
 
     if config.eager_mode:
         return _diag_eager(input, diagonal, device, dtype)
 
-    input_shape: object = getattr(input, "shape", ())
+    input_shape = getattr(input, "shape", ())
     if len(input_shape) == MAGIC_VAL_2:
-        n: object = min(input_shape) - abs(diagonal)
-        shape: object = (max(0, n),)
+        n = min(input_shape) - abs(diagonal)
+        shape = (max(0, n),)
     else:
-        msg: object = "diag requires a 1D or 2D tensor."
+        msg = "diag requires a 1D or 2D tensor."
         raise ValueError(msg)
 
     if not global_tracing_state.is_tracing:
-        msg: object = "Cannot emit diag node outside of a tracing context."
+        msg = "Cannot emit diag node outside of a tracing context."
         raise RuntimeError(msg)
-    out_id: object = str(uuid.uuid4())
-    input_id: object = input.data.id if hasattr(input, "data") else getattr(input, "id", "const")
-    node: object = LogicalNode(
+    out_id = str(uuid.uuid4())
+    input_id = input.data.id if hasattr(input, "data") else getattr(input, "id", "const")
+    node = LogicalNode(
         id=out_id,
         op_type="Diag",
         inputs=[input_id],
@@ -134,7 +134,7 @@ def diag(input: Tensor, diagonal: int = 0) -> object:
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
-    proxy: object = ProxyTensor(
+    proxy = ProxyTensor(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),

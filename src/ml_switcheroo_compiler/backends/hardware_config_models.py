@@ -1,5 +1,7 @@
 """Pydantic models for hardware generators."""
 
+from typing import Any
+
 from pydantic import BaseModel
 
 
@@ -16,6 +18,6 @@ class HardwareTemplatesConfig(BaseModel):
     templates: dict[str, HardwareTemplateConfig]
     orchestration: dict[str, str] = {}
 
-    def model_dump(self, *args: object, **kwargs: object) -> object:
+    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
         """Dump the model."""
         return super().model_dump(*args, **kwargs)

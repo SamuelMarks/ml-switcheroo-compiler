@@ -22,11 +22,11 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     Returns:
         str: The computed result.
     """
-    out_id: object = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
-    n1: object = graph.nodes[n1_id]
+    out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
+    n1 = graph.nodes[n1_id]
 
     # Simple shape heuristic for accumulation
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id,
         op_type="Add",
         inputs=[n1_id, n2_id],
@@ -45,7 +45,7 @@ def _copy_graph(graph: LogicalGraph) -> LogicalGraph:
     Returns:
         LogicalGraph: The new graph.
     """
-    new_graph: object = LogicalGraph(name=f"{graph.name}_grad")
+    new_graph = LogicalGraph(name=f"{graph.name}_grad")
     for nid, node in graph.nodes.items():
         new_graph.nodes[nid] = clone_logical_node(node)
     return new_graph
@@ -83,17 +83,17 @@ def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNo
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
-    recompute_node: object = clone_logical_node(node)
+    recompute_node = clone_logical_node(node)
     recompute_node.id = f"{node.id}_recompute_{uuid.uuid4().hex[:6]}"
 
     # Recursively recompute inputs if they are also tagged for rematerialization
-    new_inputs: object = []
+    new_inputs = []
     for inp_id in getattr(node, "inputs", []):
         if inp_id in new_graph.nodes:
-            inp_node: object = new_graph.nodes[inp_id]
+            inp_node = new_graph.nodes[inp_id]
             if inp_node.attributes.get("rematerialize", False):
                 # Need to recompute the input as well
-                recomputed_inp: object = _recompute_subgraph(new_graph, inp_node)
+                recomputed_inp = _recompute_subgraph(new_graph, inp_node)
                 new_inputs.append(recomputed_inp.id)
             else:
                 new_inputs.append(inp_id)
@@ -124,18 +124,18 @@ def _accumulate_gradients(
     """
     try:
         if node.attributes.get("rematerialize", False):
-            eval_node: object = _recompute_subgraph(new_graph, node)
+            eval_node = _recompute_subgraph(new_graph, node)
         else:
-            eval_node: object = node
-        vjp_func: object = get_vjp(node.op_type)
-        input_adjs: object = vjp_func(new_graph, eval_node, adj_id)
+            eval_node = node
+        vjp_func = get_vjp(node.op_type)
+        input_adjs = vjp_func(new_graph, eval_node, adj_id)
 
     except ValueError:
-        msg: object = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
+        msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
         raise ValueError(msg) from None
 
     if len(input_adjs) != len(node.inputs):
-        msg: object = f"VJP for {getattr(node, 'op_type', 'Unknown')} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
+        msg = f"VJP for {getattr(node, 'op_type', 'Unknown')} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
         raise ValueError(msg)
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
@@ -166,7 +166,7 @@ def _backward_pass(
 
     """
     for node in reversed(sorted_nodes):
-        nid: object = node.id
+        nid = node.id
         if nid not in reachable_from_output or nid not in adjoints:
             continue
 
@@ -199,17 +199,17 @@ def _extract_gradients(
     Raises:
         ValueError: If a target node is not found.
     """
-    grad_outputs: object = []
+    grad_outputs = []
     for w in wrt:
         if w not in new_graph.nodes:
-            msg: object = f"Target node '{w}' not found in graph."
+            msg = f"Target node '{w}' not found in graph."
             raise ValueError(msg)
 
         if w in adjoints:
             grad_outputs.append(adjoints[w])
         else:
-            zero_id: object = f"grad_zeros_{uuid.uuid4().hex[:6]}"
-            zeros_node: object = LogicalNode(
+            zero_id = f"grad_zeros_{uuid.uuid4().hex[:6]}"
+            zeros_node = LogicalNode(
                 id=zero_id,
                 op_type="Constant",
                 attributes={"value": 0.0},
@@ -236,14 +236,14 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typi
         ValueError: An exception.
     """
     if output_id not in graph.nodes:
-        msg: object = f"Output node '{output_id}' not found in graph."
+        msg = f"Output node '{output_id}' not found in graph."
         raise ValueError(msg)
 
-    new_graph: object = _copy_graph(graph)
+    new_graph = _copy_graph(graph)
 
-    sorted_nodes: object = topological_sort(new_graph)
+    sorted_nodes = topological_sort(new_graph)
 
-    reachable_from_output: object = _get_reachable_from_output(sorted_nodes, output_id)
+    reachable_from_output = _get_reachable_from_output(sorted_nodes, output_id)
 
     adjoints: dict[str, str] = {}
     if cotangent_id is not None:
@@ -253,8 +253,8 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typi
         else:
             adjoints[output_id] = cotangent_id
     else:
-        one_id: object = f"grad_ones_{uuid.uuid4().hex[:6]}"
-        ones_node: object = LogicalNode(
+        one_id = f"grad_ones_{uuid.uuid4().hex[:6]}"
+        ones_node = LogicalNode(
             id=one_id,
             op_type="Constant",
             attributes={"value": 1.0},
@@ -269,7 +269,7 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typi
     return new_graph
 
 
-def _get_input_tangents(new_graph: IRGraph, node: object, tangents: dict[str, str]) -> list[str]:
+def _get_input_tangents(new_graph: IRGraph, node, tangents: dict[str, str]) -> list[str]:
     """Get or create input tangents for a node.
 
     Args:
@@ -284,13 +284,13 @@ def _get_input_tangents(new_graph: IRGraph, node: object, tangents: dict[str, st
 
     from ml_switcheroo_ir import LogicalNode
 
-    input_tangents: object = []
+    input_tangents = []
     for inp in node.inputs:
         if inp in tangents:
             input_tangents.append(tangents[inp])
         else:
-            zero_id: object = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
-            zeros_node: object = LogicalNode(
+            zero_id = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
+            zeros_node = LogicalNode(
                 id=zero_id,
                 op_type="Constant",
                 attributes={"value": 0.0},
@@ -301,7 +301,7 @@ def _get_input_tangents(new_graph: IRGraph, node: object, tangents: dict[str, st
     return input_tangents
 
 
-def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: object, inverse_map: dict[str, str]) -> str:
+def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata, inverse_map: dict[str, str]) -> str:
     """Compile a JVP expression string into IR nodes.
 
     Args:
@@ -317,9 +317,9 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: object, inv
 
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    node: object = ast.parse(expr_str, mode="eval").body
+    node = ast.parse(expr_str, mode="eval").body
 
-    def _convert(ast_node: object) -> str:
+    def _convert(ast_node) -> str:
         """Recursively convert an AST node to IR.
 
         Args:
@@ -334,20 +334,20 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: object, inv
         if isinstance(ast_node, ast.Name):
             return inverse_map.get(ast_node.id, ast_node.id)
         if isinstance(ast_node, ast.BinOp):
-            left_id: object = _convert(ast_node.left)
-            right_id: object = _convert(ast_node.right)
-            op_map: object = {
+            left_id = _convert(ast_node.left)
+            right_id = _convert(ast_node.right)
+            op_map = {
                 ast.Add: "Add",
                 ast.Sub: "Subtract",
                 ast.Mult: "Multiply",
                 ast.Div: "TrueDivide",
             }
-            op_type: object = op_map.get(type(ast_node.op))
+            op_type = op_map.get(type(ast_node.op))
             if op_type is None:
                 raise ValueError(f"Unsupported binary operator in JVP expression: {type(ast_node.op)}")
             return emit_ir_node(graph, op_type, [left_id, right_id], shape_metadata)
         if isinstance(ast_node, ast.UnaryOp):
-            operand_id: object = _convert(ast_node.operand)
+            operand_id = _convert(ast_node.operand)
             if isinstance(ast_node.op, ast.USub):
                 return emit_ir_node(graph, "Negative", [operand_id], shape_metadata)
             return operand_id
@@ -356,8 +356,8 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: object, inv
 
             from ml_switcheroo_ir import LogicalNode
 
-            const_id: object = f"jvp_const_{uuid.uuid4().hex[:6]}"
-            const_node: object = LogicalNode(
+            const_id = f"jvp_const_{uuid.uuid4().hex[:6]}"
+            const_node = LogicalNode(
                 id=const_id,
                 op_type="Constant",
                 attributes={"value": ast_node.value},
@@ -370,7 +370,7 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: object, inv
     return _convert(node)
 
 
-def _invoke_style2_jvp_rule(jvp_func: object, sig: object, new_graph: IRGraph, node: object, input_tangents: list[str]) -> object:
+def _invoke_style2_jvp_rule(jvp_func, sig, new_graph: IRGraph, node, input_tangents: list[str]):
     """Invoke a JVP rule using the 'style 2' parameter mapping.
 
     Args:
@@ -380,25 +380,25 @@ def _invoke_style2_jvp_rule(jvp_func: object, sig: object, new_graph: IRGraph, n
         node (object): The IR node.
         input_tangents (list[str]): The list of input tangents.
 
-    Returns: object: The result of the JVP rule.
+    Returns: Tensor: The result of the JVP rule.
     """
     import inspect
 
-    args: object = input_tangents + getattr(node, "inputs", [])
-    param_keys: object = [name for name, param in sig.parameters.items() if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
-    call_args: object = args[: len(param_keys)]
+    args = input_tangents + getattr(node, "inputs", [])
+    param_keys = [name for name, param in sig.parameters.items() if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+    call_args = args[: len(param_keys)]
 
-    safe_id_map: object = {}
-    inverse_map: object = {}
+    safe_id_map = {}
+    inverse_map = {}
     for i, orig_id in enumerate(call_args):
-        safe_id: object = f"safe_id_{i}"
+        safe_id = f"safe_id_{i}"
         safe_id_map[orig_id] = safe_id
         inverse_map[safe_id] = orig_id
 
-    safe_call_args: object = [safe_id_map[orig_id] for orig_id in call_args]
+    safe_call_args = [safe_id_map[orig_id] for orig_id in call_args]
 
     try:
-        expr: object = jvp_func(*safe_call_args)
+        expr = jvp_func(*safe_call_args)
         if isinstance(expr, str):
             return _compile_jvp_expr(expr, new_graph, getattr(node, "shape_metadata", None), inverse_map)
         return expr
@@ -406,7 +406,7 @@ def _invoke_style2_jvp_rule(jvp_func: object, sig: object, new_graph: IRGraph, n
         raise MissingJVPRuleError(f"Failed to execute JVP rule for {getattr(node, 'op_type', 'Unknown')}: {e}") from e
 
 
-def _invoke_jvp_rule(jvp_func: object, new_graph: IRGraph, node: object, input_tangents: list[str]) -> object:
+def _invoke_jvp_rule(jvp_func, new_graph: IRGraph, node, input_tangents: list[str]):
     """Invoke a JVP rule function, auto-detecting the style.
 
     Args:
@@ -415,11 +415,11 @@ def _invoke_jvp_rule(jvp_func: object, new_graph: IRGraph, node: object, input_t
         node (object): The IR node.
         input_tangents (list[str]): The list of input tangents.
 
-    Returns: object: The result of the JVP rule.
+    Returns: Tensor: The result of the JVP rule.
     """
     import inspect
 
-    sig: object = inspect.signature(jvp_func)
+    sig = inspect.signature(jvp_func)
     if "graph" in sig.parameters and "node" in sig.parameters:
         try:
             return jvp_func(new_graph, node, input_tangents[0] if len(input_tangents) == 1 else input_tangents)
@@ -427,7 +427,7 @@ def _invoke_jvp_rule(jvp_func: object, new_graph: IRGraph, node: object, input_t
             raise MissingJVPRuleError(f"Failed to execute JVP rule for {getattr(node, 'op_type', 'Unknown')}: {e}") from e
 
     # Style 2: real math rules with tangent parameters
-    has_tangent_param: object = any("tangent" in p_name for p_name in sig.parameters)
+    has_tangent_param = any("tangent" in p_name for p_name in sig.parameters)
     if len(sig.parameters) >= 2 and has_tangent_param:
         return _invoke_style2_jvp_rule(jvp_func, sig, new_graph, node, input_tangents)
 
@@ -436,7 +436,7 @@ def _invoke_jvp_rule(jvp_func: object, new_graph: IRGraph, node: object, input_t
 
 def _process_jvp_node(
     new_graph: IRGraph,
-    node: object,
+    node,
     tangents: dict[str, str],
 ) -> None:
     """Process a single node for JVP.
@@ -456,13 +456,13 @@ def _process_jvp_node(
 
         from ml_switcheroo_ir import LogicalNode
 
-        out_tangent_ids: object = []
+        out_tangent_ids = []
         for inp in node.inputs:
             if inp in tangents:
                 out_tangent_ids.append(tangents[inp])
             else:
-                zero_id: object = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
-                zeros_node: object = LogicalNode(
+                zero_id = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
+                zeros_node = LogicalNode(
                     id=zero_id,
                     op_type="Constant",
                     attributes={"value": 0.0},
@@ -472,8 +472,8 @@ def _process_jvp_node(
                 tangents[inp] = zero_id
                 out_tangent_ids.append(zero_id)
 
-        jvp_out_node_id: object = f"jvp_output_{uuid.uuid4().hex[:6]}"
-        jvp_out_node: object = LogicalNode(
+        jvp_out_node_id = f"jvp_output_{uuid.uuid4().hex[:6]}"
+        jvp_out_node = LogicalNode(
             id=jvp_out_node_id,
             op_type="Output",
             inputs=out_tangent_ids,
@@ -490,14 +490,14 @@ def _process_jvp_node(
         return
 
     try:
-        jvp_func: object = get_jvp(node.op_type)
+        jvp_func = get_jvp(node.op_type)
     except ValueError:
         raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 
-    input_tangents: object = _get_input_tangents(new_graph, node, tangents)
+    input_tangents = _get_input_tangents(new_graph, node, tangents)
 
     try:
-        out_tangent: object = _invoke_jvp_rule(jvp_func, new_graph, node, input_tangents)
+        out_tangent = _invoke_jvp_rule(jvp_func, new_graph, node, input_tangents)
         if out_tangent is not None:
             tangents[node.id] = str(out_tangent)
     except ValueError:
@@ -506,7 +506,7 @@ def _process_jvp_node(
 
 def _forward_pass_jvp(
     new_graph: IRGraph,
-    sorted_nodes: list[object],
+    sorted_nodes,
     tangents: dict[str, str],
 ) -> None:
     """Perform the forward pass to compute JVP.
@@ -542,21 +542,21 @@ def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
         if out_id not in graph.nodes:
             raise ValueError(f"Output node '{out_id}' not found in graph.")
 
-    new_graph: object = _copy_graph(graph)
-    sorted_nodes: object = topological_sort(new_graph)
+    new_graph = _copy_graph(graph)
+    sorted_nodes = topological_sort(new_graph)
 
     tangents_map: dict[str, str] = dict(zip(primals, tangents))
 
     _forward_pass_jvp(new_graph, sorted_nodes, tangents_map)
 
     # Extract required output tangents
-    out_tangents: object = []
+    out_tangents = []
     for out in outputs:
         if out in tangents_map:
             out_tangents.append(tangents_map[out])
         else:
-            zero_id: object = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
-            zeros_node: object = LogicalNode(
+            zero_id = f"jvp_zeros_{uuid.uuid4().hex[:6]}"
+            zeros_node = LogicalNode(
                 id=zero_id,
                 op_type="Constant",
                 attributes={"value": 0.0},
@@ -582,14 +582,14 @@ def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
         LogicalGraph: Result.
     """
     # First get the gradient (VJP) graph
-    grad_graph: object = grad(graph, primals, outputs[0])
+    grad_graph = grad(graph, primals, outputs[0])
 
     # Then apply JVP to the gradient graph
     # For a scalar output f(x), the gradient is df/dx
     # The JVP of the gradient with tangent v is d^2f/dx^2 * v
 
     # Extract the gradient output nodes (these represent df/dx)
-    grad_outputs: object = grad_graph.outputs
+    grad_outputs = grad_graph.outputs
 
     # Now compute JVP of the gradient graph
     return jvp(grad_graph, primals, tangents, grad_outputs)

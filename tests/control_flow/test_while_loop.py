@@ -18,12 +18,12 @@ def test_while_loop_eager() -> None:
     """Test the while loop eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the while_loop operator.\n\n    Verifies that while_loop correctly iterates using the condition and body\n    functions until the condition is no longer met when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
 
-        def cond_fn(val: object) -> object:
+        def cond_fn(val):
             """Cond fn.
 
             Args:
@@ -34,7 +34,7 @@ def test_while_loop_eager() -> None:
             """
             return Tensor(val < 5, TensorConfig((), DType.Bool, device))
 
-        def body_fn(val: object) -> object:
+        def body_fn(val):
             """Body fn.
 
             Args:
@@ -53,12 +53,12 @@ def test_while_loop_trace() -> None:
     """Test the while loop trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the while_loop operator.\n\n    Verifies that while_loop correctly records the loop operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
 
-        def cond_fn(val: object) -> object:
+        def cond_fn(val):
             """Cond fn.
 
             Args:
@@ -69,7 +69,7 @@ def test_while_loop_trace() -> None:
             """
             return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
-        def body_fn(val: object) -> object:
+        def body_fn(val):
             """Body fn.
 
             Args:
@@ -91,14 +91,14 @@ def test_while_loop_tuple_init() -> None:
     """Test the while loop tuple init behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the while_loop operator with tuple and list initial states.\n\n    Verifies that while_loop correctly handles structured state (tuples in\n    eager mode, lists in tracing mode) for both condition and body functions\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         t1 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
         t2 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
 
-        def cond_fn(state: object) -> object:
+        def cond_fn(state):
             """Cond fn.
 
             Args:
@@ -110,7 +110,7 @@ def test_while_loop_tuple_init() -> None:
             (v1, _v2) = state
             return Tensor(v1.data < 2, TensorConfig((), DType.Bool, device))
 
-        def body_fn(state: object) -> object:
+        def body_fn(state):
             """Body fn.
 
             Args:
@@ -128,7 +128,7 @@ def test_while_loop_tuple_init() -> None:
         pt1 = Tensor(ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
         pt2 = Tensor(ProxyTensor(id="mock2", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
 
-        def cond_fn_trace(v1: object, v2: object) -> object:
+        def cond_fn_trace(v1, v2):
             """Cond fn trace.
 
             Args:
@@ -140,7 +140,7 @@ def test_while_loop_tuple_init() -> None:
             """
             return Tensor(ProxyTensor(id="mock3", shape=(), dtype="bool"), TensorConfig((), DType.Bool, device))
 
-        def body_fn_trace(v1: object, v2: object) -> object:
+        def body_fn_trace(v1, v2):
             """Body fn trace.
 
             Args:

@@ -22,7 +22,7 @@ def test_register_and_get_op() -> None:
     """Test the register and get op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the registration and retrieval of operations in the global registry.\n\n    This test ensures that custom operations subclassing `OpDef` can be registered\n    using the `@register_op` decorator and retrieved via `get_op`. It also verifies\n    that duplicate registrations raise a `ValueError` and retrieving non-existent\n    operations raises a `KeyError`\n\n    Returns:\n    None\n    "
@@ -37,7 +37,7 @@ def test_register_and_get_op() -> None:
                 emission.
                 """
 
-                def infer_shape(self, *args: object, **kwargs: object) -> object:
+                def infer_shape(self, *args, **kwargs):
                     """Infer the output shape of the operation.
 
                     Args:
@@ -48,7 +48,7 @@ def test_register_and_get_op() -> None:
                     object: The resulting output.
                     """
 
-                def eager_eval(self, *args: object, **kwargs: object) -> object:
+                def eager_eval(self, *args, **kwargs):
                     """Evaluate the operation using NumPy.
 
                     Args:
@@ -59,7 +59,7 @@ def test_register_and_get_op() -> None:
                     object: The resulting output.
                     """
 
-                def vjp(self, cotangent: object, *args: object, **kwargs: object) -> tuple[object, ...]:
+                def vjp(self, cotangent, *args, **kwargs):
                     """Compute the vector-Jacobian product.
 
                     Args:
@@ -72,7 +72,7 @@ def test_register_and_get_op() -> None:
                     """
                     return ()
 
-                def jvp(self, tangent: object, *args: object, **kwargs: object) -> object:
+                def jvp(self, tangent, *args, **kwargs):
                     """Compute the Jacobian-vector product.
 
                     Args:
@@ -84,7 +84,7 @@ def test_register_and_get_op() -> None:
                     object: The resulting output.
                     """
 
-                def emit_jax(self, *args: object, **kwargs: object) -> str:
+                def emit_jax(self, *args, **kwargs) -> str:
                     """Emit code for the jax backend.
 
                     Args:
@@ -96,7 +96,7 @@ def test_register_and_get_op() -> None:
                     """
                     return "jax"
 
-                def emit_pytorch(self, *args: object, **kwargs: object) -> str:
+                def emit_pytorch(self, *args, **kwargs) -> str:
                     """Emit code for the pytorch backend.
 
                     Args:
@@ -108,7 +108,7 @@ def test_register_and_get_op() -> None:
                     """
                     return "torch"
 
-                def emit_mlx(self, *args: object, **kwargs: object) -> str:
+                def emit_mlx(self, *args, **kwargs) -> str:
                     """Emit code for the mlx backend.
 
                     Args:
@@ -120,7 +120,7 @@ def test_register_and_get_op() -> None:
                     """
                     return "mlx"
 
-                def emit_keras(self, *args: object, **kwargs: object) -> str:
+                def emit_keras(self, *args, **kwargs) -> str:
                     """Emit code for the keras backend.
 
                     Args:
@@ -132,7 +132,7 @@ def test_register_and_get_op() -> None:
                     """
                     return "keras"
 
-                def emit_tensorflow(self, *args: object, **kwargs: object) -> str:
+                def emit_tensorflow(self, *args, **kwargs) -> str:
                     """Emit code for the tensorflow backend.
 
                     Args:
@@ -165,7 +165,7 @@ def test_opdef_call_eager() -> None:
     """Test the opdef call eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the eager execution behavior of `OpDef` instances.\n\n    This test configures the system to run in eager mode, instantiates a test\n    operation, and calls it with a `Tensor` input. It verifies that the operation\n    is evaluated immediately using its NumPy implementation and returns a new\n    `Tensor` with the correct shape, data type, and device\n\n    Returns:\n    None\n    "
@@ -176,7 +176,7 @@ def test_opdef_call_eager() -> None:
             class TestEagerOp(OpDef):
                 """A mock operation class used for testing eager execution behavior."""
 
-                def infer_shape(self, *args: object, **kwargs: object) -> object:
+                def infer_shape(self, *args, **kwargs):
                     """infer_shape function.
 
                     Args:
@@ -188,7 +188,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ()
 
-                def eager_eval(self, *args: object, **kwargs: object) -> object:
+                def eager_eval(self, *args, **kwargs):
                     """eager_eval function.
 
                     Args:
@@ -200,7 +200,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return np.array([1, 2, 3], dtype=np.float32)
 
-                def vjp(self, cotangent: object, *args: object, **kwargs: object) -> tuple[object, ...]:
+                def vjp(self, cotangent, *args, **kwargs):
                     """Vjp function.
 
                     Args:
@@ -213,7 +213,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ()
 
-                def jvp(self, tangent: object, *args: object, **kwargs: object) -> object:
+                def jvp(self, tangent, *args, **kwargs):
                     """Jvp function.
 
                     Args:
@@ -226,7 +226,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return tangent
 
-                def emit_jax(self, *args: object, **kwargs: object) -> str:
+                def emit_jax(self, *args, **kwargs) -> str:
                     """emit_jax function.
 
                     Args:
@@ -238,7 +238,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ""
 
-                def emit_pytorch(self, *args: object, **kwargs: object) -> str:
+                def emit_pytorch(self, *args, **kwargs) -> str:
                     """emit_pytorch function.
 
                     Args:
@@ -250,7 +250,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ""
 
-                def emit_mlx(self, *args: object, **kwargs: object) -> str:
+                def emit_mlx(self, *args, **kwargs) -> str:
                     """emit_mlx function.
 
                     Args:
@@ -262,7 +262,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ""
 
-                def emit_keras(self, *args: object, **kwargs: object) -> str:
+                def emit_keras(self, *args, **kwargs) -> str:
                     """emit_keras function.
 
                     Args:
@@ -274,7 +274,7 @@ def test_opdef_call_eager() -> None:
                     """
                     return ""
 
-                def emit_tensorflow(self, *args: object, **kwargs: object) -> str:
+                def emit_tensorflow(self, *args, **kwargs) -> str:
                     """emit_tensorflow function.
 
                     Args:
@@ -307,7 +307,7 @@ def test_opdef_call_tracing() -> None:
     """Test the opdef call tracing behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the tracing execution behavior of `OpDef` instances.\n\n    This test configures the system to run in tracing mode, starts a tracing\n    context,\n    and calls a test operation with a `Tensor` containing a `ProxyTensor`. It\n    verifies\n    that the operation records its execution in the active tracing graph and returns\n    a new `Tensor` wrapping a `ProxyTensor` with the correct shape and data type\n    It also ensures that calling the operation outside of a tracing context raises\n    a `RuntimeError`\n\n    Returns:\n    None\n    "
@@ -318,7 +318,7 @@ def test_opdef_call_tracing() -> None:
             class TestTraceOp(OpDef):
                 """A mock operation class used for testing tracing execution behavior."""
 
-                def infer_shape(self, *args: object, **kwargs: object) -> object:
+                def infer_shape(self, *args, **kwargs):
                     """infer_shape function.
 
                     Args:
@@ -330,7 +330,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return (3,)
 
-                def eager_eval(self, *args: object, **kwargs: object) -> object:
+                def eager_eval(self, *args, **kwargs):
                     """eager_eval function.
 
                     Args:
@@ -342,7 +342,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return np.array([1, 2, 3])
 
-                def vjp(self, cotangent: object, *args: object, **kwargs: object) -> tuple[object, ...]:
+                def vjp(self, cotangent, *args, **kwargs):
                     """Vjp function.
 
                     Args:
@@ -355,7 +355,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return ()
 
-                def jvp(self, tangent: object, *args: object, **kwargs: object) -> object:
+                def jvp(self, tangent, *args, **kwargs):
                     """Jvp function.
 
                     Args:
@@ -368,7 +368,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return tangent
 
-                def emit_jax(self, *args: object, **kwargs: object) -> str:
+                def emit_jax(self, *args, **kwargs) -> str:
                     """emit_jax function.
 
                     Args:
@@ -380,7 +380,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return ""
 
-                def emit_pytorch(self, *args: object, **kwargs: object) -> str:
+                def emit_pytorch(self, *args, **kwargs) -> str:
                     """emit_pytorch function.
 
                     Args:
@@ -392,7 +392,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return ""
 
-                def emit_mlx(self, *args: object, **kwargs: object) -> str:
+                def emit_mlx(self, *args, **kwargs) -> str:
                     """emit_mlx function.
 
                     Args:
@@ -404,7 +404,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return ""
 
-                def emit_keras(self, *args: object, **kwargs: object) -> str:
+                def emit_keras(self, *args, **kwargs) -> str:
                     """emit_keras function.
 
                     Args:
@@ -416,7 +416,7 @@ def test_opdef_call_tracing() -> None:
                     """
                     return ""
 
-                def emit_tensorflow(self, *args: object, **kwargs: object) -> str:
+                def emit_tensorflow(self, *args, **kwargs) -> str:
                     """emit_tensorflow function.
 
                     Args:

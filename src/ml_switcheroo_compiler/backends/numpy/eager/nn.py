@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
-def _gelu(x: object, *args: object, **kwargs: object) -> object:
+def _gelu(x, *args, **kwargs):
     """Evaluate _gelu operation.
 
     Args:
@@ -21,12 +21,12 @@ def _gelu(x: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    erf_vec: object = np.vectorize(math.erf)
+    erf_vec = np.vectorize(math.erf)
     return 0.5 * x * (1 + erf_vec(x / np.sqrt(2.0)))
 
 
 @numpy_eager_registry.register("Relu")
-def _np_relu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_relu(backend_module, x, *args, **kwargs):
     """Evaluate _np_relu operation.
 
     Args:
@@ -42,7 +42,7 @@ def _np_relu(backend_module: object, x: object, *args: object, **kwargs: object)
 
 
 @numpy_eager_registry.register("AlphaDropout")
-def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_alpha_dropout(backend_module, x, **kwargs):
     """Evaluate _np_alpha_dropout operation.
 
     Args:
@@ -53,25 +53,25 @@ def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> ob
     Returns:
             tuple[int, ...]: Result.
     """
-    rate: object = kwargs.get("rate", 0.5)
-    training: object = kwargs.get("training", False)
+    rate = kwargs.get("rate", 0.5)
+    training = kwargs.get("training", False)
     if not training or rate == 0.0:
         return x
-    alpha: object = 1.6732632423543772
-    scale: object = 1.0507009873554805
-    alpha_p: object = -alpha * scale
-    rng: object = np.random.default_rng(kwargs.get("seed", None))
-    noise_shape: object = kwargs.get("noise_shape", None)
+    alpha = 1.6732632423543772
+    scale = 1.0507009873554805
+    alpha_p = -alpha * scale
+    rng = np.random.default_rng(kwargs.get("seed", None))
+    noise_shape = kwargs.get("noise_shape", None)
     if noise_shape is None:
-        noise_shape: object = x.shape
-    mask: object = rng.binomial(1, 1.0 - rate, size=noise_shape)
-    a: object = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
-    b: object = -a * alpha_p * rate
+        noise_shape = x.shape
+    mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
+    a = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
+    b = -a * alpha_p * rate
     return a * (x * mask + alpha_p * (1.0 - mask)) + b
 
 
 @numpy_eager_registry.register("ActivityRegularization")
-def _np_activity_regularization(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_activity_regularization(backend_module, x, **kwargs):
     """Evaluate _np_activity_regularization operation.
 
     Args:
@@ -86,7 +86,7 @@ def _np_activity_regularization(backend_module: object, x: object, **kwargs: obj
 
 
 @numpy_eager_registry.register("Dropout")
-def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_dropout(backend_module, x, **kwargs):
     """Evaluate _np_dropout operation.
 
     Args:
@@ -97,20 +97,20 @@ def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    rate: object = kwargs.get("rate", 0.5)
-    training: object = kwargs.get("training", False)
+    rate = kwargs.get("rate", 0.5)
+    training = kwargs.get("training", False)
     if not training or rate == 0.0:
         return x
-    rng: object = np.random.default_rng(kwargs.get("seed", None))
-    noise_shape: object = kwargs.get("noise_shape", None)
+    rng = np.random.default_rng(kwargs.get("seed", None))
+    noise_shape = kwargs.get("noise_shape", None)
     if noise_shape is None:
-        noise_shape: object = x.shape
-    mask: object = rng.binomial(1, 1.0 - rate, size=noise_shape)
+        noise_shape = x.shape
+    mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
     return x * mask / (1.0 - rate)
 
 
 @numpy_eager_registry.register("TimeDistributed")
-def _np_time_distributed(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_time_distributed(backend_module, x, **kwargs):
     """Evaluate _np_time_distributed operation.
 
     Args:
@@ -121,18 +121,18 @@ def _np_time_distributed(backend_module: object, x: object, **kwargs: object) ->
     Returns:
             tuple[int, ...]: Result.
     """
-    wrapped_op_name: object = kwargs.pop("wrapped_op_name")
-    shape: object = x.shape
+    wrapped_op_name = kwargs.pop("wrapped_op_name")
+    shape = x.shape
     if len(shape) < MAGIC_VAL_3:
         return get_active_backend().execute_op(wrapped_op_name, x, **kwargs)
-    flat_x: object = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
-    out: object = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
-    out_shape: object = (shape[0], shape[1], *out.shape[1:])
+    flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
+    out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
+    out_shape = (shape[0], shape[1], *out.shape[1:])
     return np.reshape(out, out_shape)
 
 
 @numpy_eager_registry.register("Rope")
-def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_rope(backend_module, x, **kwargs):
     """Apply Rotary Positional Encoding using NumPy.
 
     Args:
@@ -140,13 +140,13 @@ def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
         x (object): Input tensor.
         **kwargs (object): Keyword arguments.
 
-    Returns: object: Output tensor.
+    Returns: np.ndarray: Output tensor.
     """
-    x_np: object = backend_module.asarray(x)
-    half_dim: object = kwargs.get("axis", kwargs.get("dim", x_np.shape[-1])) // 2
-    position: object = backend_module.arange(kwargs.get("offset", 0), kwargs.get("offset", 0) + x_np.shape[-2], dtype=x_np.dtype)
-    freqs: object = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(kwargs.get("base", 10000.0)) / half_dim))
-    angles: object = position[:, None] * freqs[None, :]
+    x_np = backend_module.asarray(x)
+    half_dim = kwargs.get("axis", kwargs.get("dim", x_np.shape[-1])) // 2
+    position = backend_module.arange(kwargs.get("offset", 0), kwargs.get("offset", 0) + x_np.shape[-2], dtype=x_np.dtype)
+    freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(kwargs.get("base", 10000.0)) / half_dim))
+    angles = position[:, None] * freqs[None, :]
 
     return backend_module.concatenate(
         [
@@ -158,7 +158,7 @@ def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Rrelu")
-def _np_rrelu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_rrelu(backend_module, x, *args, **kwargs):
     """Evaluate _np_rrelu operation.
 
     Args:
@@ -170,14 +170,14 @@ def _np_rrelu(backend_module: object, x: object, *args: object, **kwargs: object
     Returns:
             tuple[int, ...]: Result.
     """
-    lower: object = kwargs.get("lower", 1.0 / 8.0)
-    upper: object = kwargs.get("upper", 1.0 / 3.0)
-    training: object = kwargs.get("training", False)
+    lower = kwargs.get("lower", 1.0 / 8.0)
+    upper = kwargs.get("upper", 1.0 / 3.0)
+    training = kwargs.get("training", False)
 
-    x_data: object = backend_module.asarray(getattr(x, "data", x))
+    x_data = backend_module.asarray(getattr(x, "data", x))
     if not training:
-        alpha: object = (lower + upper) / 2.0
+        alpha = (lower + upper) / 2.0
         return backend_module.where(x_data >= 0, x_data, x_data * alpha)
 
-    alpha: object = backend_module.random.uniform(lower, upper, size=x_data.shape)
+    alpha = backend_module.random.uniform(lower, upper, size=x_data.shape)
     return backend_module.where(x_data >= 0, x_data, x_data * alpha)

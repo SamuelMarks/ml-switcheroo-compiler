@@ -75,7 +75,7 @@ class ScanConfig:
 
 
 def scan(
-    f: object,
+    f,
     init: tuple[Tensor, ...],
     xs: Tensor,
     config: Optional[ScanConfig] = None,
@@ -91,16 +91,16 @@ def scan(
     Returns:
         tuple: Result.
     """
-    conf: object = config if config is not None else ScanConfig()
+    conf = config if config is not None else ScanConfig()
 
     if global_config.eager_mode or conf.unroll:
-        xs_unstacked: object = unstack(xs, axis=0)
+        xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
-            xs_unstacked: object = list(reversed(xs_unstacked))
+            xs_unstacked = list(reversed(xs_unstacked))
 
-        carry: object = init
-        ys: object = []
+        carry = init
+        ys = []
 
         for x in xs_unstacked:
             carry, y = f(carry, x)
@@ -109,7 +109,7 @@ def scan(
         return carry, stack(ys, axis=0)
     else:
         if conf.reverse:
-            xs: object = cf_reverse(xs, (0,))
+            xs = cf_reverse(xs, (0,))
 
         carry, y = cf_scan(f, init, xs, conf.length)
 
@@ -118,7 +118,7 @@ def scan(
 
 def bidirectional(
     inputs: BidirectionalInputs,
-    cell_fn: object,
+    cell_fn,
     config: Optional[BidirectionalConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
@@ -133,7 +133,7 @@ def bidirectional(
         tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
             Merged output sequence, forward final states, backward final states.
     """
-    conf: object = config if config is not None else BidirectionalConfig()
+    conf = config if config is not None else BidirectionalConfig()
     forward_out, forward_state = rnn(
         inputs.forward_inputs,
         inputs.forward_initial_state,
@@ -148,23 +148,23 @@ def bidirectional(
         config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),
     )
 
-    conf: object = config if config is not None else BidirectionalConfig()
+    conf = config if config is not None else BidirectionalConfig()
     if conf.merge_mode == "concat":
-        merged_out: object = concatenate([forward_out, backward_out], axis=-1)
+        merged_out = concatenate([forward_out, backward_out], axis=-1)
     elif conf.merge_mode == "sum":
-        merged_out: object = add(forward_out, backward_out)
+        merged_out = add(forward_out, backward_out)
     elif conf.merge_mode == "mul":
-        merged_out: object = multiply(forward_out, backward_out)
+        merged_out = multiply(forward_out, backward_out)
     elif conf.merge_mode == "ave":
-        merged_out: object = multiply(add(forward_out, backward_out), 0.5)
+        merged_out = multiply(add(forward_out, backward_out), 0.5)
     else:
         # None
-        merged_out: object = (forward_out, backward_out)
+        merged_out = (forward_out, backward_out)
 
     return merged_out, forward_state, backward_state
 
 
-def _permute_time_major(inputs: Tensor) -> object:
+def _permute_time_major(inputs: Tensor):
     """Swap batch and time dimensions.
 
     Args:
@@ -173,7 +173,7 @@ def _permute_time_major(inputs: Tensor) -> object:
     Returns:
         Tensor: Result.
     """
-    dims: object = list(range(len(inputs.shape)))
+    dims = list(range(len(inputs.shape)))
     dims[0], dims[1] = 1, 0
     return permute(inputs, tuple(dims))
 
@@ -181,7 +181,7 @@ def _permute_time_major(inputs: Tensor) -> object:
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn: object,
+    cell_fn,
     config: Optional[RNNConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
@@ -195,11 +195,11 @@ def rnn(
     Returns:
         tuple: Result.
     """
-    conf: object = config if config is not None else RNNConfig()
+    conf = config if config is not None else RNNConfig()
     if not conf.time_major:
-        inputs: object = _permute_time_major(inputs)
+        inputs = _permute_time_major(inputs)
 
-    def scan_fn(carry: Tensor, x: Tensor) -> object:
+    def scan_fn(carry: Tensor, x: Tensor):
         """Evaluate scan_fn operation.
 
         Args:
@@ -219,10 +219,10 @@ def rnn(
         config=ScanConfig(reverse=conf.go_backwards, unroll=conf.unroll),
     )
     if not conf.return_all_outputs:
-        outputs: object = outputs[-1] if conf.time_major else outputs[:, -1]
+        outputs = outputs[-1] if conf.time_major else outputs[:, -1]
 
     if not conf.time_major:
-        outputs: object = _permute_time_major(outputs)
+        outputs = _permute_time_major(outputs)
 
     return outputs, final_state
 
@@ -230,7 +230,7 @@ def rnn(
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell: object, device: object, **kwargs: object) -> None:
+    def __init__(self, cell, device, **kwargs) -> None:
         """Init.
 
         Args:
@@ -241,7 +241,7 @@ class RNNCellDeviceWrapper:
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple[object, ...]:
+    def __call__(self, inputs, state, **kwargs):
         """Call.
 
         Args:
@@ -264,9 +264,9 @@ class DropoutWrapperConfig:
     state_keep_prob: float = 1.0
     variational_recurrent: bool = False
     input_size: Optional[int] = None
-    dtype: Optional[object] = None
+    dtype = None
     seed: Optional[int] = None
-    dropout_state_filter_visitor: Optional[object] = None
+    dropout_state_filter_visitor = None
 
 
 class RNNCellDropoutWrapper:
@@ -274,9 +274,9 @@ class RNNCellDropoutWrapper:
 
     def __init__(
         self,
-        cell: object,
+        cell,
         config: Optional[DropoutWrapperConfig] = None,
-        **kwargs: object,
+        **kwargs,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
 
@@ -288,7 +288,7 @@ class RNNCellDropoutWrapper:
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: object) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs) -> tuple[Tensor, tuple[Tensor, ...]]:
         """Run the cell with dropout.
 
         Args:
@@ -300,17 +300,17 @@ class RNNCellDropoutWrapper:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
         if self._config.input_keep_prob < 1.0:
-            inputs: object = dropout(inputs, rate=1.0 - self._config.input_keep_prob)
+            inputs = dropout(inputs, rate=1.0 - self._config.input_keep_prob)
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._config.output_keep_prob < 1.0:
-            out: object = dropout(out, rate=1.0 - self._config.output_keep_prob)
+            out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
 
 
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell: object, residual_fn: object = None, **kwargs: object) -> None:
+    def __init__(self, cell, residual_fn=None, **kwargs) -> None:
         """Init.
 
         Args:
@@ -321,7 +321,7 @@ class RNNCellResidualWrapper:
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple[object, ...]:
+    def __call__(self, inputs, state, **kwargs):
         """Call.
 
         Args:
@@ -334,7 +334,7 @@ class RNNCellResidualWrapper:
         """
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._residual_fn is not None:
-            out: object = self._residual_fn(inputs, out)
+            out = self._residual_fn(inputs, out)
         else:
-            out: object = add(inputs, out)
+            out = add(inputs, out)
         return out, new_state

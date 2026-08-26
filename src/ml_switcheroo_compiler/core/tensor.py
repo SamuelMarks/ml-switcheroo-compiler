@@ -21,7 +21,7 @@ from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPro
 class ArrayAt:
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor: "Tensor[object]", indices: object) -> None:
+    def __init__(self, tensor, indices) -> None:
         """Initialize ArrayAt.
 
         Args:
@@ -31,7 +31,7 @@ class ArrayAt:
         self.tensor = tensor
         self.indices = indices
 
-    def add(self, value: object) -> "Tensor[object]":
+    def add(self, value):
         """Add value at indices.
 
         Args:
@@ -42,7 +42,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def multiply(self, value: object) -> "Tensor[object]":
+    def multiply(self, value):
         """Multiply value at indices.
 
         Args:
@@ -53,7 +53,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def set(self, value: object) -> "Tensor[object]":
+    def set(self, value):
         """Set value at indices.
 
         Args:
@@ -64,7 +64,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def maximum(self, value: object) -> "Tensor[object]":
+    def maximum(self, value):
         """Maximum value at indices.
 
         Args:
@@ -75,7 +75,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def minimum(self, value: object) -> "Tensor[object]":
+    def minimum(self, value):
         """Minimum value at indices.
 
         Args:
@@ -90,7 +90,7 @@ class ArrayAt:
 class ArrayAtIndexer:
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor: "Tensor[object]") -> None:
+    def __init__(self, tensor) -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
@@ -98,7 +98,7 @@ class ArrayAtIndexer:
         """
         self.tensor = tensor
 
-    def __getitem__(self, indices: object) -> ArrayAt:
+    def __getitem__(self, indices) -> ArrayAt:
         """Get ArrayAt for indices.
 
         Args:
@@ -132,7 +132,7 @@ class TensorConfig:
 
 from typing import Generic, TypeVar
 
-T_Payload: object = TypeVar("T_Payload")
+T_Payload = TypeVar("T_Payload")
 
 
 class Tensor(
@@ -159,13 +159,13 @@ class Tensor(
         """
         self._data = data
 
-        def _parse_dim(s: object) -> Union[int, str]:
+        def _parse_dim(s) -> Union[int, str]:
             """Parse dimension.
 
             Args:
             s (object): The s parameter.
 
-            Returns: object: Result.
+            Returns: Tensor: Result.
             """
             try:
                 return int(s)
@@ -178,7 +178,7 @@ class Tensor(
         self._requires_grad = config.requires_grad
         self.config = config
 
-    def eval(self) -> "Tensor[object]":
+    def eval(self):
         """Trigger evaluation of a lazy tensor.
 
         Returns:
@@ -188,12 +188,12 @@ class Tensor(
             return self
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph:
-            graph: object = global_tracing_state.active_graph
+            graph = global_tracing_state.active_graph
             if self.data.id not in graph.outputs:
                 graph.outputs.append(self.data.id)
         return self
 
-    def backward(self, *args: object, **kwargs: object) -> None:
+    def backward(self, *args, **kwargs) -> None:
         """Triggers the reverse-mode auto-differentiation.
 
         Args:
@@ -204,7 +204,7 @@ class Tensor(
 
         get_util("backward")(self, *args, **kwargs)
 
-    def view(self, *shape: int) -> "Tensor[object]":
+    def view(self, *shape: int):
         """Return a new tensor with the same data but different size.
 
         Args:
@@ -213,7 +213,7 @@ class Tensor(
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        flat_shape: object = []
+        flat_shape = []
         for s in shape:
             if isinstance(s, (list, tuple)):
                 flat_shape.extend(s)
@@ -221,10 +221,10 @@ class Tensor(
                 flat_shape.append(s)
         from ml_switcheroo_compiler.ops.registry import get_frontend
 
-        res: Tensor[object] = get_frontend("reshape")(self, tuple(flat_shape))
+        res = get_frontend("reshape")(self, tuple(flat_shape))
         return res
 
-    def contiguous(self) -> "Tensor[object]":
+    def contiguous(self):
         """Return a contiguous in memory tensor.
 
         Returns:
@@ -232,7 +232,7 @@ class Tensor(
         """
         return self
 
-    def detach(self) -> "Tensor[object]":
+    def detach(self):
         """Return a new Tensor, detached from the current graph.
 
         Returns:
@@ -254,7 +254,7 @@ class Variable(Tensor[T_Payload]):
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value: "Tensor[object]") -> "Variable[object]":
+    def assign(self, value):
         """Assign a new value to the variable.
 
         Args:
@@ -266,7 +266,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend: object = get_active_backend()
+            backend = get_active_backend()
             self._data = backend.execute_op("Assign", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -275,7 +275,7 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value: "Tensor[object]") -> "Variable[object]":
+    def assign_add(self, value):
         """Add a value to the variable in-place.
 
         Args:
@@ -287,7 +287,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend: object = get_active_backend()
+            backend = get_active_backend()
             self._data = backend.execute_op("AssignAdd", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -296,7 +296,7 @@ class Variable(Tensor[T_Payload]):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value: "Tensor[object]") -> "Variable[object]":
+    def assign_sub(self, value):
         """Subtract a value from the variable in-place.
 
         Args:
@@ -308,7 +308,7 @@ class Variable(Tensor[T_Payload]):
         if config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend: object = get_active_backend()
+            backend = get_active_backend()
             self._data = backend.execute_op("AssignSub", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -329,7 +329,7 @@ class Parameter(Variable[T_Payload]):
             config (TensorConfig): The tensor configuration.
         """
         # Override config.trainable to True for Parameter
-        config: object = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
+        config = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
         super().__init__(data, config)
 
     def __index__(self) -> int:

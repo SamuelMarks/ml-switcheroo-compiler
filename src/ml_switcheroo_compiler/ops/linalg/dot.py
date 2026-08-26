@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _has_valid_shape(obj: object) -> bool:
+def _has_valid_shape(obj) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
@@ -28,7 +28,7 @@ class Dot(OpDef):
     Computes the dot product of two arrays
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infer shape.
 
         Args:
@@ -49,9 +49,9 @@ class DotGeneral(OpDef):
     Computes a generalized dot product matching JAX's lax.dot_general.
     """
 
-    op_name: object = "DotGeneral"
+    op_name = "DotGeneral"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -63,15 +63,15 @@ class DotGeneral(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res
 
-    def _compute_out_shape(self, lhs_shape: tuple[object, ...], rhs_shape: tuple[object, ...], dimension_numbers: tuple[object, ...]) -> tuple[object, ...]:
+    def _compute_out_shape(self, lhs_shape, rhs_shape, dimension_numbers):
         """Evaluate _compute_out_shape operation.
 
         Args:
@@ -86,7 +86,7 @@ class DotGeneral(OpDef):
         lhs_contracting, rhs_contracting = contracting
         lhs_batch, rhs_batch = batch
 
-        out_shape: object = [lhs_shape[b] for b in lhs_batch]
+        out_shape = [lhs_shape[b] for b in lhs_batch]
         out_shape.extend([lhs_shape[i] for i in range(len(lhs_shape)) if i not in lhs_contracting + lhs_batch])
         out_shape.extend([rhs_shape[i] for i in range(len(rhs_shape)) if i not in rhs_contracting + rhs_batch])
 
@@ -100,7 +100,7 @@ class Tensordot(OpDef):
     Computes tensor dot product along specified axes.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -108,7 +108,7 @@ class Tensordot(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: object: The computed result.
+        Returns: Tensor: The computed result.
         """
         return ()
 
@@ -120,7 +120,7 @@ class Inner(OpDef):
     Computes the inner product of two vectors or matrices.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -128,7 +128,7 @@ class Inner(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: object: The computed result.
+        Returns: Tensor: The computed result.
         """
         return ()
 
@@ -140,7 +140,7 @@ class Outer(OpDef):
     Computes the outer product of two vectors.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -148,12 +148,12 @@ class Outer(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns: object: The computed result.
+        Returns: Tensor: The computed result.
         """
         return ()
 
 
-def _compute_pdot_shape(lhs_shape: tuple[object, ...], rhs_shape: tuple[object, ...]) -> tuple[object, ...]:
+def _compute_pdot_shape(lhs_shape, rhs_shape):
     """Evaluate _compute_pdot_shape operation.
 
     Args:
@@ -180,9 +180,9 @@ def _compute_pdot_shape(lhs_shape: tuple[object, ...], rhs_shape: tuple[object, 
 class Pdot(OpDef):
     """Parallel dot product operator."""
 
-    op_name: object = "Pdot"
+    op_name = "Pdot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -192,14 +192,14 @@ class Pdot(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        lhs: object = args[0] if len(args) > 0 else None
-        rhs: object = args[1] if len(args) > 1 else None
-        lhs_shape: object = getattr(lhs, "shape", ())
-        rhs_shape: object = getattr(rhs, "shape", ())
+        lhs = args[0] if len(args) > 0 else None
+        rhs = args[1] if len(args) > 1 else None
+        lhs_shape = getattr(lhs, "shape", ())
+        rhs_shape = getattr(rhs, "shape", ())
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 
-def pdot(*args: object, **kwargs: object) -> object:
+def pdot(*args, **kwargs):
     """Evaluate pdot operation.
 
     Args:

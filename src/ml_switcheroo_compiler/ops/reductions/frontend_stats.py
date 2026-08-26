@@ -16,7 +16,7 @@ from .frontend_utils import _emit_reduction_node
 
 
 @dispatch_eager("Psum")
-def psum(x: Tensor, axis_name: str) -> object:
+def psum(x: Tensor, axis_name: str):
     """Compute an all-reduce sum over the specified mapped axis.
 
     Args:
@@ -30,7 +30,7 @@ def psum(x: Tensor, axis_name: str) -> object:
 
 
 @dispatch_eager("Pmean")
-def pmean(x: Tensor, axis_name: str) -> object:
+def pmean(x: Tensor, axis_name: str):
     """Compute an all-reduce mean over the specified mapped axis.
 
     Args:
@@ -44,7 +44,7 @@ def pmean(x: Tensor, axis_name: str) -> object:
 
 
 @dispatch_eager("ApproxMaxK")
-def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> object:
+def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95):
     """Compute approximate top-k max elements and their indices.
 
     Args:
@@ -56,19 +56,19 @@ def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    attributes: object = {
+    attributes = {
         "k": k,
         "reduction_dimension": reduction_dimension,
         "recall_target": recall_target,
     }
 
-    val: object = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
-    idx: object = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
+    val = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
+    idx = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
 @dispatch_eager("ApproxMinK")
-def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> object:
+def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95):
     """Compute approximate top-k min elements and their indices.
 
     Args:
@@ -80,14 +80,14 @@ def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    attributes: object = {
+    attributes = {
         "k": k,
         "reduction_dimension": reduction_dimension,
         "recall_target": recall_target,
     }
 
-    val: object = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
-    idx: object = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
+    val = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
+    idx = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
@@ -96,7 +96,7 @@ def ctc_loss(
     targets: Tensor,
     input_lengths: Tensor,
     target_lengths: Tensor,
-) -> object:
+):
     """Connectionist Temporal Classification Loss.
 
     Args:
@@ -108,12 +108,12 @@ def ctc_loss(
     Returns:
         Tensor: The loss.
     """
-    inputs: object = [log_probs, targets, input_lengths, target_lengths]
+    inputs = [log_probs, targets, input_lengths, target_lengths]
     return _emit_reduction_node("CTCLoss", inputs, {}, (), log_probs.dtype)
 
 
 @dispatch_eager("Corrcoef")
-def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None) -> object:
+def corrcoef(x, y=None, rowvar: bool = True, bias=None, ddof=None):
     """Return Pearson product-moment correlation coefficients.
 
     Args:
@@ -136,7 +136,7 @@ def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = No
 
 
 @dispatch_eager("Correlate")
-def correlate(a: object, v: object, mode: str = "valid") -> object:
+def correlate(a, v, mode: str = "valid"):
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
@@ -152,10 +152,10 @@ def correlate(a: object, v: object, mode: str = "valid") -> object:
 
 @dispatch_eager("Cov")
 def cov(
-    m: object,
-    y: object = None,
-    **kwargs: object,
-) -> object:
+    m,
+    y=None,
+    **kwargs,
+):
     """Estimate a covariance matrix, given data and weights.
 
     Args:
@@ -169,16 +169,16 @@ def cov(
     Raises:
         ValueError: An exception.
     """
-    allowed_keys: object = {"rowvar", "bias", "ddof", "fweights", "aweights"}
+    allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
     for k in kwargs:
         if k not in allowed_keys:
             raise ValueError(f"Invalid keyword argument to cov: {k}")
 
-    rowvar: object = kwargs.get("rowvar", True)
-    bias: object = kwargs.get("bias", False)
-    ddof: object = kwargs.get("ddof", None)
-    fweights: object = kwargs.get("fweights", None)
-    aweights: object = kwargs.get("aweights", None)
+    rowvar = kwargs.get("rowvar", True)
+    bias = kwargs.get("bias", False)
+    ddof = kwargs.get("ddof", None)
+    fweights = kwargs.get("fweights", None)
+    aweights = kwargs.get("aweights", None)
 
     return _emit_reduction_node(
         "Cov",

@@ -40,11 +40,11 @@ def _calc_same_pad(k: int, s: int) -> tuple[int, int]:
     Returns:
         tuple[int, int]: Pads.
     """
-    pad_len: object = k + s - 2
+    pad_len = k + s - 2
     if s > k - 1:
-        pad_a: object = k - 1
+        pad_a = k - 1
     else:
-        pad_a: object = int(math.ceil(pad_len / 2.0))
+        pad_a = int(math.ceil(pad_len / 2.0))
     return pad_a, pad_len - pad_a
 
 
@@ -58,8 +58,8 @@ def _calc_valid_pad(k: int, s: int) -> tuple[int, int]:
     Returns:
         tuple[int, int]: Pads.
     """
-    pad_len: object = k + s - 2 + max(k - s, 0)
-    pad_a: object = k - 1
+    pad_len = k + s - 2 + max(k - s, 0)
+    pad_a = k - 1
     return pad_a, pad_len - pad_a
 
 
@@ -81,7 +81,7 @@ def _calculate_conv_transpose_padding(
     if not (isinstance(padding, str) and padding in {"SAME", "VALID"}):
         return padding
 
-    pads: object = []
+    pads = []
     for k, s in zip(k_sdims, strides_tuple):
         if padding == "SAME":
             pads.append(_calc_same_pad(k, s))
@@ -90,7 +90,7 @@ def _calculate_conv_transpose_padding(
     return pads
 
 
-def _build_conv_config(kwargs: dict[str, object], dimension_numbers: tuple[object, ...]) -> object:
+def _build_conv_config(kwargs, dimension_numbers):
     """Evaluate _build_conv_config operation.
 
     Args:
@@ -100,15 +100,15 @@ def _build_conv_config(kwargs: dict[str, object], dimension_numbers: tuple[objec
     Returns:
             tuple[int, ...]: Result.
     """
-    strides: object = kwargs.get("strides", 1)
+    strides = kwargs.get("strides", 1)
     if isinstance(strides, int):
-        strides: object = (strides,) * (len(dimension_numbers[0]) - 2)
-    lhs_dilation: object = kwargs.get("lhs_dilation", None)
+        strides = (strides,) * (len(dimension_numbers[0]) - 2)
+    lhs_dilation = kwargs.get("lhs_dilation", None)
     if isinstance(lhs_dilation, int):
-        lhs_dilation: object = (lhs_dilation,) * (len(dimension_numbers[0]) - 2)
-    rhs_dilation: object = kwargs.get("rhs_dilation", None)
+        lhs_dilation = (lhs_dilation,) * (len(dimension_numbers[0]) - 2)
+    rhs_dilation = kwargs.get("rhs_dilation", None)
     if isinstance(rhs_dilation, int):
-        rhs_dilation: object = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
+        rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
     return ConvConfig(
         window_strides=strides,
         padding=kwargs.get("padding", "VALID"),
@@ -123,9 +123,9 @@ def _prepare_depthwise_conv(
     rhs: Tensor,
     spatial_dims: int,
     dimension_numbers: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
-    config_obj: typing.Optional[object] = None,
-    **kwargs: object,
-) -> tuple[Tensor, object]:
+    config_obj=None,
+    **kwargs,
+):
     """Prepare configuration and reshape weights for depthwise convolution.
 
     Args:
@@ -140,19 +140,19 @@ def _prepare_depthwise_conv(
         tuple: Result.
     """
     if config_obj is None:
-        strides: object = kwargs.get("strides", 1)
+        strides = kwargs.get("strides", 1)
         if isinstance(strides, int):
-            strides: object = (strides,) * spatial_dims
-        lhs_dilation: object = kwargs.get("lhs_dilation", None)
+            strides = (strides,) * spatial_dims
+        lhs_dilation = kwargs.get("lhs_dilation", None)
         if isinstance(lhs_dilation, int):
-            lhs_dilation: object = (lhs_dilation,) * spatial_dims
-        rhs_dilation: object = kwargs.get("rhs_dilation", None)
+            lhs_dilation = (lhs_dilation,) * spatial_dims
+        rhs_dilation = kwargs.get("rhs_dilation", None)
         if isinstance(rhs_dilation, int):
-            rhs_dilation: object = (rhs_dilation,) * spatial_dims
+            rhs_dilation = (rhs_dilation,) * spatial_dims
 
-        in_channels: object = lhs.shape[-1]
+        in_channels = lhs.shape[-1]
 
-        config_obj: object = ConvConfig(
+        config_obj = ConvConfig(
             window_strides=strides,
             padding=kwargs.get("padding", "VALID"),
             lhs_dilation=lhs_dilation,
@@ -161,16 +161,16 @@ def _prepare_depthwise_conv(
             feature_group_count=in_channels,
         )
 
-    in_channels: object = rhs.shape[-2]
-    channel_multiplier: object = rhs.shape[-1]
+    in_channels = rhs.shape[-2]
+    channel_multiplier = rhs.shape[-1]
 
-    new_rhs_shape: object = rhs.shape[:spatial_dims] + (1, in_channels * channel_multiplier)
-    rhs_reshaped: object = reshape(rhs, new_rhs_shape)
+    new_rhs_shape = rhs.shape[:spatial_dims] + (1, in_channels * channel_multiplier)
+    rhs_reshaped = reshape(rhs, new_rhs_shape)
 
     return rhs_reshaped, config_obj
 
 
-def atrous_conv2d(value: object, filters: object, rate: object, padding: object, name: object = None) -> object:
+def atrous_conv2d(value, filters, rate, padding, name=None):
     """Atrous convolution.
 
     Args:
@@ -183,18 +183,18 @@ def atrous_conv2d(value: object, filters: object, rate: object, padding: object,
     Returns:
             tuple[int, ...]: Result.
     """
-    conv2d: object = get_op("Conv2d")()
+    conv2d = get_op("Conv2d")()
 
     return conv2d(value, filters, strides=1, padding=padding, dilation_rate=rate)
 
 
 def atrous_conv2d_transpose(
-    value: object,
-    filters: object,
-    output_shape: object,
+    value,
+    filters,
+    output_shape,
     config: typing.Optional[GenericConvConfig] = None,
-    name: object = None,
-) -> object:
+    name=None,
+):
     """Atrous convolution transpose.
 
     Args:
@@ -207,14 +207,14 @@ def atrous_conv2d_transpose(
     Returns:
             tuple[int, ...]: Result.
     """
-    conf: object = config if config is not None else GenericConvConfig()
+    conf = config if config is not None else GenericConvConfig()
 
-    conv2d_transpose: object = get_op("Conv2dTranspose")()
+    conv2d_transpose = get_op("Conv2dTranspose")()
 
     return conv2d_transpose(value, filters, strides=1, padding=conf.padding, dilation_rate=conf.dilation_rate)
 
 
-def bias_add(value: object, bias: object, data_format: object = None, name: object = None) -> object:
+def bias_add(value, bias, data_format=None, name=None):
     """Add `bias` to `value`.
 
     Args:
@@ -229,7 +229,7 @@ def bias_add(value: object, bias: object, data_format: object = None, name: obje
     return add(value, bias)
 
 
-def collapse_repeated(labels: object, seq_length: object, name: object = None) -> object:
+def collapse_repeated(labels, seq_length, name=None):
     """Merge repeated labels into single labels.
 
     Args:
@@ -249,11 +249,11 @@ def collapse_repeated(labels: object, seq_length: object, name: object = None) -
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    out: object = _emit_shape_node("CollapseRepeated", [labels], {"seq_length": seq_length, "name": name}, getattr(labels, "shape", ()), getattr(labels, "dtype", "int32"))
+    out = _emit_shape_node("CollapseRepeated", [labels], {"seq_length": seq_length, "name": name}, getattr(labels, "shape", ()), getattr(labels, "dtype", "int32"))
     return out, Tensor(None, TensorConfig(getattr(labels, "shape", ()), "int32", "cpu"))
 
 
-def compute_average_loss(per_example_loss: object, sample_weight: object = None, global_batch_size: object = None) -> object:
+def compute_average_loss(per_example_loss, sample_weight=None, global_batch_size=None):
     """Compute the average loss.
 
     Args:
@@ -265,7 +265,7 @@ def compute_average_loss(per_example_loss: object, sample_weight: object = None,
             tuple[int, ...]: Result.
     """
     if sample_weight is not None:
-        per_example_loss: object = multiply(per_example_loss, sample_weight)
+        per_example_loss = multiply(per_example_loss, sample_weight)
     return mean(per_example_loss)
 
 
@@ -274,7 +274,7 @@ def depthwise_conv2d(
     filter: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
     name: typing.Optional[str] = None,
-) -> object:
+):
     """Depthwise 2-D convolution.
 
     Args:
@@ -286,9 +286,9 @@ def depthwise_conv2d(
     Returns:
             tuple[int, ...]: Result.
     """
-    conf: object = config if config is not None else GenericConvConfig()
+    conf = config if config is not None else GenericConvConfig()
 
-    conv2d: object = get_op("Conv2d")()
+    conv2d = get_op("Conv2d")()
 
     return conv2d(
         input,
@@ -301,12 +301,12 @@ def depthwise_conv2d(
 
 
 def depthwise_conv2d_backprop_filter(
-    input: object,
-    filter_sizes: object,
-    out_backprop: object,
+    input,
+    filter_sizes,
+    out_backprop,
     config: typing.Optional[GenericConvConfig] = None,
-    name: object = None,
-) -> object:
+    name=None,
+):
     """Compute the gradients of depthwise convolution with respect to the filter.
 
     Args:
@@ -323,12 +323,12 @@ def depthwise_conv2d_backprop_filter(
 
 
 def depthwise_conv2d_backprop_input(
-    input_sizes: object,
-    filter: object,
-    out_backprop: object,
+    input_sizes,
+    filter,
+    out_backprop,
     config: typing.Optional[GenericConvConfig] = None,
-    name: object = None,
-) -> object:
+    name=None,
+):
     """Compute the gradients of depthwise convolution with respect to the input.
 
     Args:
@@ -348,19 +348,19 @@ def depthwise_conv2d_backprop_input(
 class ConvSpatialArgs:
     """Arguments for spatial convolutions and morphological ops."""
 
-    strides: typing.Optional[object] = None
-    padding: object = "VALID"
-    data_format: typing.Optional[object] = None
-    dilations: typing.Optional[object] = None
-    rates: typing.Optional[object] = None
-    name: typing.Optional[object] = None
+    strides = None
+    padding = "VALID"
+    data_format = None
+    dilations = None
+    rates = None
+    name = None
 
 
 def dilation2d(
-    input: object,
-    filter: object,
+    input,
+    filter,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> object:
+):
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
     Args:
@@ -383,10 +383,10 @@ def dilation2d(
 
 
 def erosion2d(
-    value: object,
-    kernel: object,
+    value,
+    kernel,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> object:
+):
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
     Args:
@@ -409,10 +409,10 @@ def erosion2d(
 
 
 def convolution(
-    input: object,
-    filters: object,
+    input,
+    filters,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> object:
+):
     """Compute sums of N-D convolutions (actually cross-correlation).
 
     Args:
@@ -423,10 +423,10 @@ def convolution(
     Returns:
             tuple[int, ...]: Result.
     """
-    args: object = args or ConvSpatialArgs()
+    args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
 
-    num_spatial_dims: object = len(input.shape) - 2
+    num_spatial_dims = len(input.shape) - 2
     return _conv_nd(
         input,
         filters,
@@ -439,11 +439,11 @@ def convolution(
 
 
 def conv_transpose(
-    input: object,
-    filters: object,
-    output_shape: object,
+    input,
+    filters,
+    output_shape,
     args: typing.Optional[ConvSpatialArgs] = None,
-) -> object:
+):
     """Return the transpose of `convolution`.
 
     Args:

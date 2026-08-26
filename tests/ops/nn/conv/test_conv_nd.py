@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.nn.conv_nd import GenericConvConfig, conv, conv_
 "Core abstractions and logic definitions for test_nn_conv_nd_extra.py."
 
 
-def test_conv_nd_extra() -> object:
+def test_conv_nd_extra():
     """Test the conv nd extra behavior.
 
     Returns:
@@ -48,7 +48,7 @@ def test_conv_nd_extra() -> object:
         pass
 
 
-def test_conv_transpose_extra() -> object:
+def test_conv_transpose_extra():
     """Test the conv transpose extra behavior.
 
     Returns:
@@ -80,7 +80,7 @@ def test_conv_transpose_extra() -> object:
         pass
 
 
-def test_conv_nd_2d_3d() -> object:
+def test_conv_nd_2d_3d():
     """Test the conv nd 2d 3d behavior.
 
     Returns:

@@ -22,31 +22,31 @@ class Environment:
     values
     """
 
-    def __init__(self, inputs: dict[str, object] | None = None) -> None:
+    def __init__(self, inputs=None) -> None:
         """Initialize the object.
 
         Args:
             inputs (dict[str, object]): The inputs to process.
         """
-        self.memory: dict[str, object] = inputs or {}
+        self.memory = inputs or {}
 
-    def get(self, name: str) -> object:
+    def get(self, name: str):
         """Retrieve the value associated with the given node or variable name.
 
         Args:
             name (str): The unique identifier for the tensor or variable to retrieve.
 
-        Returns: object: The concrete tensor, scalar, or value associated with the name.
+        Returns: Tensor: The concrete tensor, scalar, or value associated with the name.
 
         Raises:
             ValueError: If the requested name does not exist in the environment's memory.
         """
         if name not in self.memory:
-            msg: object = f"Missing input value for node '{name}'"
+            msg = f"Missing input value for node '{name}'"
             raise ValueError(msg)
         return self.memory[name]
 
-    def set(self, name: str, value: object) -> None:
+    def set(self, name: str, value) -> None:
         """Store or update a value in the environment for a specific node or variable.
 
         Args:

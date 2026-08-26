@@ -11,15 +11,11 @@ class WGSLNode:
 class WGSLRaw(WGSLNode):
     """Raw string insertion."""
 
-    def __init__(self, code: str):
+    def __init__(self, code: str) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        code (Any): The code parameter.
-
-        Returns:
-        Any: Result.
+            code (str): The code parameter.
         """
         self.code = code
 
@@ -27,15 +23,11 @@ class WGSLRaw(WGSLNode):
 class WGSLVar(WGSLNode):
     """WGSL Variable expression."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        name (Any): The name parameter.
-
-        Returns:
-        Any: Result.
+            name (str): The name parameter.
         """
         self.name = name
 
@@ -43,16 +35,12 @@ class WGSLVar(WGSLNode):
 class WGSLIndex(WGSLNode):
     """WGSL Array/Buffer Indexing."""
 
-    def __init__(self, buffer: str, index: Union[str, "WGSLNode"]):
+    def __init__(self, buffer: str, index: Union[str, "WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        buffer (Any): The buffer parameter.
-        index (Any): The index parameter.
-
-        Returns:
-        Any: Result.
+            buffer (str): The buffer parameter.
+            index (Union[str, WGSLNode]): The index parameter.
         """
         self.buffer = buffer
         self.index = index
@@ -61,17 +49,13 @@ class WGSLIndex(WGSLNode):
 class WGSLBinaryOp(WGSLNode):
     """WGSL Binary Operation."""
 
-    def __init__(self, op: str, left: Union[str, "WGSLNode"], right: Union[str, "WGSLNode"]):
+    def __init__(self, op: str, left: Union[str, "WGSLNode"], right: Union[str, "WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        op (Any): The op parameter.
-        left (Any): The left parameter.
-        right (Any): The right parameter.
-
-        Returns:
-        Any: Result.
+            op (str): The op parameter.
+            left (Union[str, WGSLNode]): The left parameter.
+            right (Union[str, WGSLNode]): The right parameter.
         """
         self.op = op
         self.left = left
@@ -81,16 +65,12 @@ class WGSLBinaryOp(WGSLNode):
 class WGSLUnaryOp(WGSLNode):
     """WGSL Unary Operation."""
 
-    def __init__(self, op: str, expr: Union[str, "WGSLNode"]):
+    def __init__(self, op: str, expr: Union[str, "WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        op (Any): The op parameter.
-        expr (Any): The expr parameter.
-
-        Returns:
-        Any: Result.
+            op (str): The op parameter.
+            expr (Union[str, WGSLNode]): The expr parameter.
         """
         self.op = op
         self.expr = expr
@@ -99,16 +79,12 @@ class WGSLUnaryOp(WGSLNode):
 class WGSLAssign(WGSLNode):
     """WGSL Assignment Statement."""
 
-    def __init__(self, target: Union[str, "WGSLNode"], value: Union[str, "WGSLNode"]):
+    def __init__(self, target: Union[str, "WGSLNode"], value: Union[str, "WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        target (Any): The target parameter.
-        value (Any): The value parameter.
-
-        Returns:
-        Any: Result.
+            target (Union[str, WGSLNode]): The target parameter.
+            value (Union[str, WGSLNode]): The value parameter.
         """
         self.target = target
         self.value = value
@@ -117,18 +93,14 @@ class WGSLAssign(WGSLNode):
 class WGSLDecl(WGSLNode):
     """WGSL Variable Declaration (let or var)."""
 
-    def __init__(self, kind: str, name: str, value: Any = None, type_annotation: Any = None):
+    def __init__(self, kind: str, name: str, value: Any = None, type_annotation: Any = None) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        kind (Any): The kind parameter.
-        name (Any): The name parameter.
-        value (Any): The value parameter.
-        type_annotation (Any): The type_annotation parameter.
-
-        Returns:
-        Any: Result.
+            kind (str): The kind parameter.
+            name (str): The name parameter.
+            value (Any): The value parameter.
+            type_annotation (Any): The type_annotation parameter.
         """
         self.kind = kind
         self.name = name
@@ -139,16 +111,12 @@ class WGSLDecl(WGSLNode):
 class WGSLIf(WGSLNode):
     """WGSL If Statement."""
 
-    def __init__(self, condition: Union[str, "WGSLNode"], body: list["WGSLNode"]):
+    def __init__(self, condition: Union[str, "WGSLNode"], body: list["WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        condition (Any): The condition parameter.
-        body (Any): The body parameter.
-
-        Returns:
-        Any: Result.
+            condition (Union[str, WGSLNode]): The condition parameter.
+            body (list[WGSLNode]): The body parameter.
         """
         self.condition = condition
         self.body = body
@@ -157,18 +125,14 @@ class WGSLIf(WGSLNode):
 class WGSLFor(WGSLNode):
     """WGSL For Loop."""
 
-    def __init__(self, init: Union[str, "WGSLNode"], cond: Union[str, "WGSLNode"], step: Union[str, "WGSLNode"], body: list["WGSLNode"]):
+    def __init__(self, init: Union[str, "WGSLNode"], cond: Union[str, "WGSLNode"], step: Union[str, "WGSLNode"], body: list["WGSLNode"]) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        init (Any): The init parameter.
-        cond (Any): The cond parameter.
-        step (Any): The step parameter.
-        body (Any): The body parameter.
-
-        Returns:
-        Any: Result.
+            init (Union[str, WGSLNode]): The init parameter.
+            cond (Union[str, WGSLNode]): The cond parameter.
+            step (Union[str, WGSLNode]): The step parameter.
+            body (list[WGSLNode]): The body parameter.
         """
         self.init = init
         self.cond = cond
@@ -179,18 +143,14 @@ class WGSLFor(WGSLNode):
 class WGSLFunction(WGSLNode):
     """WGSL Function Definition."""
 
-    def __init__(self, name: str, params: list[str], body: list["WGSLNode"], attrs: Any = None):
+    def __init__(self, name: str, params: list[str], body: list["WGSLNode"], attrs: Any = None) -> None:
         """__init__ function.
 
         Args:
-        self (Any): The self parameter.
-        name (Any): The name parameter.
-        params (Any): The params parameter.
-        body (Any): The body parameter.
-        attrs (Any): The attrs parameter.
-
-        Returns:
-        Any: Result.
+            name (str): The name parameter.
+            params (list[str]): The params parameter.
+            body (list[WGSLNode]): The body parameter.
+            attrs (Any): The attrs parameter.
         """
         self.name = name
         self.params = params
@@ -201,19 +161,19 @@ class WGSLFunction(WGSLNode):
 class WGSLEmitter:
     """Emits WGSL code from AST."""
 
-    def __init__(self):  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-        """__init__ function.
-
-        Args:
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
+    def __init__(self) -> None:
+        """__init__ function."""
         self.indent = 0
 
     def emit(self, node: Union[str, WGSLNode]) -> str:
-        """Emit WGSL string for a node."""
+        """Emit WGSL string for a node.
+
+        Args:
+            node (Union[str, WGSLNode]): The node to emit.
+
+        Returns:
+            str: Generated WGSL code.
+        """
         if isinstance(node, str):
             return node
         if isinstance(node, WGSLRaw):
@@ -229,11 +189,11 @@ class WGSLEmitter:
         elif isinstance(node, WGSLAssign):
             return f"{self.emit(node.target)} = {self.emit(node.value)};"
         elif isinstance(node, WGSLDecl):
-            type_str: object = f": {node.type_annotation}" if node.type_annotation else ""
-            val_str: object = f" = {self.emit(node.value)}" if node.value else ""
+            type_str: str = f": {node.type_annotation}" if node.type_annotation else ""
+            val_str: str = f" = {self.emit(node.value)}" if node.value else ""
             return f"{node.kind} {node.name}{type_str}{val_str};"
         elif isinstance(node, WGSLIf):
-            lines: object = [f"if ({self.emit(node.condition)}) {{"]
+            lines: list[str] = [f"if ({self.emit(node.condition)}) {{"]
             self.indent += 2
             for stmt in node.body:
                 lines.append(" " * self.indent + self.emit(stmt))
@@ -241,7 +201,7 @@ class WGSLEmitter:
             lines.append(" " * self.indent + "}")
             return "\n".join(lines)
         elif isinstance(node, WGSLFor):
-            lines: object = [f"for ({self.emit(node.init)} {self.emit(node.cond)}; {self.emit(node.step)}) {{"]
+            lines = [f"for ({self.emit(node.init)} {self.emit(node.cond)}; {self.emit(node.step)}) {{"]
             self.indent += 2
             for stmt in node.body:
                 lines.append(" " * self.indent + self.emit(stmt))
@@ -249,10 +209,10 @@ class WGSLEmitter:
             lines.append(" " * self.indent + "}")
             return "\n".join(lines)
         elif isinstance(node, WGSLFunction):
-            lines: object = []
+            lines = []
             for attr in node.attrs:
                 lines.append(attr)
-            params_str: object = ", ".join(node.params)
+            params_str: str = ", ".join(node.params)
             lines.append(f"fn {node.name}({params_str}) {{")
             self.indent += 2
             for stmt in node.body:

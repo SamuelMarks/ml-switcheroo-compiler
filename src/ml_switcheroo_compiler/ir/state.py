@@ -8,7 +8,7 @@ import uuid
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def create_read_variable(variable_name: str, shape: tuple[object, ...], dtype: str) -> IRNode:
+def create_read_variable(variable_name: str, shape, dtype: str) -> IRNode:
     """Create a ReadVariable node.
 
     Args:
@@ -28,7 +28,7 @@ def create_read_variable(variable_name: str, shape: tuple[object, ...], dtype: s
     )
 
 
-def create_assign_variable(variable_name: str, value_id: str, shape: tuple[object, ...]) -> IRNode:
+def create_assign_variable(variable_name: str, value_id: str, shape) -> IRNode:
     """Create an AssignVariable node.
 
     Args:
@@ -52,7 +52,7 @@ def create_scatter_update(
     tensor_id: str,
     indices_id: str,
     updates_id: str,
-    shape: tuple[object, ...],
+    shape,
 ) -> IRNode:
     """Create a ScatterUpdate node.
 

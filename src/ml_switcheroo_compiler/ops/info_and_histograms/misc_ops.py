@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Infeed(OpDef):
     """Read from the infeed queue."""
 
-    op_name: object = "Infeed"
+    op_name = "Infeed"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -27,9 +27,9 @@ class Infeed(OpDef):
 class Vectorize(OpDef):
     """Generalized function class."""
 
-    op_name: object = "Vectorize"
+    op_name = "Vectorize"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -46,9 +46,9 @@ class Vectorize(OpDef):
 class AxisIndex(OpDef):
     """AxisIndex operation."""
 
-    op_name: object = "AxisIndex"
+    op_name = "AxisIndex"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -63,7 +63,7 @@ class AxisIndex(OpDef):
         return getattr(args[0], "shape", ())
 
 
-def infeed(*args: object, **kwargs: object) -> object:
+def infeed(*args, **kwargs):
     """Read from the infeed queue.
 
     Args:
@@ -78,7 +78,7 @@ def infeed(*args: object, **kwargs: object) -> object:
     return dispatch_op("Infeed", *args, **kwargs)
 
 
-def vectorize(*args: object, **kwargs: object) -> object:
+def vectorize(*args, **kwargs):
     """Vectorize a python function.
 
     Args:

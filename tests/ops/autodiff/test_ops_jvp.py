@@ -12,7 +12,7 @@ def test_all_ops_coverage() -> None:
     """Test the all ops coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that all registered operations implement core interface methods.\n\n    This test iterates through all operations in the global registry (excluding\n    control flow and variable operations) and attempts to invoke their JVP,\n    VJP, NumPy evaluation, shape inference, and argument formatting methods\n    with standard mock inputs. It ensures that these methods are defined and\n    do not raise unexpected exceptions during basic execution\n\n    Returns:\n    None\n    "

@@ -10,7 +10,7 @@ import sys
 "Core abstractions and logic definitions for test_jax_generator_extra.py."
 
 
-def test_jax_generator_extra_coverage() -> object:
+def test_jax_generator_extra_coverage():
     """Test the jax generator extra coverage behavior.
 
     Returns:
@@ -20,7 +20,7 @@ def test_jax_generator_extra_coverage() -> object:
         g = IRGraph()
         gen = JAXCodeGenerator(g)
 
-        def _test_node(op_type: object, inputs: object, attrs: object, expected: object) -> object:
+        def _test_node(op_type, inputs, attrs, expected):
             """Test the node behavior.
 
             Args:
@@ -64,7 +64,7 @@ def test_jax_generator_extra_coverage() -> object:
         pass
 
 
-def test_jax_generator_generate_full() -> object:
+def test_jax_generator_generate_full():
     """Test the jax generator generate full behavior.
 
     Returns:

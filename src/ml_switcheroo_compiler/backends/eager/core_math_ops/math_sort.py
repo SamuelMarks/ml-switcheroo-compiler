@@ -3,65 +3,67 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argsort")
-def _argsort(backend_module: object, a: object, axis: int = -1, **kwargs: object) -> object:
+def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argsort operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a (object): The a parameter.
+        backend_module (Any): The backend_module parameter.
+        a (Any): The a parameter.
         axis (int): The axis parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.argsort(a, axis=axis)
 
 
 @global_eager_registry.register("Lexsort")
-def _lexsort(backend_module: object, *args: object, **kwargs: object) -> object:
+def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _lexsort operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
 
 @global_eager_registry.register("Searchsorted")
-def _searchsorted(backend_module: object, *args: object, **kwargs: object) -> object:
+def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _searchsorted operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.searchsorted(*args, **kwargs)
 
 
 @global_eager_registry.register("SortComplex")
-def _sortcomplex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _sortcomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _sortcomplex operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)

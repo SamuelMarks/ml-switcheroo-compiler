@@ -18,13 +18,13 @@ def test_scan_eager() -> None:
     """Test the scan eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the scan operator.\n\n    Verifies that scan correctly loops over a tensor, carrying state and\n    accumulating results, when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(carry: object, x: object) -> object:
+        def f(carry, x):
             """F.
 
             Args:
@@ -46,14 +46,14 @@ def test_scan_trace() -> None:
     """Test the scan trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the scan operator.\n\n    Verifies that scan correctly records the scan operation into the active\n    tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         xs = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
         init = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Int32, device))
 
-        def f(carry: object, x: object) -> object:
+        def f(carry, x):
             """F.
 
             Args:
@@ -75,14 +75,14 @@ def test_scan_eager_ndarray() -> None:
     """Test the scan eager ndarray behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test scan eager mode returning an ndarray."
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def f(carry: object, x: object) -> object:
+        def f(carry, x):
             """Evaluate and process the f operation.
 
             Args:

@@ -15,7 +15,7 @@ def test_unary_math_ops() -> None:
     """Test the unary math ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the correctness of various unary mathematical operations.\n\n    This test iterates through a suite of unary operations (e.g., Sin, Cos, Exp) and\n    validates their shape inference and NumPy evaluation against standard NumPy\n    functions\n\n    Returns:\n    None\n    "
@@ -35,7 +35,7 @@ def test_unary_base_op() -> None:
     """Test the unary base op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the base class functionality of unary mathematical operations.\n\n    This test defines a dummy unary operation subclassing UnaryMathOp to verify\n    default behaviors such as shape inference and NumPy evaluation\n\n    Returns:\n    None\n    "
@@ -50,7 +50,7 @@ def test_unary_base_op() -> None:
 
             op_name = "Sin"
 
-            def vjp(self, cotangent: object, x: object, **kwargs: object) -> object:
+            def vjp(self, cotangent, x, **kwargs):
                 """Computes the vector-Jacobian product for the dummy operation.
 
                 Args:
@@ -62,7 +62,7 @@ def test_unary_base_op() -> None:
                 object: The computed vector-Jacobian product.
                 """
 
-            def jvp(self, tangent: object, x: object, **kwargs: object) -> object:
+            def jvp(self, tangent, x, **kwargs):
                 """Computes the Jacobian-vector product for the dummy operation.
 
                 Args:
@@ -85,7 +85,7 @@ def test_unary_special_coverage() -> None:
     """Test the unary special coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests special edge cases and error handling for unary operations."
@@ -116,7 +116,7 @@ def test_unary_special_coverage_brute() -> None:
     """Test the unary special coverage brute behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."

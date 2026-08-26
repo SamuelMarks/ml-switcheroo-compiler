@@ -17,13 +17,13 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 "Core abstractions and logic definitions for test_linalg_frontend_new.py."
 
 
-def _test_op(func: object, *args: object, **kwargs: object) -> object:
+def _test_op(func, *args, **kwargs):
     """Test the op behavior.
 
     Args:
         func (object): The func parameter.
-        *args (Any): Variable length argument list.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Variable length argument list.
+        **kwargs (object): Arbitrary keyword arguments.
 
     Returns:
         object: The inferred shape or computed result.
@@ -39,7 +39,7 @@ def _test_op(func: object, *args: object, **kwargs: object) -> object:
     return (out_eager, out_traced)
 
 
-def test_frontend_ops() -> object:
+def test_frontend_ops():
     """Test the frontend ops behavior.
 
     Returns:
@@ -71,7 +71,7 @@ def test_frontend_ops() -> object:
         pass
 
 
-def test_opdefs_infer_shapes() -> object:
+def test_opdefs_infer_shapes():
     """Test the opdefs infer shapes behavior.
 
     Returns:
@@ -106,7 +106,7 @@ def test_opdefs_infer_shapes() -> object:
 "Core abstractions and logic definitions for test_linalg_frontend_coverage3.py."
 
 
-def test_linalg_band_part_diag_coverage() -> object:
+def test_linalg_band_part_diag_coverage():
     """Test the linalg band part diag coverage behavior.
 
     Returns:

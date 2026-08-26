@@ -14,7 +14,7 @@ class ReadVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -34,7 +34,7 @@ class AssignVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Infer the output shape of the operation.
 
         Args:

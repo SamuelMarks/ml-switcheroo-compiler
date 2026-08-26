@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 "Extra tests for control flow."
 
 
-def test_stop_gradient_eager_extra() -> object:
+def test_stop_gradient_eager_extra():
     """Test the stop gradient eager extra behavior.
 
     Returns:
@@ -32,7 +32,7 @@ def test_stop_gradient_eager_extra() -> object:
         config.eager_mode = False
 
 
-def test_stop_gradient_tracing_extra() -> object:
+def test_stop_gradient_tracing_extra():
     """Test the stop gradient tracing extra behavior.
 
     Returns:
@@ -51,7 +51,7 @@ def test_stop_gradient_tracing_extra() -> object:
         global_tracing_state.stop_tracing()
 
 
-def test_pmap_eager_extra() -> object:
+def test_pmap_eager_extra():
     """Test the pmap eager extra behavior.
 
     Returns:
@@ -62,7 +62,7 @@ def test_pmap_eager_extra() -> object:
         dev = Device(DeviceType.CPU)
         t = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Float32, dev))
 
-        def f(x: object) -> object:
+        def f(x):
             """Evaluate and process the f operation.
 
             Args:
@@ -79,7 +79,7 @@ def test_pmap_eager_extra() -> object:
         config.eager_mode = False
 
 
-def test_assert_value_eager_extra() -> object:
+def test_assert_value_eager_extra():
     """Test the assert value eager extra behavior.
 
     Returns:
@@ -94,7 +94,7 @@ def test_assert_value_eager_extra() -> object:
         config.eager_mode = False
 
 
-def test_assert_value_tracing_extra() -> object:
+def test_assert_value_tracing_extra():
     """Test the assert value tracing extra behavior.
 
     Returns:
@@ -112,7 +112,7 @@ def test_assert_value_tracing_extra() -> object:
         global_tracing_state.stop_tracing()
 
 
-def test_scan_tuple_return() -> object:
+def test_scan_tuple_return():
     """Test the scan tuple return behavior.
 
     Returns:
@@ -123,7 +123,7 @@ def test_scan_tuple_return() -> object:
         dev = Device(DeviceType.CPU)
         xs = Tensor(np.array([[1], [2]]), TensorConfig((2, 1), DType.Float32, dev))
 
-        def f(c: object, x: object) -> object:
+        def f(c, x):
             """Evaluate and process the f operation.
 
             Args:
@@ -140,7 +140,7 @@ def test_scan_tuple_return() -> object:
         config.eager_mode = False
 
 
-def test_map_tuple_return() -> object:
+def test_map_tuple_return():
     """Test the map tuple return behavior.
 
     Returns:
@@ -151,7 +151,7 @@ def test_map_tuple_return() -> object:
         dev = Device(DeviceType.CPU)
         elems = Tensor(np.array([[1], [2]]), TensorConfig((2, 1), DType.Float32, dev))
 
-        def f(x: object) -> object:
+        def f(x):
             """Evaluate and process the f operation.
 
             Args:
@@ -167,7 +167,7 @@ def test_map_tuple_return() -> object:
         config.eager_mode = False
 
 
-def test_tracing_exceptions() -> object:
+def test_tracing_exceptions():
     """Test the tracing exceptions behavior.
 
     Returns:
@@ -189,7 +189,7 @@ def test_tracing_exceptions() -> object:
     assert res2 == []
 
 
-def test_assert_op_infer_shape() -> object:
+def test_assert_op_infer_shape():
     """Test the assert op infer shape behavior.
 
     Returns:
@@ -198,7 +198,7 @@ def test_assert_op_infer_shape() -> object:
     assert AssertOp().infer_shape(None) == ()
 
 
-def test_pmap_tracing_non_tensor() -> object:
+def test_pmap_tracing_non_tensor():
     """Test the pmap tracing non tensor behavior.
 
     Returns:
@@ -225,13 +225,13 @@ def test_vmap_eager() -> None:
     """Test the vmap eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the vectorized map (vmap) operator.\n\n    Verifies that vmap correctly applies a function element-wise or along a\n    batch dimension when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def func(t: object) -> object:
+        def func(t):
             """Func.
 
             Args:
@@ -250,13 +250,13 @@ def test_pmap_eager() -> None:
     """Test the pmap eager behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the eager execution of the parallel map (pmap) operator.\n\n    Verifies that pmap correctly maps a function over a tensor in eager mode\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
-        def func(t: object) -> object:
+        def func(t):
             """Func.
 
             Args:
@@ -275,13 +275,13 @@ def test_vmap_trace() -> None:
     """Test the vmap trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the vectorized map (vmap) operator.\n\n    Verifies that vmap correctly records the vectorization operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         x = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
 
-        def func(t: object) -> object:
+        def func(t):
             """Func.
 
             Args:
@@ -302,13 +302,13 @@ def test_pmap_trace() -> None:
     """Test the pmap trace behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests the tracing behavior of the parallel map (pmap) operator.\n\n    Verifies that pmap correctly records the parallel map operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         x = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((3,), DType.Int32, device))
 
-        def func(t: object) -> object:
+        def func(t):
             """Func.
 
             Args:
@@ -329,11 +329,11 @@ def test_trace_function_type_error() -> None:
     """Test the trace function type error behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests that tracing a function that returns an invalid type raises a TypeError.\n\n    Verifies that _trace_function enforces that control flow functions must\n    return a Tensor or a tuple of Tensors, raising a TypeError otherwise\n\n    Returns:\n    None\n    "
 
-    def bad_func(*args: object) -> int:
+    def bad_func(*args) -> int:
         """Bad func.
 
         Args:
@@ -356,7 +356,7 @@ def test_control_flow_outside_tracing() -> None:
     """Test the control flow outside tracing behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Tests that control flow operators raise errors when called outside a tracing.\n\n    context\n\n    Verifies that calling cond, while_loop, scan, vmap, or pmap in non-eager\n    mode without an active tracer raises a RuntimeError\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
@@ -377,7 +377,7 @@ def test_stop_gradient() -> None:
     """Test the stop gradient behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test stop_gradient."
     device = Device(DeviceType.CPU)
@@ -411,13 +411,13 @@ def test_vmap_tuple_axes() -> None:
     """Test the vmap tuple axes behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Test vmap with tuple in_axes."
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
 
-        def f(x: object) -> object:
+        def f(x):
             """Evaluate and process the f operation.
 
             Args:
@@ -434,7 +434,7 @@ def test_vmap_tuple_axes() -> None:
         assert np.array_equal(y.data, np.array([-1, -2]))
 
 
-def test_new_control_flow_fori() -> object:
+def test_new_control_flow_fori():
     """Test the new control flow fori behavior.
 
     Returns:
@@ -442,7 +442,7 @@ def test_new_control_flow_fori() -> object:
     """
     config.eager_mode = True
 
-    def body_fun(i: object, x: object) -> object:
+    def body_fun(i, x):
         """Evaluate and process the body fun operation.
 
         Args:
@@ -461,7 +461,7 @@ def test_new_control_flow_fori() -> object:
     assert res is not None
 
 
-def test_new_control_flow_map() -> object:
+def test_new_control_flow_map():
     """Test the new control flow map behavior.
 
     Returns:
@@ -475,7 +475,7 @@ def test_new_control_flow_map() -> object:
     assert res_vmap is not None
 
 
-def test_new_control_flow_switch() -> object:
+def test_new_control_flow_switch():
     """Test the new control flow switch behavior.
 
     Returns:
@@ -489,7 +489,7 @@ def test_new_control_flow_switch() -> object:
     assert res_switch is not None
 
 
-def test_new_control_flow_custom_gradient() -> object:
+def test_new_control_flow_custom_gradient():
     """Test the new control flow custom gradient behavior.
 
     Returns:
@@ -499,7 +499,7 @@ def test_new_control_flow_custom_gradient() -> object:
     arg = ops.array(np.array(10.0).astype(np.float32))
 
     @ops.custom_gradient
-    def my_fn(x: object) -> object:
+    def my_fn(x):
         """Evaluate and process the my fn operation.
 
         Args:

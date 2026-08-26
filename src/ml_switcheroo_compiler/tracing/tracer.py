@@ -10,7 +10,7 @@ from __future__ import annotations
 import threading
 from typing import TYPE_CHECKING, Generic, TypeVar
 
-T_Payload: object = TypeVar("T_Payload")
+T_Payload = TypeVar("T_Payload")
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -31,7 +31,7 @@ T = TypeVar("T", bound="ProxyTensor[object]")
 _TRACE_COUNTS: dict[int, int] = {}
 
 
-def get_trace_count(func: object) -> int:
+def get_trace_count(func) -> int:
     """Return the number of times the function has been traced.
 
     Args:
@@ -43,7 +43,7 @@ def get_trace_count(func: object) -> int:
     return _TRACE_COUNTS.get(id(func), 0)
 
 
-def increment_trace_count(func: object) -> None:
+def increment_trace_count(func) -> None:
     """Increment the trace count for the given function.
 
     Args:
@@ -52,7 +52,7 @@ def increment_trace_count(func: object) -> None:
     _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
 
 
-def reset_trace_count(func: object) -> None:
+def reset_trace_count(func) -> None:
     """Reset the trace count for the given function.
 
     Args:
@@ -116,7 +116,7 @@ class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticM
         id: str,
         shape: tuple[int | str, ...],
         dtype: str = "float32",
-        sparsity: dict[str, object] | None = None,
+        sparsity=None,
     ) -> None:
         """Initialize a ProxyTensor.
 

@@ -68,7 +68,7 @@ def test_text_classes_infer_shape():
 "Tests for text operations."
 
 
-def test_text_eager_mode_exceptions() -> object:
+def test_text_eager_mode_exceptions():
     """Test the text eager mode exceptions behavior.
 
     Returns:
@@ -100,7 +100,7 @@ def test_text_eager_mode_exceptions() -> object:
         pass
 
 
-def test_text_tracing_mode() -> object:
+def test_text_tracing_mode():
     """Test the text tracing mode behavior.
 
     Returns:
@@ -130,7 +130,7 @@ def test_text_new_ops() -> None:
     """Test the text new ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         hypothesis = Tensor(ProxyTensor(id="h", shape=(), dtype="string"), TensorConfig((), "string", None))

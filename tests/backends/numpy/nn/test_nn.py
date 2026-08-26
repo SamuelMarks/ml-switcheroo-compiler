@@ -88,7 +88,7 @@ def test_np_rrelu() -> None:
 "Core abstractions and logic definitions for test_numpy_eager_nn_extra.py."
 
 
-def test_numpy_nn_eager_extra() -> object:
+def test_numpy_nn_eager_extra():
     """Test the numpy nn eager extra behavior.
 
     Returns:
@@ -119,7 +119,7 @@ def test_numpy_nn_eager_extra() -> object:
         pass
 
 
-def test_np_time_distributed_2(monkeypatch: object) -> object:
+def test_np_time_distributed_2(monkeypatch):
     """Test the np time distributed behavior.
 
     Args:
@@ -131,14 +131,14 @@ def test_np_time_distributed_2(monkeypatch: object) -> object:
     try:
         try:
 
-            def mock_exec(backend: object, op_name: object, x: object, **kwargs: object) -> object:
+            def mock_exec(backend, op_name, x, **kwargs):
                 """Evaluate and process the mock exec operation.
 
                 Args:
                     backend (object): Required parameter for backend.
                     op_name (object): Required parameter for op_name.
                     x (object): Required parameter for x.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.

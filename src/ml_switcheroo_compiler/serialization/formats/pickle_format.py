@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, Weig
 class PickleWeightFormat(WeightLoader, WeightSaver):
     """Pickle weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, object]:
+    def load(self, filepath: str):
         """Load pickle weights.
 
         Args:
@@ -23,7 +23,7 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
         with open(filepath, "rb") as f:
             return pickle.load(f)
 
-    def save(self, weights_np: dict[str, object], filepath: str) -> None:
+    def save(self, weights_np, filepath: str) -> None:
         """Save pickle weights.
 
         Args:

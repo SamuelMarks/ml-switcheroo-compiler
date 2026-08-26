@@ -14,7 +14,7 @@ def test_evaluator_not_implemented() -> None:
     """Test the evaluator not implemented behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that the evaluator raises a UnimplementedMathError when encountering a non-.\n\n    existent operator type\n\n    Returns:\n    None\n    "
@@ -31,7 +31,7 @@ def test_evaluator_greater() -> None:
     """Test the evaluator greater behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that the evaluator correctly evaluates the 'Greater' comparison operator.\n\n    using NumPy arrays\n\n    Returns:\n    None\n    "
@@ -51,7 +51,7 @@ def test_evaluator_relu() -> None:
     """Test the evaluator relu behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test evaluator relu."
@@ -70,7 +70,7 @@ def test_evaluator_where() -> None:
     """Test the evaluator where behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test evaluator where."
@@ -110,7 +110,7 @@ def test_evaluator_exception() -> None:
     """Test the evaluator exception behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."
@@ -132,7 +132,7 @@ def test_evaluator_stubs() -> None:
     """Test the evaluator stubs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test stub evaluations in interpreter."
@@ -164,7 +164,7 @@ def test_evaluator_shape_kwargs() -> None:
     """Test the evaluator shape kwargs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test Expand and Reshape kwargs."

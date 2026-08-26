@@ -18,7 +18,7 @@ def test_evaluate_graph() -> None:
     """Test the evaluate graph behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -35,7 +35,7 @@ def test_missing_input() -> None:
     """Test the missing input behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that evaluating a graph with missing input values raises a Exception.\n\n    Returns:\n    None\n    "
@@ -51,7 +51,7 @@ def test_not_implemented() -> None:
     """Test the not implemented behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -64,7 +64,7 @@ def test_missing_output() -> None:
     """Test the missing output behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -76,7 +76,7 @@ def test_all_ops() -> None:
     """Test the all ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in1"] = LogicalNode(id="in1", op_type="Input")

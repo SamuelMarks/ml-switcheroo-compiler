@@ -51,7 +51,7 @@ class DefaultCostModel:
         Returns:
         object: Result.
         """
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
         with open(yaml_path) as f:
             self.config = yaml.safe_load(f)
 
@@ -64,12 +64,12 @@ class DefaultCostModel:
         Returns:
             int: Memory size in bytes.
         """
-        size: object = 1
+        size = 1
         if node.shape_metadata and not node.is_dynamic_shape:
             for dim in node.static_shape:
                 size *= max(1, int(dim))
-        dtype: object = node.attributes.get("dtype", "float32")
-        sizes: object = self.config.get("memory_sizes", {})
+        dtype = node.attributes.get("dtype", "float32")
+        sizes = self.config.get("memory_sizes", {})
         return size * sizes.get(dtype, 4)
 
     def get_compute_cost(self, node: IRNode) -> int:
@@ -81,7 +81,7 @@ class DefaultCostModel:
         Returns:
             int: The compute cost heuristic.
         """
-        costs: object = self.config.get("compute_costs", {})
+        costs = self.config.get("compute_costs", {})
         if node.op_type in costs.get("heavy_ops", []):
             return costs.get("heavy_cost", 1000)
         if node.op_type in costs.get("light_ops", []):
@@ -99,8 +99,8 @@ def _build_adjacency_lists(graph: IRGraph) -> tuple[dict[str, list[str]], dict[s
         tuple: (consumers, remaining_uses, in_degree)
     """
     consumers: dict[str, list[str]] = {node_id: [] for node_id in graph.nodes}
-    remaining_uses: object = {node_id: 0 for node_id in graph.nodes}
-    in_degree: object = {node_id: 0 for node_id in graph.nodes}
+    remaining_uses = {node_id: 0 for node_id in graph.nodes}
+    in_degree = {node_id: 0 for node_id in graph.nodes}
     for node_id, node in graph.nodes.items():
         for inp in node.inputs:
             if inp in graph.nodes:
@@ -123,20 +123,20 @@ def _score_node(node_id: str, graph: IRGraph, cost_model: CostModel, remaining_u
     Returns:
         float: The node score.
     """
-    node: object = graph.nodes[node_id]
-    mem_cost: object = cost_model.get_memory_cost(node)
-    mem_freed: object = 0
+    node = graph.nodes[node_id]
+    mem_cost = cost_model.get_memory_cost(node)
+    mem_freed = 0
     for inp in node.inputs:
         if inp in remaining_uses and remaining_uses[inp] == 1:
             mem_freed += cost_model.get_memory_cost(graph.nodes[inp])
-    net_mem: object = mem_cost - mem_freed
-    comp_cost: object = cost_model.get_compute_cost(node)
-    is_compute_heavy: object = comp_cost > 100
-    interleave_penalty: object = 0
+    net_mem = mem_cost - mem_freed
+    comp_cost = cost_model.get_compute_cost(node)
+    is_compute_heavy = comp_cost > 100
+    interleave_penalty = 0
     if is_compute_heavy and last_was_compute_heavy:
-        interleave_penalty: object = 500
+        interleave_penalty = 500
     elif not is_compute_heavy and not last_was_compute_heavy:
-        interleave_penalty: object = 100
+        interleave_penalty = 100
     return float(net_mem + interleave_penalty)
 
 
@@ -153,15 +153,15 @@ def _select_best_node(ready_nodes: list[str], graph: IRGraph, cost_model: CostMo
     Returns:
         tuple[int, str]: Index and node ID of the best node.
     """
-    best_node_id: object = None
-    best_score: object = float("inf")
-    best_idx: object = -1
+    best_node_id = None
+    best_score = float("inf")
+    best_idx = -1
     for i, node_id in enumerate(ready_nodes):
-        score: object = _score_node(node_id, graph, cost_model, remaining_uses, last_was_compute_heavy)
+        score = _score_node(node_id, graph, cost_model, remaining_uses, last_was_compute_heavy)
         if score < best_score or (score == best_score and (best_node_id is None or node_id < best_node_id)):
-            best_score: object = score
-            best_node_id: object = node_id
-            best_idx: object = i
+            best_score = score
+            best_node_id = node_id
+            best_idx = i
     assert best_node_id is not None
     return best_idx, best_node_id
 
@@ -199,24 +199,24 @@ def graph_scheduling_pass(graph: IRGraph) -> bool:
     Returns:
         bool: True if the graph was modified, False otherwise.
     """
-    cost_model: object = DefaultCostModel()
+    cost_model = DefaultCostModel()
     consumers, remaining_uses, in_degree = _build_adjacency_lists(graph)
-    ready_nodes: object = [node_id for node_id, deg in in_degree.items() if deg == 0]
-    scheduled_order: object = []
-    last_was_compute_heavy: object = False
+    ready_nodes = [node_id for node_id, deg in in_degree.items() if deg == 0]
+    scheduled_order = []
+    last_was_compute_heavy = False
     while ready_nodes:
         best_idx, best_node_id = _select_best_node(ready_nodes, graph, cost_model, remaining_uses, last_was_compute_heavy)
         ready_nodes.pop(best_idx)
         scheduled_order.append(best_node_id)
-        node: object = graph.nodes[best_node_id]
-        comp_cost: object = cost_model.get_compute_cost(node)
-        last_was_compute_heavy: object = comp_cost > 100
+        node = graph.nodes[best_node_id]
+        comp_cost = cost_model.get_compute_cost(node)
+        last_was_compute_heavy = comp_cost > 100
         _update_degrees_and_uses(node, best_node_id, consumers, remaining_uses, in_degree, ready_nodes)
     if len(scheduled_order) != len(graph.nodes):
         return False
     if scheduled_order == list(graph.nodes.keys()):
         return False
-    new_nodes: object = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
+    new_nodes = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
     graph.nodes.clear()
     graph.nodes.update(new_nodes)
     return True

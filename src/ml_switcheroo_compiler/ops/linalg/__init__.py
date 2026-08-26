@@ -108,9 +108,9 @@ from .transform import hadamard_transform as hadamard_transform
 class Vecdot(OpDef):
     """Vecdot operator definition."""
 
-    op_name: object = "Vecdot"
+    op_name = "Vecdot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:
@@ -127,9 +127,9 @@ class Vecdot(OpDef):
 class CustomLinearSolve(OpDef):
     """CustomLinearSolve operator definition."""
 
-    op_name: object = "CustomLinearSolve"
+    op_name = "CustomLinearSolve"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:
@@ -146,9 +146,9 @@ class CustomLinearSolve(OpDef):
 class CustomRoot(OpDef):
     """CustomRoot operator definition."""
 
-    op_name: object = "CustomRoot"
+    op_name = "CustomRoot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:

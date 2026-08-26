@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 "Core abstractions and logic definitions for test_control_flow_extra3.py."
 
 
-def test_vmap_in_axes_length_coverage() -> object:
+def test_vmap_in_axes_length_coverage():
     """Test the vmap in axes length coverage behavior.
 
     Returns:
@@ -22,7 +22,7 @@ def test_vmap_in_axes_length_coverage() -> object:
         device = Device(DeviceType.CPU, 0)
         with ConfigContext(eager_mode=False):
 
-            def my_func(a: object, b: object) -> object:
+            def my_func(a, b):
                 """Evaluate and process the my func operation.
 
                 Args:
@@ -48,7 +48,7 @@ def test_vmap_in_axes_length_coverage() -> object:
 "Core abstractions and logic definitions for test_control_flow_extra2.py."
 
 
-def test_vmap_pmap_scalar_fallback() -> object:
+def test_vmap_pmap_scalar_fallback():
     """Test the vmap pmap scalar fallback behavior.
 
     Returns:
@@ -56,7 +56,7 @@ def test_vmap_pmap_scalar_fallback() -> object:
     """
     try:
 
-        def f(x: object, y: object) -> object:
+        def f(x, y):
             """Evaluate and process the f operation.
 
             Args:

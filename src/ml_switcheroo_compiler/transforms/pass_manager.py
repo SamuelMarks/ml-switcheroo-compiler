@@ -41,12 +41,12 @@ class IRValidator:
             CompilationError: If a node is missing shape metadata.
         """
         # Simple validator: ensure every node has shape metadata
-        nodes_iterable: object = graph.nodes
+        nodes_iterable = graph.nodes
         if isinstance(nodes_iterable, dict):
-            nodes_iterable: object = nodes_iterable.values()
+            nodes_iterable = nodes_iterable.values()
         for node in nodes_iterable:
             if getattr(node, "shape_metadata", None) is None:
-                msg: object = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
+                msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
                 raise CompilationError(msg)
 
 
@@ -59,10 +59,10 @@ def _graph_hash(graph: IRGraph) -> str:
     Returns:
         str: Result.
     """
-    state: object = {}
-    nodes_iterable: object = graph.nodes
+    state = {}
+    nodes_iterable = graph.nodes
     if isinstance(nodes_iterable, dict):
-        nodes_iterable: object = nodes_iterable.values()
+        nodes_iterable = nodes_iterable.values()
     for node in nodes_iterable:
         state[getattr(node, "id", "")] = {
             "op": node.op_type,
@@ -89,7 +89,7 @@ class PassManager:
             IRValidator.check_shapes,
         ]
 
-    def add_pass(self, ir_pass: Callable[[IRGraph], bool], name: object = None) -> None:
+    def add_pass(self, ir_pass: Callable[[IRGraph], bool], name=None) -> None:
         """Add a pass to the manager.
 
         A pass should return True if it modified the graph
@@ -109,13 +109,13 @@ class PassManager:
 
         from ml_switcheroo_compiler.transforms.passes.config_models import PassConfig
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
         if not os.path.exists(yaml_path):
             return
 
         with open(yaml_path) as f:
-            res: object = yaml.safe_load(f)
-            config: object = PassConfig(**res)
+            res = yaml.safe_load(f)
+            config = PassConfig(**res)
 
         import importlib
 
@@ -127,7 +127,7 @@ class PassManager:
         # Keep a mapping of known passes, normally this would use a registry
         # We will dynamically look them up from the passes package
         for pass_name in config.execution_order:
-            pass_func: object = getattr(passes_module, f"{pass_name}_pass", None)
+            pass_func = getattr(passes_module, f"{pass_name}_pass", None)
             if pass_func and callable(pass_func):
                 self.add_pass(pass_func, name=pass_name)
 
@@ -168,7 +168,7 @@ class PassManager:
         self.validate(graph)
 
         for _ in range(max_iterations):
-            prev_hash: object = _graph_hash(graph)
+            prev_hash = _graph_hash(graph)
 
             for ir_pass in self.passes:
                 if ir_pass(graph):
@@ -179,7 +179,7 @@ class PassManager:
                     dtype_inference_pass(graph)
                 self.validate(graph)
 
-            new_hash: object = _graph_hash(graph)
+            new_hash = _graph_hash(graph)
             if new_hash == prev_hash:
                 break
 

@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def decode_image(contents: Tensor, channels: object = 0, dtype: object = DType.UInt8, name: object = None, expand_animations: object = True) -> object:
+def decode_image(contents: Tensor, channels=0, dtype=DType.UInt8, name=None, expand_animations=True):
     """Decode image.
 
     Args:
@@ -40,7 +40,7 @@ def decode_image(contents: Tensor, channels: object = 0, dtype: object = DType.U
     return _emit_shape_node("DecodeImage", [contents], {"channels": channels, "dtype": dtype, "name": name, "expand_animations": expand_animations}, getattr(contents, "shape", ()), getattr(contents, "dtype", "float32"))
 
 
-def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
+def decode_jpeg(contents, channels: int = 0, ratio: int = 1):
     """Decode JPEG image.
 
     Args:
@@ -53,7 +53,7 @@ def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls: object = get_active_backend()
+    backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_jpeg"):
         return backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -61,7 +61,7 @@ def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
     return Tensor(None, TensorConfig((), None, None))
 
 
-def decode_png(contents: object, channels: int = 0, dtype: object = None) -> object:
+def decode_png(contents, channels: int = 0, dtype=None):
     """Decode PNG image.
 
     Args:
@@ -75,7 +75,7 @@ def decode_png(contents: object, channels: int = 0, dtype: object = None) -> obj
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls: object = get_active_backend()
+    backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_png"):
         return backend_cls.decode_png(contents, channels=channels, dtype=dtype)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -84,8 +84,8 @@ def decode_png(contents: object, channels: int = 0, dtype: object = None) -> obj
 
 
 def decode_gif(
-    contents: object,
-) -> object:
+    contents,
+):
     """Decode GIF image.
 
     Args:
@@ -96,7 +96,7 @@ def decode_gif(
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls: object = get_active_backend()
+    backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_gif"):
         return backend_cls.decode_gif(contents)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -104,7 +104,7 @@ def decode_gif(
     return Tensor(None, TensorConfig((), None, None))
 
 
-def decode_bmp(contents: object, channels: int = 0) -> object:
+def decode_bmp(contents, channels: int = 0):
     """Decode BMP image.
 
     Args:
@@ -116,7 +116,7 @@ def decode_bmp(contents: object, channels: int = 0) -> object:
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend_cls: object = get_active_backend()
+    backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_bmp"):
         return backend_cls.decode_bmp(contents, channels=channels)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -128,9 +128,9 @@ def decode_bmp(contents: object, channels: int = 0) -> object:
 class DecodeImage(OpDef):
     """DecodeImage operation."""
 
-    op_name: object = "DecodeImage"
+    op_name = "DecodeImage"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -142,10 +142,10 @@ class DecodeImage(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res

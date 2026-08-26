@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import _dispatch_random, _emit_random_node
 
 
-def randint(key: object, shape: object, minval: object, maxval: object, dtype: object = None) -> object:
+def randint(key, shape, minval, maxval, dtype=None):
     """Sample uniform random integers from a given key.
 
     Args:
@@ -21,13 +21,13 @@ def randint(key: object, shape: object, minval: object, maxval: object, dtype: o
         maxval (object): The maxval parameter for the operation.
         dtype (object): The target data type.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
-    dtype: object = dtype or dtypes.DType.Int32
+    dtype = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomRandint", [key], shape, dtype, {"minval": minval, "maxval": maxval})
 
 
-def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
+def bernoulli(key, p=0.5, shape=None):
     """Sample Bernoulli random variables from a given key.
 
     Args:
@@ -35,14 +35,14 @@ def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
         p (object): The p parameter for the operation.
         shape (object): The target shape.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     if shape is None:
-        shape: object = ()
+        shape = ()
     return _emit_random_node("RandomBernoulli", [key], shape, dtypes.DType.Bool, {"p": p})
 
 
-def categorical(key: object, logits: object, axis: object = -1, shape: object = None) -> object:
+def categorical(key, logits, axis=-1, shape=None):
     """Sample categorical random variables from a given key.
 
     Args:
@@ -51,16 +51,16 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
         axis (object): The axis along which to perform the operation.
         shape (object): The target shape.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
-    out_shape: object = shape or ()
-    inputs: object = [key]
+    out_shape = shape or ()
+    inputs = [key]
     if isinstance(logits, Tensor):
         inputs.append(logits)
     return _emit_random_node("RandomCategorical", inputs, out_shape, dtypes.DType.Int32, {"axis": axis})
 
 
-def permutation(key: object, x: object, axis: object = 0, independent: object = False) -> object:
+def permutation(key, x, axis=0, independent=False):
     """Generate random permutation of a sequence.
 
     Args:
@@ -72,12 +72,12 @@ def permutation(key: object, x: object, axis: object = 0, independent: object = 
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: object = getattr(x, "shape", ())
-    dtype: object = getattr(x, "dtype", None)
+    shape = getattr(x, "shape", ())
+    dtype = getattr(x, "dtype", None)
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 
-def choice(key: object, a: object, **kwargs: object) -> object:
+def choice(key, a, **kwargs):
     """Generate a random sample from a given 1-D array.
 
     Args:
@@ -85,19 +85,19 @@ def choice(key: object, a: object, **kwargs: object) -> object:
         a (object): The input a tensor.
         **kwargs (object): Optional arguments shape, replace, p, axis.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
-    shape: object = kwargs.get("shape", ())
-    replace: object = kwargs.get("replace", True)
-    p: object = kwargs.get("p", None)
-    axis: object = kwargs.get("axis", 0)
-    inputs: object = [key, a]
+    shape = kwargs.get("shape", ())
+    replace = kwargs.get("replace", True)
+    p = kwargs.get("p", None)
+    axis = kwargs.get("axis", 0)
+    inputs = [key, a]
     if isinstance(p, Tensor):
         inputs.append(p)
     return _emit_random_node("RandomChoice", inputs, shape, a.dtype, {"replace": replace, "axis": axis})
 
 
-def binomial(key: object, n: object, p: object, shape: object = None, dtype: object = None) -> object:
+def binomial(key, n, p, shape=None, dtype=None):
     """Sample binomial random values from a given key.
 
     Args:
@@ -111,12 +111,12 @@ def binomial(key: object, n: object, p: object, shape: object = None, dtype: obj
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape: object = ()
-    dtype: object = dtype or dtypes.DType.Int32
+        shape = ()
+    dtype = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomBinomial", [key], shape, dtype)
 
 
-def geometric(*args: object, **kwargs: object) -> object:
+def geometric(*args, **kwargs):
     """Evaluate geometric operation.
 
     Args:
@@ -129,7 +129,7 @@ def geometric(*args: object, **kwargs: object) -> object:
     return _dispatch_random("geometric", *args, **kwargs)
 
 
-def poisson(key: object, lam: object, shape: object = None, dtype: object = None) -> object:
+def poisson(key, lam, shape=None, dtype=None):
     """Sample poisson random values from a given key.
 
     Args:
@@ -142,12 +142,12 @@ def poisson(key: object, lam: object, shape: object = None, dtype: object = None
             tuple[int, ...]: Result.
     """
     if shape is None:
-        shape: object = ()
-    dtype: object = dtype or dtypes.DType.Int32
+        shape = ()
+    dtype = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)
 
 
-def rademacher(*args: object, **kwargs: object) -> object:
+def rademacher(*args, **kwargs):
     """Evaluate rademacher operation.
 
     Args:
@@ -160,7 +160,7 @@ def rademacher(*args: object, **kwargs: object) -> object:
     return _dispatch_random("rademacher", *args, **kwargs)
 
 
-def multinomial(key: object, n: int, pvals: object, shape: object = None) -> object:
+def multinomial(key, n: int, pvals, shape=None):
     """Sample from multinomial distribution.
 
     Args:
@@ -169,8 +169,8 @@ def multinomial(key: object, n: int, pvals: object, shape: object = None) -> obj
         pvals (object): Probabilities of each of the p different outcomes.
         shape (object): Target shape.
 
-    Returns: object: The computed result.
+    Returns: Tensor: The computed result.
     """
     if shape is None:
-        shape: object = ()
+        shape = ()
     return _emit_random_node("RandomMultinomial", [key, pvals], shape, dtypes.DType.Int32, {"n": n})

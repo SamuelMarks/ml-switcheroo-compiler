@@ -3,20 +3,22 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Pshuffle")
-def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object:
+def _pshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pshuffle operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pshuffle"):
         return backend_module.lax.pshuffle(*args, **kwargs)
@@ -24,18 +26,18 @@ def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Gumbel")
-def _np_gumbel(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_gumbel operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
+    func = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -44,18 +46,18 @@ def _np_gumbel(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("RngUniform")
-def _np_rnguniform(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_rnguniform operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
+    func = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -64,18 +66,18 @@ def _np_rnguniform(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("Wald")
-def _np_wald(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_wald(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_wald operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
+    func = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
-def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
+def _ragged_op(op_name, *args, **kwargs):
     """Evaluate _ragged_op operation.
 
     Args:
@@ -27,12 +27,12 @@ def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    op_cls: object = get_op(op_name)
+    op_cls = get_op(op_name)
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(op_name, *[getattr(a, "data", a) for a in args], **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op(op_name, *[getattr(a, "data", a) for a in args], **kwargs)
         return Tensor(
             data,
             TensorConfig(
@@ -42,8 +42,8 @@ def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
             ),
         )
 
-    op: object = op_cls()
-    out_shape: object = op.infer_shape(*args, **kwargs)
+    op = op_cls()
+    out_shape = op.infer_shape(*args, **kwargs)
     return _emit_linalg_node(
         op_name,
         list(args),
@@ -53,7 +53,7 @@ def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
     )
 
 
-def ragged_constant(*args: object, **kwargs: object) -> object:
+def ragged_constant(*args, **kwargs):
     """Evaluate ragged_constant operation.
 
     Args:
@@ -66,7 +66,7 @@ def ragged_constant(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedConstant", *args, **kwargs)
 
 
-def ragged_cross(*args: object, **kwargs: object) -> object:
+def ragged_cross(*args, **kwargs):
     """Evaluate ragged_cross operation.
 
     Args:
@@ -79,7 +79,7 @@ def ragged_cross(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)  # Alias
 
 
-def ragged_cross_hashed(*args: object, **kwargs: object) -> object:
+def ragged_cross_hashed(*args, **kwargs):
     """Evaluate ragged_cross_hashed operation.
 
     Args:
@@ -92,7 +92,7 @@ def ragged_cross_hashed(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)
 
 
-def ragged_range(*args: object, **kwargs: object) -> object:
+def ragged_range(*args, **kwargs):
     """Evaluate ragged_range operation.
 
     Args:
@@ -105,7 +105,7 @@ def ragged_range(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedRange", *args, **kwargs)
 
 
-def ragged_row_splits_to_segment_ids(*args: object, **kwargs: object) -> object:
+def ragged_row_splits_to_segment_ids(*args, **kwargs):
     """Evaluate ragged_row_splits_to_segment_ids operation.
 
     Args:
@@ -118,7 +118,7 @@ def ragged_row_splits_to_segment_ids(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedRowSplitsToSegmentIds", *args, **kwargs)
 
 
-def ragged_segment_ids_to_row_splits(*args: object, **kwargs: object) -> object:
+def ragged_segment_ids_to_row_splits(*args, **kwargs):
     """Evaluate ragged_segment_ids_to_row_splits operation.
 
     Args:
@@ -131,7 +131,7 @@ def ragged_segment_ids_to_row_splits(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedSegmentIdsToRowSplits", *args, **kwargs)
 
 
-def ragged_stack(*args: object, **kwargs: object) -> object:
+def ragged_stack(*args, **kwargs):
     """Evaluate ragged_stack operation.
 
     Args:
@@ -144,7 +144,7 @@ def ragged_stack(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedStack", *args, **kwargs)
 
 
-def ragged_stack_dynamic_partitions(*args: object, **kwargs: object) -> object:
+def ragged_stack_dynamic_partitions(*args, **kwargs):
     """Evaluate ragged_stack_dynamic_partitions operation.
 
     Args:
@@ -157,7 +157,7 @@ def ragged_stack_dynamic_partitions(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedStackDynamicPartitions", *args, **kwargs)
 
 
-def ragged_dot(*args: object, **kwargs: object) -> object:
+def ragged_dot(*args, **kwargs):
     """Evaluate ragged_dot operation.
 
     Args:
@@ -170,7 +170,7 @@ def ragged_dot(*args: object, **kwargs: object) -> object:
     return _ragged_op("RaggedDot", *args, **kwargs)
 
 
-def boolean_mask(*args: object, **kwargs: object) -> object:
+def boolean_mask(*args, **kwargs):
     """Boolean mask.
 
     Args:
@@ -183,7 +183,7 @@ def boolean_mask(*args: object, **kwargs: object) -> object:
     return _ragged_op("BooleanMask", *args, **kwargs)
 
 
-def map_flat_values(*args: object, **kwargs: object) -> object:
+def map_flat_values(*args, **kwargs):
     """Map flat values.
 
     Args:

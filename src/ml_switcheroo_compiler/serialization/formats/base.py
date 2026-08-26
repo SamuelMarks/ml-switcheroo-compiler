@@ -10,7 +10,7 @@ class WeightLoader(ABC):
     """Interface for loading weights from a file."""
 
     @abstractmethod
-    def load(self, filepath: str) -> dict[str, object]:
+    def load(self, filepath: str):
         """Load weights from a file.
 
         Args:
@@ -26,7 +26,7 @@ class WeightSaver(ABC):
     """Interface for saving weights to a file."""
 
     @abstractmethod
-    def save(self, weights_np: dict[str, object], filepath: str) -> None:
+    def save(self, weights_np, filepath: str) -> None:
         """Save weights to a file.
 
         Args:

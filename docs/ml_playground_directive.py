@@ -5,8 +5,13 @@ and execution console. It allows users to write, compile, and run ML code (e.g.,
 PyTorch, TensorFlow) directly in the browser using Pyodide, WebGPU, and WASM.
 """
 
-from docutils import nodes
-from docutils.parsers.rst import Directive
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    import sphinx.application  # type: ignore[import-untyped]
+
+from docutils import nodes  # type: ignore[import-untyped]
+from docutils.parsers.rst import Directive  # type: ignore[import-untyped]
 
 
 class MLPlaygroundDirective(Directive):
@@ -20,12 +25,12 @@ class MLPlaygroundDirective(Directive):
         allowed. Defaults to True.
     """
 
-    has_content: object = True
+    has_content: bool = True
 
-    def run(self) -> object:
+    def run(self) -> list[nodes.Node]:
         """Execute standard operation."""
         # We output a section with an id that our JS will hydrate
-        html: object = """
+        html = """
 <section id="ml-playground-container" aria-label="ML Switcheroo Playground">
     <header class="pg-header">
         <label class="theme-switch" aria-label="Toggle Dark Mode">
@@ -116,17 +121,17 @@ var require = { paths: { 'vs':
         return [nodes.raw("", html, format="html")]
 
 
-def setup(app: object) -> object:
+def setup(app: "sphinx.application.Sphinx") -> dict[str, Union[str, bool]]:
     """Initializes the Sphinx extension.
 
     Registers the `ml-playground` directive and associates the required
     CSS and JavaScript assets for the playground's interactive features.
 
     Args:
-        app (object): The Sphinx application object.
+        app: The Sphinx application object.
 
     Returns:
-        dict: A dictionary containing extension metadata, including the
+        A dictionary containing extension metadata, including the
             version and parallel read/write safety flags.
     """
     app.add_directive("ml-playground", MLPlaygroundDirective)

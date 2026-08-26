@@ -4,7 +4,7 @@
 import torch
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]):
     """Evaluate zeros operation.
 
     Args:
@@ -25,7 +25,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return torch.zeros(shape)
 
 
-def array(cls: type, data: object, dtype: object = None) -> object:
+def array(cls: type, data, dtype=None):
     """Evaluate array operation.
 
     Args:
@@ -47,13 +47,13 @@ def array(cls: type, data: object, dtype: object = None) -> object:
             tuple[int, ...]: Result.
     """
     if dtype is not None:
-        dtype_str: object = str(getattr(dtype, "value", dtype)).split(".")[-1]
-        dt: object = getattr(torch, dtype_str, None)
+        dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
+        dt = getattr(torch, dtype_str, None)
         return torch.tensor(data, dtype=dt)
     return torch.tensor(data)
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data):
     """Evaluate asarray operation.
 
     Args:
@@ -74,7 +74,7 @@ def asarray(cls: type, data: object) -> object:
     return torch.as_tensor(data)
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data) -> float:
     """Evaluate item operation.
 
     Args:

@@ -37,7 +37,7 @@ def conv_lstm_cell(
     Raises:
         ValueError: An exception.
     """
-    naxis: object = len(inputs.shape)
+    naxis = len(inputs.shape)
     if naxis == MAGIC_VAL_3:
         return conv1d_lstm_cell(inputs, state, weights, config)
     elif naxis == MAGIC_VAL_4:
@@ -68,20 +68,20 @@ def _apply_conv_lstm_gates(
         tuple: Result.
     """
     h_prev, c_prev = state
-    gates: object = add(x_conv, h_conv)
+    gates = add(x_conv, h_conv)
     if weights.bias is not None:
-        gates: object = add(gates, weights.bias)
+        gates = add(gates, weights.bias)
 
-    axis_val: object = -1 if data_format == "channels_last" else 1
+    axis_val = -1 if data_format == "channels_last" else 1
     i, f, c, o = split(gates, 4, axis=axis_val)
 
-    i: object = _sigmoid(i)
-    f: object = _sigmoid(f)
-    c: object = tanh(c)
-    o: object = _sigmoid(o)
+    i = _sigmoid(i)
+    f = _sigmoid(f)
+    c = tanh(c)
+    o = _sigmoid(o)
 
-    new_c: object = add(multiply(f, c_prev), multiply(i, c))
-    new_h: object = multiply(o, tanh(new_c))
+    new_c = add(multiply(f, c_prev), multiply(i, c))
+    new_h = multiply(o, tanh(new_c))
 
     return new_h, (new_h, new_c)
 
@@ -105,15 +105,15 @@ def conv1d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf: object = config if config is not None else ConvLSTMConfig()
-    x_conv: object = conv1d(
+    conf = config if config is not None else ConvLSTMConfig()
+    x_conv = conv1d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv: object = conv1d(
+    h_conv = conv1d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -143,15 +143,15 @@ def conv2d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf: object = config if config is not None else ConvLSTMConfig()
-    x_conv: object = conv2d(
+    conf = config if config is not None else ConvLSTMConfig()
+    x_conv = conv2d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv: object = conv2d(
+    h_conv = conv2d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -181,15 +181,15 @@ def conv3d_lstm_cell(
     """
     h_prev, c_prev = state
 
-    conf: object = config if config is not None else ConvLSTMConfig()
-    x_conv: object = conv3d(
+    conf = config if config is not None else ConvLSTMConfig()
+    x_conv = conv3d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
     )
-    h_conv: object = conv3d(
+    h_conv = conv3d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -200,7 +200,7 @@ def conv3d_lstm_cell(
     return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
 
 
-def _sigmoid(x: object) -> object:
+def _sigmoid(x):
     """Sigmoid.
 
     Args:

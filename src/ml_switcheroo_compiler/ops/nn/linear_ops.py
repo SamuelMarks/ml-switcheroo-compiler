@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> object:
+def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None):
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -23,13 +23,13 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> obje
     Returns:
         The transformed tensor.
     """
-    out: object = matmul(input, swapaxes(weight, -1, -2))
+    out = matmul(input, swapaxes(weight, -1, -2))
     if bias is not None:
-        out: object = add(out, bias)
+        out = add(out, bias)
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> object:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None):
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).
@@ -44,7 +44,7 @@ def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tens
         The transformed tensor. Shape `(..., out_features)`.
     """
     # Computes sum_i sum_k input1[..., i] * weight[j, i, k] * input2[..., k] -> out[..., j]
-    out: object = einsum("...i,jik,...k->...j", input1, weight, input2)
+    out = einsum("...i,jik,...k->...j", input1, weight, input2)
     if bias is not None:
-        out: object = add(out, bias)
+        out = add(out, bias)
     return out

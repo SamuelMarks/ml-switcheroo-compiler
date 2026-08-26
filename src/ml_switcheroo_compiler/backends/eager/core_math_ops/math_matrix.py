@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import typing
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -12,19 +13,19 @@ from .math_reduction import _apply_softmax
 
 
 @global_eager_registry.register("Einsum")
-def _einsum(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _einsum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    eq: typing.Any = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
-    op_args: typing.Any = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
+    eq = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
+    op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
     if hasattr(backend_module, "einsum"):
         return backend_module.einsum(eq, *op_args, **kwargs)
     import numpy as np
@@ -33,66 +34,66 @@ def _einsum(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any)
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
-def _scaled_dot_product_attention_eager(backend_module: typing.Any, query: typing.Any, key: typing.Any, value: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: Any, value: Any, *args: Any, **kwargs: Any) -> Any:
     """Fallback eager execution for ScaledDotProductAttention.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        query (object): The query parameter.
-        key (object): The key parameter.
-        value (object): The value parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        query (Any): The query parameter.
+        key (Any): The key parameter.
+        value (Any): The value parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import math
 
-    scale: typing.Any = kwargs.get("scale")
-    is_causal: typing.Any = kwargs.get("is_causal", False)
-    mask: typing.Any = kwargs.get("mask", None)
+    scale = kwargs.get("scale")
+    is_causal = kwargs.get("is_causal", False)
+    mask = kwargs.get("mask", None)
 
     if scale is None:
-        scale: typing.Any = 1.0 / math.sqrt(query.shape[-1])
+        scale = 1.0 / math.sqrt(query.shape[-1])
 
     # key transpose
-    key_t_axes: typing.Any = list(range(len(key.shape)))
+    key_t_axes = list(range(len(key.shape)))
     key_t_axes[-1], key_t_axes[-2] = key_t_axes[-2], key_t_axes[-1]
 
     if hasattr(backend_module, "transpose"):
-        key_t: typing.Any = backend_module.transpose(key, axes=key_t_axes)
+        key_t = backend_module.transpose(key, axes=key_t_axes)
     else:
-        key_t: typing.Any = key
+        key_t = key
 
-    scores: typing.Any = backend_module.matmul(query, key_t) * scale
+    scores = backend_module.matmul(query, key_t) * scale
 
     if is_causal:
-        scores: typing.Any = _apply_causal_mask(backend_module, scores)
+        scores = _apply_causal_mask(backend_module, scores)
 
     if mask is not None:
-        scores: typing.Any = scores + mask
+        scores = scores + mask
 
-    attn: typing.Any = _apply_softmax(backend_module, scores)
+    attn = _apply_softmax(backend_module, scores)
 
     return backend_module.matmul(attn, value)
 
 
 @global_eager_registry.register("CholeskySolve")
-def _cholesky_solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky_solve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import scipy.linalg
 
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cho_solve"):
         return func.cho_solve(*args, **kwargs)
     if hasattr(backend_module, "cho_solve"):
@@ -104,18 +105,18 @@ def _cholesky_solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typ
 
 
 @global_eager_registry.register("BandedTriangularSolve")
-def _banded_triangular_solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _banded_triangular_solve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
         return func.solve_banded(*args, **kwargs)
     if hasattr(backend_module, "solve_banded"):
@@ -130,18 +131,18 @@ def _banded_triangular_solve(backend_module: typing.Any, *args: typing.Any, **kw
 @global_eager_registry.register("Igammac")
 @global_eager_registry.register("Polygamma")
 @global_eager_registry.register("MatrixPower")
-def _matrix_power(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_power operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
         return func.matrix_power(*args, **kwargs)
     if hasattr(backend_module, "matrix_power"):
@@ -152,40 +153,40 @@ def _matrix_power(backend_module: typing.Any, *args: typing.Any, **kwargs: typin
 
 
 @global_eager_registry.register("MatrixRank")
-def _matrix_rank(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_rank operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
         return func.matrix_rank(*args, **kwargs)
     if hasattr(backend_module, "matrix_rank"):
         return backend_module.matrix_rank(*args, **kwargs)
 
-    x: typing.Any = args[0]
+    x = args[0]
     return backend_module.linalg.matrix_rank(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Solve")
-def _solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _solve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
         return func.solve(*args, **kwargs)
     if hasattr(backend_module, "solve"):
@@ -196,18 +197,18 @@ def _solve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) 
 
 
 @global_eager_registry.register("Tensorsolve")
-def _tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tensorsolve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "linalg", None)
+    func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
         return func.tensorsolve(*args, **kwargs)
     if hasattr(backend_module, "tensorsolve"):
@@ -218,18 +219,18 @@ def _tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing
 
 
 @global_eager_registry.register("Tensorsolve")
-def _np_tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorsolve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
+    func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -238,18 +239,18 @@ def _np_tensorsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typ
 
 
 @global_eager_registry.register("TriangularSolve")
-def _np_triangularsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triangularsolve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
+    func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -258,18 +259,18 @@ def _np_triangularsolve(backend_module: typing.Any, *args: typing.Any, **kwargs:
 
 
 @global_eager_registry.register("TridiagonalMatmul")
-def _np_tridiagonalmatmul(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonalmatmul operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
+    func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -278,18 +279,18 @@ def _np_tridiagonalmatmul(backend_module: typing.Any, *args: typing.Any, **kwarg
 
 
 @global_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonalsolve(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonalsolve operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
+    func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
@@ -298,18 +299,18 @@ def _np_tridiagonalsolve(backend_module: typing.Any, *args: typing.Any, **kwargs
 
 
 @global_eager_registry.register("Vecdot")
-def _np_vecdot(backend_module: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> object:
+def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_vecdot operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: typing.Any = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
+    func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

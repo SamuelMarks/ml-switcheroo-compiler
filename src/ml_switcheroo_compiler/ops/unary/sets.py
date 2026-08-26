@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Setdiff1d(OpDef):
     """Setdiff1d operator definition."""
 
-    op_name: object = "Setdiff1d"
+    op_name = "Setdiff1d"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -27,16 +27,16 @@ class Setdiff1d(OpDef):
 class Setxor1d(OpDef):
     """Setxor1d operator definition."""
 
-    op_name: object = "Setxor1d"
+    op_name = "Setxor1d"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -45,16 +45,16 @@ class Setxor1d(OpDef):
 class Union1d(OpDef):
     """Union1d operator definition."""
 
-    op_name: object = "Union1d"
+    op_name = "Union1d"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -63,16 +63,16 @@ class Union1d(OpDef):
 class UniqueAll(OpDef):
     """UniqueAll operator definition."""
 
-    op_name: object = "UniqueAll"
+    op_name = "UniqueAll"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -81,16 +81,16 @@ class UniqueAll(OpDef):
 class UniqueCounts(OpDef):
     """UniqueCounts operator definition."""
 
-    op_name: object = "UniqueCounts"
+    op_name = "UniqueCounts"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -99,16 +99,16 @@ class UniqueCounts(OpDef):
 class UniqueInverse(OpDef):
     """UniqueInverse operator definition."""
 
-    op_name: object = "UniqueInverse"
+    op_name = "UniqueInverse"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -117,15 +117,15 @@ class UniqueInverse(OpDef):
 class UniqueValues(OpDef):
     """UniqueValues operator definition."""
 
-    op_name: object = "UniqueValues"
+    op_name = "UniqueValues"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()

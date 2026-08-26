@@ -13,7 +13,7 @@ def test_numpy_generator_visit_kwargs_only() -> None:
     """Test the numpy generator visit kwargs only behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test visit branch where args_str is empty but kwargs_str exists."
@@ -25,7 +25,7 @@ def test_numpy_generator_visit_kwargs_only() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 
@@ -42,7 +42,7 @@ def test_numpy_generator_visit_no_kwargs() -> None:
     """Test the numpy generator visit no kwargs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test visit branch where kwargs_str is empty."
@@ -54,7 +54,7 @@ def test_numpy_generator_visit_no_kwargs() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 
@@ -70,7 +70,7 @@ def test_numpy_generator_kwargs_only() -> None:
     """Test the numpy generator kwargs only behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test _format_generic_fallback branch where args_str is empty but kwargs_str exists."
@@ -85,7 +85,7 @@ def test_numpy_generator_kwargs_only() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 
@@ -100,7 +100,7 @@ def test_cupy_generator_kwargs_only() -> None:
     """Test the cupy generator kwargs only behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -112,7 +112,7 @@ def test_cupy_generator_kwargs_only() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 
@@ -126,7 +126,7 @@ def test_dask_generator_kwargs_only() -> None:
     """Test the dask generator kwargs only behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -138,7 +138,7 @@ def test_dask_generator_kwargs_only() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 
@@ -152,7 +152,7 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
     """Test the cupy generator fallback empty args str with kwargs behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Docstring."
@@ -164,7 +164,7 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
                 """Initialize the instance.
 
                 Returns:
-                    Any: The inferred shape or computed result.
+                    object: The inferred shape or computed result.
                 """
                 pass
 

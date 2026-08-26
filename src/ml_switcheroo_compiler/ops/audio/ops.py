@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Stft(OpDef):
     """Short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the STFT output.
 
         Args:
@@ -19,15 +19,15 @@ class Stft(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and hasattr(args[0], "shape"):
-            shape: object = list(getattr(args[0], "shape", ()))
+            shape = list(getattr(args[0], "shape", ()))
             if len(shape) > 0:
-                signal_length: object = shape[-1]
-                frame_length: object = kwargs.get("frame_length", 256)
-                frame_step: object = kwargs.get("frame_step", 128)
-                fft_length: object = kwargs.get("fft_length", kwargs.get("fft_size", frame_length))
+                signal_length = shape[-1]
+                frame_length = kwargs.get("frame_length", 256)
+                frame_step = kwargs.get("frame_step", 128)
+                fft_length = kwargs.get("fft_length", kwargs.get("fft_size", frame_length))
 
-                num_frames: object = max(1, (signal_length - frame_length) // frame_step + 1)
-                fft_bins: object = fft_length // 2 + 1
+                num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
+                fft_bins = fft_length // 2 + 1
                 shape[-1] = num_frames
                 shape.append(fft_bins)
             return tuple(shape)
@@ -38,7 +38,7 @@ class Stft(OpDef):
 class MelSpectrogram(OpDef):
     """Mel spectrogram computation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the mel spectrogram output.
 
         Args:
@@ -49,13 +49,13 @@ class MelSpectrogram(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and hasattr(args[0], "shape"):
-            shape: object = list(getattr(args[0], "shape", ()))
+            shape = list(getattr(args[0], "shape", ()))
             if len(shape) > 0:
-                signal_length: object = shape[-1]
-                frame_length: object = kwargs.get("frame_length", 256)
-                frame_step: object = kwargs.get("frame_step", 128)
-                num_mel_bins: object = kwargs.get("num_mel_bins", 128)
-                num_frames: object = max(1, (signal_length - frame_length) // frame_step + 1)
+                signal_length = shape[-1]
+                frame_length = kwargs.get("frame_length", 256)
+                frame_step = kwargs.get("frame_step", 128)
+                num_mel_bins = kwargs.get("num_mel_bins", 128)
+                num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
                 shape.append(num_mel_bins)
             return tuple(shape)
@@ -66,7 +66,7 @@ class MelSpectrogram(OpDef):
 class Istft(OpDef):
     """Inverse short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the inverse STFT output.
 
         Args:
@@ -77,13 +77,13 @@ class Istft(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and hasattr(args[0], "shape"):
-            shape: object = list(getattr(args[0], "shape", ()))
+            shape = list(getattr(args[0], "shape", ()))
             if len(shape) >= 2:
-                num_frames: object = shape[-2]
-                frame_length: object = kwargs.get("frame_length", 256)
-                frame_step: object = kwargs.get("frame_step", 128)
-                signal_length: object = (num_frames - 1) * frame_step + frame_length
-                shape: object = shape[:-2]
+                num_frames = shape[-2]
+                frame_length = kwargs.get("frame_length", 256)
+                frame_step = kwargs.get("frame_step", 128)
+                signal_length = (num_frames - 1) * frame_step + frame_length
+                shape = shape[:-2]
                 shape.append(signal_length)
             return tuple(shape)
         return ()
@@ -93,7 +93,7 @@ class Istft(OpDef):
 class MelFilterbank(OpDef):
     """Mel filterbank generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the mel filterbank matrix.
 
         Args:
@@ -103,9 +103,9 @@ class MelFilterbank(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        fft_length: object = kwargs.get("fft_length", kwargs.get("fft_size", 256))
-        num_mel_bins: object = kwargs.get("num_mel_bins", 128)
-        fft_bins: object = fft_length // 2 + 1
+        fft_length = kwargs.get("fft_length", kwargs.get("fft_size", 256))
+        num_mel_bins = kwargs.get("num_mel_bins", 128)
+        fft_bins = fft_length // 2 + 1
         return (fft_bins, num_mel_bins)
 
 
@@ -113,7 +113,7 @@ class MelFilterbank(OpDef):
 class Mfcc(OpDef):
     """Mel-frequency cepstral coefficients (MFCC) extraction operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the MFCC output.
 
         Args:
@@ -124,13 +124,13 @@ class Mfcc(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and hasattr(args[0], "shape"):
-            shape: object = list(getattr(args[0], "shape", ()))
+            shape = list(getattr(args[0], "shape", ()))
             if len(shape) > 0:
-                signal_length: object = shape[-1]
-                frame_length: object = kwargs.get("frame_length", 256)
-                frame_step: object = kwargs.get("frame_step", 128)
-                num_mfccs: object = kwargs.get("num_mfccs", 13)
-                num_frames: object = max(1, (signal_length - frame_length) // frame_step + 1)
+                signal_length = shape[-1]
+                frame_length = kwargs.get("frame_length", 256)
+                frame_step = kwargs.get("frame_step", 128)
+                num_mfccs = kwargs.get("num_mfccs", 13)
+                num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
                 shape[-1] = num_frames
                 shape.append(num_mfccs)
             return tuple(shape)
@@ -141,7 +141,7 @@ class Mfcc(OpDef):
 class MfccsFromLogMelSpectrograms(OpDef):
     """Operator to compute MFCCs directly from log mel spectrograms."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the resulting MFCC output.
 
         Args:
@@ -152,9 +152,9 @@ class MfccsFromLogMelSpectrograms(OpDef):
             The output shape as a tuple of integers.
         """
         if len(args) > 0 and hasattr(args[0], "shape"):
-            shape: object = list(getattr(args[0], "shape", ()))
+            shape = list(getattr(args[0], "shape", ()))
             if len(shape) > 0:
-                num_mfccs: object = kwargs.get("num_mfccs", 13)
+                num_mfccs = kwargs.get("num_mfccs", 13)
                 shape[-1] = num_mfccs
             return tuple(shape)
         return ()
@@ -164,7 +164,7 @@ class MfccsFromLogMelSpectrograms(OpDef):
 class HannWindow(OpDef):
     """Hann window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the generated Hann window.
 
         Args:
@@ -174,11 +174,11 @@ class HannWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length: object = kwargs.get("window_length", 256)
+        window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val: object = getattr(args[0], "value", args[0])
+            val = getattr(args[0], "value", args[0])
             if isinstance(val, int):
-                window_length: object = val
+                window_length = val
         return (window_length,)
 
 
@@ -186,7 +186,7 @@ class HannWindow(OpDef):
 class HammingWindow(OpDef):
     """Hamming window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the generated Hamming window.
 
         Args:
@@ -196,11 +196,11 @@ class HammingWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length: object = kwargs.get("window_length", 256)
+        window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val: object = getattr(args[0], "value", args[0])
+            val = getattr(args[0], "value", args[0])
             if isinstance(val, int):
-                window_length: object = val
+                window_length = val
         return (window_length,)
 
 
@@ -208,7 +208,7 @@ class HammingWindow(OpDef):
 class KaiserWindow(OpDef):
     """Kaiser window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the generated Kaiser window.
 
         Args:
@@ -218,11 +218,11 @@ class KaiserWindow(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        window_length: object = kwargs.get("window_length", 256)
+        window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val: object = getattr(args[0], "value", args[0])
+            val = getattr(args[0], "value", args[0])
             if isinstance(val, int):
-                window_length: object = val
+                window_length = val
         return (window_length,)
 
 
@@ -230,9 +230,9 @@ class KaiserWindow(OpDef):
 class Dct(OpDef):
     """Discrete cosine transform (DCT) operator."""
 
-    op_name: object = "Dct"
+    op_name = "Dct"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infers the shape of the DCT output based on the input signal.
 
         Args:
@@ -249,9 +249,9 @@ class Dct(OpDef):
 class Idct(OpDef):
     """Inverse discrete cosine transform (IDCT) operator."""
 
-    op_name: object = "Idct"
+    op_name = "Idct"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infers the shape of the IDCT output based on the input transformed signal.
 
         Args:
@@ -268,9 +268,9 @@ class Idct(OpDef):
 class Mdct(OpDef):
     """Modify discrete cosine transform (MDCT) operator."""
 
-    op_name: object = "Mdct"
+    op_name = "Mdct"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the MDCT output based on the input signal.
 
         Args:
@@ -282,14 +282,14 @@ class Mdct(OpDef):
         """
         if len(args) == 0 or not hasattr(args[0], "shape"):
             return ()
-        a: object = args[0]
-        shape: object = list(getattr(a, "shape", ()) or ())
+        a = args[0]
+        shape = list(getattr(a, "shape", ()) or ())
         if not shape:
             return ()
 
-        frame_length: object = int(kwargs.get("frame_length", 512))
-        frame_step: object = int(kwargs.get("frame_step", 256))
-        pad_end: object = bool(kwargs.get("pad_end", False))
+        frame_length = int(kwargs.get("frame_length", 512))
+        frame_step = int(kwargs.get("frame_step", 256))
+        pad_end = bool(kwargs.get("pad_end", False))
 
         # If the input represents a pre-framed block (last dim is frame_length)
         if shape[-1] == frame_length:
@@ -297,15 +297,15 @@ class Mdct(OpDef):
             return tuple(shape)
 
         # Otherwise, the input is a continuous 1D signal (..., signal_length)
-        signal_length: object = shape[-1]
+        signal_length = shape[-1]
         if signal_length < frame_length:
             shape[-1] = signal_length // 2
             return tuple(shape)
 
         if pad_end:
-            num_frames: object = (signal_length + frame_step - 1) // frame_step if signal_length > 0 else 0
+            num_frames = (signal_length + frame_step - 1) // frame_step if signal_length > 0 else 0
         else:
-            num_frames: object = max(0, (signal_length - frame_length) // frame_step + 1)
+            num_frames = max(0, (signal_length - frame_length) // frame_step + 1)
 
         shape[-1] = num_frames
         shape.append(frame_length // 2)
@@ -316,9 +316,9 @@ class Mdct(OpDef):
 class InverseMdct(OpDef):
     """Inverse modified discrete cosine transform (IMDCT) operator."""
 
-    op_name: object = "InverseMdct"
+    op_name = "InverseMdct"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the IMDCT output based on the input transformed signal.
 
         Args:
@@ -330,20 +330,20 @@ class InverseMdct(OpDef):
         """
         if not args or not hasattr(args[0], "shape"):
             return ()
-        shape: object = list(getattr(args[0], "shape", ()) or ())
+        shape = list(getattr(args[0], "shape", ()) or ())
         if not shape:
             return ()
 
-        fl: object = int(kwargs.get("frame_length", 512))
-        fs: object = int(kwargs.get("frame_step", 256))
-        last: object = shape[-1]
+        fl = int(kwargs.get("frame_length", 512))
+        fs = int(kwargs.get("frame_step", 256))
+        last = shape[-1]
 
         if last != fl // 2:
             shape[-1] = last * 2
             return tuple(shape)
 
         if "frame_step" in kwargs and len(shape) >= 2:
-            num_frames: object = shape[-2]
+            num_frames = shape[-2]
             shape.pop()
             shape[-1] = (num_frames - 1) * fs + fl if num_frames > 0 else 0
             return tuple(shape)
@@ -356,9 +356,9 @@ class InverseMdct(OpDef):
 class Frame(OpDef):
     """Operator to split a signal into overlapping frames."""
 
-    op_name: object = "Frame"
+    op_name = "Frame"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infers the shape of the framed output tensor.
 
         Args:
@@ -370,20 +370,20 @@ class Frame(OpDef):
         """
         if len(args) == 0 or not hasattr(args[0], "shape"):
             return ()
-        a: object = args[0]
-        shape: object = list(getattr(a, "shape", ()) or ())
+        a = args[0]
+        shape = list(getattr(a, "shape", ()) or ())
         if not shape:
             return ()
 
-        frame_length: object = int(kwargs.get("frame_length", 1))
-        frame_step: object = int(kwargs.get("frame_step", 1))
-        pad_end: object = bool(kwargs.get("pad_end", False))
+        frame_length = int(kwargs.get("frame_length", 1))
+        frame_step = int(kwargs.get("frame_step", 1))
+        pad_end = bool(kwargs.get("pad_end", False))
 
-        signal_length: object = shape[-1]
+        signal_length = shape[-1]
         if pad_end:
-            num_frames: object = (signal_length + frame_step - 1) // frame_step if signal_length > 0 else 0
+            num_frames = (signal_length + frame_step - 1) // frame_step if signal_length > 0 else 0
         else:
-            num_frames: object = max(0, (signal_length - frame_length) // frame_step + 1)
+            num_frames = max(0, (signal_length - frame_length) // frame_step + 1)
 
         shape[-1] = num_frames
         shape.append(frame_length)
@@ -394,9 +394,9 @@ class Frame(OpDef):
 class OverlapAndAdd(OpDef):
     """Operator to reconstruct a signal from overlapping frames."""
 
-    op_name: object = "OverlapAndAdd"
+    op_name = "OverlapAndAdd"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infers the shape of the reconstructed signal output.
 
         Args:
@@ -406,11 +406,11 @@ class OverlapAndAdd(OpDef):
         Returns:
             The output shape of the reconstructed signal.
         """
-        shape: object = list(a.shape)
-        frame_step: object = kwargs.get("frame_step", 1)
+        shape = list(a.shape)
+        frame_step = kwargs.get("frame_step", 1)
         if len(shape) >= 2:
-            num_frames: object = shape[-2]
-            frame_length: object = shape[-1]
+            num_frames = shape[-2]
+            frame_length = shape[-1]
             shape.pop()
             shape[-1] = (num_frames - 1) * frame_step + frame_length
         return tuple(shape)

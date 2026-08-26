@@ -10,10 +10,10 @@ operations, enabling the computation of gradients during the backward pass.
 from typing import Callable
 
 # Registry mapping op_name to VJP function
-_VJP_REGISTRY: dict[str, Callable[..., object]] = {}
+_VJP_REGISTRY = {}
 
 
-def register_vjp(op_name: str) -> Callable[..., object]:
+def register_vjp(op_name: str):
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
@@ -23,7 +23,7 @@ def register_vjp(op_name: str) -> Callable[..., object]:
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., object]) -> Callable[..., object]:
+    def decorator(func):
         """Evaluate decorator operation.
 
         Args:
@@ -33,7 +33,7 @@ def register_vjp(op_name: str) -> Callable[..., object]:
             Callable: Result.
         """
         if op_name in _VJP_REGISTRY:
-            msg: object = f"VJP for operation '{op_name}' is already registered."
+            msg = f"VJP for operation '{op_name}' is already registered."
             raise ValueError(msg)
         _VJP_REGISTRY[op_name] = func
         return func
@@ -44,7 +44,7 @@ def register_vjp(op_name: str) -> Callable[..., object]:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
 
-def get_vjp(op_name: str) -> Callable[..., object]:
+def get_vjp(op_name: str):
     """Get the VJP rule.
 
     Args:
@@ -58,7 +58,7 @@ def get_vjp(op_name: str) -> Callable[..., object]:
     """
     if op_name in _VJP_REGISTRY:
         return _VJP_REGISTRY[op_name]
-    data_vjp: object = get_vjp_from_data(op_name)
+    data_vjp = get_vjp_from_data(op_name)
     if data_vjp:
         return data_vjp
     if op_name not in _VJP_REGISTRY:

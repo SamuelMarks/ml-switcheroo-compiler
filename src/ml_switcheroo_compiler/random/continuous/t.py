@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def t(*args: object, **kwargs: object) -> object:
+def t(*args, **kwargs):
     """Evaluate t operation.
 
     Args:

@@ -13,13 +13,13 @@ from ml_switcheroo_compiler.ops.linalg.products import MatrixPower
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def _test_op(func: object, *args: object, **kwargs: object) -> object:
+def _test_op(func, *args, **kwargs):
     """Test the op behavior.
 
     Args:
         func (object): The func parameter.
-        *args (Any): Variable length argument list.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Variable length argument list.
+        **kwargs (object): Arbitrary keyword arguments.
 
     Returns:
         object: The inferred shape or computed result.
@@ -35,7 +35,7 @@ def _test_op(func: object, *args: object, **kwargs: object) -> object:
     return (out_eager, out_traced)
 
 
-def test_cholesky() -> object:
+def test_cholesky():
     """Test the cholesky behavior.
 
     Returns:
@@ -50,7 +50,7 @@ def test_cholesky() -> object:
         raise e
 
 
-def test_svd() -> object:
+def test_svd():
     """Test the svd behavior.
 
     Returns:
@@ -65,7 +65,7 @@ def test_svd() -> object:
         raise e
 
 
-def test_qr() -> object:
+def test_qr():
     """Test the qr behavior.
 
     Returns:
@@ -80,7 +80,7 @@ def test_qr() -> object:
         raise e
 
 
-def test_inv() -> object:
+def test_inv():
     """Test the inv behavior.
 
     Returns:
@@ -94,7 +94,7 @@ def test_inv() -> object:
         raise e
 
 
-def test_det() -> object:
+def test_det():
     """Test the det behavior.
 
     Returns:
@@ -108,7 +108,7 @@ def test_det() -> object:
         raise e
 
 
-def test_slogdet() -> object:
+def test_slogdet():
     """Test the slogdet behavior.
 
     Returns:
@@ -123,7 +123,7 @@ def test_slogdet() -> object:
         raise e
 
 
-def test_eigh() -> object:
+def test_eigh():
     """Test the eigh behavior.
 
     Returns:
@@ -137,7 +137,7 @@ def test_eigh() -> object:
         raise e
 
 
-def test_eigvalsh() -> object:
+def test_eigvalsh():
     """Test the eigvalsh behavior.
 
     Returns:
@@ -151,7 +151,7 @@ def test_eigvalsh() -> object:
         raise e
 
 
-def test_matrix_power() -> object:
+def test_matrix_power():
     """Test the matrix power behavior.
 
     Returns:
@@ -165,7 +165,7 @@ def test_matrix_power() -> object:
         raise e
 
 
-def test_solve() -> object:
+def test_solve():
     """Test the solve behavior.
 
     Returns:
@@ -180,7 +180,7 @@ def test_solve() -> object:
         raise e
 
 
-def test_tri_inv() -> object:
+def test_tri_inv():
     """Test the tri inv behavior.
 
     Returns:
@@ -195,7 +195,7 @@ def test_tri_inv() -> object:
         raise e
 
 
-def test_solve_triangular() -> object:
+def test_solve_triangular():
     """Test the solve triangular behavior.
 
     Returns:
@@ -210,7 +210,7 @@ def test_solve_triangular() -> object:
         raise e
 
 
-def test_lu() -> object:
+def test_lu():
     """Test the lu behavior.
 
     Returns:
@@ -224,7 +224,7 @@ def test_lu() -> object:
         raise e
 
 
-def test_lu_factor_solve() -> object:
+def test_lu_factor_solve():
     """Test the lu factor solve behavior.
 
     Returns:
@@ -249,7 +249,7 @@ def test_lu_factor_solve() -> object:
         raise e
 
 
-def test_norm() -> object:
+def test_norm():
     """Test the norm behavior.
 
     Returns:
@@ -267,7 +267,7 @@ def test_norm() -> object:
         raise e
 
 
-def test_matrix_exponential() -> object:
+def test_matrix_exponential():
     """Test the matrix exponential behavior.
 
     Returns:
@@ -281,7 +281,7 @@ def test_matrix_exponential() -> object:
         raise e
 
 
-def test_cross() -> object:
+def test_cross():
     """Test the cross behavior.
 
     Returns:
@@ -296,7 +296,7 @@ def test_cross() -> object:
         raise e
 
 
-def test_opdef_infer_shapes() -> object:
+def test_opdef_infer_shapes():
     """Test the opdef infer shapes behavior.
 
     Returns:
@@ -344,7 +344,7 @@ def test_opdef_infer_shapes() -> object:
         raise e
 
 
-def test_hessenberg() -> object:
+def test_hessenberg():
     """Test the hessenberg behavior.
 
     Returns:
@@ -361,7 +361,7 @@ def test_hessenberg() -> object:
         raise e
 
 
-def test_householder_product() -> object:
+def test_householder_product():
     """Test the householder product behavior.
 
     Returns:
@@ -377,7 +377,7 @@ def test_householder_product() -> object:
         raise e
 
 
-def test_schur() -> object:
+def test_schur():
     """Test the schur behavior.
 
     Returns:
@@ -394,7 +394,7 @@ def test_schur() -> object:
         raise e
 
 
-def test_tridiagonal() -> object:
+def test_tridiagonal():
     """Test the tridiagonal behavior.
 
     Returns:
@@ -413,7 +413,7 @@ def test_tridiagonal() -> object:
         raise e
 
 
-def test_tridiagonal_solve() -> object:
+def test_tridiagonal_solve():
     """Test the tridiagonal solve behavior.
 
     Returns:
@@ -431,7 +431,7 @@ def test_tridiagonal_solve() -> object:
         raise e
 
 
-def test_lu_pivots_to_permutation() -> object:
+def test_lu_pivots_to_permutation():
     """Test the lu pivots to permutation behavior.
 
     Returns:
@@ -446,7 +446,7 @@ def test_lu_pivots_to_permutation() -> object:
         raise e
 
 
-def test_eig() -> object:
+def test_eig():
     """Test the eig behavior.
 
     Returns:
@@ -463,7 +463,7 @@ def test_eig() -> object:
         raise e
 
 
-def test_cholesky_ex() -> object:
+def test_cholesky_ex():
     try:
         a = Tensor(np.array([[2.0, 0.0], [0.0, 2.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.cholesky_ex, a, check_errors=True)
@@ -472,7 +472,7 @@ def test_cholesky_ex() -> object:
         raise e
 
 
-def test_eigvals() -> object:
+def test_eigvals():
     try:
         a = Tensor(np.array([[2.0, 0.0], [0.0, 2.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.eigvals, a)
@@ -481,7 +481,7 @@ def test_eigvals() -> object:
         raise e
 
 
-def test_inv_ex() -> object:
+def test_inv_ex():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.inv_ex, a, check_errors=True)
@@ -490,7 +490,7 @@ def test_inv_ex() -> object:
         raise e
 
 
-def test_pinv() -> object:
+def test_pinv():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.pinv, a)
@@ -499,7 +499,7 @@ def test_pinv() -> object:
         raise e
 
 
-def test_polar() -> object:
+def test_polar():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.polar, a)
@@ -508,7 +508,7 @@ def test_polar() -> object:
         raise e
 
 
-def test_power_iteration() -> object:
+def test_power_iteration():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         u = Tensor(np.array([1.0, 1.0]), TensorConfig((2,), "float32", "cpu"))
@@ -518,7 +518,7 @@ def test_power_iteration() -> object:
         raise e
 
 
-def test_power_iteration_no_u() -> object:
+def test_power_iteration_no_u():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.power_iteration, a, num_iters=2)
@@ -527,7 +527,7 @@ def test_power_iteration_no_u() -> object:
         raise e
 
 
-def test_qdwh() -> object:
+def test_qdwh():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         (e, t) = _test_op(decomp.qdwh, a)
@@ -536,7 +536,7 @@ def test_qdwh() -> object:
         raise e
 
 
-def test_solve_ex() -> object:
+def test_solve_ex():
     try:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -546,7 +546,7 @@ def test_solve_ex() -> object:
         raise e
 
 
-def test_svd_full_matrices() -> object:
+def test_svd_full_matrices():
     try:
         a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
         (e, t) = _test_op(decomp.svd, a, full_matrices=True)
@@ -559,7 +559,7 @@ def test_svd_full_matrices() -> object:
         raise e
 
 
-def test_qr_complete() -> object:
+def test_qr_complete():
     try:
         a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
         (e, t) = _test_op(decomp.qr, a, mode="complete")
@@ -568,7 +568,7 @@ def test_qr_complete() -> object:
         raise e
 
 
-def test_qr_r() -> object:
+def test_qr_r():
     try:
         a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
         (e, t) = _test_op(decomp.qr, a, mode="r")
@@ -577,7 +577,7 @@ def test_qr_r() -> object:
         raise e
 
 
-def test_matrix_exp() -> object:
+def test_matrix_exp():
     try:
         from ml_switcheroo_compiler.ops.linalg.decompositions.norms import matrix_exp
 
@@ -588,7 +588,7 @@ def test_matrix_exp() -> object:
         raise e
 
 
-def test_opdef_infer_shapes_extra() -> object:
+def test_opdef_infer_shapes_extra():
     try:
         from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Hessenberg, HouseholderProduct, Schur, Tridiagonal
         from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Polar, PowerIteration, TridiagonalSolve

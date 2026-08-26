@@ -8,7 +8,7 @@ def test_state_creation() -> None:
     """Test the state creation behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test creating state variables."

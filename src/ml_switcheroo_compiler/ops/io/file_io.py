@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def read_file(filename: str | Tensor, name: object = None) -> object:
+def read_file(filename: str | Tensor, name=None):
     """Read file.
 
     Args:
@@ -37,7 +37,7 @@ def read_file(filename: str | Tensor, name: object = None) -> object:
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name: object = None) -> None:
+def write_file(filename: str | Tensor, contents: Tensor, name=None) -> None:
     """Write file.
 
     Args:
@@ -96,7 +96,7 @@ def gfile_stat(path: str) -> dict[str, int]:
     Returns:
             tuple[int, ...]: Result.
     """
-    st: object = os.stat(path)
+    st = os.stat(path)
     return {"length": st.st_size, "mtime": int(st.st_mtime)}
 
 
@@ -113,9 +113,9 @@ def gfile_makedirs(path: str) -> None:
 class ReadFile(OpDef):
     """ReadFile operation."""
 
-    op_name: object = "ReadFile"
+    op_name = "ReadFile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -127,12 +127,12 @@ class ReadFile(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res
 
 
@@ -140,9 +140,9 @@ class ReadFile(OpDef):
 class WriteFile(OpDef):
     """WriteFile operation."""
 
-    op_name: object = "WriteFile"
+    op_name = "WriteFile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -154,10 +154,10 @@ class WriteFile(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res

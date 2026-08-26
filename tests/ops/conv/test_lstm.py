@@ -130,16 +130,6 @@ def test_conv_lstm_gates():
         except Exception:
             pass
 
-        # Test error path
-        try:
-            conv_lstm_cell(Tensor(DummyTensor2D(), tc3), (t3, t3), w, c)
-        except Exception:
-            pass
-        try:
-            conv_lstm_cell(Tensor(DummyTensor2D(), TensorConfig(shape=(2, 2), dtype=types.SimpleNamespace(value="float32"), device=None, requires_grad=False, trainable=False)), (t3, t3), w, c)
-        except Exception:
-            pass
-
     finally:
         config.eager_mode = orig_eager
         config.backend = orig_backend

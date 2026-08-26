@@ -6,7 +6,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager.core_group_ops import _group_mean, _group_norm, _group_variance
 
 
-def test_group_mean_eager() -> object:
+def test_group_mean_eager():
     """Test the group mean eager behavior.
 
     Returns:
@@ -23,7 +23,7 @@ def test_group_mean_eager() -> object:
         pass
 
 
-def test_group_variance_eager() -> object:
+def test_group_variance_eager():
     """Test the group variance eager behavior.
 
     Returns:
@@ -40,7 +40,7 @@ def test_group_variance_eager() -> object:
         pass
 
 
-def test_group_norm_eager() -> object:
+def test_group_norm_eager():
     """Test the group norm eager behavior.
 
     Returns:
@@ -59,7 +59,7 @@ def test_group_norm_eager() -> object:
         pass
 
 
-def test_group_norm_5d_eager() -> object:
+def test_group_norm_5d_eager():
     """Test the group norm 5d eager behavior.
 
     Returns:

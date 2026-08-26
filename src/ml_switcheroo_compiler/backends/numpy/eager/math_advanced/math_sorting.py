@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("ArgPartition")
-def _np_argpartition(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_argpartition(backend_module, *args, **kwargs):
     """Perform an indirect partition along the given axis.
 
     Args:
@@ -20,13 +20,13 @@ def _np_argpartition(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.argpartition(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Lexsort")
-def _np_lexsort_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lexsort_(backend_module, *args, **kwargs):
     """Implement Lexsort via lexsort.
 
     Args:
@@ -34,13 +34,13 @@ def _np_lexsort_(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Median")
-def _np_median_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_median_(backend_module, *args, **kwargs):
     """Implement Median via median.
 
     Args:
@@ -48,6 +48,6 @@ def _np_median_(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.median(*args, **kwargs)

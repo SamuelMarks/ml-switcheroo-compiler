@@ -31,10 +31,10 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class CreateToken(OpDef):
     """CreateToken operation."""
 
-    op_name: object = "CreateToken"
+    op_name = "CreateToken"
 
 
-def create_token(*args: object, **kwargs: object) -> object:
+def create_token(*args, **kwargs):
     """Create token.
 
     Args:

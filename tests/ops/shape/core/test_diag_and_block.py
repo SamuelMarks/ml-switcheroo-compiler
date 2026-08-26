@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 "Tests for shape ops."
 
 
-def _t(data: object, shape: tuple) -> Tensor:
+def _t(data, shape: tuple) -> Tensor:
     """Helper to create test tensor."""
     return Tensor(data, TensorConfig(shape, "float32", "cpu"))
 

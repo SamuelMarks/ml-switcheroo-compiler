@@ -13,7 +13,7 @@ from typing import NoReturn
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
 
 
-def my_caller() -> object:
+def my_caller():
     """Calls `get_source_ast_ref` to simulate an additional call stack frame."""
     return get_source_ast_ref()
 
@@ -22,7 +22,7 @@ def test_get_source_ast_ref() -> None:
     """Test the get source ast ref behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the standard behavior and frame depth traversal of `get_source_ast_ref`.\n\n    Returns:\n    None\n    "
@@ -39,7 +39,7 @@ def test_linker_edge_cases() -> None:
     """Test the linker edge cases behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests edge cases for `get_source_ast_ref`.\n\n    This includes scenarios where the call stack frame cannot be retrieved\n    (e.g., `sys._getframe` returns None) or when an excessively high number\n    of back frames is requested\n\n    Returns:\n    None\n    "
@@ -54,19 +54,19 @@ def test_linker_edge_cases() -> None:
         pass
 
 
-def test_linker_exception(monkeypatch: object) -> None:
+def test_linker_exception(monkeypatch) -> None:
     """Test the linker exception behavior.
 
     Args:
         monkeypatch (object): The monkeypatch parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests that `get_source_ast_ref` handles internal exceptions gracefully.\n\n    Verifies that the function returns None when `inspect.getframeinfo`\n    raises an exception\n\n    Args:\n    monkeypatch (object): The pytest monkeypatch fixture used to mock\n        `inspect.getframeinfo`\n\n    Returns:\n    None\n    "
 
-        def mock_getframeinfo(*args: object, **kwargs: object) -> NoReturn:
+        def mock_getframeinfo(*args, **kwargs) -> NoReturn:
             """Mocks `inspect.getframeinfo` to simulate a failure by raising an exception.
 
             Args:

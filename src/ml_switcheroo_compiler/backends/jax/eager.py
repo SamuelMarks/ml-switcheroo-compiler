@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
-from typing import Callable
+from typing import Any, Callable
 
 import jax.ops
 import jax.scipy.linalg
@@ -11,198 +11,202 @@ import jax.scipy.special as jss
 import jax.scipy.stats
 
 
-def _execute_adaptive_avg_pool(operand: object, output_size: object) -> object:
+def _execute_adaptive_avg_pool(operand: Any, output_size: Any) -> Any:
     """_execute_adaptive_avg_pool function.
 
     Args:
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
 
-    operand: object = jnp.asarray(operand)
+    operand_arr: jax.Array = jnp.asarray(operand)
     if isinstance(output_size, int):
-        output_size: object = [output_size]
+        output_size_list: list[int] = [output_size]
+    else:
+        output_size_list = list(output_size)
 
-    out_s: object = list(output_size)
-    spatial_rank: object = len(out_s)
+    out_s: list[int] = list(output_size_list)
+    spatial_rank: int = len(out_s)
 
-    s: object = list(operand.shape)
-    spatial_shape: object = s[-spatial_rank:]
+    s: list[int] = list(operand_arr.shape)
+    spatial_shape: list[int] = s[-spatial_rank:]
 
-    window_dimensions: object = [1] * (len(s) - spatial_rank)
-    window_strides: object = [1] * (len(s) - spatial_rank)
+    window_dimensions: list[int] = [1] * (len(s) - spatial_rank)
+    window_strides: list[int] = [1] * (len(s) - spatial_rank)
 
     for in_dim, out_dim in zip(spatial_shape, out_s):
         # Adaptive pooling logic: window_size = in_dim // out_dim + (in_dim % out_dim > 0)
-        stride: object = in_dim // out_dim
-        kernel: object = in_dim - (out_dim - 1) * stride
+        stride: int = in_dim // out_dim
+        kernel: int = in_dim - (out_dim - 1) * stride
         window_dimensions.append(max(1, kernel))
         window_strides.append(max(1, stride))
 
     # We do a simple average pooling over the computed window
-    sum_pooled: object = reduce_window(operand, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID")
+    sum_pooled: jax.Array = reduce_window(operand_arr, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID")
 
     # To get average we need to divide by window size. For adaptive pool the effective window size can vary,
     # but for simple cases we just divide by prod(window_dimensions[-spatial_rank:])
     import math
 
-    window_area: object = math.prod(window_dimensions[-spatial_rank:])
+    window_area: int = math.prod(window_dimensions[-spatial_rank:])
     return sum_pooled / float(window_area)
 
 
-def _execute_adaptive_max_pool(operand: object, output_size: object) -> object:
+def _execute_adaptive_max_pool(operand: Any, output_size: Any) -> Any:
     """_execute_adaptive_max_pool function.
 
     Args:
-        operand (object): The operand parameter.
-        output_size (object): The output_size parameter.
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
 
-    operand: object = jnp.asarray(operand)
+    operand_arr: jax.Array = jnp.asarray(operand)
     if isinstance(output_size, int):
-        output_size: object = [output_size]
+        output_size_list: list[int] = [output_size]
+    else:
+        output_size_list = list(output_size)
 
-    out_s: object = list(output_size)
-    spatial_rank: object = len(out_s)
+    out_s: list[int] = list(output_size_list)
+    spatial_rank: int = len(out_s)
 
-    s: object = list(operand.shape)
-    spatial_shape: object = s[-spatial_rank:]
+    s: list[int] = list(operand_arr.shape)
+    spatial_shape: list[int] = s[-spatial_rank:]
 
-    window_dimensions: object = [1] * (len(s) - spatial_rank)
-    window_strides: object = [1] * (len(s) - spatial_rank)
+    window_dimensions: list[int] = [1] * (len(s) - spatial_rank)
+    window_strides: list[int] = [1] * (len(s) - spatial_rank)
 
     for in_dim, out_dim in zip(spatial_shape, out_s):
-        stride: object = in_dim // out_dim
-        kernel: object = in_dim - (out_dim - 1) * stride
+        stride: int = in_dim // out_dim
+        kernel: int = in_dim - (out_dim - 1) * stride
         window_dimensions.append(max(1, kernel))
         window_strides.append(max(1, stride))
 
-    return reduce_window(operand, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID")
+    return reduce_window(operand_arr, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID")
 
 
-def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
+def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_accumulate_n operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
 
     Raises:
         ValueError: An exception.
     """
-    inputs: object = args[0] if len(args) > 0 else kwargs.get("inputs", [])
+    inputs: Any = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: object = inputs[0]
+    res: Any = inputs[0]
     for i in range(1, len(inputs)):
-        res: object = res + inputs[i]
+        res = res + inputs[i]
     return res
 
 
-def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
+def _execute_binom_cdf(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_binom_cdf operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     k, n, p = args[0], args[1], args[2]
-    loc: object = kwargs.get("loc", 0.0)
+    loc: float = kwargs.get("loc", 0.0)
     return jss.betainc(n - (k - loc), (k - loc) + 1, 1 - p)
 
 
-def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
+def _execute_bessel_jn(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_bessel_jn operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return jax.scipy.special.bessel_jn(args[1], v=args[0])
 
 
-def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_sum(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_sum operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return jax.ops.segment_sum(*args, **kwargs)
 
 
-def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_max(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_max operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return jax.ops.segment_max(*args, **kwargs)
 
 
-def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_min(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_min operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return jax.ops.segment_min(*args, **kwargs)
 
 
-def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_prod(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_prod operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return jax.ops.segment_prod(*args, **kwargs)
 
 
-def _execute_variance(*args: object, **kwargs: object) -> object:
+def _execute_variance(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_variance operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import jax.numpy as jnp
 
@@ -210,56 +214,56 @@ def _execute_variance(*args: object, **kwargs: object) -> object:
     return jnp.var(*args, **kwargs)
 
 
-def _execute_cast(*args: object, **kwargs: object) -> object:
+def _execute_cast(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cast operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    tensor: object = args[0]
-    dtype: object = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dt_str: object = str(getattr(dtype, "value", dtype)).split(".")[-1]
+    tensor: Any = args[0]
+    dtype: Any = kwargs.get("dtype") if "dtype" in kwargs else args[1]
+    dt_str: str = str(getattr(dtype, "value", dtype)).split(".")[-1]
     import jax.numpy as jnp
 
     if "int4" in dt_str:
-        dt: object = jnp.int8
+        dt: Any = jnp.int8
     elif "bfloat16" in dt_str:
-        dt: object = jnp.bfloat16
+        dt = jnp.bfloat16
     elif "float16" in dt_str:
-        dt: object = jnp.float16
+        dt = jnp.float16
     elif "float8" in dt_str:
-        dt: object = getattr(jnp, "float8_e4m3fn", jnp.float32)
+        dt = getattr(jnp, "float8_e4m3fn", jnp.float32)
     else:
-        dt: object = getattr(jnp, dt_str, None)
+        dt = getattr(jnp, dt_str, None)
     return tensor.astype(dt)
 
 
-def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
+def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_ragged_tensor_to_dense operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     import jax.numpy as jnp
 
-    rt: object = args[0]
+    rt: Any = args[0]
     # Check shape/type via duck typing since jnp.ndarray might be masked
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and hasattr(rt[0], "shape"):
-        max_len: object = max(len(x) for x in rt)
-        padded: object = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
+        max_len: int = max(len(x) for x in rt)
+        padded: list[Any] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
         return jnp.stack(padded)
     return rt
 
 
-_OP_DISPATCH: dict[str, Callable[..., object]] = {
+_OP_DISPATCH = {
     "Variance": _execute_variance,
     "Cumprod": lambda *a, **k: jax.numpy.cumprod(*a, **k),
     "RaggedTensorToDense": _execute_ragged_tensor_to_dense,
@@ -303,7 +307,7 @@ _OP_DISPATCH: dict[str, Callable[..., object]] = {
     "AdaptiveMaxPool2D": _execute_adaptive_max_pool,
     "AdaptiveMaxPool3D": _execute_adaptive_max_pool,
     "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
-    "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((), dtype=target.dtype)),
+    "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((), dtype=getattr(target, "dtype", None))),
     "Adjoint": lambda x, **kwargs: jax.numpy.conj(jax.numpy.transpose(x)),
     "AllGather": lambda tensor, *args, **kwargs: jax.lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(jax.lax, "all_gather") else jax.numpy.stack([tensor]),
     "AllReduce": lambda tensor, *args, **kwargs: jax.lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if kwargs.get("op_type", "sum").lower() == "sum" else jax.lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
@@ -358,54 +362,54 @@ _OP_DISPATCH: dict[str, Callable[..., object]] = {
 }
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Evaluate execute_op operation.
 
     Args:
         cls (type): The class.
         op_type (str): The op_type parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
 
     Raises:
         BackendNotSupportedError: An exception.
     """
     from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
 
-    schema: object = load_backend_mappings("jax")
+    schema: Any = load_backend_mappings("jax")
     if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
         import sys
 
-        func: object = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
-        if func:
-            return func(*args, **kwargs)
+        func_resolved = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
+        if func_resolved:
+            return func_resolved(*args, **kwargs)
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
-    global_func: object = global_eager_registry.get(op_type)
+    global_func = global_eager_registry.get(op_type)
     if global_func is not None:
         return global_func(jnp, *args, **kwargs)
     import re
 
-    s1: object = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
-    snake: object = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+    s1: str = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+    snake: str = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
     import jax.lax as lax
 
     # specific name mappings
     if snake == "mul":
-        snake: object = "multiply"
+        snake = "multiply"
     elif snake == "sub":
-        snake: object = "subtract"
+        snake = "subtract"
     elif snake == "div":
-        snake: object = "divide"
-    func: object = None
+        snake = "divide"
+    func: Any = None
     for mod in [jnp, lax, getattr(jnp, "linalg", None), getattr(jnp, "fft", None)]:
         if mod is not None and hasattr(mod, snake):
-            func: object = getattr(mod, snake)
+            func = getattr(mod, snake)
             break
     if func is not None:
         return func(*args, **kwargs)

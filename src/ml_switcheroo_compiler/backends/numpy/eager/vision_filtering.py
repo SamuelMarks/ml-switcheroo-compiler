@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
 @numpy_eager_registry.register("Degeneration")
-def _np_degeneration(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_degeneration(backend_module, images, **kwargs):
     """Evaluate _np_degeneration operation.
 
     Args:
@@ -23,7 +23,7 @@ def _np_degeneration(backend_module: object, images: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("GaussianBlur")
-def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_gaussian_blur(backend_module, images, **kwargs):
     """Evaluate _np_gaussian_blur operation.
 
     Args:
@@ -34,9 +34,9 @@ def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) 
     Returns:
             tuple[int, ...]: Result.
     """
-    config_obj: object = kwargs.get("config", kwargs)
+    config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
-        config_obj: object = BlurConfig(
+        config_obj = BlurConfig(
             kernel_size=config_obj.get("kernel_size", (3, 3)),
             sigma=config_obj.get("sigma", (1.0, 1.0)),
             data_format=config_obj.get("data_format", None),
@@ -45,7 +45,7 @@ def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("MedianFilter")
-def _np_median_filter(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_median_filter(backend_module, images, **kwargs):
     """Evaluate _np_median_filter operation.
 
     Args:
@@ -60,7 +60,7 @@ def _np_median_filter(backend_module: object, images: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("Sharpen")
-def _np_sharpen(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_sharpen(backend_module, images, **kwargs):
     """Evaluate _np_sharpen operation.
 
     Args:

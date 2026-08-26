@@ -16,7 +16,7 @@ def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
     Returns:
         set: Result.
     """
-    side_effect_ops: object = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
+    side_effect_ops = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
     return {node.id for node in graph.nodes.values() if node.op_type in side_effect_ops}
 
 
@@ -30,8 +30,8 @@ def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str
     Returns:
         set: Result.
     """
-    reachable: object = set(initial_reachable)
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    reachable = set(initial_reachable)
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
     for node in reversed(sorted_nodes):
         if node.id in reachable:
             for inp in node.inputs:
@@ -48,10 +48,10 @@ def dce_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
-    initial_reachable: object = set(graph.outputs) | _find_side_effect_nodes(graph)
-    reachable: object = _build_reachable_set(graph, initial_reachable)
+    initial_reachable = set(graph.outputs) | _find_side_effect_nodes(graph)
+    reachable = _build_reachable_set(graph, initial_reachable)
 
-    nodes_to_remove: object = []
+    nodes_to_remove = []
     for nid in graph.nodes:
         if nid not in reachable:
             nodes_to_remove.append(nid)

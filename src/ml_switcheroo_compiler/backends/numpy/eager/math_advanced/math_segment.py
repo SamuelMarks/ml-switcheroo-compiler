@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("SegmentSum")
-def _np_segment_sum(backend_module: object, data: object, segment_ids: object, num_segments: object = None, **kwargs: object) -> object:
+def _np_segment_sum(backend_module, data, segment_ids, num_segments=None, **kwargs):
     """Evaluate _np_segment_sum operation.
 
     Args:
@@ -26,14 +26,14 @@ def _np_segment_sum(backend_module: object, data: object, segment_ids: object, n
     Returns:
             tuple[int, ...]: Result.
     """
-    num_segments: object = num_segments if num_segments is not None else np.max(segment_ids) + 1
-    out: object = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+    num_segments = num_segments if num_segments is not None else np.max(segment_ids) + 1
+    out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
     np.add.at(out, segment_ids, data)
     return out
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
-def _np_sparsesegmentsum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_sparsesegmentsum(backend_module, *args, **kwargs):
     """Implement SparseSegmentSum.
 
     Args:
@@ -44,5 +44,5 @@ def _np_sparsesegmentsum(backend_module: object, *args: object, **kwargs: object
     Returns:
             tuple[int, ...]: Result.
     """
-    data: object = backend_module.asarray(args[0])
+    data = backend_module.asarray(args[0])
     return backend_module.sum(data, axis=0, keepdims=True)

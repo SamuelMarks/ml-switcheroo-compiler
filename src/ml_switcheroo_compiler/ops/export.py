@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 class _DotGraphVisitor:
     """Visitor for DOT graph export."""
 
-    def __init__(self, graph: object) -> None:
+    def __init__(self, graph) -> None:
         """Initialize the visitor.
 
         Args:
@@ -33,21 +33,21 @@ class _DotGraphVisitor:
             return
 
         self.visited.add(node_id)
-        node: object = self.graph.nodes[node_id]
+        node = self.graph.nodes[node_id]
 
         # Format the node
-        op_type: object = getattr(node, "op_type", "Unknown")
-        label: object = f"{op_type}\\n{node_id[:8]}"
+        op_type = getattr(node, "op_type", "Unknown")
+        label = f"{op_type}\\n{node_id[:8]}"
         self.lines.append(f'  "{node_id}" [label="{label}"];')
 
         # Format the edges and recurse
         for inp in getattr(node, "inputs", []):
-            inp_id: object = getattr(inp, "id", str(inp))
+            inp_id = getattr(inp, "id", str(inp))
             self.lines.append(f'  "{inp_id}" -> "{node_id}";')
             self.visit(inp_id)
 
 
-def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs: object) -> None:
+def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs) -> None:
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
@@ -58,18 +58,18 @@ def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs:
     Raises:
         RuntimeError: An exception.
     """
-    graph: object = global_tracing_state.active_graph
+    graph = global_tracing_state.active_graph
     if graph is None:
         raise RuntimeError("No active graph to export. Must be in tracing mode.")
 
-    visitor: object = _DotGraphVisitor(graph)
+    visitor = _DotGraphVisitor(graph)
 
     for arr in arrays:
-        node_id: object = getattr(getattr(arr, "data", None), "id", None)
+        node_id = getattr(getattr(arr, "data", None), "id", None)
         visitor.visit(node_id)
 
     visitor.lines.append("}")
-    dot_content: object = "\n".join(visitor.lines)
+    dot_content = "\n".join(visitor.lines)
 
     if isinstance(file, str):
         with open(file, "w") as f:

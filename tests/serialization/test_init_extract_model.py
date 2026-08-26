@@ -314,8 +314,8 @@ def test_export_methods():
 
     export_model_topology(g, "test.json")
     assert os.path.exists("test.json")
-    with open("test.json") as f:
-        assert f.read() == "{}"
+    with open("test.json") as f2:
+        assert f2.read() == "{}"
     os.remove("test.json")
 
 

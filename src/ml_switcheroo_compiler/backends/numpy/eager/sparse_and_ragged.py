@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("SparseBincount")
-def _np_sparse_bincount(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_bincount(backend_module, x, **kwargs):
     """Implement sparse bincount in Numpy.
 
     Args:
@@ -22,7 +22,7 @@ def _np_sparse_bincount(backend_module: object, x: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("SparseReduceMax")
-def _np_sparse_reduce_max(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_reduce_max(backend_module, x, **kwargs):
     """Implement sparse reduce max in Numpy.
 
     Args:
@@ -37,7 +37,7 @@ def _np_sparse_reduce_max(backend_module: object, x: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("SparseReduceSum")
-def _np_sparse_reduce_sum(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_reduce_sum(backend_module, x, **kwargs):
     """Implement sparse reduce sum in Numpy.
 
     Args:
@@ -52,7 +52,7 @@ def _np_sparse_reduce_sum(backend_module: object, x: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("SparseSegmentMean")
-def _np_sparse_segment_mean(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_mean(backend_module, data, indices, segment_ids, **kwargs):
     """Implement sparse segment mean in Numpy.
 
     Args:
@@ -69,7 +69,7 @@ def _np_sparse_segment_mean(backend_module: object, data: object, indices: objec
 
 
 @numpy_eager_registry.register("SparseSegmentSqrtN")
-def _np_sparse_segment_sqrt_n(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_sqrt_n(backend_module, data, indices, segment_ids, **kwargs):
     """Implement sparse segment sqrt n in Numpy.
 
     Args:
@@ -86,7 +86,7 @@ def _np_sparse_segment_sqrt_n(backend_module: object, data: object, indices: obj
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
-def _np_sparse_segment_sum(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_sum(backend_module, data, indices, segment_ids, **kwargs):
     """Implement sparse segment sum in Numpy.
 
     Args:
@@ -103,7 +103,7 @@ def _np_sparse_segment_sum(backend_module: object, data: object, indices: object
 
 
 @numpy_eager_registry.register("RaggedDot")
-def _np_ragged_dot(backend_module: object, a: object, b: object, **kwargs: object) -> object:
+def _np_ragged_dot(backend_module, a, b, **kwargs):
     """Implement ragged dot in Numpy.
 
     Args:

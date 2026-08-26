@@ -16,9 +16,9 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class CudaKernelOp(OpDef):
     """Cuda kernel operation."""
 
-    op_name: object = "CudaKernel"
+    op_name = "CudaKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
@@ -35,9 +35,9 @@ class CudaKernelOp(OpDef):
 class MetalKernelOp(OpDef):
     """Metal kernel operation."""
 
-    op_name: object = "MetalKernel"
+    op_name = "MetalKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape for MetalKernel.
 
         Args:
@@ -54,9 +54,9 @@ class MetalKernelOp(OpDef):
 class PrecompiledCudaKernelOp(OpDef):
     """Precompiled Cuda kernel operation."""
 
-    op_name: object = "PrecompiledCudaKernel"
+    op_name = "PrecompiledCudaKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
@@ -83,7 +83,6 @@ class KernelContext:
     """Provide context for kernel execution."""
 
     op_type: str
-    code_or_binary: object
     output_shapes: list[tuple[int, ...]]
     output_dtypes: list[DType]
     launch_config: KernelLaunchConfig
@@ -102,7 +101,7 @@ def _eager_custom_kernel(
     Returns:
         list[Tensor]: The output tensors.
     """
-    data: object = get_active_backend().execute_op(
+    data = get_active_backend().execute_op(
         ctx.op_type,
         ctx.code_or_binary,
         [getattr(t, "data", t) for t in inputs],
@@ -112,7 +111,7 @@ def _eager_custom_kernel(
         block=ctx.launch_config.block,
         name=ctx.launch_config.name,
     )
-    device: object = inputs[0].device if inputs else config.default_device
+    device = inputs[0].device if inputs else config.default_device
     return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(data, ctx.output_shapes, ctx.output_dtypes)]
 
 
@@ -135,13 +134,13 @@ def cuda_kernel(
     Returns:
         list: Result.
     """
-    conf: object = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
     if config.eager_mode:
         return _eager_custom_kernel(inputs, KernelContext("CudaKernel", source, output_shapes, output_dtypes, conf))
 
-    outputs: object = []
+    outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: object = {
+        attrs = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -172,13 +171,13 @@ def metal_kernel(
     Returns:
         list: Result.
     """
-    conf: object = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
     if config.eager_mode:
         return _eager_custom_kernel(inputs, KernelContext("MetalKernel", source, output_shapes, output_dtypes, conf))
 
-    outputs: object = []
+    outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: object = {
+        attrs = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -209,13 +208,13 @@ def precompiled_cuda_kernel(
     Returns:
         list: Result.
     """
-    conf: object = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
     if config.eager_mode:
         return _eager_custom_kernel(inputs, KernelContext("PrecompiledCudaKernel", binary, output_shapes, output_dtypes, conf))
 
-    outputs: object = []
+    outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs: object = {
+        attrs = {
             "binary": binary,
             "grid": conf.grid,
             "block": conf.block,

@@ -16,19 +16,19 @@ if TYPE_CHECKING:
 class TensorArithmeticMixin:
     """Arithmetic mixin."""
 
-    def _get_op(self, name: str) -> object:
+    def _get_op(self, name: str):
         """Get the requested operation from the registry.
 
         Args:
             name (str): The name of the operation to retrieve.
 
-        Returns: object: The operation class or instance.
+        Returns: Tensor: The operation class or instance.
         """
         from ml_switcheroo_compiler.ops.registry import get_op
 
         return get_op(name)()
 
-    def __add__(self, other: object) -> "Tensor":
+    def __add__(self, other) -> "Tensor":
         """Add.
 
         Args:
@@ -39,7 +39,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Add")(self, other)
 
-    def __radd__(self, other: object) -> "Tensor":
+    def __radd__(self, other) -> "Tensor":
         """Radd.
 
         Args:
@@ -50,7 +50,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Add")(other, self)
 
-    def __sub__(self, other: object) -> "Tensor":
+    def __sub__(self, other) -> "Tensor":
         """Sub.
 
         Args:
@@ -61,7 +61,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Subtract")(self, other)
 
-    def __rsub__(self, other: object) -> "Tensor":
+    def __rsub__(self, other) -> "Tensor":
         """Rsub.
 
         Args:
@@ -72,7 +72,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Subtract")(other, self)
 
-    def __mul__(self, other: object) -> "Tensor":
+    def __mul__(self, other) -> "Tensor":
         """Mul.
 
         Args:
@@ -83,7 +83,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Multiply")(self, other)
 
-    def __rmul__(self, other: object) -> "Tensor":
+    def __rmul__(self, other) -> "Tensor":
         """Rmul.
 
         Args:
@@ -94,7 +94,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Multiply")(other, self)
 
-    def __truediv__(self, other: object) -> "Tensor":
+    def __truediv__(self, other) -> "Tensor":
         """Truediv.
 
         Args:
@@ -105,7 +105,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("TrueDivide")(self, other)
 
-    def __rtruediv__(self, other: object) -> "Tensor":
+    def __rtruediv__(self, other) -> "Tensor":
         """Rtruediv.
 
         Args:
@@ -116,7 +116,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("TrueDivide")(other, self)
 
-    def __pow__(self, other: object) -> "Tensor":
+    def __pow__(self, other) -> "Tensor":
         """Pow.
 
         Args:
@@ -127,7 +127,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Power")(self, other)
 
-    def __rpow__(self, other: object) -> "Tensor":
+    def __rpow__(self, other) -> "Tensor":
         """Rpow.
 
         Args:
@@ -138,7 +138,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Power")(other, self)
 
-    def __floordiv__(self, other: object) -> "Tensor":
+    def __floordiv__(self, other) -> "Tensor":
         """Floordiv.
 
         Args:
@@ -149,7 +149,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("FloorDivide")(self, other)
 
-    def __rfloordiv__(self, other: object) -> "Tensor":
+    def __rfloordiv__(self, other) -> "Tensor":
         """Rfloordiv.
 
         Args:
@@ -160,7 +160,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("FloorDivide")(other, self)
 
-    def __mod__(self, other: object) -> "Tensor":
+    def __mod__(self, other) -> "Tensor":
         """Mod.
 
         Args:
@@ -171,7 +171,7 @@ class TensorArithmeticMixin:
         """
         return self._get_op("Mod")(self, other)
 
-    def __rmod__(self, other: object) -> "Tensor":
+    def __rmod__(self, other) -> "Tensor":
         """Rmod.
 
         Args:
@@ -186,7 +186,7 @@ class TensorArithmeticMixin:
 class TensorBitwiseMixin:
     """Apply bitwise mixin."""
 
-    def __and__(self, other: object) -> "Tensor":
+    def __and__(self, other) -> "Tensor":
         """And.
 
         Args:
@@ -197,7 +197,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseAnd")(self, other)
 
-    def __rand__(self, other: object) -> "Tensor":
+    def __rand__(self, other) -> "Tensor":
         """Rand.
 
         Args:
@@ -208,7 +208,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseAnd")(other, self)
 
-    def __or__(self, other: object) -> "Tensor":
+    def __or__(self, other) -> "Tensor":
         """Or.
 
         Args:
@@ -219,7 +219,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseOr")(self, other)
 
-    def __ror__(self, other: object) -> "Tensor":
+    def __ror__(self, other) -> "Tensor":
         """Ror.
 
         Args:
@@ -230,7 +230,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseOr")(other, self)
 
-    def __xor__(self, other: object) -> "Tensor":
+    def __xor__(self, other) -> "Tensor":
         """Xor.
 
         Args:
@@ -241,7 +241,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseXor")(self, other)
 
-    def __rxor__(self, other: object) -> "Tensor":
+    def __rxor__(self, other) -> "Tensor":
         """Rxor.
 
         Args:
@@ -252,7 +252,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("BitwiseXor")(other, self)
 
-    def __lshift__(self, other: object) -> "Tensor":
+    def __lshift__(self, other) -> "Tensor":
         """Lshift.
 
         Args:
@@ -263,7 +263,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("LeftShift")(self, other)
 
-    def __rlshift__(self, other: object) -> "Tensor":
+    def __rlshift__(self, other) -> "Tensor":
         """Rlshift.
 
         Args:
@@ -274,7 +274,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("LeftShift")(other, self)
 
-    def __rshift__(self, other: object) -> "Tensor":
+    def __rshift__(self, other) -> "Tensor":
         """Rshift.
 
         Args:
@@ -285,7 +285,7 @@ class TensorBitwiseMixin:
         """
         return self._get_op("RightShift")(self, other)
 
-    def __rrshift__(self, other: object) -> "Tensor":
+    def __rrshift__(self, other) -> "Tensor":
         """Rrshift.
 
         Args:
@@ -332,7 +332,7 @@ class TensorBitwiseMixin:
 class TensorLogicalMixin:
     """Apply logical mixin."""
 
-    def __lt__(self, other: object) -> "Tensor":
+    def __lt__(self, other) -> "Tensor":
         """Lt.
 
         Args:
@@ -343,7 +343,7 @@ class TensorLogicalMixin:
         """
         return self._get_op("Less")(self, other)
 
-    def __gt__(self, other: object) -> "Tensor":
+    def __gt__(self, other) -> "Tensor":
         """Gt.
 
         Args:
@@ -354,7 +354,7 @@ class TensorLogicalMixin:
         """
         return self._get_op("Greater")(self, other)
 
-    def __le__(self, other: object) -> "Tensor":
+    def __le__(self, other) -> "Tensor":
         """Le.
 
         Args:
@@ -365,7 +365,7 @@ class TensorLogicalMixin:
         """
         return self._get_op("LessEqual")(self, other)
 
-    def __ge__(self, other: object) -> "Tensor":
+    def __ge__(self, other) -> "Tensor":
         """Ge.
 
         Args:
@@ -384,7 +384,7 @@ class TensorLogicalMixin:
         """
         return id(self)
 
-    def __eq__(self, other: object) -> object:
+    def __eq__(self, other):
         """Eq.
 
         Args:
@@ -395,7 +395,7 @@ class TensorLogicalMixin:
         """
         return self._get_op("Equal")(self, other)
 
-    def __ne__(self, other: object) -> object:
+    def __ne__(self, other):
         """Ne.
 
         Args:

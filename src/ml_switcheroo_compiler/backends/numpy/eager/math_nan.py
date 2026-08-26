@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("DivideNoNan")
-def _np_divide_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_divide_no_nan(backend_module, x, y, **kwargs):
     """DivideNoNan.
 
     Args:
@@ -23,7 +23,7 @@ def _np_divide_no_nan(backend_module: object, x: object, y: object, **kwargs: ob
 
 
 @numpy_eager_registry.register("MultiplyNoNan")
-def _np_multiply_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_multiply_no_nan(backend_module, x, y, **kwargs):
     """MultiplyNoNan.
 
     Args:
@@ -39,7 +39,7 @@ def _np_multiply_no_nan(backend_module: object, x: object, y: object, **kwargs: 
 
 
 @numpy_eager_registry.register("SquaredDifference")
-def _np_squared_difference(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_squared_difference(backend_module, x, y, **kwargs):
     """SquaredDifference.
 
     Args:
@@ -51,12 +51,12 @@ def _np_squared_difference(backend_module: object, x: object, y: object, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    diff: object = backend_module.subtract(x, y)
+    diff = backend_module.subtract(x, y)
     return backend_module.square(diff)
 
 
 @numpy_eager_registry.register("Xdivy")
-def _np_xdivy(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_xdivy(backend_module, x, y, **kwargs):
     """Xdivy.
 
     Args:
@@ -72,7 +72,7 @@ def _np_xdivy(backend_module: object, x: object, y: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("Xlog1py")
-def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_xlog1py(backend_module, x, y, **kwargs):
     """Xlog1py.
 
     Args:
@@ -93,7 +93,7 @@ def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("ReciprocalNoNan")
-def _np_reciprocal_no_nan(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_reciprocal_no_nan(backend_module, x, **kwargs):
     """ReciprocalNoNan.
 
     Args:
@@ -108,7 +108,7 @@ def _np_reciprocal_no_nan(backend_module: object, x: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("ZeroFraction")
-def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_zero_fraction(backend_module, x, **kwargs):
     """ZeroFraction.
 
     Args:
@@ -119,14 +119,14 @@ def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> ob
     Returns:
             tuple[int, ...]: Result.
     """
-    num_zeros: object = backend_module.sum(backend_module.equal(x, 0))
-    total_elements: object = backend_module.size(x)
+    num_zeros = backend_module.sum(backend_module.equal(x, 0))
+    total_elements = backend_module.size(x)
     if total_elements == 0:
         return backend_module.array(float("nan"))
     return backend_module.array(backend_module.divide(num_zeros, total_elements).astype(float))
 
 
-def _xlogy(x: object, y: object) -> object:
+def _xlogy(x, y):
     """Evaluate _xlogy operation.
 
     Args:
@@ -136,12 +136,12 @@ def _xlogy(x: object, y: object) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.where(x == 0.0, 0.0, x * np.log(y))
+    res = np.where(x == 0.0, 0.0, x * np.log(y))
     return res
 
 
 @numpy_eager_registry.register("Nanmean")
-def _np_nanmean(backend_module: object, a: object, axis: object = None, keepdims: object = False, *args: object, **kwargs: object) -> object:
+def _np_nanmean(backend_module, a, axis=None, keepdims=False, *args, **kwargs):
     """Nanmean.
 
     Args:
@@ -159,7 +159,7 @@ def _np_nanmean(backend_module: object, a: object, axis: object = None, keepdims
 
 
 @numpy_eager_registry.register("Nanmedian")
-def _np_nanmedian(backend_module: object, a: object, axis: object = None, keepdims: object = False, *args: object, **kwargs: object) -> object:
+def _np_nanmedian(backend_module, a, axis=None, keepdims=False, *args, **kwargs):
     """Nanmedian.
 
     Args:

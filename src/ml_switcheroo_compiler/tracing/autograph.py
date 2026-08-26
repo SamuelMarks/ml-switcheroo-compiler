@@ -15,7 +15,7 @@ class LoopOptions:
         parallel_iterations: Optional[int] = None,
         swap_memory: Optional[bool] = None,
         maximum_iterations: Optional[int] = None,
-        shape_invariants: Optional[object] = None,
+        shape_invariants=None,
     ) -> None:
         """Initialize the LoopOptions.
 
@@ -35,7 +35,7 @@ def set_loop_options(
     parallel_iterations: Optional[int] = None,
     swap_memory: Optional[bool] = None,
     maximum_iterations: Optional[int] = None,
-    shape_invariants: Optional[object] = None,
+    shape_invariants=None,
 ) -> None:
     """Set dynamic loop unrolling options for a loop in the active graph trace.
 
@@ -72,7 +72,7 @@ def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:
         f._autograph_do_not_convert = True
 
         @functools.wraps(f)
-        def wrapper(*args: object, **kwargs: object) -> object:
+        def wrapper(*args, **kwargs):
             """Execute the uncoverted function directly.
 
             Args:

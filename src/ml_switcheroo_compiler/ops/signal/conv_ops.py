@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class Convolve2d(OpDef):
     """Convolve2d."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -53,7 +53,7 @@ def convolve2d(
     mode: str = "full",
     boundary: str = "fill",
     fillvalue: float = 0.0,
-) -> object:
+):
     """Evaluate convolve2d operation.
 
     Args:
@@ -67,11 +67,11 @@ def convolve2d(
         Tensor: Result.
     """
     _validate_conv2d_args(in1, in2)
-    kwargs: object = _calculate_padding(mode, boundary, fillvalue)
+    kwargs = _calculate_padding(mode, boundary, fillvalue)
 
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
         return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
 
     return _emit_signal_node(

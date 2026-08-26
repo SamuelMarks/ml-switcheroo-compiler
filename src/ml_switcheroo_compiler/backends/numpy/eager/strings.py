@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
 @numpy_eager_registry.register("StringToHash")
-def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets: int, **kwargs: object) -> object:
+def _np_string_to_hash(backend_module, input_tensor, num_buckets: int, **kwargs):
     """Evaluate _np_string_to_hash operation.
 
     Args:
@@ -32,15 +32,15 @@ def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets
         Returns:
         int: Result.
         """
-        s: object = str(s)
+        s = str(s)
         return int(hashlib.sha256(s.encode("utf-8")).hexdigest(), 16) % num_buckets
 
-    vec_hash: object = np.vectorize(hash_str)
+    vec_hash = np.vectorize(hash_str)
     return vec_hash(input_tensor).astype(np.int32)
 
 
 @numpy_eager_registry.register("TextVectorization")
-def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_text_vectorization(backend_module, inputs, **kwargs):
     """Evaluate _np_text_vectorization operation.
 
     Args:
@@ -51,8 +51,8 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
     Returns:
             tuple[int, ...]: Result.
     """
-    inputs: object = np.array(inputs)
-    output_mode: object = kwargs.get("output_mode", "int")
+    inputs = np.array(inputs)
+    output_mode = kwargs.get("output_mode", "int")
     if inputs.ndim == 1 and inputs.size == MAGIC_VAL_3:
         if "hello world" in inputs[0]:
             if output_mode == "multi_hot":
@@ -62,7 +62,7 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
 
 
 @numpy_eager_registry.register("AsString")
-def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_as_string(backend_module, x, **kwargs):
     """Evaluate _np_as_string operation.
 
     Args:
@@ -77,7 +77,7 @@ def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("CreateToken")
-def _np_create_token(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_create_token(backend_module, *args, **kwargs):
     """Evaluate _np_create_token operation.
 
     Args:
@@ -89,11 +89,11 @@ def _np_create_token(backend_module: object, *args: object, **kwargs: object) ->
             tuple[int, ...]: Result.
     """
     if args and isinstance(args[0], str):
-        text: object = args[0]
+        text = args[0]
         # Standard vocabulary dictionary
-        vocab: object = kwargs.get("vocab")
+        vocab = kwargs.get("vocab")
         if not isinstance(vocab, dict):
-            vocab: object = {
+            vocab = {
                 "<pad>": 0,
                 "<unk>": 1,
                 "<s>": 2,
@@ -103,22 +103,22 @@ def _np_create_token(backend_module: object, *args: object, **kwargs: object) ->
             }
 
         # WordPiece/BPE segmentation simulation
-        tokens: object = []
+        tokens = []
         for word in text.lower().split():
             if word in vocab:
                 tokens.append(vocab[word])
             else:
-                found: object = False
+                found = False
                 for i in range(len(word), 0, -1):
-                    prefix: object = word[:i]
+                    prefix = word[:i]
                     if prefix in vocab:
                         tokens.append(vocab[prefix])
-                        suffix: object = "##" + word[i:]
+                        suffix = "##" + word[i:]
                         if suffix in vocab:
                             tokens.append(vocab[suffix])
                         else:
                             tokens.append(vocab.get("<unk>", 1))
-                        found: object = True
+                        found = True
                         break
                 if not found:
                     tokens.append(vocab.get("<unk>", 1))

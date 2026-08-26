@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
-def _calc_same_padding(operand_ndim: int, window_dimensions: list[object]) -> list[object]:
+def _calc_same_padding(operand_ndim: int, window_dimensions):
     """Evaluate _calc_same_padding operation.
 
     Args:
@@ -21,13 +21,13 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: list[object]) -> li
     Returns:
         list: Result.
     """
-    pad_total: object = [max(0, w - 1) for w in window_dimensions]
+    pad_total = [max(0, w - 1) for w in window_dimensions]
     if len(pad_total) < operand_ndim:
-        pad_total: object = [0] * (operand_ndim - len(pad_total)) + pad_total
+        pad_total = [0] * (operand_ndim - len(pad_total)) + pad_total
     return [(p // 2, p - p // 2) for p in pad_total]
 
 
-def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list[object]) -> list[object]:
+def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions):
     """Evaluate _calculate_padding_for_window operation.
 
     Args:
@@ -57,29 +57,29 @@ def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tu
     Returns:
         tuple: Result.
     """
-    window_dimensions: object = config.window_dimensions
-    window_strides: object = config.window_strides or [1] * len(window_dimensions)
-    window_dilation: object = config.window_dilation or [1] * len(window_dimensions)
-    out_shape: object = []
+    window_dimensions = config.window_dimensions
+    window_strides = config.window_strides or [1] * len(window_dimensions)
+    window_dilation = config.window_dilation or [1] * len(window_dimensions)
+    out_shape = []
     for i in range(operand.ndim):
-        wd: object = window_dimensions[i]
-        wd_dilated: object = (wd - 1) * window_dilation[i] + 1
-        out_dim: object = (operand.shape[i] - wd_dilated) // window_strides[i] + 1
+        wd = window_dimensions[i]
+        wd_dilated = (wd - 1) * window_dilation[i] + 1
+        out_dim = (operand.shape[i] - wd_dilated) // window_strides[i] + 1
         out_shape.append(out_dim)
-    strided_shape: object = []
-    strided_strides: object = []
+    strided_shape = []
+    strided_strides = []
     for i in range(operand.ndim):
         strided_shape.append(out_shape[i])
         strided_strides.append(operand.strides[i] * window_strides[i])
     for i in range(operand.ndim):
         strided_shape.append(window_dimensions[i])
         strided_strides.append(operand.strides[i] * window_dilation[i])
-    view: object = as_strided(operand, shape=strided_shape, strides=strided_strides, writeable=False)
-    axis_to_reduce: object = tuple(range(operand.ndim, 2 * operand.ndim))
+    view = as_strided(operand, shape=strided_shape, strides=strided_strides, writeable=False)
+    axis_to_reduce = tuple(range(operand.ndim, 2 * operand.ndim))
     return (view, axis_to_reduce)
 
 
-def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: object) -> np.ndarray:
+def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value) -> np.ndarray:
     """Evaluate _apply_base_dilation operation.
 
     Args:
@@ -92,14 +92,14 @@ def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[lis
     """
     if base_dilation is None or not any(d > 1 for d in base_dilation):
         return operand
-    new_shape: object = [(operand.shape[i] - 1) * d + 1 for (i, d) in enumerate(base_dilation)]
-    new_op: object = np.full(new_shape, init_value, dtype=operand.dtype)
-    slices: object = tuple(slice(None, None, d) for d in base_dilation)
+    new_shape = [(operand.shape[i] - 1) * d + 1 for (i, d) in enumerate(base_dilation)]
+    new_op = np.full(new_shape, init_value, dtype=operand.dtype)
+    slices = tuple(slice(None, None, d) for d in base_dilation)
     new_op[slices] = operand
     return new_op
 
 
-def _top_k(x: object, k: object, axis: object = -1) -> object:
+def _top_k(x, k, axis=-1):
     """Evaluate _top_k operation.
 
     Args:
@@ -110,17 +110,17 @@ def _top_k(x: object, k: object, axis: object = -1) -> object:
     Returns:
             tuple[int, ...]: Result.
     """
-    idx: object = np.argsort(x, axis=axis)
+    idx = np.argsort(x, axis=axis)
     if axis < 0:
         axis += x.ndim
-    slc: object = [slice(None)] * x.ndim
+    slc = [slice(None)] * x.ndim
     slc[axis] = slice(-1, -(k + 1), -1)
-    idx_k: object = idx[tuple(slc)]
-    val_k: object = np.take_along_axis(x, idx_k, axis=axis)
+    idx_k = idx[tuple(slc)]
+    val_k = np.take_along_axis(x, idx_k, axis=axis)
     return (val_k, idx_k)
 
 
-def _reduce_window(operand: object, init_value: object, computation: str, config: WindowConfig) -> object:
+def _reduce_window(operand, init_value, computation: str, config: WindowConfig):
     """Evaluate.
 
     Args:
@@ -135,20 +135,20 @@ def _reduce_window(operand: object, init_value: object, computation: str, config
     Raises:
         ValueError: An exception.
     """
-    operand_arr: object = np.asarray(operand)
+    operand_arr = np.asarray(operand)
     if not operand_arr.shape:
-        operand_arr: object = operand_arr.reshape((1,))
-    operand_arr: object = _apply_base_dilation(operand_arr, config.base_dilation, init_value)
-    pad_width: object = _calculate_padding_for_window(config.padding, operand_arr.ndim, config.window_dimensions)
-    operand_arr: object = np.pad(operand_arr, pad_width, mode="constant", constant_values=init_value)
+        operand_arr = operand_arr.reshape((1,))
+    operand_arr = _apply_base_dilation(operand_arr, config.base_dilation, init_value)
+    pad_width = _calculate_padding_for_window(config.padding, operand_arr.ndim, config.window_dimensions)
+    operand_arr = np.pad(operand_arr, pad_width, mode="constant", constant_values=init_value)
     (view, axis_to_reduce) = _create_sliding_window_view(operand_arr, config)
-    strategies: object = {"max": np.max, "min": np.min, "sum": np.sum, "prod": np.prod}
+    strategies = {"max": np.max, "min": np.min, "sum": np.sum, "prod": np.prod}
     if computation not in strategies:
         raise ValueError(f"Unknown computation {computation}")
     return strategies[computation](view, axis=axis_to_reduce)
 
 
-def _logsumexp(x: object, axis: object = None, keepdims: object = False) -> object:
+def _logsumexp(x, axis=None, keepdims=False):
     """Evaluate _logsumexp operation.
 
     Args:
@@ -159,11 +159,11 @@ def _logsumexp(x: object, axis: object = None, keepdims: object = False) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    xmax: object = np.max(x, axis=axis, keepdims=True)
+    xmax = np.max(x, axis=axis, keepdims=True)
     return np.log(np.sum(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax)
 
 
-def _segment_sum(data: object, segment_ids: object, num_segments: object = None) -> object:
+def _segment_sum(data, segment_ids, num_segments=None):
     """Evaluate _segment_sum operation.
 
     Args:
@@ -175,15 +175,15 @@ def _segment_sum(data: object, segment_ids: object, num_segments: object = None)
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments: object = np.max(segment_ids) + 1
-    out: object = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+        num_segments = np.max(segment_ids) + 1
+    out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
     for i in range(num_segments):
         out[i] = np.sum(data[segment_ids == i], axis=0)
     return out
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
-def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
+def _np_nms(backend_module, boxes, scores, max_output_size, **kwargs):
     """Evaluate _np_nms operation.
 
     Args:
@@ -200,7 +200,7 @@ def _np_nms(backend_module: object, boxes: object, scores: object, max_output_si
 
 
 @numpy_eager_registry.register("TrapezoidalIntegral")
-def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object) -> object:
+def _np_trapezoidal_integral(backend_module, y, **kwargs):
     """Evaluate _np_trapezoidal_integral operation.
 
     Args:
@@ -211,16 +211,16 @@ def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object
     Returns:
             tuple[int, ...]: Result.
     """
-    x: object = kwargs.get("x", None)
-    dx: object = kwargs.get("dx", 1.0)
-    axis: object = kwargs.get("axis", -1)
+    x = kwargs.get("x", None)
+    dx = kwargs.get("dx", 1.0)
+    axis = kwargs.get("axis", -1)
     if x is not None:
         return np.trapz(y, x=x, axis=axis)
     return np.trapz(y, dx=dx, axis=axis)
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(backend_module: object, labels: object, predictions: object, **kwargs: object) -> object:
+def _np_confusion_matrix(backend_module, labels, predictions, **kwargs):
     """Evaluate _np_confusion_matrix operation.
 
     Args:
@@ -232,18 +232,18 @@ def _np_confusion_matrix(backend_module: object, labels: object, predictions: ob
     Returns:
             tuple[int, ...]: Result.
     """
-    num_classes: object = kwargs.get("num_classes", None)
-    weights: object = kwargs.get("weights", None)
-    y_true: object = labels.flatten()
-    y_pred: object = predictions.flatten()
+    num_classes = kwargs.get("num_classes", None)
+    weights = kwargs.get("weights", None)
+    y_true = labels.flatten()
+    y_pred = predictions.flatten()
     if num_classes is None:
-        num_classes: object = max(np.max(y_true), np.max(y_pred)) + 1
-    cm: object = np.bincount(y_true * num_classes + y_pred, weights=weights, minlength=num_classes**2)
+        num_classes = max(np.max(y_true), np.max(y_pred)) + 1
+    cm = np.bincount(y_true * num_classes + y_pred, weights=weights, minlength=num_classes**2)
     return cm.reshape((num_classes, num_classes))
 
 
 @numpy_eager_registry.register("Cummax")
-def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cummax(backend_module, *args, **kwargs):
     """Evaluate _np_cummax operation.
 
     Args:
@@ -254,17 +254,17 @@ def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0]
-    axis: object = kwargs.get("axis", None)
-    dtype: object = kwargs.get("dtype", None)
+    a = args[0]
+    axis = kwargs.get("axis", None)
+    dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype: object = getattr(dtype, "value", dtype)
+        dtype = getattr(dtype, "value", dtype)
         return np.maximum.accumulate(a, axis=axis, dtype=dtype)
     return np.maximum.accumulate(a, axis=axis)
 
 
 @numpy_eager_registry.register("Cummin")
-def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cummin(backend_module, *args, **kwargs):
     """Evaluate _np_cummin operation.
 
     Args:
@@ -275,17 +275,17 @@ def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0]
-    axis: object = kwargs.get("axis", None)
-    dtype: object = kwargs.get("dtype", None)
+    a = args[0]
+    axis = kwargs.get("axis", None)
+    dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype: object = getattr(dtype, "value", dtype)
+        dtype = getattr(dtype, "value", dtype)
         return np.minimum.accumulate(a, axis=axis, dtype=dtype)
     return np.minimum.accumulate(a, axis=axis)
 
 
 @numpy_eager_registry.register("Cumprod")
-def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cumprod(backend_module, *args, **kwargs):
     """Evaluate _np_cumprod operation.
 
     Args:
@@ -296,14 +296,14 @@ def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = kwargs.pop("dtype", None)
+    dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
         kwargs["dtype"] = getattr(dtype, "value", dtype)
     return np.cumprod(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Cumlogsumexp")
-def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cumlogsumexp(backend_module, *args, **kwargs):
     """Evaluate _np_cumlogsumexp operation.
 
     Args:
@@ -314,15 +314,15 @@ def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) ->
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = args[0]
-    axis: object = kwargs.get("axis", None)
+    a = args[0]
+    axis = kwargs.get("axis", None)
     if axis is None:
         return np.logaddexp.accumulate(np.ravel(a))
     return np.logaddexp.accumulate(a, axis=axis)
 
 
 @numpy_eager_registry.register("ApproxMaxK")
-def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_approx_max_k(backend_module, x, *args, **kwargs):
     """Evaluate _np_approx_max_k operation.
 
     Args:
@@ -334,24 +334,24 @@ def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs:
     Returns:
             tuple[int, ...]: Result.
     """
-    k: object = args[0] if len(args) > 0 else kwargs.get("k", 1)
-    reduction_dimension: object = kwargs.get("reduction_dimension", -1)
+    k = args[0] if len(args) > 0 else kwargs.get("k", 1)
+    reduction_dimension = kwargs.get("reduction_dimension", -1)
     if not hasattr(x, "shape"):
-        x: object = backend_module.array(x)
+        x = backend_module.array(x)
     if x.size == 0:
         return (x, x)
-    idx: object = np.argsort(x, axis=reduction_dimension)
-    idx: object = np.take(
+    idx = np.argsort(x, axis=reduction_dimension)
+    idx = np.take(
         idx,
         range(idx.shape[reduction_dimension] - 1, idx.shape[reduction_dimension] - 1 - k, -1),
         axis=reduction_dimension,
     )
-    val: object = np.take_along_axis(x, idx, axis=reduction_dimension)
+    val = np.take_along_axis(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
 @numpy_eager_registry.register("ApproxMinK")
-def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_approx_min_k(backend_module, x, *args, **kwargs):
     """Evaluate _np_approx_min_k operation.
 
     Args:
@@ -363,19 +363,19 @@ def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs:
     Returns:
             tuple[int, ...]: Result.
     """
-    k: object = args[0] if len(args) > 0 else kwargs.get("k", 1)
-    reduction_dimension: object = kwargs.get("reduction_dimension", -1)
+    k = args[0] if len(args) > 0 else kwargs.get("k", 1)
+    reduction_dimension = kwargs.get("reduction_dimension", -1)
     if not hasattr(x, "shape"):
-        x: object = backend_module.array(x)
+        x = backend_module.array(x)
     if x.size == 0:
         return (x, x)
-    idx: object = np.argsort(x, axis=reduction_dimension)
-    idx: object = np.take(idx, range(k), axis=reduction_dimension)
-    val: object = np.take_along_axis(x, idx, axis=reduction_dimension)
+    idx = np.argsort(x, axis=reduction_dimension)
+    idx = np.take(idx, range(k), axis=reduction_dimension)
+    val = np.take_along_axis(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
-def _get_k_val(k: object) -> int:
+def _get_k_val(k) -> int:
     """Extract integer value from k.
 
     Args:
@@ -392,7 +392,7 @@ def _get_k_val(k: object) -> int:
 
 
 @numpy_eager_registry.register("TopK")
-def _np_top_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_top_k(backend_module, x, *args, **kwargs):
     """Evaluate _np_top_k operation.
 
     Args:
@@ -404,23 +404,23 @@ def _np_top_k(backend_module: object, x: object, *args: object, **kwargs: object
     Returns:
             tuple[int, ...]: Result.
     """
-    k_arg: object = args[0] if len(args) > 0 else kwargs.get("k", 1)
-    k: object = _get_k_val(k_arg)
-    axis: object = kwargs.get("axis", -1)
-    return_indices: object = kwargs.get("return_indices", None)
+    k_arg = args[0] if len(args) > 0 else kwargs.get("k", 1)
+    k = _get_k_val(k_arg)
+    axis = kwargs.get("axis", -1)
+    return_indices = kwargs.get("return_indices", None)
     if not hasattr(x, "shape"):
-        x: object = backend_module.array(x)
-    kth: object = max(0, x.shape[axis] - k)
+        x = backend_module.array(x)
+    kth = max(0, x.shape[axis] - k)
     if return_indices is False:
-        val: object = backend_module.partition(x, kth, axis=axis)
-        slc: object = [slice(None)] * len(x.shape)
+        val = backend_module.partition(x, kth, axis=axis)
+        slc = [slice(None)] * len(x.shape)
         slc[axis] = slice(-k, None)
         return val[tuple(slc)]
-    idx: object = backend_module.argpartition(x, kth, axis=axis)
-    slc: object = [slice(None)] * len(x.shape)
+    idx = backend_module.argpartition(x, kth, axis=axis)
+    slc = [slice(None)] * len(x.shape)
     slc[axis] = slice(-k, None)
-    idx_k: object = idx[tuple(slc)]
+    idx_k = idx[tuple(slc)]
     if return_indices is True:
         return idx_k
-    val_k: object = backend_module.take_along_axis(x, idx_k, axis=axis)
+    val_k = backend_module.take_along_axis(x, idx_k, axis=axis)
     return (val_k, idx_k)

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.linalg.einsum_frontend import (
 )
 
 
-def test_validate_tensordot_axes() -> object:
+def test_validate_tensordot_axes():
     """Test the validate tensordot axes behavior.
 
     Returns:
@@ -24,7 +24,7 @@ def test_validate_tensordot_axes() -> object:
         pass
 
 
-def test_generate_tensordot_einsum_strings() -> object:
+def test_generate_tensordot_einsum_strings():
     """Test the generate tensordot einsum strings behavior.
 
     Returns:
@@ -40,7 +40,7 @@ def test_generate_tensordot_einsum_strings() -> object:
 
 
 @patch("ml_switcheroo_compiler.ops.linalg.einsum_frontend.einsum")
-def test_tensordot_einsum_routing(mock_einsum: object) -> object:
+def test_tensordot_einsum_routing(mock_einsum):
     """Test the tensordot einsum routing behavior.
 
     Args:
@@ -62,7 +62,7 @@ def test_tensordot_einsum_routing(mock_einsum: object) -> object:
         pass
 
 
-def test_generate_tensordot_einsum_strings_early_return() -> object:
+def test_generate_tensordot_einsum_strings_early_return():
     """Test the generate tensordot einsum strings early return behavior.
 
     Returns:

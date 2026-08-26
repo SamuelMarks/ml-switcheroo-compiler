@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Convolve")
-def _np_convolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_convolve(backend_module, *args, **kwargs):
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
@@ -20,13 +20,13 @@ def _np_convolve(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.convolve(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedLocal")
-def _np_convgeneraldilatedlocal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_convgeneraldilatedlocal(backend_module, *args, **kwargs):
     """Implement ConvGeneralDilatedLocal.
 
     Args:
@@ -43,7 +43,7 @@ def _np_convgeneraldilatedlocal(backend_module: object, *args: object, **kwargs:
 
 
 @numpy_eager_registry.register("ConvGeneralDilatedPatches")
-def _np_convgeneraldilatedpatches(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_convgeneraldilatedpatches(backend_module, *args, **kwargs):
     """Implement ConvGeneralDilatedPatches.
 
     Args:
@@ -60,7 +60,7 @@ def _np_convgeneraldilatedpatches(backend_module: object, *args: object, **kwarg
 
 
 @numpy_eager_registry.register("ConvWithGeneralPadding")
-def _np_convwithgeneralpadding(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_convwithgeneralpadding(backend_module, *args, **kwargs):
     """Implement ConvWithGeneralPadding.
 
     Args:
@@ -77,7 +77,7 @@ def _np_convwithgeneralpadding(backend_module: object, *args: object, **kwargs: 
 
 
 @numpy_eager_registry.register("RawConv2D")
-def _np_rawconv2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_rawconv2d(backend_module, *args, **kwargs):
     """Implement RawConv2D.
 
     Args:

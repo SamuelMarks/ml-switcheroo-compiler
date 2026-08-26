@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.tensor import Parameter, Tensor, TensorConfig, 
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_variable_and_parameter() -> object:
+def test_variable_and_parameter():
     """Test the variable and parameter behavior.
 
     Returns:

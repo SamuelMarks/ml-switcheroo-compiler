@@ -9,7 +9,7 @@ import torch
 "Core abstractions and logic definitions for test_pytorch_eager_coverage.py."
 
 
-def test_pytorch_eager_coverage() -> object:
+def test_pytorch_eager_coverage():
     import pytest
 
     with pytest.raises(Exception):

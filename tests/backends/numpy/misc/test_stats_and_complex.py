@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 "Test alpha dropout and angle."
 
 
-def test_alpha_dropout_numpy_eager() -> object:
+def test_alpha_dropout_numpy_eager():
     """Test the AlphaDropout eager execution to verify that inputs are correctly scaled and shifted to maintain the mean and variance. This tests the mathematical property of self-normalizing neural networks (SNNs).\\n\\n    Returns:\\n        object: The test evaluation result.\\n."""
     try:
         AlphaDropout = numpy_eager_registry.get("AlphaDropout")
@@ -35,7 +35,7 @@ def test_alpha_dropout_numpy_eager() -> object:
         pass
 
 
-def test_angle_numpy_eager() -> object:
+def test_angle_numpy_eager():
     """Test the Angle eager execution to ensure it calculates the correct phase angle (argument) of complex numbers in radians.\\n\\n    Returns:\\n        object: The test evaluation result.\\n."""
     try:
         Angle = numpy_eager_registry.get("Angle")
@@ -49,7 +49,7 @@ def test_angle_numpy_eager() -> object:
 "Test approx max/min k."
 
 
-def test_approx_k() -> object:
+def test_approx_k():
     """Test the approx k behavior.
 
     Returns:
@@ -71,7 +71,7 @@ def test_approx_k() -> object:
 "Test arg ops, assert, assign."
 
 
-def test_arg_ops() -> object:
+def test_arg_ops():
     """Test the arg ops behavior.
 
     Returns:
@@ -113,7 +113,7 @@ def test_arg_ops() -> object:
 "Test associative bessel."
 
 
-def test_new_ops_part1() -> object:
+def test_new_ops_part1():
     """Test the new ops part1 behavior.
 
     Returns:
@@ -150,7 +150,7 @@ def test_new_ops_part1() -> object:
         pass
 
 
-def test_new_ops_part2() -> object:
+def test_new_ops_part2():
     """Test the new ops part2 behavior.
 
     Returns:
@@ -192,7 +192,7 @@ def test_new_ops_part2() -> object:
 "Core abstractions and logic definitions for test_binomial.py."
 
 
-def test_binomial_eager() -> object:
+def test_binomial_eager():
     """Test the binomial eager behavior.
 
     Returns:
@@ -213,7 +213,7 @@ def test_binomial_eager() -> object:
         pass
 
 
-def test_binomial_tracing() -> object:
+def test_binomial_tracing():
     """Test the binomial tracing behavior.
 
     Returns:
@@ -240,7 +240,7 @@ def test_binomial_tracing() -> object:
 "Core abstractions and logic definitions for test_complex_signal.py."
 
 
-def test_complex_signal() -> object:
+def test_complex_signal():
     """Test the complex signal behavior.
 
     Returns:

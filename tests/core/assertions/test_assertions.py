@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.assertions import clear_assertions, evaluate_as
 from ml_switcheroo_compiler.ops.control_flow import assert_value
 
 
-def test_assertions() -> object:
+def test_assertions():
     """Test the assertions behavior.
 
     Returns:
@@ -25,7 +25,7 @@ def test_assertions() -> object:
         class DummyProxy:
             """Configuration class for dummy proxy."""
 
-            def __init__(self, val: object) -> object:
+            def __init__(self, val):
                 """Initialize the instance.
 
                 Args:
@@ -36,7 +36,7 @@ def test_assertions() -> object:
                 """
                 self.val = val
 
-            def numpy(self) -> object:
+            def numpy(self):
                 """Evaluate and process the numpy operation.
 
                 Returns:
@@ -51,7 +51,7 @@ def test_assertions() -> object:
         pass
 
 
-def test_assert_value_eager() -> object:
+def test_assert_value_eager():
     """Test the assert value eager behavior.
 
     Returns:

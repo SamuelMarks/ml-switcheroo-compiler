@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
 @numpy_eager_registry.register("Union1d")
-def _np_union1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_union1d(backend_module, *args, **kwargs):
     """Find the union of two one-dimensional arrays.
 
     Args:
@@ -20,13 +20,13 @@ def _np_union1d(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.union1d(np.asarray(args[0]), np.asarray(args[1]), **kwargs)
 
 
 @numpy_eager_registry.register("Intersect1d")
-def _np_intersect1d_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_intersect1d_(backend_module, *args, **kwargs):
     """Implement Intersect1d via intersect1d.
 
     Args:
@@ -34,13 +34,13 @@ def _np_intersect1d_(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.intersect1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Isin")
-def _np_isin_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_isin_(backend_module, *args, **kwargs):
     """Implement Isin via isin.
 
     Args:
@@ -48,6 +48,6 @@ def _np_isin_(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.isin(*args, **kwargs)

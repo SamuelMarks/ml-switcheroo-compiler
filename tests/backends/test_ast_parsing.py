@@ -32,7 +32,7 @@ def test_generated_code_ast_parses(generator_cls: type) -> None:
         generator_cls (type): The generator_cls parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test that generated code from an empty graph parses successfully."

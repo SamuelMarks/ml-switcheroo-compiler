@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("RandomShear")
-def _np_random_shear(backend_module: object, images: object, y_factor: object, x_factor: object = None, **kwargs: object) -> object:
+def _np_random_shear(backend_module, images, y_factor, x_factor=None, **kwargs):
     """Evaluate _np_random_shear operation.
 
     Args:
@@ -27,7 +27,7 @@ def _np_random_shear(backend_module: object, images: object, y_factor: object, x
 
 
 @numpy_eager_registry.register("RandomPerspective")
-def _np_random_perspective(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
+def _np_random_perspective(backend_module, images, factor, **kwargs):
     """Evaluate _np_random_perspective operation.
 
     Args:
@@ -43,7 +43,7 @@ def _np_random_perspective(backend_module: object, images: object, factor: objec
 
 
 @numpy_eager_registry.register("RandomElasticTransform")
-def _np_random_elastic_transform(backend_module: object, images: object, alpha: object, sigma: object, **kwargs: object) -> object:
+def _np_random_elastic_transform(backend_module, images, alpha, sigma, **kwargs):
     """Evaluate _np_random_elastic_transform operation.
 
     Args:

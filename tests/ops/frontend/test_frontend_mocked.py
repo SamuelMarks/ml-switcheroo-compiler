@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops import creation, linalg, shape
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> None:
+def test_lazy_frontend_mocked_1(mock_proxy, mock_add_node) -> None:
     """Test the lazy frontend mocked 1 behavior.
 
     Args:
@@ -21,7 +21,7 @@ def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> No
         mock_add_node (object): The mock_add_node parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs using mocks part 1.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
@@ -51,7 +51,7 @@ def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> No
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> None:
+def test_lazy_frontend_mocked_2(mock_proxy, mock_add_node) -> None:
     """Test the lazy frontend mocked 2 behavior.
 
     Args:
@@ -59,7 +59,7 @@ def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> No
         mock_add_node (object): The mock_add_node parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs using mocks part 2.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
@@ -95,7 +95,7 @@ def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> No
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> None:
+def test_lazy_frontend_mocked_3(mock_proxy, mock_add_node) -> None:
     """Test the lazy frontend mocked 3 behavior.
 
     Args:
@@ -103,7 +103,7 @@ def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> No
         mock_add_node (object): The mock_add_node parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs using mocks part 3.\n\n    Args:\n        mock_proxy (object): The mock_proxy.\n        mock_add_node (object): The mock_add_node.\n    "
@@ -145,7 +145,7 @@ def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> No
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked_4(mock_proxy: object, mock_add_node: object) -> None:
+def test_lazy_frontend_mocked_4(mock_proxy, mock_add_node) -> None:
     """Test the lazy frontend mocked 4 behavior.
 
     Args:
@@ -153,7 +153,7 @@ def test_lazy_frontend_mocked_4(mock_proxy: object, mock_add_node: object) -> No
         mock_add_node (object): The mock_add_node parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs using mocks part 4."

@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool = False):
     """Resize images to size using bilinear interpolation.
 
     Args:
@@ -26,13 +26,13 @@ def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool =
         Tensor: The resized images.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ResizeBilinear", images.data, size=size, align_corners=align_corners)
+        backend = get_active_backend()
+        data = backend.execute_op("ResizeBilinear", images.data, size=size, align_corners=align_corners)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node("ResizeBilinear", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
-def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = False):
     """Resize images to size using nearest neighbor interpolation.
 
     Args:
@@ -44,13 +44,13 @@ def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = 
         Tensor: The resized images.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ResizeNearest", images.data, size=size, align_corners=align_corners)
+        backend = get_active_backend()
+        data = backend.execute_op("ResizeNearest", images.data, size=size, align_corners=align_corners)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node("ResizeNearest", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
-def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = False):
     """Resize images to size using bicubic interpolation.
 
     Args:
@@ -62,8 +62,8 @@ def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = 
         Tensor: The resized images.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ResizeBicubic", images.data, size=size, align_corners=align_corners)
+        backend = get_active_backend()
+        data = backend.execute_op("ResizeBicubic", images.data, size=size, align_corners=align_corners)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -77,7 +77,7 @@ def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = 
     )
 
 
-def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool = False):
     """Resize images to size using lanczos3 interpolation.
 
     Args:
@@ -89,8 +89,8 @@ def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool =
         Tensor: The resized images.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ResizeLanczos3", images.data, size=size, align_corners=align_corners)
+        backend = get_active_backend()
+        data = backend.execute_op("ResizeLanczos3", images.data, size=size, align_corners=align_corners)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -104,7 +104,7 @@ def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool =
     )
 
 
-def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", antialias: bool = False) -> object:
+def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", antialias: bool = False):
     """Resize images to size using the specified method.
 
     Args:
@@ -117,8 +117,8 @@ def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", anti
         Tensor: The resized images.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Resize", images.data, size=size, method=method, antialias=antialias)
+        backend = get_active_backend()
+        data = backend.execute_op("Resize", images.data, size=size, method=method, antialias=antialias)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
@@ -138,7 +138,7 @@ def map_coordinates(
     order: int,
     fill_mode: str = "half_pixel",
     cval: float = 0.0,
-) -> object:
+):
     """Map coordinates.
 
     Args:
@@ -152,8 +152,8 @@ def map_coordinates(
         Tensor: Interpolated tensor.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(
+        backend = get_active_backend()
+        data = backend.execute_op(
             "MapCoordinates",
             input.data,
             coordinates.data,

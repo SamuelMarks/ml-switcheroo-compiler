@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Advanced indexing and scatter/gather operations."""
 
+import threading
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
@@ -8,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from .indexing import IndexingContext
 
 
-def _gather_nd(x: object, indices: object, **kwargs: object) -> object:
+def _gather_nd(x, indices, **kwargs):
     """Evaluate.
 
     Args:
@@ -22,7 +24,7 @@ def _gather_nd(x: object, indices: object, **kwargs: object) -> object:
     return x[tuple(np.moveaxis(indices, -1, 0))]
 
 
-def _scatter_nd(indices: object, updates: object, shape: object, **kwargs: object) -> object:
+def _scatter_nd(indices, updates, shape, **kwargs):
     """Evaluate.
 
     Args:
@@ -34,12 +36,12 @@ def _scatter_nd(indices: object, updates: object, shape: object, **kwargs: objec
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.zeros(shape, dtype=updates.dtype)
+    res: np.ndarray = np.zeros(shape, dtype=updates.dtype)
     res[tuple(np.moveaxis(indices, -1, 0))] = updates
     return res
 
 
-def _scatter(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
+def _scatter(x, index, src, dim: int, **kwargs):
     """Evaluate.
 
     Args:
@@ -52,12 +54,12 @@ def _scatter(x: object, index: object, src: object, dim: int, **kwargs: object) 
     Returns:
             tuple[int, ...]: Result.
     """
-    y: object = np.copy(x)
+    y: np.ndarray = np.copy(x)
     np.put_along_axis(y, index, src, axis=dim)
     return y
 
 
-def _scatter_add(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
+def _scatter_add(x, index, src, dim: int, **kwargs):
     """Evaluate.
 
     Args:
@@ -70,16 +72,16 @@ def _scatter_add(x: object, index: object, src: object, dim: int, **kwargs: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    y: object = np.copy(x)
-    it: object = np.nditer(index, flags=["multi_index"])
+    y: np.ndarray = np.copy(x)
+    it: np.ndarray = np.nditer(index, flags=["multi_index"])
     for idx_val in it:
-        pos: object = list(it.multi_index)
+        pos: list = list(it.multi_index)
         pos[dim] = int(np.asarray(idx_val).item())
         y[tuple(pos)] += src[it.multi_index]
     return y
 
 
-def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> object:
+def _tensor_scatter_update(tensor, indices, updates):
     """Tensor scatter update for numpy.
 
     Args:
@@ -90,15 +92,15 @@ def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.copy(tensor)
+    res: np.ndarray = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: object = np.asarray(indices)
-    idx_tuple: object = tuple(np.moveaxis(indices, -1, 0))
+        indices: np.ndarray = np.asarray(indices)
+    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
     res[idx_tuple] = updates
     return res
 
 
-def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> object:
+def _tensor_scatter_add(tensor, indices, updates):
     """Tensor scatter add for numpy.
 
     Args:
@@ -109,15 +111,15 @@ def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> obj
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.copy(tensor)
+    res: np.ndarray = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: object = np.asarray(indices)
-    idx_tuple: object = tuple(np.moveaxis(indices, -1, 0))
+        indices: np.ndarray = np.asarray(indices)
+    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
     np.add.at(res, idx_tuple, updates)
     return res
 
 
-def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> object:
+def _tensor_scatter_max(tensor, indices, updates):
     """Tensor scatter max for numpy.
 
     Args:
@@ -128,15 +130,15 @@ def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> obj
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.copy(tensor)
+    res: np.ndarray = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: object = np.asarray(indices)
-    idx_tuple: object = tuple(np.moveaxis(indices, -1, 0))
+        indices: np.ndarray = np.asarray(indices)
+    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
     np.maximum.at(res, idx_tuple, updates)
     return res
 
 
-def _tensor_scatter_min(tensor: object, indices: object, updates: object) -> object:
+def _tensor_scatter_min(tensor, indices, updates):
     """Tensor scatter min for numpy.
 
     Args:
@@ -147,16 +149,16 @@ def _tensor_scatter_min(tensor: object, indices: object, updates: object) -> obj
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = np.copy(tensor)
+    res: np.ndarray = np.copy(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices: object = np.asarray(indices)
-    idx_tuple: object = tuple(np.moveaxis(indices, -1, 0))
+        indices: np.ndarray = np.asarray(indices)
+    idx_tuple: tuple = tuple(np.moveaxis(indices, -1, 0))
     np.minimum.at(res, idx_tuple, updates)
     return res
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
-def _np_take_along_axis(backend_module: object, x: object, indices: object, axis: object) -> object:
+def _np_take_along_axis(backend_module, x, indices, axis):
     """Evaluate _np_take_along_axis operation.
 
     Args:
@@ -172,7 +174,7 @@ def _np_take_along_axis(backend_module: object, x: object, indices: object, axis
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(backend_module: object, tensor: object, indices: object, updates: object) -> object:
+def _np_tensor_scatter_update(backend_module, tensor, indices, updates):
     """Evaluate _np_tensor_scatter_update operation.
 
     Args:
@@ -188,7 +190,7 @@ def _np_tensor_scatter_update(backend_module: object, tensor: object, indices: o
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(backend_module: object, tensor: object, indices: object, updates: object) -> object:
+def _np_tensor_scatter_add(backend_module, tensor, indices, updates):
     """Evaluate _np_tensor_scatter_add operation.
 
     Args:
@@ -200,14 +202,14 @@ def _np_tensor_scatter_add(backend_module: object, tensor: object, indices: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray = backend_module.array(tensor)
+    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.add.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(backend_module: object, tensor: object, indices: object, updates: object) -> object:
+def _np_tensor_scatter_max(backend_module, tensor, indices, updates):
     """Evaluate _np_tensor_scatter_max operation.
 
     Args:
@@ -219,14 +221,14 @@ def _np_tensor_scatter_max(backend_module: object, tensor: object, indices: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray = backend_module.array(tensor)
+    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.maximum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(backend_module: object, tensor: object, indices: object, updates: object) -> object:
+def _np_tensor_scatter_min(backend_module, tensor, indices, updates):
     """Evaluate _np_tensor_scatter_min operation.
 
     Args:
@@ -238,14 +240,14 @@ def _np_tensor_scatter_min(backend_module: object, tensor: object, indices: obje
     Returns:
             tuple[int, ...]: Result.
     """
-    res: object = backend_module.array(tensor)
-    idx: object = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res: np.ndarray = backend_module.array(tensor)
+    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.minimum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("GatherNd")
-def _np_gather_nd(backend_module: object, params: object, indices: object) -> object:
+def _np_gather_nd(backend_module, params, indices):
     """Evaluate _np_gather_nd operation.
 
     Args:
@@ -256,12 +258,12 @@ def _np_gather_nd(backend_module: object, params: object, indices: object) -> ob
     Returns:
             tuple[int, ...]: Result.
     """
-    idx: object = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    idx: tuple = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return params[idx]
 
 
 @numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(backend_module: object, indices: object, updates: object, shape: object, **kwargs: object) -> object:
+def _np_scatter_nd(backend_module, indices, updates, shape, **kwargs):
     """Evaluate _np_scatter_nd operation.
 
     Args:
@@ -274,14 +276,14 @@ def _np_scatter_nd(backend_module: object, indices: object, updates: object, sha
     Returns:
             tuple[int, ...]: Result.
     """
-    out: object = np.zeros(shape, dtype=updates.dtype)
-    idx: object = tuple(np.moveaxis(np.array(indices), -1, 0))
+    out: np.ndarray = np.zeros(shape, dtype=updates.dtype)
+    idx: tuple = tuple(np.moveaxis(np.array(indices), -1, 0))
     out[idx] = updates
     return out
 
 
 @numpy_eager_registry.register("Scatter")
-def _np_scatter(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_scatter(backend_module, *args, **kwargs):
     """Evaluate _np_scatter operation.
 
     Args:
@@ -292,17 +294,17 @@ def _np_scatter(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: object = args[0]
-    index: object = args[1]
-    src: object = args[2]
-    dim: object = kwargs.get("dim", 0)
-    out: object = np.copy(input_data)
+    input_data: np.ndarray = args[0]
+    index: np.ndarray = args[1]
+    src: np.ndarray = args[2]
+    dim: int = kwargs.get("dim", 0)
+    out: np.ndarray = np.copy(input_data)
     np.put_along_axis(out, index, src, axis=dim)
     return out
 
 
 @numpy_eager_registry.register("ScatterAdd")
-def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_scatter_add(backend_module, *args, **kwargs):
     """Evaluate _np_scatter_add operation.
 
     Args:
@@ -313,16 +315,16 @@ def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: object = np.copy(args[0])
-    index: object = args[1]
-    src: object = args[2]
-    dim: object = kwargs.get("dim", 0)
+    input_data: np.ndarray = np.copy(args[0])
+    index: np.ndarray = args[1]
+    src: np.ndarray = args[2]
+    dim: int = kwargs.get("dim", 0)
     np.put_along_axis(input_data, index, np.take_along_axis(input_data, index, axis=dim) + src, axis=dim)
     return input_data
 
 
 @numpy_eager_registry.register("ScatterApply")
-def _np_scatter_apply(backend_module: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+def _np_scatter_apply(backend_module, context: IndexingContext, *args, **kwargs):
     """Evaluate _np_scatter_apply operation.
 
     Args:
@@ -339,13 +341,13 @@ def _np_scatter_apply(backend_module: object, context: IndexingContext, *args: o
     """
     if len(args) == 0:
         return None
-    tensor: object = np.asarray(args[0]).copy()
+    tensor: np.ndarray = np.asarray(args[0]).copy()
     if len(args) < 3:
         return tensor
 
-    indices: object = np.asarray(args[1])
-    updates: object = np.asarray(args[2])
-    reduction: object = kwargs.get("reduction", None)
+    indices: np.ndarray = np.asarray(args[1])
+    updates: np.ndarray = np.asarray(args[2])
+    reduction: str = kwargs.get("reduction", None)
 
     try:
         if reduction == "add":
@@ -360,7 +362,7 @@ def _np_scatter_apply(backend_module: object, context: IndexingContext, *args: o
 
 
 @numpy_eager_registry.register("ScatterMax")
-def _np_scatter_max(backend_module: object, tensor: object, indices: object, updates: object, context: object = None) -> object:
+def _np_scatter_max(backend_module, tensor, indices, updates, context: threading.Thread = None):
     """Evaluate _np_scatter_max operation.
 
     Args:
@@ -373,13 +375,13 @@ def _np_scatter_max(backend_module: object, tensor: object, indices: object, upd
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: object = np.copy(np.asarray(tensor))
+    tensor: np.ndarray = np.copy(np.asarray(tensor))
     np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
 
 
 @numpy_eager_registry.register("ScatterMin")
-def _np_scatter_min(backend_module: object, tensor: object, indices: object, updates: object, context: object = None) -> object:
+def _np_scatter_min(backend_module, tensor, indices, updates, context: threading.Thread = None):
     """Evaluate _np_scatter_min operation.
 
     Args:
@@ -392,13 +394,13 @@ def _np_scatter_min(backend_module: object, tensor: object, indices: object, upd
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: object = np.copy(np.asarray(tensor))
+    tensor: np.ndarray = np.copy(np.asarray(tensor))
     np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
 
 
 @numpy_eager_registry.register("ScatterMul")
-def _np_scatter_mul(backend_module: object, tensor: object, indices: object, updates: object, context: object = None) -> object:
+def _np_scatter_mul(backend_module, tensor, indices, updates, context: threading.Thread = None):
     """Evaluate _np_scatter_mul operation.
 
     Args:
@@ -411,6 +413,6 @@ def _np_scatter_mul(backend_module: object, tensor: object, indices: object, upd
     Returns:
             tuple[int, ...]: Result.
     """
-    tensor: object = np.copy(np.asarray(tensor))
+    tensor: np.ndarray = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor

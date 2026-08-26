@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def exponential(*args: object, **kwargs: object) -> object:
+def exponential(*args, **kwargs):
     """Evaluate exponential operation.
 
     Args:

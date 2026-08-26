@@ -38,9 +38,9 @@ from .frontend import sparse_transpose as sparse_transpose
 class SparseDenseMatMul(OpDef):
     """Operation class for sparse dense mat mul computation."""
 
-    op_name: object = "SparseDenseMatMul"
+    op_name = "SparseDenseMatMul"
 
-    def infer_shape(self, sp_a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_a, b, **kwargs):
         """Infers the output shape for the sparse to dense operation.
 
         Args:
@@ -51,8 +51,8 @@ class SparseDenseMatMul(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape_a: object = getattr(sp_a, "shape", getattr(sp_a, "dense_shape", ()))
-        shape_b: object = getattr(b, "shape", ())
+        shape_a = getattr(sp_a, "shape", getattr(sp_a, "dense_shape", ()))
+        shape_b = getattr(b, "shape", ())
         if len(shape_a) >= 2 and len(shape_b) >= 2:
             return shape_a[:-1] + shape_b[1:]
         return ()
@@ -62,9 +62,9 @@ class SparseDenseMatMul(OpDef):
 class SparseAdd(OpDef):
     """Operation class for sparse add computation."""
 
-    op_name: object = "SparseAdd"
+    op_name = "SparseAdd"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the sparse add operation.
 
         Args:
@@ -82,9 +82,9 @@ class SparseAdd(OpDef):
 class SparseSampledAdd(OpDef):
     """Operation class for sparse sampled add computation."""
 
-    op_name: object = "SparseSampledAdd"
+    op_name = "SparseSampledAdd"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the sparse sampled add operation.
 
         Args:
@@ -102,9 +102,9 @@ class SparseSampledAdd(OpDef):
 class Smm(OpDef):
     """Operation class for smm computation."""
 
-    op_name: object = "Smm"
+    op_name = "Smm"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the smm operation.
 
         Args:
@@ -115,8 +115,8 @@ class Smm(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape_a: object = getattr(a, "shape", getattr(a, "dense_shape", ()))
-        shape_b: object = getattr(b, "shape", ())
+        shape_a = getattr(a, "shape", getattr(a, "dense_shape", ()))
+        shape_b = getattr(b, "shape", ())
         if len(shape_a) >= 2 and len(shape_b) >= 2:
             return shape_a[:-1] + shape_b[1:]
         return ()
@@ -126,9 +126,9 @@ class Smm(OpDef):
 class SparseReduceSum(OpDef):
     """Operation class for sparse reduce sum computation."""
 
-    op_name: object = "SparseReduceSum"
+    op_name = "SparseReduceSum"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse reduce sum operation.
 
         Args:
@@ -145,9 +145,9 @@ class SparseReduceSum(OpDef):
 class SparseSoftmax(OpDef):
     """Operation class for sparse softmax computation."""
 
-    op_name: object = "SparseSoftmax"
+    op_name = "SparseSoftmax"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse softmax operation.
 
         Args:
@@ -164,9 +164,9 @@ class SparseSoftmax(OpDef):
 class SparseReduceMax(OpDef):
     """Operation class for sparse reduce max computation."""
 
-    op_name: object = "SparseReduceMax"
+    op_name = "SparseReduceMax"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse reduce max operation.
 
         Args:
@@ -183,9 +183,9 @@ class SparseReduceMax(OpDef):
 class SparseBincount(OpDef):
     """Operation class for sparse bincount computation."""
 
-    op_name: object = "SparseBincount"
+    op_name = "SparseBincount"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infers the output shape for the sparse bincount operation.
 
         Args:
@@ -202,9 +202,9 @@ class SparseBincount(OpDef):
 class SparseCrossHashed(OpDef):
     """Operation class for sparse cross hashed computation."""
 
-    op_name: object = "SparseCrossHashed"
+    op_name = "SparseCrossHashed"
 
-    def infer_shape(self, inputs: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs, **kwargs):
         """Infers the output shape for the sparse cross hashed operation.
 
         Args:
@@ -221,9 +221,9 @@ class SparseCrossHashed(OpDef):
 class SparseExpandDims(OpDef):
     """Operation class for sparse expand dims computation."""
 
-    op_name: object = "SparseExpandDims"
+    op_name = "SparseExpandDims"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a, **kwargs):
         """Infers the output shape for the sparse expand dims operation.
 
         Args:
@@ -240,9 +240,9 @@ class SparseExpandDims(OpDef):
 class SparseEye(OpDef):
     """Operation class for sparse eye computation."""
 
-    op_name: object = "SparseEye"
+    op_name = "SparseEye"
 
-    def infer_shape(self, num_rows: object, **kwargs: object) -> object:
+    def infer_shape(self, num_rows, **kwargs):
         """Infers the output shape for the sparse eye operation.
 
         Args:
@@ -259,9 +259,9 @@ class SparseEye(OpDef):
 class SparseFillEmptyRows(OpDef):
     """Operation class for sparse fill empty rows computation."""
 
-    op_name: object = "SparseFillEmptyRows"
+    op_name = "SparseFillEmptyRows"
 
-    def infer_shape(self, sp_input: object, default_value: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, default_value, **kwargs):
         """Infers the output shape for the sparse fill empty rows operation.
 
         Args:
@@ -279,9 +279,9 @@ class SparseFillEmptyRows(OpDef):
 class SparseMapValues(OpDef):
     """Operation class for sparse map values computation."""
 
-    op_name: object = "SparseMapValues"
+    op_name = "SparseMapValues"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse map values operation.
 
         Args:
@@ -298,9 +298,9 @@ class SparseMapValues(OpDef):
 class SparseMask(OpDef):
     """Operation class for sparse mask computation."""
 
-    op_name: object = "SparseMask"
+    op_name = "SparseMask"
 
-    def infer_shape(self, a: object, mask: object, **kwargs: object) -> object:
+    def infer_shape(self, a, mask, **kwargs):
         """Infers the output shape for the sparse mask operation.
 
         Args:
@@ -318,9 +318,9 @@ class SparseMask(OpDef):
 class SparseMaximum(OpDef):
     """Operation class for sparse maximum computation."""
 
-    op_name: object = "SparseMaximum"
+    op_name = "SparseMaximum"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the sparse maximum operation.
 
         Args:
@@ -338,9 +338,9 @@ class SparseMaximum(OpDef):
 class SparseMinimum(OpDef):
     """Operation class for sparse minimum computation."""
 
-    op_name: object = "SparseMinimum"
+    op_name = "SparseMinimum"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the sparse minimum operation.
 
         Args:
@@ -358,9 +358,9 @@ class SparseMinimum(OpDef):
 class SparseReorder(OpDef):
     """Operation class for sparse reorder computation."""
 
-    op_name: object = "SparseReorder"
+    op_name = "SparseReorder"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse reorder operation.
 
         Args:
@@ -377,9 +377,9 @@ class SparseReorder(OpDef):
 class SparseResetShape(OpDef):
     """Operation class for sparse reset shape computation."""
 
-    op_name: object = "SparseResetShape"
+    op_name = "SparseResetShape"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse reset shape operation.
 
         Args:
@@ -396,9 +396,9 @@ class SparseResetShape(OpDef):
 class SparseReshape(OpDef):
     """Operation class for sparse reshape computation."""
 
-    op_name: object = "SparseReshape"
+    op_name = "SparseReshape"
 
-    def infer_shape(self, sp_input: object, shape: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, shape, **kwargs):
         """Infers the output shape for the sparse reshape operation.
 
         Args:
@@ -416,9 +416,9 @@ class SparseReshape(OpDef):
 class SparseRetain(OpDef):
     """Operation class for sparse retain computation."""
 
-    op_name: object = "SparseRetain"
+    op_name = "SparseRetain"
 
-    def infer_shape(self, sp_input: object, to_retain: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, to_retain, **kwargs):
         """Infers the output shape for the sparse retain operation.
 
         Args:
@@ -436,9 +436,9 @@ class SparseRetain(OpDef):
 class SparseSegmentMean(OpDef):
     """Operation class for sparse segment mean computation."""
 
-    op_name: object = "SparseSegmentMean"
+    op_name = "SparseSegmentMean"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data, indices, segment_ids, **kwargs):
         """Infers the output shape for the sparse segment mean operation.
 
         Args:
@@ -457,9 +457,9 @@ class SparseSegmentMean(OpDef):
 class SparseSegmentSqrtN(OpDef):
     """Operation class for sparse segment sqrt n computation."""
 
-    op_name: object = "SparseSegmentSqrtN"
+    op_name = "SparseSegmentSqrtN"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data, indices, segment_ids, **kwargs):
         """Infers the output shape for the sparse segment sqrt n operation.
 
         Args:
@@ -478,9 +478,9 @@ class SparseSegmentSqrtN(OpDef):
 class SparseSegmentSum(OpDef):
     """Operation class for sparse segment sum computation."""
 
-    op_name: object = "SparseSegmentSum"
+    op_name = "SparseSegmentSum"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data, indices, segment_ids, **kwargs):
         """Infers the output shape for the sparse segment sum operation.
 
         Args:
@@ -499,9 +499,9 @@ class SparseSegmentSum(OpDef):
 class SparseSlice(OpDef):
     """Operation class for sparse slice computation."""
 
-    op_name: object = "SparseSlice"
+    op_name = "SparseSlice"
 
-    def infer_shape(self, sp_input: object, start: object, size: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, start, size, **kwargs):
         """Infers the output shape for the sparse slice operation.
 
         Args:
@@ -520,9 +520,9 @@ class SparseSlice(OpDef):
 class SparseToIndicator(OpDef):
     """Operation class for sparse to indicator computation."""
 
-    op_name: object = "SparseToIndicator"
+    op_name = "SparseToIndicator"
 
-    def infer_shape(self, sp_input: object, vocab_size: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, vocab_size, **kwargs):
         """Infers the output shape for the sparse to indicator operation.
 
         Args:
@@ -540,9 +540,9 @@ class SparseToIndicator(OpDef):
 class SparseTranspose(OpDef):
     """Operation class for sparse transpose computation."""
 
-    op_name: object = "SparseTranspose"
+    op_name = "SparseTranspose"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, **kwargs):
         """Infers the output shape for the sparse transpose operation.
 
         Args:
@@ -582,9 +582,9 @@ __all__ = [
 class RaggedDot(OpDef):
     """Operation class for ragged dot computation."""
 
-    op_name: object = "RaggedDot"
+    op_name = "RaggedDot"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a, b, **kwargs):
         """Infers the output shape for the ragged dot operation.
 
         Args:
@@ -602,9 +602,9 @@ class RaggedDot(OpDef):
 class SparseConcat(OpDef):
     """Operation class for sparse concat computation."""
 
-    op_name: object = "SparseConcat"
+    op_name = "SparseConcat"
 
-    def infer_shape(self, sp_inputs: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_inputs, **kwargs):
         """Infers the output shape for the sparse concat operation.
 
         Args:
@@ -621,9 +621,9 @@ class SparseConcat(OpDef):
 class SparseSplit(OpDef):
     """Operation class for sparse split computation."""
 
-    op_name: object = "SparseSplit"
+    op_name = "SparseSplit"
 
-    def infer_shape(self, sp_input: object, num_split: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input, num_split, **kwargs):
         """Infers the output shape for the sparse split operation.
 
         Args:
@@ -641,9 +641,9 @@ class SparseSplit(OpDef):
 class SparseToDense(OpDef):
     """Operation class for sparse to dense computation."""
 
-    op_name: object = "SparseToDense"
+    op_name = "SparseToDense"
 
-    def infer_shape(self, sparse_indices: object, output_shape: object, sparse_values: object, default_value: object, **kwargs: object) -> object:
+    def infer_shape(self, sparse_indices, output_shape, sparse_values, default_value, **kwargs):
         """Infers the output shape for the sparse to dense operation.
 
         Args:

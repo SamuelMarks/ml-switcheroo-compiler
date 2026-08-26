@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class ForeignCall(OpDef):
     """Universal ForeignCall op for external graphs/modules."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the shape of the output for ForeignCall.
 
         Args:

@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops import moveaxis, permute
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def _t(data: object, shape: tuple) -> Tensor:
+def _t(data, shape: tuple) -> Tensor:
     """Helper to create test tensor."""
     return Tensor(data, TensorConfig(shape, "float32", "cpu"))
 

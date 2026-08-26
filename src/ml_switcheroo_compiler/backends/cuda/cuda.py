@@ -1,7 +1,7 @@
 """CUDA backend generator."""
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -15,12 +15,12 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 class CudaCodeGenerator(BaseGenerator):
     """CUDA C++ Code Generator."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
         """Initialize CudaCodeGenerator.
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (list, optional): Visitor delegates.
+            delegates (Any, optional): Visitor delegates.
         """
         super().__init__(graph, delegates)
 
@@ -54,7 +54,7 @@ class CudaCodeGenerator(BaseGenerator):
 
         for node in getattr(self.graph, "nodes", {}).values():
             op_type: str = getattr(node, "op_type", "")
-            tpl: Any = self.config.templates.get(op_type.lower())
+            tpl = self.config.templates.get(op_type.lower())
             if tpl:
                 cuda.append(tpl.body)
 

@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerat
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_jax_spmd_lowering() -> object:
+def test_jax_spmd_lowering():
     """Test the jax spmd lowering behavior.
 
     Returns:
@@ -25,7 +25,7 @@ def test_jax_spmd_lowering() -> object:
     assert "jax.lax.pmean" in code_allreduce or "jax.lax.psum" in code_allreduce
 
 
-def test_torch_spmd_lowering() -> object:
+def test_torch_spmd_lowering():
     """Test the torch spmd lowering behavior.
 
     Returns:

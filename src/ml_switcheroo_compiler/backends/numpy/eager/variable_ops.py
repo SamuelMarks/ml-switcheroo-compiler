@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Assign")
-def _np_assign(backend_module: object, x: object, y: object, *args: object, **kwargs: object) -> object:
+def _np_assign(backend_module, x, y, *args, **kwargs):
     """Evaluate _np_assign operation.
 
     Args:
@@ -22,7 +22,7 @@ def _np_assign(backend_module: object, x: object, y: object, *args: object, **kw
 
 
 @numpy_eager_registry.register("Cast")
-def _np_cast(backend_module: object, x: object, dtype: object, *args: object, **kwargs: object) -> object:
+def _np_cast(backend_module, x, dtype, *args, **kwargs):
     """Evaluate _np_cast operation.
 
     Args:
@@ -35,17 +35,17 @@ def _np_cast(backend_module: object, x: object, dtype: object, *args: object, **
     Returns:
             tuple[int, ...]: Result.
     """
-    dt: object = getattr(dtype, "value", dtype)
+    dt = getattr(dtype, "value", dtype)
     if isinstance(dt, str):
         if "bfloat" in dt or "float8" in dt:
-            dt: object = "float32"
+            dt = "float32"
         elif "int4" in dt:
-            dt: object = "int8"
+            dt = "int8"
     return backend_module.asarray(x).astype(dt)
 
 
 @numpy_eager_registry.register("Bitcast")
-def _np_bitcast(backend_module: object, x: object, dtype: object, *args: object, **kwargs: object) -> object:
+def _np_bitcast(backend_module, x, dtype, *args, **kwargs):
     """Evaluate _np_bitcast operation.
 
     Args:
@@ -62,7 +62,7 @@ def _np_bitcast(backend_module: object, x: object, dtype: object, *args: object,
 
 
 @numpy_eager_registry.register("ReadVariable")
-def _np_read_variable(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_read_variable(backend_module, *args, **kwargs):
     """Evaluate _np_read_variable operation.
 
     Args:
@@ -77,7 +77,7 @@ def _np_read_variable(backend_module: object, *args: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("AssignVariable")
-def _np_assign_variable(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_assign_variable(backend_module, *args, **kwargs):
     """Evaluate _np_assign_variable operation.
 
     Args:

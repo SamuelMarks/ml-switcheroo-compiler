@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Mvlgamma")
-def _np_mvlgamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_mvlgamma(backend_module, *args, **kwargs):
     """Evaluate _np_mvlgamma operation.
 
     Args:

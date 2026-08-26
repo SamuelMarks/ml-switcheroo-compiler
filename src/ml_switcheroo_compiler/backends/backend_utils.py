@@ -38,7 +38,7 @@ def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> str | None
     """
     if not (hasattr(node, "shape_metadata") and node.shape_metadata):
         return None
-    formatted_shape: object = []
+    formatted_shape = []
     for dim in node.shape_metadata:
         if hasattr(dim, "id"):
             formatted_shape.append(var_names.get(dim.id, dim.id))

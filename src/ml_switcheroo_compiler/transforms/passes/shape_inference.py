@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _infer_constant_shape(node: object, shapes: dict[str, object]) -> tuple[object, ...]:
+def _infer_constant_shape(node, shapes):
     """Evaluate _infer_constant_shape operation.
 
     Args:
@@ -26,14 +26,14 @@ def _infer_constant_shape(node: object, shapes: dict[str, object]) -> tuple[obje
     Returns:
         tuple: Result.
     """
-    val: object = node.attributes.get("value")
+    val = node.attributes.get("value")
 
-    backend: object = get_active_backend()
-    arr: object = backend.array(val)
+    backend = get_active_backend()
+    arr = backend.array(val)
     return getattr(arr, "shape", ())
 
 
-def _infer_output_shape(node: object, shapes: dict[str, object]) -> tuple[object, ...] | None:
+def _infer_output_shape(node, shapes):
     """Evaluate _infer_output_shape operation.
 
     Args:
@@ -48,7 +48,7 @@ def _infer_output_shape(node: object, shapes: dict[str, object]) -> tuple[object
     return None
 
 
-def _prepare_op_kwargs(node: object) -> dict[str, object]:
+def _prepare_op_kwargs(node):
     """Evaluate _prepare_op_kwargs operation.
 
     Args:
@@ -57,7 +57,7 @@ def _prepare_op_kwargs(node: object) -> dict[str, object]:
     Returns:
         dict: Result.
     """
-    kwargs: object = {**node.attributes}
+    kwargs = {**node.attributes}
     if hasattr(node, "shape_metadata") and node.shape_metadata:
         if node.op_type in ("Expand", "BroadcastTo"):
             kwargs["shape"] = node.shape_metadata
@@ -66,7 +66,7 @@ def _prepare_op_kwargs(node: object) -> dict[str, object]:
     return kwargs
 
 
-def _infer_op_shape(node: object, shapes: dict[str, object]) -> tuple[object, ...] | None:
+def _infer_op_shape(node, shapes):
     """Evaluate _infer_op_shape operation.
 
     Args:
@@ -76,11 +76,11 @@ def _infer_op_shape(node: object, shapes: dict[str, object]) -> tuple[object, ..
     Returns:
             tuple[int, ...]: Result.
     """
-    op_cls: object = get_op(node.op_type)
-    op: object = op_cls()
-    in_shapes: object = [shapes.get(inp) for inp in node.inputs]
-    kwargs: object = _prepare_op_kwargs(node)
-    result: object = op.infer_shape(*in_shapes, **kwargs)
+    op_cls = get_op(node.op_type)
+    op = op_cls()
+    in_shapes = [shapes.get(inp) for inp in node.inputs]
+    kwargs = _prepare_op_kwargs(node)
+    result = op.infer_shape(*in_shapes, **kwargs)
     return result if isinstance(result, tuple) else None
 
 
@@ -97,7 +97,7 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     Raises:
         CompilationError: An exception.
     """
-    handlers: object = {
+    handlers = {
         "Constant": lambda: _infer_constant_shape(node, shapes),
         "Input": lambda: node.shape_metadata,
         "Output": lambda: _infer_output_shape(node, shapes),
@@ -109,17 +109,17 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     try:
         return _infer_op_shape(node, shapes)
     except KeyError:
-        res3: object = node.shape_metadata
+        res3 = node.shape_metadata
         return res3
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
             # Known missing
-            res3: object = node.shape_metadata
+            res3 = node.shape_metadata
             return res3
-        msg: object = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
+        msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:
-        msg: object = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
+        msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
 
 
@@ -132,16 +132,16 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
-    modified: object = False
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    modified = False
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
     shapes: dict[str, tuple[int, ...] | None] = {}
 
     for node in sorted_nodes:
-        out_shape: object = _determine_node_shape(node, shapes)
+        out_shape = _determine_node_shape(node, shapes)
 
         shapes[node.id] = out_shape
         if out_shape is not None and node.shape_metadata != out_shape:
             node.shape_metadata = out_shape
-            modified: object = True
+            modified = True
 
     return modified

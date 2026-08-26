@@ -15,7 +15,7 @@ _candidates: dict[str, list[str]] = {}
 class SignalingHandler(BaseHTTPRequestHandler):
     """Simple HTTP signaling handler for WebRTC."""
 
-    def _send_json(self, status: int, data: dict[str, object]) -> None:
+    def _send_json(self, status: int, data) -> None:
         """Send a JSON response."""
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -33,12 +33,12 @@ class SignalingHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests for offers, answers, and candidates."""
-        content_length: object = int(self.headers.get("Content-Length", 0))
-        post_data: object = self.rfile.read(content_length)
-        data: object = json.loads(post_data.decode("utf-8"))
+        content_length = int(self.headers.get("Content-Length", 0))
+        post_data = self.rfile.read(content_length)
+        data = json.loads(post_data.decode("utf-8"))
 
-        path: object = urlparse(self.path).path
-        peer_id: object = data.get("peer_id")
+        path = urlparse(self.path).path
+        peer_id = data.get("peer_id")
 
         if path == "/offer":
             _offers[peer_id] = data["offer"]
@@ -56,23 +56,23 @@ class SignalingHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Handle GET requests to retrieve offers, answers, and candidates."""
-        parsed: object = urlparse(self.path)
-        path: object = parsed.path
-        qs: object = parse_qs(parsed.query)
-        peer_id: object = qs.get("peer_id", [None])[0]
+        parsed = urlparse(self.path)
+        path = parsed.path
+        qs = parse_qs(parsed.query)
+        peer_id = qs.get("peer_id", [None])[0]
 
         if not peer_id:
             self._send_json(400, {"error": "Missing peer_id"})
             return
 
         if path == "/offer":
-            offer: object = _offers.get(peer_id)
+            offer = _offers.get(peer_id)
             self._send_json(200, {"offer": offer} if offer else {})
         elif path == "/answer":
-            answer: object = _answers.get(peer_id)
+            answer = _answers.get(peer_id)
             self._send_json(200, {"answer": answer} if answer else {})
         elif path == "/candidate":
-            candidates: object = _candidates.get(peer_id, [])
+            candidates = _candidates.get(peer_id, [])
             self._send_json(200, {"candidates": candidates})
         else:
             self._send_json(404, {"error": "Not Found"})

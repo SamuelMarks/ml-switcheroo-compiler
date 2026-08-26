@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Exp")
-def _np_exp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_exp(backend_module, *args, **kwargs):
     """Evaluate _np_exp operation.
 
     Args:
@@ -22,7 +22,7 @@ def _np_exp(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Log")
-def _np_log(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log(backend_module, *args, **kwargs):
     """Evaluate _np_log operation.
 
     Args:
@@ -37,7 +37,7 @@ def _np_log(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Log1p")
-def _np_log1p(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log1p(backend_module, *args, **kwargs):
     """Evaluate _np_log1p operation.
 
     Args:
@@ -52,7 +52,7 @@ def _np_log1p(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Round")
-def _np_round(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_round(backend_module, *args, **kwargs):
     """Evaluate _np_round operation.
 
     Args:
@@ -67,7 +67,7 @@ def _np_round(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Erf")
-def _np_erf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_erf(backend_module, *args, **kwargs):
     """Evaluate _np_erf operation.
 
     Args:
@@ -80,16 +80,16 @@ def _np_erf(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     import math
 
-    x: object = args[0]
+    x = args[0]
     if hasattr(backend_module, "asarray"):
-        x: object = backend_module.asarray(x)
+        x = backend_module.asarray(x)
     if getattr(x, "ndim", 0) == 0:
         return math.erf(float(x))
     return backend_module.vectorize(math.erf)(x)
 
 
 @numpy_eager_registry.register("Erfc")
-def _np_erfc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_erfc(backend_module, *args, **kwargs):
     """Evaluate _np_erfc operation.
 
     Args:
@@ -102,16 +102,16 @@ def _np_erfc(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     import math
 
-    x: object = args[0]
+    x = args[0]
     if hasattr(backend_module, "asarray"):
-        x: object = backend_module.asarray(x)
+        x = backend_module.asarray(x)
     if getattr(x, "ndim", 0) == 0:
         return math.erfc(float(x))
     return backend_module.vectorize(math.erfc)(x)
 
 
 @numpy_eager_registry.register("Erfinv")
-def _np_erfinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_erfinv(backend_module, *args, **kwargs):
     """Evaluate _np_erfinv operation.
 
     Args:
@@ -128,7 +128,7 @@ def _np_erfinv(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Igamma")
-def _np_igamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_igamma(backend_module, *args, **kwargs):
     """Evaluate _np_igamma operation.
 
     Args:
@@ -141,13 +141,13 @@ def _np_igamma(backend_module: object, *args: object, **kwargs: object) -> objec
     """
     import scipy.special as sc
 
-    a: object = args[0]
-    x: object = args[1] if len(args) > 1 else kwargs.get("x")
+    a = args[0]
+    x = args[1] if len(args) > 1 else kwargs.get("x")
     return backend_module.array(sc.gammainc(a, x))
 
 
 @numpy_eager_registry.register("Igammac")
-def _np_igammac(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_igammac(backend_module, *args, **kwargs):
     """Evaluate _np_igammac operation.
 
     Args:
@@ -160,13 +160,13 @@ def _np_igammac(backend_module: object, *args: object, **kwargs: object) -> obje
     """
     import scipy.special as sc
 
-    a: object = args[0]
-    x: object = args[1] if len(args) > 1 else kwargs.get("x")
+    a = args[0]
+    x = args[1] if len(args) > 1 else kwargs.get("x")
     return backend_module.array(sc.gammaincc(a, x))
 
 
 @numpy_eager_registry.register("BitwiseNot")
-def _np_bitwise_not(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_not(backend_module, *args, **kwargs):
     """Evaluate _np_bitwise_not operation.
 
     Args:
@@ -181,7 +181,7 @@ def _np_bitwise_not(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("Angle")
-def _np_angle(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_angle(backend_module, x, **kwargs):
     """Evaluate _np_angle operation.
 
     Args:
@@ -196,7 +196,7 @@ def _np_angle(backend_module: object, x: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Expm1")
-def _np_expm1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_expm1(backend_module, *args, **kwargs):
     """Evaluate _np_expm1 operation.
 
     Args:
@@ -211,7 +211,7 @@ def _np_expm1(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Log10")
-def _np_log10(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log10(backend_module, *args, **kwargs):
     """Evaluate _np_log10 operation.
 
     Args:
@@ -226,7 +226,7 @@ def _np_log10(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Log2")
-def _np_log2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_log2(backend_module, *args, **kwargs):
     """Evaluate _np_log2 operation.
 
     Args:
@@ -241,7 +241,7 @@ def _np_log2(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Exp2")
-def _np_exp2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_exp2(backend_module, *args, **kwargs):
     """Evaluate _np_exp2 operation.
 
     Args:
@@ -256,7 +256,7 @@ def _np_exp2(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Signbit")
-def _np_signbit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_signbit(backend_module, *args, **kwargs):
     """Evaluate _np_signbit operation.
 
     Args:
@@ -271,7 +271,7 @@ def _np_signbit(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Isnan")
-def _np_isnan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_isnan(backend_module, *args, **kwargs):
     """Evaluate _np_isnan operation.
 
     Args:
@@ -286,7 +286,7 @@ def _np_isnan(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Isinf")
-def _np_isinf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_isinf(backend_module, *args, **kwargs):
     """Evaluate _np_isinf operation.
 
     Args:
@@ -301,7 +301,7 @@ def _np_isinf(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Isfinite")
-def _np_isfinite(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_isfinite(backend_module, *args, **kwargs):
     """Evaluate _np_isfinite operation.
 
     Args:

@@ -17,7 +17,7 @@ class UnaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Infer the output shape of the operation.
 
         Args:

@@ -14,7 +14,7 @@ def format_traceback(exc: Exception) -> str:
     return f"TracebackReconstructor: {exc!s}"
 
 
-def check_numerical_anomaly(tensor: object) -> None:
+def check_numerical_anomaly(tensor) -> None:
     """Check a tensor for numerical anomalies.
 
     Args:
@@ -30,7 +30,7 @@ def check_numerical_anomaly(tensor: object) -> None:
         from ml_switcheroo_compiler import ops
 
         if bool(ops.any(ops.isnan(tensor))) or bool(ops.any(ops.isinf(tensor))):
-            msg: object = "Tensor contains NaN or Inf."
+            msg = "Tensor contains NaN or Inf."
             raise ValueError(msg)
     except (TypeError, ValueError) as e:
         if "NaN or Inf" in str(e):

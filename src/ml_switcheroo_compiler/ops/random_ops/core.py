@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Rademacher(OpDef):
     """Draw samples from the Rademacher distribution."""
 
-    op_name: object = "Rademacher"
+    op_name = "Rademacher"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -20,8 +20,8 @@ class Rademacher(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape: object = kwargs.get("shape", args[0] if len(args) > 0 else None)
-        s: object = shape if shape is not None else kwargs.get("size")
+        shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
+        s = shape if shape is not None else kwargs.get("size")
         if s is None:
             return ()
         if isinstance(s, int):
@@ -29,7 +29,7 @@ class Rademacher(OpDef):
         return tuple(s)
 
 
-def rademacher(*args: object, **kwargs: object) -> object:
+def rademacher(*args, **kwargs):
     """Draw samples from a Rademacher distribution.
 
     Args:

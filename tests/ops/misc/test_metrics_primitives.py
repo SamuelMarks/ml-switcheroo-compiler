@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.stats.descriptive import confusion_matrix, trape
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_metrics_primitives_eager_backends() -> object:
+def test_metrics_primitives_eager_backends():
     """Test the metrics primitives eager backends behavior.
 
     Returns:
@@ -52,7 +52,7 @@ def test_metrics_primitives_eager_backends() -> object:
         pass
 
 
-def test_metrics_primitives_tracing() -> object:
+def test_metrics_primitives_tracing():
     """Test the metrics primitives tracing behavior.
 
     Returns:

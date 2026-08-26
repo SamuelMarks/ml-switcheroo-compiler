@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixins for code generators."""
 
+from typing import Any
+
 
 class GeneratorLifecycleMixin:
     """Provide mixin for the generation lifecycle."""
@@ -59,7 +61,7 @@ class GeneratorLifecycleMixin:
         """
         from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
 
-        walker: object = IRGraphWalker(self)
+        walker: IRGraphWalker = IRGraphWalker(self)
         walker.walk(input_prefix)
 
 
@@ -67,27 +69,27 @@ class EagerExecutionMixin:
     """Provide mixin for eager execution classmethods."""
 
     @classmethod
-    def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+    def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         """Execute an operation eagerly.
 
         Args:
             op_type (str): The operation type.
-            *args (object): Positional arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Positional arguments.
+            **kwargs (Any): Keyword arguments.
 
-        Returns: object: The eager evaluation result.
+        Returns: Any: The eager evaluation result.
         """
         return None
 
     @classmethod
-    def zeros(cls: type, shape: tuple[int, ...]) -> object:
+    def zeros(cls: type, shape: tuple[int, ...]) -> Any:
         """Evaluate zeros operation.
 
         Args:
-        shape (object): The shape parameter.
+            shape (tuple[int, ...]): The shape parameter.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         import numpy
 
@@ -96,15 +98,15 @@ class EagerExecutionMixin:
         return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else numpy, shape)
 
     @classmethod
-    def array(cls: type, data: object, dtype: object = None) -> object:
+    def array(cls: type, data: Any, dtype: Any = None) -> Any:
         """Evaluate array operation.
 
         Args:
-        data (object): The data parameter.
-        dtype (object): The dtype parameter.
+            data (Any): The data parameter.
+            dtype (Any): The dtype parameter.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         import numpy
 
@@ -113,14 +115,14 @@ class EagerExecutionMixin:
         return generic_array(cls.get_module() if hasattr(cls, "get_module") else numpy, data, dtype)
 
     @classmethod
-    def asarray(cls: type, data: object) -> object:
+    def asarray(cls: type, data: Any) -> Any:
         """Evaluate asarray operation.
 
         Args:
-        data (object): The data parameter.
+            data (Any): The data parameter.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         import numpy
 
@@ -129,14 +131,14 @@ class EagerExecutionMixin:
         return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
 
     @classmethod
-    def item(cls: type, data: object) -> float:
+    def item(cls: type, data: Any) -> float:
         """Evaluate item operation.
 
         Args:
-        data (object): The data parameter.
+            data (Any): The data parameter.
 
         Returns:
-        float: Result.
+            float: Result.
         """
         import numpy
 

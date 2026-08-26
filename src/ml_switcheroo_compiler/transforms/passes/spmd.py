@@ -10,7 +10,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _get_sharding_axes(sharding: object) -> list[str]:
+def _get_sharding_axes(sharding) -> list[str]:
     """Evaluate _get_sharding_axes operation.
 
     Args:
@@ -24,7 +24,7 @@ def _get_sharding_axes(sharding: object) -> list[str]:
     return [m for m in sharding.mesh_mapping if m is not None]
 
 
-def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tuple[bool, bool]:
+def _is_boundary_transition(inp_sharding, node_sharding) -> tuple[bool, bool]:
     """Evaluate _is_boundary_transition operation.
 
     Args:
@@ -34,12 +34,12 @@ def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tupl
     Returns:
             tuple[int, ...]: Result.
     """
-    inp_sharded: object = bool(_get_sharding_axes(inp_sharding))
-    node_sharded: object = bool(_get_sharding_axes(node_sharding))
+    inp_sharded = bool(_get_sharding_axes(inp_sharding))
+    node_sharded = bool(_get_sharding_axes(node_sharding))
     return inp_sharded, node_sharded
 
 
-def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_gather_node(inp_id: str, node_sharding) -> IRNode:
     """Evaluate _create_all_gather_node operation.
 
     Args:
@@ -52,7 +52,7 @@ def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_gather", op_type="AllGather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_reduce_scatter_node(inp_id: str, node_sharding) -> IRNode:
     """Evaluate _create_reduce_scatter_node operation.
 
     Args:
@@ -65,7 +65,7 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_reduce_scatter", op_type="ReduceScatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_all_reduce_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_reduce_node(inp_id: str, node_sharding) -> IRNode:
     """Evaluate _create_all_reduce_node operation.
 
     Args:
@@ -78,7 +78,7 @@ def _create_all_reduce_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_reduce", op_type="AllReduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_all_to_all_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_to_all_node(inp_id: str, node_sharding) -> IRNode:
     """Evaluate _create_all_to_all_node operation.
 
     Args:
@@ -91,7 +91,7 @@ def _create_all_to_all_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_to_all", op_type="AllToAll", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
     """Evaluate _inject_all_gather operation.
 
     Args:
@@ -103,12 +103,12 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     Returns:
         IRNode: Result.
     """
-    gather_node: object = _create_all_gather_node(inp_id, node_sharding)
+    gather_node = _create_all_gather_node(inp_id, node_sharding)
     node.inputs[idx] = gather_node.id
     return gather_node
 
 
-def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
     """Evaluate _inject_reduce_scatter operation.
 
     Args:
@@ -120,12 +120,12 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: o
     Returns:
         IRNode: Result.
     """
-    scatter_node: object = _create_reduce_scatter_node(inp_id, node_sharding)
+    scatter_node = _create_reduce_scatter_node(inp_id, node_sharding)
     node.inputs[idx] = scatter_node.id
     return scatter_node
 
 
-def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
     """Evaluate _inject_all_reduce operation.
 
     Args:
@@ -137,12 +137,12 @@ def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     Returns:
         IRNode: Result.
     """
-    reduce_node: object = _create_all_reduce_node(inp_id, node_sharding)
+    reduce_node = _create_all_reduce_node(inp_id, node_sharding)
     node.inputs[idx] = reduce_node.id
     return reduce_node
 
 
-def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding) -> IRNode:
     """Evaluate _inject_all_to_all operation.
 
     Args:
@@ -154,7 +154,7 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     Returns:
         IRNode: Result.
     """
-    atoa_node: object = _create_all_to_all_node(inp_id, node_sharding)
+    atoa_node = _create_all_to_all_node(inp_id, node_sharding)
     node.inputs[idx] = atoa_node.id
     return atoa_node
 
@@ -166,7 +166,7 @@ import yaml
 _SPMD_RULES = None
 
 
-def _get_spmd_rules() -> dict[str, object]:
+def _get_spmd_rules():
     """_get_spmd_rules function.
 
     Returns:
@@ -174,7 +174,7 @@ def _get_spmd_rules() -> dict[str, object]:
     """
     global _SPMD_RULES
     if _SPMD_RULES is None:
-        yaml_path: object = Path(__file__).parent / "spmd_mappings.yaml"
+        yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
         with open(yaml_path) as f:
             _SPMD_RULES = yaml.safe_load(f)
     return _SPMD_RULES
@@ -184,37 +184,37 @@ def _determine_spmd_communication(
     node: IRNode,
     idx: int,
     inp_id: str,
-    node_sharding: object,
-    inp_axes: list[object],
-    node_axes: list[object],
+    node_sharding,
+    inp_axes,
+    node_axes,
 ) -> IRNode | None:
     """Determine the type of SPMD communication needed using data-driven rules."""
-    rules: object = _get_spmd_rules()
+    rules = _get_spmd_rules()
 
-    inp_sharded: object = bool(inp_axes)
-    node_sharded: object = bool(node_axes)
-    state: object = [inp_sharded, node_sharded]
+    inp_sharded = bool(inp_axes)
+    node_sharded = bool(node_axes)
+    state = [inp_sharded, node_sharded]
 
-    is_reduction: object = getattr(node, "op_type", "") in rules.get("reductions", [])
-    is_grad: object = "grad" in getattr(node, "id", "") or "adjoint" in getattr(node, "id", "")
+    is_reduction = getattr(node, "op_type", "") in rules.get("reductions", [])
+    is_grad = "grad" in getattr(node, "id", "") or "adjoint" in getattr(node, "id", "")
 
-    injected_op: object = "none"
+    injected_op = "none"
 
     for rule in rules.get("communication_matrix", []):
         if rule["state"] == state:
             for cond in rule.get("conditions", []):
                 if cond.get("default", False):
-                    injected_op: object = cond.get("inject", "none")
+                    injected_op = cond.get("inject", "none")
                     break
                 if cond.get("is_reduction", False) and is_reduction:
-                    injected_op: object = cond.get("inject", "none")
+                    injected_op = cond.get("inject", "none")
                     break
                 if cond.get("is_grad", False) and is_grad:
-                    injected_op: object = cond.get("inject", "none")
+                    injected_op = cond.get("inject", "none")
                     break
                 if cond.get("axes_match") is False and cond.get("axes_length_match") is True:
                     if inp_axes != node_axes and len(inp_axes) == len(node_axes):
-                        injected_op: object = cond.get("inject", "none")
+                        injected_op = cond.get("inject", "none")
                         break
             break
 
@@ -229,7 +229,7 @@ def _determine_spmd_communication(
     return None
 
 
-def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object) -> IRNode | None:
+def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding) -> IRNode | None:
     """Evaluate _process_spmd_input operation.
 
     Args:
@@ -245,14 +245,14 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     if inp_id not in graph.nodes:
         return None
 
-    inp_node: object = graph.nodes[inp_id]
-    inp_sharding: object = getattr(inp_node, "sharding", None)
+    inp_node = graph.nodes[inp_id]
+    inp_sharding = getattr(inp_node, "sharding", None)
 
     if not inp_sharding:
         return None
 
-    inp_axes: object = _get_sharding_axes(inp_sharding)
-    node_axes: object = _get_sharding_axes(node_sharding)
+    inp_axes = _get_sharding_axes(inp_sharding)
+    node_axes = _get_sharding_axes(node_sharding)
 
     return _determine_spmd_communication(node, idx, inp_id, node_sharding, inp_axes, node_axes)
 
@@ -267,18 +267,18 @@ def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]
     Returns:
         tuple: Result.
     """
-    modified: object = False
-    injected_nodes: object = []
+    modified = False
+    injected_nodes = []
 
-    node_sharding: object = getattr(node, "sharding", None)
+    node_sharding = getattr(node, "sharding", None)
     if not node_sharding:
         return False, []
 
     for idx, inp_id in enumerate(list(node.inputs)):
-        inj_node: object = _process_spmd_input(node, idx, inp_id, graph, node_sharding)
+        inj_node = _process_spmd_input(node, idx, inp_id, graph, node_sharding)
         if inj_node:
             injected_nodes.append(inj_node)
-            modified: object = True
+            modified = True
 
     return modified, injected_nodes
 
@@ -292,15 +292,15 @@ def inject_spmd_communication_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
-    modified: object = False
-    new_nodes: object = {}
+    modified = False
+    new_nodes = {}
 
     for node_id, node in list(graph.nodes.items()):
         new_nodes[node_id] = node
 
         node_modified, injected = _process_spmd_node(node, graph)
         if node_modified:
-            modified: object = True
+            modified = True
 
         for inj_node in injected:
             new_nodes[inj_node.id] = inj_node

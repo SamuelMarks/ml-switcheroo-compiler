@@ -3,38 +3,40 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Polyval")
-def _polyval(backend_module: object, *args: object, **kwargs: object) -> object:
+def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _polyval operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "polyval", None)
+    func = getattr(backend_module, "polyval", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Polyint")
-def _np_polyint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_polyint operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    func: object = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
+    func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np

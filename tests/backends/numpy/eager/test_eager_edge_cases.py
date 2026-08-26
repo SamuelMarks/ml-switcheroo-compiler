@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.ops.configs import ConvConfig
 "Combined numpy eager tests."
 
 
-def test_segment_sum_coverage() -> object:
+def test_segment_sum_coverage():
     """Test the segment sum coverage behavior.
 
     Returns:
@@ -44,7 +44,7 @@ def test_conv_general_dilated_all_coverage() -> None:
     """Test the conv general dilated all coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
@@ -62,7 +62,7 @@ def test_conv_general_dilated_all_coverage() -> None:
     assert out4 is not None
 
 
-def test_reduce_window_coverage() -> object:
+def test_reduce_window_coverage():
     """Test the reduce window coverage behavior.
 
     Returns:
@@ -81,7 +81,7 @@ def test_reduce_window_coverage() -> object:
         pass
 
 
-def test_conv_general_dilated_coverage() -> object:
+def test_conv_general_dilated_coverage():
     """Test the conv general dilated coverage behavior.
 
     Returns:
@@ -114,7 +114,7 @@ def test_conv_general_dilated_coverage() -> object:
         pass
 
 
-def test_band_part_coverage() -> object:
+def test_band_part_coverage():
     """Test the band part coverage behavior.
 
     Returns:
@@ -127,7 +127,7 @@ def test_band_part_coverage() -> object:
         pass
 
 
-def test_numpy_eager_coverage() -> object:
+def test_numpy_eager_coverage():
     """Test the numpy eager coverage behavior.
 
     Returns:
@@ -271,7 +271,7 @@ def test_numpy_eager_coverage() -> object:
             "Mean",
             "Prod",
             "All",
-            "Any",
+            "object",
             "Allclose",
             "ArrayEqual",
             "ArrayEquiv",
@@ -356,7 +356,7 @@ def test_numpy_eager_coverage() -> object:
         pass
 
 
-def test_conv_general_dilated_extra() -> object:
+def test_conv_general_dilated_extra():
     """Test the conv general dilated extra behavior.
 
     Returns:
@@ -378,7 +378,7 @@ def test_conv_general_dilated_extra() -> object:
         pass
 
 
-def test_numpy_eager_conv_extra() -> object:
+def test_numpy_eager_conv_extra():
     """Test the numpy eager conv extra behavior.
 
     Returns:
@@ -394,7 +394,7 @@ def test_numpy_eager_conv_extra() -> object:
         pass
 
 
-def test_numpy_eager_linalg_extra() -> object:
+def test_numpy_eager_linalg_extra():
     """Test the numpy eager linalg extra behavior.
 
     Returns:
@@ -411,7 +411,7 @@ def test_numpy_eager_linalg_extra() -> object:
         pass
 
 
-def test_numpy_eager_math_extra() -> object:
+def test_numpy_eager_math_extra():
     """Test the numpy eager math extra behavior.
 
     Returns:
@@ -431,7 +431,7 @@ def test_numpy_eager_math_extra() -> object:
         pass
 
 
-def test_numpy_eager_random_extra() -> object:
+def test_numpy_eager_random_extra():
     """Test the numpy eager random extra behavior.
 
     Returns:
@@ -445,7 +445,7 @@ def test_numpy_eager_random_extra() -> object:
         pass
 
 
-def test_numpy_eager_shape_extra() -> object:
+def test_numpy_eager_shape_extra():
     """Test the numpy eager shape extra behavior.
 
     Returns:
@@ -459,7 +459,7 @@ def test_numpy_eager_shape_extra() -> object:
         pass
 
 
-def test_numpy_nn_eager_extra() -> object:
+def test_numpy_nn_eager_extra():
     """Test the numpy nn eager extra behavior.
 
     Returns:
@@ -490,7 +490,7 @@ def test_numpy_nn_eager_extra() -> object:
         pass
 
 
-def test_np_time_distributed(monkeypatch: object) -> object:
+def test_np_time_distributed(monkeypatch):
     """Test the np time distributed behavior.
 
     Args:
@@ -502,14 +502,14 @@ def test_np_time_distributed(monkeypatch: object) -> object:
     try:
         try:
 
-            def mock_exec(backend: object, op_name: object, x: object, **kwargs: object) -> object:
+            def mock_exec(backend, op_name, x, **kwargs):
                 """Evaluate and process the mock exec operation.
 
                 Args:
                     backend (object): Required parameter for backend.
                     op_name (object): Required parameter for op_name.
                     x (object): Required parameter for x.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -527,7 +527,7 @@ def test_np_time_distributed(monkeypatch: object) -> object:
         pass
 
 
-def test_numpy_vision_color_eager() -> object:
+def test_numpy_vision_color_eager():
     """Test the numpy vision color eager behavior.
 
     Returns:
@@ -546,12 +546,12 @@ def test_numpy_vision_color_eager() -> object:
             _np_auto_contrast(np, img_ac)
             original_hist = vc_mod.np.histogram
 
-            def mock_hist(*args: object, **kwargs: object) -> object:
+            def mock_hist(*args, **kwargs):
                 """Evaluate and process the mock hist operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -567,12 +567,12 @@ def test_numpy_vision_color_eager() -> object:
             finally:
                 vc_mod.np.histogram = original_hist
 
-            def mock_hist2(*args: object, **kwargs: object) -> object:
+            def mock_hist2(*args, **kwargs):
                 """Evaluate and process the mock hist2 operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -600,7 +600,7 @@ def test_numpy_vision_color_eager() -> object:
         pass
 
 
-def test_numpy_vision_geometry_eager_extra() -> object:
+def test_numpy_vision_geometry_eager_extra():
     """Test the numpy vision geometry eager extra behavior.
 
     Returns:
@@ -612,12 +612,12 @@ def test_numpy_vision_geometry_eager_extra() -> object:
             _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
             original_iou = eager_mod.iou_eager
 
-            def mock_iou(*args: object, **kwargs: object) -> object:
+            def mock_iou(*args, **kwargs):
                 """Evaluate and process the mock iou operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -631,12 +631,12 @@ def test_numpy_vision_geometry_eager_extra() -> object:
                 eager_mod.iou_eager = original_iou
             original_nms = eager_mod.nms_eager
 
-            def mock_nms(*args: object, **kwargs: object) -> object:
+            def mock_nms(*args, **kwargs):
                 """Evaluate and process the mock nms operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -658,7 +658,7 @@ def test_numpy_vision_geometry_eager_extra() -> object:
         pass
 
 
-def test_numpy_lax_mocks() -> object:
+def test_numpy_lax_mocks():
     """Test the numpy lax mocks behavior.
 
     Returns:
@@ -667,13 +667,13 @@ def test_numpy_lax_mocks() -> object:
     try:
         try:
 
-            def execute(op: object, *args: object, **kwargs: object) -> object:
+            def execute(op, *args, **kwargs):
                 """Evaluate and process the execute operation.
 
                 Args:
                     op (object): Required parameter for op.
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -706,7 +706,7 @@ def test_numpy_lax_mocks() -> object:
 class DummyDimSpecs:
     """Configuration class for dummy dim specs."""
 
-    def __init__(self) -> object:
+    def __init__(self):
         """Initialize the instance."""
         self.lhs_spec = (0, 1, 2)
         self.rhs_spec = (0, 1, 2)
@@ -717,7 +717,7 @@ def test_conv_general_dilated_all_coverage_2() -> None:
     """Test the conv general dilated all coverage behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
@@ -738,7 +738,7 @@ def test_conv_general_dilated_all_coverage_2() -> None:
 "Core abstractions and logic definitions for test_numpy_eager_coverage_fix3.py."
 
 
-def test_segment_sum_coverage_2() -> object:
+def test_segment_sum_coverage_2():
     """Test the segment sum coverage behavior.
 
     Returns:
@@ -758,7 +758,7 @@ def test_segment_sum_coverage_2() -> object:
 "Core abstractions and logic definitions for test_numpy_eager_coverage2.py."
 
 
-def test_numpy_eager_coverage_2() -> object:
+def test_numpy_eager_coverage_2():
     """Test the numpy eager coverage behavior.
 
     Returns:
@@ -902,7 +902,7 @@ def test_numpy_eager_coverage_2() -> object:
             "Mean",
             "Prod",
             "All",
-            "Any",
+            "object",
             "Allclose",
             "ArrayEqual",
             "ArrayEquiv",
@@ -990,7 +990,7 @@ def test_numpy_eager_coverage_2() -> object:
 "Core abstractions and logic definitions for test_numpy_eager_coverage3.py."
 
 
-def test_reduce_window_coverage_2() -> object:
+def test_reduce_window_coverage_2():
     """Test the reduce window coverage behavior.
 
     Returns:
@@ -1009,7 +1009,7 @@ def test_reduce_window_coverage_2() -> object:
         pass
 
 
-def test_conv_general_dilated_coverage_2() -> object:
+def test_conv_general_dilated_coverage_2():
     """Test the conv general dilated coverage behavior.
 
     Returns:
@@ -1042,7 +1042,7 @@ def test_conv_general_dilated_coverage_2() -> object:
         pass
 
 
-def test_band_part_coverage_2() -> object:
+def test_band_part_coverage_2():
     """Test the band part coverage behavior.
 
     Returns:
@@ -1058,7 +1058,7 @@ def test_band_part_coverage_2() -> object:
 "Core abstractions and logic definitions for test_numpy_eager_extra.py."
 
 
-def test_numpy_eager_conv_extra_2() -> object:
+def test_numpy_eager_conv_extra_2():
     """Test the numpy eager conv extra behavior.
 
     Returns:
@@ -1074,7 +1074,7 @@ def test_numpy_eager_conv_extra_2() -> object:
         pass
 
 
-def test_numpy_eager_linalg_extra_2() -> object:
+def test_numpy_eager_linalg_extra_2():
     """Test the numpy eager linalg extra behavior.
 
     Returns:
@@ -1091,7 +1091,7 @@ def test_numpy_eager_linalg_extra_2() -> object:
         pass
 
 
-def test_numpy_eager_math_extra_2() -> object:
+def test_numpy_eager_math_extra_2():
     """Test the numpy eager math extra behavior.
 
     Returns:
@@ -1111,7 +1111,7 @@ def test_numpy_eager_math_extra_2() -> object:
         pass
 
 
-def test_numpy_eager_random_extra_2() -> object:
+def test_numpy_eager_random_extra_2():
     """Test the numpy eager random extra behavior.
 
     Returns:
@@ -1125,7 +1125,7 @@ def test_numpy_eager_random_extra_2() -> object:
         pass
 
 
-def test_numpy_eager_shape_extra_2() -> object:
+def test_numpy_eager_shape_extra_2():
     """Test the numpy eager shape extra behavior.
 
     Returns:

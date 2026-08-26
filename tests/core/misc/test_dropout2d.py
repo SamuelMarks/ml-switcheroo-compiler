@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.nn.dropout import dropout2d
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_dropout2d_shape() -> object:
+def test_dropout2d_shape():
     """Test the dropout2d shape behavior.
 
     Returns:
@@ -36,7 +36,7 @@ def test_dropout2d_shape() -> object:
         pass
 
 
-def test_dropout2d_eager() -> object:
+def test_dropout2d_eager():
     """Test the dropout2d eager behavior.
 
     Returns:

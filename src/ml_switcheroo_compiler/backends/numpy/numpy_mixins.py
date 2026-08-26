@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ir.core import IRNode
 class NumpyVisionVisitor:
     """Provide AST visitor methods for vision operations in NumPy."""
 
-    def visit_PerspectiveTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_PerspectiveTransform(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a perspective transform operation.
 
         Args:
@@ -28,10 +28,10 @@ class NumpyVisionVisitor:
             A string containing the generated NumPy expression.
         """
         interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
-        df_str: object = "None" if data_format is None else f'"{data_format}"'
+        df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, PerspectiveConfig(interpolation='{interpolation}', fill_value={fill_value}, data_format={df_str}))"
 
-    def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ElasticTransform(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for an elastic transform operation.
 
         Args:
@@ -43,10 +43,10 @@ class NumpyVisionVisitor:
             A string containing the generated NumPy expression.
         """
         interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
-        df_str: object = "None" if data_format is None else f'"{data_format}"'
+        df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
 
-    def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_GaussianBlur(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a gaussian blur operation.
 
         Args:
@@ -58,10 +58,10 @@ class NumpyVisionVisitor:
             A string containing the generated NumPy expression.
         """
         kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
-        df_str: object = "None" if data_format is None else f'"{data_format}"'
+        df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
 
-    def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MedianFilter(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a median filter operation.
 
         Args:
@@ -73,10 +73,10 @@ class NumpyVisionVisitor:
             A string containing the generated NumPy expression.
         """
         kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
-        df_str: object = "None" if data_format is None else f'"{data_format}"'
+        df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
 
-    def visit_ExtractBoundingBoxes(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ExtractBoundingBoxes(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for extracting bounding boxes from images.
 
         Args:
@@ -88,10 +88,10 @@ class NumpyVisionVisitor:
             A string containing the generated NumPy expression.
         """
         crop_size, interpolation, extrapolation_value, data_format = _extract_extract_boxes_attributes(node)
-        df_str: object = "None" if data_format is None else f'"{data_format}"'
+        df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {crop_size}, '{interpolation}', {extrapolation_value}, {df_str})"
 
-    def visit_IoU(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_IoU(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for calculating Intersection over Union (IoU).
 
         Args:
@@ -102,10 +102,10 @@ class NumpyVisionVisitor:
         Returns:
             A string containing the generated NumPy expression.
         """
-        bounding_box_format: object = node.attributes.get("bounding_box_format", "xyxy")
+        bounding_box_format = node.attributes.get("bounding_box_format", "xyxy")
         return f"np_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
 
-    def visit_NonMaxSuppression(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_NonMaxSuppression(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for non-maximum suppression.
 
         Args:
@@ -116,12 +116,12 @@ class NumpyVisionVisitor:
         Returns:
             A string containing the generated NumPy expression.
         """
-        max_output_size: object = node.attributes.get("max_output_size")
-        iou_threshold: object = node.attributes.get("iou_threshold", 0.5)
-        score_threshold: object = node.attributes.get("score_threshold", float("-inf"))
+        max_output_size = node.attributes.get("max_output_size")
+        iou_threshold = node.attributes.get("iou_threshold", 0.5)
+        score_threshold = node.attributes.get("score_threshold", float("-inf"))
         return f"np_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
 
-    def visit_ResizeBicubic(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ResizeBicubic(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a bicubic resize operation.
 
         Args:
@@ -132,11 +132,11 @@ class NumpyVisionVisitor:
         Returns:
             A string containing the generated NumPy expression.
         """
-        size: object = node.attributes.get("size")
-        align_corners: object = node.attributes.get("align_corners", False)
+        size = node.attributes.get("size")
+        align_corners = node.attributes.get("align_corners", False)
         return f"np_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
 
-    def visit_ResizeLanczos3(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ResizeLanczos3(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a Lanczos3 resize operation.
 
         Args:
@@ -147,15 +147,15 @@ class NumpyVisionVisitor:
         Returns:
             A string containing the generated NumPy expression.
         """
-        size: object = node.attributes.get("size")
-        align_corners: object = node.attributes.get("align_corners", False)
+        size = node.attributes.get("size")
+        align_corners = node.attributes.get("align_corners", False)
         return f"np_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
 
 
 class NumpyAudioVisitor:
     """Provide AST visitor methods for audio operations in NumPy."""
 
-    def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Istft(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for the inverse short-time Fourier transform.
 
         Args:
@@ -169,7 +169,7 @@ class NumpyAudioVisitor:
         frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)
         return f"np_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"
 
-    def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_MelFilterbank(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a mel filterbank.
 
         Args:
@@ -190,7 +190,7 @@ class NumpyAudioVisitor:
         ) = extract_mel_attributes(node)
         return f"np_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
 
-    def visit_Mfcc(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Mfcc(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for calculating Mel-frequency cepstral coefficients.
 
         Args:
@@ -215,7 +215,7 @@ class NumpyAudioVisitor:
 class NumpyScatterVisitor:
     """Provide AST visitor methods for scatter operations in NumPy."""
 
-    def visit_TensorScatterUpdate(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterUpdate(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a tensor scatter update operation.
 
         Args:
@@ -228,7 +228,7 @@ class NumpyScatterVisitor:
         """
         return f"(lambda c, i, u: [c.__setitem__(tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
 
-    def visit_TensorScatterAdd(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterAdd(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a tensor scatter add operation.
 
         Args:
@@ -241,7 +241,7 @@ class NumpyScatterVisitor:
         """
         return f"(lambda c, i, u: [np.add.at(c, tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
 
-    def visit_TensorScatterMax(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterMax(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a tensor scatter max operation.
 
         Args:
@@ -254,7 +254,7 @@ class NumpyScatterVisitor:
         """
         return f"(lambda c, i, u: [np.maximum.at(c, tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
 
-    def visit_TensorScatterMin(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterMin(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
         """Generate NumPy code for a tensor scatter min operation.
 
         Args:

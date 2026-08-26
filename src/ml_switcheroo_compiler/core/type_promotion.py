@@ -203,18 +203,18 @@ def promote_types(dtype1: DType, dtype2: DType) -> DType:
         return _clamp_x64(dtype1)
 
     # Order doesn't matter for promotion
-    res: object = _PROMOTION_TABLE.get((dtype1, dtype2))
+    res = _PROMOTION_TABLE.get((dtype1, dtype2))
     if res is None:
-        res: object = _PROMOTION_TABLE.get((dtype2, dtype1))
+        res = _PROMOTION_TABLE.get((dtype2, dtype1))
 
     if res is None:
-        msg: object = f"Cannot promote types: {dtype1} and {dtype2}"
+        msg = f"Cannot promote types: {dtype1} and {dtype2}"
         raise DTypePromotionError(msg)
 
     # Preserve exact input type object if equal (for custom dtype instances)
     if res == dtype1:
-        res: object = dtype1
+        res = dtype1
     elif res == dtype2:
-        res: object = dtype2
+        res = dtype2
 
     return _clamp_x64(res)

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]):
     """Evaluate zeros operation.
 
     Args:
@@ -32,7 +32,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return generic_zeros(tf, shape)
 
 
-def array(cls: type, data: object, dtype: object = None) -> object:
+def array(cls: type, data, dtype=None):
     """Evaluate array operation.
 
     Args:
@@ -56,7 +56,7 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     return generic_array(tf, data, dtype)
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data):
     """Evaluate asarray operation.
 
     Args:
@@ -77,7 +77,7 @@ def asarray(cls: type, data: object) -> object:
     return generic_asarray(tf, data)
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data) -> float:
     """Evaluate item operation.
 
     Args:

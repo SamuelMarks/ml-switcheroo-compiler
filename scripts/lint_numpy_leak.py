@@ -5,11 +5,18 @@ import re
 import sys
 
 
-def check_for_numpy_leaks(directory: str) -> list:
-    """Check for numpy leaks in backends (excluding numpy backend and eager execution)."""
-    violations: object = []
+def check_for_numpy_leaks(directory: str) -> list[str]:
+    """Check for numpy leaks in backends (excluding numpy backend and eager execution).
 
-    files_to_check: object = glob.glob(directory + "/backends/**/*.py", recursive=True)
+    Args:
+        directory (str): The root directory to scan.
+
+    Returns:
+        list[str]: A list of violation messages.
+    """
+    violations: list[str] = []
+
+    files_to_check: list[str] = glob.glob(directory + "/backends/**/*.py", recursive=True)
 
     # Explicitly check root level core tracing files
     files_to_check.extend(glob.glob(f"{directory}/grad/**/*.py", recursive=True))
@@ -29,10 +36,10 @@ def check_for_numpy_leaks(directory: str) -> list:
                     continue
 
                 # Strip inline comments to prevent false positives
-                code_line: object = line.split("#")[0].strip()
+                code_line: str = line.split("#")[0].strip()
 
-                has_import: object = "import numpy" in code_line or "from numpy" in code_line
-                has_np: object = re.search(r"\bnp\.", code_line)
+                has_import: bool = "import numpy" in code_line or "from numpy" in code_line
+                has_np: bool = bool(re.search(r"\bnp\.", code_line))
 
                 if has_import or has_np:
                     # Ignore .numpy() attribute calls, common in PyTorch/TF tests
@@ -48,11 +55,18 @@ def check_for_numpy_leaks(directory: str) -> list:
     return violations
 
 
-def check_for_architectural_imports(directory: str) -> list:
-    """Check that core/, ir/, and ops/ never import from backends/ except registry."""
-    violations: object = []
+def check_for_architectural_imports(directory: str) -> list[str]:
+    """Check that core/, ir/, and ops/ never import from backends/ except registry.
 
-    files_to_check: object = []
+    Args:
+        directory (str): The root directory to scan.
+
+    Returns:
+        list[str]: A list of violation messages.
+    """
+    violations: list[str] = []
+
+    files_to_check: list[str] = []
     for d in ["core", "ir", "ops", "transforms"]:
         files_to_check.extend(glob.glob(directory + f"/{d}/**/*.py", recursive=True))
 
@@ -61,7 +75,7 @@ def check_for_architectural_imports(directory: str) -> list:
             for i, line in enumerate(f):
                 if line.strip().startswith("#"):
                     continue
-                code_line: object = line.split("#")[0].strip()
+                code_line: str = line.split("#")[0].strip()
 
                 # Check if it imports from ml_switcheroo_compiler.backends
                 if "ml_switcheroo_compiler.backends" in code_line:
@@ -78,10 +92,14 @@ def check_for_architectural_imports(directory: str) -> list:
 
 
 def main() -> int:
-    """Run linting."""
-    directory_to_check: object = "src/ml_switcheroo_compiler"
-    numpy_violations: object = check_for_numpy_leaks(directory_to_check)
-    arch_violations: object = check_for_architectural_imports(directory_to_check)
+    """Run linting.
+
+    Returns:
+        int: 0 if success, 1 if failed.
+    """
+    directory_to_check: str = "src/ml_switcheroo_compiler"
+    numpy_violations: list[str] = check_for_numpy_leaks(directory_to_check)
+    arch_violations: list[str] = check_for_architectural_imports(directory_to_check)
 
     if numpy_violations or arch_violations:
         if numpy_violations:
@@ -90,13 +108,13 @@ def main() -> int:
                 print(v)
         if arch_violations:
             print("Architectural Boundaries failed. Found restricted imports from backends:")
-            for v in arch_violations:
-                print(v)
+            for v_arch in arch_violations:
+                print(v_arch)
         return 1
 
     print("NumPy Leak and Architectural Boundaries Linting passed.")
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())

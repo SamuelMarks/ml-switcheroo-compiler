@@ -1,7 +1,7 @@
 """WebGL 2.0 Backend Emission."""
 
 import os
-from typing import Optional
+from typing import Any
 
 import yaml
 
@@ -15,18 +15,18 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 class WebGLCodeGenerator(BaseGenerator):
     """WebGL 2.0 Code Generator for emitting fragment shader compute passes and browser JS orchestrator."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[object]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
         """Initialize WebGLCodeGenerator.
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (list, optional): Visitor delegates.
+            delegates (Any, optional): Visitor delegates.
         """
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
         self.body_lines: list[str] = []
 
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "webgl_templates.yaml")
+        yaml_path: str = os.path.join(os.path.dirname(__file__), "webgl_templates.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 self.config = WebglTemplatesConfig(**yaml.safe_load(f))
@@ -39,7 +39,7 @@ class WebGLCodeGenerator(BaseGenerator):
         Returns:
             str: Generated JS code.
         """
-        js: object = [self.config.js_orchestration.get("init", "")]
+        js: list[str] = [self.config.js_orchestration.get("init", "")]
         js.append(self.config.js_orchestration.get("create_texture", ""))
 
         js.append("function evaluate_webgl(gl, inputs) {")
@@ -47,20 +47,20 @@ class WebGLCodeGenerator(BaseGenerator):
         js.append("    const vsSource = `#version 300 es\\nin vec4 aVertexPosition;\\nvoid main() {\\n  gl_Position = aVertexPosition;\\n}`;")
 
         for node in getattr(self.graph, "nodes", {}).values():
-            op_type: object = getattr(node, "op_type", "")
+            op_type: str = getattr(node, "op_type", "")
             if op_type == "Input":
                 continue
 
-            nid: object = getattr(node, "id", "")
-            clean_id: object = nid.replace("-", "_")
+            nid: str = getattr(node, "id", "")
+            clean_id: str = nid.replace("-", "_")
 
             # Emit standard fragment shader
-            shader_tpl: object = self.config.templates.get(op_type.lower(), "")
+            shader_tpl: str = self.config.templates.get(op_type.lower(), "")
             if not shader_tpl:
                 # Fallback shader for missing operations (Identity/Copy)
-                shader_tpl: object = "#version 300 es\nprecision highp float;\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0); }"
+                shader_tpl = "#version 300 es\nprecision highp float;\nout vec4 fragColor;\nvoid main() { fragColor = vec4(0.0); }"
 
-            escaped_shader: object = shader_tpl.replace("\n", "\\n").replace('"', '\\"')
+            escaped_shader: str = shader_tpl.replace("\n", "\\n").replace('"', '\\"')
             js.append(f'    const shader_{clean_id} = "{escaped_shader}";')
 
             # Setup program and textures

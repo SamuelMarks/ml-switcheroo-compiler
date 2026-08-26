@@ -28,7 +28,7 @@ class CppGenerator(BaseGenerator):
         self.use_openmp = use_openmp
         self.lines: list[str] = []
 
-    def _get_shape(self, node: object) -> list[int]:
+    def _get_shape(self, node) -> list[int]:
         """_get_shape function.
 
         Args:
@@ -38,12 +38,12 @@ class CppGenerator(BaseGenerator):
         Returns:
         object: Result.
         """
-        shape: object = getattr(node, "shape_metadata", None)
+        shape: tuple = getattr(node, "shape_metadata", None)
         if not shape:
             return [1]
         if isinstance(shape, (int, float)):
             return [int(shape)]
-        res: object = []
+        res: str = []
         for s in shape:
             res.append(int(s))
         return res
@@ -58,7 +58,7 @@ class CppGenerator(BaseGenerator):
         Returns:
         object: Result.
         """
-        n: object = 1
+        n: int = 1
         for s in shape:
             n *= s
         return n
@@ -73,7 +73,7 @@ class CppGenerator(BaseGenerator):
         Returns:
         object: Result.
         """
-        strides: object = [1] * len(shape)
+        strides: list[int] = [1] * len(shape)
         for i in range(len(shape) - 2, -1, -1):
             strides[i] = strides[i + 1] * shape[i + 1]
         return strides
@@ -91,23 +91,23 @@ class CppGenerator(BaseGenerator):
 
         import yaml
 
-        tmpl_path: object = os.path.join(os.path.dirname(__file__), "cpp_templates.yaml")
+        tmpl_path: str = os.path.join(os.path.dirname(__file__), "cpp_templates.yaml")
         with open(tmpl_path) as f:
-            data: object = yaml.safe_load(f)
-        prelude: object = data.get("prelude", "")
+            data: dict = yaml.safe_load(f)
+        prelude: str = data.get("prelude", "")
         self.lines = prelude.strip().split("\n")
 
         self.lines.append("void compute_graph() {")
 
-        graph_to_use: object = graph if graph is not None else self.graph
+        graph_to_use: IRGraph = graph if graph is not None else self.graph
 
         # Determine maximum memory offset required
-        max_offset: object = 0
+        max_offset: int = 0
         for node in graph_to_use.nodes.values():
-            offset: object = node.attributes.get("buffer_offset")
-            size: object = node.attributes.get("buffer_size")
+            offset: int = node.attributes.get("buffer_offset")
+            size: int = node.attributes.get("buffer_size")
             if offset is not None and size is not None:
-                max_offset: object = max(max_offset, offset + size)
+                max_offset: int = max(max_offset, offset + size)
 
         if max_offset > 0:
             self.lines.append(f"    // Allocate global arena buffer of size {max_offset} bytes")
@@ -119,7 +119,7 @@ class CppGenerator(BaseGenerator):
         self.lines.append("}")
         return "\n".join(self.lines)
 
-    def _visit_if_op(self, node: object, graph_to_use: object = None) -> None:
+    def _visit_if_op(self, node, graph_to_use: IRGraph = None) -> None:
         """_visit_if_op function.
 
         Args:
@@ -131,20 +131,20 @@ class CppGenerator(BaseGenerator):
         object: Result.
         """
         assert len(node.inputs) >= 1
-        cond_var: object = node.inputs[0]
+        cond_var: str = node.inputs[0]
         self.lines.append(f"    if ({cond_var}.data[0] > 0.0f) {{")
-        then_graph: object = node.attributes.get("then_branch")
+        then_graph: IRGraph = node.attributes.get("then_branch")
         if then_graph:
             for _, sub_node in then_graph.nodes.items():
                 self._visit_node(sub_node, graph_to_use)
         self.lines.append("    } else {")
-        else_graph: object = node.attributes.get("else_branch")
+        else_graph: IRGraph = node.attributes.get("else_branch")
         if else_graph:
             for _, sub_node in else_graph.nodes.items():
                 self._visit_node(sub_node, graph_to_use)
         self.lines.append("    }")
 
-    def _visit_loop_op(self, node: object, graph_to_use: object = None) -> None:
+    def _visit_loop_op(self, node, graph_to_use: IRGraph = None) -> None:
         """_visit_loop_op function.
 
         Args:
@@ -156,42 +156,42 @@ class CppGenerator(BaseGenerator):
         object: Result.
         """
         self.lines.append("    while (true) {")
-        cond_graph: object = node.attributes.get("cond")
+        cond_graph: IRGraph = node.attributes.get("cond")
         if cond_graph:
             for _, sub_node in cond_graph.nodes.items():
                 self._visit_node(sub_node, graph_to_use)
-        body_graph: object = node.attributes.get("body")
+        body_graph: IRGraph = node.attributes.get("body")
         if body_graph:
             for _, sub_node in body_graph.nodes.items():
                 self._visit_node(sub_node, graph_to_use)
         self.lines.append("        break;")
         self.lines.append("    }")
 
-    def visit_Conv2D(self, node: object, graph_to_use: object = None) -> None:
+    def visit_Conv2D(self, node, graph_to_use: IRGraph = None) -> None:
         """Generate Conv2D LLVM CPP."""
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
 
-        template: object = get_cpp_template("conv2d")
+        template: dict = get_cpp_template("conv2d")
 
-        inputs_list: object = getattr(node, "inputs", [])
-        input_nodes: object = [graph_to_use.nodes.get(inp) for inp in inputs_list]
-        in0_shape: object = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
-        w_shape: object = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1]
-        shape: object = self._get_shape(node)
+        inputs_list: list = getattr(node, "inputs", [])
+        input_nodes: list = [graph_to_use.nodes.get(inp) for inp in inputs_list]
+        in0_shape: tuple = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
+        w_shape: tuple = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1]
+        shape: tuple = self._get_shape(node)
 
         if len(in0_shape) < 4:
-            in0_shape: object = [1] * (4 - len(in0_shape)) + in0_shape
+            in0_shape: tuple = [1] * (4 - len(in0_shape)) + in0_shape
         if len(w_shape) < 4:
-            w_shape: object = [1] * (4 - len(w_shape)) + w_shape
+            w_shape: tuple = [1] * (4 - len(w_shape)) + w_shape
         if len(shape) < 4:
-            shape: object = [1] * (4 - len(shape)) + shape
+            shape: tuple = [1] * (4 - len(shape)) + shape
 
-        attrs: object = getattr(node, "attributes", {})
-        stride: object = attrs.get("stride", 1)
-        stride_h: object = stride[0] if isinstance(stride, (tuple, list)) else stride
-        stride_w: object = stride[1] if isinstance(stride, (tuple, list)) else stride
+        attrs: dict = getattr(node, "attributes", {})
+        stride: int = attrs.get("stride", 1)
+        stride_h: int = stride[0] if isinstance(stride, (tuple, list)) else stride
+        stride_w: int = stride[1] if isinstance(stride, (tuple, list)) else stride
 
-        expr_args: object = {
+        expr_args: dict = {
             "B": shape[0],
             "out_channels": shape[1],
             "out_height": shape[2],
@@ -208,29 +208,29 @@ class CppGenerator(BaseGenerator):
             "in1": inputs_list[1] if len(inputs_list) > 1 else "dummy",
             "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
         }
-        body: object = template["body"].format(**expr_args)
+        body: str = template["body"].format(**expr_args)
 
         for line in body.split("\n"):
             self.lines.append(f"    {line}")
 
-    def _visit_node(self, node: object, graph_to_use: object = None) -> None:
+    def _visit_node(self, node, graph_to_use: IRGraph = None) -> None:
         """Visit a node and emit C++ code.
 
         Args:
             node (object): The IR node to visit.
             graph_to_use (object): The graph.
         """
-        op: object = node.op_type
+        op: str = node.op_type
 
-        offset: object = node.attributes.get("buffer_offset")
-        offset_str: object = f", global_arena.data() + {offset}" if offset is not None else ""
+        offset: int = node.attributes.get("buffer_offset")
+        offset_str: str = f", global_arena.data() + {offset}" if offset is not None else ""
 
         if op == "Input":
-            out_shape_str: object = "{" + ",".join(map(str, self._get_shape(node))) + "}"
+            out_shape_str: str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
             self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}{offset_str}); // Input")
         elif op == "Constant":
-            val: object = node.attributes.get("value", 0.0)
-            out_shape_str: object = "{" + ",".join(map(str, self._get_shape(node))) + "}"
+            val: float = node.attributes.get("value", 0.0)
+            out_shape_str: str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
             self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
             self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {node.id}.data[i] = {val};")
         elif op in ("If", "Cond"):
@@ -245,33 +245,33 @@ class CppGenerator(BaseGenerator):
             from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
             from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
-            op_def: object = OPS_REGISTRY.get(op, {})
-            mapping: object = op_def.get("variants", {}).get("llvm_cpp", {})
+            op_def: dict = OPS_REGISTRY.get(op, {})
+            mapping: dict = op_def.get("variants", {}).get("llvm_cpp", {})
 
             if not mapping:
-                out_shape_str: object = "{" + ",".join(map(str, self._get_shape(node))) + "}"
+                out_shape_str: str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
                 self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}); // Fallback Unimplemented {op}")
             else:
-                template: object = get_cpp_template(mapping["template"])
+                template: dict = get_cpp_template(mapping["template"])
 
-                in0_node: object = graph_to_use.nodes.get(node.inputs[0]) if len(node.inputs) > 0 else None
-                in0_shape: object = self._get_shape(in0_node) if in0_node else [1, 1]
-                out_shape: object = self._get_shape(node)
-                out_shape_str: object = "{" + ",".join(map(str, out_shape)) + "}"
+                in0_node = graph_to_use.nodes.get(node.inputs[0]) if len(node.inputs) > 0 else None
+                in0_shape: tuple = self._get_shape(in0_node) if in0_node else [1, 1]
+                out_shape: tuple = self._get_shape(node)
+                out_shape_str: str = "{" + ",".join(map(str, out_shape)) + "}"
 
                 M = out_shape[0] if len(out_shape) > 0 else 1
                 N = out_shape[1] if len(out_shape) > 1 else 1
                 K = in0_shape[1] if len(in0_shape) > 1 else 1
 
-                expr_format_args: object = {"clean_id": node.id, "out_shape_str": out_shape_str, "in0": node.inputs[0] if len(node.inputs) > 0 else "dummy", "in1": node.inputs[1] if len(node.inputs) > 1 else "dummy", "rank": len(out_shape), "M": M, "N": N, "K": K}
+                expr_format_args: dict = {"clean_id": node.id, "out_shape_str": out_shape_str, "in0": node.inputs[0] if len(node.inputs) > 0 else "dummy", "in1": node.inputs[1] if len(node.inputs) > 1 else "dummy", "rank": len(out_shape), "M": M, "N": N, "K": K}
                 expr_format_args.update(mapping)
 
-                body: object = template["body"].format(**expr_format_args)
+                body: str = template["body"].format(**expr_format_args)
                 for line in body.split("\n"):
                     if line.strip():
                         self.lines.append(f"    {line}")
 
-    def compile(self, code: str) -> object:
+    def compile(self, code: str):
         """Compile the generated C++ code into a shared library.
 
         Args:
@@ -286,29 +286,26 @@ class CppGenerator(BaseGenerator):
         import tempfile
 
         # Create a temporary directory for compilation
-        temp_dir: object = tempfile.mkdtemp()
-        src_file: object = os.path.join(temp_dir, "graph.cpp")
-        lib_ext: object = ".dylib" if os.name == "posix" and "darwin" in os.uname().sysname.lower() else ".so"
-        lib_file: object = os.path.join(temp_dir, f"graph{lib_ext}")
+        temp_dir: str = tempfile.mkdtemp()
+        src_file: str = os.path.join(temp_dir, "graph.cpp")
+        lib_ext: str = ".dylib" if os.name == "posix" and "darwin" in os.uname().sysname.lower() else ".so"
+        lib_file: str = os.path.join(temp_dir, f"graph{lib_ext}")
 
         with open(src_file, "w") as f:
             f.write(code)
 
         # Compile using clang++ (or g++)
-        compile_cmd: object = ["clang++", "-O3", "-shared", "-fPIC", src_file, "-o", lib_file]
+        compile_cmd: list[str] = ["clang++", "-O3", "-shared", "-fPIC", src_file, "-o", lib_file]
 
         try:
             subprocess.run(compile_cmd, check=True, capture_output=True)
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Compilation failed: {e.stderr.decode()}") from e
-
-        # Load the compiled library
-        compute_func: object
         try:
-            lib: object = ctypes.CDLL(lib_file)
+            lib: ctypes.CDLL = ctypes.CDLL(lib_file)
             # Find the compute_graph function
             if hasattr(lib, "compute_graph"):
-                compute_func: object = lib.compute_graph
+                compute_func = lib.compute_graph
             else:
                 # C++ name mangling might have occurred if not extern "C"
                 # For this simple prototype, we assume it's exported or we simulate if not found
@@ -320,7 +317,7 @@ class CppGenerator(BaseGenerator):
                     """
                     return "Execution simulated (compiled)"
 
-                compute_func: object = _simulate_execution_1
+                compute_func = _simulate_execution_1
 
         except Exception:
 
@@ -332,7 +329,7 @@ class CppGenerator(BaseGenerator):
                 """
                 return "Execution simulated (compiled)"
 
-            compute_func: object = _simulate_execution_2
+            compute_func = _simulate_execution_2
 
         def executable() -> str:
             """Executable function.
@@ -341,7 +338,7 @@ class CppGenerator(BaseGenerator):
                 str: Result.
             """
             try:
-                res: object = compute_func()
+                res: str = compute_func()
                 if isinstance(res, str):
                     return res
                 return "Execution successful"
@@ -350,8 +347,8 @@ class CppGenerator(BaseGenerator):
 
         return executable
 
-    def execute(self, graph: IRGraph, *args: object, **kwargs: object) -> object:
+    def execute(self, graph: IRGraph, *args, **kwargs):
         """Execute the graph using the C++ generator."""
-        code: object = self.generate(graph)
-        executable: object = self.compile(code)
+        code: str = self.generate(graph)
+        executable = self.compile(code)
         return executable()

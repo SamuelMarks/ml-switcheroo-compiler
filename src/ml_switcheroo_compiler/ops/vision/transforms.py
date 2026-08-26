@@ -19,9 +19,9 @@ def perspective_transform(
     images: Tensor,
     start_points: Tensor,
     end_points: Tensor,
-    config_obj: object | None = None,
-    **kwargs: object,
-) -> object:
+    config_obj=None,
+    **kwargs,
+):
     """Apply a perspective transformation to the image(s).
 
     Args:
@@ -35,15 +35,15 @@ def perspective_transform(
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj: object = PerspectiveConfig(
+        config_obj = PerspectiveConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
             data_format=kwargs.get("data_format", None),
         )
 
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(
+        backend = get_active_backend()
+        data = backend.execute_op(
             "PerspectiveTransform",
             images.data,
             start_points.data,
@@ -63,9 +63,9 @@ def perspective_transform(
 def elastic_transform(
     images: Tensor,
     displacement: Tensor,
-    config_obj: object | None = None,
-    **kwargs: object,
-) -> object:
+    config_obj=None,
+    **kwargs,
+):
     """Apply an elastic transformation to the image(s).
 
     Args:
@@ -78,15 +78,15 @@ def elastic_transform(
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj: object = ElasticConfig(
+        config_obj = ElasticConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
             data_format=kwargs.get("data_format", None),
         )
 
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op(
+        backend = get_active_backend()
+        data = backend.execute_op(
             "ElasticTransform",
             images.data,
             displacement.data,
@@ -102,7 +102,7 @@ def elastic_transform(
     )
 
 
-def flip_left_right(images: Tensor) -> object:
+def flip_left_right(images: Tensor):
     """Flips images horizontally.
 
     Args:
@@ -112,14 +112,14 @@ def flip_left_right(images: Tensor) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("FlipLeftRight", images.data)
+        backend = get_active_backend()
+        data = backend.execute_op("FlipLeftRight", images.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("FlipLeftRight")()(images, dtype=DType.Int32)
 
 
-def flip_up_down(images: Tensor) -> object:
+def flip_up_down(images: Tensor):
     """Flips images vertically.
 
     Args:
@@ -129,8 +129,8 @@ def flip_up_down(images: Tensor) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("FlipUpDown", images.data)
+        backend = get_active_backend()
+        data = backend.execute_op("FlipUpDown", images.data)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("FlipUpDown")()(images, dtype=DType.Int32)
@@ -140,9 +140,9 @@ def flip_up_down(images: Tensor) -> object:
 class ElasticTransform(OpDef):
     """ElasticTransform operation."""
 
-    op_name: object = "ElasticTransform"
+    op_name = "ElasticTransform"
 
-    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, images, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:

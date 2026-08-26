@@ -7,7 +7,7 @@ import typing
 class TypeMapper:
     """Handle mapping between generic IR types and backend-specific types."""
 
-    def __init__(self, type_dict: typing.Optional[dict[str, object]] = None) -> None:
+    def __init__(self, type_dict=None) -> None:
         """Initialize.
 
         Args:

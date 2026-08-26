@@ -14,9 +14,9 @@ from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 class Psum(ReductionOp):
     """Parallel sum reduction operation."""
 
-    op_name: object = "Psum"
+    op_name = "Psum"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -26,7 +26,7 @@ class Psum(ReductionOp):
         Returns:
             tuple[int, ...]: Result.
         """
-        x: object = args[0] if len(args) > 0 else kwargs.get("x")
+        x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())
 
 
@@ -34,9 +34,9 @@ class Psum(ReductionOp):
 class Pmean(ReductionOp):
     """Parallel mean reduction operation."""
 
-    op_name: object = "Pmean"
+    op_name = "Pmean"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -46,5 +46,5 @@ class Pmean(ReductionOp):
         Returns:
             tuple[int, ...]: Result.
         """
-        x: object = args[0] if len(args) > 0 else kwargs.get("x")
+        x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())

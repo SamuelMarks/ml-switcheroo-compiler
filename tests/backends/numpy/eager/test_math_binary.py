@@ -67,7 +67,7 @@ def test_missing_math_binary():
         pass
 
     try:
-        mb._np_zeta(DummyBk2(), np.array([1.0]), q=np.array([1.0]))
+        mb._np_zeta(DummyBk(), np.array([1.0]), q=np.array([1.0]))
     except:
         pass
 

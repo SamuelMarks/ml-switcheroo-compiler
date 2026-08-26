@@ -35,7 +35,7 @@ class DropoutConfig:
 class Dropout(OpDef):
     """Operation definition for standard dropout regularization."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape of the dropout operation based on the input.
 
         Args:
@@ -53,7 +53,7 @@ def dropout(
     x: Tensor,
     rate: float = 0.5,
     config: DropoutConfig | None = None,
-) -> object:
+):
     """Apply standard dropout regularization to the input tensor.
 
     Randomly zeroes out elements of the input tensor with the specified probability
@@ -74,7 +74,7 @@ def dropout(
 class AlphaDropout(OpDef):
     """Operation definition for alpha dropout regularization."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape for alpha dropout based on the input.
 
         Args:
@@ -92,7 +92,7 @@ def alpha_dropout(
     x: Tensor,
     rate: float = 0.5,
     config: DropoutConfig | None = None,
-) -> object:
+):
     """Apply alpha dropout regularization to the input tensor.
 
     Alpha dropout is a type of dropout that maintains the mean and variance
@@ -113,7 +113,7 @@ def alpha_dropout(
 class ActivityRegularization(OpDef):
     """Operation definition for applying activity regularization."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape for activity regularization based on the input.
 
         Args:
@@ -133,7 +133,7 @@ def activity_regularization(
     x: Tensor,
     l1: float = 0.0,
     l2: float = 0.0,
-) -> object:
+):
     """Apply L1 and L2 activity regularization to the given input tensor.
 
     Adds regularization penalties based on the magnitude of the tensor's values.
@@ -153,9 +153,9 @@ def activity_regularization(
 class Dropout1d(OpDef):
     """Operation definition for 1D spatial dropout."""
 
-    op_name: object = "Dropout1d"
+    op_name = "Dropout1d"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape of the 1D dropout operation.
 
         Args:
@@ -168,7 +168,7 @@ class Dropout1d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
+def dropout1d(x: Tensor, p: float = 0.5, training: bool = True):
     """Apply 1D spatial dropout to the input tensor.
 
     Randomly zeroes out entire channels (1D feature maps) of the input tensor.
@@ -184,8 +184,8 @@ def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Dropout1d", x.data, p=p, training=training)
+        backend = get_active_backend()
+        data = backend.execute_op("Dropout1d", x.data, p=p, training=training)
         return Tensor(data, TensorConfig(x.shape, x.dtype, x.device))
     return _emit_shape_node("Dropout1d", [x], {"p": p, "training": training}, getattr(x, "shape", ()), getattr(x, "dtype", None))
 
@@ -194,9 +194,9 @@ def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
 class Dropout2d(OpDef):
     """Operation definition for 2D spatial dropout."""
 
-    op_name: object = "Dropout2d"
+    op_name = "Dropout2d"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape of the 2D dropout operation.
 
         Args:
@@ -209,7 +209,7 @@ class Dropout2d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
+def dropout2d(x: Tensor, p: float = 0.5, training: bool = True):
     """Apply 2D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 2D feature maps (channels) of the input tensor.
@@ -223,8 +223,8 @@ def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
         A new tensor with 2D dropout applied.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Dropout2d", getattr(x, "data", x), p=p, training=training)
+        backend = get_active_backend()
+        data = backend.execute_op("Dropout2d", getattr(x, "data", x), p=p, training=training)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(x, "dtype", None), getattr(x, "device", None)))
 
     return _emit_shape_node(
@@ -240,9 +240,9 @@ def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
 class Dropout3d(OpDef):
     """Operation definition for 3D spatial dropout."""
 
-    op_name: object = "Dropout3d"
+    op_name = "Dropout3d"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x, **kwargs):
         """Determine the output shape of the 3D dropout operation.
 
         Args:
@@ -255,7 +255,7 @@ class Dropout3d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
+def dropout3d(x: Tensor, p: float = 0.5, training: bool = True):
     """Apply 3D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 3D feature maps (channels) of the input tensor.
@@ -269,7 +269,7 @@ def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> object:
         A new tensor with 3D dropout applied.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         return backend.execute_op("Dropout3d", getattr(x, "data", x), p=p, training=training)
 
     return _emit_shape_node(

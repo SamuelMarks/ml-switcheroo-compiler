@@ -22,7 +22,7 @@ def slice(
     start: int | None = None,
     end: int | None = None,
     step: int = 1,
-) -> object:
+):
     """Slice the input tensor along a specific dimension.
 
     Args:
@@ -36,13 +36,13 @@ def slice(
         Tensor: Result.
     """
     if config.eager_mode:
-        sl: object = [builtins.slice(None)] * len(input.shape)
+        sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data: object = input.data[tuple(sl)]
+        data = input.data[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs: object = [input]
+    inputs = [input]
     # shape calculation placeholder
-    out_shape: object = inputs[0].shape
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Slice",
         inputs,
@@ -57,7 +57,7 @@ def strided_slice(
     begin: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
-) -> object:
+):
     """Extract a strided slice from the input tensor.
 
     Args:
@@ -70,12 +70,12 @@ def strided_slice(
         Tensor: Result.
     """
     if config.eager_mode:
-        idx: object = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data: object = input.data[idx]
+        idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
+        data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs: object = [input]
+    inputs = [input]
     # shape calculation placeholder
-    out_shape: object = inputs[0].shape
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "StridedSlice",
         inputs,
@@ -89,7 +89,7 @@ def strided_slice(
 class Slice(OpDef):
     """Slice operator definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -106,7 +106,7 @@ class Slice(OpDef):
 class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape for StridedSlice.
 
         Args:
@@ -123,10 +123,10 @@ class StridedSlice(OpDef):
 class Choose(OpDef):
     """Construct an array from an index array and a list of arrays to choose from."""
 
-    op_name: object = "Choose"
-    np_op_name: object = "choose"
+    op_name = "Choose"
+    np_op_name = "choose"
 
-    def infer_shape(self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object) -> object:
+    def infer_shape(self, a, choices, out=None, mode: str = "raise", **kwargs):
         """Infer the output shape.
 
         Args:
@@ -146,9 +146,9 @@ class Choose(OpDef):
 class IndexInDim(OpDef):
     """Return elements of an array at specific indices along a given dimension."""
 
-    op_name: object = "IndexInDim"
+    op_name = "IndexInDim"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -158,21 +158,21 @@ class IndexInDim(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        operand: object = args[0] if len(args) > 0 else None
-        index: object = args[1] if len(args) > 1 else None
-        axis: object = kwargs.get("axis", 0)
-        keepdims: object = kwargs.get("keepdims", True)
-        shape: object = list(getattr(operand, "shape", ()))
+        operand = args[0] if len(args) > 0 else None
+        index = args[1] if len(args) > 1 else None
+        axis = kwargs.get("axis", 0)
+        keepdims = kwargs.get("keepdims", True)
+        shape = list(getattr(operand, "shape", ()))
         if not shape:
             return ()
 
-        index_shape: object = getattr(index, "shape", ())
+        index_shape = getattr(index, "shape", ())
         if keepdims:
             shape[axis] = index_shape[0] if index_shape else 1
         else:
             if index_shape:
                 shape.pop(axis)
-                shape: object = shape[:axis] + list(index_shape) + shape[axis:]
+                shape = shape[:axis] + list(index_shape) + shape[axis:]
             else:
                 shape.pop(axis)
 
@@ -183,9 +183,9 @@ class IndexInDim(OpDef):
 class UpdateSlice(OpDef):
     """Update a slice of an array."""
 
-    op_name: object = "UpdateSlice"
+    op_name = "UpdateSlice"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -195,11 +195,11 @@ class UpdateSlice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        operand: object = args[0] if len(args) > 0 else None
+        operand = args[0] if len(args) > 0 else None
         return getattr(operand, "shape", ())
 
 
-def index_in_dim(*args: object, **kwargs: object) -> object:
+def index_in_dim(*args, **kwargs):
     """Return the index in a dimension.
 
     Args:
@@ -214,7 +214,7 @@ def index_in_dim(*args: object, **kwargs: object) -> object:
     return dispatch_op("IndexInDim", *args, **kwargs)
 
 
-def update_slice(*args: object, **kwargs: object) -> object:
+def update_slice(*args, **kwargs):
     """Update a slice.
 
     Args:

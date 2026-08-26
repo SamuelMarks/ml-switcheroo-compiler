@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_color import (
 )
 
 
-def test_numpy_vision_color_eager() -> object:
+def test_numpy_vision_color_eager():
     """Test the numpy vision color eager behavior.
 
     Returns:
@@ -37,12 +37,12 @@ def test_numpy_vision_color_eager() -> object:
             _np_auto_contrast(np, img_ac)
             original_hist = vc_mod.np.histogram
 
-            def mock_hist(*args: object, **kwargs: object) -> object:
+            def mock_hist(*args, **kwargs):
                 """Evaluate and process the mock hist operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -58,12 +58,12 @@ def test_numpy_vision_color_eager() -> object:
             finally:
                 vc_mod.np.histogram = original_hist
 
-            def mock_hist2(*args: object, **kwargs: object) -> object:
+            def mock_hist2(*args, **kwargs):
                 """Evaluate and process the mock hist2 operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.

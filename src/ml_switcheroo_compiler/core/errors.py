@@ -18,7 +18,7 @@ def _load_error_templates() -> None:
     """
     global _ERROR_TEMPLATES
     if not _ERROR_TEMPLATES:
-        yaml_path: object = os.path.join(os.path.dirname(__file__), "error_messages.yaml")
+        yaml_path = os.path.join(os.path.dirname(__file__), "error_messages.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 _ERROR_TEMPLATES = yaml.safe_load(f) or {}
@@ -27,7 +27,7 @@ def _load_error_templates() -> None:
 class SwitcherooError(Exception):
     """Define base class for all ml-switcheroo errors."""
 
-    def __init__(self, message: str = "", **kwargs: object) -> None:
+    def __init__(self, message: str = "", **kwargs) -> None:
         """__init__ function.
 
         Args:
@@ -45,10 +45,10 @@ class SwitcherooError(Exception):
         object: Result.
         """
         _load_error_templates()
-        template: object = _ERROR_TEMPLATES.get(self.__class__.__name__)
+        template = _ERROR_TEMPLATES.get(self.__class__.__name__)
         if template and kwargs:
             try:
-                message: object = template.format(**kwargs)
+                message = template.format(**kwargs)
             except KeyError:
                 pass
         super().__init__(message)

@@ -71,7 +71,7 @@ def _apply_grouped_reduction(backend_module: Any, op_name: str, x: Any, **kwargs
     C_per_group: int = C // groups
     reshaped_dims: list[int] = shape.copy()
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
-    reshaped_x: Any = backend_module.reshape(x, reshaped_dims)
+    reshaped_x = backend_module.reshape(x, reshaped_dims)
     reduction_axes: tuple[int, ...] = _get_reduction_axes(reshaped_dims, axis)
     return _invoke_grouped_op(backend_module, op_name, reshaped_x, reduction_axes)
 
@@ -88,9 +88,9 @@ def _group_mean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             Any: Result.
     """
-    x: Any = args[0]
-    groups: int = kwargs.get("groups") if "groups" in kwargs else args[1]
-    axis: int = kwargs.get("axis", -1)
+    x = args[0]
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    axis: int = int(kwargs.get("axis", -1))
     return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
 
@@ -106,9 +106,9 @@ def _group_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             Any: Result.
     """
-    x: Any = args[0]
-    groups: int = kwargs.get("groups") if "groups" in kwargs else args[1]
-    axis: int = kwargs.get("axis", -1)
+    x = args[0]
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    axis: int = int(kwargs.get("axis", -1))
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
@@ -124,24 +124,24 @@ def _apply_affine_transform(backend_module: Any, out: Any, axis: int, **kwargs: 
     Returns:
             Any: Result.
     """
-    weight: Any = kwargs.get("weight")
-    bias: Any = kwargs.get("bias")
+    weight = kwargs.get("weight")
+    bias = kwargs.get("bias")
     shape: list[int] = list(out.shape)
     ndims: int = len(shape)
     if weight is not None:
         w_shape: list[int] = [1] * ndims
         w_shape[axis] = shape[axis]
-        w: Any = backend_module.reshape(weight, w_shape)
+        w = backend_module.reshape(weight, w_shape)
         out = out * w
     if bias is not None:
         b_shape: list[int] = [1] * ndims
         b_shape[axis] = shape[axis]
-        b: Any = backend_module.reshape(bias, b_shape)
+        b = backend_module.reshape(bias, b_shape)
         out = out + b
     return out
 
 
-def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, ...]:
+def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, int, Any, Any, int, float]:
     """Evaluate _parse_group_norm_args operation.
 
     Args:
@@ -149,14 +149,14 @@ def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tup
         kwargs (dict[str, Any]): The kwargs parameter.
 
     Returns:
-        tuple[Any, ...]: Result.
+        tuple[Any, int, Any, Any, int, float]: Result.
     """
-    x: Any = args[0]
-    groups: int = kwargs.get("groups") if "groups" in kwargs else args[1]
-    weight: Any = kwargs.get("weight", None)
-    bias: Any = kwargs.get("bias", None)
-    axis: int = kwargs.get("axis", -1)
-    epsilon: float = kwargs.get("epsilon", 1e-05)
+    x = args[0]
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    weight = kwargs.get("weight", None)
+    bias = kwargs.get("bias", None)
+    axis: int = int(kwargs.get("axis", -1))
+    epsilon: float = float(kwargs.get("epsilon", 1e-05))
     return (x, groups, weight, bias, axis, epsilon)
 
 
@@ -178,8 +178,8 @@ def _compute_group_norm(backend_module: Any, x: Any, shape: list[int], group_par
     C_per_group: int = shape[axis] // groups
     reshaped_dims: list[int] = shape.copy()
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
-    reshaped_x: Any = backend_module.reshape(x, reshaped_dims)
-    normalized: Any = (reshaped_x - mean) / backend_module.sqrt(var + epsilon)
+    reshaped_x = backend_module.reshape(x, reshaped_dims)
+    normalized = (reshaped_x - mean) / backend_module.sqrt(var + epsilon)
     return backend_module.reshape(normalized, shape)
 
 
@@ -200,7 +200,7 @@ def _group_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     ndims: int = len(shape)
     if axis < 0:
         axis += ndims
-    mean: Any = _group_mean(backend_module, x, groups=groups, axis=axis)
-    var: Any = _group_variance(backend_module, x, groups=groups, axis=axis)
-    out: Any = _compute_group_norm(backend_module, x, shape, (axis, groups), (mean, var, epsilon))
+    mean = _group_mean(backend_module, x, groups=groups, axis=axis)
+    var = _group_variance(backend_module, x, groups=groups, axis=axis)
+    out = _compute_group_norm(backend_module, x, shape, (axis, groups), (mean, var, epsilon))
     return _apply_affine_transform(backend_module, out, axis, weight=weight, bias=bias)

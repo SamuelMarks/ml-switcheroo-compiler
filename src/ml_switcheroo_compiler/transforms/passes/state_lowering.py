@@ -18,9 +18,9 @@ def state_lowering_pass(graph: IRGraph) -> bool:
     Returns:
         bool: True if the graph was modified, False otherwise.
     """
-    modified: object = False
+    modified = False
 
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     for node in sorted_nodes:
         if node.op_type == "Input" and node.attributes.get("is_state", False):
@@ -28,12 +28,12 @@ def state_lowering_pass(graph: IRGraph) -> bool:
             node.attributes["variable_name"] = node.attributes.get("name", node.id)
             if "name" in node.attributes:
                 del node.attributes["name"]
-            modified: object = True
+            modified = True
         elif node.op_type == "Output" and node.attributes.get("is_state", False):
             node.op_type = "AssignVariable"
             node.attributes["variable_name"] = node.attributes.get("name", node.id)
             if "name" in node.attributes:
                 del node.attributes["name"]
-            modified: object = True
+            modified = True
 
     return modified

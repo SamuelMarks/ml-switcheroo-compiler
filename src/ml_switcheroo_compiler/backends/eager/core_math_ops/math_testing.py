@@ -3,37 +3,39 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _allclose operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
-    a: object = args[0]
-    b: object = args[1]
-    rtol: object = kwargs.get("rtol", 1e-05)
-    atol: object = kwargs.get("atol", 1e-08)
-    equal_nan: object = kwargs.get("equal_nan", False)
+    a = args[0]
+    b = args[1]
+    rtol = kwargs.get("rtol", 1e-05)
+    atol = kwargs.get("atol", 1e-08)
+    equal_nan = kwargs.get("equal_nan", False)
 
-    def _val(x: object) -> object:
+    def _val(x: Any) -> Any:
         """Evaluate _val operation.
 
         Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
-        x_data: object = getattr(x, "data", x)
+        x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(x_data.item):
             return x_data.item()
         if hasattr(x_data, "tolist"):
@@ -48,63 +50,63 @@ def _allclose(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: object, a1: object, a2: object, **kwargs: object) -> object:
+def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
     """Evaluate _array_equiv operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        a1 (object): The a1 parameter.
-        a2 (object): The a2 parameter.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        a1 (Any): The a1 parameter.
+        a2 (Any): The a2 parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.allclose(a1, a2) if hasattr(backend_module, "allclose") else True
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: object, condition: object, data: object, summarize: int = 3, **kwargs: object) -> object:
+def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
     """Evaluate _assert operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        condition (object): The condition parameter.
-        data (object): The data parameter.
+        backend_module (Any): The backend_module parameter.
+        condition (Any): The condition parameter.
+        data (Any): The data parameter.
         summarize (int): The summarize parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return None
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _promotetypes operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.promote_types(*args, **kwargs)
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: object, *args: object, **kwargs: object) -> object:
+def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _resulttype operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (Any): The backend_module parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     return backend_module.result_type(*args, **kwargs)

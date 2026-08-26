@@ -15,7 +15,7 @@ def test_creation_ops() -> None:
     """Test the creation ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the Zeros and Ones tensor creation operations.\n\n    Verifies that both Zeros and Ones operations correctly infer the target\n    shape and evaluate to the expected NumPy arrays\n\n    Returns:\n    None\n    "
@@ -32,7 +32,7 @@ def test_full_op() -> None:
     """Test the full op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the Full tensor creation operation.\n\n    Verifies that the Full operation correctly infers the target shape\n    and evaluates to a NumPy array filled with the specified value\n\n    Returns:\n    None\n    "
@@ -49,7 +49,7 @@ def test_arange_op() -> None:
     """Test the arange op behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests the Arange tensor creation operation.\n\n    Verifies that the Arange operation correctly handles shape inference\n    and evaluates to a NumPy array containing a sequence of numbers\n\n    Returns:\n    None\n    "
@@ -64,7 +64,7 @@ def test_rand_ops() -> None:
     """Test the rand ops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test function."

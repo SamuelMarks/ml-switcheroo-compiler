@@ -12,18 +12,14 @@ from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 class EvaluationContext:
     """Provide context object for eager evaluation containing operation details."""
 
-    op_cls: object
     op_type: str
-    raw_args: list[object]
-    kwargs: dict[str, object]
-    backend: object
 
 
 class EvaluationStrategy(abc.ABC):
     """Define base evaluation strategy."""
 
     @abc.abstractmethod
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext):
         """Evaluate evaluate operation.
 
         Args:
@@ -38,7 +34,7 @@ class EvaluationStrategy(abc.ABC):
 class CustomEagerEvalStrategy(EvaluationStrategy):
     """Strategy for custom eager evaluation."""
 
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext):
         """Evaluate evaluate operation.
 
         Args:
@@ -53,7 +49,7 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
 class BackendExecuteOpStrategy(EvaluationStrategy):
     """Strategy for backend execution."""
 
-    def evaluate(self, ctx: EvaluationContext) -> object:
+    def evaluate(self, ctx: EvaluationContext):
         """Evaluate evaluate operation.
 
         Args:
@@ -69,7 +65,7 @@ class EagerEvaluator:
     """Evaluate operations eagerly."""
 
     @staticmethod
-    def _get_strategy(op_cls: object) -> EvaluationStrategy:
+    def _get_strategy(op_cls) -> EvaluationStrategy:
         """Get the evaluation strategy for a given operation class.
 
         Args:
@@ -80,7 +76,7 @@ class EagerEvaluator:
         """
         from ml_switcheroo_compiler.ops.base import OpDef
 
-        has_custom_eval: object = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(
+        has_custom_eval = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(
             OpDef,
             "eager_eval",
             None,
@@ -90,7 +86,7 @@ class EagerEvaluator:
         return BackendExecuteOpStrategy()
 
     @staticmethod
-    def _pack_outputs(res_data: object, first_tensor: object, device: object) -> object:
+    def _pack_outputs(res_data, first_tensor, device):
         """Pack raw output data into Tensor objects.
 
         Args:
@@ -98,7 +94,7 @@ class EagerEvaluator:
             first_tensor (object): The first input tensor, used for dtype resolution.
             device (object): The execution device.
 
-        Returns: object: A Tensor or a tuple of Tensors.
+        Returns: Tensor: A Tensor or a tuple of Tensors.
         """
         if isinstance(res_data, (tuple, list)):
             return tuple(
@@ -113,12 +109,12 @@ class EagerEvaluator:
                 for d in res_data
             )
 
-        dtype: object = resolve_dtype(res_data, first_tensor)
-        shape: object = res_data.shape if hasattr(res_data, "shape") else ()
+        dtype = resolve_dtype(res_data, first_tensor)
+        shape = res_data.shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod
-    def evaluate(op_type: str, *args: object, **kwargs: object) -> object:
+    def evaluate(op_type: str, *args, **kwargs):
         """Evaluate evaluate operation.
 
         Args:
@@ -132,15 +128,15 @@ class EagerEvaluator:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.ops.registry import get_op
 
-        backend: object = get_active_backend()
-        op_cls: object = get_op(op_type)
-        raw_args: object = [a.data if isinstance(a, Tensor) else a for a in args]
+        backend = get_active_backend()
+        op_cls = get_op(op_type)
+        raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
 
-        ctx: object = EvaluationContext(op_cls, op_type, raw_args, kwargs, backend)
-        strategy: object = EagerEvaluator._get_strategy(op_cls)
-        res_data: object = strategy.evaluate(ctx)
+        ctx = EvaluationContext(op_cls, op_type, raw_args, kwargs, backend)
+        strategy = EagerEvaluator._get_strategy(op_cls)
+        res_data = strategy.evaluate(ctx)
 
-        first_tensor: object = next((a for a in args if isinstance(a, Tensor)), None)
-        device: object = first_tensor.device if first_tensor is not None else None
+        first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
+        device = first_tensor.device if first_tensor is not None else None
 
         return EagerEvaluator._pack_outputs(res_data, first_tensor, device)

@@ -70,7 +70,7 @@ def test_np_affine_transform() -> None:
 "Core abstractions and logic definitions for test_numpy_eager_vision_geometry_extra.py."
 
 
-def test_numpy_vision_geometry_eager_extra() -> object:
+def test_numpy_vision_geometry_eager_extra():
     """Test the numpy vision geometry eager extra behavior.
 
     Returns:
@@ -82,12 +82,12 @@ def test_numpy_vision_geometry_eager_extra() -> object:
             _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
             original_iou = eager_mod.iou_eager
 
-            def mock_iou(*args: object, **kwargs: object) -> object:
+            def mock_iou(*args, **kwargs):
                 """Evaluate and process the mock iou operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.
@@ -101,12 +101,12 @@ def test_numpy_vision_geometry_eager_extra() -> object:
                 eager_mod.iou_eager = original_iou
             original_nms = eager_mod.nms_eager
 
-            def mock_nms(*args: object, **kwargs: object) -> object:
+            def mock_nms(*args, **kwargs):
                 """Evaluate and process the mock nms operation.
 
                 Args:
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.

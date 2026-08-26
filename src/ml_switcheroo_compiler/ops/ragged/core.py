@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class RaggedDot(OpDef):
     """RaggedDot op."""
 
-    op_name: object = "RaggedDot"
+    op_name = "RaggedDot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:

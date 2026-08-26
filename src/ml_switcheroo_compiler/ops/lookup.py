@@ -22,7 +22,7 @@ class MutableHashTable:
         self.value_dtype = value_dtype
         self.default_value = default_value
 
-    def lookup(self, keys: Tensor) -> object:
+    def lookup(self, keys: Tensor):
         """Lookup keys.
 
         Args:
@@ -65,7 +65,7 @@ class DenseHashTable:
         self.empty_key = empty_key
         self.deleted_key = deleted_key
 
-    def lookup(self, keys: Tensor) -> object:
+    def lookup(self, keys: Tensor):
         """Lookup keys.
 
         Args:

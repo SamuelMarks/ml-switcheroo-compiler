@@ -30,14 +30,14 @@ def simple_rnn_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, ...]]: The output and new state.
     """
-    h_prev: object = state[0]
+    h_prev = state[0]
 
-    matrix_x: object = matmul(inputs, kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_x = matmul(inputs, kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     if bias is not None:
-        matrix_x: object = add(matrix_x, bias)
+        matrix_x = add(matrix_x, bias)
 
-    matrix_inner: object = matmul(h_prev, recurrent_kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_inner = matmul(h_prev, recurrent_kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
-    h_new: object = tanh(add(matrix_x, matrix_inner))
+    h_new = tanh(add(matrix_x, matrix_inner))
 
     return h_new, (h_new,)

@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def gamma(key: object, a: object, shape: object = (), dtype: object = None) -> object:
+def gamma(key, a, shape=(), dtype=None):
     """Sample gamma random values from a given key.
 
     Args:
@@ -22,5 +22,5 @@ def gamma(key: object, a: object, shape: object = (), dtype: object = None) -> o
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = dtype or dtypes.DType.Float32
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("Gamma", [key, a], shape, dtype)

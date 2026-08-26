@@ -2,6 +2,7 @@
 """JAX/Flax Target Emission."""
 
 import os
+from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -21,29 +22,29 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
     """JAX code generator."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
         """Load.
 
         Args:
-        filepath (str): The filepath parameter.
-        allow_pickle (bool): The allow_pickle parameter.
-        fix_imports (bool): The fix_imports parameter.
-        encoding (str): The encoding parameter.
+            filepath (str): The filepath parameter.
+            allow_pickle (bool): The allow_pickle parameter.
+            fix_imports (bool): The fix_imports parameter.
+            encoding (str): The encoding parameter.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         import jax.numpy as jnp
 
         return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
             file (str): The file parameter.
-            arr (object): The arr parameter.
+            arr (Any): The arr parameter.
             allow_pickle (bool): The allow_pickle parameter.
             fix_imports (bool): The fix_imports parameter.
         """
@@ -52,26 +53,26 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         jnp.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez.
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (Any): Positional args.
+            **kwds (Any): Keyword args.
         """
         import jax.numpy as jnp
 
         jnp.savez(file, *args, **kwds)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez compressed.
 
         Args:
             file (str): The file parameter.
-            *args (object): Positional args.
-            **kwds (object): Keyword args.
+            *args (Any): Positional args.
+            **kwds (Any): Keyword args.
         """
         import jax.numpy as jnp
 
@@ -81,44 +82,45 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         """Init.
 
         Args:
-            graph (object): The graph parameter.
+            graph (IRGraph): The graph parameter.
         """
         super().__init__(graph)
         self.visitors.extend(
             [
                 *get_shared_ast_visitors(generator=self),
-                JaxAudioVisitor,
-                JaxControlFlowVisitor(),
-                JaxMathVisitor(),
-                JaxVisionVisitor(),
+                JaxAudioVisitor(),
+                JaxControlFlowVisitor(generator=self),
+                JaxMathVisitor(generator=self),
+                JaxVisionVisitor(generator=self),
+                JaxDistributedVisitor(generator=self),
             ]
         )
 
-    def _format_zeros_like(self, op: str, kwargs: object) -> str:
+    def _format_zeros_like(self, op: str, kwargs: dict[str, Any]) -> str:
         """Evaluate _format_zeros_like operation.
 
         Args:
-        op (str): The op parameter.
-        kwargs (object): The kwargs parameter.
+            op (str): The op parameter.
+            kwargs (dict[str, Any]): The kwargs parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
-        res: object = f"jnp.{op}({{shape}})"
+        res: str = f"jnp.{op}({{shape}})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: object) -> str:
+    def _format_full(self, kwargs: dict[str, Any]) -> str:
         """Evaluate _format_full operation.
 
         Args:
-        kwargs (object): The kwargs parameter.
+            kwargs (dict[str, Any]): The kwargs parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
-        res: object = "jnp.full({shape}, {fill_value})"
+        res: str = "jnp.full({shape}, {fill_value})"
         if "dtype" in kwargs:
             res += f", dtype='{kwargs['dtype']}'"
         return res
@@ -128,28 +130,29 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
         from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 
-        gen: object = NumpyGenerator(self.graph)
-        base_code: object = gen.generate()
-        return transpile_source(base_code, target_framework="jax")
+        gen: NumpyGenerator = NumpyGenerator(self.graph)
+        base_code: str = gen.generate()
+        transpiled: Any = transpile_source(base_code, target_framework="jax")
+        return str(transpiled)
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
 
         Returns:
-        str: Result.
+            str: Result.
         """
         return "jnp"
 
-    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
-            kwargs: Operation kwargs.
+            kwargs (dict[str, Any]): Operation kwargs.
 
         Returns:
-            Dictionary mapping operation type to format string.
+            dict[str, str]: Dictionary mapping operation type to format string.
         """
-        ops: object = super().get_ops_map(kwargs)
+        ops: dict[str, str] = super().get_ops_map(kwargs)
         ops["Zeros"] = self._format_zeros_like("zeros", kwargs)
         ops["Ones"] = self._format_zeros_like("ones", kwargs)
         ops["Full"] = self._format_full(kwargs)
@@ -168,7 +171,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         """Generate file header with module docstrings.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
         return [self.header.strip()]
 
@@ -176,15 +179,15 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
         """Resolve and register required imports.
 
         Returns:
-            tuple[int, ...]: Result.
+            list[str]: Result.
         """
-        tmpl_path: object = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
+        tmpl_path: str = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
         with open(tmpl_path, encoding="utf-8") as f:
-            jax_prefix_template: object = f.read()
+            jax_prefix_template: str = f.read()
         return ["import jax", "import jax.numpy as jnp", "import jax.scipy.special", *jax_prefix_template.split("\n")]
 
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
         self.indent_level = 0
-        self.add_line("def apply_model(params, *args, **kwargs) -> object:")
+        self.add_line("def apply_model(params, *args, **kwargs) -> Any:")
         self.indent_level += 1

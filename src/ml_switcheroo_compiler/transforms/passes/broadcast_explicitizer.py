@@ -27,8 +27,8 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     Returns:
         str: Result.
     """
-    new_id: object = f"broadcast_{uuid.uuid4().hex[:6]}"
-    new_node: object = LogicalNode(
+    new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
+    new_node = LogicalNode(
         id=new_id,
         op_type="BroadcastTo",
         inputs=[input_id],
@@ -76,21 +76,21 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
         return False
 
     in1, in2 = node.inputs
-    shape1: object = graph.nodes[in1].shape_metadata
-    shape2: object = graph.nodes[in2].shape_metadata
+    shape1 = graph.nodes[in1].shape_metadata
+    shape2 = graph.nodes[in2].shape_metadata
 
-    target_shape: object = _needs_broadcast(shape1, shape2)
+    target_shape = _needs_broadcast(shape1, shape2)
     if target_shape is None:
         return False
 
-    modified: object = False
+    modified = False
     if shape1 != target_shape:
         node.inputs[0] = _inject_broadcast_node(graph, in1, target_shape)
-        modified: object = True
+        modified = True
 
     if shape2 != target_shape:
         node.inputs[1] = _inject_broadcast_node(graph, in2, target_shape)
-        modified: object = True
+        modified = True
 
     return modified
 
@@ -104,13 +104,13 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     Returns:
         bool: A boolean indicating the result of the check.
     """
-    modified: object = False
-    sorted_nodes: object = DAGTopologicalSorter.sort(graph)
+    modified = False
+    sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     shape_inference_pass(graph)
 
     for node in sorted_nodes:
         if _process_broadcast_node(graph, node):
-            modified: object = True
+            modified = True
 
     return modified

@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 class Atan2(OpDef):
     """Provide an operation class for computing the element-wise arc tangent of x/y."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:
@@ -42,7 +42,7 @@ class Atan2(OpDef):
 class Divmod(OpDef):
     """Provide an operation class for computing element-wise quotient and remainder."""
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
+    def __call__(self, *args, **kwargs):
         """Call Divmod.
 
         Args:
@@ -59,7 +59,7 @@ class Divmod(OpDef):
 
         return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:
@@ -90,7 +90,7 @@ class Allclose(OpDef):
     tolerance
     """
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:
@@ -107,7 +107,7 @@ class Allclose(OpDef):
 class Isclose(OpDef):
     """Provide an operation class for checking element-wise equality within a tolerance."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Evaluate infer_shape operation.
 
         Args:

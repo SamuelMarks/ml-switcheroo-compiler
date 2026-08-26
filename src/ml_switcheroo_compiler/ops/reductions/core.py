@@ -19,7 +19,7 @@ class ReductionOp(OpDef):
 
     op_name: str = ""
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
+    def __call__(self, *args, **kwargs):
         """Universal dispatcher for the operation.
 
         Args:
@@ -33,7 +33,7 @@ class ReductionOp(OpDef):
 
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -45,7 +45,7 @@ class ReductionOp(OpDef):
         """
         return ()  # Symbolic shape inference will handle axis reduction logic
 
-    def _format_args(self, x: str, **kwargs: object) -> str:
+    def _format_args(self, x: str, **kwargs) -> str:
         """Format args.
 
         Args:
@@ -55,7 +55,7 @@ class ReductionOp(OpDef):
         Returns:
             str: Result.
         """
-        args: object = [x]
+        args = [x]
         if "axis" in kwargs and kwargs["axis"] is not None:
             args.append(f"axis={kwargs['axis']}")
         if kwargs.get("keepdims"):

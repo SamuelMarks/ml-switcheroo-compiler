@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def test_conv_tracing() -> object:
+def test_conv_tracing():
     """Test the conv tracing behavior.
 
     Returns:

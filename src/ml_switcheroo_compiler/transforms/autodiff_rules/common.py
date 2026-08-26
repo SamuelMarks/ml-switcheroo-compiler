@@ -12,7 +12,7 @@ class UnconnectedGradients(enum.Enum):
     ZERO = "zero"
 
 
-def make_zero_vjp(name: str) -> Callable[..., object]:
+def make_zero_vjp(name: str):
     """Create a VJP function that returns zero gradients for a given operation.
 
     Args:
@@ -22,7 +22,7 @@ def make_zero_vjp(name: str) -> Callable[..., object]:
         Callable: The generated VJP function.
     """
 
-    def vjp(graph: object, node: object, cotangent: str) -> tuple[object, ...]:
+    def vjp(graph, node, cotangent: str):
         """Return zero gradients for all inputs.
 
         Args:
@@ -38,7 +38,7 @@ def make_zero_vjp(name: str) -> Callable[..., object]:
     return vjp
 
 
-def make_zero_jvp(name: str) -> Callable[..., object]:
+def make_zero_jvp(name: str):
     """Create a JVP function that returns zero gradients for a given operation.
 
     Args:
@@ -48,7 +48,7 @@ def make_zero_jvp(name: str) -> Callable[..., object]:
         Callable: The generated JVP function.
     """
 
-    def jvp(graph: object, node: object, tangents: tuple[object, ...]) -> str:
+    def jvp(graph, node, tangents) -> str:
         """Return None to represent a zero tangent.
 
         Args:

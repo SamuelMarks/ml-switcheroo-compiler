@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def uniform(key: object, shape: object = (), dtype: object = None, minval: object = 0.0, maxval: object = 1.0) -> object:
+def uniform(key, shape=(), dtype=None, minval=0.0, maxval=1.0):
     """Sample uniform random values from a given key.
 
     Args:
@@ -23,5 +23,5 @@ def uniform(key: object, shape: object = (), dtype: object = None, minval: objec
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype: object = dtype or dtypes.DType.Float32
+    dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomUniform", [key], shape, dtype, {"minval": minval, "maxval": maxval})

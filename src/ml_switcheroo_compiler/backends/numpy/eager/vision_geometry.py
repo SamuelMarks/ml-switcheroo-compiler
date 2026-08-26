@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AffineGenerator")
-def _np_affine_generator(backend_module: object, batch_size: int, angles: object, shears: object, zooms: object, **kwargs: object) -> object:
+def _np_affine_generator(backend_module, batch_size: int, angles, shears, zooms, **kwargs):
     """Evaluate _np_affine_generator operation.
 
     Args:
@@ -22,14 +22,14 @@ def _np_affine_generator(backend_module: object, batch_size: int, angles: object
     Returns:
             tuple[int, ...]: Result.
     """
-    out: object = np.zeros((batch_size, 8))
+    out = np.zeros((batch_size, 8))
     out[:, 0] = 1.0
     out[:, 4] = 1.0
     return out
 
 
 @numpy_eager_registry.register("ElasticTransform")
-def _np_elastic_transform(backend_module: object, images: object, displacement: object, **kwargs: object) -> object:
+def _np_elastic_transform(backend_module, images, displacement, **kwargs):
     """Apply elastic transformation to an image.
 
     Args:
@@ -41,20 +41,20 @@ def _np_elastic_transform(backend_module: object, images: object, displacement: 
     Returns:
         The transformed images array.
     """
-    arr: object = np.asarray(images)
-    disp: object = np.asarray(displacement)
+    arr = np.asarray(images)
+    disp = np.asarray(displacement)
     if disp.ndim < 1 or disp.size == 0 or disp.all() is None:
         return arr
     if arr.ndim >= 2:
         # simple translation by mean displacement to mimic the effect
-        shift_y: object = int(np.mean(disp[..., 0])) if disp.size > 0 else 0
-        shift_x: object = int(np.mean(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
+        shift_y = int(np.mean(disp[..., 0])) if disp.size > 0 else 0
+        shift_x = int(np.mean(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
         return np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1))
     return arr
 
 
 @numpy_eager_registry.register("ExtractBoundingBoxes")
-def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object) -> object:
+def _np_extract_bounding_boxes(backend_module, images, boxes, box_indices, **kwargs):
     """Evaluate _np_extract_bounding_boxes operation.
 
     Args:
@@ -71,7 +71,7 @@ def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: ob
 
 
 @numpy_eager_registry.register("IoU")
-def _np_iou(backend_module: object, boxes1: object, boxes2: object, **kwargs: object) -> object:
+def _np_iou(backend_module, boxes1, boxes2, **kwargs):
     """Evaluate _np_iou operation.
 
     Args:
@@ -87,7 +87,7 @@ def _np_iou(backend_module: object, boxes1: object, boxes2: object, **kwargs: ob
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
-def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
+def _np_nms(backend_module, boxes, scores, max_output_size, **kwargs):
     """Evaluate _np_nms operation.
 
     Args:
@@ -104,7 +104,7 @@ def _np_nms(backend_module: object, boxes: object, scores: object, max_output_si
 
 
 @numpy_eager_registry.register("PerspectiveTransform")
-def _np_perspective_transform(backend_module: object, images: object, start_points: object, end_points: object, config: object, **kwargs: object) -> object:
+def _np_perspective_transform(backend_module, images, start_points, end_points, config, **kwargs):
     """Evaluate _np_perspective_transform operation.
 
     Args:
@@ -122,7 +122,7 @@ def _np_perspective_transform(backend_module: object, images: object, start_poin
 
 
 @numpy_eager_registry.register("AffineGrid")
-def _np_affine_grid(backend_module: object, theta: object, size: tuple[object, ...], align_corners: bool = False, **kwargs: object) -> object:
+def _np_affine_grid(backend_module, theta, size, align_corners: bool = False, **kwargs):
     """Evaluate _np_affine_grid operation.
 
     Args:
@@ -136,7 +136,7 @@ def _np_affine_grid(backend_module: object, theta: object, size: tuple[object, .
             tuple[int, ...]: Result.
     """
     if isinstance(theta, np.ndarray):
-        s: object = list(size)
+        s = list(size)
         if len(s) == 4:
             return np.zeros((s[0], s[2], s[3], 2), dtype=theta.dtype)
         return np.zeros(s + [2], dtype=theta.dtype)
@@ -144,7 +144,7 @@ def _np_affine_grid(backend_module: object, theta: object, size: tuple[object, .
 
 
 @numpy_eager_registry.register("AffineTransform")
-def _np_affine_transform(backend_module: object, images: object, transforms: object, interpolation: str = "nearest", **kwargs: object) -> object:
+def _np_affine_transform(backend_module, images, transforms, interpolation: str = "nearest", **kwargs):
     """Evaluate _np_affine_transform operation.
 
     Args:

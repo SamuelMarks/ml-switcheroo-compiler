@@ -21,7 +21,7 @@ def test_tensor_dunders() -> None:
     """Test the tensor dunders behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the correct execution of various magic (dunder) methods on the Tensor.\n\n    class\n\n    This test runs in eager mode and exercises arithmetic, bitwise, comparison,\n    unary, indexing, in-place modification, and type conversion operations\n    on Tensor instances to ensure they execute without errors\n\n    Returns:\n    None\n    "
@@ -64,7 +64,7 @@ def test_tensor_dunders_extra() -> None:
     """Test the tensor dunders extra behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests extra tensor dunders for coverage."
@@ -104,7 +104,7 @@ def test_tensor_errors() -> None:
     """Test the tensor errors behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests tensor errors."
@@ -125,7 +125,7 @@ def test_tensor_tracing_eval() -> None:
     """Test the tensor tracing eval behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests tensor eval in tracing."
@@ -149,7 +149,7 @@ def test_tensor_coverage_more() -> None:
     """Test the tensor coverage more behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests more tensor coverage."
@@ -174,7 +174,7 @@ def test_tensor_coverage_even_more() -> None:
     """Test the tensor coverage even more behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Tests even more tensor coverage."

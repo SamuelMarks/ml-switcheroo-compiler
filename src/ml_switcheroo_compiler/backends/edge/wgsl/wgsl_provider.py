@@ -4,23 +4,23 @@ import os
 
 import yaml
 
-_WGSL_TEMPLATES: dict[str, object] = {}
+_WGSL_TEMPLATES = {}
 
 
 def _load_templates() -> None:
     """Load wgsl templates."""
     global _WGSL_TEMPLATES
     if not _WGSL_TEMPLATES:
-        path: object = os.path.join(os.path.dirname(__file__), "wgsl_templates.yaml")
+        path: str = os.path.join(os.path.dirname(__file__), "wgsl_templates.yaml")
         if os.path.exists(path):
             with open(path) as f:
                 from ml_switcheroo_compiler.backends.edge.config_models import WgslTemplatesConfig
 
-                raw_data: object = yaml.safe_load(f)
+                raw_data: dict[str, str] = yaml.safe_load(f)
                 _WGSL_TEMPLATES = WgslTemplatesConfig(**raw_data).model_dump()
 
 
-def get_wgsl_template(name: str) -> object:
+def get_wgsl_template(name: str):
     """Get wgsl template."""
     _load_templates()
     return _WGSL_TEMPLATES.get("templates", {}).get(name, {})

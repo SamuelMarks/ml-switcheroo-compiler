@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Linalg extras module."""
 
+import threading
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -17,11 +19,11 @@ def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[
     Returns:
             tuple[int, ...]: Result.
     """
-    skip_set: object = set(batch) | set(contracting)
+    skip_set: threading.Thread = set(batch) | set(contracting)
     return [dims[i] for i in range(len(dims)) if i not in skip_set]
 
 
-def _parse_dot_dimension_numbers(dimension_numbers: object) -> tuple[object, ...]:
+def _parse_dot_dimension_numbers(dimension_numbers):
     """Evaluate _parse_dot_dimension_numbers operation.
 
     Args:
@@ -36,7 +38,7 @@ def _parse_dot_dimension_numbers(dimension_numbers: object) -> tuple[object, ...
     return (a_contracting, b_contracting, a_batch, b_batch)
 
 
-def _dot_general(a: object, b: object, dimension_numbers: object) -> object:
+def _dot_general(a, b, dimension_numbers):
     """Evaluate _dot_general operation.
 
     Args:
@@ -51,7 +53,7 @@ def _dot_general(a: object, b: object, dimension_numbers: object) -> object:
     return np.einsum(a, a_dims, b, b_dims, out_dims)
 
 
-def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: object) -> tuple[list[int], list[int], list[int]]:
+def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers) -> tuple[list[int], list[int], list[int]]:
     """Evaluate _build_einsum_equation operation.
 
     Args:
@@ -63,20 +65,20 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: object) 
             tuple[int, ...]: Result.
     """
     (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(dimension_numbers)
-    a_dims: object = list(range(a_ndim))
-    b_dims: object = list(range(a_ndim, a_ndim + b_ndim))
+    a_dims: list = list(range(a_ndim))
+    b_dims: list = list(range(a_ndim, a_ndim + b_ndim))
     for i, a_b in enumerate(a_batch):
         b_dims[b_batch[i]] = a_dims[a_b]
     for i, a_c in enumerate(a_contracting):
         b_dims[b_contracting[i]] = a_dims[a_c]
-    out_dims: object = [a_dims[i] for i in a_batch]
+    out_dims: list = [a_dims[i] for i in a_batch]
     out_dims.extend(_get_uncontracted_dims(a_dims, a_batch, a_contracting))
     out_dims.extend(_get_uncontracted_dims(b_dims, b_batch, b_contracting))
     return (a_dims, b_dims, out_dims)
 
 
 @numpy_eager_registry.register("Trace")
-def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trace(backend_module, *args, **kwargs):
     """Evaluate _np_trace operation.
 
     Args:
@@ -91,7 +93,7 @@ def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("MatrixRank")
-def _np_matrix_rank(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_rank(backend_module, *args, **kwargs):
     """Evaluate _np_matrix_rank operation.
 
     Args:
@@ -106,7 +108,7 @@ def _np_matrix_rank(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("MatrixTranspose")
-def _np_matrix_transpose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_transpose(backend_module, *args, **kwargs):
     """Evaluate _np_matrix_transpose operation.
 
     Args:
@@ -121,7 +123,7 @@ def _np_matrix_transpose(backend_module: object, *args: object, **kwargs: object
 
 
 @numpy_eager_registry.register("Sqrtm")
-def _np_sqrtm(a: object) -> object:
+def _np_sqrtm(a):
     """Sqrtm.
 
     Args:
@@ -134,7 +136,7 @@ def _np_sqrtm(a: object) -> object:
 
 
 @numpy_eager_registry.register("Adjoint")
-def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_adjoint(backend_module, *args, **kwargs):
     """Evaluate _np_adjoint operation.
 
     Args:
@@ -149,7 +151,7 @@ def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("CholeskySolve")
-def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cholesky_solve(backend_module, *args, **kwargs):
     """Evaluate _np_cholesky_solve operation.
 
     Args:
@@ -165,14 +167,14 @@ def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) 
     if len(args) < 2:
         return args[0]
 
-    b: object = backend_module.asarray(args[0])
-    u: object = backend_module.asarray(args[1])
-    upper: object = kwargs.get("upper", False)
+    b: np.ndarray = backend_module.asarray(args[0])
+    u: np.ndarray = backend_module.asarray(args[1])
+    upper: bool = kwargs.get("upper", False)
     return backend_module.array(scipy.linalg.cho_solve((u, not upper), b))
 
 
 @numpy_eager_registry.register("EighTridiagonal")
-def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_eigh_tridiagonal(backend_module, *args, **kwargs):
     """Evaluate _np_eigh_tridiagonal operation.
 
     Args:
@@ -188,14 +190,14 @@ def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object
     if len(args) < 2:
         return args[0]
 
-    alpha: object = backend_module.asarray(args[0])
-    beta: object = backend_module.asarray(args[1])
+    alpha: np.ndarray = backend_module.asarray(args[0])
+    beta: np.ndarray = backend_module.asarray(args[1])
     eigvals, eigvecs = scipy.linalg.eigh_tridiagonal(alpha, beta)
     return backend_module.array(eigvals), backend_module.array(eigvecs)
 
 
 @numpy_eager_registry.register("Qr")
-def _np_qr(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_qr(backend_module, *args, **kwargs):
     """Evaluate _np_qr operation.
 
     Args:
@@ -210,7 +212,7 @@ def _np_qr(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Cross")
-def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cross(backend_module, *args, **kwargs):
     """Evaluate _np_cross operation.
 
     Args:
@@ -221,7 +223,7 @@ def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: object = kwargs.pop("axes", None)
+    axes: np.ndarray = kwargs.pop("axes", None)
     if axes:
         kwargs.update({k: v for k, v in axes.items() if v is not None})
     if "axis" in kwargs and kwargs["axis"] is None:
@@ -230,7 +232,7 @@ def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Slogdet")
-def _np_slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_slogdet(backend_module, *args, **kwargs):
     """Evaluate _np_slogdet operation.
 
     Args:
@@ -260,7 +262,7 @@ for op_name in [
     "MultiDot",
 ]:
 
-    def make_linalg_wrapper(name: str) -> object:
+    def make_linalg_wrapper(name: str):
         """Create a wrapper for linalg operations.
 
         Args:
@@ -270,7 +272,7 @@ for op_name in [
             tuple[int, ...]: Result.
         """
 
-        def _wrapper(backend_module: object, *args: object, **kwargs: object) -> object:
+        def _wrapper(backend_module, *args, **kwargs):
             """Evaluate _wrapper operation.
 
             Args:
@@ -283,7 +285,7 @@ for op_name in [
             """
             import numpy as np
 
-            func: object = getattr(np.linalg, name.lower() if name.lower() != "multidot" else "multi_dot")
+            func = getattr(np.linalg, name.lower() if name.lower() != "multidot" else "multi_dot")
             return func(*args, **kwargs)
 
         return _wrapper
@@ -292,7 +294,7 @@ for op_name in [
 
 
 @numpy_eager_registry.register("Lu")
-def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu(backend_module, *args, **kwargs):
     """Evaluate _np_lu operation.
 
     Args:
@@ -309,7 +311,7 @@ def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("LuFactor")
-def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_factor(backend_module, *args, **kwargs):
     """Evaluate _np_lu_factor operation.
 
     Args:
@@ -326,7 +328,7 @@ def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("LuSolve")
-def _np_lu_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_solve(backend_module, *args, **kwargs):
     """Evaluate _np_lu_solve operation.
 
     Args:
@@ -343,7 +345,7 @@ def _np_lu_solve(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("LuPivotsToPermutation")
-def _np_lu_pivots(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_pivots(backend_module, *args, **kwargs):
     """Evaluate _np_lu_pivots operation.
 
     Args:
@@ -356,16 +358,16 @@ def _np_lu_pivots(backend_module: object, *args: object, **kwargs: object) -> ob
     """
     import numpy as np
 
-    pivots: object = args[0]
-    n: object = args[1]
-    perm: object = np.arange(n)
+    pivots: list = args[0]
+    n: np.ndarray = args[1]
+    perm: np.ndarray = np.arange(n)
     for i, p in enumerate(pivots):
         perm[i], perm[p] = perm[p], perm[i]
     return perm
 
 
 @numpy_eager_registry.register("MatrixExponential")
-def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_exponential(backend_module, *args, **kwargs):
     """Evaluate _np_matrix_exponential operation.
 
     Args:
@@ -382,7 +384,7 @@ def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: obje
 
 
 @numpy_eager_registry.register("Hessenberg")
-def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_hessenberg(backend_module, *args, **kwargs):
     """Evaluate _np_hessenberg operation.
 
     Args:
@@ -399,7 +401,7 @@ def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("Tridiagonal")
-def _np_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tridiagonal(backend_module, *args, **kwargs):
     """Evaluate _np_tridiagonal operation.
 
     Args:
@@ -412,15 +414,15 @@ def _np_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> 
     """
     import numpy as np
 
-    a: object = args[0]
-    diag: object = np.diagonal(a)
-    off_diag: object = np.diagonal(a, offset=1)
-    q: object = np.eye(a.shape[0])
+    a: np.ndarray = args[0]
+    diag: np.ndarray = np.diagonal(a)
+    off_diag: np.ndarray = np.diagonal(a, offset=1)
+    q: np.ndarray = np.eye(a.shape[0])
     return diag, off_diag, q
 
 
 @numpy_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonal_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tridiagonal_solve(backend_module, *args, **kwargs):
     """Evaluate _np_tridiagonal_solve operation.
 
     Args:
@@ -438,7 +440,7 @@ def _np_tridiagonal_solve(backend_module: object, *args: object, **kwargs: objec
 
 
 @numpy_eager_registry.register("CholeskyEx")
-def _np_cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cholesky_ex(backend_module, *args, **kwargs):
     """Evaluate _np_cholesky_ex operation.
 
     Args:
@@ -458,7 +460,7 @@ def _np_cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("InvEx")
-def _np_inv_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_inv_ex(backend_module, *args, **kwargs):
     """Evaluate _np_inv_ex operation.
 
     Args:
@@ -478,7 +480,7 @@ def _np_inv_ex(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Pinv")
-def _np_pinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_pinv(backend_module, *args, **kwargs):
     """Evaluate _np_pinv operation.
 
     Args:
@@ -495,7 +497,7 @@ def _np_pinv(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Polar")
-def _np_polar(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_polar(backend_module, *args, **kwargs):
     """Evaluate _np_polar operation.
 
     Args:
@@ -512,7 +514,7 @@ def _np_polar(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Qdwh")
-def _np_qdwh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_qdwh(backend_module, *args, **kwargs):
     """Evaluate _np_qdwh operation.
 
     Args:
@@ -526,13 +528,13 @@ def _np_qdwh(backend_module: object, *args: object, **kwargs: object) -> object:
     import numpy as np
     import scipy.linalg
 
-    a: object = args[0]
+    a: np.ndarray = args[0]
     u, p = scipy.linalg.polar(a)
     return u, p, np.array(0, dtype=np.int32), np.array(True, dtype=bool)
 
 
 @numpy_eager_registry.register("SolveEx")
-def _np_solve_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_solve_ex(backend_module, *args, **kwargs):
     """Evaluate _np_solve_ex operation.
 
     Args:
@@ -552,7 +554,7 @@ def _np_solve_ex(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Svd")
-def _np_svd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_svd(backend_module, *args, **kwargs):
     """Evaluate _np_svd operation.
 
     Args:
@@ -565,6 +567,6 @@ def _np_svd(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     import numpy as np
 
-    full_matrices: object = kwargs.get("full_matrices", True)
-    compute_uv: object = kwargs.get("compute_uv", True)
+    full_matrices: list = kwargs.get("full_matrices", True)
+    compute_uv: np.ndarray = kwargs.get("compute_uv", True)
     return np.linalg.svd(args[0], full_matrices=full_matrices, compute_uv=compute_uv)

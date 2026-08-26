@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Sum")
-def _np_sum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_sum(backend_module, *args, **kwargs):
     """Evaluate _np_sum operation.
 
     Args:
@@ -20,7 +20,7 @@ def _np_sum(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Mean")
-def _np_mean(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_mean(backend_module, *args, **kwargs):
     """Evaluate _np_mean operation.
 
     Args:
@@ -35,7 +35,7 @@ def _np_mean(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Max")
-def _np_max(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_max(backend_module, *args, **kwargs):
     """Evaluate _np_max operation.
 
     Args:
@@ -50,7 +50,7 @@ def _np_max(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Min")
-def _np_min(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_min(backend_module, *args, **kwargs):
     """Evaluate _np_min operation.
 
     Args:
@@ -65,7 +65,7 @@ def _np_min(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Variance")
-def _np_variance(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_variance(backend_module, *args, **kwargs):
     """Evaluate _np_variance operation.
 
     Args:
@@ -81,7 +81,7 @@ def _np_variance(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Std")
-def _np_std(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_std(backend_module, *args, **kwargs):
     """Evaluate _np_std operation.
 
     Args:
@@ -96,7 +96,7 @@ def _np_std(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Argmax")
-def _np_argmax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_argmax(backend_module, *args, **kwargs):
     """Evaluate _np_argmax operation.
 
     Args:
@@ -111,7 +111,7 @@ def _np_argmax(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Argmin")
-def _np_argmin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_argmin(backend_module, *args, **kwargs):
     """Evaluate _np_argmin operation.
 
     Args:
@@ -126,7 +126,7 @@ def _np_argmin(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Prod")
-def _np_prod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_prod(backend_module, *args, **kwargs):
     """Evaluate _np_prod operation.
 
     Args:
@@ -141,7 +141,7 @@ def _np_prod(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("AnyOp")
-def _np_any_op(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_any_op(backend_module, *args, **kwargs):
     """Evaluate _np_any_op operation.
 
     Args:
@@ -156,7 +156,7 @@ def _np_any_op(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Cumsum")
-def _np_cumsum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cumsum(backend_module, *args, **kwargs):
     """Evaluate _np_cumsum operation.
 
     Args:
@@ -171,7 +171,7 @@ def _np_cumsum(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("AddN")
-def _np_add_n(backend_module: object, inputs: list[object], **kwargs: object) -> object:
+def _np_add_n(backend_module, inputs, **kwargs):
     """Evaluate _np_add_n operation.
 
     Args:
@@ -187,14 +187,14 @@ def _np_add_n(backend_module: object, inputs: list[object], **kwargs: object) ->
     """
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: object = inputs[0]
+    res = inputs[0]
     for i in range(1, len(inputs)):
-        res: object = backend_module.add(res, inputs[i])
+        res = backend_module.add(res, inputs[i])
     return res
 
 
 @numpy_eager_registry.register("AccumulateN")
-def _np_accumulate_n(backend_module: object, inputs: list[object], **kwargs: object) -> object:
+def _np_accumulate_n(backend_module, inputs, **kwargs):
     """Evaluate _np_accumulate_n operation.
 
     Args:
@@ -210,14 +210,14 @@ def _np_accumulate_n(backend_module: object, inputs: list[object], **kwargs: obj
     """
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: object = inputs[0]
+    res = inputs[0]
     for i in range(1, len(inputs)):
-        res: object = backend_module.add(res, inputs[i])
+        res = backend_module.add(res, inputs[i])
     return res
 
 
 @numpy_eager_registry.register("CumulativeLogsumexp")
-def _np_cumulative_logsumexp(backend_module: object, x: object, axis: int = 0, **kwargs: object) -> object:
+def _np_cumulative_logsumexp(backend_module, x, axis: int = 0, **kwargs):
     """Evaluate _np_cumulative_logsumexp operation.
 
     Args:
@@ -229,6 +229,6 @@ def _np_cumulative_logsumexp(backend_module: object, x: object, axis: int = 0, *
     Returns:
             tuple[int, ...]: Result.
     """
-    exp_x: object = backend_module.exp(x)
-    cumsum_exp: object = backend_module.cumsum(exp_x, axis=axis)
+    exp_x = backend_module.exp(x)
+    cumsum_exp = backend_module.cumsum(exp_x, axis=axis)
     return backend_module.log(cumsum_exp)

@@ -15,7 +15,7 @@ def test_lazy_frontend_direct_1() -> None:
     """Test the lazy frontend direct 1 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs part 1."
@@ -49,7 +49,7 @@ def test_lazy_frontend_direct_2() -> None:
     """Test the lazy frontend direct 2 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs part 2."
@@ -98,7 +98,7 @@ def test_lazy_frontend_direct_3() -> None:
     """Test the lazy frontend direct 3 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs part 3."
@@ -138,7 +138,7 @@ def test_lazy_frontend_direct_4() -> None:
     """Test the lazy frontend direct 4 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test frontend lazy APIs part 4."

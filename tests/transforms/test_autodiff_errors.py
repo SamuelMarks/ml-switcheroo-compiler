@@ -11,7 +11,7 @@ def test_real_exception() -> None:
     """Test the real exception behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Execute the requested function."

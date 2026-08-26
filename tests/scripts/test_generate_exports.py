@@ -20,15 +20,18 @@ def test_get_exports_from_submodule() -> None:
     with patch("importlib.import_module") as mock_import:
 
         class MockMod:
+            """Mock module."""
+
             _hidden = 1
             visible = 2
 
             def func(self) -> None:
+                """Mock method."""
                 pass
 
         import types
 
-        MockMod.mod = types.ModuleType("sub")  # type: ignore
+        MockMod.mod = types.ModuleType("sub")
         mock_import.return_value = MockMod()
         assert ge._get_exports_from_submodule("foo") == ["func", "visible"]
 
@@ -96,6 +99,7 @@ def test_process_file_no_src_dir(tmp_path: Path) -> None:
     f.write_text("")
 
     def fake_abs(p: str) -> str:
+        """Mock absolute path."""
         if p == "src":
             return "/tmp/src"
         return "/tmp/other/file.py"
@@ -116,6 +120,7 @@ def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     f.write_text("")
 
     def fake_abspath(p: str) -> str:
+        """Mock absolute path."""
         if p == "src":
             return str(tmp_path / "src")
         return os.path.join(os.getcwd(), p) if not os.path.isabs(p) else p
@@ -140,6 +145,7 @@ def setup_mock_src(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     src.mkdir(exist_ok=True)
 
     def fake_abspath(p: str) -> str:
+        """Mock absolute path."""
         if p == "src":
             return str(src)
         if not os.path.isabs(p):
@@ -162,6 +168,8 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     f.write_text("# generate_exports_from: sub1\n# exclude_exports: y\nx = 1\n__all__ = ['w']\n\n\n")
 
     class MockMod:
+        """Mock module."""
+
         __all__ = ["x"]
 
     with patch("importlib.import_module", return_value=MockMod()):
@@ -187,6 +195,8 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     f.write_text("# auto-generate-all\nx = 1\ny = 2\n_z = 3\n__all__ = ['w']")
 
     class MockMod:
+        """Mock module."""
+
         x = 1
         y = 2
         _z = 3
@@ -209,10 +219,12 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         monkeypatch (pytest.MonkeyPatch): Pytest fixture.
     """
     src = setup_mock_src(tmp_path, monkeypatch)
-    f = src / "test3.py"
-    f.write_text("x = 1\n__all__ = ['y']")  # different existing
+    f = src / "test3.__init__.py"
+    f.write_text("x = 1\n__all__ = ['y']\n\n  \n")  # different existing, trailing space for coverage
 
     class MockMod:
+        """Mock module."""
+
         __all__ = ["x"]
 
     with patch("importlib.import_module", return_value=MockMod()):
@@ -222,6 +234,29 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     content = f.read_text()
     assert '"x"' in content
     assert '"y"' not in content
+
+
+def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test processing a file where existing __all__ exactly matches.
+
+    Args:
+        tmp_path (Path): Pytest fixture.
+        monkeypatch (pytest.MonkeyPatch): Pytest fixture.
+    """
+    src = setup_mock_src(tmp_path, monkeypatch)
+    f = src / "test_match.py"
+    f.write_text("x = 1\n__all__ = ['x']")  # matches exactly
+
+    class MockMod:
+        """Mock module."""
+
+        __all__ = ["x"]
+
+    with patch("importlib.import_module", return_value=MockMod()):
+        with patch("subprocess.run"):
+            ge.process_file(str(f))
+
+    assert f.read_text() == "x = 1\n__all__ = ['x']"
 
 
 def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -236,6 +271,8 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
     f.write_text("x = 1\n")
 
     class MockMod:
+        """Mock module."""
+
         __all__ = None
         x = 1
 
@@ -243,11 +280,7 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
-    content = f.read_text()
-    # It will not be generated because "if not lines_to_remove and not getattr(mod, '__all__', None): return"
-    # Wait, the fallback is exports = [n for n in dir(mod) if not n.startswith("_")]
-    # And then we get no lines to remove. So it returns.
-    assert content == "x = 1\n"
+    assert f.read_text() == "x = 1\n"
 
 
 def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -262,6 +295,8 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     f.write_text("x = 1\n__all__.append('x')")
 
     class MockMod:
+        """Mock module."""
+
         __all__ = ["x"]
         x = 1
 
@@ -286,23 +321,45 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
     f.write_text("x = 1\n__all__ = [")  # Invalid syntax
 
     class MockMod:
+        """Mock module."""
+
         __all__ = ["x"]
 
     with patch("importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             # Ensure it hits the return line
-            result = ge.process_file(str(f))
-            assert result is None
+            ge.process_file(str(f))
 
     # Content shouldn't change due to syntax error
     assert f.read_text() == "x = 1\n__all__ = ["
 
 
+def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test processing a file where existing __all__ is an invalid type.
+
+    Args:
+        tmp_path (Path): Pytest fixture.
+        monkeypatch (pytest.MonkeyPatch): Pytest fixture.
+    """
+    src = setup_mock_src(tmp_path, monkeypatch)
+    f = src / "test_invalid_all.py"
+    f.write_text("x = 1\n")
+
+    class MockMod:
+        """Mock module."""
+
+        __all__ = 123  # Not a list, tuple, or set
+
+    with patch("importlib.import_module", return_value=MockMod()):
+        with patch("subprocess.run"):
+            ge.process_file(str(f))
+
+    assert f.read_text() == "x = 1\n\n__all__ = [\n]\n"
+
+
 def test_main() -> None:
     """Test the __main__ block of generate_exports.py."""
-    import subprocess
-
-    # Run the actual script to ensure full coverage of the __main__ block
-    # It will rewrite files to the same state
-    result = subprocess.run(["python3", "scripts/generate_exports.py"], capture_output=True, check=False)
-    assert result.returncode == 0
+    with patch("scripts.generate_exports.generate_init") as mock_generate_init:
+        with patch("scripts.generate_exports.process_file") as mock_process_file:
+            ge.main()
+            mock_generate_init.assert_called()

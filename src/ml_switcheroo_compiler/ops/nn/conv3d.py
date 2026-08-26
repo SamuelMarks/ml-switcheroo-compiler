@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .conv_utils import _build_conv_config
 
 
-def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
+def conv3d(lhs: Tensor, rhs: Tensor, config_obj=None, **kwargs):
     """3D Convolution.
 
     Args:
@@ -25,7 +25,7 @@ def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None,
         Tensor: The result of the convolution.
     """
     if config_obj is None:
-        config_obj: object = _build_conv_config(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)))
+        config_obj = _build_conv_config(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 
@@ -35,7 +35,7 @@ def conv3d_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> object:
+):
     """3D convolution transpose.
 
     Args:
@@ -47,6 +47,6 @@ def conv3d_transpose(
     Returns:
         Tensor: The result of the convolution.
     """
-    conv_transpose: object = get_op("ConvTranspose")()
+    conv_transpose = get_op("ConvTranspose")()
 
     return conv_transpose(lhs, rhs, strides, padding)

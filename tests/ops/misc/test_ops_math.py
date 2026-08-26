@@ -10,7 +10,7 @@ def test_extra_unary() -> None:
     """Test the extra unary behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test function."
@@ -36,7 +36,7 @@ def test_extra_binary() -> None:
     """Test the extra binary behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test function."

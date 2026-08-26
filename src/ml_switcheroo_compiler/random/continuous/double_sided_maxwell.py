@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def double_sided_maxwell(*args: object, **kwargs: object) -> object:
+def double_sided_maxwell(*args, **kwargs):
     """Evaluate double_sided_maxwell operation.
 
     Args:

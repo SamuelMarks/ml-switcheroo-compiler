@@ -8,6 +8,7 @@ from __future__ import annotations
 
 
 import inspect
+from typing import Optional
 
 
 def get_source_ast_ref(back_frames: int = 1) -> str | None:
@@ -17,21 +18,21 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
         back_frames (int): The back_frames parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Optional[str]: Result.
     """
     try:
-        frame: object = inspect.currentframe()
+        frame = inspect.currentframe()
         if frame is None:
             return None
 
         # Traverse back the specified number of frames
         for _ in range(back_frames + 1):
             if frame.f_back:
-                frame: object = frame.f_back
+                frame = frame.f_back
             else:
                 break
 
-        info: object = inspect.getframeinfo(frame)
+        info = inspect.getframeinfo(frame)
         return f"{info.filename}:{info.lineno}"
     except (ValueError, TypeError, AttributeError):
         return None

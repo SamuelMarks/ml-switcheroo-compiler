@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _eager_base64(op: str, data: object, pad: bool = False) -> object:
+def _eager_base64(op: str, data, pad: bool = False):
     """Evaluate _eager_base64 operation.
 
     Args:
@@ -29,7 +29,7 @@ def _eager_base64(op: str, data: object, pad: bool = False) -> object:
     """
     import base64
 
-    def _proc(d: object) -> bytes:
+    def _proc(d) -> bytes:
         """Process a single element for base64 operation.
 
         Args:
@@ -40,10 +40,10 @@ def _eager_base64(op: str, data: object, pad: bool = False) -> object:
         """
         if d is None:
             return b""
-        b: object = d.encode("utf-8") if isinstance(d, str) else d
-        res: object = base64.b64encode(b) if op == "encode" else base64.b64decode(b)
+        b = d.encode("utf-8") if isinstance(d, str) else d
+        res = base64.b64encode(b) if op == "encode" else base64.b64decode(b)
         if op == "encode" and not pad:
-            res: object = res.rstrip(b"=")
+            res = res.rstrip(b"=")
         return res
 
     if isinstance(data, (list, tuple)):
@@ -51,7 +51,7 @@ def _eager_base64(op: str, data: object, pad: bool = False) -> object:
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad: object = False, name: object = None) -> object:
+def encode_base64(input: Tensor, pad=False, name=None):
     """Encode base64.
 
     Args:
@@ -73,7 +73,7 @@ def encode_base64(input: Tensor, pad: object = False, name: object = None) -> ob
     return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def decode_base64(input: Tensor, name: object = None) -> object:
+def decode_base64(input: Tensor, name=None):
     """Decode base64.
 
     Args:
@@ -98,9 +98,9 @@ def decode_base64(input: Tensor, name: object = None) -> object:
 class EncodeBase64(OpDef):
     """EncodeBase64 operation."""
 
-    op_name: object = "EncodeBase64"
+    op_name = "EncodeBase64"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -112,12 +112,12 @@ class EncodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res
 
 
@@ -125,9 +125,9 @@ class EncodeBase64(OpDef):
 class DecodeBase64(OpDef):
     """DecodeBase64 operation."""
 
-    op_name: object = "DecodeBase64"
+    op_name = "DecodeBase64"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -139,10 +139,10 @@ class DecodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes: object = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
-        res: object = shapes[0]
+        res = shapes[0]
         for s in shapes[1:]:
-            res: object = broadcast_shapes(res, s)
+            res = broadcast_shapes(res, s)
         return res

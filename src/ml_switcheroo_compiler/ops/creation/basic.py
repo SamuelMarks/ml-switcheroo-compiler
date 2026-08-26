@@ -18,7 +18,7 @@ class CreationOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -35,7 +35,7 @@ class CreationOp(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
@@ -52,14 +52,14 @@ class CreationOp(OpDef):
 class Zeros(CreationOp):
     """Provide an operation that creates a tensor of a specified shape filled with zeros."""
 
-    op_name: object = "Zeros"
+    op_name = "Zeros"
 
 
 @register_op("Ones")
 class Ones(CreationOp):
     """Provide an operation that creates a tensor of a specified shape filled with ones."""
 
-    op_name: object = "Ones"
+    op_name = "Ones"
 
 
 @register_op("Full")
@@ -69,9 +69,9 @@ class Full(CreationOp):
     value
     """
 
-    op_name: object = "Full"
+    op_name = "Full"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -88,7 +88,7 @@ class Full(CreationOp):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
@@ -111,7 +111,7 @@ class Arange(OpDef):
     within a given interval
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -128,7 +128,7 @@ class Arange(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
@@ -145,9 +145,9 @@ class Arange(OpDef):
 class Rand(CreationOp):
     """Create a tensor with random numbers from a uniform distribution [0, 1)."""
 
-    op_name: object = "Rand"
+    op_name = "Rand"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -164,7 +164,7 @@ class Rand(CreationOp):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
@@ -185,16 +185,16 @@ class Rand(CreationOp):
 class Randn(Rand):
     """Create a tensor with random numbers from a standard normal distribution."""
 
-    op_name: object = "Randn"
+    op_name = "Randn"
 
 
 @register_op("Randint")
 class Randint(CreationOp):
     """Create a tensor with random integers from [low, high)."""
 
-    op_name: object = "Randint"
+    op_name = "Randint"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -211,7 +211,7 @@ class Randint(CreationOp):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
@@ -232,9 +232,9 @@ class Randint(CreationOp):
 class ManualSeed(OpDef):
     """Set the seed for generating random numbers."""
 
-    op_name: object = "ManualSeed"
+    op_name = "ManualSeed"
 
-    def infer_shape(self, seed: object, **kwargs: object) -> object:
+    def infer_shape(self, seed, **kwargs):
         """Infer the output shape of the operation.
 
         Args:
@@ -251,7 +251,7 @@ class ManualSeed(OpDef):
 class ConstantOfShape(OpDef):
     """ConstantOfShape operator."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Infer shape.
 
         Args:
@@ -268,7 +268,7 @@ class ConstantOfShape(OpDef):
 class Range(OpDef):
     """Range operator."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes, **kwargs):
         """Infer shape.
 
         Args:
@@ -286,7 +286,7 @@ class Range(OpDef):
 class Blackman(OpDef):
     """Blackman window."""
 
-    def infer_shape(self, M: object, **kwargs: object) -> object:
+    def infer_shape(self, M, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -303,7 +303,7 @@ class Blackman(OpDef):
 class Bartlett(OpDef):
     """Bartlett window."""
 
-    def infer_shape(self, M: object, **kwargs: object) -> object:
+    def infer_shape(self, M, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -320,7 +320,7 @@ class Bartlett(OpDef):
 class Hamming(OpDef):
     """Hamming window."""
 
-    def infer_shape(self, M: object, **kwargs: object) -> object:
+    def infer_shape(self, M, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -337,7 +337,7 @@ class Hamming(OpDef):
 class Hanning(OpDef):
     """Hanning window."""
 
-    def infer_shape(self, M: object, **kwargs: object) -> object:
+    def infer_shape(self, M, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -354,7 +354,7 @@ class Hanning(OpDef):
 class Kaiser(OpDef):
     """Kaiser window."""
 
-    def infer_shape(self, M: object, **kwargs: object) -> object:
+    def infer_shape(self, M, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -371,9 +371,9 @@ class Kaiser(OpDef):
 class TrilIndices(OpDef):
     """TrilIndices operator definition."""
 
-    op_name: object = "TrilIndices"
+    op_name = "TrilIndices"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -390,14 +390,14 @@ class TrilIndices(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -406,9 +406,9 @@ class TrilIndices(OpDef):
 class TrilIndicesFrom(OpDef):
     """TrilIndicesFrom operator definition."""
 
-    op_name: object = "TrilIndicesFrom"
+    op_name = "TrilIndicesFrom"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -425,14 +425,14 @@ class TrilIndicesFrom(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -441,9 +441,9 @@ class TrilIndicesFrom(OpDef):
 class TriuIndices(OpDef):
     """TriuIndices operator definition."""
 
-    op_name: object = "TriuIndices"
+    op_name = "TriuIndices"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -460,14 +460,14 @@ class TriuIndices(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -476,9 +476,9 @@ class TriuIndices(OpDef):
 class TriuIndicesFrom(OpDef):
     """TriuIndicesFrom operator definition."""
 
-    op_name: object = "TriuIndicesFrom"
+    op_name = "TriuIndicesFrom"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -495,14 +495,14 @@ class TriuIndicesFrom(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns: object: Computed shape.
+        Returns: Tensor: Computed shape.
         """
         return args[0] if args else ()
 
@@ -511,9 +511,9 @@ class TriuIndicesFrom(OpDef):
 class Logspace(CreationOp):
     """Logspace op."""
 
-    op_name: object = "Logspace"
+    op_name = "Logspace"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -530,7 +530,7 @@ class Logspace(CreationOp):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
@@ -547,7 +547,7 @@ class Logspace(CreationOp):
 class Frombuffer(OpDef):
     """Operator Frombuffer."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -564,7 +564,7 @@ class Frombuffer(OpDef):
         Returns:
         object: Result.
         """
-        shape: object = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:

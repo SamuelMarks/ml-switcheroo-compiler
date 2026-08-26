@@ -15,10 +15,10 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 def _emit_signal_node(
     op_type: str,
     inputs: list[Tensor],
-    attrs: dict[str, object],
+    attrs,
     out_shape: tuple[int, ...],
     dtype: str,
-) -> object:
+):
     """Emit a signal node.
 
     Args:
@@ -34,7 +34,7 @@ def _emit_signal_node(
     return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
-def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, object]:
+def _calculate_padding(mode: str, boundary: str, fillvalue: float):
     """Calculate padding configuration for convolve2d.
 
     Args:

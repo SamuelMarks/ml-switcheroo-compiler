@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class Fftconvolve(OpDef):
     """Fftconvolve."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -33,7 +33,7 @@ class Fftconvolve(OpDef):
         return args[0].shape
 
 
-def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = None) -> object:
+def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes=None):
     """Evaluate fftconvolve operation.
 
     Args:
@@ -46,9 +46,9 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = Non
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
+        backend = get_active_backend()
 
-        data: object = backend.execute_op("Fftconvolve", in1.data, in2.data, mode=mode, axes=axes)
+        data = backend.execute_op("Fftconvolve", in1.data, in2.data, mode=mode, axes=axes)
 
         return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
 
@@ -65,7 +65,7 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = Non
 class Fft(OpDef):
     """Fft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -78,7 +78,7 @@ class Fft(OpDef):
         return args[0].shape
 
 
-def fft(input: Tensor, *args: object, **kwargs: object) -> object:
+def fft(input: Tensor, *args, **kwargs):
     """Evaluate fft operation.
 
     Args:
@@ -90,8 +90,8 @@ def fft(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Fft", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Fft", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_signal_node("Fft", [input], kwargs, input.shape, input.dtype)
 
@@ -100,7 +100,7 @@ def fft(input: Tensor, *args: object, **kwargs: object) -> object:
 class Rfft(OpDef):
     """Rfft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -117,7 +117,7 @@ class Rfft(OpDef):
 class Fft2(OpDef):
     """Fft2 class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -134,7 +134,7 @@ class Fft2(OpDef):
 class Fftfreq(OpDef):
     """Fftfreq class."""
 
-    def infer_shape(self, n: object, d: object = 1.0, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, n, d=1.0, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -153,7 +153,7 @@ class Fftfreq(OpDef):
 class Irfft(OpDef):
     """Irfft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -170,7 +170,7 @@ class Irfft(OpDef):
 class Ihfft(OpDef):
     """Ihfft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -187,7 +187,7 @@ class Ihfft(OpDef):
 class Ifft(OpDef):
     """Ifft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -200,7 +200,7 @@ class Ifft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft(input: Tensor, *args: object, **kwargs: object) -> object:
+def ifft(input: Tensor, *args, **kwargs):
     """Evaluate ifft operation.
 
     Args:
@@ -212,8 +212,8 @@ def ifft(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Ifft", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Ifft", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Ifft", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -222,7 +222,7 @@ def ifft(input: Tensor, *args: object, **kwargs: object) -> object:
 class Fftn(OpDef):
     """Fftn class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -235,7 +235,7 @@ class Fftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftn(input: Tensor, *args: object, **kwargs: object) -> object:
+def fftn(input: Tensor, *args, **kwargs):
     """Evaluate fftn operation.
 
     Args:
@@ -247,8 +247,8 @@ def fftn(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Fftn", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Fftn", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Fftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -257,7 +257,7 @@ def fftn(input: Tensor, *args: object, **kwargs: object) -> object:
 class Ifftn(OpDef):
     """Ifftn class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -270,7 +270,7 @@ class Ifftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftn(input: Tensor, *args: object, **kwargs: object) -> object:
+def ifftn(input: Tensor, *args, **kwargs):
     """Evaluate ifftn operation.
 
     Args:
@@ -282,8 +282,8 @@ def ifftn(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Ifftn", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftn", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Ifftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -292,7 +292,7 @@ def ifftn(input: Tensor, *args: object, **kwargs: object) -> object:
 class Rfftn(OpDef):
     """Rfftn class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -305,7 +305,7 @@ class Rfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftn(input: Tensor, *args: object, **kwargs: object) -> object:
+def rfftn(input: Tensor, *args, **kwargs):
     """Evaluate rfftn operation.
 
     Args:
@@ -317,8 +317,8 @@ def rfftn(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Rfftn", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftn", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Rfftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -327,7 +327,7 @@ def rfftn(input: Tensor, *args: object, **kwargs: object) -> object:
 class Irfftn(OpDef):
     """Irfftn class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -340,7 +340,7 @@ class Irfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftn(input: Tensor, *args: object, **kwargs: object) -> object:
+def irfftn(input: Tensor, *args, **kwargs):
     """Evaluate irfftn operation.
 
     Args:
@@ -352,8 +352,8 @@ def irfftn(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Irfftn", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Irfftn", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Irfftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -362,7 +362,7 @@ def irfftn(input: Tensor, *args: object, **kwargs: object) -> object:
 class Ifft2(OpDef):
     """Ifft2 class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -375,7 +375,7 @@ class Ifft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft2(input: Tensor, *args: object, **kwargs: object) -> object:
+def ifft2(input: Tensor, *args, **kwargs):
     """Evaluate ifft2 operation.
 
     Args:
@@ -387,8 +387,8 @@ def ifft2(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Ifft2", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Ifft2", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Ifft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -397,7 +397,7 @@ def ifft2(input: Tensor, *args: object, **kwargs: object) -> object:
 class Rfft2(OpDef):
     """Rfft2 class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -410,7 +410,7 @@ class Rfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfft2(input: Tensor, *args: object, **kwargs: object) -> object:
+def rfft2(input: Tensor, *args, **kwargs):
     """Evaluate rfft2 operation.
 
     Args:
@@ -422,8 +422,8 @@ def rfft2(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Rfft2", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Rfft2", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Rfft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -432,7 +432,7 @@ def rfft2(input: Tensor, *args: object, **kwargs: object) -> object:
 class Irfft2(OpDef):
     """Irfft2 class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -445,7 +445,7 @@ class Irfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfft2(input: Tensor, *args: object, **kwargs: object) -> object:
+def irfft2(input: Tensor, *args, **kwargs):
     """Evaluate irfft2 operation.
 
     Args:
@@ -457,8 +457,8 @@ def irfft2(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Irfft2", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Irfft2", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Irfft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -467,7 +467,7 @@ def irfft2(input: Tensor, *args: object, **kwargs: object) -> object:
 class Fftnd(OpDef):
     """Fftnd class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -480,7 +480,7 @@ class Fftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftnd(input: Tensor, *args: object, **kwargs: object) -> object:
+def fftnd(input: Tensor, *args, **kwargs):
     """Evaluate fftnd operation.
 
     Args:
@@ -492,8 +492,8 @@ def fftnd(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Fftnd", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Fftnd", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Fftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -502,7 +502,7 @@ def fftnd(input: Tensor, *args: object, **kwargs: object) -> object:
 class Ifftnd(OpDef):
     """Ifftnd class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -515,7 +515,7 @@ class Ifftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftnd(input: Tensor, *args: object, **kwargs: object) -> object:
+def ifftnd(input: Tensor, *args, **kwargs):
     """Evaluate ifftnd operation.
 
     Args:
@@ -527,8 +527,8 @@ def ifftnd(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Ifftnd", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftnd", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Ifftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -537,7 +537,7 @@ def ifftnd(input: Tensor, *args: object, **kwargs: object) -> object:
 class Rfftnd(OpDef):
     """Rfftnd class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -550,7 +550,7 @@ class Rfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
+def rfftnd(input: Tensor, *args, **kwargs):
     """Evaluate rfftnd operation.
 
     Args:
@@ -562,8 +562,8 @@ def rfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Rfftnd", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftnd", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Rfftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -572,7 +572,7 @@ def rfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
 class Irfftnd(OpDef):
     """Irfftnd class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -585,7 +585,7 @@ class Irfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
+def irfftnd(input: Tensor, *args, **kwargs):
     """Evaluate irfftnd operation.
 
     Args:
@@ -597,8 +597,8 @@ def irfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Irfftnd", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Irfftnd", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Irfftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -607,7 +607,7 @@ def irfftnd(input: Tensor, *args: object, **kwargs: object) -> object:
 class Fftshift(OpDef):
     """Fftshift class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -620,7 +620,7 @@ class Fftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftshift(input: Tensor, *args: object, **kwargs: object) -> object:
+def fftshift(input: Tensor, *args, **kwargs):
     """Evaluate fftshift operation.
 
     Args:
@@ -632,8 +632,8 @@ def fftshift(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Fftshift", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Fftshift", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Fftshift", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -642,7 +642,7 @@ def fftshift(input: Tensor, *args: object, **kwargs: object) -> object:
 class Ifftshift(OpDef):
     """Ifftshift class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -655,7 +655,7 @@ class Ifftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftshift(input: Tensor, *args: object, **kwargs: object) -> object:
+def ifftshift(input: Tensor, *args, **kwargs):
     """Evaluate ifftshift operation.
 
     Args:
@@ -667,8 +667,8 @@ def ifftshift(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Ifftshift", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftshift", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Ifftshift", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -677,7 +677,7 @@ def ifftshift(input: Tensor, *args: object, **kwargs: object) -> object:
 class Hfft(OpDef):
     """Hfft class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -690,7 +690,7 @@ class Hfft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def hfft(input: Tensor, *args: object, **kwargs: object) -> object:
+def hfft(input: Tensor, *args, **kwargs):
     """Evaluate hfft operation.
 
     Args:
@@ -702,8 +702,8 @@ def hfft(input: Tensor, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Hfft", input.data, *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Hfft", input.data, *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Hfft", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
@@ -712,7 +712,7 @@ def hfft(input: Tensor, *args: object, **kwargs: object) -> object:
 class Rfftfreq(OpDef):
     """Rfftfreq class."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -725,7 +725,7 @@ class Rfftfreq(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftfreq(input: int, *args: object, **kwargs: object) -> object:
+def rfftfreq(input: int, *args, **kwargs):
     """Evaluate rfftfreq operation.
 
     Args:
@@ -737,7 +737,7 @@ def rfftfreq(input: int, *args: object, **kwargs: object) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Rfftfreq", getattr(input, "data", input), *args, **kwargs)
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftfreq", getattr(input, "data", input), *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Rfftfreq", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))

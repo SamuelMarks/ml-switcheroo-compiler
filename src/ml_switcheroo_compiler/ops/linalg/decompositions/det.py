@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Det(OpDef):
     """Det Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -33,19 +33,19 @@ class Det(OpDef):
 class Slogdet(OpDef):
     """Slogdet Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns: object: The shape.
+        Returns: Tensor: The shape.
         """
         return ()
 
 
-def det(input: Tensor) -> object:
+def det(input: Tensor):
     """Compute the determinant of a square matrix.
 
     Args:
@@ -57,8 +57,8 @@ def det(input: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Det", (input.data if type(input).__name__ == "Tensor" else input))
+        backend = get_active_backend()
+        data = backend.execute_op("Det", (input.data if type(input).__name__ == "Tensor" else input))
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
@@ -66,7 +66,7 @@ def det(input: Tensor) -> object:
     return _emit_linalg_node("Det", [input], {}, [()], [getattr(input, "dtype", None)])
 
 
-def slogdet(input: Tensor) -> object:
+def slogdet(input: Tensor):
     """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:
@@ -78,7 +78,7 @@ def slogdet(input: Tensor) -> object:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        backend: object = get_active_backend()
+        backend = get_active_backend()
         sign, logdet = backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input))
         return (
             Tensor(

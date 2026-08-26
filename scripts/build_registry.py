@@ -2,7 +2,6 @@
 
 import os
 import pprint
-from typing import Any
 
 import yaml
 
@@ -12,19 +11,20 @@ def build() -> None:
     definitions_dir: str = "src/ml_switcheroo_compiler/ops/definitions"
     out_file: str = "src/ml_switcheroo_compiler/ops/generated_registry.py"
 
-    ops_data: dict[str, dict[str, Any]] = {}
+    ops_data: dict[str, dict[str, object]] = {}
 
     # Load all yaml files
     for filename in sorted(os.listdir(definitions_dir)):
         if filename.endswith(".yaml"):
             with open(os.path.join(definitions_dir, filename)) as f:
-                data: dict[str, Any] = yaml.safe_load(f)
+                data: dict[str, object] = yaml.safe_load(f)
                 if "operation" in data:
-                    op_name: str = data["operation"]
+                    op_name: str = str(data["operation"])
                     ops_data[op_name] = data
                 else:
-                    for op_name, op_info in data.items():
-                        ops_data[op_name] = op_info
+                    for op_name_inner, op_info in data.items():
+                        if isinstance(op_info, dict):
+                            ops_data[op_name_inner] = op_info
 
     # Generate the python file
     with open(out_file, "w") as f:
@@ -33,14 +33,18 @@ def build() -> None:
         f.write("# Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml\n\n")
 
         # __all__ definition
-        f.write("from typing import Any\n\n")
         all_list_str: str = ',\n    "OPS_REGISTRY"'
         f.write(f"__all__ = [\n    {all_list_str.strip(', ')}\n]\n\n")
 
         # Format the dictionary directly into python source
         formatted_dict: str = pprint.pformat(ops_data, indent=4, sort_dicts=True)
-        f.write(f"OPS_REGISTRY: dict[str, dict[str, Any]] = {formatted_dict}\n")
+        f.write(f"OPS_REGISTRY: dict[str, dict[str, object]] = {formatted_dict}\n")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Entry point for the script."""
     build()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

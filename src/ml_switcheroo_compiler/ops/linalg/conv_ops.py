@@ -11,9 +11,9 @@ from ml_switcheroo_compiler.ops.linalg.products import _has_valid_shape
 class ConvGeneralDilated(OpDef):
     """General N-dimensional convolution operator."""
 
-    op_name: object = "ConvGeneralDilated"
+    op_name = "ConvGeneralDilated"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -29,13 +29,13 @@ class ConvGeneralDilated(OpDef):
             *args (object): lhs, rhs, config.
             **kwargs: Additional keyword arguments.
 
-        Returns: object: The evaluated output resulting from this operation.
+        Returns: Tensor: The evaluated output resulting from this operation.
         """
-        lhs: object = args[0] if len(args) > 0 else kwargs["lhs"]
-        rhs: object = args[1] if len(args) > 1 else kwargs["rhs"]
-        config: object = args[2] if len(args) > MAGIC_VAL_2 else kwargs.get("config", None)
+        lhs = args[0] if len(args) > 0 else kwargs["lhs"]
+        rhs = args[1] if len(args) > 1 else kwargs["rhs"]
+        config = args[2] if len(args) > MAGIC_VAL_2 else kwargs.get("config", None)
         if config is None:
-            config: object = ConvConfig(window_strides=[], padding=[])
+            config = ConvConfig(window_strides=[], padding=[])
         if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):
             return ()
 
@@ -50,10 +50,10 @@ class ConvGeneralDilated(OpDef):
 class Convolve(OpDef):
     """Return the discrete, linear convolution of two one-dimensional sequences."""
 
-    op_name: object = "Convolve"
-    np_op_name: object = "convolve"
+    op_name = "Convolve"
+    np_op_name = "convolve"
 
-    def infer_shape(self, a: object, v: object, mode: str = "full", **kwargs: object) -> object:
+    def infer_shape(self, a, v, mode: str = "full", **kwargs):
         """Infer the output shape.
 
         Args:
@@ -72,9 +72,9 @@ class Convolve(OpDef):
 class ConvGeneralDilatedLocal(OpDef):
     """ConvGeneralDilatedLocal operator definition."""
 
-    op_name: object = "ConvGeneralDilatedLocal"
+    op_name = "ConvGeneralDilatedLocal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -91,9 +91,9 @@ class ConvGeneralDilatedLocal(OpDef):
 class ConvGeneralDilatedPatches(OpDef):
     """ConvGeneralDilatedPatches operator definition."""
 
-    op_name: object = "ConvGeneralDilatedPatches"
+    op_name = "ConvGeneralDilatedPatches"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -110,9 +110,9 @@ class ConvGeneralDilatedPatches(OpDef):
 class ConvWithGeneralPadding(OpDef):
     """ConvWithGeneralPadding operator definition."""
 
-    op_name: object = "ConvWithGeneralPadding"
+    op_name = "ConvWithGeneralPadding"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -129,9 +129,9 @@ class ConvWithGeneralPadding(OpDef):
 class ConvTransposeShapeTuple(OpDef):
     """ConvTransposeShapeTuple operator definition."""
 
-    op_name: object = "ConvTransposeShapeTuple"
+    op_name = "ConvTransposeShapeTuple"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -148,9 +148,9 @@ class ConvTransposeShapeTuple(OpDef):
 class ConvTranspose(OpDef):
     """ConvTranspose operator definition."""
 
-    op_name: object = "ConvTranspose"
+    op_name = "ConvTranspose"
 
-    def infer_shape(self, lhs: object, rhs: object, **kwargs: object) -> object:
+    def infer_shape(self, lhs, rhs, **kwargs):
         """Infer shape.
 
         Args:
@@ -162,24 +162,24 @@ class ConvTranspose(OpDef):
             tuple[int, ...]: Result.
         """
         # Assuming NHWC and HWIO or NWC and WIO
-        strides: object = kwargs.get("strides", 1)
-        padding: object = kwargs.get("padding", "VALID")
+        strides = kwargs.get("strides", 1)
+        padding = kwargs.get("padding", "VALID")
 
-        batch: object = lhs.shape[0]
-        c_out: object = rhs.shape[-1]
+        batch = lhs.shape[0]
+        c_out = rhs.shape[-1]
 
-        spatial_in: object = lhs.shape[1:-1]
-        spatial_k: object = rhs.shape[:-2]
+        spatial_in = lhs.shape[1:-1]
+        spatial_k = rhs.shape[:-2]
 
         if isinstance(strides, int):
-            strides: object = (strides,) * len(spatial_in)
+            strides = (strides,) * len(spatial_in)
 
-        out_spatial: object = []
+        out_spatial = []
         for s_in, k, st in zip(spatial_in, spatial_k, strides):
             if padding == "VALID":
-                s_out: object = (s_in - 1) * st + k
+                s_out = (s_in - 1) * st + k
             else:  # SAME
-                s_out: object = s_in * st
+                s_out = s_in * st
             out_spatial.append(s_out)
 
         return (batch,) + tuple(out_spatial) + (c_out,)

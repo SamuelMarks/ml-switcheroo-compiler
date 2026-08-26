@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def random_gamma_p(*args: object, **kwargs: object) -> object:
+def random_gamma_p(*args, **kwargs):
     """Evaluate random_gamma_p operation.
 
     Args:

@@ -5,7 +5,6 @@ import tarfile
 import urllib.error
 import urllib.request
 import zipfile
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -48,7 +47,7 @@ def test_validate_cache(tmp_path: str) -> None:
         tmp_path (str): The tmp_path parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test _validate_cache."
@@ -69,7 +68,7 @@ def test_download_remote_file(mock_urlretrieve: MagicMock) -> None:
         mock_urlretrieve (MagicMock): The mock_urlretrieve parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test _download_remote_file."
@@ -89,7 +88,7 @@ def test_extract_archive(tmp_path: str) -> None:
         tmp_path (str): The tmp_path parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test _extract_archive."
@@ -127,7 +126,7 @@ def test_get_file(mock_validate_cache: MagicMock, mock_download_remote_file: Mag
         mock_extract_archive (MagicMock): The mock_extract_archive parameter.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Test get_file."
@@ -200,14 +199,14 @@ def test_set_random_seed() -> None:
     set_random_seed(42)
 
 
-def test_validate_cache_2(tmpdir: Any) -> None:
+def test_validate_cache_2(tmpdir) -> None:
     p = tmpdir.join("test.txt")
     assert _validate_cache(str(p)) is False
     p.write("test")
     assert _validate_cache(str(p)) is True
 
 
-def test_download_remote_file_2(tmpdir: Any) -> None:
+def test_download_remote_file_2(tmpdir) -> None:
     p = tmpdir.join("test.txt")
     with patch("urllib.request.urlretrieve") as mock_ret:
         _download_remote_file("http://test.com/t.txt", str(p))
@@ -217,7 +216,7 @@ def test_download_remote_file_2(tmpdir: Any) -> None:
             _download_remote_file("http://test.com/t.txt", str(p))
 
 
-def test_extract_archive_2(tmpdir: Any) -> None:
+def test_extract_archive_2(tmpdir) -> None:
     d = str(tmpdir.join("out"))
     os.makedirs(d)
     with patch("tarfile.open") as mock_tar:
@@ -232,7 +231,7 @@ def test_extract_archive_2(tmpdir: Any) -> None:
         mock_zip.assert_called_with("test.zip", "r")
 
 
-def test_get_file_2(tmpdir: Any) -> None:
+def test_get_file_2(tmpdir) -> None:
     with patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True):
         res = get_file("test.txt", "http://test.com")
         assert res.endswith("test.txt")

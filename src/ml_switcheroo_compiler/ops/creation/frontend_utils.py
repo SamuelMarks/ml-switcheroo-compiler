@@ -22,8 +22,8 @@ def _emit_creation_node(
     op_type: str,
     shape: Sequence[int],
     dtype: DType,
-    attributes: dict[str, object] | None = None,
-) -> object:
+    attributes=None,
+):
     """Emit a creation node to the IR graph.
 
     Args:
@@ -39,11 +39,11 @@ def _emit_creation_node(
         RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
-        msg: object = f"Cannot emit {op_type} node outside of a tracing context."
+        msg = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
 
-    out_id: object = str(uuid.uuid4())
-    node: object = LogicalNode(
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=[],
@@ -52,7 +52,7 @@ def _emit_creation_node(
     )
     global_tracing_state.add_node(node)
 
-    proxy: object = ProxyTensor(
+    proxy = ProxyTensor(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
@@ -61,9 +61,9 @@ def _emit_creation_node(
 
 
 def _emit_constant_node(
-    value: object,
+    value,
     dtype: DType,
-) -> object:
+):
     """Emit a Constant node to the IR graph.
 
     Args:
@@ -77,14 +77,14 @@ def _emit_constant_node(
         RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
-        msg: object = "Cannot emit Constant node outside of a tracing context."
+        msg = "Cannot emit Constant node outside of a tracing context."
         raise RuntimeError(msg)
 
-    out_id: object = str(uuid.uuid4())
-    val_arr: object = get_active_backend().array(value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)))
-    shape: object = tuple(val_arr.shape)
+    out_id = str(uuid.uuid4())
+    val_arr = get_active_backend().array(value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)))
+    shape = tuple(val_arr.shape)
 
-    node: object = LogicalNode(
+    node = LogicalNode(
         id=out_id,
         op_type="Constant",
         inputs=[],
@@ -93,7 +93,7 @@ def _emit_constant_node(
     )
     global_tracing_state.add_node(node)
 
-    proxy: object = ProxyTensor(
+    proxy = ProxyTensor(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
@@ -105,9 +105,9 @@ def _emit_constant_node(
 class FromDlpack(OpDef):
     """Create a switcheroo array from a DLPack capsule."""
 
-    op_name: object = "FromDlpack"
+    op_name = "FromDlpack"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -117,7 +117,7 @@ class FromDlpack(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        obj: object = args[0] if len(args) > 0 else None
+        obj = args[0] if len(args) > 0 else None
         return getattr(obj, "shape", ())
 
 
@@ -125,9 +125,9 @@ class FromDlpack(OpDef):
 class Frompyfunc(OpDef):
     """Take an arbitrary Python function and returns a NumPy ufunc."""
 
-    op_name: object = "Frompyfunc"
+    op_name = "Frompyfunc"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -144,9 +144,9 @@ class Frompyfunc(OpDef):
 class Geomspace(OpDef):
     """Return numbers spaced evenly on a log scale (a geometric progression)."""
 
-    op_name: object = "Geomspace"
+    op_name = "Geomspace"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -156,18 +156,18 @@ class Geomspace(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        start: object = args[0] if len(args) > 0 else None
-        stop: object = args[1] if len(args) > 1 else None
-        num: object = kwargs.get("num", args[2] if len(args) > 2 else 50)
-        axis: object = kwargs.get("axis", 0)
-        shape1: object = getattr(start, "shape", ())
-        shape2: object = getattr(stop, "shape", ())
-        b_shape: object = shape1 if len(shape1) > len(shape2) else shape2
+        start = args[0] if len(args) > 0 else None
+        stop = args[1] if len(args) > 1 else None
+        num = kwargs.get("num", args[2] if len(args) > 2 else 50)
+        axis = kwargs.get("axis", 0)
+        shape1 = getattr(start, "shape", ())
+        shape2 = getattr(stop, "shape", ())
+        b_shape = shape1 if len(shape1) > len(shape2) else shape2
         if not b_shape:
             return (num,)
 
-        out_shape: object = list(b_shape)
-        insert_axis: object = axis + len(b_shape) + 1 if axis < 0 else axis
+        out_shape = list(b_shape)
+        insert_axis = axis + len(b_shape) + 1 if axis < 0 else axis
         out_shape.insert(insert_axis, num)
         return tuple(out_shape)
 
@@ -176,9 +176,9 @@ class Geomspace(OpDef):
 class Geometric(OpDef):
     """Draw samples from the geometric distribution."""
 
-    op_name: object = "Geometric"
+    op_name = "Geometric"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -188,8 +188,8 @@ class Geometric(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        p: object = args[0] if len(args) > 0 else None
-        size: object = kwargs.get("size", args[1] if len(args) > 1 else None)
+        p = args[0] if len(args) > 0 else None
+        size = kwargs.get("size", args[1] if len(args) > 1 else None)
         if size is None:
             return getattr(p, "shape", ())
         if isinstance(size, int):
@@ -197,7 +197,7 @@ class Geometric(OpDef):
         return tuple(size)
 
 
-def from_dlpack(obj: object) -> object:
+def from_dlpack(obj):
     """Create a switcheroo array from a DLPack capsule.
 
     Args:
@@ -211,7 +211,7 @@ def from_dlpack(obj: object) -> object:
     return dispatch_op("FromDlpack", obj)
 
 
-def frompyfunc(func: object, nin: int, nout: int) -> object:
+def frompyfunc(func, nin: int, nout: int):
     """Take an arbitrary Python function and returns a NumPy ufunc.
 
     Args:
@@ -227,7 +227,7 @@ def frompyfunc(func: object, nin: int, nout: int) -> object:
     return dispatch_op("Frompyfunc", func, nin, nout)
 
 
-def geomspace(start: object, stop: object, num: int = 50, endpoint: bool = True, dtype: object = None, axis: int = 0) -> object:
+def geomspace(start, stop, num: int = 50, endpoint: bool = True, dtype=None, axis: int = 0):
     """Return numbers spaced evenly on a log scale (a geometric progression).
 
     Args:
@@ -246,7 +246,7 @@ def geomspace(start: object, stop: object, num: int = 50, endpoint: bool = True,
     return dispatch_op("Geomspace", start, stop, num=num, endpoint=endpoint, dtype=dtype, axis=axis)
 
 
-def geometric(p: object, size: object = None) -> object:
+def geometric(p, size=None):
     """Draw samples from the geometric distribution.
 
     Args:

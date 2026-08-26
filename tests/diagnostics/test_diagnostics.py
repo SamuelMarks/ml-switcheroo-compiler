@@ -30,7 +30,7 @@ def test_traceback_reconstructor() -> None:
     """Test the traceback reconstructor behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies that TracebackReconstructor correctly formats exception tracebacks.\n\n    Returns:\n    None\n    "
@@ -46,11 +46,11 @@ def test_debug_shapes() -> None:
     """Test the debug shapes behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Verifies the shape debugging utility under various model execution scenarios.\n\n    Returns:\n    None\n    "
 
-    def dummy_model(x: object) -> object:
+    def dummy_model(x):
         """Dummy model.
 
         Args:
@@ -65,7 +65,7 @@ def test_debug_shapes() -> None:
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
-    def dummy_model_no_shape(x: object) -> int:
+    def dummy_model_no_shape(x) -> int:
         """Dummy model no shape.
 
         Args:
@@ -79,7 +79,7 @@ def test_debug_shapes() -> None:
     res = debug_shapes(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
-    def failing_model(x: object) -> NoReturn:
+    def failing_model(x) -> NoReturn:
         """Failing model.
 
         Args:
@@ -119,7 +119,7 @@ def test_estimate_flops() -> None:
     """Test the estimate flops behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the FLOPs estimation utility for logical graphs.\n\n    Returns:\n    None\n    "
@@ -132,7 +132,7 @@ def test_estimate_flops() -> None:
         class BadShape:
             """Bad Shape class."""
 
-            def __iter__(self) -> object:
+            def __iter__(self):
                 """Iter.
 
                 Returns:
@@ -153,7 +153,7 @@ def test_memory_profiler() -> None:
     """Test the memory profiler behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the memory profiling utility for logical graphs.\n\n    Returns:\n    None\n    "
@@ -164,7 +164,7 @@ def test_memory_profiler() -> None:
         class BadShape:
             """Bad Shape class."""
 
-            def __iter__(self) -> object:
+            def __iter__(self):
                 """Iter.
 
                 Returns:
@@ -185,7 +185,7 @@ def test_numerical_anomaly_detector() -> None:
     """Test the numerical anomaly detector behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the numerical anomaly detector's ability to identify NaNs and Infs.\n\n    Returns:\n    None\n    "
@@ -216,7 +216,7 @@ def test_to_graphviz() -> None:
     """Test the to graphviz behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the Graphviz DOT export utility for logical graphs.\n\n    Returns:\n    None\n    "
@@ -236,7 +236,7 @@ def test_to_html() -> None:
     """Test the to html behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     try:
         "Verifies the HTML export utility for logical graphs.\n\n    Returns:\n    None\n    "

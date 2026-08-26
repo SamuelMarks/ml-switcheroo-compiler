@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.ops.ragged.frontend import ragged_dot, ragged_stack,
 "Core abstractions and logic definitions for test_ragged_extra.py."
 
 
-def test_ragged_ops() -> object:
+def test_ragged_ops():
     """Test the ragged ops behavior.
 
     Returns:

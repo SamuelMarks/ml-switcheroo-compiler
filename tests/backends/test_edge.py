@@ -68,7 +68,7 @@ if not hasattr(ml_dtypes, "float4_e2m1fn"):
 
 # ruff: noqa
 # ruff: noqa
-from typing import Any
+
 from ml_switcheroo_compiler.backends import edge
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -83,7 +83,7 @@ def test_edge_generators() -> None:
     """Test the edge generators behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Verifies the code generation and node visitation of various edge backends.\n\n    This test ensures that WebGPU and ONNX code generators\n    correctly initialize with a logical graph, produce the expected boilerplate\n    code, and return the correct operation identifiers during graph traversal\n\n    Args:\n    None\n\n    Returns:\n    None\n\n    Raises:\n    AssertionError: If any of the generated code or visited operation\n        strings do not match the expected output.\n    "
     graph = LogicalGraph()
@@ -211,7 +211,7 @@ def test_edge_coverage2() -> None:
     """Test the edge coverage2 behavior.
 
     Returns:
-        Any: The inferred shape or computed result.
+        object: The inferred shape or computed result.
     """
     "Docstring."
     classes = [edge.WebGPUCodeGenerator, edge.WasmCodeGenerator, edge.ONNXCodeGenerator, edge.StableHLOCodeGenerator]
@@ -298,11 +298,11 @@ def test_webgpu_ops_coverage() -> None:
         pass
 
 
-def test_onnx_binary_export(tmp_path: Any) -> None:
+def test_onnx_binary_export(tmp_path) -> None:
     """Test the ONNX code generator to verify correctness of real binary .onnx export.
 
     Args:
-        tmp_path (Any): Pytest temporary path fixture.
+        tmp_path (object): Pytest temporary path fixture.
     """
     import os
     import onnx

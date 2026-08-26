@@ -2,6 +2,7 @@
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -11,7 +12,7 @@ class FormatterContext:
     prefix: str
     op_type: str
     input_vars: list[str]
-    kwargs: dict[str, object]
+    kwargs: dict[str, Any]
     axis_kwarg: str = "axis"
     keepdims_kwarg: str = "keepdims"
 
@@ -20,7 +21,7 @@ class OpFormatter:
     """Formatter for backend operation strings."""
 
     @staticmethod
-    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, object]) -> str:
+    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, Any]) -> str:
         """Replace format placeholders with variables and kwargs.
 
         Args:
@@ -33,11 +34,11 @@ class OpFormatter:
         """
         for k, v in kwargs.items():
             if f"{{{k}}}" in fmt:
-                fmt: object = fmt.replace(f"{{{k}}}", str(v))
+                fmt = fmt.replace(f"{{{k}}}", str(v))
         for i, var in enumerate(input_vars):
-            fmt: object = fmt.replace(f"{{{i}}}", var)
+            fmt = fmt.replace(f"{{{i}}}", var)
         if "{__inputs__}" in fmt:
-            fmt: object = fmt.replace("{__inputs__}", ", ".join(input_vars))
+            fmt = fmt.replace("{__inputs__}", ", ".join(input_vars))
         return fmt
 
     @staticmethod
@@ -50,7 +51,7 @@ class OpFormatter:
         Returns:
             str: The formatted code string.
         """
-        args: object = list(context.input_vars)
+        args: list[str] = list(context.input_vars)
         for k, v in context.kwargs.items():
             if k == "axis":
                 if v is not None:
@@ -66,7 +67,7 @@ class OpFormatter:
                 else:
                     args.append(f"{k}={v}")
 
-        args_str: object = ", ".join(args)
+        args_str: str = ", ".join(args)
         return f"{context.prefix}.{context.op_type.lower()}({args_str})"
 
 
@@ -75,23 +76,23 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        node: object,
+        node: Any,
         input_vars: list[str],
         prefix: str,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> str:
         """Generate fallback code for an unsupported operation.
 
         Args:
-            node (object): The IR node.
+            node (Any): The IR node.
             input_vars (list[str]): List of input variables.
             prefix (str): Backend prefix.
-            kwargs (dict): Node attributes.
+            **kwargs (Any): Node attributes.
 
         Returns:
             str: Generated python code.
         """
-        ctx: object = FormatterContext(
+        ctx: FormatterContext = FormatterContext(
             prefix=prefix,
             op_type=getattr(node, "op_type", "Unknown"),
             input_vars=input_vars,

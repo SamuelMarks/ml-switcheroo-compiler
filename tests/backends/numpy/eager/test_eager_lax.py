@@ -6,7 +6,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def test_numpy_lax_mocks() -> object:
+def test_numpy_lax_mocks():
     """Test the numpy lax mocks behavior.
 
     Returns:
@@ -15,13 +15,13 @@ def test_numpy_lax_mocks() -> object:
     try:
         try:
 
-            def execute(op: object, *args: object, **kwargs: object) -> object:
+            def execute(op, *args, **kwargs):
                 """Evaluate and process the execute operation.
 
                 Args:
                     op (object): Required parameter for op.
-                    *args (Any): Variable positional arguments.
-                    **kwargs (Any): Arbitrary keyword arguments.
+                    *args (object): Variable positional arguments.
+                    **kwargs (object): Arbitrary keyword arguments.
 
                 Returns:
                     object: The evaluated or processed output.

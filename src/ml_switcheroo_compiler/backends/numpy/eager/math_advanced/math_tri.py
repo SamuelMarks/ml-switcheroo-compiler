@@ -13,7 +13,7 @@ from .math_misc_ext import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Tri")
-def _np_tri(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tri(backend_module, *args, **kwargs):
     """Construct an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
@@ -21,13 +21,13 @@ def _np_tri(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.tri(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TrilIndices")
-def _np_trilindices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trilindices(backend_module, *args, **kwargs):
     """Return the indices for the lower-triangle of an (n, m) array.
 
     Args:
@@ -35,13 +35,13 @@ def _np_trilindices(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.tril_indices(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TrilIndicesFrom")
-def _np_trilindicesfrom(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trilindicesfrom(backend_module, *args, **kwargs):
     """Return the indices for the lower-triangle of an array.
 
     Args:
@@ -49,13 +49,13 @@ def _np_trilindicesfrom(backend_module: object, *args: object, **kwargs: object)
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.tril_indices_from(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("TrimZeros")
-def _np_trimzeros(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trimzeros(backend_module, *args, **kwargs):
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
@@ -63,13 +63,13 @@ def _np_trimzeros(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.trim_zeros(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("TriuIndices")
-def _np_triuindices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_triuindices(backend_module, *args, **kwargs):
     """Return the indices for the upper-triangle of an (n, m) array.
 
     Args:
@@ -77,13 +77,13 @@ def _np_triuindices(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.triu_indices(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TriuIndicesFrom")
-def _np_triuindicesfrom(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_triuindicesfrom(backend_module, *args, **kwargs):
     """Return the indices for the upper-triangle of an array.
 
     Args:
@@ -91,13 +91,13 @@ def _np_triuindicesfrom(backend_module: object, *args: object, **kwargs: object)
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return np.triu_indices_from(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Fromstring")
-def _np_fromstring_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fromstring_(backend_module, *args, **kwargs):
     """Implement Fromstring via fromstring.
 
     Args:
@@ -105,13 +105,13 @@ def _np_fromstring_(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.fromstring(*args, **kwargs)
 
 
 @numpy_eager_registry.register("MatrixPower")
-def _np_linalg_matrix_power_(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linalg_matrix_power_(backend_module, *args, **kwargs):
     """Implement MatrixPower via linalg.matrix_power.
 
     Args:
@@ -119,13 +119,13 @@ def _np_linalg_matrix_power_(backend_module: object, *args: object, **kwargs: ob
         *args (object): Variable positional arguments.
         **kwargs (object): Arbitrary keyword arguments.
 
-    Returns: object: The computed result.
+    Returns: np.ndarray: The computed result.
     """
     return backend_module.linalg.matrix_power(*args, **kwargs)
 
 
 @numpy_eager_registry.register("AsStringConfig")
-def _np_asstringconfig(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_asstringconfig(backend_module, *args, **kwargs):
     """Implement AsStringConfig.
 
     Args:
@@ -142,7 +142,7 @@ def _np_asstringconfig(backend_module: object, *args: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("LinearOperatorBlockLowerTriangular")
-def _np_linearoperatorblocklowertriangular(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorblocklowertriangular(backend_module, *args, **kwargs):
     """Implement LinearOperatorBlockLowerTriangular.
 
     Args:
@@ -159,7 +159,7 @@ def _np_linearoperatorblocklowertriangular(backend_module: object, *args: object
 
 
 @numpy_eager_registry.register("LinearOperatorFullMatrix")
-def _np_linearoperatorfullmatrix(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorfullmatrix(backend_module, *args, **kwargs):
     """Implement LinearOperatorFullMatrix.
 
     Args:
@@ -176,7 +176,7 @@ def _np_linearoperatorfullmatrix(backend_module: object, *args: object, **kwargs
 
 
 @numpy_eager_registry.register("LinearOperatorLowerTriangular")
-def _np_linearoperatorlowertriangular(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatorlowertriangular(backend_module, *args, **kwargs):
     """Implement LinearOperatorLowerTriangular.
 
     Args:
@@ -193,7 +193,7 @@ def _np_linearoperatorlowertriangular(backend_module: object, *args: object, **k
 
 
 @numpy_eager_registry.register("LinearOperatorTridiag")
-def _np_linearoperatortridiag(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_linearoperatortridiag(backend_module, *args, **kwargs):
     """Implement LinearOperatorTridiag.
 
     Args:
@@ -210,7 +210,7 @@ def _np_linearoperatortridiag(backend_module: object, *args: object, **kwargs: o
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_confusion_matrix(backend_module, *args, **kwargs):
     """Evaluate _np_confusion_matrix operation.
 
     Args:
@@ -221,18 +221,18 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
     Returns:
             tuple[int, ...]: Result.
     """
-    y_true: object = _get_np_arg(args, 0)
-    y_pred: object = _get_np_arg(args, 1)
+    y_true = _get_np_arg(args, 0)
+    y_pred = _get_np_arg(args, 1)
     if y_true is None or y_pred is None:
         return None
-    num_classes: object = kwargs.get("num_classes", None)
+    num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes: object = max(np.max(y_true), np.max(y_pred)) + 1
+        num_classes = max(np.max(y_true), np.max(y_pred)) + 1
     return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape((num_classes, num_classes))
 
 
 @numpy_eager_registry.register("Distributions")
-def _np_distributions(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_distributions(backend_module, *args, **kwargs):
     """Evaluate _np_distributions operation.
 
     Args:
@@ -243,7 +243,7 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
     Returns:
             tuple[int, ...]: Result.
     """
-    a: object = _get_np_arg(args, 0)
+    a = _get_np_arg(args, 0)
     if a is None:
         return None
     counts, bins = np.histogram(a, bins="auto")
@@ -251,7 +251,7 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("StridedSlice")
-def _np_stridedslice(backend_module: object, data: object, start: object, end: object, strides: object, **kwargs: object) -> object:  # noqa: D417
+def _np_stridedslice(backend_module, data, start, end, strides, **kwargs):  # noqa: D417
     """Evaluate _np_stridedslice logic eagerly backed by NumPy.
 
     Args:
@@ -265,5 +265,5 @@ def _np_stridedslice(backend_module: object, data: object, start: object, end: o
     Returns:
             tuple[int, ...]: Result.
     """
-    slices: object = tuple(slice(s, e, st) for s, e, st in zip(start, end, strides))
+    slices = tuple(slice(s, e, st) for s, e, st in zip(start, end, strides))
     return data[slices]

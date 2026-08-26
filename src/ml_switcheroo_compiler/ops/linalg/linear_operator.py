@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class BaseLinearOperator(OpDef):
     """Base for linear operators."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """infer_shape function.
 
         Args:
@@ -31,7 +31,7 @@ class BaseLinearOperator(OpDef):
         object: Result.
         """
         # Default shape inference attempts to find a shape or operand
-        operand: object = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
+        operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
         if hasattr(operand, "shape"):
             return getattr(operand, "shape", ())
         return ()

@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Add")
-def _np_add(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_add(backend_module, *args, **kwargs):
     """Evaluate _np_add operation.
 
     Args:
@@ -20,7 +20,7 @@ def _np_add(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Subtract")
-def _np_subtract(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_subtract(backend_module, *args, **kwargs):
     """Evaluate _np_subtract operation.
 
     Args:
@@ -35,7 +35,7 @@ def _np_subtract(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Multiply")
-def _np_multiply(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_multiply(backend_module, *args, **kwargs):
     """Evaluate _np_multiply operation.
 
     Args:
@@ -50,7 +50,7 @@ def _np_multiply(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("TrueDivide")
-def _np_true_divide(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_true_divide(backend_module, *args, **kwargs):
     """Evaluate _np_true_divide operation.
 
     Args:
@@ -65,7 +65,7 @@ def _np_true_divide(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("Maximum")
-def _np_maximum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_maximum(backend_module, *args, **kwargs):
     """Evaluate _np_maximum operation.
 
     Args:
@@ -80,7 +80,7 @@ def _np_maximum(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Minimum")
-def _np_minimum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_minimum(backend_module, *args, **kwargs):
     """Evaluate _np_minimum operation.
 
     Args:
@@ -95,7 +95,7 @@ def _np_minimum(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("BitwiseAnd")
-def _np_bitwise_and(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_and(backend_module, *args, **kwargs):
     """Evaluate _np_bitwise_and operation.
 
     Args:
@@ -110,7 +110,7 @@ def _np_bitwise_and(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("BitwiseOr")
-def _np_bitwise_or(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_or(backend_module, *args, **kwargs):
     """Evaluate _np_bitwise_or operation.
 
     Args:
@@ -125,7 +125,7 @@ def _np_bitwise_or(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("BitwiseXor")
-def _np_bitwise_xor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_xor(backend_module, *args, **kwargs):
     """Evaluate _np_bitwise_xor operation.
 
     Args:
@@ -140,7 +140,7 @@ def _np_bitwise_xor(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("LeftShift")
-def _np_left_shift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_left_shift(backend_module, *args, **kwargs):
     """Evaluate _np_left_shift operation.
 
     Args:
@@ -155,7 +155,7 @@ def _np_left_shift(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("RightShift")
-def _np_right_shift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_right_shift(backend_module, *args, **kwargs):
     """Evaluate _np_right_shift operation.
 
     Args:
@@ -170,7 +170,7 @@ def _np_right_shift(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("Logaddexp")
-def _np_logaddexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_logaddexp(backend_module, *args, **kwargs):
     """Evaluate _np_logaddexp operation.
 
     Args:
@@ -185,7 +185,7 @@ def _np_logaddexp(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("Logaddexp2")
-def _np_logaddexp2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_logaddexp2(backend_module, *args, **kwargs):
     """Evaluate _np_logaddexp2 operation.
 
     Args:
@@ -200,7 +200,7 @@ def _np_logaddexp2(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("NanToNum")
-def _np_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_nan_to_num(backend_module, *args, **kwargs):
     """Evaluate _np_nan_to_num operation.
 
     Args:
@@ -215,7 +215,7 @@ def _np_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("Frexp")
-def _np_frexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_frexp(backend_module, *args, **kwargs):
     """Evaluate _np_frexp operation.
 
     Args:
@@ -230,7 +230,7 @@ def _np_frexp(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Clip")
-def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_clip(backend_module, *args, **kwargs):
     """Evaluate _np_clip operation.
 
     Args:
@@ -245,7 +245,7 @@ def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Amax")
-def _np_amax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_amax(backend_module, *args, **kwargs):
     """Evaluate _np_amax operation.
 
     Args:
@@ -260,7 +260,7 @@ def _np_amax(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Amin")
-def _np_amin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_amin(backend_module, *args, **kwargs):
     """Evaluate _np_amin operation.
 
     Args:
@@ -275,7 +275,7 @@ def _np_amin(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Logit")
-def _np_logit(backend_module: object, x: object, eps: object = None, *args: object, **kwargs: object) -> object:
+def _np_logit(backend_module, x, eps=None, *args, **kwargs):
     """Evaluate _np_logit operation.
 
     Args:
@@ -295,7 +295,7 @@ def _np_logit(backend_module: object, x: object, eps: object = None, *args: obje
 
 
 @numpy_eager_registry.register("Polygamma")
-def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_polygamma(backend_module, *args, **kwargs):
     """Evaluate _np_polygamma operation.
 
     Args:
@@ -308,18 +308,18 @@ def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> ob
     """
     import scipy.special as sc
 
-    n: object = args[0]
+    n = args[0]
     if len(args) > 1:
-        x: object = args[1]
+        x = args[1]
     elif "x" in kwargs:
-        x: object = kwargs["x"]
+        x = kwargs["x"]
     else:
         return backend_module.zeros_like(n)
     return backend_module.array(sc.polygamma(n, x))
 
 
 @numpy_eager_registry.register("Zeta")
-def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_zeta(backend_module, *args, **kwargs):
     """Evaluate _np_zeta operation.
 
     Args:
@@ -332,18 +332,18 @@ def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     import scipy.special as sc
 
-    x: object = args[0]
+    x = args[0]
     if len(args) > 1:
-        q: object = args[1]
+        q = args[1]
     elif "q" in kwargs:
-        q: object = kwargs["q"]
+        q = kwargs["q"]
     else:
         return backend_module.zeros_like(x)
     return backend_module.array(sc.zeta(x, q))
 
 
 @numpy_eager_registry.register("Remainder")
-def _eager_remainder(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eager_remainder(backend_module, *args, **kwargs):
     """Evaluate _eager_remainder operation.
 
     Args:

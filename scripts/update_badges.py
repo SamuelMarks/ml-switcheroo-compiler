@@ -9,7 +9,7 @@ import json
 import os
 import re
 import subprocess
-from typing import Any, Optional
+from typing import Optional
 
 
 def get_color(pct: float) -> str:
@@ -71,7 +71,7 @@ def get_test_coverage() -> Optional[float]:
         # Run coverage json, check=True will raise an exception if it fails (e.g. no .coverage file)
         subprocess.run(["coverage", "json", "-o", "coverage.json"], check=True, capture_output=True)
         with open("coverage.json") as f:
-            data: dict[str, Any] = json.load(f)
+            data = json.load(f)
             return float(data["totals"]["percent_covered"])
     except Exception:
         return None
@@ -89,11 +89,19 @@ def get_doc_coverage() -> float:
     import ast
 
     class DocVisitor(ast.NodeVisitor):
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Visitor to count AST nodes and their docstrings."""
+
+        def __init__(self) -> None:
+            """Initialize the visitor."""
             self.total_nodes: int = 0
             self.nodes_with_docstrings: int = 0
 
         def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            """Visit a class definition node.
+
+            Args:
+                node (ast.ClassDef): The class definition node.
+            """
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):
@@ -102,6 +110,11 @@ def get_doc_coverage() -> float:
                 self.generic_visit(node)
 
         def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            """Visit a function definition node.
+
+            Args:
+                node (ast.FunctionDef): The function definition node.
+            """
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):
@@ -109,6 +122,11 @@ def get_doc_coverage() -> float:
             # Do not visit inner functions/classes
 
         def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            """Visit an async function definition node.
+
+            Args:
+                node (ast.AsyncFunctionDef): The async function definition node.
+            """
             if not node.name.startswith("_"):
                 self.total_nodes += 1
                 if ast.get_docstring(node):

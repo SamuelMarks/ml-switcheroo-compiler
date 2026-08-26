@@ -25,7 +25,7 @@ from .jvp_vjp import vjp
 from .options import DEFAULT_GRAD_EPSILON, GradCheckOptions
 
 
-def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], options: object = None) -> None:
+def check_numerical_grads(f, args, options=None) -> None:
     """Check numerical gradients for a function against analytical gradients.
 
     Args:
@@ -36,34 +36,34 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
     Raises:
         SwitcherooError: If analytical and numerical gradients do not match.
     """
-    options: object = options or GradCheckOptions()
+    options = options or GradCheckOptions()
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
     with ConfigContext(eager_mode=True):
         # Compute analytical gradients using VJP
         out, vjp_fn = vjp(f, *args)
-        out_arr: object = get_active_backend().asarray(getattr(out, "data", out))
-        cotangent: object = get_active_backend().execute_op("Ones_like", out_arr)
-        analytical_grads: object = vjp_fn(cotangent)
+        out_arr = get_active_backend().asarray(getattr(out, "data", out))
+        cotangent = get_active_backend().execute_op("Ones_like", out_arr)
+        analytical_grads = vjp_fn(cotangent)
 
-        step: object = options.step
-        atol: object = options.atol
-        rtol: object = options.rtol
+        step = options.step
+        atol = options.atol
+        rtol = options.rtol
 
         for arg_idx, arg in enumerate(args):
-            arg_arr: object = get_active_backend().array(getattr(arg, "data", arg), dtype="float64")
-            numerical_grad: object = get_active_backend().execute_op("Zeros_like", arg_arr)
+            arg_arr = get_active_backend().array(getattr(arg, "data", arg), dtype="float64")
+            numerical_grad = get_active_backend().execute_op("Zeros_like", arg_arr)
 
-            flat_arg: object = arg_arr.ravel()
-            flat_num_grad: object = numerical_grad.ravel()
+            flat_arg = arg_arr.ravel()
+            flat_num_grad = numerical_grad.ravel()
 
             for i in range(flat_arg.size):
-                orig_val: object = flat_arg[i]
+                orig_val = flat_arg[i]
 
                 # Perturb positive
                 flat_arg[i] = orig_val + step
-                args_pos: object = list(args)
+                args_pos = list(args)
                 from ml_switcheroo_compiler.core.device import Device
 
                 if isinstance(arg, Tensor):
@@ -73,12 +73,12 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
                     )
                 else:
                     args_pos[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_pos: object = f(*args_pos)
-                out_pos_arr: object = get_active_backend().asarray(getattr(out_pos, "data", out_pos))
+                out_pos = f(*args_pos)
+                out_pos_arr = get_active_backend().asarray(getattr(out_pos, "data", out_pos))
 
                 # Perturb negative
                 flat_arg[i] = orig_val - step
-                args_neg: object = list(args)
+                args_neg = list(args)
                 if isinstance(arg, Tensor):
                     args_neg[arg_idx] = Tensor(
                         arg_arr.reshape(arg_arr.shape).copy(),
@@ -86,16 +86,16 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
                     )
                 else:
                     args_neg[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_neg: object = f(*args_neg)
-                out_neg_arr: object = get_active_backend().asarray(getattr(out_neg, "data", out_neg))
+                out_neg = f(*args_neg)
+                out_neg_arr = get_active_backend().asarray(getattr(out_neg, "data", out_neg))
 
                 flat_arg[i] = orig_val
 
-                diff: object = (out_pos_arr - out_neg_arr) / (2.0 * step)
+                diff = (out_pos_arr - out_neg_arr) / (2.0 * step)
                 flat_num_grad[i] = float(get_active_backend().execute_op("Sum", diff))
 
-            anal_grad: object = get_active_backend().asarray(getattr(analytical_grads[arg_idx], "data", analytical_grads[arg_idx]))
+            anal_grad = get_active_backend().asarray(getattr(analytical_grads[arg_idx], "data", analytical_grads[arg_idx]))
 
             if not get_active_backend().execute_op("Allclose", anal_grad, numerical_grad, atol=atol, rtol=rtol):
-                msg: object = f"Gradient check failed for argument {arg_idx}.\nAnalytical gradient:\n{anal_grad}\nNumerical gradient:\n{numerical_grad}"
+                msg = f"Gradient check failed for argument {arg_idx}.\nAnalytical gradient:\n{anal_grad}\nNumerical gradient:\n{numerical_grad}"
                 raise SwitcherooError(msg)

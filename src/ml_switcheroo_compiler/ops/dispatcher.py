@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def dispatch_op(op_type: str, *args: object, **kwargs: object) -> object:
+def dispatch_op(op_type: str, *args, **kwargs):
     """Route operation to eager or tracing handler.
 
     Args:
@@ -25,7 +25,7 @@ def dispatch_op(op_type: str, *args: object, **kwargs: object) -> object:
         return EagerEvaluator.evaluate(op_type, *args, **kwargs)
 
     if not global_tracing_state.is_tracing:
-        msg: object = f"Cannot emit {op_type} node outside of a tracing context."
+        msg = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
 
     return TracingNodeBuilder.emit_tracing_node(op_type, *args, **kwargs)

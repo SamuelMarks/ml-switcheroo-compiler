@@ -12,4 +12,4 @@ from .base import UnaryMathOp
 class L2Normalize(UnaryMathOp):
     """L2Normalize operation."""
 
-    op_name: object = "L2Normalize"
+    op_name = "L2Normalize"

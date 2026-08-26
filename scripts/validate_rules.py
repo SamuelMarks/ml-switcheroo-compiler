@@ -2,19 +2,22 @@
 
 import glob
 import sys
-from typing import Any
 
 import yaml
 
 
 def validate_n_to_m() -> list[str]:
-    """Validate Rule 4."""
+    """Validate Rule 4 (N-to-M utility rule).
+
+    Returns:
+        list[str]: A list of error messages describing operations that violate Rule 4.
+    """
     # Gather all operations registered across all mappings.yaml
     op_counts: dict[str, list[str]] = {}
     backend_maps: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
     for bp in backend_maps:
         with open(bp) as f:
-            data: dict[str, Any] = yaml.safe_load(f)
+            data = yaml.safe_load(f)
             be: str = data.get("backend_name", "")
             for op, spec in data.get("operations", {}).items():
                 if spec.get("target_api") or spec.get("ast_template") or spec.get("custom_code"):
@@ -32,7 +35,11 @@ def validate_n_to_m() -> list[str]:
 
 
 def main() -> int:
-    """Run rule validation."""
+    """Run rule validation.
+
+    Returns:
+        int: Exit code (0 for success, 1 for failure).
+    """
     errors: list[str] = validate_n_to_m()
     # It will fail, so let's just log and exit 0 for this demo context to not block the pipeline,
     # but technically we'd raise exceptions.

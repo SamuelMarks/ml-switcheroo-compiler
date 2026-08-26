@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.ops.registry import get_util
 _emit_shape_node = get_util("_emit_shape_node")
 
 
-def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
+def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor):
     """Scatter values from a source tensor into the input tensor along a specified.
 
     Args:
@@ -31,13 +31,13 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("Scatter", input.data, index.data, src.data, axis=axis)
+        backend = get_active_backend()
+        data = backend.execute_op("Scatter", input.data, index.data, src.data, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
-    inputs: object = [input, index, src]
-    attributes: object = {"axis": axis}
+    inputs = [input, index, src]
+    attributes = {"axis": axis}
     # shape calculation placeholder
-    out_shape: object = inputs[0].shape
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Scatter",
         inputs,
@@ -47,7 +47,7 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
     )
 
 
-def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> object:
+def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]):
     """Scatter updates into a new tensor of specified shape using indices.
 
     Args:
@@ -59,11 +59,11 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> object
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ScatterNd", indices.data, updates.data, shape=shape)
+        backend = get_active_backend()
+        data = backend.execute_op("ScatterNd", indices.data, updates.data, shape=shape)
         return Tensor(backend.array(data), TensorConfig(tuple(shape), updates.dtype, updates.device))
-    inputs: object = [indices, updates]
-    attributes: object = {"shape": shape}
+    inputs = [indices, updates]
+    attributes = {"shape": shape}
     return _emit_shape_node(
         "ScatterNd",
         inputs,
@@ -73,7 +73,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> object
     )
 
 
-def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
+def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor):
     """Add values from a source tensor to the input tensor at specified indices along a.
 
     Args:
@@ -86,13 +86,13 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("ScatterAdd", input.data, index.data, src.data, axis=axis)
+        backend = get_active_backend()
+        data = backend.execute_op("ScatterAdd", input.data, index.data, src.data, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
-    inputs: object = [input, index, src]
-    attributes: object = {"axis": axis}
+    inputs = [input, index, src]
+    attributes = {"axis": axis}
     # shape calculation placeholder
-    out_shape: object = inputs[0].shape
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "ScatterAdd",
         inputs,
@@ -102,7 +102,7 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> object:
     )
 
 
-def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> object:
+def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor):
     """Update the value of a tensor at given indices.
 
     Args:
@@ -114,15 +114,15 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> o
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("TensorScatterUpdate", tensor.data, indices.data, updates.data)
+        backend = get_active_backend()
+        data = backend.execute_op("TensorScatterUpdate", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    inputs: object = [tensor, indices, updates]
+    inputs = [tensor, indices, updates]
     # shape calculation placeholder
-    out_shape: object = tensor.shape
+    out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterUpdate",
         inputs,
@@ -132,7 +132,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> o
     )
 
 
-def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> object:
+def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor):
     """Update a tensor at given indices with the maximum of the current value and the update.
 
     Args:
@@ -144,15 +144,15 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> obje
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("TensorScatterMax", tensor.data, indices.data, updates.data)
+        backend = get_active_backend()
+        data = backend.execute_op("TensorScatterMax", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    inputs: object = [tensor, indices, updates]
+    inputs = [tensor, indices, updates]
     # shape calculation placeholder
-    out_shape: object = tensor.shape
+    out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterMax",
         inputs,
@@ -162,7 +162,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> obje
     )
 
 
-def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> object:
+def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor):
     """Update a tensor at given indices with the minimum of the current value and the update.
 
     Args:
@@ -174,15 +174,15 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> obje
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("TensorScatterMin", tensor.data, indices.data, updates.data)
+        backend = get_active_backend()
+        data = backend.execute_op("TensorScatterMin", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    inputs: object = [tensor, indices, updates]
+    inputs = [tensor, indices, updates]
     # shape calculation placeholder
-    out_shape: object = tensor.shape
+    out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterMin",
         inputs,
@@ -192,7 +192,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> obje
     )
 
 
-def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> object:
+def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor):
     """Add updates to a tensor at given indices.
 
     Args:
@@ -204,15 +204,15 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> obje
         Tensor: Result.
     """
     if config.eager_mode:
-        backend: object = get_active_backend()
-        data: object = backend.execute_op("TensorScatterAdd", tensor.data, indices.data, updates.data)
+        backend = get_active_backend()
+        data = backend.execute_op("TensorScatterAdd", tensor.data, indices.data, updates.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    inputs: object = [tensor, indices, updates]
+    inputs = [tensor, indices, updates]
     # shape calculation placeholder
-    out_shape: object = tensor.shape
+    out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterAdd",
         inputs,

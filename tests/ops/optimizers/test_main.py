@@ -29,7 +29,7 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
 
 
 @pytest.fixture
-def tensor_fixtures() -> object:
+def tensor_fixtures():
     """Evaluate and process the tensor fixtures operation.
 
     Returns:
@@ -43,7 +43,7 @@ def tensor_fixtures() -> object:
     return (p, g)
 
 
-def test_sgd(tensor_fixtures: object) -> object:
+def test_sgd(tensor_fixtures):
     """Test the sgd behavior.
 
     Args:
@@ -62,7 +62,7 @@ def test_sgd(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adam(tensor_fixtures: object) -> object:
+def test_adam(tensor_fixtures):
     """Test the adam behavior.
 
     Args:
@@ -79,7 +79,7 @@ def test_adam(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adamw(tensor_fixtures: object) -> object:
+def test_adamw(tensor_fixtures):
     """Test the adamw behavior.
 
     Args:
@@ -96,7 +96,7 @@ def test_adamw(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adagrad(tensor_fixtures: object) -> object:
+def test_adagrad(tensor_fixtures):
     """Test the adagrad behavior.
 
     Args:
@@ -113,7 +113,7 @@ def test_adagrad(tensor_fixtures: object) -> object:
         pass
 
 
-def test_rmsprop(tensor_fixtures: object) -> object:
+def test_rmsprop(tensor_fixtures):
     """Test the rmsprop behavior.
 
     Args:
@@ -132,7 +132,7 @@ def test_rmsprop(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adadelta(tensor_fixtures: object) -> object:
+def test_adadelta(tensor_fixtures):
     """Test the adadelta behavior.
 
     Args:
@@ -149,7 +149,7 @@ def test_adadelta(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adamax(tensor_fixtures: object) -> object:
+def test_adamax(tensor_fixtures):
     """Test the adamax behavior.
 
     Args:
@@ -166,7 +166,7 @@ def test_adamax(tensor_fixtures: object) -> object:
         pass
 
 
-def test_lion(tensor_fixtures: object) -> object:
+def test_lion(tensor_fixtures):
     """Test the lion behavior.
 
     Args:
@@ -183,7 +183,7 @@ def test_lion(tensor_fixtures: object) -> object:
         pass
 
 
-def test_adafactor(tensor_fixtures: object) -> object:
+def test_adafactor(tensor_fixtures):
     """Test the adafactor behavior.
 
     Args:
@@ -200,7 +200,7 @@ def test_adafactor(tensor_fixtures: object) -> object:
         pass
 
 
-def test_muon(tensor_fixtures: object) -> object:
+def test_muon(tensor_fixtures):
     """Test the muon behavior.
 
     Args:
@@ -217,7 +217,7 @@ def test_muon(tensor_fixtures: object) -> object:
         pass
 
 
-def test_apply_adam(tensor_fixtures: object) -> None:
+def test_apply_adam(tensor_fixtures) -> None:
     """Test apply adam."""
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adam
@@ -226,7 +226,7 @@ def test_apply_adam(tensor_fixtures: object) -> None:
     assert p_new is not None
 
 
-def test_apply_adagrad(tensor_fixtures: object) -> None:
+def test_apply_adagrad(tensor_fixtures) -> None:
     """Test apply adagrad."""
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adagrad
@@ -235,7 +235,7 @@ def test_apply_adagrad(tensor_fixtures: object) -> None:
     assert p_new is not None
 
 
-def test_apply_ftrl(tensor_fixtures: object) -> None:
+def test_apply_ftrl(tensor_fixtures) -> None:
     """Test apply ftrl."""
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_ftrl
@@ -244,7 +244,7 @@ def test_apply_ftrl(tensor_fixtures: object) -> None:
     assert p_new is not None
 
 
-def test_apply_rmsprop(tensor_fixtures: object) -> None:
+def test_apply_rmsprop(tensor_fixtures) -> None:
     """Test apply rmsprop."""
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_rmsprop
@@ -253,7 +253,7 @@ def test_apply_rmsprop(tensor_fixtures: object) -> None:
     assert p_new is not None
 
 
-def test_apply_trace_fallback(tensor_fixtures: object) -> None:
+def test_apply_trace_fallback(tensor_fixtures) -> None:
     """Test apply trace fallback."""
     from ml_switcheroo_compiler.core.config import config
 

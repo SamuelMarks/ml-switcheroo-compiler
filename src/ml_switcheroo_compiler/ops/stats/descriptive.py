@@ -19,16 +19,16 @@ class Mean(ReductionOp):
     tensor
     """
 
-    op_name: object = "Mean"
+    op_name = "Mean"
 
 
 @register_op("ApplyOverAxes")
 class ApplyOverAxes(OpDef):
     """Apply a function repeatedly over multiple axes."""
 
-    op_name: object = "ApplyOverAxes"
+    op_name = "ApplyOverAxes"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -46,9 +46,9 @@ class ApplyOverAxes(OpDef):
 class Bincount(OpDef):
     """Bincount operation."""
 
-    op_name: object = "Bincount"
+    op_name = "Bincount"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -69,8 +69,8 @@ class Average(ReductionOp):
     Computes the weighted average along the specified axis
     """
 
-    op_name: object = "Average"
-    np_op_name: object = "average"
+    op_name = "Average"
+    np_op_name = "average"
 
 
 @register_op("Variance")
@@ -81,8 +81,8 @@ class Variance(ReductionOp):
     tensor
     """
 
-    op_name: object = "Variance"
-    np_op_name: object = "var"
+    op_name = "Variance"
+    np_op_name = "var"
 
 
 @register_op("Std")
@@ -93,18 +93,18 @@ class Std(ReductionOp):
     input tensor
     """
 
-    op_name: object = "Std"
-    np_op_name: object = "std"
+    op_name = "Std"
+    np_op_name = "std"
 
 
 @register_op("Corrcoef")
 class Corrcoef(OpDef):
     """Return Pearson product-moment correlation coefficients."""
 
-    op_name: object = "Corrcoef"
-    np_op_name: object = "corrcoef"
+    op_name = "Corrcoef"
+    np_op_name = "corrcoef"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -121,10 +121,10 @@ class Corrcoef(OpDef):
 class Correlate(OpDef):
     """Cross-correlation of two 1-dimensional sequences."""
 
-    op_name: object = "Correlate"
-    np_op_name: object = "correlate"
+    op_name = "Correlate"
+    np_op_name = "correlate"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -141,10 +141,10 @@ class Correlate(OpDef):
 class Cov(OpDef):
     """Estimate a covariance matrix, given data and weights."""
 
-    op_name: object = "Cov"
-    np_op_name: object = "cov"
+    op_name = "Cov"
+    np_op_name = "cov"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape.
 
         Args:
@@ -161,7 +161,7 @@ class Cov(OpDef):
 class TrapezoidalIntegral(OpDef):
     """TrapezoidalIntegral operation."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -171,9 +171,9 @@ class TrapezoidalIntegral(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        y: object = args[0] if len(args) > 0 else kwargs.get("y")
-        shape: object = list(y)
-        axis: object = kwargs.get("axis", -1)
+        y = args[0] if len(args) > 0 else kwargs.get("y")
+        shape = list(y)
+        axis = kwargs.get("axis", -1)
         if axis < 0:
             axis += len(shape)
         shape.pop(axis)
@@ -181,7 +181,7 @@ class TrapezoidalIntegral(OpDef):
 
 
 @dispatch_eager("TrapezoidalIntegral")
-def trapezoidal_integral(y: Tensor, x: object = None, dx: object = 1.0, axis: object = -1) -> object:
+def trapezoidal_integral(y: Tensor, x=None, dx=1.0, axis=-1):
     """Evaluate trapezoidal_integral operation.
 
     Args:
@@ -200,7 +200,7 @@ def trapezoidal_integral(y: Tensor, x: object = None, dx: object = 1.0, axis: ob
 class ConfusionMatrix(OpDef):
     """ConfusionMatrix operation."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -210,12 +210,12 @@ class ConfusionMatrix(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        num_classes: object = kwargs.get("num_classes", 0)
+        num_classes = kwargs.get("num_classes", 0)
         return (num_classes, num_classes)
 
 
 @dispatch_eager("ConfusionMatrix")
-def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: object = None) -> object:
+def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights=None):
     """Evaluate confusion_matrix operation.
 
     Args:
@@ -230,7 +230,7 @@ def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weig
     return get_op("ConfusionMatrix")()(labels, predictions, num_classes=num_classes, weights=weights)
 
 
-def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[object, object]:
+def moments(x, axes=None, keepdims: bool = False):
     """Compute the mean and variance of x.
 
     Args:
@@ -241,11 +241,11 @@ def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[obj
     Returns:
             tuple[int, ...]: Result.
     """
-    mean_op: object = get_op("Mean")()
-    variance_op: object = get_op("Variance")()
+    mean_op = get_op("Mean")()
+    variance_op = get_op("Variance")()
 
-    m: object = mean_op(x, axis=axes, keepdims=keepdims)
-    v: object = variance_op(x, axis=axes, keepdims=keepdims)
+    m = mean_op(x, axis=axes, keepdims=keepdims)
+    v = variance_op(x, axis=axes, keepdims=keepdims)
     return m, v
 
 
@@ -253,11 +253,11 @@ def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[obj
 class Descriptive(OpDef):
     """Descriptive operation."""
 
-    op_name: object = "Descriptive"
+    op_name = "Descriptive"
 
 
 @dispatch_eager("Descriptive")
-def descriptive(a: object) -> object:
+def descriptive(a):
     """Provide function for descriptive.
 
     Args:
@@ -273,11 +273,11 @@ def descriptive(a: object) -> object:
 class Distributions(OpDef):
     """Distributions operation."""
 
-    op_name: object = "Distributions"
+    op_name = "Distributions"
 
 
 @dispatch_eager("Distributions")
-def distributions(a: object) -> object:
+def distributions(a):
     """Provide function for distributions.
 
     Args:

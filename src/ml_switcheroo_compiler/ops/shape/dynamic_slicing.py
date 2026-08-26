@@ -22,7 +22,7 @@ def dynamic_slice(
     input: Tensor,
     start_indices: Sequence[Tensor],
     slice_sizes: Sequence[int],
-) -> object:
+):
     """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
@@ -34,19 +34,19 @@ def dynamic_slice(
         Tensor: Result.
     """
     if config.eager_mode:
-        starts: object = []
+        starts = []
         for s in start_indices:
             if hasattr(s, "data"):
                 starts.append(int(s.data))
             else:
                 starts.append(int(s))
-        starts: object = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
-        idx: object = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data: object = input.data[idx]
+        starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
+        idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
+        data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs: object = [input, *start_indices]
+    inputs = [input, *start_indices]
     # shape calculation placeholder
-    out_shape: object = tuple(slice_sizes)
+    out_shape = tuple(slice_sizes)
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
@@ -56,7 +56,7 @@ def dynamic_slice(
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> object:
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]):
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
@@ -69,7 +69,7 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
-    starts: object = [s if isinstance(s, Tensor) else array(s) for s in start_indices]
+    starts = [s if isinstance(s, Tensor) else array(s) for s in start_indices]
     return dynamic_update_slice(input, update, starts)
 
 
@@ -78,7 +78,7 @@ def dynamic_update_slice(
     operand: Tensor,
     update: Tensor,
     start_indices: Sequence[Tensor],
-) -> object:
+):
     """Update a slice of an array at dynamically computed start indices.
 
     Args:
@@ -89,7 +89,7 @@ def dynamic_update_slice(
     Returns:
         Tensor: Result.
     """
-    inputs: object = [operand, update, *start_indices]
+    inputs = [operand, update, *start_indices]
     return _emit_shape_node(
         "DynamicUpdateSlice",
         inputs,
@@ -103,9 +103,9 @@ def dynamic_update_slice(
 class DynamicSlice(OpDef):
     """DynamicSlice operation."""
 
-    op_name: object = "DynamicSlice"
+    op_name = "DynamicSlice"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -115,7 +115,7 @@ class DynamicSlice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        slice_sizes: object = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
+        slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
 
 
@@ -123,15 +123,15 @@ class DynamicSlice(OpDef):
 class DynamicUpdateSlice(OpDef):
     """DynamicUpdateSlice operation."""
 
-    op_name: object = "DynamicUpdateSlice"
+    op_name = "DynamicUpdateSlice"
 
     def infer_shape(
         self,
-        x: object,
-        update: object,
-        start_indices: object,
-        **kwargs: object,
-    ) -> object:
+        x,
+        update,
+        start_indices,
+        **kwargs,
+    ):
         """Infer shape.
 
         Args:
@@ -140,6 +140,6 @@ class DynamicUpdateSlice(OpDef):
             start_indices (object): The start_indices parameter for the operation.
             **kwargs: Additional keyword arguments.
 
-        Returns: object: The computed result.
+        Returns: Tensor: The computed result.
         """
         return getattr(x, "shape", ())

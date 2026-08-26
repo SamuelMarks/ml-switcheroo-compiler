@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Gradient(OpDef):
     """Return the gradient of an N-dimensional array."""
 
-    op_name: object = "Gradient"
+    op_name = "Gradient"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -29,9 +29,9 @@ class Gradient(OpDef):
 class I0(OpDef):
     """Modify Bessel function of the first kind, order 0."""
 
-    op_name: object = "I0"
+    op_name = "I0"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -50,9 +50,9 @@ class I0(OpDef):
 class Interp(OpDef):
     """One-dimensional linear interpolation."""
 
-    op_name: object = "Interp"
+    op_name = "Interp"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -71,9 +71,9 @@ class Interp(OpDef):
 class Intersect1d(OpDef):
     """Find the intersection of two arrays."""
 
-    op_name: object = "Intersect1d"
+    op_name = "Intersect1d"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -90,9 +90,9 @@ class Intersect1d(OpDef):
 class Kron(OpDef):
     """Kronecker product of two arrays."""
 
-    op_name: object = "Kron"
+    op_name = "Kron"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -105,11 +105,11 @@ class Kron(OpDef):
         if len(args) < 2:
             return ()
         a, b = args[0], args[1]
-        shape_a: object = getattr(a, "shape", ())
-        shape_b: object = getattr(b, "shape", ())
-        ndims: object = max(len(shape_a), len(shape_b))
-        shape_a: object = (1,) * (ndims - len(shape_a)) + shape_a
-        shape_b: object = (1,) * (ndims - len(shape_b)) + shape_b
+        shape_a = getattr(a, "shape", ())
+        shape_b = getattr(b, "shape", ())
+        ndims = max(len(shape_a), len(shape_b))
+        shape_a = (1,) * (ndims - len(shape_a)) + shape_a
+        shape_b = (1,) * (ndims - len(shape_b)) + shape_b
         return tuple(a_dim * b_dim for a_dim, b_dim in zip(shape_a, shape_b))
 
 
@@ -117,9 +117,9 @@ class Kron(OpDef):
 class Median(OpDef):
     """Compute the median along the specified axis."""
 
-    op_name: object = "Median"
+    op_name = "Median"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -131,13 +131,13 @@ class Median(OpDef):
         """
         if not args:
             return ()
-        shape: object = list(getattr(args[0], "shape", ()))
-        axis: object = kwargs.get("axis", None)
-        keepdims: object = kwargs.get("keepdims", False)
+        shape = list(getattr(args[0], "shape", ()))
+        axis = kwargs.get("axis", None)
+        keepdims = kwargs.get("keepdims", False)
         if axis is None:
             return (1,) if keepdims else ()
         if isinstance(axis, int):
-            axis: object = [axis]
+            axis = [axis]
         for ax in sorted(axis, reverse=True):
             if ax < len(shape):
                 if keepdims:
@@ -151,9 +151,9 @@ class Median(OpDef):
 class Mish(OpDef):
     """Mish activation function."""
 
-    op_name: object = "Mish"
+    op_name = "Mish"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -172,9 +172,9 @@ class Mish(OpDef):
 class Modf(OpDef):
     """Return the fractional and integral parts of an array, element-wise."""
 
-    op_name: object = "Modf"
+    op_name = "Modf"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -193,9 +193,9 @@ class Modf(OpDef):
 class Piecewise(OpDef):
     """Evaluate a piecewise-defined function."""
 
-    op_name: object = "Piecewise"
+    op_name = "Piecewise"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -214,9 +214,9 @@ class Piecewise(OpDef):
 class Rot90(OpDef):
     """Rotate an array by 90 degrees in the plane specified by axes."""
 
-    op_name: object = "Rot90"
+    op_name = "Rot90"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -228,8 +228,8 @@ class Rot90(OpDef):
         """
         if not args:
             return ()
-        shape: object = list(getattr(args[0], "shape", ()))
-        axes: object = kwargs.get("axes", (0, 1))
+        shape = list(getattr(args[0], "shape", ()))
+        axes = kwargs.get("axes", (0, 1))
         if len(axes) == 2 and axes[0] < len(shape) and axes[1] < len(shape):
             shape[axes[0]], shape[axes[1]] = shape[axes[1]], shape[axes[0]]
         return tuple(shape)
@@ -239,9 +239,9 @@ class Rot90(OpDef):
 class Trapezoid(OpDef):
     """Integrate along the given axis using the composite trapezoidal rule."""
 
-    op_name: object = "Trapezoid"
+    op_name = "Trapezoid"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -253,8 +253,8 @@ class Trapezoid(OpDef):
         """
         if not args:
             return ()
-        shape: object = list(getattr(args[0], "shape", ()))
-        axis: object = kwargs.get("axis", -1)
+        shape = list(getattr(args[0], "shape", ()))
+        axis = kwargs.get("axis", -1)
         if axis < len(shape):
             shape.pop(axis)
         return tuple(shape)
@@ -264,9 +264,9 @@ class Trapezoid(OpDef):
 class Tri(OpDef):
     """Provide an array with ones at and below the given diagonal and zeros elsewhere."""
 
-    op_name: object = "Tri"
+    op_name = "Tri"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -285,9 +285,9 @@ class Tri(OpDef):
 class Tril(OpDef):
     """Lower triangle of an array."""
 
-    op_name: object = "Tril"
+    op_name = "Tril"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -306,9 +306,9 @@ class Tril(OpDef):
 class TrimZeros(OpDef):
     """Trim the leading and/or trailing zeros from a 1-D array or sequence."""
 
-    op_name: object = "TrimZeros"
+    op_name = "TrimZeros"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -325,9 +325,9 @@ class TrimZeros(OpDef):
 class Triu(OpDef):
     """Upper triangle of an array."""
 
-    op_name: object = "Triu"
+    op_name = "Triu"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -346,9 +346,9 @@ class Triu(OpDef):
 class Unwrap(OpDef):
     """Unwrap by taking the complement of large deltas with respect to the period."""
 
-    op_name: object = "Unwrap"
+    op_name = "Unwrap"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -367,9 +367,9 @@ class Unwrap(OpDef):
 class Vander(OpDef):
     """Generate a Vandermonde matrix."""
 
-    op_name: object = "Vander"
+    op_name = "Vander"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args, **kwargs):
         """Infer shape.
 
         Args:
@@ -381,12 +381,12 @@ class Vander(OpDef):
         """
         if not args:
             return ()
-        x: object = getattr(args[0], "shape", ())
+        x = getattr(args[0], "shape", ())
         N = kwargs.get("N", x[0] if x else 0)
         return (*x, N)
 
 
-def gradient(*args: object, **kwargs: object) -> object:
+def gradient(*args, **kwargs):
     """Return the gradient of an N-dimensional array.
 
     Args:
@@ -401,7 +401,7 @@ def gradient(*args: object, **kwargs: object) -> object:
     return dispatch_op("Gradient", *args, **kwargs)
 
 
-def i0(*args: object, **kwargs: object) -> object:
+def i0(*args, **kwargs):
     """Modify Bessel function of the first kind, order 0.
 
     Args:
@@ -416,7 +416,7 @@ def i0(*args: object, **kwargs: object) -> object:
     return dispatch_op("I0", *args, **kwargs)
 
 
-def interp(*args: object, **kwargs: object) -> object:
+def interp(*args, **kwargs):
     """One-dimensional linear interpolation.
 
     Args:
@@ -431,7 +431,7 @@ def interp(*args: object, **kwargs: object) -> object:
     return dispatch_op("Interp", *args, **kwargs)
 
 
-def median(*args: object, **kwargs: object) -> object:
+def median(*args, **kwargs):
     """Evaluate median operation.
 
     Args:
@@ -446,7 +446,7 @@ def median(*args: object, **kwargs: object) -> object:
     return dispatch_op("Median", *args, **kwargs)
 
 
-def modf(*args: object, **kwargs: object) -> object:
+def modf(*args, **kwargs):
     """Return the fractional and integral parts of an array, element-wise.
 
     Args:
@@ -461,7 +461,7 @@ def modf(*args: object, **kwargs: object) -> object:
     return dispatch_op("Modf", *args, **kwargs)
 
 
-def piecewise(*args: object, **kwargs: object) -> object:
+def piecewise(*args, **kwargs):
     """Evaluate piecewise operation.
 
     Args:
@@ -476,7 +476,7 @@ def piecewise(*args: object, **kwargs: object) -> object:
     return dispatch_op("Piecewise", *args, **kwargs)
 
 
-def trapezoid(*args: object, **kwargs: object) -> object:
+def trapezoid(*args, **kwargs):
     """Integrate along the given axis using the composite trapezoidal rule.
 
     Args:
@@ -491,7 +491,7 @@ def trapezoid(*args: object, **kwargs: object) -> object:
     return dispatch_op("Trapezoid", *args, **kwargs)
 
 
-def kron(*args: object, **kwargs: object) -> object:
+def kron(*args, **kwargs):
     """Kronecker product of two arrays.
 
     Args:
@@ -506,7 +506,7 @@ def kron(*args: object, **kwargs: object) -> object:
     return dispatch_op("Kron", *args, **kwargs)
 
 
-def rot90(*args: object, **kwargs: object) -> object:
+def rot90(*args, **kwargs):
     """Rotate an array by 90 degrees in the plane specified by axes.
 
     Args:
@@ -521,7 +521,7 @@ def rot90(*args: object, **kwargs: object) -> object:
     return dispatch_op("Rot90", *args, **kwargs)
 
 
-def tri(*args: object, **kwargs: object) -> object:
+def tri(*args, **kwargs):
     """Provide an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
@@ -536,7 +536,7 @@ def tri(*args: object, **kwargs: object) -> object:
     return dispatch_op("Tri", *args, **kwargs)
 
 
-def tril(*args: object, **kwargs: object) -> object:
+def tril(*args, **kwargs):
     """Lower triangle of an array.
 
     Args:
@@ -551,7 +551,7 @@ def tril(*args: object, **kwargs: object) -> object:
     return dispatch_op("Tril", *args, **kwargs)
 
 
-def trim_zeros(*args: object, **kwargs: object) -> object:
+def trim_zeros(*args, **kwargs):
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
@@ -566,7 +566,7 @@ def trim_zeros(*args: object, **kwargs: object) -> object:
     return dispatch_op("TrimZeros", *args, **kwargs)
 
 
-def triu(*args: object, **kwargs: object) -> object:
+def triu(*args, **kwargs):
     """Upper triangle of an array.
 
     Args:
@@ -581,7 +581,7 @@ def triu(*args: object, **kwargs: object) -> object:
     return dispatch_op("Triu", *args, **kwargs)
 
 
-def vander(*args: object, **kwargs: object) -> object:
+def vander(*args, **kwargs):
     """Generate a Vandermonde matrix.
 
     Args:
@@ -596,7 +596,7 @@ def vander(*args: object, **kwargs: object) -> object:
     return dispatch_op("Vander", *args, **kwargs)
 
 
-def intersect1d(*args: object, **kwargs: object) -> object:
+def intersect1d(*args, **kwargs):
     """Find the intersection of two arrays.
 
     Args:
@@ -611,7 +611,7 @@ def intersect1d(*args: object, **kwargs: object) -> object:
     return dispatch_op("Intersect1d", *args, **kwargs)
 
 
-def unwrap(*args: object, **kwargs: object) -> object:
+def unwrap(*args, **kwargs):
     """Unwrap an array.
 
     Args:

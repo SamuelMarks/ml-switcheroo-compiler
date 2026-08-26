@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, Weig
 class SafetensorsWeightFormat(WeightLoader, WeightSaver):
     """Safetensors weight format handler."""
 
-    def load(self, filepath: str) -> dict[str, object]:
+    def load(self, filepath: str):
         """Load safetensors weights.
 
         Args:
@@ -23,25 +23,25 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         dict: Result.
         """
         with open(filepath, "rb") as f:
-            header_size_bytes: object = f.read(8)
+            header_size_bytes = f.read(8)
             if len(header_size_bytes) < MAGIC_VAL_8:
                 return {}
-            header_size: object = struct.unpack("<Q", header_size_bytes)[0]
+            header_size = struct.unpack("<Q", header_size_bytes)[0]
 
-            header_bytes: object = f.read(header_size)
-            header: object = json.loads(header_bytes.decode("utf-8"))
+            header_bytes = f.read(header_size)
+            header = json.loads(header_bytes.decode("utf-8"))
 
-            weights: object = {}
+            weights = {}
             for k, v in header.items():
                 if k == "__metadata__":
                     continue
-                offsets: object = v["data_offsets"]
+                offsets = v["data_offsets"]
                 f.seek(8 + header_size + offsets[0])
-                buffer: object = f.read(offsets[1] - offsets[0])
+                buffer = f.read(offsets[1] - offsets[0])
 
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-                backend: object = get_active_backend()
+                backend = get_active_backend()
                 if hasattr(backend, "from_buffer"):
                     weights[k] = backend.from_buffer(buffer, dtype=v["dtype"], shape=v["shape"])
                 else:
@@ -50,16 +50,16 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
             return weights
 
-    def save(self, weights_np: dict[str, object], filepath: str) -> None:
+    def save(self, weights_np, filepath: str) -> None:
         """Save safetensors weights.
 
         Args:
             weights_np (dict): The weights_np parameter.
             filepath (str): The filepath parameter.
         """
-        header: object = {}
-        offset: object = 0
-        buffers: object = []
+        header = {}
+        offset = 0
+        buffers = []
 
         for k, v in weights_np.items():
             if not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes"):
@@ -71,17 +71,17 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
             from ml_switcheroo_compiler.serialization.formats.config_models import SerializationSchemaConfig
 
-            path: object = os.path.join(os.path.dirname(__file__), "serialization_schema.yaml")
+            path = os.path.join(os.path.dirname(__file__), "serialization_schema.yaml")
             with open(path) as f:
-                data: object = yaml.safe_load(f)
-                schema: object = SerializationSchemaConfig(**data)
-            dtype_map: object = schema.safetensors.dtype_map
+                data = yaml.safe_load(f)
+                schema = SerializationSchemaConfig(**data)
+            dtype_map = schema.safetensors.dtype_map
 
-            dtype_str: object = str(v.dtype)
-            st_dtype: object = dtype_map.get(dtype_str, "F32")
+            dtype_str = str(v.dtype)
+            st_dtype = dtype_map.get(dtype_str, "F32")
 
-            buffer: object = v.tobytes()
-            length: object = len(buffer)
+            buffer = v.tobytes()
+            length = len(buffer)
 
             header[k] = {
                 "dtype": st_dtype,
@@ -92,10 +92,10 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
             buffers.append(buffer)
             offset += length
 
-        header_bytes: object = json.dumps(header, separators=(",", ":")).encode("utf-8")
-        header_length: object = len(header_bytes)
+        header_bytes = json.dumps(header, separators=(",", ":")).encode("utf-8")
+        header_length = len(header_bytes)
 
-        padding_length: object = (8 - (header_length % 8)) % 8
+        padding_length = (8 - (header_length % 8)) % 8
         header_bytes += b" " * padding_length
         header_length += padding_length
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
-def maxwell(*args: object, **kwargs: object) -> object:
+def maxwell(*args, **kwargs):
     """Evaluate maxwell operation.
 
     Args:
