@@ -1,0 +1,2 @@
+RandomUniform:
+  target_api: '''mx.random.uniform(low={minval}, high={maxval}, shape={shape}, key={0})'''

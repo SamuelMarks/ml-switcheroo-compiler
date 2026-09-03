@@ -2,7 +2,7 @@
 
 from ml_switcheroo_compiler.ops.random_ops import RngBitGenerator, RngUniform
 
-"Core abstractions and logic definitions for test_random_ops_extra.py."
+"Core abstractions and logic definitions for test_random_ops_edge_cases.py."
 
 
 def test_random_ops_infer_shape_coverage():

@@ -20,9 +20,9 @@ def _ragged_op(op_name, *args, **kwargs):
     """Evaluate _ragged_op operation.
 
     Args:
-        op_name (object): The op_name parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        op_name (Any): The op_name parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -57,8 +57,8 @@ def ragged_constant(*args, **kwargs):
     """Evaluate ragged_constant operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -70,8 +70,8 @@ def ragged_cross(*args, **kwargs):
     """Evaluate ragged_cross operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -83,8 +83,8 @@ def ragged_cross_hashed(*args, **kwargs):
     """Evaluate ragged_cross_hashed operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -96,8 +96,8 @@ def ragged_range(*args, **kwargs):
     """Evaluate ragged_range operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -109,8 +109,8 @@ def ragged_row_splits_to_segment_ids(*args, **kwargs):
     """Evaluate ragged_row_splits_to_segment_ids operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -122,8 +122,8 @@ def ragged_segment_ids_to_row_splits(*args, **kwargs):
     """Evaluate ragged_segment_ids_to_row_splits operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -135,8 +135,8 @@ def ragged_stack(*args, **kwargs):
     """Evaluate ragged_stack operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -148,8 +148,8 @@ def ragged_stack_dynamic_partitions(*args, **kwargs):
     """Evaluate ragged_stack_dynamic_partitions operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -161,8 +161,8 @@ def ragged_dot(*args, **kwargs):
     """Evaluate ragged_dot operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -174,8 +174,8 @@ def boolean_mask(*args, **kwargs):
     """Boolean mask.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -187,8 +187,8 @@ def map_flat_values(*args, **kwargs):
     """Map flat values.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

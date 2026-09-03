@@ -1,0 +1,4 @@
+lu_factor:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

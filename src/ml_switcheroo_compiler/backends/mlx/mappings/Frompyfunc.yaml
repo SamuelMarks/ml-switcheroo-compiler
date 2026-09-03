@@ -1,0 +1,2 @@
+Frompyfunc:
+  target_api: '''mx.frompyfunc({0})'''

@@ -1,0 +1,9 @@
+tiled_matmul:
+  body: "// SIMD Tiled MatMul\nfor (int i = 0; i < {M}; i += {TILE_M}) {{\n    for\
+    \ (int j = 0; j < {N}; j += {TILE_N}) {{\n        for (int k = 0; k < {K}; k +=\
+    \ {TILE_K}) {{\n            // unrolled block\n            for (int ti = 0; ti\
+    \ < {TILE_M}; ++ti) {{\n                // we load vectors\n                v128_t\
+    \ a_val = wasm_v128_load(&buf_{in0}[(i+ti) * {K} + k]);\n                v128_t\
+    \ b_val = wasm_v128_load(&buf_{in1}[k * {N} + j]);\n                v128_t res\
+    \ = wasm_f32x4_mul(a_val, b_val);\n                res = wasm_f32x4_add(res, wasm_f32x4_splat(0.0f));\n\
+    \            }}\n        }}\n    }}\n}}\n"

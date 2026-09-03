@@ -1,0 +1,4 @@
+create_scaled_f8f6f4_instr_descriptor:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+RaggedRange:
+  target_api: jax.numpy.raggedrange

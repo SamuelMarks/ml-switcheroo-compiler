@@ -1,0 +1,4 @@
+GridSample:
+  ast_template: torch.nn.functional.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
+    align_corners={align_corners})
+  target_api: ''

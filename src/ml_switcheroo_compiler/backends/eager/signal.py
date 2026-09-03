@@ -1,6 +1,6 @@
 """signal.py module."""
 
-from typing import Any
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
@@ -9,12 +9,12 @@ def _generate_gaussian_kernel(np_mod: Any, kernel_size: tuple[int, int], sigma: 
     """Evaluate _generate_gaussian_kernel operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
+        np_mod: The np_mod parameter.
         kernel_size (tuple[int, int]): The kernel_size parameter.
         sigma (tuple[float, float]): The sigma parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     kx, ky = kernel_size
     sx, sy = sigma
@@ -29,13 +29,13 @@ def _apply_conv2d_batch(np_mod: Any, imgs: Any, kernel: Any, mode: str) -> Any:
     """Evaluate _apply_conv2d_batch operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        imgs (Any): The imgs parameter.
-        kernel (Any): The kernel parameter.
+        np_mod: The np_mod parameter.
+        imgs: The imgs parameter.
+        kernel: The kernel parameter.
         mode (str): The mode parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         ValueError: An exception.
@@ -60,36 +60,36 @@ def _apply_conv2d_batch(np_mod: Any, imgs: Any, kernel: Any, mode: str) -> Any:
     return out
 
 
-def _get_blur_config(kwargs: dict[str, Any], config_obj: Any) -> Any:
+def _get_blur_config(kwargs: dict[str, object], config_obj: Optional[BlurConfig]) -> BlurConfig:
     """Evaluate _get_blur_config operation.
 
     Args:
-        kwargs (dict[str, Any]): The kwargs parameter.
-        config_obj (Any): The config_obj parameter.
+        kwargs (dict[str, object]): The kwargs parameter.
+        config_obj: The config_obj parameter.
 
     Returns:
-            Any: Result.
+            BlurConfig: Result.
     """
     if config_obj is None:
         return BlurConfig(
-            kernel_size=kwargs.get("kernel_size", (3, 3)),
-            sigma=kwargs.get("sigma", (1.0, 1.0)),
-            data_format=kwargs.get("data_format", None),
+            kernel_size=kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3),
+            sigma=kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0),
+            data_format=str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None,
         )
     return config_obj
 
 
-def gaussian_blur_eager(backend_module: Any, images: Any, config_obj: Any = None, **kwargs: Any) -> Any:
+def gaussian_blur_eager(backend_module: Any, images: Any, config_obj: Optional[BlurConfig] = None, **kwargs: Any) -> Any:
     """Evaluate gaussian_blur_eager operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        images (Any): The images parameter.
-        config_obj (Any): The config_obj parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        images: The images parameter.
+        config_obj: The config_obj parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     config = _get_blur_config(kwargs, config_obj)
     kernel = _generate_gaussian_kernel(backend_module, config.kernel_size, config.sigma)
@@ -100,13 +100,13 @@ def _apply_median_filter_batch(np_mod: Any, imgs: Any, kernel_size: tuple[int, i
     """Evaluate _apply_median_filter_batch operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        imgs (Any): The imgs parameter.
+        np_mod: The np_mod parameter.
+        imgs: The imgs parameter.
         kernel_size (tuple[int, int]): The kernel_size parameter.
         padding (str): The padding parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         ValueError: An exception.
@@ -133,18 +133,18 @@ def median_filter_eager(
     images: Any,
     kernel_size: tuple[int, int],
     padding: str = "same",
-    data_format: Any = None,
+    data_format: Optional[object] = None,
 ) -> Any:
     """Evaluate median_filter_eager operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        images (Any): The images parameter.
+        backend_module: The backend_module parameter.
+        images: The images parameter.
         kernel_size (tuple[int, int]): The kernel_size parameter.
         padding (str): The padding parameter.
-        data_format (Any): The data_format parameter.
+        data_format: The data_format parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

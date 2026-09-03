@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -76,8 +76,8 @@ class Gru(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -89,8 +89,8 @@ def gru(*args, **kwargs):
     """GRU layer.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -109,7 +109,7 @@ def _sigmoid(x):
     """Evaluate _sigmoid operation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

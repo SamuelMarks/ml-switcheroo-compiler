@@ -1,0 +1,4 @@
+create_path_filters:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

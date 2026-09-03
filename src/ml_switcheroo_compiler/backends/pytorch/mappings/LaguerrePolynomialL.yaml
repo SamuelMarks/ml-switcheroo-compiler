@@ -1,0 +1,2 @@
+LaguerrePolynomialL:
+  target_api: torch.special.laguerre_polynomial_l

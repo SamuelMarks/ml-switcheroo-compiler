@@ -1,0 +1,4 @@
+depthwise_conv:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

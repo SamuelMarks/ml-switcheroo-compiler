@@ -1,0 +1,2 @@
+Frexp:
+  target_api: cp.frexp

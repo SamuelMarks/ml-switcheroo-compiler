@@ -1,0 +1,2 @@
+Diagonal:
+  target_api: keras_ops.diagonal

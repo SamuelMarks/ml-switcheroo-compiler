@@ -1,0 +1,15 @@
+ReduceSum:
+  body: |
+    // WASM SIMD ReduceSum
+    if ({nelem} > size) return;
+    float sum_{clean_id} = 0.0f;
+    int i = 0;
+    v128_t sum_vec = wasm_f32x4_splat(0.0f);
+    for (; i <= {nelem} - 4; i += 4) {{
+        sum_vec = wasm_f32x4_add(sum_vec, wasm_v128_load(&buf_{in0}[i]));
+    }}
+    sum_{clean_id} += wasm_f32x4_extract_lane(sum_vec, 0) + wasm_f32x4_extract_lane(sum_vec, 1) + wasm_f32x4_extract_lane(sum_vec, 2) + wasm_f32x4_extract_lane(sum_vec, 3);
+    for (; i < {nelem}; i++) {{
+        sum_{clean_id} += buf_{in0}[i];
+    }}
+    buf_{clean_id}[0] = sum_{clean_id};

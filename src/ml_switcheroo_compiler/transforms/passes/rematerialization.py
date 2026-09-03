@@ -128,9 +128,7 @@ def rematerialization_pass(graph: IRGraph) -> bool:
         for c_id in consumers[n.id]:
             if node_indices[c_id] - node_indices[n.id] > 10:
                 c_node = graph.nodes[c_id]
-                # Check if we actually need to change inputs
-                if n.id in c_node.inputs:
-                    c_node.inputs = [clone_id if inp == n.id else inp for inp in c_node.inputs]
-                    modified = True
+                c_node.inputs = [clone_id if inp == n.id else inp for inp in c_node.inputs]
+                modified = True
 
     return modified

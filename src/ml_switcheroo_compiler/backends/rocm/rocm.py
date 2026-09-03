@@ -1,6 +1,15 @@
 """ROCm backend generator."""
 
+import ctypes
+import ctypes.util
+import typing
+
+try:
+    import cupy
+except ImportError:
+    cupy = None
 import os
+from typing import Optional
 
 import yaml
 
@@ -23,12 +32,28 @@ class RocmCodeGenerator(BaseGenerator):
         """
         super().__init__(graph, delegates)
 
+        yaml_dir = os.path.join(os.path.dirname(__file__), "rocm_orchestration")
         yaml_path = os.path.join(os.path.dirname(__file__), "rocm_templates.yaml")
-        if os.path.exists(yaml_path):
+        self.config = HardwareTemplatesConfig(templates={})
+        if os.path.isdir(yaml_dir):
+            for filename in os.listdir(yaml_dir):
+                if filename.endswith(".yaml"):
+                    with open(os.path.join(yaml_dir, filename)) as f:
+                        op_data = yaml.safe_load(f)
+                        if isinstance(op_data, dict):
+                            source = op_data.get("templates", op_data)
+                            for k, v in source.items():
+                                if isinstance(v, dict) and "body" in v:
+                                    self.config.templates[k] = v
+                                elif isinstance(v, str):
+                                    self.config.templates[k] = {"body": v}
+                                else:
+                                    self.config.templates[k] = v
+        elif os.path.exists(yaml_path):
             with open(yaml_path) as f:
-                self.config = HardwareTemplatesConfig(**yaml.safe_load(f))
-        else:
-            self.config = HardwareTemplatesConfig(templates={})
+                data = yaml.safe_load(f)
+                if data and "templates" in data:
+                    self.config.templates.update(data["templates"])
 
     def generate(self) -> str:
         """Generate ROCm HIP code.
@@ -55,7 +80,7 @@ class RocmCodeGenerator(BaseGenerator):
             op_type = getattr(node, "op_type", "")
             tpl = self.config.templates.get(op_type.lower())
             if tpl:
-                hip.append(tpl.body)
+                hip.append(tpl.get("body", ""))
 
         hip.append("void evaluate_rocm(const std::vector<float*>& inputs, std::vector<float*>& outputs) {")
         hip.append("    // 1. Memory Allocation (Host to Device)")
@@ -68,7 +93,7 @@ class RocmCodeGenerator(BaseGenerator):
                 out_name = f"d_out_{node_idx}"
                 hip.append(f"    float* {out_name};")
                 hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, 1024 * sizeof(float))); // Mock size")
-                wg = tpl.workgroup_size
+                wg = tpl.get("workgroup_size", [1, 1, 1])
                 hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
                 hip.append(f"    dim3 grid_{node_idx}((1024 + block_{node_idx}.x - 1) / block_{node_idx}.x, 1, 1);")
                 hip.append(f"    hipLaunchKernelGGL({op_type.lower()}, grid_{node_idx}, block_{node_idx}, 0, 0, inputs[0], inputs[1], {out_name}, 1024);")
@@ -79,3 +104,150 @@ class RocmCodeGenerator(BaseGenerator):
         hip.append("}")
 
         return "\n".join(hip)
+
+
+class ROCmRunner:
+    """ROCm Runner utilizing cupy if available, fallback to ctypes driver API."""
+
+    def __init__(self) -> None:
+        """Initialize ROCmRunner and load hardware limits."""
+        self.limits: dict[str, typing.Any] = {}
+        limits_path: str = os.path.join(os.path.dirname(__file__), "hardware_limits.yaml")
+        if os.path.exists(limits_path):
+            with open(limits_path) as f:
+                self.limits = yaml.safe_load(f)
+
+        self.rocm_lib = None
+        self._ctx = None
+
+        if cupy is not None:
+            self.mode = "cupy"
+        else:
+            self.mode = "ctypes"
+            try:
+                # Basic initialization for testing purposes without cupy
+                rocm_lib_path = ctypes.util.find_library("amdhip64")
+                if rocm_lib_path:
+                    self.rocm_lib = ctypes.cdll.LoadLibrary(rocm_lib_path)
+                    self.rocm_lib.hipInit(0)
+            except Exception:
+                pass
+
+    def allocate_buffer(self, size: int) -> Optional[ctypes.c_void_p]:
+        """Allocate device memory.
+
+        Args:
+            size (int): Size in bytes.
+
+        Returns:
+            Optional[ctypes.c_void_p]: Pointer to device memory.
+        """
+        if self.mode == "cupy" and cupy is not None:
+            mem = cupy.cuda.alloc(size)
+            return ctypes.c_void_p(mem.ptr)
+
+        if not self.rocm_lib:
+            return ctypes.c_void_p(0)
+
+        dptr = ctypes.c_void_p()
+        res = self.rocm_lib.hipMalloc(ctypes.byref(dptr), size)
+        if res != 0:
+            raise RuntimeError(f"hipMalloc failed with error code {res}")
+        return dptr
+
+    def write_buffer(self, device_ptr: ctypes.c_void_p, host_data: bytes) -> None:
+        """Write to device buffer.
+
+        Args:
+            device_ptr (ctypes.c_void_p): Device pointer.
+            host_data (bytes): Data to write.
+        """
+        if not device_ptr:
+            return
+
+        if self.mode == "cupy" and cupy is not None:
+            # We can use numpy to write the bytes memory
+            arr = cupy.frombuffer(host_data, dtype=cupy.uint8)
+            dst = cupy.ndarray(arr.shape, dtype=arr.dtype, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, arr.nbytes, device_ptr), 0))
+            dst.set(arr)
+            return
+
+        if self.rocm_lib:
+            res = self.rocm_lib.hipMemcpyHtoD(device_ptr, host_data, len(host_data))
+            if res != 0:
+                raise RuntimeError(f"hipMemcpyHtoD failed with error code {res}")
+
+    def read_buffer(self, device_ptr: ctypes.c_void_p, size: int) -> bytes:
+        """Read from device buffer.
+
+        Args:
+            device_ptr (ctypes.c_void_p): Device pointer.
+            size (int): Size to read.
+
+        Returns:
+            bytes: Read data.
+        """
+        if not device_ptr:
+            return b"\x00" * size
+
+        if self.mode == "cupy" and cupy is not None:
+            src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
+            arr = src.get()
+            return arr.tobytes()
+
+        if self.rocm_lib:
+            host_data = ctypes.create_string_buffer(size)
+            res = self.rocm_lib.hipMemcpyDtoH(host_data, device_ptr, size)
+            if res != 0:
+                raise RuntimeError(f"hipMemcpyDtoH failed with error code {res}")
+            return host_data.raw
+        return b"\x00" * size
+
+    def free_buffer(self, device_ptr: ctypes.c_void_p) -> None:
+        """Free device memory.
+
+        Args:
+            device_ptr (ctypes.c_void_p): Device pointer.
+        """
+        if not device_ptr:
+            return
+
+        if self.mode == "cupy":
+            # CuPy memory pool handles this usually, but if Unowned, we don't free it this way
+            # We'll just pass for CuPy as we'd normally let the allocator manage it.
+            pass
+        elif self.rocm_lib:
+            self.rocm_lib.hipFree(device_ptr)
+
+    def load_and_dispatch(self, binary_path: str, entry_point: str, grid_size: list[int], block_size: list[int]) -> None:
+        """Load binaries and launch kernels.
+
+        Args:
+            binary_path (str): Path to binary.
+            entry_point (str): Kernel entry point.
+            grid_size (list[int]): Grid sizing.
+            block_size (list[int]): Block sizing.
+        """
+        if self.mode == "cupy" and cupy is not None:
+            with open(binary_path, "rb") as f:
+                code = f.read()
+            module = cupy.RawModule(code=code)
+            kernel = module.get_function(entry_point)
+            kernel(tuple(grid_size), tuple(block_size), ())
+            return
+
+        if self.rocm_lib:
+            module = ctypes.c_void_p()
+            res = self.rocm_lib.hipModuleLoad(ctypes.byref(module), binary_path.encode("utf-8"))
+            if res != 0:
+                raise RuntimeError(f"hipModuleLoad failed with error code {res}")
+
+            kernel = ctypes.c_void_p()
+            res = self.rocm_lib.hipModuleGetFunction(ctypes.byref(kernel), module, entry_point.encode("utf-8"))
+            if res != 0:
+                raise RuntimeError(f"hipModuleGetFunction failed with error code {res}")
+
+            # Basic hipModuleLaunchKernel with no arguments for stubbing
+            res = self.rocm_lib.hipModuleLaunchKernel(kernel, grid_size[0], grid_size[1], grid_size[2], block_size[0], block_size[1], block_size[2], 0, None, None, None)
+            if res != 0:
+                raise RuntimeError(f"hipModuleLaunchKernel failed with error code {res}")

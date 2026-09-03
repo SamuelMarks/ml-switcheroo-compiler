@@ -3,9 +3,11 @@
 # AUTO-GENERATED FILE. DO NOT EDIT.
 # Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml
 
+import typing
+
 __all__ = ["OPS_REGISTRY"]
 
-OPS_REGISTRY: dict[str, dict[str, object]] = {
+OPS_REGISTRY: dict[str, dict[str, typing.Union[str, int, float, bool, list, dict, tuple, None]]] = {
     "ALiBi": {
         "description": "Attention with Linear Biases (ALiBi) layer.",
         "operation": "ALiBi",
@@ -5002,12 +5004,6 @@ OPS_REGISTRY: dict[str, dict[str, object]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "file", "type": "str"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "fun", "type": "Callable"}, {"is_variadic": True, "kind": "positional_or_keyword", "name": "args", "type": "Any"}],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "ExportToDot": {
-        "description": "Export a graph to DOT format for visualization.",
-        "operation": "ExportToDot",
-        "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "file", "type": "str"}, {"is_variadic": True, "kind": "positional_or_keyword", "name": "args", "type": "Any"}],
-        "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "Exporter": {
         "description": "Context manager to export execution traces.",
         "operation": "Exporter",
@@ -6302,7 +6298,6 @@ OPS_REGISTRY: dict[str, dict[str, object]] = {
             "tensorflow": {"eager": "tf.histogrambinedges"},
         },
     },
-    "HloPass": {"description": "The class representing a Python class.", "operation": "HloPass", "std_args": [], "type": "class", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "Hsmm": {"description": "Hidden Semi-Markov Model (likely specialized/internal).", "operation": "Hsmm", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "Hspmm": {
         "description": "Performs sparse matrix multiplication.",
@@ -8728,7 +8723,6 @@ OPS_REGISTRY: dict[str, dict[str, object]] = {
     "PartitionName": {"description": "String conversion utility.", "operation": "PartitionName", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "obj", "type": "Any"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PartitionState": {"description": "Auto-generated from jax_code_defs", "operation": "PartitionState", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PartitionsOrReplicated": {"description": "The class representing a Python module/class/instance attribute.", "operation": "PartitionsOrReplicated", "std_args": [], "type": "attribute", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "Pass": {"description": "The class representing a Python class.", "operation": "Pass", "std_args": ["self", "name", "compile_fn", "generate_dump"], "type": "class", "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PathContains": {"description": "Path filter predicate.", "operation": "PathContains", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "key", "type": "str"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PathIn": {"description": "Auto-generated mapping for PathIn.", "operation": "PathIn", "std_args": [], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PcaLowRank": {

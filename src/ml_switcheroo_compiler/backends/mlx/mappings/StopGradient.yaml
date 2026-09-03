@@ -1,0 +1,2 @@
+StopGradient:
+  target_api: '''mx.stop_gradient({0})'''

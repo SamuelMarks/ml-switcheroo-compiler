@@ -1,0 +1,2 @@
+Softmax:
+  target_api: '''mx.softmax({0}, axis={axis})'''

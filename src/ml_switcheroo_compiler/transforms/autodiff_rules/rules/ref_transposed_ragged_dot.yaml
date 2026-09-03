@@ -1,0 +1,4 @@
+ref_transposed_ragged_dot:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

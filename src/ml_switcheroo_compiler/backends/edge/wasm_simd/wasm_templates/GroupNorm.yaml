@@ -1,0 +1,6 @@
+GroupNorm:
+  body: '
+
+    // WASM SIMD GroupNorm
+
+    '

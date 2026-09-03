@@ -1,0 +1,3 @@
+NanToNum:
+  target_api: '''mx.where(mx.isnan({0}), {nan}, mx.where(mx.isposinf({0}), {posinf},
+    mx.where(mx.isneginf({0}), {neginf}, {0})))'''

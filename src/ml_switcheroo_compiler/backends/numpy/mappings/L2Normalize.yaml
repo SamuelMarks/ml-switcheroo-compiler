@@ -1,0 +1,2 @@
+L2Normalize:
+  target_api: np.l2normalize

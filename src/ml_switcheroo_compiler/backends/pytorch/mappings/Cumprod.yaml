@@ -1,0 +1,2 @@
+Cumprod:
+  target_api: torch.cumprod

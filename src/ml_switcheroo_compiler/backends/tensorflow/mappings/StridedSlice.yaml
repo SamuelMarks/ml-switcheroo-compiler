@@ -1,0 +1,2 @@
+StridedSlice:
+  target_api: tf.strided_slice

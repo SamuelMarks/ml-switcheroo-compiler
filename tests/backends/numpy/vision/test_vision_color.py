@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Core abstractions and logic definitions for test_numpy_eager_vision_color_extra.py."""
+"""Core abstractions and logic definitions for test_numpy_eager_vision_color_edge_cases.py."""
 
 import numpy as np
 

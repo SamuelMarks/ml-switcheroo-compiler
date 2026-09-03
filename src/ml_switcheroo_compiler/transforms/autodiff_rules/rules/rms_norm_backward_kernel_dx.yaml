@@ -1,0 +1,4 @@
+rms_norm_backward_kernel_dx:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

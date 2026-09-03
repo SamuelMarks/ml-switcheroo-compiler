@@ -1,0 +1,2 @@
+Lstsq:
+  target_api: '''mx.linalg.lstsq({0}, {1}, rcond={rcond})[0]'''

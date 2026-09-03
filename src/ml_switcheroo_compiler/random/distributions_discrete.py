@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any, Optional, Union
+
+from ml_switcheroo_compiler.core.tensor import Tensor
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Generate random ops module."""
@@ -11,7 +16,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import _dispatch_random, _emit_random_node
 
 
-def randint(key, shape, minval, maxval, dtype=None):
+def randint(key: Any, shape: Any, minval: Any, maxval: Any, dtype: Any | None = None) -> Tensor:
     """Sample uniform random integers from a given key.
 
     Args:
@@ -27,7 +32,7 @@ def randint(key, shape, minval, maxval, dtype=None):
     return _emit_random_node("RandomRandint", [key], shape, dtype, {"minval": minval, "maxval": maxval})
 
 
-def bernoulli(key, p=0.5, shape=None):
+def bernoulli(key: Any, p: Any = 0.5, shape: Sequence[int] | int | None = None) -> Tensor:
     """Sample Bernoulli random variables from a given key.
 
     Args:
@@ -42,7 +47,7 @@ def bernoulli(key, p=0.5, shape=None):
     return _emit_random_node("RandomBernoulli", [key], shape, dtypes.DType.Bool, {"p": p})
 
 
-def categorical(key, logits, axis=-1, shape=None):
+def categorical(key: Any, logits: Any, axis: Any = -1, shape: Sequence[int] | int | None = None) -> Tensor:
     """Sample categorical random variables from a given key.
 
     Args:
@@ -60,7 +65,7 @@ def categorical(key, logits, axis=-1, shape=None):
     return _emit_random_node("RandomCategorical", inputs, out_shape, dtypes.DType.Int32, {"axis": axis})
 
 
-def permutation(key, x, axis=0, independent=False):
+def permutation(key: Any, x: Any, axis: Any = 0, independent: Any = False) -> Tensor:
     """Generate random permutation of a sequence.
 
     Args:
@@ -70,14 +75,14 @@ def permutation(key, x, axis=0, independent=False):
         independent (object): The independent parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     shape = getattr(x, "shape", ())
     dtype = getattr(x, "dtype", None)
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 
-def choice(key, a, **kwargs):
+def choice(key: Any, a: Any, **kwargs: Any) -> Tensor:
     """Generate a random sample from a given 1-D array.
 
     Args:
@@ -97,7 +102,7 @@ def choice(key, a, **kwargs):
     return _emit_random_node("RandomChoice", inputs, shape, a.dtype, {"replace": replace, "axis": axis})
 
 
-def binomial(key, n, p, shape=None, dtype=None):
+def binomial(key: Any, n: Any, p: Any, shape: Sequence[int] | int | None = None, dtype: Any | None = None) -> Tensor:
     """Sample binomial random values from a given key.
 
     Args:
@@ -108,7 +113,7 @@ def binomial(key, n, p, shape=None, dtype=None):
         dtype (object): The dtype parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     if shape is None:
         shape = ()
@@ -116,7 +121,7 @@ def binomial(key, n, p, shape=None, dtype=None):
     return _emit_random_node("RandomBinomial", [key], shape, dtype)
 
 
-def geometric(*args, **kwargs):
+def geometric(*args: Any, **kwargs: Any) -> Tensor:
     """Evaluate geometric operation.
 
     Args:
@@ -124,12 +129,12 @@ def geometric(*args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     return _dispatch_random("geometric", *args, **kwargs)
 
 
-def poisson(key, lam, shape=None, dtype=None):
+def poisson(key: Any, lam: Any, shape: Sequence[int] | int | None = None, dtype: Any | None = None) -> Tensor:
     """Sample poisson random values from a given key.
 
     Args:
@@ -139,7 +144,7 @@ def poisson(key, lam, shape=None, dtype=None):
         dtype (object): The dtype parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     if shape is None:
         shape = ()
@@ -147,7 +152,7 @@ def poisson(key, lam, shape=None, dtype=None):
     return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)
 
 
-def rademacher(*args, **kwargs):
+def rademacher(*args: Any, **kwargs: Any) -> Tensor:
     """Evaluate rademacher operation.
 
     Args:
@@ -155,12 +160,12 @@ def rademacher(*args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     return _dispatch_random("rademacher", *args, **kwargs)
 
 
-def multinomial(key, n: int, pvals, shape=None):
+def multinomial(key: Any, n: int, pvals: Any, shape: Sequence[int] | int | None = None) -> Tensor:
     """Sample from multinomial distribution.
 
     Args:

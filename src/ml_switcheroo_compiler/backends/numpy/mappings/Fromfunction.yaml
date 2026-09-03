@@ -1,0 +1,3 @@
+Fromfunction:
+  ast_template: np.fromfunction
+  target_api: ''

@@ -148,7 +148,7 @@ def random_color_jitter(
 
     Args:
         images (Tensor): Input images.
-        **kwargs (object): Additional keyword arguments.
+        **kwargs (Any): Additional keyword arguments.
 
     Returns:
         Tensor: Jittered images.
@@ -456,9 +456,9 @@ class AdjustBrightness(OpDef):
         """Infer shape.
 
         Args:
-        images (object): The images parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        images (Any): The images parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -476,9 +476,9 @@ class AdjustContrast(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -496,9 +496,9 @@ class AdjustHue(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -516,9 +516,9 @@ class AdjustSaturation(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -536,9 +536,9 @@ class AugMix(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -556,9 +556,9 @@ class AutoContrast(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -576,9 +576,9 @@ class Equalization(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -596,9 +596,9 @@ class Invert(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -616,9 +616,9 @@ class Posterize(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -636,9 +636,9 @@ class RgbToGrayscale(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -663,9 +663,9 @@ class Solarize(OpDef):
         """Infer shape.
 
         Args:
-            images (object): The images parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            images (Any): The images parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -161,7 +161,7 @@ class TFRecordWriter:
         """Write record.
 
         Args:
-        record (object): The record parameter.
+        record (Any): The record parameter.
 
         Returns:
         NoneType: Result.
@@ -188,9 +188,9 @@ class TFRecordWriter:
         """Exit context manager.
 
         Args:
-            exc_type (object): The exc_type parameter.
-            exc_val (object): The exc_val parameter.
-            exc_tb (object): The exc_tb parameter.
+            exc_type (Any): The exc_type parameter.
+            exc_val (Any): The exc_val parameter.
+            exc_tb (Any): The exc_tb parameter.
         """
         self.close()
 
@@ -205,8 +205,8 @@ class DecodeCsv(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -232,8 +232,8 @@ class ParseExample(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -259,8 +259,8 @@ class SerializeTensor(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -286,8 +286,8 @@ class ParseTensor(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -313,8 +313,8 @@ class ParseSequenceExample(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

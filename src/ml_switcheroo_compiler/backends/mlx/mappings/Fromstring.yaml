@@ -1,0 +1,2 @@
+Fromstring:
+  target_api: '''mx.fromstring({0})'''

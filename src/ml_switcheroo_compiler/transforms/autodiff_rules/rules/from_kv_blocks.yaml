@@ -1,0 +1,4 @@
+from_kv_blocks:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

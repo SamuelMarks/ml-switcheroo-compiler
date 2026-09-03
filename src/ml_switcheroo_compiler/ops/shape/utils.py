@@ -65,8 +65,8 @@ def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], kee
     """Reusable utility to compute the shape after a reduction operation.
 
     Args:
-        x_shape (object): The x_shape parameter.
-        axes (object): The axes parameter.
+        x_shape (Any): The x_shape parameter.
+        axes (Any): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:

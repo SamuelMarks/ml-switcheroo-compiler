@@ -1,0 +1,4 @@
+jaxpr_eqn_ctx:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,16 @@
+Swish:
+  body: '
+
+    let idx = global_id.x;
+
+    if (idx >= {nelem}u) { return; }
+
+    let x = buf_in_f32[idx];
+
+    buf_out_f32[idx] = x / (1.0 + exp(-x));
+
+    '
+  workgroup_size:
+  - 64
+  - 1
+  - 1

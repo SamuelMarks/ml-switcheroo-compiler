@@ -1,0 +1,2 @@
+Ifft2:
+  target_api: keras_ops.ifft2

@@ -1,0 +1,4 @@
+use_fused_bwd_kernel:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

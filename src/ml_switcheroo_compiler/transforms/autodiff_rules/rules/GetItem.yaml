@@ -1,0 +1,4 @@
+GetItem:
+  jvp: GetItem($tangent[0])
+  vjp:
+  - SetItem(ZerosLike($input[0]), $cotangent)

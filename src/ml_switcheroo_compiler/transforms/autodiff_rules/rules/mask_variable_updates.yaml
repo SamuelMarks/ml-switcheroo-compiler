@@ -1,0 +1,4 @@
+mask_variable_updates:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

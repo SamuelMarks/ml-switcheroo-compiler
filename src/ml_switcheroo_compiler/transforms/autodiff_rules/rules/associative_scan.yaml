@@ -1,0 +1,4 @@
+associative_scan:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

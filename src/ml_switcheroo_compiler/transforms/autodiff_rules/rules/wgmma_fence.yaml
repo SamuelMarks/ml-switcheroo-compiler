@@ -1,0 +1,4 @@
+wgmma_fence:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

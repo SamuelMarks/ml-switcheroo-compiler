@@ -1,0 +1,4 @@
+static_validate_inputs:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

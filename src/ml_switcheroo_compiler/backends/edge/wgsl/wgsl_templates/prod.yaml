@@ -1,0 +1,8 @@
+Prod:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar prod =\
+    \ 1.0;\nfor (var i = 0u; i < {reduce_size}u; i = i + 1u) {\n    prod = prod *\
+    \ buf_in_f32[idx * {reduce_size}u + i];\n}\nbuf_out_f32[idx] = prod;\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

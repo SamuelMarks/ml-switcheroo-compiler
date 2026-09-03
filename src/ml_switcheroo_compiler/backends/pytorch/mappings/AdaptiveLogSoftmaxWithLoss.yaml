@@ -1,0 +1,4 @@
+AdaptiveLogSoftmaxWithLoss:
+  custom_code: 'lambda input, target, *args, **kwargs: (target, torch.zeros((), dtype=target.dtype,
+    device=target.device))'
+  target_api: custom_op

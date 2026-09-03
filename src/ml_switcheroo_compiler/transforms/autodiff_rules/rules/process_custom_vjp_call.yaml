@@ -1,0 +1,4 @@
+process_custom_vjp_call:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

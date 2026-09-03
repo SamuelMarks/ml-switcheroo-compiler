@@ -1,0 +1,3 @@
+Hfft:
+  ast_template: np.fft.hfft
+  target_api: ''

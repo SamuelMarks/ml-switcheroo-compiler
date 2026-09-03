@@ -1,0 +1,3 @@
+Atleast3d:
+  custom_code: 'lambda *args, **kwargs: torch.atleast_3d(*args)'
+  target_api: custom_op

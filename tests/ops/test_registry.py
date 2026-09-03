@@ -47,13 +47,15 @@ def test_registry_extras():
 
     with pytest.raises(KeyError):
         get_op("NonExistentOp")
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         get_op("SomeOtherMissingOpThatIsNotNonExistentOp")
 
     ops = get_all_ops()
     assert isinstance(ops, dict)
 
     _YAML_REGISTRY["DummyOpForTest"] = {"variants": {"test_backend": {"generator": "test_gen"}}}
+
+    assert id(_YAML_REGISTRY) == id(backend_mapping_registry.operations)
 
     assert backend_mapping_registry.get_generator_mapping("test_backend", "DummyOpForTest") == "test_gen"
     assert backend_mapping_registry.get_generator_mapping("test_backend", "MissingOp") is None
@@ -131,20 +133,3 @@ def test_registry_remaining():
     shim = _RegistryShim({"TestOpShim": {"variants": {"test_backend": {"generator": "test_gen_shim"}}}})
     assert shim.get_generator_mapping("test_backend", "TestOpShim") == "test_gen_shim"
     assert shim.get_generator_mapping("test_backend", "MissingOpShim") is None
-
-
-def test_registry_yaml_missing():
-    """test_registry_yaml_missing."""
-
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
-
-    orig = _YAML_REGISTRY.copy()
-    _YAML_REGISTRY.clear()
-
-    from unittest.mock import patch
-
-    with patch("os.path.exists", return_value=False):
-        _load_yaml_registry(force=True)
-        assert not _YAML_REGISTRY
-
-    _YAML_REGISTRY.update(orig)

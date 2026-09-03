@@ -1,0 +1,4 @@
+sigmoid_focal_loss:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

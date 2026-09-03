@@ -1,0 +1,3 @@
+Polyval:
+  ast_template: np.polyval
+  target_api: ''

@@ -1,0 +1,2 @@
+CountNonzero:
+  target_api: cp.count_nonzero

@@ -1,0 +1,2 @@
+AdaptiveMaxPool2D:
+  target_api: torch.nn.functional.adaptive_max_pool2d

@@ -1,0 +1,4 @@
+tmem_alloc_exact_ncols:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

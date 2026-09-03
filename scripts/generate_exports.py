@@ -48,6 +48,9 @@ def _append_import_lines(
         imported_symbols (set[str]): The set of symbols that have already been imported.
         import_lines (list[str]): The list of formatted import statements to append to.
         all_exports (list[str]): The list of all exported symbols to append to.
+
+    Returns:
+        None
     """
     unique_exports: list[str] = [e for e in sorted(set(exports)) if e not in imported_symbols]
     if unique_exports:
@@ -72,6 +75,9 @@ def generate_init(
         module_name (str): The base name of the module.
         submodules (list[str]): A list of submodules to import from.
         extra_imports (Optional[list[tuple[str, list[str]]]]): A list of tuples containing an external module name and a list of symbols to import.
+
+    Returns:
+        None
     """
     all_exports: list[str] = []
     import_lines: list[str] = []
@@ -139,6 +145,9 @@ def process_file(filepath: str) -> None:
 
     Args:
         filepath (str): The path to the Python file to process.
+
+    Returns:
+        None
     """
     abs_path: str = os.path.abspath(filepath)
     src_dir: str = os.path.abspath("src")
@@ -267,7 +276,11 @@ def process_file(filepath: str) -> None:
 
 
 def main() -> None:
-    """Main execution block."""
+    """Main execution block.
+
+    Returns:
+        None
+    """
     vision_subs: list[str] = [
         "affine",
         "bbox",
@@ -376,5 +389,5 @@ def main() -> None:
     )
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     main()

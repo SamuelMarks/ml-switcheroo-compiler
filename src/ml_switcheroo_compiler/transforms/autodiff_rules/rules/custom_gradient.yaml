@@ -1,0 +1,4 @@
+custom_gradient:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

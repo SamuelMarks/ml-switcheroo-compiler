@@ -1,0 +1,2 @@
+GetItem:
+  target_api: np.getitem

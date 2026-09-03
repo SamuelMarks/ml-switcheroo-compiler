@@ -6,7 +6,7 @@ from .common_ops import _emit_signal_node
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -24,8 +24,8 @@ class Fftconvolve(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -40,7 +40,7 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes=None):
         in1 (Tensor): The in1 parameter.
         in2 (Tensor): The in2 parameter.
         mode (str): The mode parameter.
-        axes (object): The axes parameter.
+        axes (Any): The axes parameter.
 
     Returns:
         Tensor: Result.
@@ -69,8 +69,8 @@ class Fft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -83,8 +83,8 @@ def fft(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -104,8 +104,8 @@ class Rfft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -121,8 +121,8 @@ class Fft2(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -138,10 +138,10 @@ class Fftfreq(OpDef):
         """Infer shape.
 
         Args:
-            n (object): The n parameter.
-            d (object): The d parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            n (Any): The n parameter.
+            d (Any): The d parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -157,8 +157,8 @@ class Irfft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -174,8 +174,8 @@ class Ihfft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -191,8 +191,8 @@ class Ifft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -205,8 +205,8 @@ def ifft(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -226,8 +226,8 @@ class Fftn(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -240,8 +240,8 @@ def fftn(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -261,8 +261,8 @@ class Ifftn(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -275,8 +275,8 @@ def ifftn(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -296,8 +296,8 @@ class Rfftn(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -310,8 +310,8 @@ def rfftn(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -331,8 +331,8 @@ class Irfftn(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -345,8 +345,8 @@ def irfftn(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -366,8 +366,8 @@ class Ifft2(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -380,8 +380,8 @@ def ifft2(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -401,8 +401,8 @@ class Rfft2(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -415,8 +415,8 @@ def rfft2(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -436,8 +436,8 @@ class Irfft2(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -450,8 +450,8 @@ def irfft2(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -471,8 +471,8 @@ class Fftnd(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -485,8 +485,8 @@ def fftnd(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -506,8 +506,8 @@ class Ifftnd(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -520,8 +520,8 @@ def ifftnd(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -541,8 +541,8 @@ class Rfftnd(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -555,8 +555,8 @@ def rfftnd(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -576,8 +576,8 @@ class Irfftnd(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -590,8 +590,8 @@ def irfftnd(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -611,8 +611,8 @@ class Fftshift(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -625,8 +625,8 @@ def fftshift(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -646,8 +646,8 @@ class Ifftshift(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -660,8 +660,8 @@ def ifftshift(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -681,8 +681,8 @@ class Hfft(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -695,8 +695,8 @@ def hfft(input: Tensor, *args, **kwargs):
 
     Args:
         input (Tensor): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -716,8 +716,8 @@ class Rfftfreq(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -730,8 +730,8 @@ def rfftfreq(input: int, *args, **kwargs):
 
     Args:
         input (int): The input parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.

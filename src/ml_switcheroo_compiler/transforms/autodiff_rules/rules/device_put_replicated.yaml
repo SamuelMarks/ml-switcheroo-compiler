@@ -1,0 +1,4 @@
+device_put_replicated:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

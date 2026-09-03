@@ -1,0 +1,2 @@
+RaggedConstant:
+  target_api: jax.numpy.raggedconstant

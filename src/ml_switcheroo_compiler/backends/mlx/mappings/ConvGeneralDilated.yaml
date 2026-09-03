@@ -1,0 +1,2 @@
+ConvGeneralDilated:
+  target_api: '''{0}.conv_general_dilated({1}, {2})'''

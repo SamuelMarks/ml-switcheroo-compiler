@@ -1,0 +1,2 @@
+Reshape:
+  target_api: '''mx.reshape({0}, {shape})'''

@@ -1,0 +1,16 @@
+topologies:
+  ring:
+    connections:
+    - from: node_{rank}
+      to: node_{(rank+1)%world_size}
+    description: Standard Ring AllReduce topology
+    nodes:
+    - node_{rank}
+  tree:
+    connections:
+    - condition: rank > 0
+      from: node_{rank}
+      to: node_{(rank-1)//2}
+    description: Hierarchical Tree topology
+    nodes:
+    - node_{rank}

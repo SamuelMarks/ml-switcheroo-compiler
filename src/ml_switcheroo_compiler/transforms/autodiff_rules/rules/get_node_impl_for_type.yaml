@@ -1,0 +1,4 @@
+get_node_impl_for_type:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

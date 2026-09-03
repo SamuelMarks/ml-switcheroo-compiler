@@ -1,0 +1,3 @@
+Squareplus:
+  custom_code: 'lambda x: 0.5 * (x + torch.sqrt(x ** 2 + 4.0))'
+  target_api: custom_op

@@ -1,0 +1,2 @@
+ScatterAdd:
+  target_api: '''mx.scatter_add({0}, {1}, {2}, {dim})'''

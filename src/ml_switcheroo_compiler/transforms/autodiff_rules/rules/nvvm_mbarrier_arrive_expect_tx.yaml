@@ -1,0 +1,4 @@
+nvvm_mbarrier_arrive_expect_tx:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+MatrixTranspose:
+  target_api: '''mx.swapaxes({0}, -1, -2)'''

@@ -1,0 +1,2 @@
+RgbToYuv:
+  target_api: '''mx.image.rgb_to_yuv({0})'''

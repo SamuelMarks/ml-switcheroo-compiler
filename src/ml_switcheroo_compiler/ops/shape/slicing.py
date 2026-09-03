@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 import builtins
 from collections.abc import Sequence
 
@@ -28,8 +28,8 @@ def slice(
     Args:
         input (Tensor): The input parameter.
         axis (int): The axis parameter.
-        start (object): The start parameter.
-        end (object): The end parameter.
+        start (Any): The start parameter.
+        end (Any): The end parameter.
         step (int): The step parameter.
 
     Returns:
@@ -93,8 +93,8 @@ class Slice(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -110,8 +110,8 @@ class StridedSlice(OpDef):
         """Infer shape for StridedSlice.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.
@@ -130,11 +130,11 @@ class Choose(OpDef):
         """Infer the output shape.
 
         Args:
-            a (object): The a parameter.
-            choices (object): The choices parameter.
-            out (object): The out parameter.
+            a (Any): The a parameter.
+            choices (Any): The choices parameter.
+            out (Any): The out parameter.
             mode (str): The mode parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -152,8 +152,8 @@ class IndexInDim(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -189,8 +189,8 @@ class UpdateSlice(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -203,8 +203,8 @@ def index_in_dim(*args, **kwargs):
     """Return the index in a dimension.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -218,8 +218,8 @@ def update_slice(*args, **kwargs):
     """Update a slice.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

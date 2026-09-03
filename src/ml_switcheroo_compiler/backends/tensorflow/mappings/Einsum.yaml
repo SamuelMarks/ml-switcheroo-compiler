@@ -1,0 +1,2 @@
+Einsum:
+  target_api: tf.einsum

@@ -1,0 +1,2 @@
+RandomBernoulli:
+  target_api: '''mx.random.bernoulli(p={p}, shape={shape}, key={0})'''

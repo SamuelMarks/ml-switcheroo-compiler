@@ -1,5 +1,10 @@
 """Pass to lower complex polyfilled operations into simpler IR primitives."""
 
+import os
+from typing import Any
+
+import yaml
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -14,19 +19,6 @@ def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) 
     Returns:
         IRNode: node.
     """
-    # We lower InTopK(targets, predictions, k=k) to:
-    # 1. TopK(predictions, k=k) -> values, indices
-    # 2. Reshape targets if needed to match indices rank
-    # 3. Broadcast and Equal
-    # 4. ReduceSum or ReduceAny over the k dimension
-
-    # Wait, the universal IR already has TopK.
-    # predictions: [batch, classes], targets: [batch]
-    # TopK(predictions, k) -> vals [batch, k], idxs [batch, k]
-    # targets_expand = Reshape(targets, [batch, 1])
-    # match = Equal(idxs, targets_expand)
-    # res = ReduceAny(match, axes=[-1])
-
     import uuid
 
     uid = uuid.uuid4().hex[:6]
@@ -58,47 +50,6 @@ def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) 
     return node
 
 
-def polyfill_lowering_pass(graph: IRGraph) -> bool:
-    """Lower complex polyfills to IR.
-
-    Args:
-        graph (IRGraph): graph.
-
-    Returns:
-        bool: modified.
-    """
-    modified = False
-    new_nodes: dict[str, IRNode] = {}
-
-    for _node_id, node in graph.nodes.items():
-        if node.op_type == "InTopK":
-            _lower_in_top_k(node, graph, new_nodes)
-            modified = True
-        elif node.op_type == "CtcGreedyDecoder":
-            _lower_ctc_greedy_decoder(node, graph, new_nodes)
-            modified = True
-        elif node.op_type == "IsotonicRegression":
-            _lower_isotonic_regression(node, graph, new_nodes)
-            modified = True
-        elif node.op_type == "ConvTranspose":
-            _lower_conv_transpose(node, graph, new_nodes)
-            modified = True
-        elif node.op_type == "DepthwiseConv2dBackpropFilter":
-            _lower_depthwise_bwd_filter(node, graph, new_nodes)
-            modified = True
-        elif node.op_type == "DepthwiseConv2dBackpropInput":
-            _lower_depthwise_bwd_input(node, graph, new_nodes)
-            modified = True
-        elif node.op_type in ("Dilation2d", "Erosion2d"):
-            _lower_morph_2d(node, graph, new_nodes)
-            modified = True
-
-        new_nodes[node.id] = node
-
-    graph.nodes = new_nodes
-    return modified
-
-
 def _lower_ctc_greedy_decoder(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
     """Lower CtcGreedyDecoder.
 
@@ -109,28 +60,57 @@ def _lower_ctc_greedy_decoder(node: IRNode, graph: IRGraph, new_nodes: dict[str,
 
     Returns:
         IRNode: node.
-
-
-    This is extremely complex to lower perfectly to basic IR without a WhileLoop.
-    For now, we replace it with Argmax, which is the core of GreedyDecoder, and
-    leave the collapse step as a composite CollapseRepeated op that we will also lower or emit as an edge kernel.
-    Actually, we can just rewrite CtcGreedyDecoder to:
-    1. Argmax(inputs, axis=-1)
-    2. CollapseRepeated(argmax_res) # Removes consecutive duplicates and blanks
-
-    This splits the math from the decoding logic.
     """
     import uuid
 
     uid = uuid.uuid4().hex[:6]
+
+    # 1. Argmax over classes
     argmax_id = f"ctc_argmax_{uid}"
     argmax = IRNode(id=argmax_id, op_type="Argmax", inputs=[node.inputs[0]], attributes={"axis": -1, "keepdims": False})
     new_nodes[argmax_id] = argmax
 
-    # We mutate the original node to be CollapseRepeated
-    node.op_type = "CollapseRepeated"
-    node.inputs = [argmax_id]
-    # Keep attributes if needed
+    # 2. Transpose to [batch, seq_len]
+    transp_id = f"ctc_transp_{uid}"
+    transp = IRNode(id=transp_id, op_type="Transpose", inputs=[argmax_id], attributes={"permutation": [1, 0]})
+    new_nodes[transp_id] = transp
+
+    # 3. Shift by 1 to detect duplicates
+    # Since we can't easily express Pad+Slice without knowing shapes statically,
+    # we emit a Roll or Shift node. Let's use Roll.
+    roll_id = f"ctc_roll_{uid}"
+    roll = IRNode(id=roll_id, op_type="Roll", inputs=[transp_id], attributes={"shift": 1, "axis": 1})
+    new_nodes[roll_id] = roll
+
+    # 4. NotEqual (is_new)
+    neq_id = f"ctc_neq_{uid}"
+    neq = IRNode(id=neq_id, op_type="NotEqual", inputs=[transp_id, roll_id], attributes={})
+    new_nodes[neq_id] = neq
+
+    # 5. NotEqual blank (assuming blank is 0 or -1, typically from attributes)
+    blank_idx = node.attributes.get("blank_index", 0)
+    blank_const_id = f"ctc_blank_{uid}"
+    blank_const = IRNode(id=blank_const_id, op_type="Constant", inputs=[], attributes={"value": blank_idx})
+    new_nodes[blank_const_id] = blank_const
+
+    not_blank_id = f"ctc_not_blank_{uid}"
+    not_blank = IRNode(id=not_blank_id, op_type="NotEqual", inputs=[transp_id, blank_const_id], attributes={})
+    new_nodes[not_blank_id] = not_blank
+
+    # 6. LogicalAnd to get keep mask
+    keep_id = f"ctc_keep_{uid}"
+    keep = IRNode(id=keep_id, op_type="LogicalAnd", inputs=[neq_id, not_blank_id], attributes={})
+    new_nodes[keep_id] = keep
+
+    # Mutate the original node to just return the filtered mask applied to the array.
+    # For now, we emit a Select to zero out the non-kept tokens.
+    zero_const_id = f"ctc_zero_{uid}"
+    zero_const = IRNode(id=zero_const_id, op_type="Constant", inputs=[], attributes={"value": 0})
+    new_nodes[zero_const_id] = zero_const
+
+    node.op_type = "Select"
+    node.inputs = [keep_id, transp_id, zero_const_id]
+    node.attributes = {}
     return node
 
 
@@ -144,10 +124,6 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
 
     Returns:
         IRNode: node.
-
-
-    A genuine in-IR lowering of Pool Adjacent Violators Algorithm (PAVA) requires
-    a `WhileLoop` since it's dynamic.
     """
     from ml_switcheroo_ir import LogicalGraph
 
@@ -155,69 +131,70 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     cond_graph = LogicalGraph(name="pava_cond")
     body_graph = LogicalGraph(name="pava_body")
 
+    cond_graph.inputs = ["array", "idx", "has_violations"]
+    body_graph.inputs = ["array", "idx", "has_violations"]
+
+    cond_graph.nodes["cond_out"] = IRNode(id="cond_out", op_type="Identity", inputs=["has_violations"])
+    cond_graph.outputs = ["cond_out"]
+
+    body_graph.nodes["next_idx"] = IRNode(id="next_idx", op_type="Add", inputs=["idx"], attributes={"value": 1})
+    body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
+    body_graph.outputs = ["array", "next_idx", "false_violations"]
+
     node.attributes = {"cond": cond_graph, "body": body_graph}
 
     return node
 
 
-def _lower_conv_transpose(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
-    """Lower ConvTranspose to an explicit Scatter or Pad+Conv2D.
-
-    Args:
-        node (IRNode): node.
-        graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
+def _load_poly_rules() -> dict[str, Any]:
+    """Load poly rules.
 
     Returns:
-        IRNode: node.
+        dict: loaded rules.
     """
-    node.op_type = "Conv2D"
-    node.attributes["padding"] = "TRANSposed_LOWERED"
-    return node
+    yaml_path = os.path.join(os.path.dirname(__file__), "poly_lower_rules.yaml")
+    if not os.path.exists(yaml_path):
+        return {}
+    with open(yaml_path) as f:
+        return yaml.safe_load(f).get("rules", {})
 
 
-def _lower_depthwise_bwd_filter(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
-    """Lower DepthwisebwdFilter.
+def polyfill_lowering_pass(graph: IRGraph) -> bool:
+    """Lower complex polyfills to IR.
 
     Args:
-        node (IRNode): node.
         graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
 
     Returns:
-        IRNode: node.
+        bool: modified.
     """
-    node.op_type = "Conv2D"
-    node.attributes["feature_group_count"] = "LOWERED"
-    return node
+    rules = _load_poly_rules()
+    modified = False
+    new_nodes: dict[str, IRNode] = {}
 
+    python_handlers = {
+        "_lower_in_top_k": _lower_in_top_k,
+        "_lower_ctc_greedy_decoder": _lower_ctc_greedy_decoder,
+        "_lower_isotonic_regression": _lower_isotonic_regression,
+    }
 
-def _lower_depthwise_bwd_input(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
-    """Lower DepthwisebwdInput.
+    for _node_id, node in graph.nodes.items():
+        if node.op_type in rules:
+            rule = rules[node.op_type]
+            if rule["type"] == "python":
+                func = python_handlers.get(rule["func"])
+                if func:
+                    func(node, graph, new_nodes)
+                    modified = True
+            elif rule["type"] == "rewrite":
+                node.op_type = str(rule.get("op_type", node.op_type))
+                if "attributes" in rule:
+                    for k, v in dict(rule["attributes"]).items():
+                        node.attributes[k] = v
+                modified = True
 
-    Args:
-        node (IRNode): node.
-        graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
+        new_nodes[node.id] = node
 
-    Returns:
-        IRNode: node.
-    """
-    node.op_type = "Conv2D"
-    node.attributes["feature_group_count"] = "LOWERED_INP"
-    return node
-
-
-def _lower_morph_2d(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
-    """Lower Morph2D.
-
-    Args:
-        node (IRNode): node.
-        graph (IRGraph): graph.
-        new_nodes (dict): new nodes.
-
-    Returns:
-        IRNode: node.
-    """
-    node.op_type = "MaxPool2D" if node.op_type == "Dilation2d" else "MinPool2D"
-    return node
+    if modified:
+        graph.nodes = new_nodes
+    return modified

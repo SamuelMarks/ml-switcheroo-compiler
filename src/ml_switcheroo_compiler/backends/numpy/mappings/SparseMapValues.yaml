@@ -1,0 +1,3 @@
+SparseMapValues:
+  ast_template: tf.sparse.map_values
+  target_api: ''

@@ -1,0 +1,2 @@
+Sigmoid:
+  target_api: keras_ops.sigmoid

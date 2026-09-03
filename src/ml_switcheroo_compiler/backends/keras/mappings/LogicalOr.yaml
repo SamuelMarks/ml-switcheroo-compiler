@@ -1,0 +1,2 @@
+LogicalOr:
+  target_api: keras_ops.logical_or

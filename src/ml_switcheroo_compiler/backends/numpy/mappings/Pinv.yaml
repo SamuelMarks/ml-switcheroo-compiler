@@ -1,0 +1,3 @@
+Pinv:
+  ast_template: np.linalg.pinv
+  target_api: ''

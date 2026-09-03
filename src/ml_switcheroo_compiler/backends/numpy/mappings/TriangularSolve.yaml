@@ -1,0 +1,4 @@
+TriangularSolve:
+  ast_template: getattr(backend_module.linalg, 'solve_triangular', None)({0}, {1},
+    lower={lower}, unit_diagonal={unit_diagonal}, trans=1 if {adjoint} else 0, check_finite=False)
+  target_api: ''

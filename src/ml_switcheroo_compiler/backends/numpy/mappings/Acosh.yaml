@@ -1,0 +1,3 @@
+Acosh:
+  ast_template: np.arccosh
+  target_api: ''

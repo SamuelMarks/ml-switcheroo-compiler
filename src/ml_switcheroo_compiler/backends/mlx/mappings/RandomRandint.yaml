@@ -1,0 +1,2 @@
+RandomRandint:
+  target_api: '''mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})'''

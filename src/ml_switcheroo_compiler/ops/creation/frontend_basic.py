@@ -44,7 +44,7 @@ def _infer_dtype(val_arr) -> DType:
     """Infers the DType from a backend array.
 
     Args:
-        val_arr (object): The val_arr parameter.
+        val_arr (Any): The val_arr parameter.
 
     Returns:
         DType: Result.
@@ -52,7 +52,7 @@ def _infer_dtype(val_arr) -> DType:
     dtype_str = str(val_arr.dtype)
     if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
         return DType.String
-    if dtype_str == "object" or dtype_str == "O":
+    if dtype_str == "Any" or dtype_str == "O":
         return DType.Object
     return DType(dtype_str)
 
@@ -61,10 +61,10 @@ def _get_dtype_val(dtype):
     """Get the backend dtype value.
 
     Args:
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     if hasattr(dtype, "value"):
         return dtype.value
@@ -77,58 +77,58 @@ def _try_create_array(backend, obj, dtype_val=None):
     """Try create array.
 
     Args:
-        backend (object): The backend parameter.
-        obj (object): The obj parameter.
-        dtype_val (object): The dtype_val parameter.
+        backend (Any): The backend parameter.
+        obj (Any): The obj parameter.
+        dtype_val (Any): The dtype_val parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     if dtype_val is None:
         try:
             return backend.array(obj)
         except ValueError:
-            return backend.array(obj, dtype="object")
+            return backend.array(obj, dtype="Any")
     try:
         return backend.array(obj, dtype=dtype_val)
     except TypeError:
         return backend.array(obj)
 
 
-def _create_backend_array(object, dtype):
+def _create_backend_array(Any, dtype):
     """Create the backend array.
 
     Args:
-        object (object): The object parameter.
-        dtype (object): The dtype parameter.
+        Any (Any): The Any parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     backend = get_active_backend()
     dtype_val = None
     if dtype is not None:
         dtype_val = _get_dtype_val(dtype)
 
-    res = _try_create_array(backend, object, dtype_val)
+    res = _try_create_array(backend, Any, dtype_val)
 
     return res
 
 
 def array(
-    object,
+    Any,
     dtype: DType | None = None,
 ) -> Tensor:
     """Create an array.
 
     Args:
-        object (object): The object parameter.
-        dtype (object): The dtype parameter.
+        Any (Any): The Any parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
     """
-    val_arr = _create_backend_array(object, dtype)
+    val_arr = _create_backend_array(Any, dtype)
     if dtype is None:
         dtype = _infer_dtype(val_arr)
 
@@ -149,8 +149,8 @@ def asarray(
     """Convert the input to an array.
 
     Args:
-        a (object): The a parameter.
-        dtype (object): The dtype parameter.
+        a (Any): The a parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -166,10 +166,10 @@ def convert_to_tensor(
     x,
     dtype: DType | None = None,
 ) -> Tensor:
-    """Convert the given object to a Tensor.
+    """Convert the given Any to a Tensor.
 
     Args:
-        x (object): Object to convert.
+        x (Any): Object to convert.
         dtype (Optional[DType]): The data type.
 
     Returns:
@@ -240,10 +240,10 @@ def _extract_fill_value(fill_value):
     """Extract fill value.
 
     Args:
-        fill_value (object): The fill_value parameter.
+        fill_value (Any): The fill_value parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     if hasattr(fill_value, "data"):
         fill_value = fill_value.data
@@ -257,7 +257,7 @@ def _full_eager(shape: tuple[int, ...], fill_value, dtype: DType, device: Device
 
     Args:
         shape (tuple): The shape parameter.
-        fill_value (object): The fill_value parameter.
+        fill_value (Any): The fill_value parameter.
         dtype (DType): The dtype parameter.
         device (Device): The device parameter.
 
@@ -278,10 +278,10 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-        shape (object): The shape parameter.
+        shape (Any): The shape parameter.
         fill_value (float): The fill_value parameter.
-        dtype (object): The dtype parameter.
-        device (object): The device parameter.
+        dtype (Any): The dtype parameter.
+        device (Any): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -367,8 +367,8 @@ def full_like(
     Args:
         input (Tensor): The input parameter.
         fill_value (float): The fill_value parameter.
-        dtype (object): The dtype parameter.
-        device (object): The device parameter.
+        dtype (Any): The dtype parameter.
+        device (Any): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -440,7 +440,7 @@ def convert_to_numpy(x: Tensor):
         x (Tensor): Input tensor.
 
     Returns:
-        object: A numpy array.
+        Any: A numpy array.
     """
     if hasattr(x, "numpy"):
         return x.numpy()
@@ -458,7 +458,7 @@ def frombuffer(
     """Create a 1-D tensor from a buffer.
 
     Args:
-        buffer (object): An object that exposes the buffer interface.
+        buffer (Any): An Any that exposes the buffer interface.
         dtype (Optional[DType]): Data type of the returned array.
         count (int): Number of items to read. -1 means all data in the buffer.
         offset (int): Start reading the buffer from this offset.

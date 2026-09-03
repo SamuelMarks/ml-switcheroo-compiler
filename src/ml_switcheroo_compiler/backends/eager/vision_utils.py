@@ -19,6 +19,7 @@ class RandomCropConfig:
     c: int
     H: int
     W: int
+    rng: Any | None = None
 
 
 @dataclass
@@ -27,9 +28,9 @@ class GeometricGridConfig:
 
     H: int
     W: int
-    rng: Any = None
-    factor1: Any = None
-    factor2: Any = None
+    rng: Any | None = None
+    factor1: Any | None = None
+    factor2: Any | None = None
 
 
 @dataclass
@@ -41,19 +42,19 @@ class EagerTransformContext:
     W: int
     C: int
     name: str
-    np_mod: Any = None
-    imgs: Any = None
-    rng: Any = None
+    np_mod: Any | None = None
+    imgs: Any | None = None
+    rng: Any | None = None
 
 
-def _prepare_eager_transform(backend_module: Any, images: Any, seed: Any, data_format: Any) -> EagerTransformContext:
+def _prepare_eager_transform(backend_module: Any, images: Any, seed: Any | None, data_format: Any | None) -> EagerTransformContext:
     """Evaluate _prepare_eager_transform operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        images (Any): The images parameter.
-        seed (Any): The seed parameter.
-        data_format (Any): The data_format parameter.
+        backend_module: The backend_module parameter.
+        images: The images parameter.
+        seed: The seed parameter.
+        data_format: The data_format parameter.
 
     Returns:
         EagerTransformContext: Result.
@@ -67,8 +68,8 @@ class TransformInterpolationConfig:
 
     order: int
     fill_value: float
-    new_y: Any = None
-    new_x: Any = None
+    new_y: Any | None = None
+    new_x: Any | None = None
 
 
 @dataclass
@@ -85,6 +86,12 @@ class ResizeContext:
 @dataclass
 class MapCoordsContext:
     """MapCoordsContext."""
+
+    np_mod: Any | None = None
+    image: Any | None = None
+    y: Any | None = None
+    x: Any | None = None
+    valid: Any | None = None
 
 
 def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
@@ -115,9 +122,9 @@ def _np_map_coordinates(np_mod: Any, image: Any, coords: Any, order: int = 1, fi
     """Evaluate _np_map_coordinates operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        image (Any): The image parameter.
-        coords (Any): The coords parameter.
+        np_mod: The np_mod parameter.
+        image: The image parameter.
+        coords: The coords parameter.
         order (int): The order parameter.
         fill_value (float): The fill_value parameter.
 
@@ -131,9 +138,9 @@ def _compute_perspective_matrix(np_mod: Any, src: Any, dst: Any) -> Any:
     """Evaluate _compute_perspective_matrix operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        src (Any): The src parameter.
-        dst (Any): The dst parameter.
+        np_mod: The np_mod parameter.
+        src: The src parameter.
+        dst: The dst parameter.
 
     Returns:
             Any: Result.
@@ -145,9 +152,9 @@ def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
     """Generate source x and y coordinates for a given batch from homography matrix.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        h_batch (Any): The h_batch parameter.
-        coords (Any): The coords parameter.
+        np_mod: The np_mod parameter.
+        h_batch: The h_batch parameter.
+        coords: The coords parameter.
 
     Returns:
             Any: Result.
@@ -159,7 +166,7 @@ def _generate_perspective_grid(np_mod: Any, H: int, W: int) -> Any:
     """Evaluate _generate_perspective_grid operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
+        np_mod: The np_mod parameter.
         H (int): The H parameter.
         W (int): The W parameter.
 
@@ -174,6 +181,8 @@ class PerspectiveContext:
     """Configuration class for perspective context."""
 
     b: int
+    coords: Any | None = None
+    h: Any | None = None
 
 
 @dataclass
@@ -182,6 +191,9 @@ class PerspectiveChannelContext:
 
     ctx: PerspectiveContext
     config: PerspectiveConfig
+    np_mod: Any | None = None
+    imgs: Any | None = None
+    out: Any | None = None
 
 
 def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
@@ -200,9 +212,9 @@ def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: Perspective
     """Apply perspective transform to a batched image array.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        imgs (Any): The imgs parameter.
-        h (Any): The h parameter.
+        np_mod: The np_mod parameter.
+        imgs: The imgs parameter.
+        h: The h parameter.
         config (PerspectiveConfig): The config parameter.
 
     Returns:
@@ -210,38 +222,6 @@ def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: Perspective
     """
     return 0
 
-
-__all__ = [
-    "EagerTransformContext",
-    "GeometricGridConfig",
-    "MapCoordsContext",
-    "PerspectiveChannelContext",
-    "PerspectiveConfig",
-    "PerspectiveContext",
-    "RandomCropConfig",
-    "ResizeContext",
-    "TransformInterpolationConfig",
-    "__cached__",
-    "__doc__",
-    "__file__",
-    "__loader__",
-    "__name__",
-    "__package__",
-    "__spec__",
-    "_apply_perspective_batch",
-    "_apply_perspective_channel",
-    "_compute_perspective_matrix",
-    "_generate_perspective_coords",
-    "_generate_perspective_grid",
-    "_map_coords_bilinear",
-    "_map_coords_nearest",
-    "_np_map_coordinates",
-    "_prepare_eager_transform",
-    "_to_channels_last",
-    "_to_numpy_array",
-    "annotations",
-    "dataclass",
-]
 
 __all__ = [
     "EagerTransformContext",

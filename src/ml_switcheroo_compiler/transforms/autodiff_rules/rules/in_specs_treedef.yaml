@@ -1,0 +1,4 @@
+in_specs_treedef:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

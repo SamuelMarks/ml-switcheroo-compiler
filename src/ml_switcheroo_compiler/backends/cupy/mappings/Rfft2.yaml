@@ -1,0 +1,2 @@
+Rfft2:
+  target_api: cp.fft.rfft2

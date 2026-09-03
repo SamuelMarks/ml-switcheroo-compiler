@@ -1,0 +1,4 @@
+numeric_type_aliases:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

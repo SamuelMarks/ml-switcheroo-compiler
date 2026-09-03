@@ -1,0 +1,2 @@
+Allclose:
+  target_api: '''mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})'''

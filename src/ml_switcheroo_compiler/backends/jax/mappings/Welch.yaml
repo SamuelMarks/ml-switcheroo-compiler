@@ -1,0 +1,2 @@
+Welch:
+  target_api: jax.scipy.signal.welch

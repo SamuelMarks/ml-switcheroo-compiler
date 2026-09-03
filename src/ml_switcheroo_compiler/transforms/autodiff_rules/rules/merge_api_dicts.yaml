@@ -1,0 +1,4 @@
+merge_api_dicts:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

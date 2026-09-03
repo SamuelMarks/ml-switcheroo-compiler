@@ -6,7 +6,7 @@ from .common_ops import _calculate_padding, _emit_signal_node
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -24,8 +24,8 @@ class Convolve2d(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

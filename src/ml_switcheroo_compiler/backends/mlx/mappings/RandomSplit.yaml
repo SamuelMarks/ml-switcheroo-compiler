@@ -1,0 +1,2 @@
+RandomSplit:
+  target_api: '''mx.random.split({0}, {num})'''

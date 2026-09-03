@@ -1,0 +1,6 @@
+Div:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1],
+    Constant(2.0)))
+  vjp:
+  - '- Div($cotangent, $input[1])'
+  - '- Mul($cotangent, Div($input[0], Pow($input[1], Constant(2.0))))'

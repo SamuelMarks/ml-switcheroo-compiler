@@ -1,0 +1,2 @@
+BinomPmf:
+  target_api: np.binompmf

@@ -1,0 +1,4 @@
+below_or_on_diag:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

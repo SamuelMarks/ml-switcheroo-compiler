@@ -1,0 +1,3 @@
+Irfftnd:
+  ast_template: np.fft.irfftn({0})
+  target_api: ''

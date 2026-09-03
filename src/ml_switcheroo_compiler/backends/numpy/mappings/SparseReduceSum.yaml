@@ -1,0 +1,3 @@
+SparseReduceSum:
+  ast_template: tf.sparse.reduce_sum
+  target_api: ''

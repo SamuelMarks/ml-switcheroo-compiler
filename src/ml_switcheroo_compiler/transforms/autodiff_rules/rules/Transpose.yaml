@@ -1,0 +1,4 @@
+Transpose:
+  jvp: Transpose($tangent[0])
+  vjp:
+  - Transpose($cotangent)

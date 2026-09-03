@@ -1,0 +1,4 @@
+get_col_name:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

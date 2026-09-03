@@ -1,0 +1,3 @@
+NanToNum:
+  ast_template: np.nan_to_num
+  target_api: ''

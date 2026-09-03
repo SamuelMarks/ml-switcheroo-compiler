@@ -1,0 +1,4 @@
+check_no_aliases:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

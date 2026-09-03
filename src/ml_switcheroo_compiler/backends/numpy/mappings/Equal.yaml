@@ -1,0 +1,3 @@
+Equal:
+  ast_template: np.equal
+  target_api: ''

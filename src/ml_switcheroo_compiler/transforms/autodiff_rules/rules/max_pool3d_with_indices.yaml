@@ -1,0 +1,4 @@
+max_pool3d_with_indices:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

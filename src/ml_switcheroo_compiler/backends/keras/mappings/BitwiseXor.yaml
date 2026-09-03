@@ -1,0 +1,2 @@
+BitwiseXor:
+  target_api: keras_ops.bitwise_xor

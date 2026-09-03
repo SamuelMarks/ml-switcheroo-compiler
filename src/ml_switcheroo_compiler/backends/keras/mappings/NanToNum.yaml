@@ -1,0 +1,2 @@
+NanToNum:
+  target_api: keras_ops.nan_to_num

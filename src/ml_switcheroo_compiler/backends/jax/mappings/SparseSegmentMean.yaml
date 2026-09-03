@@ -1,0 +1,2 @@
+SparseSegmentMean:
+  target_api: jax.numpy.sparsesegmentmean

@@ -1,0 +1,5 @@
+fallback_copy:
+  body: "// SIMD Fallback Copy\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+    for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t val = wasm_v128_load(&buf_{in0}[i]);\n\
+    \    wasm_v128_store(&buf_{clean_id}[i], val);\n}}\nfor (int j = limit_{clean_id};\
+    \ j < {nelem}; ++j) {{\n    buf_{clean_id}[j] = buf_{in0}[j];\n}}\n"

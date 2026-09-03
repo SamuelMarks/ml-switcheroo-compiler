@@ -1,0 +1,4 @@
+from_scipy_sparse:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

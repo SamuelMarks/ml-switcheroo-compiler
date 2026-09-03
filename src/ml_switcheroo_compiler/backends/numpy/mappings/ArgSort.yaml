@@ -1,0 +1,3 @@
+ArgSort:
+  ast_template: np.argsort
+  target_api: ''

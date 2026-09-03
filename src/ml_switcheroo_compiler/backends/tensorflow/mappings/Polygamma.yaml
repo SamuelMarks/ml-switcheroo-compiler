@@ -1,0 +1,2 @@
+Polygamma:
+  target_api: tf.math.polygamma

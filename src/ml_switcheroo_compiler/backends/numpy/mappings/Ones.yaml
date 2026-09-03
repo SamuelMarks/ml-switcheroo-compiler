@@ -1,0 +1,3 @@
+Ones:
+  ast_template: np.ones
+  target_api: ''

@@ -1,0 +1,4 @@
+register_forward_hook:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

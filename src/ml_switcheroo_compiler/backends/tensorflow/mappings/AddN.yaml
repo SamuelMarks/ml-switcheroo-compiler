@@ -1,0 +1,2 @@
+AddN:
+  target_api: tf.add_n

@@ -1,0 +1,7 @@
+get_thread_local_state_call_tf_concrete_function_list:
+  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
+    \ = {expr};\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

@@ -1,0 +1,8 @@
+recv:
+  body: '// Recv primitive: No-op in shader, handled by JS orchestrator
+
+    '
+  workgroup_size:
+  - 1
+  - 1
+  - 1

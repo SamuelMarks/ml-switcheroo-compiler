@@ -1,0 +1,2 @@
+SparseSoftmax:
+  target_api: jax.numpy.sparsesoftmax

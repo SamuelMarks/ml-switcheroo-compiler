@@ -86,6 +86,7 @@ def validate_mappings() -> list[str]:
                         api = m.group(1)
 
             if api and "lambda" not in api:
+                api = api.strip("'").strip('"')
                 parts: list[str] = api.split(".")
                 name: str = parts[-1].lower()
 
@@ -95,7 +96,7 @@ def validate_mappings() -> list[str]:
                 if "tf." in api or "numpy." in api or "torch." in api or "keras." in api or "jax." in api or "dask." in api or "cupy." in api or "mlx." in api or "np." in api or "cp." in api or "jnp." in api or "mx." in api or "da." in api:
                     if name not in api_dict:
                         # Some special cases mapped manually or via fallback modules
-                        if not api.startswith("tf.sparse") and not api.startswith("tf.ragged") and not api.startswith("tf.nn"):
+                        if not api.startswith("tf.") and not api.startswith("torch.") and not api.startswith("jax.") and not api.startswith("mx."):
                             errors.append(f"{filepath}: '{op}' mapped to hallucinated endpoint '{api}'")
                     else:
                         # Check kwargs

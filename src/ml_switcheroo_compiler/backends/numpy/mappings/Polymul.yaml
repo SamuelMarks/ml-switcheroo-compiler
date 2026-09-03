@@ -1,0 +1,3 @@
+Polymul:
+  ast_template: np.polymul
+  target_api: ''

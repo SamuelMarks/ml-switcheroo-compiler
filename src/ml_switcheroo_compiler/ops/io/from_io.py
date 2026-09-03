@@ -21,8 +21,8 @@ class Fromfile(OpDef):
     """Construct an array from data in a text or binary file.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
     """
 
     op_name = "Fromfile"
@@ -31,8 +31,8 @@ class Fromfile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -46,8 +46,8 @@ class Fromstring(OpDef):
     """Provide a new 1-D array initialized from text data in a string.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
     """
 
     op_name = "Fromstring"
@@ -56,8 +56,8 @@ class Fromstring(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -68,11 +68,11 @@ class Fromstring(OpDef):
 
 @register_op("Fromiter")
 class Fromiter(OpDef):
-    """Create a new 1-dimensional array from an iterable object.
+    """Create a new 1-dimensional array from an iterable Any.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
     """
 
     op_name = "Fromiter"
@@ -81,8 +81,8 @@ class Fromiter(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -96,8 +96,8 @@ class Fromfunction(OpDef):
     """Construct an array by executing a function over each coordinate.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
     """
 
     op_name = "Fromfunction"
@@ -106,8 +106,8 @@ class Fromfunction(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -120,13 +120,13 @@ def fromfile(file, dtype=float, count: int = -1, sep: str = "", offset: int = 0,
     """Construct an array from data in a text or binary file.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
 
     Args:
-        file (object): The file parameter.
-        like (object): The like parameter.
-    dtype (object): The dtype parameter.
+        file (Any): The file parameter.
+        like (Any): The like parameter.
+    dtype (Any): The dtype parameter.
         count (int): The count parameter.
         sep (str): The sep parameter.
         offset (int): The offset parameter.
@@ -143,13 +143,13 @@ def fromstring(string: str, dtype=float, count: int = -1, sep: str = "", *, like
     """Provide a new 1-D array initialized from text data in a string.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
 
     Args:
         string (str): The string parameter.
-        like (object): The like parameter.
-    dtype (object): The dtype parameter.
+        like (Any): The like parameter.
+    dtype (Any): The dtype parameter.
         count (int): The count parameter.
         sep (str): The sep parameter.
 
@@ -162,16 +162,16 @@ def fromstring(string: str, dtype=float, count: int = -1, sep: str = "", *, like
 
 
 def fromiter(iterable, dtype, count: int = -1, *, like=None):
-    """Create a new 1-dimensional array from an iterable object.
+    """Create a new 1-dimensional array from an iterable Any.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
 
     Args:
-        iterable (object): The iterable parameter.
-        like (object): The like parameter.
-    dtype (object): The dtype parameter.
+        iterable (Any): The iterable parameter.
+        like (Any): The like parameter.
+    dtype (Any): The dtype parameter.
         count (int): The count parameter.
 
     Returns:
@@ -186,13 +186,13 @@ def fromfunction(function, shape, *, dtype=float, like=None, **kwargs):
     """Construct an array by executing a function over each coordinate.
 
     Args:
-        dtype (object): Dtype.
-        like (object): Like.
+        dtype (Any): Dtype.
+        like (Any): Like.
 
     Args:
-        function (object): The function parameter.
-        shape (object): The shape parameter.
-        **kwargs (object): Keyword args.
+        function (Any): The function parameter.
+        shape (Any): The shape parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

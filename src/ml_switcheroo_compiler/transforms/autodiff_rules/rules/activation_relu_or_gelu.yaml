@@ -1,0 +1,4 @@
+activation_relu_or_gelu:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

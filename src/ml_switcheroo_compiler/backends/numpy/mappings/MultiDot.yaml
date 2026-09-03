@@ -1,0 +1,3 @@
+MultiDot:
+  ast_template: np.linalg.multi_dot({0})
+  target_api: ''

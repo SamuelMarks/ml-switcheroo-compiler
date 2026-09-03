@@ -1,0 +1,3 @@
+Cumprod:
+  ast_template: np.cumprod
+  target_api: ''

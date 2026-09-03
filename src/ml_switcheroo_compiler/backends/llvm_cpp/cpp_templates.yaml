@@ -1,4 +1,8 @@
 templates:
+  if_op:
+    body: "    if ({cond_var}.data[0] > 0.0f) {{\n{then_body}    }} else {{\n{else_body}    }}\n"
+  loop_op:
+    body: "    while (true) {{\n{cond_body}{loop_body}        break;\n    }}\n"
   unary:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nfor(size_t i=0; i<{clean_id}.size();\
       \ ++i) {{\n    {clean_id}.data[i] = {scalar_expr};\n}}\n"
@@ -41,6 +45,10 @@ templates:
       \                        }}\n                    }}\n                }}\n  \
       \              {clean_id}.data[out_idx++] = sum;\n            }}\n        }}\n\
       \    }}\n}}\n"
+  scan:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0) {{\n    float acc = 0.0f;\n    for(size_t i=0; i<{in0}.size(); ++i) {{\n        acc = acc + {in0}.data[i];\n        {clean_id}.data[i] = acc;\n    }}\n}}\n"
+  attention:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n// Mock C++ dot-product attention\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = 0.0f;\n}}\n"
 prelude: "#include <iostream>\n#include <vector>\n#include <cmath>\n#include <numeric>\n\
   #include <algorithm>\n#include <cassert>\n#ifdef USE_BLAS\n#include <cblas.h>\n\
   #endif\n\ntemplate<typename T>\nstruct NDArrayView {\n    std::vector<T> data;\n\

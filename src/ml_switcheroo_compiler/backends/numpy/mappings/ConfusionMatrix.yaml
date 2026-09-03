@@ -1,0 +1,2 @@
+ConfusionMatrix:
+  target_api: np.confusionmatrix

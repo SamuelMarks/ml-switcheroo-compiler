@@ -1,0 +1,4 @@
+multi_transform:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

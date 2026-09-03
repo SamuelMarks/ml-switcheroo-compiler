@@ -1,0 +1,2 @@
+ConvTransposeShapeTuple:
+  target_api: jax.numpy.convtransposeshapetuple

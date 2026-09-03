@@ -1,0 +1,2 @@
+PoissonCdf:
+  target_api: jax.scipy.stats.poisson.cdf

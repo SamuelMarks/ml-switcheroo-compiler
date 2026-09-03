@@ -1,5 +1,7 @@
 """Pydantic models for pipeline topologies."""
 
+from typing import Optional
+
 from pydantic import BaseModel, RootModel
 
 
@@ -30,6 +32,20 @@ class DependencyConfig(BaseModel):
     offset_mb: int
 
 
+class SchedulePhaseConfig(BaseModel):
+    """Configuration for a schedule phase."""
+
+    type: str
+    operations: list[str]
+    count_expression: str  # e.g. "num_stages - 1" or "num_microbatches - num_stages + 1"
+
+
+class ScheduleConfig(BaseModel):
+    """Configuration for a pipeline schedule."""
+
+    phases: list[SchedulePhaseConfig]
+
+
 class TopologyConfig(BaseModel):
     """Configuration for a specific pipeline topology."""
 
@@ -37,6 +53,7 @@ class TopologyConfig(BaseModel):
     mesh_mapping: MeshMappingConfig
     stage_communication: StageCommunicationConfig
     dependencies: list[DependencyConfig] = []
+    schedule: Optional[ScheduleConfig] = None
 
 
 class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
@@ -44,7 +61,7 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args: object, **kwargs: object) -> dict:
         """Return dict representation."""
         return super().model_dump(*args, **kwargs)
 
@@ -52,6 +69,6 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
         """Return items from the underlying dictionary."""
         return self.root.items()
 
-    def get(self, key: str, default=None):
+    def get(self, key: str, default: object = None) -> Optional[TopologyConfig]:
         """Get topology config by key."""
         return self.root.get(key, default)

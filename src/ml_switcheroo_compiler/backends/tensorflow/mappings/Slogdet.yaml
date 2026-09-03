@@ -1,0 +1,2 @@
+Slogdet:
+  target_api: tf.linalg.slogdet

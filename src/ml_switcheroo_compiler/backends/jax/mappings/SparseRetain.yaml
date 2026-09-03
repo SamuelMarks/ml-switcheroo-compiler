@@ -1,0 +1,2 @@
+SparseRetain:
+  target_api: jax.numpy.sparseretain

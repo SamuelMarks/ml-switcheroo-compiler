@@ -1,0 +1,4 @@
+approx_min_k:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

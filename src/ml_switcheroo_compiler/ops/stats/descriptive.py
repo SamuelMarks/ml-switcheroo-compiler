@@ -32,8 +32,8 @@ class ApplyOverAxes(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -52,8 +52,8 @@ class Bincount(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -108,8 +108,8 @@ class Corrcoef(OpDef):
         """Infer the output shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -128,8 +128,8 @@ class Correlate(OpDef):
         """Infer the output shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -148,8 +148,8 @@ class Cov(OpDef):
         """Infer the output shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -165,8 +165,8 @@ class TrapezoidalIntegral(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -204,8 +204,8 @@ class ConfusionMatrix(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -234,8 +234,8 @@ def moments(x, axes=None, keepdims: bool = False):
     """Compute the mean and variance of x.
 
     Args:
-        x (object): The x parameter.
-        axes (object): The axes parameter.
+        x (Any): The x parameter.
+        axes (Any): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -261,7 +261,7 @@ def descriptive(a):
     """Provide function for descriptive.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -281,7 +281,7 @@ def distributions(a):
     """Provide function for distributions.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
 
     Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,4 @@
+src_device_obj:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

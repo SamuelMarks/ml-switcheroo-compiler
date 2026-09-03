@@ -1,0 +1,3 @@
+AvgPool:
+  body: "\n// WASM SIMD AvgPool\nfor (size_t i = 0; i < {out_size}; ++i) {\n    v128_t\
+    \ sum_vec = wasm_f32x4_splat(0.0f);\n    // ... loop over kernel window\n}\n"

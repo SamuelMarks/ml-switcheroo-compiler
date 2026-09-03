@@ -1,0 +1,4 @@
+SUPPORTED_F8_TYPES:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

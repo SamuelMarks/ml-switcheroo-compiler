@@ -1,0 +1,2 @@
+Power:
+  target_api: keras_ops.power

@@ -1,0 +1,2 @@
+ScatterNd:
+  target_api: '''mx.scatter_nd({0}, {1}, {shape})'''

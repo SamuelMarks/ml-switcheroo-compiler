@@ -1,0 +1,2 @@
+Pinv:
+  target_api: '''mx.linalg.pinv({0})'''

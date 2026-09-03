@@ -1,0 +1,2 @@
+RNNCellDropoutWrapper:
+  target_api: jax.numpy.rnncelldropoutwrapper

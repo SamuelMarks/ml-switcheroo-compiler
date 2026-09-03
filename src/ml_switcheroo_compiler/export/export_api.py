@@ -1,7 +1,14 @@
+"""export_api module."""
+
+from typing import Optional, TypeVar
+
+IRGraph = TypeVar("IRGraph")
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Export API."""
 
 import os
+import typing
 from typing import Callable, Optional
 
 import yaml
@@ -14,9 +21,9 @@ class ExportArchive:
 
     def __init__(self) -> None:
         """Initialize."""
-        self.trackables = {}
-        self.endpoints = {}
-        self.collections = {}
+        self.trackables: dict[int, typing.Union[int, float, str, bool, list, tuple, dict, None]] = {}
+        self.endpoints: dict[str, Callable] = {}
+        self.collections: dict[str, typing.Union[int, float, str, bool, list, tuple, dict, None]] = {}
 
         yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
         if os.path.exists(yaml_path):
@@ -25,7 +32,7 @@ class ExportArchive:
         else:
             self.schema = {"types": {}, "operations": {}}
 
-    def track(self, resource) -> None:
+    def track(self, resource: typing.Union[int, float, str, bool, list, tuple, dict, None]) -> None:
         """Track a resource.
 
         Args:
@@ -33,7 +40,7 @@ class ExportArchive:
         """
         self.trackables[id(resource)] = resource
 
-    def add_endpoint(self, name: str, fn, **kwargs) -> None:
+    def add_endpoint(self, name: str, fn: Callable, **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None]) -> None:
         """Add an endpoint.
 
         Args:
@@ -49,14 +56,17 @@ class ExportArchive:
 
     def _get_tf_op(self, op_type: str) -> str:
         """Map IR op_type to TF NodeDef op."""
-        return str(self.schema.get("operations", {}).get(op_type, self.schema.get("operations", {}).get("fallback", "Placeholder")))
+        mapped = self.schema.get("operations", {}).get(op_type)
+        if mapped is None:
+            raise ValueError(f"Operation '{op_type}' cannot be exported to TensorFlow schema.")
+        return str(mapped)
 
-    def _build_signature_def(self, name: str, graph=None) -> ProtobufWriter:
+    def _build_signature_def(self, name: str, graph: Optional["IRGraph"] = None) -> ProtobufWriter:
         """Build a SignatureDef protobuf message.
 
         Args:
             name (str): The name parameter.
-            graph (object, optional): The IR graph to inspect.
+            graph (Optional["IRGraph"]): The IR graph to inspect.
 
         Returns:
             ProtobufWriter: Result.
@@ -106,11 +116,11 @@ class ExportArchive:
 
         return sig
 
-    def _build_graph_def(self, graph=None) -> ProtobufWriter:
+    def _build_graph_def(self, graph: Optional["IRGraph"] = None) -> ProtobufWriter:
         """Build a GraphDef protobuf message.
 
         Args:
-            graph (object, optional): The IR graph to serialize.
+            graph (Optional["IRGraph"]): The IR graph to serialize.
 
         Returns:
             ProtobufWriter: Result.
@@ -132,12 +142,6 @@ class ExportArchive:
 
                 # Attributes (field 5, map<string, AttrValue>) would go here for completeness
                 graph_def.add_message(1, node_def)
-        else:
-            # Dummy node just to be compliant
-            dummy_node = ProtobufWriter()
-            dummy_node.add_string(1, "dummy_node")
-            dummy_node.add_string(2, "Placeholder")
-            graph_def.add_message(1, dummy_node)
 
         # versions
         versions = ProtobufWriter()
@@ -145,11 +149,11 @@ class ExportArchive:
         graph_def.add_message(4, versions)
         return graph_def
 
-    def _build_saved_model(self, graph=None) -> bytes:
+    def _build_saved_model(self, graph: Optional["IRGraph"] = None) -> bytes:
         """Build the SavedModel protobuf bytes.
 
         Args:
-            graph (object, optional): The IR graph.
+            graph (Optional["IRGraph"]): The IR graph.
 
         Returns:
             bytes: Result.
@@ -169,7 +173,7 @@ class ExportArchive:
         saved_model.add_message(2, meta_graph)  # meta_graphs
         return saved_model.get_bytes()
 
-    def write_out(self, filepath: str, options=None, graph=None) -> None:
+    def write_out(self, filepath: str, options: typing.Union[dict, None] = None, graph: Optional["IRGraph"] = None) -> None:
         """Write the archive to a directory.
 
         Args:
@@ -198,7 +202,7 @@ class ExportArchive:
         with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
             f.write(self._build_saved_model(graph))
 
-    def add_variable_collection(self, name: str, variables) -> None:
+    def add_variable_collection(self, name: str, variables: typing.Union[list, dict, tuple]) -> None:
         """Add a variable collection.
 
         Args:

@@ -1,0 +1,4 @@
+requires_grad_:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

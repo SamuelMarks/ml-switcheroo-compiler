@@ -1,0 +1,3 @@
+Cummax:
+  ast_template: np.maximum.accumulate
+  target_api: ''

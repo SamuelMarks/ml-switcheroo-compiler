@@ -1,0 +1,4 @@
+AlphaDropout:
+  custom_code: 'lambda x, **kwargs: jax.numpy.where(jax.random.bernoulli(jax.random.PRNGKey(0),
+    1.0 - kwargs.get(''p'', 0.5), x.shape), x, 0.0)'
+  target_api: custom_op

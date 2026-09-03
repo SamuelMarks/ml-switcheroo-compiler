@@ -1,0 +1,2 @@
+FractionalAvgPool:
+  target_api: tf.nn.fractional_avg_pool

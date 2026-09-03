@@ -3384,21 +3384,7 @@ ast_to_ir_ops:
   mlx.core.exponential: exponential
   keras.ops.exponential: exponential
   numpy.exponential: exponential
-  torch.exportfunction: ExportFunction
-  jax.numpy.exportfunction: ExportFunction
-  mlx.core.exportfunction: ExportFunction
-  keras.ops.exportfunction: ExportFunction
-  numpy.exportfunction: ExportFunction
-  torch.exporttodot: ExportToDot
-  jax.numpy.exporttodot: ExportToDot
-  mlx.core.exporttodot: ExportToDot
-  keras.ops.exporttodot: ExportToDot
-  numpy.exporttodot: ExportToDot
-  torch.exporter: Exporter
-  jax.numpy.exporter: Exporter
-  mlx.core.exporter: Exporter
-  keras.ops.exporter: Exporter
-  numpy.exporter: Exporter
+
   torch.expr: Expr
   jax.numpy.expr: Expr
   mlx.core.expr: Expr
@@ -37024,63 +37010,7 @@ ir_to_ast_ops:
     numpy:
     - numpy
     - exponential
-  ExportFunction:
-    jax:
-    - jax
-    - numpy
-    - exportfunction
-    pytorch:
-    - torch
-    - exportfunction
-    mlx:
-    - mlx
-    - core
-    - exportfunction
-    keras:
-    - keras
-    - ops
-    - exportfunction
-    numpy:
-    - numpy
-    - exportfunction
-  ExportToDot:
-    jax:
-    - jax
-    - numpy
-    - exporttodot
-    pytorch:
-    - torch
-    - exporttodot
-    mlx:
-    - mlx
-    - core
-    - exporttodot
-    keras:
-    - keras
-    - ops
-    - exporttodot
-    numpy:
-    - numpy
-    - exporttodot
-  Exporter:
-    jax:
-    - jax
-    - numpy
-    - exporter
-    pytorch:
-    - torch
-    - exporter
-    mlx:
-    - mlx
-    - core
-    - exporter
-    keras:
-    - keras
-    - ops
-    - exporter
-    numpy:
-    - numpy
-    - exporter
+
   Expr:
     jax:
     - jax

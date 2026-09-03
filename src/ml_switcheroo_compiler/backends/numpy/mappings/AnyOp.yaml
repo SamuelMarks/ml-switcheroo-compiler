@@ -1,0 +1,2 @@
+AnyOp:
+  target_api: np.anyop

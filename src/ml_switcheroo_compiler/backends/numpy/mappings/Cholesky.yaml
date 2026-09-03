@@ -1,0 +1,3 @@
+Cholesky:
+  ast_template: np.linalg.cholesky
+  target_api: ''

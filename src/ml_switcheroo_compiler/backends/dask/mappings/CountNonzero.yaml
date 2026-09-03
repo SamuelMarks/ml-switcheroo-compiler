@@ -1,0 +1,2 @@
+CountNonzero:
+  target_api: da.count_nonzero

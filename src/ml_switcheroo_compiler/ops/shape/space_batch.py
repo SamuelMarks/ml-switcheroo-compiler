@@ -14,10 +14,10 @@ class SpaceToBatchND(OpDef):
         """Infer shape.
 
         Args:
-            input (object): The input parameter.
-            block_shape (object): The block_shape parameter.
-            paddings (object): The paddings parameter.
-            **kwargs (object): Keyword args.
+            input (Any): The input parameter.
+            block_shape (Any): The block_shape parameter.
+            paddings (Any): The paddings parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -35,10 +35,10 @@ class SpaceToBatch(OpDef):
         """Infer shape.
 
         Args:
-            input (object): The input parameter.
-            block_size (object): The block_size parameter.
-            paddings (object): The paddings parameter.
-            **kwargs (object): Keyword args.
+            input (Any): The input parameter.
+            block_size (Any): The block_size parameter.
+            paddings (Any): The paddings parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -50,10 +50,10 @@ def space_to_batch(input, block_size, paddings, **kwargs):
     """Space to batch operation.
 
     Args:
-        input (object): The input parameter.
-        block_size (object): The block_size parameter.
-        paddings (object): The paddings parameter.
-        **kwargs (object): Keyword args.
+        input (Any): The input parameter.
+        block_size (Any): The block_size parameter.
+        paddings (Any): The paddings parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -76,10 +76,10 @@ def space_to_batch_nd(input, block_shape, paddings, **kwargs):
     """Space to batch ND operation.
 
     Args:
-        input (object): The input parameter.
-        block_shape (object): The block_shape parameter.
-        paddings (object): The paddings parameter.
-        **kwargs (object): Keyword args.
+        input (Any): The input parameter.
+        block_shape (Any): The block_shape parameter.
+        paddings (Any): The paddings parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

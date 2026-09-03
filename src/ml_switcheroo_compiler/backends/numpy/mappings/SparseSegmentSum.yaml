@@ -1,0 +1,3 @@
+SparseSegmentSum:
+  ast_template: tf.sparse.segment_sum
+  target_api: ''

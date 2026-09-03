@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
@@ -54,7 +54,7 @@ def _sigmoid(x):
     """Evaluate _sigmoid operation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

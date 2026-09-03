@@ -1,0 +1,2 @@
+Atanh:
+  target_api: torch.atanh

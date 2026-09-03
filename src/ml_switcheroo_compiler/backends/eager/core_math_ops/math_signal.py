@@ -3,7 +3,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+import builtins
+from typing import Any, Callable, Optional, Protocol, Union
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -13,18 +14,18 @@ def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _correlate operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "correlate", None)
     if func:
         return func(*args, **kwargs)
     (a, v) = (args[0], args[1])
-    mode = kwargs.get("mode", "valid")
+    mode = kwargs.get("mode", "valid") if hasattr(kwargs, "get") else "valid"
     return backend_module.correlate(backend_module.asarray(a), backend_module.asarray(v), mode=mode)
 
 
@@ -33,12 +34,12 @@ def _np_windowhann(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_windowhann operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
     if func is not None:

@@ -1,0 +1,4 @@
+normalize_axis_tuple:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

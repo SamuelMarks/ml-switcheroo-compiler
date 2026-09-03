@@ -1,0 +1,4 @@
+update_parities:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

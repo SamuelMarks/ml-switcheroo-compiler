@@ -1,0 +1,3 @@
+SparseFillEmptyRows:
+  ast_template: tf.sparse.fill_empty_rows
+  target_api: ''

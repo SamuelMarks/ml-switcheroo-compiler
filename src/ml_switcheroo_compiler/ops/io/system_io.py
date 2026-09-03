@@ -20,7 +20,7 @@ def set_default_stream(stream) -> None:
     """Set the default stream for the active backend.
 
     Args:
-        stream (object): The stream parameter.
+        stream (Any): The stream parameter.
 
     Returns:
         NoneType: Result.

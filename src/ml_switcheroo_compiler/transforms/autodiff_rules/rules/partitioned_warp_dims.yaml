@@ -1,0 +1,4 @@
+partitioned_warp_dims:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

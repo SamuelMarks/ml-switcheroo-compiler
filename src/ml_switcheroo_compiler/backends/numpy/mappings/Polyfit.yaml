@@ -1,0 +1,3 @@
+Polyfit:
+  ast_template: np.polyfit
+  target_api: ''

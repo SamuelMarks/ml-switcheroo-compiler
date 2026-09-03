@@ -1,0 +1,16 @@
+Scatter:
+  body: '
+
+    let idx = global_id.x;
+
+    if (idx >= {in_size}u) { return; }
+
+    let out_idx = buf_indices_i32[idx];
+
+    buf_out_f32[out_idx] = buf_in_f32[idx];
+
+    '
+  workgroup_size:
+  - 64
+  - 1
+  - 1

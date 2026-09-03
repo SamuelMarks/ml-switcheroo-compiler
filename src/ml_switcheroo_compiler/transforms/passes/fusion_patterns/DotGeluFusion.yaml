@@ -1,0 +1,16 @@
+DotGeluFusion:
+  pattern:
+    capture: gelu
+    inputs:
+    - capture: dot
+      inputs:
+      - capture: x
+      - capture: y
+      op_type: Dot
+    op_type: Gelu
+  replacement:
+    capture_to_replace: gelu
+    inputs:
+    - x
+    - y
+    op_type: DotGelu

@@ -1,0 +1,3 @@
+Multiply:
+  ast_template: np.multiply
+  target_api: ''

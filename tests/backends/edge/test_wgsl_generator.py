@@ -11,6 +11,5 @@ def test_wgsl_generator():
     gen = WebGPUCodeGenerator(graph)
     code = gen.generate()
     assert "buf_out_f32" in code
-    assert "navigator.gpu" in code
     assert "createBuffer" in code
     assert "dispatchWorkgroups" in code

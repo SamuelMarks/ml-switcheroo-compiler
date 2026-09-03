@@ -1,0 +1,3 @@
+Svdvals:
+  ast_template: np.linalg.svd({0}, compute_uv=False)
+  target_api: ''

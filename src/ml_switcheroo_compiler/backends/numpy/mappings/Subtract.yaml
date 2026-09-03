@@ -1,0 +1,3 @@
+Subtract:
+  ast_template: np.subtract
+  target_api: ''

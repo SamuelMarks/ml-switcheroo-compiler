@@ -1,0 +1,2 @@
+ScatterAdd:
+  target_api: np.scatteradd

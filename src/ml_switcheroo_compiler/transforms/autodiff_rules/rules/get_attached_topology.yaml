@@ -1,0 +1,4 @@
+get_attached_topology:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

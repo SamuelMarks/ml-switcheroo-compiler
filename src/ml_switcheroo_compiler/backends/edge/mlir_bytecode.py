@@ -90,16 +90,16 @@ class MLIRBytecodeEncoder:
         payload += self._encode_varint(len(self.ops))
         for op in self.ops:
             # Op header: op_name_idx
-            payload += self._encode_varint(self._add_string(op["name"]))
+            payload += self._encode_varint(self._add_string(str(op["name"])))
             # Operands count
-            payload += self._encode_varint(len(op["args"]))
+            payload += self._encode_varint(len(list(op["args"])))
             # Results count
-            payload += self._encode_varint(len(op["rets"]))
+            payload += self._encode_varint(len(list(op["rets"])))
             # Operands (dummy indices)
-            for _ in op["args"]:
+            for _ in list(op["args"]):
                 payload += self._encode_varint(0)
             # Results (dummy types)
-            for _ in op["rets"]:
+            for _ in list(op["rets"]):
                 payload += self._encode_varint(0)
 
         return self._encode_section(self.spec.sections["IR"], bytes(payload))

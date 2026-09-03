@@ -1,0 +1,2 @@
+CholeskySolve:
+  target_api: '''mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)), {1})'''

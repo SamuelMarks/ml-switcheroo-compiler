@@ -1,0 +1,4 @@
+dimension_numbers:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

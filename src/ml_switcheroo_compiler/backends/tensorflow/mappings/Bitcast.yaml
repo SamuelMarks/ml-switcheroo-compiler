@@ -1,0 +1,2 @@
+Bitcast:
+  target_api: tf.bitcast

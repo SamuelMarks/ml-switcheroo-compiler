@@ -1,0 +1,3 @@
+Allclose:
+  ast_template: np.allclose
+  target_api: ''

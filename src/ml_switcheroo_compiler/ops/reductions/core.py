@@ -23,8 +23,8 @@ class ReductionOp(OpDef):
         """Universal dispatcher for the operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -37,8 +37,8 @@ class ReductionOp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -50,7 +50,7 @@ class ReductionOp(OpDef):
 
         Args:
             x (str): The x parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             str: Result.

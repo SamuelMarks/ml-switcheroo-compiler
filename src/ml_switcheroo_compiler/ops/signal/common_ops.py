@@ -2,7 +2,7 @@
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -43,6 +43,6 @@ def _calculate_padding(mode: str, boundary: str, fillvalue: float):
         fillvalue (float): Fill value for 'fill' boundary.
 
     Returns:
-        dict[str, object]: Padding configuration dictionary.
+        dict[str, Any]: Padding configuration dictionary.
     """
     return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}

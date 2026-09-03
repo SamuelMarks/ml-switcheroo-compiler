@@ -1,0 +1,2 @@
+LogicalNot:
+  target_api: tf.logical_not

@@ -1,0 +1,4 @@
+scale_grad_by_freq:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

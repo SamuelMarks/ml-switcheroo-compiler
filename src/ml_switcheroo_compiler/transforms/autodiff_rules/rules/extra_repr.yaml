@@ -1,0 +1,4 @@
+extra_repr:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

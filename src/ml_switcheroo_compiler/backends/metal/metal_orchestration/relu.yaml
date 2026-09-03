@@ -1,0 +1,9 @@
+relu:
+  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void relu(\n    const\
+    \ device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n    uint\
+    \ id [[thread_position_in_grid]],\n    constant uint& N [[buffer(2)]])\n{\n  \
+    \  if (id < N) {\n        C[id] = max(0.0, A[id]);\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1

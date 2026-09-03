@@ -1,0 +1,2 @@
+TensorScatterMin:
+  target_api: np.tensorscattermin

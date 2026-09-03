@@ -1,0 +1,3 @@
+Zeros:
+  ast_template: np.zeros
+  target_api: ''

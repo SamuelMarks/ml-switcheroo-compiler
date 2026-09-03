@@ -1,0 +1,2 @@
+BitwiseAnd:
+  target_api: cp.bitwise_and

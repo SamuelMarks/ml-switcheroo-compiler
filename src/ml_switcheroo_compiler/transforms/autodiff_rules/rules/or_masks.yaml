@@ -1,0 +1,4 @@
+or_masks:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -29,10 +29,10 @@ def arange(
 
     Args:
         start (float): The start parameter.
-        stop (object): The stop parameter.
+        stop (Any): The stop parameter.
         step (float): The step parameter.
-        dtype (object): The dtype parameter.
-        device (object): The device parameter.
+        dtype (Any): The dtype parameter.
+        device (Any): The device parameter.
 
     Returns:
         Tensor: Result.
@@ -76,8 +76,8 @@ def linspace(
         start (float): The start parameter.
         stop (float): The stop parameter.
         steps (int): The steps parameter.
-        dtype (object): The dtype parameter.
-        device (object): The device parameter.
+        dtype (Any): The dtype parameter.
+        device (Any): The device parameter.
 
     Returns:
         Tensor: Result.

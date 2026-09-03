@@ -1,0 +1,2 @@
+CtcLoss:
+  target_api: keras_ops.ctc_loss

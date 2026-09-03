@@ -1,0 +1,2 @@
+SegmentSum:
+  target_api: np.segmentsum

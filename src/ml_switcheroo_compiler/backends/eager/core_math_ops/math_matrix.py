@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import typing
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -17,14 +17,14 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _einsum operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    eq = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
+    eq = kwargs.pop("equation", "") if hasattr(kwargs, "pop") and "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
     if hasattr(backend_module, "einsum"):
         return backend_module.einsum(eq, *op_args, **kwargs)
@@ -34,25 +34,25 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
-def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: Any, value: Any, *args: Any, **kwargs: Any) -> Any:
+def _scaled_dot_product_attention_eager(backend_module: Any, query: object, key: object, value: object, *args: Any, **kwargs: Any) -> Any:
     """Fallback eager execution for ScaledDotProductAttention.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        query (Any): The query parameter.
-        key (Any): The key parameter.
-        value (Any): The value parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        query: The query parameter.
+        key: The key parameter.
+        value: The value parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import math
 
-    scale = kwargs.get("scale")
-    is_causal = kwargs.get("is_causal", False)
-    mask = kwargs.get("mask", None)
+    scale = kwargs.get("scale") if hasattr(kwargs, "get") else None
+    is_causal = kwargs.get("is_causal", False) if hasattr(kwargs, "get") else False
+    mask = kwargs.get("mask", None) if hasattr(kwargs, "get") else None
 
     if scale is None:
         scale = 1.0 / math.sqrt(query.shape[-1])
@@ -84,12 +84,12 @@ def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky_solve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.linalg
 
@@ -109,12 +109,12 @@ def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> 
     """Evaluate _banded_triangular_solve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
@@ -135,12 +135,12 @@ def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_power operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
@@ -157,12 +157,12 @@ def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_rank operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
@@ -179,12 +179,12 @@ def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _solve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
@@ -201,12 +201,12 @@ def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tensorsolve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
@@ -223,12 +223,12 @@ def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorsolve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
@@ -243,12 +243,12 @@ def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triangularsolve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
@@ -263,12 +263,12 @@ def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """Evaluate _np_tridiagonalmatmul operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
@@ -283,12 +283,12 @@ def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonalsolve operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
@@ -303,12 +303,12 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_vecdot operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:

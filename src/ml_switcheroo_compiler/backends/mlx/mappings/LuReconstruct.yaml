@@ -1,0 +1,4 @@
+LuReconstruct:
+  target_api: '''mx.take_along_axis(mx.matmul(mx.tril({0}, -1) + mx.eye({0}.shape[-1],
+    dtype={0}.dtype), mx.triu({0})), mx.broadcast_to(mx.expand_dims(mx.argsort({1},
+    axis=-1), -1), {0}.shape), axis=-2)'''

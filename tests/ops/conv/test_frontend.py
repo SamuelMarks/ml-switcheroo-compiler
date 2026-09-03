@@ -60,12 +60,26 @@ def test_conv_frontend_cov():
 
 
 def test_conv_frontend_cov_config_obj_not_none():
+
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
     from ml_switcheroo_compiler.core.config import config
 
     orig_eager = config.eager_mode
     orig_backend = config.backend
 
     try:
+
+        class MockBackendConv:
+            @classmethod
+            def execute_op(cls, *args, **kwargs):
+                return None
+
+            @classmethod
+            def array(cls, x):
+                return types.SimpleNamespace(shape=(1, 1))
+
+        BackendRegistry.register("mock_conv", MockBackendConv)
+
         config.eager_mode = True
         config.backend = "mock_conv"
 

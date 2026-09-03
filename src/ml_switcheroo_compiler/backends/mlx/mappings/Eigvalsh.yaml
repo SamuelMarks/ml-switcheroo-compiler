@@ -1,0 +1,2 @@
+Eigvalsh:
+  target_api: '''mx.linalg.eigvalsh({0})'''

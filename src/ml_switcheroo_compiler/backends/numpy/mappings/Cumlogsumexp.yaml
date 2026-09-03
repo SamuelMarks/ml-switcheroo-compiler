@@ -1,0 +1,3 @@
+Cumlogsumexp:
+  ast_template: np.logaddexp.accumulate
+  target_api: ''

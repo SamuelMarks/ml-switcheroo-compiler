@@ -1,0 +1,4 @@
+convex_kl_divergence:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+SparseReduceMax:
+  target_api: jax.numpy.sparsereducemax

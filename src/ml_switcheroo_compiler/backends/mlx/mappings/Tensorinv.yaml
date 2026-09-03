@@ -1,0 +1,2 @@
+Tensorinv:
+  target_api: '''mx.linalg.tensorinv({0}, ind={ind})'''

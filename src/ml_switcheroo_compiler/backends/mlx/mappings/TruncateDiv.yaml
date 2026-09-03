@@ -1,0 +1,2 @@
+TruncateDiv:
+  target_api: '''mx.trunc(mx.divide({0}, {1}))'''

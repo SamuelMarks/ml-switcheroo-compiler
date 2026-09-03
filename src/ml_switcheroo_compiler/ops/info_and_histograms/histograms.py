@@ -14,8 +14,8 @@ class Histogram(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -38,8 +38,8 @@ class Histogram2d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -64,8 +64,8 @@ class HistogramBinEdges(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -88,8 +88,8 @@ class Histogramdd(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -105,8 +105,8 @@ def histogram(*args, **kwargs):
     """Evaluate histogram operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -120,8 +120,8 @@ def histogram2d(*args, **kwargs):
     """Evaluate histogram2d operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -135,8 +135,8 @@ def histogram_bin_edges(*args, **kwargs):
     """Provide function to calculate only the edges of the bins used by the histogram function.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -150,8 +150,8 @@ def histogramdd(*args, **kwargs):
     """Evaluate histogramdd operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

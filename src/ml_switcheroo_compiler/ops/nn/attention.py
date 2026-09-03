@@ -42,11 +42,11 @@ class ScaledDotProductAttention(OpDef):
         """Infer shape.
 
         Args:
-            q (object): The q parameter.
-            k (object): The k parameter.
-            v (object): The v parameter.
-            scale_factor (object): The scale factor parameter.
-            **kwargs (object): Keyword args.
+            q (Any): The q parameter.
+            k (Any): The k parameter.
+            v (Any): The v parameter.
+            scale_factor (Any): The scale factor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

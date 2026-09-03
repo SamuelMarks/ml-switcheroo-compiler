@@ -243,7 +243,7 @@ def eigh_tridiagonal(
     Args:
         alpha (Tensor): The diagonal elements.
         beta (Tensor): The off-diagonal elements.
-        kwargs (dict[str, bool | str | object | float | None] | None): Additional keyword arguments.
+        kwargs (dict[str, bool | str | Any | float | None] | None): Additional keyword arguments.
 
     Returns:
         Tensor: The eigenvalues.
@@ -267,8 +267,8 @@ def expm(input, name=None):
     """Compute the matrix exponential of a given square matrix.
 
     Args:
-        input (object): The input square matrix.
-        name (object): Optional name for the operation.
+        input (Any): The input square matrix.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The matrix exponential.
     """
@@ -279,8 +279,8 @@ def global_norm(t_list, name=None):
     """Compute the global norm of multiple tensors.
 
     Args:
-        t_list (object): A list of tensors.
-        name (object): Optional name for the operation.
+        t_list (Any): A list of tensors.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The global norm.
     """
@@ -291,8 +291,8 @@ def logdet(matrix, name=None):
     """Compute the logarithm of the absolute value of the determinant.
 
     Args:
-        matrix (object): The input matrix.
-        name (object): Optional name for the operation.
+        matrix (Any): The input matrix.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The log determinant.
     """
@@ -303,8 +303,8 @@ def logm(input, name=None):
     """Compute the matrix logarithm of a given square matrix.
 
     Args:
-        input (object): The input square matrix.
-        name (object): Optional name for the operation.
+        input (Any): The input square matrix.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The matrix logarithm.
     """
@@ -315,10 +315,10 @@ def normalize(tensor, ord="euclidean", axis=None, name=None):
     """Normalize the input tensor along a given axis.
 
     Args:
-        tensor (object): The input tensor.
-        ord (object): The order of the norm.
-        axis (object): The axis along which to normalize.
-        name (object): Optional name for the operation.
+        tensor (Any): The input tensor.
+        ord (Any): The order of the norm.
+        axis (Any): The axis along which to normalize.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The normalized tensor.
     """
@@ -329,9 +329,9 @@ def set_diag(input, diagonal, name=None):
     """Replace the diagonal elements of a tensor with new values.
 
     Args:
-        input (object): The input tensor.
-        diagonal (object): The new diagonal values.
-        name (object): Optional name for the operation.
+        input (Any): The input tensor.
+        diagonal (Any): The new diagonal values.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The tensor with updated diagonal.
     """
@@ -380,11 +380,11 @@ def vector_norm(x, axis=None, keepdims=False, ord=2, name=None):
     """Compute the vector norm of the input tensor.
 
     Args:
-        x (object): The input tensor.
-        axis (object): The axis along which to compute the norm.
-        keepdims (object): If True, retains reduced dimensions.
-        ord (object): The order of the norm.
-        name (object): Optional name for the operation.
+        x (Any): The input tensor.
+        axis (Any): The axis along which to compute the norm.
+        keepdims (Any): If True, retains reduced dimensions.
+        ord (Any): The order of the norm.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The computed vector norm.
     """
@@ -403,8 +403,8 @@ class Svdvals(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -438,11 +438,11 @@ def diagonal(x, offset=0, axis1=0, axis2=1, name=None):
     """Extract a diagonal from the input tensor.
 
     Args:
-        x (object): The input tensor.
-        offset (object): Offset of the diagonal from the main diagonal.
-        axis1 (object): First axis of the 2-D sub-arrays.
-        axis2 (object): Second axis of the 2-D sub-arrays.
-        name (object): Optional name for the operation.
+        x (Any): The input tensor.
+        offset (Any): Offset of the diagonal from the main diagonal.
+        axis1 (Any): First axis of the 2-D sub-arrays.
+        axis2 (Any): Second axis of the 2-D sub-arrays.
+        name (Any): Optional name for the operation.
 
     Returns: Tensor: The extracted diagonal.
     """
@@ -463,11 +463,11 @@ class TridiagonalMatmul(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-            dl (object): The dl parameter.
-            d (object): The d parameter.
-            du (object): The du parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            dl (Any): The dl parameter.
+            d (Any): The d parameter.
+            du (Any): The du parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -483,8 +483,8 @@ class Cond(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

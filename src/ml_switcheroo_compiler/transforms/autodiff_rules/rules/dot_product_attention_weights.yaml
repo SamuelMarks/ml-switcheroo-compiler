@@ -1,0 +1,4 @@
+dot_product_attention_weights:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

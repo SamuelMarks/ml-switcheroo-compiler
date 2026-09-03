@@ -1,0 +1,4 @@
+array_function_from_dispatcher:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

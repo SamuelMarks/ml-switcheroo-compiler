@@ -23,50 +23,41 @@ class DummyCp:
 
 
 def test_cupy_eager_execute_op():
-    import pytest
 
-    with pytest.raises(Exception):
-        cp_mock = DummyCp()
+    cp_mock = DummyCp()
 
-        # Test registered func
-        def dummy_eager(module, *args, **kwargs):
-            return "dummy_eager_res"
+    # Test registered func
+    def dummy_eager(module, *args, **kwargs):
+        return "dummy_eager_res"
 
-        global_eager_registry.register("TestOp")(dummy_eager)
+    global_eager_registry.register("TestOp")(dummy_eager)
 
-        with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", cp_mock):
-            res = execute_op(None, "TestOp")
-            assert res == "dummy_eager_res"
+    res = execute_op(None, "TestOp")
+    assert res == "dummy_eager_res"
 
-            # Test standard op name formatting
-            # Ensure 'Add' is not mapped to intercept dummy
-            if "Add" in global_eager_registry._registry:
-                del global_eager_registry._registry["Add"]
+    if "Add" in global_eager_registry._registry:
+        del global_eager_registry._registry["Add"]
+
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
+        mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
+        mock_mappings.return_value = mock_schema
+        with patch("sys.modules", {"ml_switcheroo_compiler.backends.cupy.eager": cp_mock}):
             res2 = execute_op(None, "Add")
             assert res2 == "add_res"
 
-            # Test attribute error -> numpy
-            global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
-            res3 = execute_op(None, "NumpyFallbackOp")
-            assert res3 == "dummy_eager_res"
+    global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
+    res3 = execute_op(None, "NumpyFallbackOp")
+    assert res3 == "dummy_eager_res"
 
-            # Test attribute error -> numpy, no reg -> fallback zeros
-            if "UnknownOp" in global_eager_registry._registry:
-                del global_eager_registry._registry["UnknownOp"]
-            try:
-                execute_op(None, "UnknownOp")
-            except NotImplementedError:
-                pass
+    if "UnknownOp" in global_eager_registry._registry:
+        del global_eager_registry._registry["UnknownOp"]
 
-            # Force a generic exception if possible to get None?
-            def exploding_zeros(*args):
-                raise Exception("Boom")
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-            with patch("numpy.zeros", exploding_zeros):
-                try:
-                    res5 = execute_op(None, "UnknownOp")
-                except NotImplementedError:
-                    pass
+    try:
+        execute_op(None, "UnknownOp")
+    except BackendNotSupportedError:
+        pass
 
 
 def test_cupy_eager_execute_op_exception():
@@ -78,16 +69,15 @@ def test_cupy_eager_execute_op_exception():
     if "OpThatRaises" in global_eager_registry._registry:
         del global_eager_registry._registry["OpThatRaises"]
 
-    with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-        with pytest.raises(BackendNotSupportedError, match="Operation 'OpThatRaises' is not implemented."):
-            execute_op(None, "OpThatRaises")
+    with pytest.raises(BackendNotSupportedError, match="Operation 'OpThatRaises' is not implemented."):
+        execute_op(None, "OpThatRaises")
 
-    class BadModule:
-        pass
-
-    with patch("re.sub", side_effect=AttributeError("Intended error")):
-        with pytest.raises(BackendNotSupportedError):
-            execute_op(None, "SnakeOp")
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
+        mock_schema = type("Dummy", (), {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}})()
+        mock_mappings.return_value = mock_schema
+        with patch("sys.modules", {"ml_switcheroo_compiler.backends.cupy.eager": DummyCp()}):
+            with pytest.raises(BackendNotSupportedError):
+                execute_op(None, "SnakeOp")
 
 
 def test_cupy_generator():

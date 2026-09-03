@@ -1,0 +1,9 @@
+sum:
+  body: "#include <hip/hip_runtime.h>\n__global__ void sum(const float* A, float*\
+    \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+    \    if (id == 0) {\n        float s = 0.0f;\n        for (int i = 0; i < N; ++i)\
+    \ {\n            s += A[i];\n        }\n        C[0] = s;\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1

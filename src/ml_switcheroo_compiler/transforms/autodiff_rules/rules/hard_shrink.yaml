@@ -1,0 +1,4 @@
+hard_shrink:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+replace_by_pure_dict:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

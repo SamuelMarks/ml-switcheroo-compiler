@@ -1,0 +1,3 @@
+Cast:
+  ast_template: getattr({0}, str('{dtype}'))()
+  target_api: ''

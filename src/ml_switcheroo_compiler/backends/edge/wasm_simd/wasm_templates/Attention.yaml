@@ -1,0 +1,59 @@
+Attention:
+  body: |
+    // WASM SIMD Attention (Scaled Dot-Product)
+    // in0: Q, in1: K, in2: V
+    // {seq_len}, {embed_dim}
+    if ({nelem} > size) return;
+
+    // Naive scalar loop for Q * K^T
+    // Wait, let's keep it simple for now, but not a mock.
+    // Q: [seq_len, embed_dim]
+    // K: [seq_len, embed_dim]
+    // V: [seq_len, embed_dim]
+    float* attn_weights = (float*)std::malloc({seq_len} * {seq_len} * sizeof(float));
+    for (int i = 0; i < {seq_len}; ++i) {{
+        for (int j = 0; j < {seq_len}; ++j) {{
+            float score = 0.0f;
+            // SIMD Dot Product Q_i, K_j
+            v128_t score_vec = wasm_f32x4_splat(0.0f);
+            int d = 0;
+            for (; d <= {embed_dim} - 4; d += 4) {{
+                v128_t q_vec = wasm_v128_load(&buf_{in0}[i * {embed_dim} + d]);
+                v128_t k_vec = wasm_v128_load(&buf_{in1}[j * {embed_dim} + d]);
+                score_vec = wasm_f32x4_add(score_vec, wasm_f32x4_mul(q_vec, k_vec));
+            }}
+            score += wasm_f32x4_extract_lane(score_vec, 0) + wasm_f32x4_extract_lane(score_vec, 1) + wasm_f32x4_extract_lane(score_vec, 2) + wasm_f32x4_extract_lane(score_vec, 3);
+            for (; d < {embed_dim}; ++d) {{
+                score += buf_{in0}[i * {embed_dim} + d] * buf_{in1}[j * {embed_dim} + d];
+            }}
+            attn_weights[i * {seq_len} + j] = score / std::sqrt((float){embed_dim});
+        }}
+    }}
+
+    // Softmax over weights
+    for (int i = 0; i < {seq_len}; ++i) {{
+        float max_w = -3.402823466e+38f;
+        for (int j = 0; j < {seq_len}; ++j) {{
+            if (attn_weights[i * {seq_len} + j] > max_w) max_w = attn_weights[i * {seq_len} + j];
+        }}
+        float sum_exp = 0.0f;
+        for (int j = 0; j < {seq_len}; ++j) {{
+            attn_weights[i * {seq_len} + j] = std::exp(attn_weights[i * {seq_len} + j] - max_w);
+            sum_exp += attn_weights[i * {seq_len} + j];
+        }}
+        for (int j = 0; j < {seq_len}; ++j) {{
+            attn_weights[i * {seq_len} + j] /= sum_exp;
+        }}
+    }}
+
+    // Multiply by V
+    for (int i = 0; i < {seq_len}; ++i) {{
+        for (int d = 0; d < {embed_dim}; ++d) {{
+            float out_val = 0.0f;
+            for (int j = 0; j < {seq_len}; ++j) {{
+                out_val += attn_weights[i * {seq_len} + j] * buf_{in2}[j * {embed_dim} + d];
+            }}
+            buf_{clean_id}[i * {embed_dim} + d] = out_val;
+        }}
+    }}
+    std::free(attn_weights);

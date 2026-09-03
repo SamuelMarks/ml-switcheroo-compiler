@@ -1,0 +1,2 @@
+ExportToDot:
+  body: "// ExportToDot is a symbolic/offline op, replacing with Identity copy\nfor (int j = 0; j < {nelem}; ++j) {{\n  buf_{clean_id}[j] = buf_{in0}[j];\n}}\n"

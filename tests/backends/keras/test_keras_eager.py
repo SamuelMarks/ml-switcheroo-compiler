@@ -37,3 +37,21 @@ def test_keras_eager_extra():
         with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             res = execute_op(None, "TestOp2")
             assert res == "mapped_res"
+
+
+def test_keras_eager_resolve_none():
+    from unittest.mock import patch
+
+    import pytest
+
+    from ml_switcheroo_compiler.backends.keras.eager import execute_op
+    from ml_switcheroo_compiler.backends.mapping_loader import _MAPPING_CACHE, BackendMappingSchema, OpMappingSchema
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    _MAPPING_CACHE["keras"] = BackendMappingSchema(backend_name="keras", operations={"TestOp3": OpMappingSchema(target_api="some_unresolvable_module.foo", custom_code=None)})
+
+    with patch("ml_switcheroo_compiler.backends.keras.eager.resolve_target_api", return_value=None, create=True):
+        with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
+            with pytest.raises(BackendNotSupportedError):
+                execute_op(None, "TestOp3", 5)
+    _MAPPING_CACHE.pop("keras", None)

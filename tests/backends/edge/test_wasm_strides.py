@@ -7,7 +7,7 @@ import pytest
 def global_wasm_mock():
     import copy
 
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+    from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
     saved_registry = copy.deepcopy(OPS_REGISTRY)
 
@@ -43,10 +43,11 @@ def global_wasm_mock():
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 
-        yield
-
-    OPS_REGISTRY.clear()
-    OPS_REGISTRY.update(saved_registry)
+        try:
+            yield
+        finally:
+            OPS_REGISTRY.clear()
+            OPS_REGISTRY.update(saved_registry)
 
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator

@@ -1,0 +1,4 @@
+sph_harm:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

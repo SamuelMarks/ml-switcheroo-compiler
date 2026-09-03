@@ -1,0 +1,4 @@
+register_standard_roofline:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

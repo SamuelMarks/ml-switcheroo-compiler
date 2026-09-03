@@ -1,0 +1,2 @@
+LogicalNot:
+  target_api: keras_ops.logical_not

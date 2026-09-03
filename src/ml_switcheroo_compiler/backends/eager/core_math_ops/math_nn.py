@@ -3,23 +3,23 @@
 
 from __future__ import annotations
 
-import typing
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("ActivityRegularization")
-def _activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> Any:
+def _activity_regularization(backend_module: Any, x: object, **kwargs: Any) -> Any:
     """Evaluate _activity_regularization operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        x (Any): The x parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        x: The x parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return x
 
@@ -28,13 +28,13 @@ def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, *
     """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        operand (Any): The operand parameter.
-        output_size (Any): The output_size parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        operand: The operand parameter.
+        output_size: The output_size parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import math
 
@@ -105,13 +105,13 @@ def _adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: Any, **
     """Evaluate _adaptive_avg_pool2d operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        operand (Any): The operand parameter.
-        output_size (Any): The output_size parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        operand: The operand parameter.
+        output_size: The output_size parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
@@ -121,28 +121,28 @@ def _adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: Any, **
     """Evaluate _adaptive_avg_pool3d operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        operand (Any): The operand parameter.
-        output_size (Any): The output_size parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        operand: The operand parameter.
+        output_size: The output_size parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AlphaDropout")
-def _alpha_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
+def _alpha_dropout(backend_module: Any, x: object, **kwargs: Any) -> Any:
     """Evaluate _alpha_dropout operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        x (Any): The x parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        x: The x parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return x
 
@@ -152,12 +152,12 @@ def _np_fractionalavgpool(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """Evaluate _np_fractionalavgpool operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
     if func is not None:

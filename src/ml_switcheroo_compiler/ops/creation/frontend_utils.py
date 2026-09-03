@@ -30,7 +30,7 @@ def _emit_creation_node(
         op_type (str): The op_type parameter.
         shape (Sequence): The shape parameter.
         dtype (DType): The dtype parameter.
-        attributes (object): The attributes parameter.
+        attributes (Any): The attributes parameter.
 
     Returns:
         Tensor: Result.
@@ -67,7 +67,7 @@ def _emit_constant_node(
     """Emit a Constant node to the IR graph.
 
     Args:
-        value (object): The value parameter.
+        value (Any): The value parameter.
         dtype (DType): The dtype parameter.
 
     Returns:
@@ -111,8 +111,8 @@ class FromDlpack(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -131,8 +131,8 @@ class Frompyfunc(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -150,8 +150,8 @@ class Geomspace(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -182,8 +182,8 @@ class Geometric(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -201,7 +201,7 @@ def from_dlpack(obj):
     """Create a switcheroo array from a DLPack capsule.
 
     Args:
-        obj (object): The obj parameter.
+        obj (Any): The obj parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -215,7 +215,7 @@ def frompyfunc(func, nin: int, nout: int):
     """Take an arbitrary Python function and returns a NumPy ufunc.
 
     Args:
-        func (object): The func parameter.
+        func (Any): The func parameter.
         nin (int): The nin parameter.
         nout (int): The nout parameter.
 
@@ -231,11 +231,11 @@ def geomspace(start, stop, num: int = 50, endpoint: bool = True, dtype=None, axi
     """Return numbers spaced evenly on a log scale (a geometric progression).
 
     Args:
-        start (object): The start parameter.
-        stop (object): The stop parameter.
+        start (Any): The start parameter.
+        stop (Any): The stop parameter.
         num (int): The num parameter.
         endpoint (bool): The endpoint parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -250,8 +250,8 @@ def geometric(p, size=None):
     """Draw samples from the geometric distribution.
 
     Args:
-        p (object): The p parameter.
-        size (object): The size parameter.
+        p (Any): The p parameter.
+        size (Any): The size parameter.
 
     Returns:
             tuple[int, ...]: Result.

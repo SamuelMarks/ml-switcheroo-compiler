@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 # pylint: disable=duplicate-code
 
-"""Define shape, memory, and movement operations for Tensor objects.
+"""Define shape, memory, and movement operations for Tensor Anys.
 
 This module provides functions to manipulate tensor shapes, dimensions, and memory
 layouts, supporting both eager execution (using NumPy) and lazy execution (by tracing
@@ -18,7 +18,7 @@ def expand_dims(a, axis: int):
     """Expand dimensions.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -38,7 +38,7 @@ def argwhere(a):
     """Find the indices of array elements that are non-zero, grouped by element.
 
     Args:
-        a (object): Input data.
+        a (Any): Input data.
 
     Returns:
         Tensor: Indices of elements that are non-zero.
@@ -53,11 +53,11 @@ def argpartition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
     """Perform an indirect partition along the given axis.
 
     Args:
-        a (object): The a parameter.
-        kth (object): The kth parameter.
+        a (Any): The a parameter.
+        kth (Any): The kth parameter.
         axis (int): The axis parameter.
         kind (str): The kind parameter.
-        order (object): The order parameter.
+        order (Any): The order parameter.
 
     Returns:
         Tensor: Result.
@@ -78,11 +78,11 @@ def partition(a, kth, axis: int = -1, kind: str = "introselect", order=None):
     """Return a partitioned copy of an array.
 
     Args:
-        a (object): The a parameter.
-        kth (object): The kth parameter.
+        a (Any): The a parameter.
+        kth (Any): The kth parameter.
         axis (int): The axis parameter.
         kind (str): The kind parameter.
-        order (object): The order parameter.
+        order (Any): The order parameter.
 
     Returns:
         Tensor: Result.
@@ -107,10 +107,10 @@ def compress(condition, a, axis=None, out=None):
     """Return selected slices of an array along given axis.
 
     Args:
-        condition (object): The condition parameter.
-        a (object): The a parameter.
+        condition (Any): The condition parameter.
+        a (Any): The a parameter.
         axis (int): The axis parameter.
-        out (object): The out parameter.
+        out (Any): The out parameter.
 
     Returns:
         Tensor: Result.
@@ -135,9 +135,9 @@ def insert(arr, obj, values, axis=None):
     """Insert values along the given axis before the given indices.
 
     Args:
-        arr (object): The arr parameter.
-        obj (object): The obj parameter.
-        values (object): The values parameter.
+        arr (Any): The arr parameter.
+        obj (Any): The obj parameter.
+        values (Any): The values parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -156,8 +156,8 @@ def fill_diagonal(a, val, wrap: bool = False):
     """Fill the main diagonal of the given array of any dimensionality.
 
     Args:
-        a (object): The a parameter.
-        val (object): The val parameter.
+        a (Any): The a parameter.
+        val (Any): The val parameter.
         wrap (bool): The wrap parameter.
 
     Returns:
@@ -176,9 +176,9 @@ def moveaxis(a, source, destination):
     """Move axes of a tensor.
 
     Args:
-        a (object): The a parameter.
-        source (object): The source parameter.
-        destination (object): The destination parameter.
+        a (Any): The a parameter.
+        source (Any): The source parameter.
+        destination (Any): The destination parameter.
 
     Returns:
         Tensor: Result.
@@ -197,8 +197,8 @@ def permute(a, dims=None):
     """Permute dimensions of a tensor.
 
     Args:
-        a (object): The a parameter.
-        dims (object): The dims parameter.
+        a (Any): The a parameter.
+        dims (Any): The dims parameter.
 
     Returns:
         Tensor: Result.
@@ -217,7 +217,7 @@ def swapaxes(a, axis1: int, axis2: int):
     """Interchange two axes of an array.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
         axis1 (int): The axis1 parameter.
         axis2 (int): The axis2 parameter.
 
@@ -238,9 +238,9 @@ def roll(a, shift, axis=None):
     """Roll array elements along a given axis.
 
     Args:
-        a (object): The a parameter.
-        shift (object): The shift parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        shift (Any): The shift parameter.
+        axis (Any): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -259,7 +259,7 @@ def atleast_1d(a):
     """Atleast 1d.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -278,7 +278,7 @@ def atleast_2d(a):
     """Atleast 2d.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -297,7 +297,7 @@ def atleast_3d(a):
     """Atleast 3d.
 
     Args:
-        a (object): The a parameter.
+        a (Any): The a parameter.
 
     Returns:
         Tensor: Result.
@@ -316,8 +316,8 @@ def _get_squeeze_shape(a, axis):
     """Evaluate _get_squeeze_shape operation.
 
     Args:
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        axis (Any): The axis parameter.
 
     Returns:
         tuple: Result.
@@ -334,8 +334,8 @@ def squeeze(a, axis=None):
     """Squeeze dimensions of a tensor.
 
     Args:
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        axis (Any): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -353,7 +353,7 @@ def diagflat(v, k: int = 0):
     """Create a two-dimensional array with the flattened input as a diagonal.
 
     Args:
-        v (object): The v parameter.
+        v (Any): The v parameter.
         k (int): The k parameter.
 
     Returns:
@@ -372,7 +372,7 @@ def block(arrays):
     """Assemble an nd-array from nested lists of blocks.
 
     Args:
-        arrays (object): The arrays parameter.
+        arrays (Any): The arrays parameter.
 
     Returns:
         Tensor: Result.
@@ -390,8 +390,8 @@ def delete(arr, obj, axis=None):
     """Return a new array with sub-arrays along an axis deleted.
 
     Args:
-        arr (object): The arr parameter.
-        obj (object): The obj parameter.
+        arr (Any): The arr parameter.
+        obj (Any): The obj parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -441,7 +441,7 @@ def diag_indices_from(arr):
     """Return the indices to access the main diagonal of an n-dimensional array.
 
     Args:
-        arr (object): The arr parameter.
+        arr (Any): The arr parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -474,8 +474,8 @@ def size(input, **kwargs):
     """Return the number of elements in a tensor.
 
     Args:
-        input (object): The input parameter.
-        **kwargs (object): Keyword args.
+        input (Any): The input parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -493,8 +493,8 @@ def reshape(a, newshape):
     """Reshape a tensor.
 
     Args:
-        a (object): The a parameter.
-        newshape (object): The newshape parameter.
+        a (Any): The a parameter.
+        newshape (Any): The newshape parameter.
 
     Returns:
         Tensor: Result.
@@ -513,8 +513,8 @@ def flip(m, axis=None):
     """Reverse the order of elements in an array along the given axis.
 
     Args:
-        m (object): The m parameter.
-        axis (object): The axis parameter.
+        m (Any): The m parameter.
+        axis (Any): The axis parameter.
 
     Returns:
         Tensor: Result.
@@ -531,7 +531,7 @@ def fliplr(m):
     """Flip array in the left/right direction.
 
     Args:
-        m (object): The m parameter.
+        m (Any): The m parameter.
 
     Returns:
         Tensor: Result.
@@ -548,7 +548,7 @@ def flipud(m):
     """Flip array in the up/down direction.
 
     Args:
-        m (object): The m parameter.
+        m (Any): The m parameter.
 
     Returns:
         Tensor: Result.

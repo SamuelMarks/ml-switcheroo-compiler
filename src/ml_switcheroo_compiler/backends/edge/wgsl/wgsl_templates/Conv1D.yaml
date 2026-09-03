@@ -1,0 +1,9 @@
+Conv1D:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar acc: f32\
+    \ = 0.0;\nfor (var k = 0u; k < {kernel_size}u; k = k + 1u) {\n    let in_idx =\
+    \ idx * {stride}u + k;\n    acc = acc + buf_in_f32[in_idx] * buf_weight_f32[k];\n\
+    }\nbuf_out_f32[idx] = acc;\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

@@ -1,0 +1,2 @@
+MultiDot:
+  target_api: '''mx.linalg.multi_dot({0})'''

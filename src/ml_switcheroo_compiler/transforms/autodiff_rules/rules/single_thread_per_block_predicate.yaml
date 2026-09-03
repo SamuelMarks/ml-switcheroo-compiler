@@ -1,0 +1,4 @@
+single_thread_per_block_predicate:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

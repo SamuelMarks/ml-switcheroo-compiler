@@ -1,0 +1,2 @@
+Cholesky:
+  target_api: da.linalg.cholesky

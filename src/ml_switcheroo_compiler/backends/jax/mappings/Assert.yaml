@@ -1,0 +1,3 @@
+Assert:
+  custom_code: 'lambda condition, data, summarize=3, **kwargs: None'
+  target_api: custom_op

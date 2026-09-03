@@ -368,9 +368,9 @@ def _np_quantized_conv(backend_module, *args, **kwargs):
         padding=pad_arg,
         lhs_dilation=(1,) * spatial_dims,
         rhs_dilation=dilation_tuple,
-        dimension_numbers=(lhs_spec, rhs_spec, out_spec),
         feature_group_count=groups,
     )
+    config_obj.dimension_numbers = (lhs_spec, rhs_spec, out_spec)
 
     from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 

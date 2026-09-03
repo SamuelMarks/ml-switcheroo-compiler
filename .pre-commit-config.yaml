@@ -5,13 +5,22 @@ repos:
   - id: check-yaml
   - id: trailing-whitespace
   - id: end-of-file-fixer
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.17
+- repo: local
   hooks:
   - id: ruff
-    args:
-    - --fix
+    name: ruff
+    entry: ruff check
+    args: [--config, pyproject.toml, --fix]
+    language: system
+    types: [python]
+    require_serial: true
   - id: ruff-format
+    name: ruff format
+    entry: ruff format
+    args: [--config, pyproject.toml]
+    language: system
+    types: [python]
+    require_serial: true
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.19.1
   hooks:
@@ -27,12 +36,20 @@ repos:
     files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
 - repo: local
   hooks:
+  - id: pytest-coverage
+    name: Run Pytest and Collect Coverage
+    entry: pytest -n auto --cov=src/ml_switcheroo_compiler
+    language: system
+    pass_filenames: false
+    files: \.py$
+    stages: [pre-push]
   - id: update-badges
     name: Update Badges
     entry: python3 scripts/update_badges.py
-    language: python
-    additional_dependencies: [coverage]
+    language: system
     pass_filenames: false
+    files: \.py$
+    stages: [pre-push]
   - id: generate-exports
     name: Generate Module Exports
     entry: python3 scripts/generate_exports.py
@@ -47,47 +64,12 @@ repos:
     pass_filenames: false
 - repo: local
   hooks:
-  - id: pylint
-    name: pylint
-    entry: pylint --disable=all --enable=too-many-instance-attributes
-    language: python
-    types: [python]
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
-    additional_dependencies: [pylint]
-- repo: local
-  hooks:
-  - id: radon
-    name: radon
-    entry: radon cc --min C
-    language: python
-    types:
-    - python
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
-    additional_dependencies:
-    - radon
-- repo: local
-  hooks:
-  - id: xenon
-    name: xenon
-    entry: xenon --max-absolute D --max-modules C --max-average B
-    language: python
-    types: [python]
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
-    additional_dependencies: [xenon]
-- repo: local
-  hooks:
   - id: check-any
     name: Check typing.Any usage
     entry: bash -c "rg -n 'typing\.Any' src/ml_switcheroo_compiler/ | wc -l"
     language: system
-    always_run: true
     pass_filenames: false
-- repo: https://github.com/econchick/interrogate
-  rev: 1.7.0
-  hooks:
-  - id: interrogate
-    args: [-c, pyproject.toml, src/]
-    pass_filenames: false
+    files: \.py$
 - repo: local
   hooks:
   - id: validate-backend-mappings

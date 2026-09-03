@@ -3,6 +3,8 @@
 
 import typing
 import uuid
+from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
@@ -120,7 +122,7 @@ def _accumulate_gradients(
         adjoints (dict[str, str]): The mapping of adjoints.
 
     Raises:
-        ValueError: If VJP rule is missing or returns incorrect number of adjoints.
+        MissingJVPRuleError: If VJP rule is missing or returns incorrect number of adjoints.
     """
     try:
         if node.attributes.get("rematerialize", False):
@@ -132,7 +134,7 @@ def _accumulate_gradients(
 
     except ValueError:
         msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
-        raise ValueError(msg) from None
+        raise MissingJVPRuleError(msg) from None
 
     if len(input_adjs) != len(node.inputs):
         msg = f"VJP for {getattr(node, 'op_type', 'Unknown')} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
@@ -370,7 +372,7 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata, inverse_map
     return _convert(node)
 
 
-def _invoke_style2_jvp_rule(jvp_func, sig, new_graph: IRGraph, node, input_tangents: list[str]):
+def _invoke_style2_jvp_rule(jvp_func: Any, sig: Any, new_graph: IRGraph, node: Any, input_tangents: list[str]) -> Any:
     """Invoke a JVP rule using the 'style 2' parameter mapping.
 
     Args:
@@ -406,7 +408,7 @@ def _invoke_style2_jvp_rule(jvp_func, sig, new_graph: IRGraph, node, input_tange
         raise MissingJVPRuleError(f"Failed to execute JVP rule for {getattr(node, 'op_type', 'Unknown')}: {e}") from e
 
 
-def _invoke_jvp_rule(jvp_func, new_graph: IRGraph, node, input_tangents: list[str]):
+def _invoke_jvp_rule(jvp_func: Any, new_graph: IRGraph, node: Any, input_tangents: list[str]) -> Any:
     """Invoke a JVP rule function, auto-detecting the style.
 
     Args:
@@ -569,7 +571,7 @@ def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
     return new_graph
 
 
-def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str]) -> LogicalGraph:
+def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str], mode: str = "forward-over-reverse") -> LogicalGraph:
     """Evaluate hvp operation.
 
     Args:
@@ -577,19 +579,27 @@ def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
         primals (list): The primals parameter.
         tangents (list): The tangents parameter.
         outputs (list): The outputs parameter.
+        mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
 
     Returns:
         LogicalGraph: Result.
     """
-    # First get the gradient (VJP) graph
-    grad_graph = grad(graph, primals, outputs[0])
-
-    # Then apply JVP to the gradient graph
-    # For a scalar output f(x), the gradient is df/dx
-    # The JVP of the gradient with tangent v is d^2f/dx^2 * v
-
-    # Extract the gradient output nodes (these represent df/dx)
-    grad_outputs = grad_graph.outputs
-
-    # Now compute JVP of the gradient graph
-    return jvp(grad_graph, primals, tangents, grad_outputs)
+    if mode == "forward-over-reverse":
+        # First get the gradient (VJP) graph
+        if len(outputs) != 1:
+            raise ValueError("hvp requires a single output node when using forward-over-reverse mode")
+        grad_graph = grad(graph, primals, outputs[0])
+        # Extract the gradient output nodes (these represent df/dx)
+        grad_outputs = grad_graph.outputs
+        # Now compute JVP of the gradient graph
+        return jvp(grad_graph, primals, tangents, grad_outputs)
+    elif mode == "reverse-over-forward":
+        # First get the JVP graph
+        jvp_graph = jvp(graph, primals, tangents, outputs)
+        jvp_outputs = jvp_graph.outputs
+        # Now compute VJP (grad) of the JVP graph
+        if len(jvp_outputs) != 1:
+            raise ValueError("hvp requires a single output node when using reverse-over-forward mode")
+        return grad(jvp_graph, primals, jvp_outputs[0])
+    else:
+        raise ValueError(f"Unknown HVP mode: {mode}")

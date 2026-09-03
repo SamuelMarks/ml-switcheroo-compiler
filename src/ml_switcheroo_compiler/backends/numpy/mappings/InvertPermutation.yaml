@@ -1,0 +1,2 @@
+InvertPermutation:
+  target_api: np.invertpermutation

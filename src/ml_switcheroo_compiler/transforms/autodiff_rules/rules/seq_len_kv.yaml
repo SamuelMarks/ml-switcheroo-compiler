@@ -1,0 +1,4 @@
+seq_len_kv:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

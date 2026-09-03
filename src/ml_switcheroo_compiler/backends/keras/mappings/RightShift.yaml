@@ -1,0 +1,2 @@
+RightShift:
+  target_api: keras_ops.right_shift

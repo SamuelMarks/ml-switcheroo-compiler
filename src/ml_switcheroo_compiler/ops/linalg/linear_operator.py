@@ -23,12 +23,12 @@ class BaseLinearOperator(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         # Default shape inference attempts to find a shape or operand
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))

@@ -170,9 +170,9 @@ def random_zoom(
 
     Args:
         images (Tensor): The images parameter.
-        height_factor (object): The height_factor parameter.
-        width_factor (object): The width_factor parameter.
-        **kwargs (object): Keyword args.
+        height_factor (Any): The height_factor parameter.
+        width_factor (Any): The width_factor parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -440,9 +440,9 @@ class AffineGenerator(OpDef):
         """Infer shape.
 
         Args:
-        inputs (object): The inputs parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        inputs (Any): The inputs parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -460,9 +460,9 @@ class AffineGrid(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -480,9 +480,9 @@ class AffineTransform(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -500,9 +500,9 @@ class PerspectiveTransform(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

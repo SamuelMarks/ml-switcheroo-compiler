@@ -1,0 +1,2 @@
+SparseBincount:
+  target_api: jax.numpy.sparsebincount

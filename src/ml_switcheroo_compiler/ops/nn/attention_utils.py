@@ -27,8 +27,8 @@ class RopeOp(OpDef):
         """Infer shape.
 
         Args:
-            input (object): The input parameter.
-            **kwargs (object): Keyword args.
+            input (Any): The input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -115,24 +115,3 @@ def alibi_mask(
 
     # We will return the base dist tensor for now.
     return 0.0
-
-
-@register_op("ScaledDotProductAttention")
-class ScaledDotProductAttention(OpDef):
-    """ScaledDotProductAttention OpDef."""
-
-    op_name = "ScaledDotProductAttention"
-
-    def infer_shape(self, query, key, value, **kwargs):
-        """Infer shape.
-
-        Args:
-            query (object): The query parameter.
-            key (object): The key parameter.
-            value (object): The value parameter.
-            **kwargs (object): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return query.shape

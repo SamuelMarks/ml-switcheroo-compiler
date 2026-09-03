@@ -89,7 +89,7 @@ try:
 except KeyError:
     all = None
 try:
-    any = get_op("object")()
+    any = get_op("Any")()
 except KeyError:
     any = None
 

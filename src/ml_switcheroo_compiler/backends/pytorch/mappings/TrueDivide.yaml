@@ -1,0 +1,3 @@
+TrueDivide:
+  ast_template: torch.true_divide({0}, {1})
+  target_api: torch.div

@@ -1,0 +1,4 @@
+non_splat_variables:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

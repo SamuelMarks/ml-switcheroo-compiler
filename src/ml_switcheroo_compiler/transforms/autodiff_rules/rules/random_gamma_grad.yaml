@@ -1,0 +1,4 @@
+random_gamma_grad:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

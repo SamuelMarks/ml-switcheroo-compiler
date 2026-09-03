@@ -1,0 +1,4 @@
+philox_random_bits:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

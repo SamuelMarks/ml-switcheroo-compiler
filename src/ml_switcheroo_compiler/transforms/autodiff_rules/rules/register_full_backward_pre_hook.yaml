@@ -1,0 +1,4 @@
+register_full_backward_pre_hook:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+build_func_data:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+Rand:
+  jvp: ZerosLike($input[0])
+  vjp: []

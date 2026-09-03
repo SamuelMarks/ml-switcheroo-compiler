@@ -1,0 +1,2 @@
+MatrixExponential:
+  target_api: '''mx.linalg.matrix_exp({0})'''

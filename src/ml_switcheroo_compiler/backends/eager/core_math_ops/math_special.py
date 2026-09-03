@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,12 +14,12 @@ def _erf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erf operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erf"):
@@ -44,12 +45,12 @@ def _erfc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erfc operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erfc"):
@@ -62,12 +63,12 @@ def _erfinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erfinv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erfinv"):
@@ -87,12 +88,12 @@ def _bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i0 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -104,12 +105,12 @@ def _bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i0e operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -121,12 +122,12 @@ def _bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -138,12 +139,12 @@ def _bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i1e operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -155,12 +156,12 @@ def _bessel_j0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_j0 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -172,12 +173,12 @@ def _bessel_j1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_j1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -189,12 +190,12 @@ def _bessel_jn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_jn operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -206,12 +207,12 @@ def _bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k0 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -223,12 +224,12 @@ def _bessel_k0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k0e operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -240,12 +241,12 @@ def _bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -257,12 +258,12 @@ def _bessel_k1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k1e operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -274,12 +275,12 @@ def _bessel_y0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_y0 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -291,12 +292,12 @@ def _bessel_y1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_y1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -308,12 +309,12 @@ def _digamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _digamma operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -325,12 +326,12 @@ def _igammac(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _igammac operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -342,12 +343,12 @@ def _polygamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _polygamma operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -359,12 +360,12 @@ def _igamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _igamma operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -376,12 +377,12 @@ def _gamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _gamma operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 
@@ -393,12 +394,12 @@ def _np_modifiedbesseli1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_modifiedbesseli1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import scipy.special
 

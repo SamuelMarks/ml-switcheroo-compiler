@@ -1,0 +1,4 @@
+soft_margin_loss:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+HardSwish:
+  custom_code: 'lambda x: torch.nn.functional.hardswish(x)'
+  target_api: custom_op

@@ -1,0 +1,4 @@
+memref_unsqueeze:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

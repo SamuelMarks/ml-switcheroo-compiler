@@ -1,0 +1,3 @@
+SparseBincount:
+  ast_template: tf.sparse.bincount
+  target_api: ''

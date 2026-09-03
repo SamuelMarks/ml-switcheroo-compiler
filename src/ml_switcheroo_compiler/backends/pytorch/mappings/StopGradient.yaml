@@ -1,0 +1,4 @@
+StopGradient:
+  ast_template: '{0}.detach()'
+  custom_code: 'lambda x: x.detach()'
+  target_api: custom_op

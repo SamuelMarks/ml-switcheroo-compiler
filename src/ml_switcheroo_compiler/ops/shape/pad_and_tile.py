@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
@@ -46,21 +46,21 @@ def tile(input: Tensor, reps: Sequence[int]):
 def repeat(
     input: Tensor,
     repeats: int | Sequence[int],
-    dim: int | None = None,
+    axis: int | None = None,
 ):
     """Repeat elements of the input tensor along a specified dimension.
 
     Args:
         input (Tensor): The input parameter.
-        repeats (object): The repeats parameter.
-        dim (object): The dim parameter.
+        repeats (Any): The repeats parameter.
+        axis (int | None): The axis parameter.
 
     Returns:
         Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=dim)
+        data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
@@ -68,7 +68,7 @@ def repeat(
     return _emit_shape_node(
         "Repeat",
         inputs,
-        {"repeats": repeats, "axis": dim},
+        {"repeats": repeats, "axis": axis},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -130,7 +130,7 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
     """Compute the shape for a meshgrid.
 
     Args:
-        inputs (object): The inputs parameter.
+        inputs (Any): The inputs parameter.
         indexing (str): The indexing parameter.
 
     Returns:
@@ -170,7 +170,7 @@ def _normalize_pad_width(pad_width, ndim: int):
     """Normalize pad width representation.
 
     Args:
-        pad_width (object): Pad width descriptor.
+        pad_width (Any): Pad width descriptor.
         ndim (int): Number of dimensions.
 
     Returns:
@@ -188,7 +188,7 @@ def _compute_pad_dim(dim: int, pw) -> int:
 
     Args:
         dim (int): The dim parameter.
-        pw (object): The pw parameter.
+        pw (Any): The pw parameter.
 
     Returns:
         int: Result.
@@ -210,10 +210,10 @@ class Pad(OpDef):
         """Infer shape.
 
         Args:
-            array (object): The array parameter.
-            pad_width (object): The pad_width parameter.
+            array (Any): The array parameter.
+            pad_width (Any): The pad_width parameter.
             mode (str): The mode parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.
@@ -241,10 +241,10 @@ def pad(
     """Pad an array with specified widths and values.
 
     Args:
-        array (object): The array parameter.
-        pad_width (object): The pad_width parameter.
+        array (Any): The array parameter.
+        pad_width (Any): The pad_width parameter.
         mode (str): The mode parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -281,70 +281,54 @@ def top_k(operand: Tensor, k: int):
 
 def argsort(
     operand: Tensor,
-    dimension: int = -1,
+    axis: int = -1,
     is_stable: bool = True,
-    axis: int | None = None,
-    dim: int | None = None,
 ):
     """Return the indices that would sort an array along a given dimension.
 
     Args:
         operand (Tensor): The operand parameter.
-        dimension (int): The dimension parameter.
+        axis (int): The axis parameter.
         is_stable (bool): The is_stable parameter.
-        axis (object): The axis parameter.
-        dim (object): The dim parameter.
 
     Returns:
         Tensor: Result.
     """
-    if axis is not None:
-        dimension = axis
-    if dim is not None:
-        dimension = dim
     if config.eager_mode:
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
-        data = backend.execute_op("ArgSort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=dimension, kind=kind)
+        data = backend.execute_op("ArgSort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
         return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
     inputs = [operand]
-    attributes = {"dimension": dimension, "is_stable": is_stable}
+    attributes = {"dimension": axis, "is_stable": is_stable}
     return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
 
 
 def sort(
     operand: Tensor,
-    dimension: int = -1,
+    axis: int = -1,
     is_stable: bool = True,
-    axis: int | None = None,
-    dim: int | None = None,
 ):
     """Sorts the elements of an array along a given dimension.
 
     Args:
         operand (Tensor): The operand parameter.
-        dimension (int): The dimension parameter.
+        axis (int): The axis parameter.
         is_stable (bool): The is_stable parameter.
-        axis (object): The axis parameter.
-        dim (object): The dim parameter.
 
     Returns:
         Tensor: Result.
     """
-    if axis is not None:
-        dimension = axis
-    if dim is not None:
-        dimension = dim
     if config.eager_mode:
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
-        data = backend.execute_op("Sort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=dimension, kind=kind)
+        data = backend.execute_op("Sort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=axis, kind=kind)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, operand.dtype, operand.device),
         )
     inputs = [operand]
-    attributes = {"dimension": dimension, "is_stable": is_stable}
+    attributes = {"dimension": axis, "is_stable": is_stable}
     return _emit_shape_node("Sort", inputs, attributes, operand.shape, operand.dtype)
 
 
@@ -379,8 +363,8 @@ class DynamicShape(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The x parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.
@@ -398,8 +382,8 @@ class Rank(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -418,9 +402,9 @@ class Size(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            axis (object): The axis parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            axis (Any): The axis parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -495,8 +479,8 @@ class Flatnonzero(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -515,8 +499,8 @@ class Lexsort(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -541,8 +525,8 @@ class Nonzero(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -556,9 +540,9 @@ def _infer_shape_percentile_quantile(a, q, axis=None, keepdims: bool = False) ->
     """Infer shape for percentile and quantile ops.
 
     Args:
-        a (object): The a parameter.
-        q (object): The q parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        q (Any): The q parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -594,8 +578,8 @@ class Percentile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -617,8 +601,8 @@ class Quantile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -640,8 +624,8 @@ class RavelMultiIndex(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -658,7 +642,7 @@ def _repeat_infer_no_axis(in_shape, repeats):
 
     Args:
         in_shape (tuple): The input shape.
-        repeats (object): The repetitions.
+        repeats (Any): The repetitions.
 
     Returns:
         tuple: The inferred shape.
@@ -686,8 +670,8 @@ class Repeat(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -718,8 +702,8 @@ class Searchsorted(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -739,8 +723,8 @@ class SortComplex(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -778,8 +762,8 @@ class Tile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -827,8 +811,8 @@ class Unique(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -861,8 +845,8 @@ def percentile(*args, **kwargs):
     """Evaluate percentile operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -876,8 +860,8 @@ def quantile(*args, **kwargs):
     """Evaluate quantile operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -891,8 +875,8 @@ def flatnonzero(*args, **kwargs):
     """Return indices that are non-zero in the flattened version of a.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -906,8 +890,8 @@ def nonzero(*args, **kwargs):
     """Return the indices of the elements that are non-zero.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -921,8 +905,8 @@ def ravel_multi_index(*args, **kwargs):
     """Convert a tuple of index arrays into an array of flat indices.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -936,8 +920,8 @@ def lexsort(*args, **kwargs):
     """Perform an indirect stable sort using a sequence of keys.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -951,8 +935,8 @@ def searchsorted(*args, **kwargs):
     """Find indices where elements should be inserted to maintain order.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -966,8 +950,8 @@ def sort_complex(*args, **kwargs):
     """Sort a complex array using the real part first, then the imaginary part.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -981,8 +965,8 @@ def unique(*args, **kwargs):
     """Find the unique elements of an array.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

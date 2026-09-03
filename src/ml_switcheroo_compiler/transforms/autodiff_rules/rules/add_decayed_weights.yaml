@@ -1,0 +1,4 @@
+add_decayed_weights:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

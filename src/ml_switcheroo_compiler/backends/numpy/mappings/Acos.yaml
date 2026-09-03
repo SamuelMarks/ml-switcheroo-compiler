@@ -1,0 +1,3 @@
+Acos:
+  ast_template: np.arccos
+  target_api: ''

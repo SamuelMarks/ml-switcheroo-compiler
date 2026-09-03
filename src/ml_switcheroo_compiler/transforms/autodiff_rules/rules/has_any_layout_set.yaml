@@ -1,0 +1,4 @@
+has_any_layout_set:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

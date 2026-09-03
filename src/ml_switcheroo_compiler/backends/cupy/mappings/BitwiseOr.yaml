@@ -1,0 +1,2 @@
+BitwiseOr:
+  target_api: cp.bitwise_or

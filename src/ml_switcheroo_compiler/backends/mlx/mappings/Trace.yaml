@@ -1,0 +1,2 @@
+Trace:
+  target_api: '''mx.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})'''

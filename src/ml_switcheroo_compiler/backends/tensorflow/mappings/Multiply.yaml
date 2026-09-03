@@ -1,0 +1,2 @@
+Multiply:
+  target_api: tf.multiply

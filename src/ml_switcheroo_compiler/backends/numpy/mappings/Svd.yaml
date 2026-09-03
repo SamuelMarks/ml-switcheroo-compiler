@@ -1,0 +1,3 @@
+Svd:
+  ast_template: np.linalg.svd
+  target_api: ''

@@ -25,7 +25,7 @@ def _emit_segment_op(
         op_type (str): The op_type parameter.
         data (Tensor): The data parameter.
         segment_ids (Tensor): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
+        num_segments (Any): The num_segments parameter.
 
     Returns:
         Tensor: Result.

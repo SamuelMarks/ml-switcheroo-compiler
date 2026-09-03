@@ -1,0 +1,4 @@
+sctype2char:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

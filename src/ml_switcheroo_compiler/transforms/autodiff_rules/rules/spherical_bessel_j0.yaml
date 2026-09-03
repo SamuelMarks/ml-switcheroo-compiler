@@ -1,0 +1,4 @@
+spherical_bessel_j0:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

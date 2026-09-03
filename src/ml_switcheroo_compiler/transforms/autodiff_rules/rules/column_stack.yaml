@@ -1,0 +1,4 @@
+column_stack:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+Acos:
+  target_api: torch.acos

@@ -1,0 +1,4 @@
+parse_mlir_locations:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

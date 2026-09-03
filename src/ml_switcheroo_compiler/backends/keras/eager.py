@@ -1,20 +1,18 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
-from typing import Any
 
-
-def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
+def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
     """Execute an eager operation using the Keras backend.
 
     Args:
         cls (type): The tensor class.
         op_type (str): The name of the operation to execute.
-        *args (Any): Positional arguments for the operation.
-        **kwargs (Any): Keyword arguments for the operation.
+        *args: Positional arguments for the operation.
+        **kwargs: Keyword arguments for the operation.
 
     Returns:
-        Any: The result of the operation execution.
+        object: The result of the operation execution.
 
     Raises:
         BackendNotSupportedError: If the operation is not supported by the Keras backend.

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import typing
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,11 +13,11 @@ def _apply_causal_mask(backend_module: Any, scores: Any) -> Any:
     """Apply a causal mask to attention scores.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        scores (Any): The scores parameter.
+        backend_module: The backend_module parameter.
+        scores: The scores parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if hasattr(backend_module, "triu") and hasattr(backend_module, "ones") and hasattr(backend_module, "where"):
         causal_mask = backend_module.triu(backend_module.ones(scores.shape[-2:]), 1)
@@ -30,12 +30,12 @@ def _geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _geometric operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return getattr(backend_module, "random", backend_module).geometric(*args, **kwargs)
 
@@ -45,12 +45,12 @@ def _indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _indices operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.indices(*args, **kwargs)
 
@@ -60,12 +60,12 @@ def _maskindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _maskindices operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.mask_indices(*args, **kwargs)
 
@@ -75,12 +75,12 @@ def _tri(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tri operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.tri(*args, **kwargs)
 
@@ -90,12 +90,12 @@ def _tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tril operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.tril(*args, **kwargs)
 
@@ -105,12 +105,12 @@ def _trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _trimzeros operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.trim_zeros(*args, **kwargs)
 
@@ -120,12 +120,12 @@ def _triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _triu operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.triu(*args, **kwargs)
 
@@ -135,12 +135,12 @@ def _fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fill_diagonal operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "fill_diagonal", None)
     if func:
@@ -158,12 +158,12 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bandpart operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         ValueError: An exception.
@@ -173,7 +173,7 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.triu(np.tril(args[0], kwargs.get("num_lower", -1)), -kwargs.get("num_upper", -1))
+    return np.triu(np.tril(args[0], getattr(kwargs.get("num_lower", -1), "__int__", lambda: -1)()), -getattr(kwargs.get("num_upper", -1), "__int__", lambda: -1)())
 
 
 @global_eager_registry.register("Geometric")
@@ -181,12 +181,12 @@ def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_geometric operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
     if func is not None:
@@ -201,12 +201,12 @@ def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triangular operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
     if func is not None:
@@ -221,12 +221,12 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonal operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
     if func is not None:
@@ -241,12 +241,12 @@ def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_trilindices operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
     if func is not None:
@@ -261,12 +261,12 @@ def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_trilindicesfrom operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
     if func is not None:
@@ -281,12 +281,12 @@ def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_trimzeros operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
     if func is not None:
@@ -301,12 +301,12 @@ def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triuindices operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
     if func is not None:
@@ -321,12 +321,12 @@ def _np_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triuindicesfrom operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
     if func is not None:

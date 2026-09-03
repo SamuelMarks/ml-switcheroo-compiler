@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import typing
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """SPMD compiler pass."""
@@ -14,7 +17,7 @@ def _get_sharding_axes(sharding) -> list[str]:
     """Evaluate _get_sharding_axes operation.
 
     Args:
-        sharding (object): The sharding parameter.
+        sharding (typing.Union[dict, list, tuple, None]): The sharding parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -28,8 +31,8 @@ def _is_boundary_transition(inp_sharding, node_sharding) -> tuple[bool, bool]:
     """Evaluate _is_boundary_transition operation.
 
     Args:
-        inp_sharding (object): The inp_sharding parameter.
-        node_sharding (object): The node_sharding parameter.
+        inp_sharding (typing.Union[dict, list, tuple, None]): The inp_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -44,7 +47,7 @@ def _create_all_gather_node(inp_id: str, node_sharding) -> IRNode:
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -57,7 +60,7 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding) -> IRNode:
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -70,7 +73,7 @@ def _create_all_reduce_node(inp_id: str, node_sharding) -> IRNode:
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -83,7 +86,7 @@ def _create_all_to_all_node(inp_id: str, node_sharding) -> IRNode:
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -98,7 +101,7 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -115,7 +118,7 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding) -
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -132,7 +135,7 @@ def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -149,7 +152,7 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding) -> IR
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -170,13 +173,24 @@ def _get_spmd_rules():
     """_get_spmd_rules function.
 
     Returns:
-        object: Result.
+        dict: Result.
     """
     global _SPMD_RULES
     if _SPMD_RULES is None:
-        yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
-        with open(yaml_path) as f:
-            _SPMD_RULES = yaml.safe_load(f)
+        _SPMD_RULES = {}
+        yaml_dir = Path(__file__).parent / "spmd_mappings"
+        if yaml_dir.exists():
+            for filename in os.listdir(yaml_dir):
+                if filename.endswith(".yaml"):
+                    with open(yaml_dir / filename) as f:
+                        op_data = yaml.safe_load(f)
+                        if isinstance(op_data, dict):
+                            _SPMD_RULES.update(op_data)
+        else:
+            yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
+            if yaml_path.exists():
+                with open(yaml_path) as f:
+                    _SPMD_RULES = yaml.safe_load(f) or {}
     return _SPMD_RULES
 
 
@@ -237,7 +251,7 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
         graph (IRGraph): The graph parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (typing.Union[dict, list, tuple, None]): The node_sharding parameter.
 
     Returns:
             tuple[int, ...]: Result.

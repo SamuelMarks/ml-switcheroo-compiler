@@ -1,0 +1,3 @@
+Transpose:
+  ast_template: torch.permute({0}, {axes})' if 'axes' in kwargs else '{0}.t()
+  target_api: torch.transpose

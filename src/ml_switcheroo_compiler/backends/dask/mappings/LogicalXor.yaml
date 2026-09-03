@@ -1,0 +1,2 @@
+LogicalXor:
+  target_api: da.logical_xor

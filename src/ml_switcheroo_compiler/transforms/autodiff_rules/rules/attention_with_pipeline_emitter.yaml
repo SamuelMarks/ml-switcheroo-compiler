@@ -1,0 +1,4 @@
+attention_with_pipeline_emitter:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

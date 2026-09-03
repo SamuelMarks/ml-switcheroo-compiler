@@ -1,0 +1,4 @@
+lower_mgpu_dialect:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

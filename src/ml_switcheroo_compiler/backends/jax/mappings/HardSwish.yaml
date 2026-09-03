@@ -1,0 +1,3 @@
+HardSwish:
+  custom_code: 'lambda x: jax.nn.hard_swish(x)'
+  target_api: custom_op

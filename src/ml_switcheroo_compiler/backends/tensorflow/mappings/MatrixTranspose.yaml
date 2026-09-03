@@ -1,0 +1,2 @@
+MatrixTranspose:
+  target_api: tf.linalg.matrix_transpose

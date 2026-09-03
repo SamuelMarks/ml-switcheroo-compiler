@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,12 +14,12 @@ def _expm1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _expm1 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     if hasattr(backend_module, "expm1"):
@@ -31,12 +32,12 @@ def _float_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _float_power operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
@@ -47,12 +48,12 @@ def _frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _frexp operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import math
 
@@ -65,12 +66,12 @@ def _ldexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ldexp operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import math
 
@@ -83,12 +84,12 @@ def _slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _slogdet operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "slogdet"):
@@ -105,12 +106,12 @@ def _np_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_xlog1py operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
     if func is not None:
@@ -125,12 +126,12 @@ def _np_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_xlogy operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
     if func is not None:

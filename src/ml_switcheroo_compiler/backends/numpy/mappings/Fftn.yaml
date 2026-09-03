@@ -1,0 +1,3 @@
+Fftn:
+  ast_template: np.fft.fftn
+  target_api: ''

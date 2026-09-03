@@ -1,0 +1,3 @@
+Lstsq:
+  ast_template: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
+  target_api: ''

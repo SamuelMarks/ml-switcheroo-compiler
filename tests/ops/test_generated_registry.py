@@ -74,7 +74,7 @@ def test_get_all_ops():
 def test_get_op_exceptions():
     with pytest.raises(KeyError):
         get_op("NonExistentOp")
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         get_op("TotallyMissingOpXYZ")
 
 
@@ -142,7 +142,12 @@ def test_util_registry():
 
 
 def test_yaml_registry_missing_file():
-    from ml_switcheroo_compiler.ops.registry import _load_yaml_registry
+    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
-    with patch("os.path.exists", return_value=False):
-        _load_yaml_registry(force=True)
+    old_registry = _YAML_REGISTRY.copy() if _YAML_REGISTRY else {}
+    try:
+        with patch("os.path.exists", return_value=False):
+            _load_yaml_registry(force=True)
+    finally:
+        _YAML_REGISTRY.clear()
+        _YAML_REGISTRY.update(old_registry)

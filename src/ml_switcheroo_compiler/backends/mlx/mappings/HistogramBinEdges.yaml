@@ -1,0 +1,2 @@
+HistogramBinEdges:
+  target_api: '''mx.histogram_bin_edges({0})'''

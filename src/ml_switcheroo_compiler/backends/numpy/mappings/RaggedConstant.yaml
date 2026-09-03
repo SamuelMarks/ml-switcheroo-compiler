@@ -1,0 +1,3 @@
+RaggedConstant:
+  ast_template: tf.ragged.constant
+  target_api: ''

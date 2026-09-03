@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 import typing
 from typing import Any
 
@@ -14,12 +15,12 @@ def _copysign(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _copysign operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "copysign", None)
     if func:
@@ -34,12 +35,12 @@ def _getprintoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _getprintoptions operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.get_printoptions(*args, **kwargs)
 
@@ -49,12 +50,12 @@ def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorarrayread operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return 0
 
@@ -64,13 +65,18 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorarraywrite operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
+    arr, index, value = args[0], args[1], args[2]
+    if isinstance(arr, list):
+        res = list(arr)
+        res[int(index)] = value
+        return res
     return 0
 
 
@@ -79,11 +85,19 @@ def _np_topk(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_topk operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return 0
+    arr = args[0]
+    k = args[1] if len(args) > 1 else 1
+    import numpy as np
+
+    if isinstance(arr, (list, np.ndarray)):
+        arr_np = np.array(arr)
+        idx = np.argsort(arr_np)[-k:][::-1]
+        return arr_np[idx], idx
+    return [0], [0]

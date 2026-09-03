@@ -1,0 +1,3 @@
+Cross:
+  ast_template: np.cross
+  target_api: ''

@@ -1,0 +1,4 @@
+flatten_fun_for_sparse_ad:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

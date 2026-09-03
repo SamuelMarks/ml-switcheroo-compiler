@@ -18,8 +18,8 @@ class Atan2(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-        *shapes (object): Positional args.
-        **kwargs (object): Keyword args.
+        *shapes (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -46,8 +46,8 @@ class Divmod(OpDef):
         """Call Divmod.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -63,8 +63,8 @@ class Divmod(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *shapes (object): Positional args.
-            **kwargs (object): Keyword args.
+            *shapes (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -94,8 +94,8 @@ class Allclose(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *shapes (object): Positional args.
-            **kwargs (object): Keyword args.
+            *shapes (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -111,8 +111,8 @@ class Isclose(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *shapes (object): Positional args.
-            **kwargs (object): Keyword args.
+            *shapes (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

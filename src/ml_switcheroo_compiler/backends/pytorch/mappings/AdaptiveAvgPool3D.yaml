@@ -1,0 +1,2 @@
+AdaptiveAvgPool3D:
+  target_api: torch.nn.functional.adaptive_avg_pool3d

@@ -1,0 +1,4 @@
+reduce_window:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

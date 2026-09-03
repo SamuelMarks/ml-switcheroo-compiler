@@ -1,0 +1,14 @@
+avg_pool2d:
+  body: "// AvgPool2D\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b) {{\n    for\
+    \ (int c = 0; c < {C}; ++c) {{\n        for (int oy = 0; oy < {out_height}; ++oy)\
+    \ {{\n            for (int ox = 0; ox < {out_width}; ++ox) {{\n              \
+    \  float sum_val = 0.0f;\n                int count = 0;\n                for\
+    \ (int ky = 0; ky < {kernel_h}; ++ky) {{\n                    for (int kx = 0;\
+    \ kx < {kernel_w}; ++kx) {{\n                        int in_y = oy * {stride_h}\
+    \ + ky;\n                        int in_x = ox * {stride_w} + kx;\n          \
+    \              if (in_y < {in_height} && in_x < {in_width}) {{\n             \
+    \               int in_idx = ((b * {C} + c) * {in_height} + in_y) * {in_width}\
+    \ + in_x;\n                            sum_val += buf_{in0}[in_idx];\n       \
+    \                     count++;\n                        }}\n                 \
+    \   }}\n                }}\n                buf_{clean_id}[out_idx++] = count\
+    \ > 0 ? sum_val / (float)count : 0.0f;\n            }}\n        }}\n    }}\n}}\n"

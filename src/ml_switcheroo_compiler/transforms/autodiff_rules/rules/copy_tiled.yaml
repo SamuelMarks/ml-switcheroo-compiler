@@ -1,0 +1,4 @@
+copy_tiled:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

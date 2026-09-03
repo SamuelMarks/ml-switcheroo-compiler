@@ -1,0 +1,4 @@
+value_sites_for_variable:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

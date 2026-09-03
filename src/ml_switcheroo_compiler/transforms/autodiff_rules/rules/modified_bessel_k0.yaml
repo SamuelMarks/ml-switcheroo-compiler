@@ -1,0 +1,4 @@
+modified_bessel_k0:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

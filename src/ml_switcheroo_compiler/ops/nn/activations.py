@@ -12,9 +12,9 @@ def crelu(features, axis=-1, name=None):
     """Compute Concatenated ReLU.
 
     Args:
-        features (object): The features parameter.
-        axis (object): The axis parameter.
-        name (object): The name parameter.
+        features (Any): The features parameter.
+        axis (Any): The axis parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -30,10 +30,10 @@ def isotonic_regression(y, sample_weights=None, increasing=True, name=None):
     """Solves isotonic regression problems.
 
     Args:
-        y (object): The y parameter.
-        sample_weights (object): The sample_weights parameter.
-        increasing (object): The increasing parameter.
-        name (object): The name parameter.
+        y (Any): The y parameter.
+        sample_weights (Any): The sample_weights parameter.
+        increasing (Any): The increasing parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -58,7 +58,7 @@ def softplus(x):
     """Softplus activation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -78,8 +78,8 @@ class Softmax(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -99,10 +99,10 @@ def softmax(x, axis: int = -1, *args, **kwargs):
     """Softmax activation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
         axis (int): The axis parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -128,8 +128,8 @@ class LogSoftmax(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -149,10 +149,10 @@ def log_softmax(x, axis: int = -1, *args, **kwargs):
     """LogSoftmax activation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
         axis (int): The axis parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -178,8 +178,8 @@ class Sigmoid(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -199,9 +199,9 @@ def sigmoid(x, *args, **kwargs):
     """Sigmoid activation.
 
     Args:
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        x (Any): The x parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -227,8 +227,8 @@ class OneHot(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -236,22 +236,23 @@ class OneHot(OpDef):
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        return res
+        indices_shape = shapes[0] if shapes else ()
+        depth = kwargs.get("depth", args[1] if len(args) > 1 else 1)
+        axis = kwargs.get("axis", -1)
+        if axis == -1:
+            return indices_shape + (depth,)
+        else:
+            return indices_shape[:axis] + (depth,) + indices_shape[axis:]
 
 
 def one_hot(indices, depth: int, *args, **kwargs):
     """OneHot encoding.
 
     Args:
-        indices (object): The indices parameter.
+        indices (Any): The indices parameter.
         depth (int): The depth parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -284,8 +285,8 @@ class Rrelu(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -305,9 +306,9 @@ def rrelu(x, *args, **kwargs):
     """Rrelu activation.
 
     Args:
-        x (object): The x parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        x (Any): The x parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -333,8 +334,8 @@ class HardSilu(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -353,8 +354,8 @@ class HardSwish(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -373,8 +374,8 @@ class Squareplus(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -387,8 +388,8 @@ def hard_silu(*args, **kwargs):
     """Hard SiLU activation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -402,8 +403,8 @@ def hard_swish(*args, **kwargs):
     """Hard Swish activation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -417,8 +418,8 @@ def mish(*args, **kwargs):
     """Mish activation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -432,8 +433,8 @@ def squareplus(*args, **kwargs):
     """Squareplus activation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

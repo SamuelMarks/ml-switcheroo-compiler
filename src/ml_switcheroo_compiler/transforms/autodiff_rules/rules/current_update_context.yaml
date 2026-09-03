@@ -1,0 +1,4 @@
+current_update_context:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

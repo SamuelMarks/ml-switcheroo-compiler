@@ -1,0 +1,4 @@
+register_cpu_gpu_lowering:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,48 +1,20 @@
 default:
   microbatch_splitting:
-    strategy: "chunk"
     num_microbatches: 4
-  stage_communication:
-    protocol: "p2p_queue"
-  mesh_mapping:
-    devices_per_stage: 1
-  dependencies: []
-
-gpipe:
-  microbatch_splitting:
-    strategy: "sequential"
-    num_microbatches: 8
-  stage_communication:
-    protocol: "rpc"
-  mesh_mapping:
-    devices_per_stage: 1
-  dependencies:
-    - source_stage: "forward"
-      target_stage: "forward"
-      offset_mb: -1
-
-pipedream:
-  microbatch_splitting:
-    strategy: "interleaved"
-    num_microbatches: 16
-  stage_communication:
-    protocol: "async_rpc"
-  mesh_mapping:
-    devices_per_stage: 1
-  dependencies: []
-
-1f1b:
-  microbatch_splitting:
     strategy: "1f1b"
-    num_microbatches: 4
-  stage_communication:
-    protocol: "sync"
   mesh_mapping:
     devices_per_stage: 1
-  dependencies:
-    - source_stage: "forward"
-      target_stage: "backward"
-      offset_mb: 0
-    - source_stage: "backward"
-      target_stage: "forward"
-      offset_mb: -1
+  stage_communication:
+    protocol: "tcp"
+  dependencies: []
+  schedule:
+    phases:
+      - type: "warmup"
+        operations: ["forward"]
+        count_expression: "num_stages - 1"
+      - type: "steady"
+        operations: ["forward", "backward"]
+        count_expression: "num_microbatches - num_stages + 1"
+      - type: "cooldown"
+        operations: ["backward"]
+        count_expression: "num_stages - 1"

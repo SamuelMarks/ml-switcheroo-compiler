@@ -1,0 +1,3 @@
+Polysub:
+  ast_template: np.polysub
+  target_api: ''

@@ -1,0 +1,2 @@
+DynamicStitch:
+  target_api: tf.dynamic_stitch

@@ -1,0 +1,2 @@
+Einsum:
+  target_api: keras_ops.einsum

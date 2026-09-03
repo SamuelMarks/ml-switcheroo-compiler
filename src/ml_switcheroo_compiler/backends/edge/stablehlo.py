@@ -3,24 +3,24 @@
 
 import os
 import uuid
-from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 class StableHLOCodeGenerator(BaseGenerator):
     """StableHLO Code Generator for emitting MLIR text format from IR Graph."""
 
-    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[CodeGeneratorVisitor]] = None) -> None:
         """Initialize StableHLOCodeGenerator.
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (Any, optional): Visitor delegates.
+            delegates (Optional[list[CodeGeneratorVisitor]], optional): Visitor delegates.
         """
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
@@ -91,7 +91,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: The generated variable name for the constant.
         """
-        val: float = node.attributes.get("value", 0.0)
+        val: float = getattr(node, "attributes", {}).get("value", 0.0)
         meta_shape: tuple[int, ...] = getattr(node, "shape_metadata", ()) or ()
         t_type: str = self._get_node_type(node)
         res_var: str = f"%v_{nid.replace('-', '_')}"
@@ -100,13 +100,13 @@ class StableHLOCodeGenerator(BaseGenerator):
         self.add_line(f'  {res_var} = "stablehlo.constant"() {{value = {dense_val} : {t_type}}} : () -> {t_type}')
         return res_var
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Process a node and return its generated code name.
 
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (Any): Additional attributes.
+            **kwargs: Additional attributes.
 
         Returns:
             str: Variable name of the evaluated node.
@@ -161,11 +161,11 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         return res_var
 
-    def _build_func_args(self, input_nodes: list[Any]) -> list[str]:
+    def _build_func_args(self, input_nodes: list[object]) -> list[str]:
         """Build the list of function arguments for the generated MLIR module.
 
         Args:
-            input_nodes (list[Any]): List of input IR nodes.
+            input_nodes (list[object]): List of input IR nodes.
 
         Returns:
             list[str]: A list of argument strings for the MLIR function.

@@ -1,0 +1,4 @@
+triu_indices_from:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

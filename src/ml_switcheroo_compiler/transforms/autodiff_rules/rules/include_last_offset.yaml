@@ -1,0 +1,4 @@
+include_last_offset:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

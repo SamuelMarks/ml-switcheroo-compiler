@@ -1,0 +1,4 @@
+Zeros:
+  ast_template: torch.zeros({shape})' + (", dtype=getattr(torch, '" + str(kwargs.get('dtype'))
+    + "', torch.float32)" if 'dtype' in kwargs else '')
+  target_api: ''

@@ -1,0 +1,2 @@
+BesselK1e:
+  target_api: np.besselk1e

@@ -1,0 +1,2 @@
+SparseReorder:
+  target_api: jax.numpy.sparsereorder

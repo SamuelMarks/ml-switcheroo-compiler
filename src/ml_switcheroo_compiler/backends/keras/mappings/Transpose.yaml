@@ -1,0 +1,2 @@
+Transpose:
+  target_api: keras_ops.transpose

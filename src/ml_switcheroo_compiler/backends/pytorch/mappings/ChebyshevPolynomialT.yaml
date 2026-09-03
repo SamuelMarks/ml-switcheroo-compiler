@@ -1,0 +1,2 @@
+ChebyshevPolynomialT:
+  target_api: torch.special.chebyshev_polynomial_t

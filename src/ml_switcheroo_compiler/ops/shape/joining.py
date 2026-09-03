@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -24,7 +24,7 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0):
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
-        tensors (object): The tensors parameter.
+        tensors (Any): The tensors parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -57,7 +57,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0):
     """Stack a sequence of tensors along a new dimension.
 
     Args:
-        tensors (object): The tensors parameter.
+        tensors (Any): The tensors parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -160,8 +160,8 @@ def append(arr, values, axis: int | None = None):
     """Append values to the end of an array.
 
     Args:
-        arr (object): Values are appended to a copy of this array.
-        values (object): These values are appended to a copy of arr.
+        arr (Any): Values are appended to a copy of this array.
+        values (Any): These values are appended to a copy of arr.
         axis (int | None, optional): The axis along which values are appended.
             If axis is not given, both arr and values are flattened before use.
 
@@ -190,7 +190,7 @@ def column_stack(tup):
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
-        tup (Sequence[object]): Sequence of 1-D or 2-D arrays.
+        tup (Sequence[Any]): Sequence of 1-D or 2-D arrays.
 
     Returns:
         Tensor: The array formed by stacking the given arrays.

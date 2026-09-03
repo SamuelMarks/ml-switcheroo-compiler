@@ -41,8 +41,8 @@ def test_numpy_vision_visitor():
 def test_numpy_audio_visitor():
     vis = NumpyAudioVisitor()
     assert vis.visit_Istft(DummyNode({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "np_istft(a, 2048, 512, None, 'hann', False)"
-    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "np_mel_filterbank(1, 2, 3, 4, 5)"
-    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "np_mfcc(a, 2, 1, 3, 4, 5)"
+    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "np_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "np_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 def test_numpy_scatter_visitor():

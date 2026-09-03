@@ -1,0 +1,3 @@
+Histogram2d:
+  ast_template: np.histogram2d
+  target_api: ''

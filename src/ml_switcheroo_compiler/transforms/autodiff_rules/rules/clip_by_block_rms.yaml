@@ -1,0 +1,4 @@
+clip_by_block_rms:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

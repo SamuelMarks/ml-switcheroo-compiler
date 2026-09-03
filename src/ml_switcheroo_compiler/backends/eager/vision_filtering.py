@@ -12,12 +12,12 @@ def _extract_volume_patches(backend_module: Any, *args: Any, **kwargs: Any) -> A
     """Evaluate _extract_volume_patches operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -25,8 +25,8 @@ def _extract_volume_patches(backend_module: Any, *args: Any, **kwargs: Any) -> A
         return backend_module.asarray([]) if hasattr(backend_module, "asarray") else np.array([])
 
     input_tensor = np.asarray(args[0])
-    ksizes = kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
-    strides = kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
+    ksizes = kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1])
+    strides = kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1])
 
     if input_tensor.ndim != 5:
         return backend_module.asarray(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
@@ -61,13 +61,13 @@ class NMSConfig:
     score_threshold: float = float("-inf")
 
 
-def _get_box_coords(np_mod: Any, box_ctx: tuple[int, int, int, int], box: Any) -> tuple[tuple[int, int], tuple[int, int]]:
+def _get_box_coords(np_mod: Any, box_ctx: tuple[int, int, int, int], box: object) -> tuple[tuple[int, int], tuple[int, int]]:
     """Retrieve the box coords property or mapping.
 
     Args:
-        np_mod (Any): NumPy module.
+        np_mod: NumPy module.
         box_ctx (tuple[int, int, int, int]): (height, width, crop_height, crop_width).
-        box (Any): Bounding box.
+        box: Bounding box.
 
     Returns:
         tuple[tuple[int, int], tuple[int, int]]: ((y1, x1), (y2, x2)).
@@ -80,13 +80,13 @@ def _get_box_coords(np_mod: Any, box_ctx: tuple[int, int, int, int], box: Any) -
     return ((y1, x1), (y2, x2))
 
 
-def _extract_box_channels(np_mod: Any, img: Any, out: Any, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
+def _extract_box_channels(np_mod: Any, img: Any, out: object, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
     """Evaluate _extract_box_channels operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        img (Any): The img parameter.
-        out (Any): The out parameter.
+        np_mod: The np_mod parameter.
+        img: The img parameter.
+        out: The out parameter.
         coords_and_i (tuple[tuple[tuple[int, int], tuple[int, int]], int]): The coords_and_i parameter.
         config (BBoxConfig): The config parameter.
 
@@ -110,12 +110,12 @@ def _extract_box_channels(np_mod: Any, img: Any, out: Any, coords_and_i: tuple[t
     out[i] = resized
 
 
-def _extract_single_box(np_mod: Any, batch_ctx: Any, i: int, config: BBoxConfig) -> None:
+def _extract_single_box(np_mod: Any, batch_ctx: object, i: int, config: BBoxConfig) -> None:
     """Evaluate _extract_single_box operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        batch_ctx (Any): The batch_ctx parameter.
+        np_mod: The np_mod parameter.
+        batch_ctx: The batch_ctx parameter.
         i (int): The i parameter.
         config (BBoxConfig): The config parameter.
 
@@ -140,10 +140,10 @@ def _extract_boxes_batch(np_mod: Any, imgs: Any, bxs: Any, bxs_idx: Any, config:
     """Extract bounding boxes for a batch.
 
     Args:
-        np_mod (Any): NumPy module.
-        imgs (Any): Images.
-        bxs (Any): Boxes.
-        bxs_idx (Any): Box indices.
+        np_mod: NumPy module.
+        imgs: Images.
+        bxs: Boxes.
+        bxs_idx: Box indices.
         config (BBoxConfig): Configuration.
 
     Returns: Any: Extracted boxes.
@@ -165,14 +165,14 @@ def _extract_boxes_tf(backend_module: Any, images: Any, boxes: Any, box_indices:
     """Evaluate _extract_boxes_tf operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        images (Any): The images parameter.
-        boxes (Any): The boxes parameter.
-        box_indices (Any): The box_indices parameter.
+        backend_module: The backend_module parameter.
+        images: The images parameter.
+        boxes: The boxes parameter.
+        box_indices: The box_indices parameter.
         config (BBoxConfig): The config parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -187,14 +187,14 @@ def extract_bounding_boxes_eager(backend_module: Any, images: Any, boxes: Any, b
     """Evaluate extract_bounding_boxes_eager operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        images (Any): The images parameter.
-        boxes (Any): The boxes parameter.
-        box_indices (Any): The box_indices parameter.
+        backend_module: The backend_module parameter.
+        images: The images parameter.
+        boxes: The boxes parameter.
+        box_indices: The box_indices parameter.
         config (BBoxConfig): The config parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
@@ -203,12 +203,12 @@ def _to_xyxy_format(np_mod: Any, boxes: Any, format: str) -> Any:
     """Evaluate _to_xyxy_format operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        boxes (Any): The boxes parameter.
+        np_mod: The np_mod parameter.
+        boxes: The boxes parameter.
         format (str): The format parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         ValueError: An exception.
@@ -227,16 +227,16 @@ def _to_xyxy_format(np_mod: Any, boxes: Any, format: str) -> Any:
         raise ValueError(msg)
 
 
-def _compute_iou(np_mod: Any, b1: Any, b2: Any) -> Any:
+def _compute_iou(np_mod: Any, b1: object, b2: object) -> Any:
     """Evaluate _compute_iou operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        b1 (Any): The b1 parameter.
-        b2 (Any): The b2 parameter.
+        np_mod: The np_mod parameter.
+        b1: The b1 parameter.
+        b2: The b2 parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     b1 = np_mod.asarray(b1)
     b2 = np_mod.asarray(b2)
@@ -264,13 +264,13 @@ def iou_eager(backend_module: Any, boxes1: Any, boxes2: Any, bounding_box_format
     """Evaluate iou_eager operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        boxes1 (Any): The boxes1 parameter.
-        boxes2 (Any): The boxes2 parameter.
+        backend_module: The backend_module parameter.
+        boxes1: The boxes1 parameter.
+        boxes2: The boxes2 parameter.
         bounding_box_format (str): The bounding_box_format parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -280,17 +280,17 @@ def iou_eager(backend_module: Any, boxes1: Any, boxes2: Any, bounding_box_format
     return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
 
-def _sort_boxes_by_score(np_mod: Any, boxes: Any, scores: Any, score_threshold: float) -> tuple[Any, Any, Any, Any]:
+def _sort_boxes_by_score(np_mod: Any, boxes: Any, scores: Any, score_threshold: float) -> tuple[object, object, object, object]:
     """Evaluate _sort_boxes_by_score operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        boxes (Any): The boxes parameter.
-        scores (Any): The scores parameter.
+        np_mod: The np_mod parameter.
+        boxes: The boxes parameter.
+        scores: The scores parameter.
         score_threshold (float): The score_threshold parameter.
 
     Returns:
-            tuple[Any, Any, Any, Any]: Result.
+            tuple[object, object, object, object]: Result.
     """
     boxes = np_mod.asarray(boxes)
     scores = np_mod.asarray(scores)
@@ -311,13 +311,13 @@ def _compute_overlap(np_mod: Any, bxs: Any, i: int, order: Any) -> Any:
     """Evaluate _compute_overlap operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        bxs (Any): The bxs parameter.
+        np_mod: The np_mod parameter.
+        bxs: The bxs parameter.
         i (int): The i parameter.
-        order (Any): The order parameter.
+        order: The order parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     b1 = bxs[order[i]]
     b2 = bxs[order[1:]]
@@ -328,14 +328,14 @@ def _apply_suppression_threshold(np_mod: Any, bxs: Any, order: Any, max_output_s
     """Evaluate _apply_suppression_threshold operation.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        bxs (Any): The bxs parameter.
-        order (Any): The order parameter.
+        np_mod: The np_mod parameter.
+        bxs: The bxs parameter.
+        order: The order parameter.
         max_output_size (int): The max_output_size parameter.
         iou_threshold (float): The iou_threshold parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     keep = []
     order_list = list(order)
@@ -360,13 +360,13 @@ def _nms_tf(backend_module: Any, boxes: Any, scores: Any, config: Optional[NMSCo
     """Evaluate _nms_tf operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        boxes (Any): The boxes parameter.
-        scores (Any): The scores parameter.
+        backend_module: The backend_module parameter.
+        boxes: The boxes parameter.
+        scores: The scores parameter.
         config (Optional[NMSConfig]): The config parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if config is None:
         config = NMSConfig(max_output_size=boxes.shape[0] if hasattr(boxes, "shape") else 100)
@@ -378,12 +378,12 @@ def _nms_torch(boxes: Any, scores: Any, config: NMSConfig) -> Any:
     """Evaluate _nms_torch operation.
 
     Args:
-        boxes (Any): The boxes parameter.
-        scores (Any): The scores parameter.
+        boxes: The boxes parameter.
+        scores: The scores parameter.
         config (NMSConfig): The config parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -400,12 +400,12 @@ def nms_eager(backend_module: Any, boxes: Any, scores: Any, config: Optional[NMS
     """Evaluate nms_eager operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        boxes (Any): The boxes parameter.
-        scores (Any): The scores parameter.
+        backend_module: The backend_module parameter.
+        boxes: The boxes parameter.
+        scores: The scores parameter.
         config (Optional[NMSConfig]): The config parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return _nms_tf(backend_module, boxes, scores, config)

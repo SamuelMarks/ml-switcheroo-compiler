@@ -1,0 +1,2 @@
+BitwiseNot:
+  target_api: keras_ops.bitwise_not

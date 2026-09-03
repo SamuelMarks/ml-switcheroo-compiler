@@ -1,0 +1,3 @@
+TrueDivide:
+  ast_template: np.divide
+  target_api: ''

@@ -1,0 +1,4 @@
+register_parametrization:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

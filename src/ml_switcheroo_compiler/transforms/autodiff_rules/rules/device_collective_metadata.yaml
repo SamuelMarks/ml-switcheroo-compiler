@@ -1,0 +1,4 @@
+device_collective_metadata:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

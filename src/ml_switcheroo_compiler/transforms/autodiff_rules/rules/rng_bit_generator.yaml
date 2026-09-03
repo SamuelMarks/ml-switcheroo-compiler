@@ -1,0 +1,4 @@
+rng_bit_generator:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

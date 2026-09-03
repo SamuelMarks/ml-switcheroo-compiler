@@ -12,7 +12,7 @@ def _get_shape_list(x):
     """Help to convert shape to list.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
         list: Result.
@@ -35,7 +35,7 @@ def _normalize_axes(axes, length: int):
     """Help to normalize axes.
 
     Args:
-        axes (object): The axes parameter.
+        axes (Any): The axes parameter.
         length (int): The length parameter.
 
     Returns:
@@ -72,8 +72,8 @@ class Reshape(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -99,8 +99,8 @@ class Transpose(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): The first input tensor and the axes.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): The first input tensor and the axes.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -116,7 +116,7 @@ class Transpose(OpDef):
 
         Args:
         x (str): The x parameter.
-        axes (object): The axes parameter.
+        axes (Any): The axes parameter.
 
         Returns:
         str: Result.
@@ -132,9 +132,9 @@ class BroadcastTo(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter.
-            shape (object): The shape parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            shape (Any): The shape parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -171,10 +171,10 @@ class BroadcastInDim(OpDef):
         """Infer the output shape of the broadcasting operation.
 
         Args:
-            x (object): The input x tensor.
-            shape (object): The target shape.
-            broadcast_dimensions (object): The broadcast_dimensions parameter for the operation.
-            **kwargs (object): Additional keyword arguments.
+            x (Any): The input x tensor.
+            shape (Any): The target shape.
+            broadcast_dimensions (Any): The broadcast_dimensions parameter for the operation.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -197,10 +197,10 @@ class Resize(OpDef):
         """Infer the output shape of the resizing operation.
 
         Args:
-            image (object): The image parameter for the operation.
-            shape (object): The target shape.
-            method (object): The method parameter for the operation.
-            **kwargs (object): Additional keyword arguments.
+            image (Any): The image parameter for the operation.
+            shape (Any): The target shape.
+            method (Any): The method parameter for the operation.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -225,8 +225,8 @@ class Atleast1d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -250,8 +250,8 @@ class Atleast2d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -277,8 +277,8 @@ class Atleast3d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -306,8 +306,8 @@ class ExpandDims(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -335,8 +335,8 @@ class Block(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -357,8 +357,8 @@ class C(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -376,8 +376,8 @@ class Collapse(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -395,8 +395,8 @@ class Delete(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -417,8 +417,8 @@ class DiagIndices(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -438,8 +438,8 @@ class DiagIndicesFrom(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -460,8 +460,8 @@ class Diagflat(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -487,8 +487,8 @@ class FillDiagonal(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -509,8 +509,8 @@ class Insert(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -531,8 +531,8 @@ class Moveaxis(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -550,8 +550,8 @@ class Moveaxis(OpDef):
 
         Args:
             shape (list[int]): The input shape.
-            source (object): The source axes.
-            destination (object): The destination axes.
+            source (Any): The source axes.
+            destination (Any): The destination axes.
 
         Returns:
             tuple: The calculated shape.
@@ -575,8 +575,8 @@ class Permute(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -601,8 +601,8 @@ class Roll(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -623,8 +623,8 @@ class Squeeze(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -641,7 +641,7 @@ class Squeeze(OpDef):
 
         Args:
             shape (list[int]): The input shape.
-            axis (object): The axis or axes to squeeze.
+            axis (Any): The axis or axes to squeeze.
 
         Returns:
             tuple: The calculated shape.
@@ -663,8 +663,8 @@ class Swapaxes(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -691,8 +691,8 @@ class Flip(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -713,8 +713,8 @@ class Fliplr(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -735,8 +735,8 @@ class Flipud(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

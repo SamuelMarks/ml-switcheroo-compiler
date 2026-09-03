@@ -1,0 +1,4 @@
+feature_alpha_dropout:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

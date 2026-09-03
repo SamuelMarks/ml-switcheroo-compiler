@@ -2,13 +2,24 @@
 
 import json
 import os
+import typing
 
 
-def generate_stubs() -> None:
-    """Generate stubs."""
+def generate_stubs(snapshot_dir: typing.Optional[str] = None, out_base_dir: str = "src/ml_switcheroo_compiler/backends") -> None:
+    """Generate stubs.
+
+    Args:
+        snapshot_dir: Optional override for snapshot directory.
+        out_base_dir: Optional override for the output base directory.
+
+    Returns:
+        None
+    """
     prefix_to_fw: dict[str, str] = {"numpy": "numpy", "pytorch": "torch", "jax": "jax", "keras": "keras", "mlx": "mlx", "dask": "dask", "cupy": "cupy", "tensorflow": "tensorflow"}
 
-    snapshot_dir: str = os.path.join(os.path.dirname(__file__), "..", "..", "ml-framework-snapshots", "src", "ml_framework_snapshots", "snapshots")
+    if snapshot_dir is None:
+        snapshot_dir = os.path.join(os.path.dirname(__file__), "..", "..", "ml-framework-snapshots", "src", "ml_framework_snapshots", "snapshots")
+
     if not os.path.exists(snapshot_dir):
         print(f"Snapshot directory not found: {snapshot_dir}")
         return
@@ -28,7 +39,7 @@ def generate_stubs() -> None:
         # very simple flat generation
         # ideally we build a module tree, but for mypy grounding in eagerly dispatched code, a flat set of functions is a good start
         # we will generate this directly into the backend directory
-        stub_path: str = f"src/ml_switcheroo_compiler/backends/{be_name}/stub.pyi"
+        stub_path: str = os.path.join(out_base_dir, be_name, "stub.pyi")
 
         # let's just make sure we are not overwriting important stuff
         if not os.path.exists(os.path.dirname(stub_path)):
@@ -63,9 +74,13 @@ def generate_stubs() -> None:
 
 
 def main() -> None:
-    """Entry point."""
+    """Entry point.
+
+    Returns:
+        None
+    """
     generate_stubs()
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     main()

@@ -1,0 +1,4 @@
+bmm_einsum:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

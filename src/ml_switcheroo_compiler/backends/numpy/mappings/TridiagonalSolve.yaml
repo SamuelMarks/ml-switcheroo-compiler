@@ -1,0 +1,4 @@
+TridiagonalSolve:
+  ast_template: getattr(backend_module.linalg, 'solve_banded', None)((1, 1), np.stack([{2},
+    {1}, {0}], axis=-2), {3})
+  target_api: ''

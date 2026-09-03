@@ -1,0 +1,4 @@
+PYTHON_RUNFILES:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

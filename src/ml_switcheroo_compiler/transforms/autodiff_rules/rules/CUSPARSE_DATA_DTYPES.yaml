@@ -1,0 +1,4 @@
+CUSPARSE_DATA_DTYPES:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

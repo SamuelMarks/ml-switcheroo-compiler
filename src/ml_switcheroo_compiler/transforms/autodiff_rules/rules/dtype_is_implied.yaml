@@ -1,0 +1,4 @@
+dtype_is_implied:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+unravel_index:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

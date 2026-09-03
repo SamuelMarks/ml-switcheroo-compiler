@@ -1,0 +1,2 @@
+Rfftfreq:
+  target_api: cp.fft.rfftfreq

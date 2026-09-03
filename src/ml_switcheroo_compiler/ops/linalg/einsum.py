@@ -3,7 +3,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -176,8 +176,8 @@ class EinsumPlanner:
 
         Args:
         part (str): The part parameter.
-        shape (object): The shape parameter.
-        broadcast_shape (object): The broadcast_shape parameter.
+        shape (Any): The shape parameter.
+        broadcast_shape (Any): The broadcast_shape parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -238,7 +238,7 @@ class EinsumPlanner:
 
         Args:
         in_subs (str): The in_subs parameter.
-        shapes (object): The shapes parameter.
+        shapes (Any): The shapes parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -290,7 +290,7 @@ class EinsumPlanner:
 
         Args:
         out_sub (str): The out_sub parameter.
-        axis_map (object): The axis_map parameter.
+        axis_map (Any): The axis_map parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -404,7 +404,7 @@ class EinsumEquationParser:
 
         Args:
         equation (str): The equation parameter.
-        shapes (object): The shapes parameter.
+        shapes (Any): The shapes parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -448,7 +448,7 @@ class Einsum(OpDef):
         """Evaluate _extract_shapes operation.
 
         Args:
-        args (object): The args parameter.
+        args (Any): The args parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -472,8 +472,8 @@ class Einsum(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

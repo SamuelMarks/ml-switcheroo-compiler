@@ -21,7 +21,7 @@ def _eager_base64(op: str, data, pad: bool = False):
 
     Args:
         op (str): The op parameter.
-        data (object): The data parameter.
+        data (Any): The data parameter.
         pad (bool): The pad parameter.
 
     Returns:
@@ -33,7 +33,7 @@ def _eager_base64(op: str, data, pad: bool = False):
         """Process a single element for base64 operation.
 
         Args:
-            d (object): The element.
+            d (Any): The element.
 
         Returns:
             bytes: The base64 bytes.
@@ -104,8 +104,8 @@ class EncodeBase64(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -131,8 +131,8 @@ class DecodeBase64(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

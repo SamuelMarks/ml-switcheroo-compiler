@@ -1,0 +1,4 @@
+mask_next:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+Allclose:
+  ast_template: torch.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+  target_api: ''

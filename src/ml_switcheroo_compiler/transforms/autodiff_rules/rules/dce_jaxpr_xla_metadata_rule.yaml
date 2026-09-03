@@ -1,0 +1,4 @@
+dce_jaxpr_xla_metadata_rule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

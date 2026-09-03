@@ -1,0 +1,4 @@
+SMEM_BANK_BYTES:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+DrawBoundingBoxes:
+  ast_template: torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors}, labels={texts})
+  target_api: ''

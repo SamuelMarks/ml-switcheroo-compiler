@@ -1,0 +1,3 @@
+RNNCellResidualWrapper:
+  ast_template: tf.nn.rnn_cell.ResidualWrapper
+  target_api: ''

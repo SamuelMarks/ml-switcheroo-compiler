@@ -12,11 +12,14 @@ import random
 import sys
 import tarfile
 import time
+import typing
 import urllib.request
 import zipfile
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.serialization import custom_object_scope, deserialize_keras_object, get_custom_objects, get_registered_name, get_registered_object, register_keras_serializable, serialize_keras_object
 
 
 @dataclass
@@ -61,7 +64,7 @@ class ProgbarConfig:
     width: int = 30
     verbose: int = 1
     interval: float = 0.05
-    stateful_metrics = None
+    stateful_metrics: Any | None = None
     unit_name: str = "step"
 
 
@@ -140,7 +143,7 @@ def get_file(
     Args:
         fname (str): The fname parameter.
         origin (str): The origin parameter.
-        config (object): The config parameter.
+        config (Any): The config parameter.
 
     Returns:
         str: Result.
@@ -194,8 +197,8 @@ class Progbar:
         """Initialize.
 
         Args:
-            target (object): The target parameter.
-            config (object): The config parameter.
+            target (Any): The target parameter.
+            config (Any): The config parameter.
         """
         conf = config if config is not None else ProgbarConfig()
 
@@ -255,7 +258,7 @@ class Progbar:
 
         Args:
         current (int): The current parameter.
-        finalize (object): The finalize parameter.
+        finalize (Any): The finalize parameter.
 
         Returns:
         bool: Result.
@@ -292,8 +295,8 @@ class Progbar:
 
         Args:
             current (int): The current parameter.
-            values (object): The values parameter.
-            finalize (object): The finalize parameter.
+            values (Any): The values parameter.
+            finalize (Any): The finalize parameter.
         """
         values = values or []
         self._update_values(current, values)
@@ -315,8 +318,8 @@ class FeatureSpace:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
@@ -329,22 +332,22 @@ class Config:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
 
 
 class CustomObjectScope:
-    """Scope for custom objects."""
+    """Scope for custom Anys."""
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
@@ -361,9 +364,9 @@ class CustomObjectScope:
         """Exit.
 
         Args:
-            exc_type (object): The exc_type parameter.
-            exc_val (object): The exc_val parameter.
-            exc_tb (object): The exc_tb parameter.
+            exc_type (Any): The exc_type parameter.
+            exc_val (Any): The exc_val parameter.
+            exc_tb (Any): The exc_tb parameter.
         """
         _ = None
 
@@ -375,8 +378,8 @@ class PyDataset:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
@@ -389,8 +392,8 @@ class Sequence:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
@@ -406,8 +409,8 @@ def clear_session(*args, **kwargs) -> None:
     config.clear_cache()
 
 
-def custom_object_scope(*args, **kwargs):
-    """Create a custom object scope.
+def custom_Any_scope(*args, **kwargs):
+    """Create a custom Any scope.
 
     Args:
         *args: arguments.
@@ -419,15 +422,15 @@ def custom_object_scope(*args, **kwargs):
     return CustomObjectScope(*args, **kwargs)
 
 
-def deserialize_keras_object(*args, **kwargs):
-    """Deserialize a Keras object.
+def deserialize_keras_Any(*args, **kwargs):
+    """Deserialize a Keras Any.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
     Returns:
-        The deserialized object.
+        The deserialized Any.
     """
     return None
 
@@ -452,15 +455,15 @@ def enable_interactive_logging(*args, **kwargs) -> None:
     config._state.env.interactive_logging = True
 
 
-def get_custom_objects(*args, **kwargs):
-    """Get custom objects.
+def get_custom_Anys(*args, **kwargs):
+    """Get custom Anys.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
     Returns:
-        A dictionary of custom objects.
+        A dictionary of custom Anys.
     """
     return {}
 
@@ -478,15 +481,15 @@ def get_registered_name(*args, **kwargs) -> str:
     return ""
 
 
-def get_registered_object(*args, **kwargs):
-    """Get registered object.
+def get_registered_Any(*args, **kwargs):
+    """Get registered Any.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
     Returns:
-        The registered object.
+        The registered Any.
     """
     return None
 
@@ -505,20 +508,20 @@ def is_interactive_logging_enabled(*args, **kwargs) -> bool:
 
 
 def is_keras_tensor(*args, **kwargs) -> bool:
-    """Check if an object is a Keras tensor.
+    """Check if an Any is a Keras tensor.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
     Returns:
-        Whether the object is a Keras tensor.
+        Whether the Any is a Keras tensor.
     """
     return False
 
 
 def register_keras_serializable(*args, **kwargs):
-    """Register an object with Keras serialization.
+    """Register an Any with Keras serialization.
 
     Args:
         *args: arguments.
@@ -532,7 +535,7 @@ def register_keras_serializable(*args, **kwargs):
         """Register the annotated class in the keras registry.
 
         Args:
-            cls (object): The class to register.
+            cls (Any): The class to register.
 
         Returns: Tensor: The original class.
         """
@@ -541,15 +544,15 @@ def register_keras_serializable(*args, **kwargs):
     return decorator
 
 
-def serialize_keras_object(*args, **kwargs):
-    """Serialize a Keras object.
+def serialize_keras_Any(*args, **kwargs):
+    """Serialize a Keras Any.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
 
     Returns:
-        The serialized object.
+        The serialized Any.
     """
     return None
 
@@ -574,8 +577,8 @@ class bounding_boxes:
         """Initialize.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs

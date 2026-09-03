@@ -1,0 +1,4 @@
+extract_assignment_candidates_from_reduce_equation:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

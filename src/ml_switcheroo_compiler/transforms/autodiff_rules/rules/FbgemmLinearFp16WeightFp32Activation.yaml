@@ -1,0 +1,4 @@
+FbgemmLinearFp16WeightFp32Activation:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

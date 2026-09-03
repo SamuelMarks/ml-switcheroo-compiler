@@ -1,0 +1,3 @@
+RaggedCrossHashed:
+  ast_template: tf.ragged.cross_hashed
+  target_api: ''

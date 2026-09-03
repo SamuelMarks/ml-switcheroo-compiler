@@ -1,0 +1,2 @@
+Lgamma:
+  target_api: tf.math.lgamma

@@ -1,0 +1,3 @@
+Arange:
+  ast_template: torch.arange({0})
+  target_api: ''

@@ -1,0 +1,3 @@
+BroadcastedIota:
+  ast_template: np.broadcasted_iota
+  target_api: ''

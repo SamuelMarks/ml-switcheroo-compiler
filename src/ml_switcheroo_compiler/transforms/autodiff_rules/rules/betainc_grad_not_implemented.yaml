@@ -1,0 +1,4 @@
+betainc_grad_not_implemented:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

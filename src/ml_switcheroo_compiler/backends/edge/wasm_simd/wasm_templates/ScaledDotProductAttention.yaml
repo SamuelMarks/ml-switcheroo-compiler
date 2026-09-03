@@ -1,0 +1,6 @@
+ScaledDotProductAttention:
+  body: '
+
+    // WASM SIMD Attention
+
+    '

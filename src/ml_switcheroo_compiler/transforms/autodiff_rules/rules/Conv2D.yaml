@@ -1,0 +1,5 @@
+Conv2D:
+  jvp: Add(Conv2D($tangent[0], $input[1]), Conv2D($input[0], $tangent[1]))
+  vjp:
+  - '- Conv2DTranspose($cotangent, Transpose($input[1]))'
+  - '- Conv2DTranspose(Transpose($input[0]), $cotangent)'

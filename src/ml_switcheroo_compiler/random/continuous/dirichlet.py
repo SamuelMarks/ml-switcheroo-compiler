@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any, Optional, Union
+
+from ml_switcheroo_compiler.core.tensor import Tensor
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for dirichlet.py."""
@@ -10,7 +15,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def dirichlet(key, alpha, shape=None, dtype=None):
+def dirichlet(key: Any, alpha: Any, shape: Sequence[int] | int | None = None, dtype: Any | None = None) -> Tensor:
     """Sample dirichlet random values from a given key.
 
     Args:
@@ -20,7 +25,7 @@ def dirichlet(key, alpha, shape=None, dtype=None):
         dtype (object): The dtype parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     if shape is None:
         shape = ()

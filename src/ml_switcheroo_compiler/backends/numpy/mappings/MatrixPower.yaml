@@ -1,0 +1,3 @@
+MatrixPower:
+  ast_template: np.linalg.matrix_power
+  target_api: ''

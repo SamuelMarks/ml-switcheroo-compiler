@@ -1,0 +1,2 @@
+BooleanMask:
+  target_api: np.booleanmask

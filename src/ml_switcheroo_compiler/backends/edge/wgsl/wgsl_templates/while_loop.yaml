@@ -1,0 +1,9 @@
+while_loop:
+  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\n// Loop\
+    \ over ND elements locally\nvar i = 0u;\nloop {{\n    if (!({condition_expr} &&\
+    \ i < {max_iters}u)) {{\n        break;\n    }}\n    {loop_body}\n    i = i +\
+    \ 1u;\n}}\n// Output write is expected to be handled in loop_body for ND tensors\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

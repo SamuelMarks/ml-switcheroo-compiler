@@ -1,0 +1,2 @@
+BesselI1e:
+  target_api: torch.special.i1e

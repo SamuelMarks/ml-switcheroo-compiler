@@ -1,0 +1,3 @@
+RaggedStack:
+  ast_template: tf.ragged.stack
+  target_api: ''

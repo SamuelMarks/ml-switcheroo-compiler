@@ -1,0 +1,4 @@
+block_q_major_dkv:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

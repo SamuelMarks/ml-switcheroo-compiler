@@ -1,0 +1,3 @@
+Cos:
+  ast_template: np.cos
+  target_api: ''

@@ -1,0 +1,2 @@
+Fft:
+  target_api: '''mx.fft.fft({0})'''

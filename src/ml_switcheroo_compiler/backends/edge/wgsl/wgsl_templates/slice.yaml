@@ -1,0 +1,16 @@
+Slice:
+  body: '
+
+    let idx = global_id.x;
+
+    if (idx >= {out_size}u) { return; }
+
+    // Simplistic 1D slice
+
+    buf_out_f32[idx] = buf_in_f32[{start}u + idx * {step}u];
+
+    '
+  workgroup_size:
+  - 64
+  - 1
+  - 1

@@ -1,0 +1,2 @@
+Clip:
+  target_api: '''mx.clip({0}, a_min={a_min}, a_max={a_max})'''

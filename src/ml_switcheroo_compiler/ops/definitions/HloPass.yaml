@@ -1,8 +1,0 @@
-operation: HloPass
-description: The class representing a Python class.
-std_args: []
-type: class
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

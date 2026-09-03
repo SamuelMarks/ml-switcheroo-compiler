@@ -1,0 +1,4 @@
+sparse_rules_bcsr:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+artificial_shared_memory_limit:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

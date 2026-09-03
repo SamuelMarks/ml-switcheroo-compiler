@@ -1,0 +1,2 @@
+Cos:
+  target_api: torch.cos

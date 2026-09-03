@@ -1,0 +1,2 @@
+EditDistance:
+  target_api: tf.edit_distance

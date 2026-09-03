@@ -1,0 +1,2 @@
+Slice:
+  target_api: keras_ops.slice

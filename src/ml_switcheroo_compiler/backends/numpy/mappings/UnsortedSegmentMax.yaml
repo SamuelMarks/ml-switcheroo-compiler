@@ -1,0 +1,2 @@
+UnsortedSegmentMax:
+  target_api: np.unsortedsegmentmax

@@ -1,0 +1,3 @@
+Trace:
+  ast_template: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+  target_api: ''

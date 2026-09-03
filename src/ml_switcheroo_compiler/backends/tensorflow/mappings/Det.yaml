@@ -1,0 +1,2 @@
+Det:
+  target_api: tf.linalg.det

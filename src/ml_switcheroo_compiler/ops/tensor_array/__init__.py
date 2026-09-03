@@ -14,9 +14,9 @@ class TensorArrayRead(OpDef):
         """Infer shape.
 
         Args:
-            handle (object): The handle parameter.
-            index (object): The index parameter.
-            **kwargs (object): Keyword args.
+            handle (Any): The handle parameter.
+            index (Any): The index parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -35,10 +35,10 @@ class TensorArrayWrite(OpDef):
         """Infer shape.
 
         Args:
-            handle (object): The handle parameter.
-            index (object): The index parameter.
-            value (object): The value parameter.
-            **kwargs (object): Keyword args.
+            handle (Any): The handle parameter.
+            index (Any): The index parameter.
+            value (Any): The value parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -56,8 +56,8 @@ class TensorArrayStack(OpDef):
         """Infer shape.
 
         Args:
-            handle (object): The handle parameter.
-            **kwargs (object): Keyword args.
+            handle (Any): The handle parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,3 @@
+Matmul:
+  ast_template: np.matmul
+  target_api: ''

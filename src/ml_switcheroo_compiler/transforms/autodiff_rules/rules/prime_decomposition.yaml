@@ -1,0 +1,4 @@
+prime_decomposition:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

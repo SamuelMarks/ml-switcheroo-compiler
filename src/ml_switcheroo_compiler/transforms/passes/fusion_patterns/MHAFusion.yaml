@@ -1,0 +1,26 @@
+MHAFusion:
+  pattern:
+    capture: matmul2
+    inputs:
+    - capture: softmax
+      inputs:
+      - capture: scale
+        inputs:
+        - capture: matmul1
+          inputs:
+          - capture: q
+          - capture: k
+          op_type: MatMul
+        - capture: scale_factor
+        op_type: Multiply
+      op_type: Softmax
+    - capture: v
+    op_type: MatMul
+  replacement:
+    capture_to_replace: matmul2
+    inputs:
+    - q
+    - k
+    - v
+    - scale_factor
+    op_type: ScaledDotProductAttention

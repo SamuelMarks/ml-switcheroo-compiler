@@ -1,0 +1,2 @@
+SpaceToBatch:
+  target_api: np.spacetobatch

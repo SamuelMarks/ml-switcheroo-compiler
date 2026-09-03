@@ -1,0 +1,2 @@
+ExtractVolumePatches:
+  target_api: np.extractvolumepatches

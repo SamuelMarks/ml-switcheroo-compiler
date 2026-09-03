@@ -1,0 +1,2 @@
+SparseMask:
+  target_api: jax.numpy.sparsemask

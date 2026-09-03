@@ -1,0 +1,2 @@
+TakeAlongAxis:
+  target_api: np.takealongaxis

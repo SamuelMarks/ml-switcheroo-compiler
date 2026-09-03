@@ -1,0 +1,4 @@
+FORCE_USE_FLEX_ATTENTION:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

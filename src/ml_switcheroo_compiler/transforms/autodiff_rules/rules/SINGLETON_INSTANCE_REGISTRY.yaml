@@ -1,0 +1,4 @@
+SINGLETON_INSTANCE_REGISTRY:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

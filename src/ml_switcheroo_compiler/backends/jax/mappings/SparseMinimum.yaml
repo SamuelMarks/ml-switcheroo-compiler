@@ -1,0 +1,2 @@
+SparseMinimum:
+  target_api: jax.numpy.sparseminimum

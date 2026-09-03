@@ -1,0 +1,4 @@
+Conv2D:
+  body: "\n// WASM SIMD Conv2D\nfor (size_t y = 0; y < {out_h}; ++y) {\n    for (size_t\
+    \ x = 0; x < {out_w}; ++x) {\n        // ... (simplified logic)\n        buf_out_f32[y\
+    \ * {out_w} + x] = 0.0f; // placeholder\n    }\n}\n"

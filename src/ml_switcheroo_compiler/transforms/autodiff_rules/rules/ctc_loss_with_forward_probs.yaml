@@ -1,0 +1,4 @@
+ctc_loss_with_forward_probs:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

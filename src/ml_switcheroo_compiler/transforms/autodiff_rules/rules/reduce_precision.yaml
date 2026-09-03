@@ -1,0 +1,4 @@
+reduce_precision:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

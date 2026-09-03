@@ -1,0 +1,4 @@
+call_tf_ordered_effect:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

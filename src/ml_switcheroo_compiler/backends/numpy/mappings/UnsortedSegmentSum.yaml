@@ -1,0 +1,2 @@
+UnsortedSegmentSum:
+  target_api: np.unsortedsegmentsum

@@ -1,0 +1,4 @@
+set_up_flags:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+Slogdet:
+  ast_template: np.linalg.slogdet
+  target_api: ''

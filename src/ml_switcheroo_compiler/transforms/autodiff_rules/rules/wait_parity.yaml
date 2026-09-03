@@ -1,0 +1,4 @@
+wait_parity:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

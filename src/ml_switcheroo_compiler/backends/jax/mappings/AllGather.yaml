@@ -1,0 +1,4 @@
+AllGather:
+  custom_code: 'lambda tensor, *args, **kwargs: jax.lax.all_gather(tensor, axis_name=kwargs.get(''axis_name'',
+    ''i'')) if hasattr(jax.lax, ''all_gather'') else jax.numpy.stack([tensor])'
+  target_api: custom_op

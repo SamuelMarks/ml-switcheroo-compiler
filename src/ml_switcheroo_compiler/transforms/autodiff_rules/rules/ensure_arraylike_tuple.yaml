@@ -1,0 +1,4 @@
+ensure_arraylike_tuple:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+unpack_lstm_weights:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

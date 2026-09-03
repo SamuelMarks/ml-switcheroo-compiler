@@ -26,7 +26,6 @@ types:
 
 # Mapping of Unified IR ops to TensorFlow NodeDef ops
 operations:
-  fallback: "Placeholder" # Default op if not found
   Add: "AddV2"
   Sub: "Sub"
   Multiply: "Mul"

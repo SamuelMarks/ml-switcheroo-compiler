@@ -1,0 +1,2 @@
+SparseMapValues:
+  target_api: jax.numpy.sparsemapvalues

@@ -1,0 +1,2 @@
+ShiftedChebyshevPolynomialW:
+  target_api: np.shiftedchebyshevpolynomialw

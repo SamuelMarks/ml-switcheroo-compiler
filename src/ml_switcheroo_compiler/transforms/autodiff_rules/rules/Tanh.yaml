@@ -1,0 +1,4 @@
+Tanh:
+  jvp: Mul($tangent[0], Sub(Constant(1.0), Pow(Tanh($input[0]), Constant(2.0))))
+  vjp:
+  - '- Mul($cotangent, Sub(Constant(1.0), Pow(Tanh($input[0]), Constant(2.0))))'

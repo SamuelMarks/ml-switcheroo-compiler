@@ -1,0 +1,2 @@
+TridiagonalSolve:
+  target_api: tf.linalg.tridiagonal_solve

@@ -1,0 +1,2 @@
+Tensordot:
+  target_api: tf.tensordot

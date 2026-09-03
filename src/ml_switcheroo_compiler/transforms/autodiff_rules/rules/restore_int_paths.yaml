@@ -1,0 +1,4 @@
+restore_int_paths:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

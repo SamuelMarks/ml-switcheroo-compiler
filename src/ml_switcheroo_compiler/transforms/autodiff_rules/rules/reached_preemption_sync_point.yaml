@@ -1,0 +1,4 @@
+reached_preemption_sync_point:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

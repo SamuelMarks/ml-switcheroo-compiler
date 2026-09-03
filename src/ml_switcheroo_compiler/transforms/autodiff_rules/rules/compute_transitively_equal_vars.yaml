@@ -1,0 +1,4 @@
+compute_transitively_equal_vars:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

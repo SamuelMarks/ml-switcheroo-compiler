@@ -1,0 +1,3 @@
+Erfinv:
+  ast_template: torch.erfinv({0})
+  target_api: ''

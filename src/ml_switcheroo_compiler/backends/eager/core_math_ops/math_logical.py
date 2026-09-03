@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 import typing
 from typing import Any
 
@@ -14,12 +15,12 @@ def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _nan_to_num operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     kwargs.pop("copy", None)
@@ -38,12 +39,12 @@ def _axis_index(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _axis_index operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return 0
 
@@ -53,19 +54,20 @@ def _divide_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _divide_no_nan operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "divide_no_nan", None)
     if func2:
         return func2(*args, **kwargs)
     (x, y) = (args[0], args[1])
-    return backend_module.where(y == 0, 0, x / y)
+    safe_y = backend_module.where(y == 0, 1.0, y)
+    return backend_module.where(y == 0, 0, x / safe_y)
 
 
 @global_eager_registry.register("Finfo")
@@ -73,12 +75,12 @@ def _finfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _finfo operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.finfo(*args, **kwargs)
 
@@ -88,12 +90,12 @@ def _hardswish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _hardswish operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     return x * backend_module.clip(x + 3, 0, 6) / 6
@@ -104,14 +106,18 @@ def _heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _heaviside operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return backend_module.heaviside(*args, **kwargs)
+    func = getattr(backend_module, "heaviside", None)
+    if func:
+        return func(*args, **kwargs)
+    x, y = args[0], args[1]
+    return backend_module.where(x < 0, 0.0, backend_module.where(x > 0, 1.0, y))
 
 
 @global_eager_registry.register("Histogram")
@@ -119,12 +125,12 @@ def _histogram(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogram operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.histogram(*args, **kwargs)
 
@@ -134,12 +140,12 @@ def _histogram2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogram2d operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.histogram2d(*args, **kwargs)
 
@@ -149,12 +155,12 @@ def _histogrambinedges(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogrambinedges operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.histogram_bin_edges(*args, **kwargs)
 
@@ -164,12 +170,12 @@ def _histogramdd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogramdd operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.histogramdd(*args, **kwargs)
 
@@ -179,12 +185,12 @@ def _iinfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iinfo operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.iinfo(*args, **kwargs)
 
@@ -194,12 +200,12 @@ def _infeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _infeed operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return 0
 
@@ -209,12 +215,12 @@ def _isclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isclose operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.isclose(*args, **kwargs)
 
@@ -224,18 +230,19 @@ def _iscomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iscomplex operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "iscomplex", None)
     if func:
         return func(*args, **kwargs)
-    x = args[0]
-    return backend_module.imag(x) != 0
+    import numpy as np
+
+    return np.iscomplex(*args, **kwargs)
 
 
 @global_eager_registry.register("Iscomplexobj")
@@ -243,12 +250,12 @@ def _iscomplexobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iscomplexobj operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "iscomplexobj", None)
     if func:
@@ -264,12 +271,12 @@ def _isnan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isnan operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.isnan(*args, **kwargs)
 
@@ -279,12 +286,12 @@ def _isneginf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isneginf operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "isneginf", None)
     if func:
@@ -298,18 +305,19 @@ def _isreal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isreal operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "isreal", None)
     if func:
         return func(*args, **kwargs)
-    x = args[0]
-    return backend_module.imag(x) == 0
+    import numpy as np
+
+    return np.isreal(*args, **kwargs)
 
 
 @global_eager_registry.register("Isrealobj")
@@ -317,12 +325,12 @@ def _isrealobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isrealobj operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "isrealobj", None)
     if func:
@@ -338,12 +346,12 @@ def _isscalar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isscalar operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "isscalar", None)
     if func:
@@ -359,12 +367,12 @@ def _issubdtype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _issubdtype operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -376,12 +384,12 @@ def _kaiser(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _kaiser operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     import numpy as np
 
@@ -393,12 +401,12 @@ def _mish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mish operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
     return x * backend_module.tanh(backend_module.log1p(backend_module.exp(x)))
@@ -409,12 +417,12 @@ def _multiply_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _multiply_no_nan operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "multiply_no_nan", None)
@@ -429,14 +437,18 @@ def _np_heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_heaviside operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return backend_module.heaviside(*args, **kwargs)
+    func = getattr(backend_module, "heaviside", None)
+    if func:
+        return func(*args, **kwargs)
+    x, y = args[0], args[1]
+    return backend_module.where(x < 0, 0.0, backend_module.where(x > 0, 1.0, y))
 
 
 @global_eager_registry.register("NpTakealongaxis")
@@ -444,12 +456,12 @@ def _np_takealongaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_takealongaxis operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.take_along_axis(*args, **kwargs)
 
@@ -459,11 +471,11 @@ def _piecewise(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _piecewise operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.piecewise(*args, **kwargs)

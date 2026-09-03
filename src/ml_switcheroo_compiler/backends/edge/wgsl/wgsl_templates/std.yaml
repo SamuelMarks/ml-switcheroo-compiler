@@ -1,0 +1,11 @@
+Std:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar sum =\
+    \ 0.0;\nvar sq_sum = 0.0;\nfor (var i = 0u; i < {reduce_size}u; i = i + 1u) {\n\
+    \    let val = buf_in_f32[idx * {reduce_size}u + i];\n    sum = sum + val;\n \
+    \   sq_sum = sq_sum + val * val;\n}\nlet mean = sum / f32({reduce_size}u);\nlet\
+    \ variance = (sq_sum / f32({reduce_size}u)) - (mean * mean);\nbuf_out_f32[idx]\
+    \ = sqrt(variance);\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

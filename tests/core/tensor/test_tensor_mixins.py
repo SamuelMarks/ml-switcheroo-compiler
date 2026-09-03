@@ -9,18 +9,6 @@ from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin, Ten
 class DummyTensor(TensorPropertiesMixin, TensorConversionMixin, TensorIndexingMixin):
     def __init__(self, shape, dtype, device, requires_grad, data=None):
         self._shape = shape
-        self.shape = shape
-        self.dtype = dtype
-        self.device = device
-        self.requires_grad = requires_grad
-        self._dtype = dtype
-        self._device = device
-        self._requires_grad = requires_grad
-        self._data = data
-        self.config = self
-        self.dtype = dtype
-        self.device = device
-        self.requires_grad = requires_grad
         self._dtype = dtype
         self._device = device
         self._requires_grad = requires_grad

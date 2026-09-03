@@ -1,0 +1,3 @@
+Sum:
+  body: "\n// WASM SIMD Sum\nfor (size_t i = 0; i < {out_size}; ++i) {\n    // horizontal\
+    \ sum reduction\n}\n"

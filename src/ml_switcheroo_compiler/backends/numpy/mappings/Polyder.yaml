@@ -1,0 +1,3 @@
+Polyder:
+  ast_template: np.polyder
+  target_api: ''

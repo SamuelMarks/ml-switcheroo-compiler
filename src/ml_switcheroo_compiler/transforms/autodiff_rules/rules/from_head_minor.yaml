@@ -1,0 +1,4 @@
+from_head_minor:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

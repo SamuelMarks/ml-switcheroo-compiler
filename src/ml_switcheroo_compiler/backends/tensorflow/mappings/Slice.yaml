@@ -1,0 +1,2 @@
+Slice:
+  target_api: tf.slice

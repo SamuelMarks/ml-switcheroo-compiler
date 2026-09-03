@@ -1,0 +1,4 @@
+wrap_in_custom_primitive:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -578,14 +578,30 @@ def test_misc_io_functions(tmp_path):
     assert (tmp_path / "dir").exists()
 
 
-def test_image_decoding(tmp_path):
+def test_image_decoding(tmp_path, mocker):
     # The default mock we can hit is the fallback returning a Tensor with empty shape ()
     # since no backend implements it by default in this test scope
     """test_image_decoding."""
-    assert decode_jpeg(b"data").shape == ()
-    assert decode_png(b"data").shape == ()
-    assert decode_gif(b"data").shape == ()
-    assert decode_bmp(b"data").shape == ()
+    import numpy as np
+    import PIL.Image
+
+    class DummyImage:
+        def __init__(self):
+            self.mode = "RGB"
+
+        def load(self):
+            pass
+
+        def convert(self, mode):
+            return self
+
+    mocker.patch.object(PIL.Image, "open", return_value=DummyImage())
+    mocker.patch("numpy.array", return_value=np.array([]))
+
+    assert decode_jpeg(b"data").shape == (0,)
+    assert decode_png(b"data").shape == (0,)
+    assert decode_gif(b"data").shape == (0,)
+    assert decode_bmp(b"data").shape == (0,)
 
 
 def test_eager_base64_2():

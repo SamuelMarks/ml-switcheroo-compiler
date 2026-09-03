@@ -128,7 +128,7 @@ def setup(app: "sphinx.application.Sphinx") -> dict[str, Union[str, bool]]:
     CSS and JavaScript assets for the playground's interactive features.
 
     Args:
-        app: The Sphinx application object.
+        app: The Sphinx application.
 
     Returns:
         A dictionary containing extension metadata, including the

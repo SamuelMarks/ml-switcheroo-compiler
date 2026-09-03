@@ -1,0 +1,2 @@
+BesselY0:
+  target_api: np.bessely0

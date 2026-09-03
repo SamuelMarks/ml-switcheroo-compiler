@@ -1,0 +1,4 @@
+merge_nested_ts_specs:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

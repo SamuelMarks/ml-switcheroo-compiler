@@ -1,0 +1,2 @@
+Searchsorted:
+  target_api: tf.searchsorted

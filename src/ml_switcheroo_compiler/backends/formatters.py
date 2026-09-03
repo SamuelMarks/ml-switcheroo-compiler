@@ -2,7 +2,6 @@
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
@@ -12,7 +11,7 @@ class FormatterContext:
     prefix: str
     op_type: str
     input_vars: list[str]
-    kwargs: dict[str, Any]
+    kwargs: dict[str, object]
     axis_kwarg: str = "axis"
     keepdims_kwarg: str = "keepdims"
 
@@ -21,7 +20,7 @@ class OpFormatter:
     """Formatter for backend operation strings."""
 
     @staticmethod
-    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, Any]) -> str:
+    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, object]) -> str:
         """Replace format placeholders with variables and kwargs.
 
         Args:
@@ -76,18 +75,18 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        node: Any,
+        node: object,
         input_vars: list[str],
         prefix: str,
-        **kwargs: Any,
+        **kwargs: object,
     ) -> str:
         """Generate fallback code for an unsupported operation.
 
         Args:
-            node (Any): The IR node.
+            node: The IR node.
             input_vars (list[str]): List of input variables.
             prefix (str): Backend prefix.
-            **kwargs (Any): Node attributes.
+            **kwargs: Node attributes.
 
         Returns:
             str: Generated python code.

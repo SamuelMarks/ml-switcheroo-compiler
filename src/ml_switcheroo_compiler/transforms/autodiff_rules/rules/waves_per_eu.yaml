@@ -1,0 +1,4 @@
+waves_per_eu:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

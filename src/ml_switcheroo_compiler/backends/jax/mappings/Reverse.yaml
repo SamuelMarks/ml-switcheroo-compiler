@@ -1,0 +1,2 @@
+Reverse:
+  target_api: jax.numpy.reverse

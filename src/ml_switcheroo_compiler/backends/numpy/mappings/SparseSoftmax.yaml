@@ -1,0 +1,3 @@
+SparseSoftmax:
+  ast_template: tf.sparse.softmax
+  target_api: ''

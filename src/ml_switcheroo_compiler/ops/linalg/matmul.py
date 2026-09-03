@@ -194,8 +194,8 @@ def convolve(a, v, mode: str = "full"):
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
-        a (object): The a parameter.
-        v (object): The v parameter.
+        a (Any): The a parameter.
+        v (Any): The v parameter.
         mode (str): The mode parameter.
 
     Returns:
@@ -219,11 +219,11 @@ def matvec(a, b, transpose_a=False, adjoint_a=False, **kwargs):
     """Matrix-vector multiplication.
 
     Args:
-        a (object): The a parameter.
-        b (object): The b parameter.
-        transpose_a (object): The transpose_a parameter.
-        adjoint_a (object): The adjoint_a parameter.
-        **kwargs (object): Keyword args.
+        a (Any): The a parameter.
+        b (Any): The b parameter.
+        transpose_a (Any): The transpose_a parameter.
+        adjoint_a (Any): The adjoint_a parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -235,8 +235,8 @@ def multi_dot(arrays, name=None):
     """Evaluate multi_dot operation.
 
     Args:
-        arrays (object): The arrays parameter.
-        name (object): The name parameter.
+        arrays (Any): The arrays parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -252,10 +252,10 @@ def vecdot(x, y, axis=-1, name=None):
     """Evaluate vecdot operation.
 
     Args:
-        x (object): The x parameter.
-        y (object): The y parameter.
-        axis (object): The axis parameter.
-        name (object): The name parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        axis (Any): The axis parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -283,8 +283,8 @@ def addmm(
     """Perform a matrix multiplication of the matrices mat1 and mat2.
 
     Args:
-        beta (object): The beta parameter.
-        alpha (object): The alpha parameter.
+        beta (Any): The beta parameter.
+        alpha (Any): The alpha parameter.
         input (Tensor): The input parameter.
         mat1 (Tensor): The mat1 parameter.
         mat2 (Tensor): The mat2 parameter.
@@ -312,9 +312,9 @@ class BlockMaskedMm(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -331,7 +331,7 @@ def _unwrap(x):
     """Unwrap a Tensor to its underlying data if it's a Tensor.
 
     Args:
-        x (object): The object to unwrap.
+        x (Any): The Any to unwrap.
 
     Returns: Tensor: The unwrapped data.
     """
@@ -350,7 +350,7 @@ def block_masked_mm(
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
         block_size (int): The block_size parameter.
-        masks (object): The masks parameter.
+        masks (Any): The masks parameter.
 
     Returns:
         Tensor: Result.
@@ -393,11 +393,11 @@ class GatherMm(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            lhs_indices (object): The lhs_indices parameter.
-            rhs_indices (object): The rhs_indices parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            lhs_indices (Any): The lhs_indices parameter.
+            rhs_indices (Any): The rhs_indices parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -484,10 +484,10 @@ class SegmentedMm(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            segments (object): The segments parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            segments (Any): The segments parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -28,8 +28,8 @@ def perspective_transform(
         images (Tensor): The images parameter.
         start_points (Tensor): The start_points parameter.
         end_points (Tensor): The end_points parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -71,8 +71,8 @@ def elastic_transform(
     Args:
         images (Tensor): The images parameter.
         displacement (Tensor): The displacement parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -146,9 +146,9 @@ class ElasticTransform(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        images (object): The images parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        images (Any): The images parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

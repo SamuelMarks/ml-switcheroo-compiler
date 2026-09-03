@@ -1,0 +1,4 @@
+array_equiv:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

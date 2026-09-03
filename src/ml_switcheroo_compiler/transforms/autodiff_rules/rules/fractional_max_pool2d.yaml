@@ -1,0 +1,4 @@
+fractional_max_pool2d:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

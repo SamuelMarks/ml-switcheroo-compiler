@@ -1,0 +1,4 @@
+convert_conv2d_weight_memory_format:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

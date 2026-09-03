@@ -1,0 +1,2 @@
+SegmentProd:
+  target_api: np.segmentprod

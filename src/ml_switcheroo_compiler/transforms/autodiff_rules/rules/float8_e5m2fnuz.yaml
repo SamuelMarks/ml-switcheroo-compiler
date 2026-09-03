@@ -1,0 +1,4 @@
+float8_e5m2fnuz:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

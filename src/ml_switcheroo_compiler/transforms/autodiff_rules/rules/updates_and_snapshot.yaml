@@ -1,0 +1,4 @@
+updates_and_snapshot:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

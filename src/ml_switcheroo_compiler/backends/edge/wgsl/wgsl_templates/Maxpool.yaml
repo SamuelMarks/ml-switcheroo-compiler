@@ -1,0 +1,9 @@
+MaxPool:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar max_val\
+    \ = -3.402823466e+38f;\nfor (var k = 0u; k < {kernel_size}u; k = k + 1u) {\n \
+    \   let in_idx = idx * {stride}u + k;\n    let val = buf_in_f32[in_idx];\n   \
+    \ if (val > max_val) { max_val = val; }\n}\nbuf_out_f32[idx] = max_val;\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

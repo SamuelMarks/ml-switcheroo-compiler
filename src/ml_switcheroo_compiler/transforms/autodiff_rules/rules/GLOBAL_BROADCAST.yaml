@@ -1,0 +1,4 @@
+GLOBAL_BROADCAST:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

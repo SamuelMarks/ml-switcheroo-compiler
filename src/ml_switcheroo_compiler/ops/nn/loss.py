@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Calculate loss functions."""
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from ml_switcheroo_compiler import ops
 
@@ -352,8 +352,8 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
         """Infers the output shape of the AdaptiveLogSoftmaxWithLoss operation.
 
         Args:
-            *args (object): The arguments passed to the operation.
-            **kwargs (object): The keyword arguments passed to the operation.
+            *args (Any): The arguments passed to the operation.
+            **kwargs (Any): The keyword arguments passed to the operation.
 
         Returns: Tensor: A tuple containing the inferred shape for output and loss.
         """
@@ -367,7 +367,7 @@ def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cut
     Args:
         input (Tensor): The input parameter.
         target (Tensor): The target parameter.
-        cutoffs (object): The cutoffs parameter.
+        cutoffs (Any): The cutoffs parameter.
         add_cluster_prob (bool): The add_cluster_prob parameter.
 
     Returns:
@@ -418,7 +418,7 @@ def adaptive_log_softmax_with_loss(
     Args:
         input (Tensor): The input tensor.
         target (Tensor): The target tensor.
-        cutoffs (object): The cutoff boundaries used to split the vocabulary into clusters.
+        cutoffs (Any): The cutoff boundaries used to split the vocabulary into clusters.
         add_cluster_prob (bool): Whether to include cluster probabilities.
 
     Returns:
@@ -448,10 +448,10 @@ def log_poisson_loss(targets, log_input, compute_full_loss=False, name=None):
     """Compute log Poisson loss.
 
     Args:
-        targets (object): The ground truth target values.
-        log_input (object): The logarithm of the predictions.
-        compute_full_loss (object): Whether to compute the full loss.
-        name (object): An optional name for the operation.
+        targets (Any): The ground truth target values.
+        log_input (Any): The logarithm of the predictions.
+        compute_full_loss (Any): Whether to compute the full loss.
+        name (Any): An optional name for the operation.
 
     Returns: Tensor: The computed log Poisson loss.
     """
@@ -462,10 +462,10 @@ def in_top_k(targets, predictions, k, name=None):
     """Says whether the targets are in the top K predictions.
 
     Args:
-        targets (object): The ground truth target values.
-        predictions (object): The predictions.
-        k (object): The number of top elements to consider.
-        name (object): An optional name for the operation.
+        targets (Any): The ground truth target values.
+        predictions (Any): The predictions.
+        k (Any): The number of top elements to consider.
+        name (Any): An optional name for the operation.
 
     Returns: Tensor: A boolean tensor indicating if the targets are in the top K predictions.
     """
@@ -476,8 +476,8 @@ def l2_loss(t, name=None):
     """Compute half the L2 norm of a tensor without the sqrt.
 
     Args:
-        t (object): The input tensor.
-        name (object): An optional name for the operation.
+        t (Any): The input tensor.
+        name (Any): An optional name for the operation.
 
     Returns: Tensor: The computed L2 loss.
     """
@@ -488,8 +488,8 @@ def scale_regularization_loss(regularization_loss, name=None):
     """Scales the sum of the given regularization losses by number of replicas.
 
     Args:
-        regularization_loss (object): The regularization loss to scale.
-        name (object): An optional name for the operation.
+        regularization_loss (Any): The regularization loss to scale.
+        name (Any): An optional name for the operation.
 
     Returns: Tensor: The scaled regularization loss.
     """
@@ -515,8 +515,8 @@ class InTopK(OpDef):
         """Infers the output shape of the InTopK operation.
 
         Args:
-            *args (object): The arguments passed to the operation.
-            **kwargs (object): The keyword arguments passed to the operation.
+            *args (Any): The arguments passed to the operation.
+            **kwargs (Any): The keyword arguments passed to the operation.
 
         Returns: Tensor: The inferred shape.
         """

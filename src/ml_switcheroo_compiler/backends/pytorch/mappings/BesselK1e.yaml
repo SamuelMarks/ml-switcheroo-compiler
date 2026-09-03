@@ -1,0 +1,2 @@
+BesselK1e:
+  target_api: torch.special.scaled_modified_bessel_k1

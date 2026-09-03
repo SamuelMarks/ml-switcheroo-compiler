@@ -1,0 +1,4 @@
+tf_wrap_with_input_names:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -7,7 +7,7 @@ from __future__ import annotations
 """Control flow operators dispatcher."""
 
 
-from typing import Callable
+from typing import Any, Callable
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -62,9 +62,9 @@ def while_loop(cond_fn, body_fn, init_val):
     """Evaluate while_loop operation.
 
     Args:
-        cond_fn (object): The cond_fn parameter.
-        body_fn (object): The body_fn parameter.
-        init_val (object): The init_val parameter.
+        cond_fn (Any): The cond_fn parameter.
+        body_fn (Any): The body_fn parameter.
+        init_val (Any): The init_val parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -78,10 +78,10 @@ def scan(f, init, xs, length: int | None = None):
     """Evaluate scan operation.
 
     Args:
-        f (object): The f parameter.
-        init (object): The init parameter.
-        xs (object): The xs parameter.
-        length (object): The length parameter.
+        f (Any): The f parameter.
+        init (Any): The init parameter.
+        xs (Any): The xs parameter.
+        length (Any): The length parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -97,7 +97,7 @@ def map_fn(fn, elems: Tensor, dtype: DType | None = None):
     Args:
         fn (Callable): The fn parameter.
         elems (Tensor): The elems parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -112,7 +112,7 @@ def pmap(func, axis_name: str | None = None):
 
     Args:
         func (Callable): The func parameter.
-        axis_name (object): The axis_name parameter.
+        axis_name (Any): The axis_name parameter.
 
     Returns:
         Callable: Result.
@@ -126,7 +126,7 @@ def stop_gradient(x):
     """Evaluate stop_gradient operation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -140,7 +140,7 @@ def assert_value(condition, message: str = "") -> None:
     """Evaluate assert_value operation.
 
     Args:
-        condition (object): The condition parameter.
+        condition (Any): The condition parameter.
         message (str): The message parameter.
     """
     if config.eager_mode:
@@ -157,8 +157,8 @@ class AssertOp(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            condition (object): The condition parameter.
-            **kwargs (object): Keyword args.
+            condition (Any): The condition parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -170,10 +170,10 @@ def fori_loop(lower, upper, body_fun, init_val):
     """Evaluate fori_loop operation.
 
     Args:
-        lower (object): The lower parameter.
-        upper (object): The upper parameter.
-        body_fun (object): The body_fun parameter.
-        init_val (object): The init_val parameter.
+        lower (Any): The lower parameter.
+        upper (Any): The upper parameter.
+        body_fun (Any): The body_fun parameter.
+        init_val (Any): The init_val parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -183,7 +183,7 @@ def fori_loop(lower, upper, body_fun, init_val):
         """Evaluate cond_fn operation.
 
         Args:
-        val (object): The val parameter.
+        val (Any): The val parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -195,7 +195,7 @@ def fori_loop(lower, upper, body_fun, init_val):
         """Evaluate body_wrapper operation.
 
         Args:
-        val (object): The val parameter.
+        val (Any): The val parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -239,7 +239,7 @@ def switch(index: Tensor, branches, *operands):
     Args:
         index (Tensor): The index parameter.
         branches (list): The branches parameter.
-        *operands (object): Positional args.
+        *operands (Any): Positional args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -300,8 +300,8 @@ def custom_gradient(func):
         """Evaluate wrapper operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -328,8 +328,8 @@ def custom_gradient(func):
                 """Evaluate infer_shape operation.
 
                 Args:
-                    *args (object): Positional args.
-                    **kwargs (object): Keyword args.
+                    *args (Any): Positional args.
+                    **kwargs (Any): Keyword args.
 
                 Returns:
                 tuple[int, ...]: Result.
@@ -341,8 +341,8 @@ def custom_gradient(func):
             """VJP function for dynamic custom gradient.
 
             Args:
-                graph (object): The IR graph.
-                node (object): The node.
+                graph (Any): The IR graph.
+                node (Any): The node.
                 cotangent (str): Cotangent.
 
             Returns:
@@ -429,8 +429,8 @@ class DebugInfs(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -448,8 +448,8 @@ class DebugNans(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -471,10 +471,10 @@ class SwitchOp(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            index (object): Index.
-            branches (object): Branches.
-            *operands (object): Operands.
-            **kwargs (object): Keyword args.
+            index (Any): Index.
+            branches (Any): Branches.
+            *operands (Any): Operands.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -492,8 +492,8 @@ class ScanOp(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -511,8 +511,8 @@ class AssociativeScan(OpDef):
         """Evaluate infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -524,8 +524,8 @@ def associative_scan(*args, **kwargs):
     """Evaluate associative_scan operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -549,10 +549,10 @@ def scan_bind(f, xs, *args, **kwargs):
     """Bind arguments to a scanning function prior to execution.
 
     Args:
-        f (object): The function to bind.
-        xs (object): The elements to scan over.
-        *args (object): Additional positional arguments.
-        **kwargs (object): Additional keyword arguments.
+        f (Any): The function to bind.
+        xs (Any): The elements to scan over.
+        *args (Any): Additional positional arguments.
+        **kwargs (Any): Additional keyword arguments.
 
     Returns: Tensor: The bound function along with its inputs.
     """

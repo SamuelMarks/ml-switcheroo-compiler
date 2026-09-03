@@ -1,0 +1,2 @@
+Psum:
+  target_api: '''{0}.psum({1})'''

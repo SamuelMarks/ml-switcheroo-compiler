@@ -1,11 +1,75 @@
 """eager_registry.py module."""
 
-from typing import Callable, Optional
+import builtins
+from typing import Callable, Optional, Protocol, Union
+
+
+class BackendArray(Protocol):
+    """Protocol for a backend array object."""
+
+    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "BackendArray":
+        """Get an item from the array."""
+        ...
+
+    def __setitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None], value: "BackendArray") -> None:
+        """Set an item in the array."""
+        ...
+
+    def __add__(self, other: "EagerValue") -> "BackendArray":
+        """Add two arrays."""
+        ...
+
+    def __sub__(self, other: "EagerValue") -> "BackendArray":
+        """Subtract two arrays."""
+        ...
+
+    def __mul__(self, other: "EagerValue") -> "BackendArray":
+        """Multiply two arrays."""
+        ...
+
+    def __truediv__(self, other: "EagerValue") -> "BackendArray":
+        """Divide two arrays."""
+        ...
+
+    def __lt__(self, other: "EagerValue") -> "EagerValue":
+        """Compare less than."""
+        ...
+
+    def __le__(self, other: "EagerValue") -> "EagerValue":
+        """Compare less than or equal."""
+        ...
+
+    def __gt__(self, other: "EagerValue") -> "EagerValue":
+        """Compare greater than."""
+        ...
+
+    def __ge__(self, other: "EagerValue") -> "EagerValue":
+        """Compare greater than or equal."""
+        ...
+
+    def __eq__(self, other: "EagerValue") -> "EagerValue":
+        """Compare equality."""
+        ...
+
+    def __pow__(self, other: "EagerValue") -> "BackendArray":
+        """Power operation."""
+        ...
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Get the shape of the array."""
+        ...
+
+    @property
+    def dtype(self) -> "BackendArray":
+        """Get the dtype of the array."""
+        ...
+
+
+EagerValue = Union[int, float, list, tuple, str, bool, BackendArray, None]
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Eager backend registry."""
-
-from typing import Any, Callable, Optional
 
 
 class EagerOpRegistry:
@@ -13,19 +77,19 @@ class EagerOpRegistry:
 
     def __init__(self) -> None:
         """Initialize the registry."""
-        self._registry: dict[str, Callable[..., Any]] = {}
+        self._registry: dict[str, Callable[..., EagerValue]] = {}
 
-    def register(self, op_type: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def register(self, op_type: str) -> Callable[[Callable[..., EagerValue]], Callable[..., EagerValue]]:
         """Register an eager operation.
 
         Args:
             op_type (str): The op_type parameter.
 
         Returns:
-            Callable[[Callable[..., Any]], Callable[..., Any]]: Result.
+            Callable[[Callable[..., EagerValue]], Callable[..., EagerValue]]: Result.
         """
 
-        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(func: Callable[..., EagerValue]) -> Callable[..., EagerValue]:
             """Evaluate decorator operation.
 
             Args:
@@ -39,26 +103,27 @@ class EagerOpRegistry:
 
         return decorator
 
-    def get(self, op_type: str) -> Optional[Callable[..., Any]]:
+    def get(self, op_type: str) -> Optional[Callable[..., EagerValue]]:
         """Get an eager operation.
 
         Args:
             op_type (str): The name of the operation.
 
         Returns:
-            Optional[Callable[..., Any]]: The eager function or None.
+            Optional[Callable[..., EagerValue]]: The eager function or None.
         """
         return self._registry.get(op_type)
 
-    def dispatch(self, op_type: str, *args: Any, **kwargs: Any) -> Any:
+    def dispatch(self, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Dispatch an eager operation.
 
         Args:
             op_type (str): The name of the operation.
-            *args (Any): Positional arguments.
-            **kwargs (Any): Keyword arguments.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
-        Returns: Any: The result.
+        Returns:
+            EagerValue: The result.
 
         Raises:
             ValueError: If the operation is not found in the registry.
@@ -112,7 +177,7 @@ pure_python_eager_registry = EagerOpRegistry()
 
 
 @global_eager_registry.register("CustomVJP")
-def _eager_custom_vjp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_custom_vjp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Custom vjp."""
     # Just return args because hook fwd is identity or simple.
     # Actually, for standard custom_vjp, we might need to run fwd_fn.
@@ -125,14 +190,18 @@ def _eager_custom_vjp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ProcessCustomVJPCall")
-def _eager_process_custom_vjp_call(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_process_custom_vjp_call(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Process custom vjp."""
     bwd_fn = kwargs["bwd_fn"]
-    return bwd_fn(None, *args)
+    if callable(bwd_fn):
+        return bwd_fn.__call__(None, *args)
+    return None
 
 
 @global_eager_registry.register("TupleGetItem")
-def _eager_tuple_get_item(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _eager_tuple_get_item(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Tuple get item."""
-    index = kwargs.get("index", 0)
-    return args[0][index]
+    index: int = int(getattr(kwargs.get("index", 0), "__int__", lambda: 0)())
+    if isinstance(args[0], (tuple, list)):
+        return args[0][index]
+    return None

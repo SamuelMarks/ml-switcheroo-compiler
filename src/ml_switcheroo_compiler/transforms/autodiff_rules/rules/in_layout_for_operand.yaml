@@ -1,0 +1,4 @@
+in_layout_for_operand:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

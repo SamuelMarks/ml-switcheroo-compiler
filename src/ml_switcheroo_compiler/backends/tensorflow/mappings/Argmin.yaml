@@ -1,0 +1,2 @@
+Argmin:
+  target_api: tf.argmin

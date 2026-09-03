@@ -1,0 +1,2 @@
+DynamicSlice:
+  target_api: np.dynamicslice

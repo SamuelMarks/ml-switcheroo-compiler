@@ -20,8 +20,8 @@ import ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.lookups  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.loss_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary  # noqa: F401  # noqa: F401  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_binary  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_extended  # noqa: F401  # noqa: F401  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_fft  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_logical  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_logical_reductions  # noqa: F401
@@ -55,14 +55,14 @@ import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F4
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
 
 
-def execute_op(cls: type, op_type: str, *args, **kwargs):
+def execute_op(cls: type, op_type: str, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> typing.Union[tuple[int, ...], np.ndarray, list, tuple, int, float, str, bool, None]:
     """Evaluate execute_op operation.
 
     Args:
         cls (type): Class.
         op_type (str): The op_type parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
+        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -81,58 +81,52 @@ def execute_op(cls: type, op_type: str, *args, **kwargs):
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
         func = getattr(np, snake)
     except AttributeError:
-        try:
-            raise AttributeError()
-        except AttributeError:
-            try:
-                raise AttributeError()
-            except AttributeError:
-                from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
-                msg = f"Operation {op_type} is not implemented in interpreter."
-                raise UnimplementedMathError(msg) from None
+        msg = f"Operation {op_type} is not implemented in interpreter."
+        raise UnimplementedMathError(msg) from None
     return func(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Repeat")
-def repeat(np, *args, **kwargs):
+def repeat(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> np.ndarray:
     """Repeat.
 
     Args:
-        np (object): The np parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The np parameter.
+        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
+        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    return np.repeat(*args, **kwargs)
+    return np_mod.repeat(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Searchsorted")
-def searchsorted(np, *args, **kwargs):
+def searchsorted(np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> np.ndarray:
     """Searchsorted.
 
     Args:
-        np (object): The np parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The np parameter.
+        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
+        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    return np.searchsorted(*args, **kwargs)
+    return np_mod.searchsorted(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod,
-    x,
+    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None],
+    x: np.ndarray,
     num_or_size_splits: typing.Union[int, list[int], tuple[int, ...]],
     axis: int = 0,
-    *args,
-    **kwargs,
-):
+    *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray],
+    **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray],
+) -> list[np.ndarray]:
     """Split array.
 
     Args:
@@ -150,7 +144,9 @@ def split(
 
 
 @numpy_eager_registry.register("Squeeze")
-def squeeze(np_mod, x, axis: typing.Optional[int] = None, *args, **kwargs):
+def squeeze(
+    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, axis: typing.Optional[int] = None, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
+) -> np.ndarray:
     """Squeeze array.
 
     Args:
@@ -167,7 +163,9 @@ def squeeze(np_mod, x, axis: typing.Optional[int] = None, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Stack")
-def stack(np_mod, arrays, axis: int = 0, *args, **kwargs):
+def stack(
+    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], arrays: typing.Sequence[np.ndarray], axis: int = 0, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
+) -> np.ndarray:
     """Stack arrays.
 
     Args:
@@ -184,7 +182,9 @@ def stack(np_mod, arrays, axis: int = 0, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Unstack")
-def unstack(np_mod, x, axis: int = 0, *args, **kwargs):
+def unstack(
+    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, axis: int = 0, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
+) -> tuple[np.ndarray, ...]:
     """Unstack array.
 
     Args:
@@ -205,77 +205,18 @@ def unstack(np_mod, x, axis: int = 0, *args, **kwargs):
     return tuple(x)
 
 
-@numpy_eager_registry.register("AllGather")
-def all_gather(np_mod, tensor, *args, **kwargs):
-    """Simulate AllGather in eager mode.
-
-    Args:
-        np_mod (object): The numpy module.
-        tensor (object): The tensor to gather.
-        *args (object): Additional args.
-        **kwargs (object): Additional kwargs.
-
-    Returns: np.ndarray: The gathered tensor (in a simulated single-node env, just expanded).
-    """
-    axis = kwargs.get("axis", 0)
-    return np_mod.expand_dims(tensor, axis=axis)
-
-
-@numpy_eager_registry.register("AllReduce")
-def all_reduce(np_mod, tensor, *args, **kwargs):
-    """Simulate AllReduce in eager mode.
-
-    Args:
-        np_mod (object): The numpy module.
-        tensor (object): The tensor to reduce.
-        *args (object): Additional args.
-        **kwargs (object): Additional kwargs.
-
-    Returns: np.ndarray: The reduced tensor.
-    """
-    return tensor
-
-
-@numpy_eager_registry.register("ReduceScatter")
-def reduce_scatter(np_mod, tensor, *args, **kwargs):
-    """Simulate ReduceScatter in eager mode.
-
-    Args:
-        np_mod (object): The numpy module.
-        tensor (object): The tensor to scatter.
-        *args (object): Additional args.
-        **kwargs (object): Additional kwargs.
-
-    Returns: np.ndarray: The scattered tensor.
-    """
-    return tensor
-
-
-@numpy_eager_registry.register("AllToAll")
-def all_to_all(np_mod, tensor, *args, **kwargs):
-    """Simulate AllToAll in eager mode.
-
-    Args:
-        np_mod (object): The numpy module.
-        tensor (object): The tensor to all-to-all.
-        *args (object): Additional args.
-        **kwargs (object): Additional kwargs.
-
-    Returns: np.ndarray: The result tensor.
-    """
-    return tensor
-
-
 @numpy_eager_registry.register("Equal")
-def equal(np_mod, x, y, *args, **kwargs):
+def equal(
+    np_mod: typing.Union[str, int, float, list, tuple, dict, bool, None], x: np.ndarray, y: np.ndarray, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]
+) -> typing.Union[np.ndarray, bool]:
     """Check if x and y are equal.
 
     Args:
-        np_mod (object): The numpy module.
-        x (object): The first array.
-        y (object): The second array.
-        *args (object): Additional arguments.
-        **kwargs (object): Additional keyword arguments.
+        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The numpy module.
+        x (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The first array.
+        y (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The second array.
+        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Additional arguments.
+        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Additional keyword arguments.
 
     Returns: np.ndarray: A boolean array where x == y.
     """

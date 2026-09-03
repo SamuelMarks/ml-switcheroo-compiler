@@ -1,0 +1,4 @@
+async_prefetch:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

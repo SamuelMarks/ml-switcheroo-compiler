@@ -3,7 +3,7 @@
 
 """RNN operations."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add

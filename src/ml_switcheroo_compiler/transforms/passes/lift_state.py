@@ -1,44 +1,47 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Lift State pass."""
 
+import typing
 from collections.abc import Iterable
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode
+
+StateValue = typing.Union[int, float, str, bool, list, tuple, dict, None]
 
 
-def flatten_state_dict(state_dict, prefix: str = ""):
+def flatten_state_dict(state_dict: dict[str, typing.Union[StateValue, dict[str, StateValue]]], prefix: str = "") -> dict[str, StateValue]:
     """Flatten a nested state dictionary (like flax.nnx.State) into a flat map.
 
     Args:
-        state_dict (Dict[str, object]): Nested state dict
-        prefix (str): Prefix for keys
+        state_dict: Nested state dict
+        prefix: Prefix for keys
 
     Returns:
-        Dict[str, object]: Flattened state map
+        Flattened state map
     """
-    flat = {}
+    flat: dict[str, StateValue] = {}
     for k, v in state_dict.items():
-        new_key = f"{prefix}.{k}" if prefix else k
+        new_key: str = f"{prefix}.{k}" if prefix else k
         if isinstance(v, dict):
-            flat.update(flatten_state_dict(v, new_key))
+            flat.update(flatten_state_dict(typing.cast(dict[str, typing.Union[StateValue, dict[str, StateValue]]], v), new_key))
         else:
             flat[new_key] = v
     return flat
 
 
-def unflatten_state_dict(flat_state):
+def unflatten_state_dict(flat_state: dict[str, StateValue]) -> dict[str, typing.Union[StateValue, dict[str, StateValue]]]:
     """Unflatten a state dict back to nested structure.
 
     Args:
-        flat_state (Dict[str, object]): Flattened state map
+        flat_state: Flattened state map
 
     Returns:
-        Dict[str, object]: Nested state dict
+        Nested state dict
     """
-    nested = {}
+    nested: dict[str, typing.Union[StateValue, dict[str, StateValue]]] = {}
     for k, v in flat_state.items():
-        parts = k.split(".")
-        d = nested
+        parts: list[str] = k.split(".")
+        d: dict[str, typing.Any] = nested  # using typing.Any locally for structural dict construction
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
@@ -47,27 +50,27 @@ def unflatten_state_dict(flat_state):
     return nested
 
 
-def _get_nodes(block) -> Iterable[IRNode]:
+def _get_nodes(block: typing.Union[IRGraph, IRBlock]) -> Iterable[IRNode]:
     """Evaluate _get_nodes operation.
 
     Args:
-        block (object): The block parameter.
+        block (typing.Union[IRGraph, IRBlock]): The block parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Iterable[IRNode]: Result.
     """
-    nodes = getattr(block, "nodes", [])
+    nodes: typing.Union[list[IRNode], dict[str, IRNode]] = getattr(block, "nodes", [])
     if isinstance(nodes, dict):
         return nodes.values()
     return nodes
 
 
-def _lift_node(node: IRNode, block) -> bool:
+def _lift_node(node: IRNode, block: typing.Union[IRGraph, IRBlock]) -> bool:
     """Evaluate _lift_node operation.
 
     Args:
         node (IRNode): The node parameter.
-        block (object): The block parameter.
+        block (typing.Union[IRGraph, IRBlock]): The block parameter.
 
     Returns:
         bool: Result.
@@ -93,21 +96,21 @@ def _lift_node(node: IRNode, block) -> bool:
     return False
 
 
-def _lift_block_ir(block) -> bool:
+def _lift_block_ir(block: typing.Union[IRGraph, IRBlock]) -> bool:
     """Evaluate _lift_block_ir operation.
 
     Args:
-        block (object): The block parameter.
+        block (typing.Union[IRGraph, IRBlock]): The block parameter.
 
     Returns:
         bool: Result.
     """
-    mod = False
+    mod: bool = False
     for node in _get_nodes(block):
         mod = _lift_node(node, block) or mod
         for attr_val in node.attributes.values():
             if hasattr(attr_val, "nodes"):
-                mod = _lift_block_ir(attr_val) or mod
+                mod = _lift_block_ir(typing.cast(typing.Union[IRGraph, IRBlock], attr_val)) or mod
     return mod
 
 

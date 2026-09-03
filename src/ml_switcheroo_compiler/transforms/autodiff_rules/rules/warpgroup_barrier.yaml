@@ -1,0 +1,4 @@
+warpgroup_barrier:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+Softsign:
+  target_api: tf.math.softsign

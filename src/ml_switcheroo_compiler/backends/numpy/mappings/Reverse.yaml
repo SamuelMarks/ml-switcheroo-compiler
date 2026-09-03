@@ -1,0 +1,3 @@
+Reverse:
+  ast_template: np.flip
+  target_api: ''

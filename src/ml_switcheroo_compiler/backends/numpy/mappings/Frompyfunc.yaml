@@ -1,0 +1,3 @@
+Frompyfunc:
+  ast_template: np.frompyfunc
+  target_api: ''

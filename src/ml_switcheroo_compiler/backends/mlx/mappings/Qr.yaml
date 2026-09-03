@@ -1,0 +1,2 @@
+Qr:
+  target_api: '''mx.linalg.qr({0})'''

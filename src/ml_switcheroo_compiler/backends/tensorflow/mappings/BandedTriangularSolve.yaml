@@ -1,0 +1,2 @@
+BandedTriangularSolve:
+  target_api: tf.linalg.banded_triangular_solve

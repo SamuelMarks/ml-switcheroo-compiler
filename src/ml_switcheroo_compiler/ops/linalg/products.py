@@ -17,8 +17,8 @@ class BandPart(OpDef):
         """Infer shape.
 
         Args:
-            input (object): The input parameter.
-            **kwargs (object): Keyword args.
+            input (Any): The input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -37,8 +37,8 @@ class Diag(OpDef):
         """Infer shape.
 
         Args:
-            input (object): The input parameter.
-            **kwargs (object): Keyword args.
+            input (Any): The input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -62,9 +62,9 @@ class Matmul(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The first input tensor.
+            b (Any): The second input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -81,7 +81,7 @@ def _has_valid_shape(obj) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
-        obj (object): The obj parameter.
+        obj (Any): The obj parameter.
 
     Returns:
         bool: Result.
@@ -100,8 +100,8 @@ class MatrixPower(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -115,8 +115,8 @@ class MatrixPower(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The evaluated output resulting from this operation.
         """
@@ -135,8 +135,8 @@ class Trace(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -160,8 +160,8 @@ class MatrixRank(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -183,8 +183,8 @@ class MatrixTranspose(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -205,8 +205,8 @@ class Adjoint(OpDef):
         """Infer shape.
 
         Args:
-            matrix (object): The matrix parameter.
-            **kwargs (object): Keyword args.
+            matrix (Any): The matrix parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -227,8 +227,8 @@ class Diagonal(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -246,8 +246,8 @@ class EinsumPath(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -266,8 +266,8 @@ class MultiDot(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

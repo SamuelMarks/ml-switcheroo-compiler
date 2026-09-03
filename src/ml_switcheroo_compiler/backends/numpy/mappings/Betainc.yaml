@@ -1,0 +1,3 @@
+Betainc:
+  ast_template: getattr(backend_module, 'betainc', None)
+  target_api: ''

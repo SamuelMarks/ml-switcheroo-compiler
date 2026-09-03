@@ -1,0 +1,3 @@
+TridiagonalSolve:
+  target_api: '''mx.linalg.solve(mx.diag({1}) + mx.diag({0}[..., 1:], k=-1) + mx.diag({2}[...,
+    :-1], k=1), {3})'''

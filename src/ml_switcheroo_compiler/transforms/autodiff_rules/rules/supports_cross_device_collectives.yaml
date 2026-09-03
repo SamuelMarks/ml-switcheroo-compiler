@@ -1,0 +1,4 @@
+supports_cross_device_collectives:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

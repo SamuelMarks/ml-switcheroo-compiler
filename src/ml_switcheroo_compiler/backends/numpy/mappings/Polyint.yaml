@@ -1,0 +1,3 @@
+Polyint:
+  ast_template: np.polyint
+  target_api: ''

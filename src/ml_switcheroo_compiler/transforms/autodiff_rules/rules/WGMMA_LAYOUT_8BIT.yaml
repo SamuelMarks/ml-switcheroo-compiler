@@ -1,0 +1,4 @@
+WGMMA_LAYOUT_8BIT:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

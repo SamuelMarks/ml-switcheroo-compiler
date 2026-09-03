@@ -1,0 +1,2 @@
+Histogramdd:
+  target_api: '''mx.histogramdd({0})'''

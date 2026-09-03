@@ -1,0 +1,4 @@
+trim_zeros_tol:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,16 @@
+Conv3D:
+  body: "\nlet x = global_id.x;\nlet y = global_id.y;\nlet z = global_id.z;\nif (x\
+    \ >= {out_w}u || y >= {out_h}u || z >= {out_d}u) { return; }\nvar acc: f32 = 0.0;\n\
+    for (var kz = 0u; kz < {kernel_d}u; kz = kz + 1u) {\n    for (var ky = 0u; ky\
+    \ < {kernel_h}u; ky = ky + 1u) {\n        for (var kx = 0u; kx < {kernel_w}u;\
+    \ kx = kx + 1u) {\n            let in_x = x * {stride_w}u + kx;\n            let\
+    \ in_y = y * {stride_h}u + ky;\n            let in_z = z * {stride_d}u + kz;\n\
+    \            let in_idx = in_z * ({in_w}u * {in_h}u) + in_y * {in_w}u + in_x;\n\
+    \            let w_idx = kz * ({kernel_w}u * {kernel_h}u) + ky * {kernel_w}u +\
+    \ kx;\n            acc = acc + buf_in_f32[in_idx] * buf_weight_f32[w_idx];\n \
+    \       }\n    }\n}\nlet out_idx = z * ({out_w}u * {out_h}u) + y * {out_w}u +\
+    \ x;\nbuf_out_f32[out_idx] = acc;\n"
+  workgroup_size:
+  - 4
+  - 4
+  - 4

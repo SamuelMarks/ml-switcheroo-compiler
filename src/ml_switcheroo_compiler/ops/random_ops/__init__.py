@@ -17,8 +17,8 @@ class Binomial(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -36,8 +36,8 @@ class Cauchy(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -54,8 +54,8 @@ class Chisquare(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -72,8 +72,8 @@ class Dirichlet(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -90,8 +90,8 @@ class DoubleSidedMaxwell(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -108,8 +108,8 @@ class Exponential(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -126,8 +126,8 @@ class F(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -144,8 +144,8 @@ class Gumbel(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -162,8 +162,8 @@ class Laplace(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -180,8 +180,8 @@ class Loggamma(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -198,8 +198,8 @@ class Logistic(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -216,8 +216,8 @@ class Lognormal(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -234,8 +234,8 @@ class Maxwell(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -252,8 +252,8 @@ class MultivariateNormal(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -270,8 +270,8 @@ class Pareto(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -288,8 +288,8 @@ class Poisson(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -306,8 +306,8 @@ class Rayleigh(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -324,8 +324,8 @@ class T(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -342,8 +342,8 @@ class Triangular(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -360,8 +360,8 @@ class Wald(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -378,8 +378,8 @@ class WeibullMin(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -396,8 +396,8 @@ class Clone(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -414,8 +414,8 @@ class KeyData(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -432,8 +432,8 @@ class KeyImpl(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -450,8 +450,8 @@ class WrapKeyData(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -468,8 +468,8 @@ class Bits(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -486,8 +486,8 @@ class GeneralizedNormal(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -504,8 +504,8 @@ class Orthogonal(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -522,8 +522,8 @@ class RandomGammaP(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -540,8 +540,8 @@ class Ball(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -558,8 +558,8 @@ class Key(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -576,10 +576,10 @@ class RngBitGenerator(OpDef):
         """Infer the output shape for the RngBitGenerator operation.
 
         Args:
-            key (object): The PRNG key state.
-            shape (object): The desired output shape.
-            dtype (object): The desired output data type.
-            **kwargs (object): Additional keyword arguments.
+            key (Any): The PRNG key state.
+            shape (Any): The desired output shape.
+            dtype (Any): The desired output data type.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed output shape, which matches the input shape parameter.
         """
@@ -596,11 +596,11 @@ class RngUniform(OpDef):
         """Infer the output shape for the RngUniform operation.
 
         Args:
-            a (object): The lower bound of the uniform distribution.
-            b (object): The upper bound of the uniform distribution.
-            shape (object): The desired output shape.
-            dtype (object): The desired output data type.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The lower bound of the uniform distribution.
+            b (Any): The upper bound of the uniform distribution.
+            shape (Any): The desired output shape.
+            dtype (Any): The desired output data type.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed output shape, which matches the input shape parameter.
         """
@@ -617,8 +617,8 @@ class Beta(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -635,8 +635,8 @@ class Gamma(OpDef):
         """Infer the output shape based on the provided inputs.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (Any): Positional arguments typically representing input shapes or values.
+            **kwargs (Any): Keyword arguments representing additional configurations.
 
         Returns: Tensor: The evaluated shape for this operation, usually derived from the first argument.
         """
@@ -659,9 +659,9 @@ class categorical(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -679,9 +679,9 @@ class dirichlet(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -699,9 +699,9 @@ class binomial(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -719,9 +719,9 @@ class truncated_normal(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -739,9 +739,9 @@ class permutation(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -759,9 +759,9 @@ class choice(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

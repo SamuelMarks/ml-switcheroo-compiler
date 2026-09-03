@@ -1,0 +1,4 @@
+Bits1x8:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

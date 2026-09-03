@@ -1,0 +1,4 @@
+BlockWise1x128:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

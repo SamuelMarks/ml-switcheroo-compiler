@@ -1,0 +1,4 @@
+optimal_step_size:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

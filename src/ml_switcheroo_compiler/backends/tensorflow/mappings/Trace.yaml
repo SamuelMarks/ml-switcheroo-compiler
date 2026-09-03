@@ -1,0 +1,2 @@
+Trace:
+  target_api: tf.linalg.trace

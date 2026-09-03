@@ -1,0 +1,4 @@
+skip_all_reduce_unused_params:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

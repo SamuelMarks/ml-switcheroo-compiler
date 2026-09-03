@@ -1,0 +1,2 @@
+RaggedTensorToDense:
+  target_api: np.raggedtensortodense

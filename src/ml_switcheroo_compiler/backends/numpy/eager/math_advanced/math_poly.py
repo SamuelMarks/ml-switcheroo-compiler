@@ -9,7 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
-from .math_misc_ext import _get_np_arg, _get_sc
+from .math_general import _get_np_arg, _get_sc
 
 
 def _poly_recurrence(n, x, p0: float, p1_func, p_next_func):  # noqa: D417

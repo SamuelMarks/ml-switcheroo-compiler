@@ -1,0 +1,6 @@
+webrtc_config:
+  ice_servers:
+  - urls: stun:stun.l.google.com:19302
+  - urls: stun:stun1.l.google.com:19302
+  signaling:
+    timeout_ms: 5000

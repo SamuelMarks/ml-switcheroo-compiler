@@ -1,0 +1,3 @@
+NotEqual:
+  ast_template: np.not_equal
+  target_api: ''

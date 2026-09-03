@@ -1,0 +1,2 @@
+Solve:
+  target_api: tf.linalg.solve

@@ -1,0 +1,26 @@
+Linear:
+  body: |
+    // WASM SIMD Linear
+    for (int i = 0; i < {M}; ++i) {{
+        for (int j = 0; j < {N}; ++j) {{
+            float sum = 0.0f;
+            int k = 0;
+            // SIMD reduction loop
+            v128_t sum_vec = wasm_f32x4_splat(0.0f);
+            for (; k <= {K} - 4; k += 4) {{
+                v128_t a = wasm_v128_load(&buf_{in0}[i * {K} + k]);
+                v128_t b_vec = wasm_f32x4_make(buf_{in1}[k * {N} + j], buf_{in1}[(k+1) * {N} + j], buf_{in1}[(k+2) * {N} + j], buf_{in1}[(k+3) * {N} + j]);
+                sum_vec = wasm_f32x4_add(sum_vec, wasm_f32x4_mul(a, b_vec));
+            }}
+            sum += wasm_f32x4_extract_lane(sum_vec, 0) + wasm_f32x4_extract_lane(sum_vec, 1) + wasm_f32x4_extract_lane(sum_vec, 2) + wasm_f32x4_extract_lane(sum_vec, 3);
+            for (; k < {K}; ++k) {{
+                sum += buf_{in0}[i * {K} + k] * buf_{in1}[k * {N} + j];
+            }}
+            if ({has_bias}) {{
+                // sum += buf_{in2}[j];
+                // We use a conditional macro or explicit check.
+                // Assuming in2 is provided if has_bias is true.
+            }}
+            buf_{clean_id}[i * {N} + j] = sum;
+        }}
+    }}

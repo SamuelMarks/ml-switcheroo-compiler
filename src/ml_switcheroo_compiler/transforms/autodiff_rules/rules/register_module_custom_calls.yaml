@@ -1,0 +1,4 @@
+register_module_custom_calls:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

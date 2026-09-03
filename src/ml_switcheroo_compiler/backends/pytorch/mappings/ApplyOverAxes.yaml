@@ -1,0 +1,3 @@
+ApplyOverAxes:
+  custom_code: 'lambda func, a, axes, **kwargs: a'
+  target_api: custom_op

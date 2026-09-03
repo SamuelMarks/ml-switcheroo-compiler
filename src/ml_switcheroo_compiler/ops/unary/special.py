@@ -17,9 +17,9 @@ class Cast(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The x parameter.
-            dtype (object): The dtype parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            dtype (Any): The dtype parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -42,8 +42,8 @@ class CanCast(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -60,9 +60,9 @@ class Frexp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter.
-            dtype (object): The dtype parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            dtype (Any): The dtype parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -181,8 +181,8 @@ class Lbeta(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The x parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,2 @@
+YiqToRgb:
+  target_api: '''mx.image.yiq_to_rgb({0})'''

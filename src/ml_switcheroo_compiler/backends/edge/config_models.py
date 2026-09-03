@@ -1,16 +1,16 @@
 """Pydantic models for edge generator configuration."""
 
-from typing import Any, Optional
+from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class WgslTemplateConfig(BaseModel):
     """Configuration for a WGSL template."""
 
-    workgroup_size: Optional[list[int]] = None
-    body: Optional[str] = None
-    global_code: Optional[str] = None
+    workgroup_size: list[int] | None = None
+    body: str | None = None
+    global_code: str | None = None
     model_config = {"extra": "allow"}
 
 
@@ -19,8 +19,9 @@ class WgslTemplatesConfig(BaseModel):
 
     templates: dict[str, WgslTemplateConfig]
     js_orchestration: dict[str, str] = {}
+    global_bindings: str | None = None
 
-    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+    def model_dump(self, *args: object, **kwargs: object) -> object:
         """Return dict representation."""
         res = super().model_dump(*args, **kwargs)
         return res
@@ -38,12 +39,14 @@ class WebglTemplateConfig(BaseModel):
     """Configuration for a WebGL template."""
 
     body: str
+    uniforms: list[str] = Field(default_factory=list)
+    custom_setup: str = ""
 
 
 class WebglTemplatesConfig(BaseModel):
     """Configuration for all WebGL JS templates."""
 
-    templates: dict[str, str]
+    templates: dict[str, WebglTemplateConfig | str]
     js_orchestration: dict[str, str]
 
 

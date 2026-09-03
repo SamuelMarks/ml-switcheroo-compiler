@@ -2,6 +2,7 @@
 """Graph export utilities."""
 
 import typing
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -14,7 +15,7 @@ class _DotGraphVisitor:
         """Initialize the visitor.
 
         Args:
-            graph (object): The IR graph.
+            graph (Any): The IR graph.
         """
         self.graph = graph
         self.visited = set()
@@ -51,9 +52,9 @@ def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs)
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
-        file (object): The file parameter.
+        file (Any): The file parameter.
         *arrays (Tensor): Positional args.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Raises:
         RuntimeError: An exception.

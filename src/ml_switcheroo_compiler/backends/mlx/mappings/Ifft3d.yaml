@@ -1,0 +1,2 @@
+Ifft3d:
+  target_api: '''mx.fft.ifftn({0}, s={s}, axes={axes})'''

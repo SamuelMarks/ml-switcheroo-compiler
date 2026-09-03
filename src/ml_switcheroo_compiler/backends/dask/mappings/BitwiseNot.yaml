@@ -1,0 +1,2 @@
+BitwiseNot:
+  target_api: da.bitwise_not

@@ -20,19 +20,19 @@ def _cast_inputs(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dic
         node (IRNode): The node parameter.
         graph (IRGraph): The graph parameter.
         target_dtype (str): The target_dtype parameter.
-        new_nodes (dict): The new_nodes parameter.
+        new_nodes (dict[str, IRNode]): The new_nodes parameter.
 
     Returns:
-        tuple: Result.
+        tuple[list[str], bool]: Result.
     """
-    new_inputs = []
-    modified = False
+    new_inputs: list[str] = []
+    modified: bool = False
     for inp_id in node.inputs:
-        inp_node = new_nodes.get(inp_id) or graph.nodes.get(inp_id)
-        current_dtype = inp_node.attributes.get("dtype", "float32") if inp_node else "float32"
+        inp_node: IRNode | None = new_nodes.get(inp_id) or graph.nodes.get(inp_id)
+        current_dtype: str = str(inp_node.attributes.get("dtype", "float32")) if inp_node else "float32"
         if current_dtype != target_dtype:
             # Insert a cast
-            cast_id = f"{inp_id}_cast_{target_dtype}"
+            cast_id: str = f"{inp_id}_cast_{target_dtype}"
             if cast_id not in new_nodes:
                 cast_node = IRNode(
                     id=cast_id,
@@ -55,18 +55,18 @@ def _process_node(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: di
         node (IRNode): The node parameter.
         graph (IRGraph): The graph parameter.
         target_dtype (str): The target_dtype parameter.
-        new_nodes (dict): The new_nodes parameter.
+        new_nodes (dict[str, IRNode]): The new_nodes parameter.
 
     Returns:
         bool: Result.
     """
-    modified = False
+    modified: bool = False
     new_inputs, inputs_modified = _cast_inputs(node, graph, target_dtype, new_nodes)
     if inputs_modified:
         modified = True
 
     if new_inputs != node.inputs:
-        new_node = clone_logical_node(node, inputs=new_inputs)
+        new_node: IRNode = clone_logical_node(node, inputs=new_inputs)
         new_node.attributes["dtype"] = target_dtype
         new_nodes[node.id] = new_node
         modified = True
@@ -89,12 +89,12 @@ def mixed_precision_pass(graph: IRGraph, target_dtype: str = "float16") -> bool:
     Returns:
         bool: True if the graph was modified, False otherwise.
     """
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
+    sorted_nodes: list[IRNode] = DAGTopologicalSorter.sort(graph)
     if not sorted_nodes:
         return False
 
     new_nodes: dict[str, IRNode] = dict(graph.nodes)
-    graph_modified = False
+    graph_modified: bool = False
 
     for node in sorted_nodes:
         if node.op_type in SAFE_FP16_OPS:
@@ -116,14 +116,14 @@ def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, s
     """Retrieve or create scaling constant nodes.
 
     Args:
-        new_nodes (object): The new_nodes parameter.
+        new_nodes (dict[str, IRNode]): The new_nodes parameter.
         scale (float): The scale parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            tuple[str, str]: Result.
     """
-    scale_node_id = "loss_scale_factor"
-    inv_scale_node_id = "loss_scale_inv_factor"
+    scale_node_id: str = "loss_scale_factor"
+    inv_scale_node_id: str = "loss_scale_inv_factor"
     if scale_node_id not in new_nodes:
         new_nodes[scale_node_id] = IRNode(
             id=scale_node_id,
@@ -143,12 +143,12 @@ def _scale_inputs(grad_inputs: list[str], new_nodes: dict[str, IRNode], scale_no
     """Scale the given gradient inputs by the scale factor.
 
     Args:
-        grad_inputs (list): The grad_inputs parameter.
-        new_nodes (dict): The new_nodes parameter.
+        grad_inputs (list[str]): The grad_inputs parameter.
+        new_nodes (dict[str, IRNode]): The new_nodes parameter.
         scale_node_id (str): The scale_node_id parameter.
     """
     for g_id in grad_inputs:
-        mul_id = f"{g_id}_scaled"
+        mul_id: str = f"{g_id}_scaled"
         if mul_id not in new_nodes:
             new_nodes[mul_id] = IRNode(id=mul_id, op_type="Mul", inputs=[g_id, scale_node_id])
 
@@ -157,7 +157,7 @@ def _scale_inputs(grad_inputs: list[str], new_nodes: dict[str, IRNode], scale_no
             if n_id == mul_id:
                 continue
             if g_id in n.inputs:
-                new_inputs = [mul_id if i == g_id else i for i in n.inputs]
+                new_inputs: list[str] = [mul_id if i == g_id else i for i in n.inputs]
                 new_nodes[n_id] = clone_logical_node(n, inputs=new_inputs)
 
 
@@ -166,15 +166,15 @@ def _unscale_outputs(graph: IRGraph, new_nodes: dict[str, IRNode], inv_scale_nod
 
     Args:
         graph (IRGraph): The graph parameter.
-        new_nodes (dict): The new_nodes parameter.
+        new_nodes (dict[str, IRNode]): The new_nodes parameter.
         inv_scale_node_id (str): The inv_scale_node_id parameter.
 
     Returns:
-        list: Result.
+        list[str]: Result.
     """
-    new_outputs = []
+    new_outputs: list[str] = []
     for out_id in graph.outputs:
-        unscaled_id = f"{out_id}_unscaled"
+        unscaled_id: str = f"{out_id}_unscaled"
         if unscaled_id not in new_nodes:
             new_nodes[unscaled_id] = IRNode(id=unscaled_id, op_type="Mul", inputs=[out_id, inv_scale_node_id])
         new_outputs.append(unscaled_id)
@@ -195,7 +195,7 @@ def loss_scaling_pass(graph: IRGraph, scale: float = 1024.0) -> bool:
     Returns:
         bool: True if modified, False otherwise.
     """
-    grad_inputs = []
+    grad_inputs: list[str] = []
     for node in graph.nodes.values():
         if node.op_type == "Input" and node.attributes.get("is_grad") is True:
             grad_inputs.append(node.id)
@@ -203,12 +203,12 @@ def loss_scaling_pass(graph: IRGraph, scale: float = 1024.0) -> bool:
     if not grad_inputs:
         return False
 
-    new_nodes = dict(graph.nodes)
+    new_nodes: dict[str, IRNode] = dict(graph.nodes)
     scale_node_id, inv_scale_node_id = _get_scale_nodes(new_nodes, scale)
 
     _scale_inputs(grad_inputs, new_nodes, scale_node_id)
 
-    new_outputs = _unscale_outputs(graph, new_nodes, inv_scale_node_id)
+    new_outputs: list[str] = _unscale_outputs(graph, new_nodes, inv_scale_node_id)
 
     graph.outputs = new_outputs
     graph.nodes.clear()

@@ -1,0 +1,6 @@
+Tanh:
+  body: '
+
+    // WASM SIMD Tanh
+
+    '

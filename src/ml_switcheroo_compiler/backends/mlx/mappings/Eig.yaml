@@ -1,0 +1,2 @@
+Eig:
+  target_api: '''mx.linalg.eig({0})'''

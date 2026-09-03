@@ -1,0 +1,4 @@
+avals_out:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

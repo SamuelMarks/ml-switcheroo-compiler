@@ -1,0 +1,4 @@
+bessel_i1e:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

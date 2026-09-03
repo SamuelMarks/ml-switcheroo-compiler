@@ -1,0 +1,8 @@
+reduction:
+  body: "let idx = global_id.x;\nif (idx == 0u) {{{{\n    {init_code}\n    for (var\
+    \ i = {start_idx}u; i < {nelem_in}u; i++) {{{{\n        {loop_code}\n    }}}}\n\
+    \    {post_loop_code}\n    buf_out_f32[0] = {result_var};\n}}}}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1

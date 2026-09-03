@@ -1,0 +1,4 @@
+lu_pivots_to_permutation:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

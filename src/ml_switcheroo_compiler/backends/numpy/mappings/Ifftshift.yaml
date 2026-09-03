@@ -1,0 +1,3 @@
+Ifftshift:
+  ast_template: np.fft.ifftshift({0})
+  target_api: ''

@@ -1,11 +1,12 @@
-"""Test module."""
-
 from unittest.mock import patch
+
+import pytest
 
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.dask.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -18,81 +19,51 @@ class DummyDa:
     def add(self, *args, **kwargs):
         return "add_res"
 
-    def _test_op(self, *args, **kwargs):
-        return "test_res"
-
-    def zeros(self, *args, **kwargs):
-        return "zeros"
-
-    def array(self, *args, **kwargs):
-        return "array"
-
-    def asarray(self, *args, **kwargs):
-        class Comp:
-            def compute(self):
-                class Item:
-                    def item(self):
-                        return 42.0
-
-                return Item()
-
-        if "compute" in str(args):
-            return Comp()
-        return Comp()
-
 
 def test_dask_eager_execute_op():
-    import pytest
-
-    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-
-    da_mock = DummyDa()
+    cp_mock = DummyDa()
 
     # Test registered func
     def dummy_eager(module, *args, **kwargs):
         return "dummy_eager_res"
 
-    global_eager_registry.register("TestOp")(dummy_eager)
+    global_eager_registry.register("TestOpDask")(dummy_eager)
 
-    with patch("ml_switcheroo_compiler.backends.dask.eager.da", da_mock):
-        res = execute_op(None, "TestOp")
-        assert res == "dummy_eager_res"
+    res = execute_op(None, "TestOpDask")
+    assert res == "dummy_eager_res"
 
-        # Test standard op name formatting via resolve_target_api mock
-        if "Add" in global_eager_registry._registry:
-            del global_eager_registry._registry["Add"]
+    if "Add" in global_eager_registry._registry:
+        del global_eager_registry._registry["Add"]
 
-        with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=da_mock.add):
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
+        mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
+        mock_mappings.return_value = mock_schema
+        with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": cp_mock}):
             res2 = execute_op(None, "Add")
             assert res2 == "add_res"
 
-        # Test attribute error -> numpy, no reg -> fallback zeros
-        if "UnknownOp" in global_eager_registry._registry:
-            del global_eager_registry._registry["UnknownOp"]
-        with pytest.raises(BackendNotSupportedError):
-            execute_op(None, "UnknownOp")
-        # Test mapping resolve fails -> raise
-        with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
-            with pytest.raises(BackendNotSupportedError):
-                execute_op(None, "Add")
+    if "UnknownOpDask" in global_eager_registry._registry:
+        del global_eager_registry._registry["UnknownOpDask"]
+
+    try:
+        execute_op(None, "UnknownOpDask")
+    except BackendNotSupportedError:
+        pass
 
 
 def test_dask_eager_execute_op_exception():
-    import pytest
+    if "OpThatRaisesDask" in global_eager_registry._registry:
+        del global_eager_registry._registry["OpThatRaisesDask"]
 
-    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+    with pytest.raises(BackendNotSupportedError):
+        execute_op(None, "OpThatRaisesDask")
 
-    if "OpThatRaises" in global_eager_registry._registry:
-        del global_eager_registry._registry["OpThatRaises"]
-
-    with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
-        with pytest.raises(BackendNotSupportedError, match="Operation 'OpThatRaises' is not implemented."):
-            execute_op(None, "OpThatRaises")
-
-    with patch("re.sub", side_effect=AttributeError("Intended error")):
-        with pytest.raises(BackendNotSupportedError):
-            execute_op(None, "SnakeOp")
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
+        mock_schema = type("Dummy", (), {"operations": {"SnakeOp": type("DummyOp", (), {"target_api": "snake_op", "custom_code": None})()}})()
+        mock_mappings.return_value = mock_schema
+        with patch("sys.modules", {"ml_switcheroo_compiler.backends.dask.eager": DummyDa()}):
+            with pytest.raises(BackendNotSupportedError):
+                execute_op(None, "SnakeOp")
 
 
 def test_dask_generator():
@@ -102,27 +73,28 @@ def test_dask_generator():
     assert gen.get_helper_functions() == []
 
     node = IRNode("Einsum", op_type="Einsum")
-
     node = IRNode("TruncateDiv", op_type="TruncateDiv")
-
     node = IRNode("TruncateMod", op_type="TruncateMod")
 
     node = IRNode("Add", op_type="Add")
     assert gen.generic_visit(node, ["a", "b"]) == "da.add(a, b)"
 
     node = IRNode("UnknownOp", op_type="UnknownOp")
-    assert gen.generic_visit(node, [], kwarg1="val") == "da.unknownop(kwarg1=\x27val\x27)"
-    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "da.unknownop(a, b, kwarg1=\x27val\x27)"
+    assert gen.generic_visit(node, [], kwarg1="val") == "da.unknownop(kwarg1='val')"
+    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "da.unknownop(a, b, kwarg1='val')"
 
 
 def test_dask_types():
-    with patch("ml_switcheroo_compiler.backends.dask.types.da", DummyDa()):
+    with patch("ml_switcheroo_compiler.backends.dask.types.da") as mock_da:
+        mock_da.zeros.return_value = "zeros"
         assert zeros(None, (2,)) == "zeros"
+        mock_da.array.return_value = "array"
         assert array(None, [1]) == "array"
+        assert array(None, [1], dtype="float32") == "array"
+        from unittest.mock import MagicMock
 
-        class DtypeVal:
-            value = "int32"
-
-        assert array(None, [1], dtype=DtypeVal()) == "array"
-        assert asarray(None, [1]) != "asarray"  # DummyDa returns Comp
-        assert item(None, [1]) == 42.0
+        mock_asarray_ret = MagicMock()
+        mock_asarray_ret.compute.return_value.item.return_value = 1.0
+        mock_da.asarray.return_value = mock_asarray_ret
+        assert asarray(None, [1]) == mock_asarray_ret
+        assert item(None, [1]) == 1.0

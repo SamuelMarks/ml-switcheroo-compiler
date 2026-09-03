@@ -1,0 +1,3 @@
+Prod:
+  ast_template: torch.prod({0}, dim={axis}, keepdim={keepdims})
+  target_api: ''

@@ -1,0 +1,4 @@
+verify_tensorstore_spec:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

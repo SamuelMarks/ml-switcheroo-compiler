@@ -1,0 +1,2 @@
+Fft:
+  target_api: cp.fft.fft

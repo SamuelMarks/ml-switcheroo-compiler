@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import typing
 import uuid
-from typing import Callable
+from typing import Any, Callable
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -55,9 +55,9 @@ def while_loop_tracing(cond_fn, body_fn, init_val):
     """Evaluate while_loop_tracing operation.
 
     Args:
-        cond_fn (object): The cond_fn parameter.
-        body_fn (object): The body_fn parameter.
-        init_val (object): The init_val parameter.
+        cond_fn (Any): The cond_fn parameter.
+        body_fn (Any): The body_fn parameter.
+        init_val (Any): The init_val parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -88,7 +88,7 @@ def _flatten_inputs(obj) -> list[str]:
     """Evaluate _flatten_inputs operation.
 
     Args:
-        obj (object): The obj parameter.
+        obj (Any): The obj parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -108,9 +108,9 @@ def scan_tracing(f, init, xs, length: int | None = None):
 
     Args:
         f (Callable): The f parameter.
-        init (object): The init parameter.
-        xs (object): The xs parameter.
-        length (object): The length parameter.
+        init (Any): The init parameter.
+        xs (Any): The xs parameter.
+        length (Any): The length parameter.
 
     Returns:
         tuple: Result.
@@ -144,7 +144,7 @@ def map_fn_tracing(fn, elems: Tensor, dtype: DType | None = None):
     Args:
         fn (Callable): The fn parameter.
         elems (Tensor): The elems parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -177,7 +177,7 @@ def pmap_tracing(func, axis_name: str | None = None):
 
     Args:
         func (Callable): The func parameter.
-        axis_name (object): The axis_name parameter.
+        axis_name (Any): The axis_name parameter.
 
     Returns:
         Callable: Result.
@@ -187,7 +187,7 @@ def pmap_tracing(func, axis_name: str | None = None):
         """Evaluate wrapped operation.
 
         Args:
-            *args (object): Positional args.
+            *args (Any): Positional args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -225,7 +225,7 @@ def stop_gradient_tracing(x):
     """Evaluate stop_gradient_tracing operation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -250,7 +250,7 @@ def assert_value_tracing(condition, message: str = "") -> None:
     """Evaluate assert_value_tracing operation.
 
     Args:
-        condition (object): The condition parameter.
+        condition (Any): The condition parameter.
         message (str): The message parameter.
 
     Returns:

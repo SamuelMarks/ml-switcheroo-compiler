@@ -1,0 +1,4 @@
+native_serialization_disabled_checks:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

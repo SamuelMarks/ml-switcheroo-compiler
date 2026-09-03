@@ -1,0 +1,2 @@
+DotGeneral:
+  target_api: '''{0}.dot_general({1}, {2})'''

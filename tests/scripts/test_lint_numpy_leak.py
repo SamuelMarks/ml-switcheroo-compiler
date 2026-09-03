@@ -120,3 +120,18 @@ def test_main_failure_arch(capsys: CaptureFixture[str]) -> None:
         captured = capsys.readouterr()
         assert "Architectural Boundaries failed" in captured.out
         assert "arch1" in captured.out
+
+
+def test_main_block(capsys: CaptureFixture[str]) -> None:
+    """Test the __main__ execution block."""
+    import runpy
+    import sys
+
+    with patch.object(sys, "argv", ["lint_numpy_leak.py"]):
+        with patch("glob.glob", return_value=[]):
+            try:
+                runpy.run_path("scripts/lint_numpy_leak.py", run_name="__main__")
+            except SystemExit as e:
+                assert e.code == 0
+    captured = capsys.readouterr()
+    assert "Linting passed" in captured.out

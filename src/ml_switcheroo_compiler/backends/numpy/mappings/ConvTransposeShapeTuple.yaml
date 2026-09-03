@@ -1,0 +1,3 @@
+ConvTransposeShapeTuple:
+  ast_template: ()
+  target_api: ''

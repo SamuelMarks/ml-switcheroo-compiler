@@ -3,9 +3,40 @@
 
 import contextlib
 import math
-import typing
 import uuid
 from collections.abc import Callable, Sequence
+from typing import Protocol, TypeVar, Union, cast
+
+from ml_switcheroo_compiler.core.tensor import Tensor, Variable
+
+
+class BackendArray(Protocol):
+    """Protocol for a backend array."""
+
+    @property
+    def dtype(self) -> "BackendArray":
+        """Get dtype."""
+        ...
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Get shape."""
+        ...
+
+    @property
+    def id(self) -> str:
+        """Get id."""
+        ...
+
+    @property
+    def data(self) -> "BackendArray":
+        """Get data."""
+        ...
+
+
+GradValue = Union[int, float, str, bool, list, tuple, dict, None, Tensor, Variable, BackendArray]
+
+
 from dataclasses import dataclass, field
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -25,39 +56,39 @@ from .options import GradOptions
 
 
 def value_and_grad_wrt_vars(
-    fun,
-):
+    fun: Callable[..., GradValue],
+) -> Callable[..., tuple[GradValue, dict[str, GradValue]]]:
     """Create a function that evaluates both the primal value and the gradient with respect to variables.
 
     Args:
-        fun (Callable[..., object]): The original function to wrap.
+        fun: The original function to wrap.
 
     Returns:
-        Callable[..., tuple[object, dict[str, object]]]: The wrapped function returning the primal value and gradients.
+        Callable: The wrapped function returning the primal value and gradients.
     """
 
-    def wrapped(*args, **kwargs):
+    def wrapped(*args: GradValue, **kwargs: GradValue) -> tuple[GradValue, dict[str, GradValue]]:
         """Evaluate wrapped operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+            *args: Positional args.
+            **kwargs: Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result.
         """
         val = fun(*args, **kwargs)
-        grads = {}
+        grads: dict[str, GradValue] = {}
         return (val, grads)
 
     return wrapped
 
 
-def _check_scalar(tensor) -> None:
+def _check_scalar(tensor: GradValue) -> None:
     """Validate that the target tensor is a scalar.
 
     Args:
-        tensor (object): The tensor to validate.
+        tensor: The tensor to validate.
 
     Raises:
         SwitcherooError: If target tensor is not a scalar.
@@ -77,41 +108,42 @@ def _check_scalar(tensor) -> None:
         raise SwitcherooError("backward() can only be called on scalar tensors.")
 
 
-def _find_wrt_tensors(graph):
+def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
     """Find all active variables/tensors in memory that require gradients and are in the graph.
 
     Args:
-        graph (object): The active tracing graph.
+        graph: The active tracing graph.
 
     Returns:
-        tuple[list[object], list[str]]: A tuple of active tensors list and their corresponding graph node IDs.
+        tuple: A tuple of active tensors list and their corresponding graph node IDs.
     """
     import gc
 
     from ml_switcheroo_compiler.core.tensor import Tensor, Variable
 
     all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
-    wrt_tensors = []
-    wrt_ids = []
+    wrt_tensors: list[GradValue] = []
+    wrt_ids: list[str] = []
     for t in all_tensors:
         if hasattr(t, "data") and hasattr(t.data, "id"):
             node_id = t.data.id
             if node_id in getattr(graph, "nodes", {}):
-                if t.requires_grad or getattr(t, "trainable", False) or isinstance(t, Variable):
+                if getattr(t, "requires_grad", False) or getattr(t, "trainable", False) or isinstance(t, Variable):
                     wrt_tensors.append(t)
                     wrt_ids.append(node_id)
     return wrt_tensors, wrt_ids
 
 
-def _get_concrete_val(t):
+def _get_concrete_val(t: GradValue) -> GradValue:
     """Extract concrete value from a tensor.
 
     Args:
-        t (object): The tensor.
+        t: The tensor.
 
-    Returns: Tensor: The concrete value or None.
+    Returns:
+        GradValue: The concrete value or None.
     """
-    val = getattr(t.data, "concrete_value", None)
+    val = getattr(getattr(t, "data", t), "concrete_value", None)
     if val is None:
         val = getattr(t, "_data", None)
         if isinstance(val, ProxyTensor):
@@ -119,154 +151,56 @@ def _get_concrete_val(t):
     return val
 
 
-def _generate_fallback_input(graph, inp_id: str):
-    """Generate fallback dummy input for evaluation.
-
-    Args:
-        graph (object): The computation graph.
-        inp_id (str): The node ID of the input.
-
-    Returns: Tensor: The concrete dummy value.
-    """
-    node = getattr(graph, "nodes", {}).get(inp_id)
-    node_shape = getattr(node, "shape_metadata", ()) or ()
-    numeric_shape = []
-    for s in node_shape:
-        try:
-            numeric_shape.append(int(s))
-        except (ValueError, TypeError):
-            numeric_shape.append(1)
-
-    dtype_str = "float32"
-    if node and hasattr(node, "attributes") and "dtype" in node.attributes:
-        dtype_str = node.attributes["dtype"]
-    return get_active_backend().execute_op("Ones", tuple(numeric_shape), dtype=dtype_str)
-
-
-def _get_inputs_dict(graph):
+def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
     """Map input node IDs to their concrete values for evaluate_graph.
 
     Args:
-        graph (object): The active tracing graph.
+        graph: The active tracing graph.
 
     Returns:
-        dict[str, object]: A dictionary mapping node IDs to concrete NumPy arrays.
+        dict: A mapping of input node ID to its value.
     """
     import gc
 
     from ml_switcheroo_compiler.core.tensor import Tensor
 
     all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
-    inputs_dict = {}
+    inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
-        if hasattr(t, "data") and hasattr(t.data, "id"):
-            node_id = t.data.id
+        if hasattr(t, "data") and hasattr(cast(BackendArray, t).data, "id"):
+            node_id = cast(BackendArray, cast(BackendArray, t).data).id
             if node_id in getattr(graph, "nodes", {}):
                 val = _get_concrete_val(t)
                 if val is not None:
                     inputs_dict[node_id] = get_active_backend().asarray(val)
 
-    # Generate dummy concrete arrays for any missing inputs to prevent errors
-    for inp_id in getattr(graph, "inputs", []):
-        if inp_id not in inputs_dict:
-            inputs_dict[inp_id] = _generate_fallback_input(graph, inp_id)
+    if hasattr(graph, "inputs"):
+        for inp_id in graph.inputs:
+            if inp_id not in inputs_dict:
+                raise ValueError(f"Missing input value for node '{inp_id}'.")
+
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     return inputs_dict
 
 
-def _to_original_type(val, orig):
-    """Convert the computed gradient to match the original input's type.
-
-    Args:
-        val (object): The calculated gradient array/value.
-        orig (object): The original input argument.
-
-    Returns: Tensor: The gradient converted to the original type.
-    """
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
-    if isinstance(orig, Tensor):
-        from ml_switcheroo_compiler.core.device import Device
-
-        arr = get_active_backend().asarray(val)
-        dt = DType.Float32
-        if str(arr.dtype) == "float64":
-            dt = DType.Float64
-        elif "int" in str(arr.dtype):
-            dt = DType.Int32
-        elif str(arr.dtype) == "bool":
-            dt = DType.Bool
-        return Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu")))
-    elif isinstance(orig, (int, float, bool)):
-        try:
-            arr = get_active_backend().asarray(val)
-            if isinstance(orig, bool):
-                return bool(arr.item())
-            if isinstance(orig, int):
-                return int(arr.item())
-            return float(arr.item())
-        except Exception:
-            return val
-    return val
-
-
-def _compute_grad_and_value(
-    fun,
-    options: GradOptions,
-    args,
-):
-    """Evaluate _compute_grad_and_value operation.
-
-    Args:
-        fun (Callable): The fun parameter.
-        options (GradOptions): The options parameter.
-        args (tuple): The args parameter.
-
-    Returns:
-        tuple: Result.
-    """
-    from .jvp_vjp import vjp
-
-    val, vjp_fn = vjp(fun, *args, has_aux=options.has_aux)
-
-    if options.has_aux:
-        primal_val, _ = val
-    else:
-        primal_val = val
-
-    primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
-    cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
-
-    grads = vjp_fn(cotangent)
-
-    argnums = options.argnums
-    if isinstance(argnums, int):
-        res_grad = _to_original_type(grads[argnums], args[argnums])
-    elif isinstance(argnums, (tuple, list)):
-        res_grad = tuple(_to_original_type(grads[idx], args[idx]) for idx in argnums)
-    else:
-        res_grad = _to_original_type(grads[0], args[0])
-
-    return val, res_grad
-
-
-def _convert_to_tensors(primals) -> list[Tensor]:
+def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
     """Convert input primals to Tensor objects.
 
     Args:
-        primals (Sequence[object]): The list/tuple of input values.
+        primals: The primals.
 
     Returns:
         list[Tensor]: A list of converted Tensor objects.
     """
-    tensor_primals = []
+    tensor_primals: list[Tensor] = []
     from ml_switcheroo_compiler.core.device import Device
 
     for p in primals:
         if isinstance(p, Tensor):
             tensor_primals.append(p)
         else:
-            arr = get_active_backend().asarray(p)
+            arr = cast(BackendArray, get_active_backend().asarray(p))
             dt = DType.Float32
             if str(arr.dtype) == "float64":
                 dt = DType.Float64
@@ -278,29 +212,97 @@ def _convert_to_tensors(primals) -> list[Tensor]:
     return tensor_primals
 
 
-def _get_fun_primal(fun, has_aux: bool):
+def _get_fun_primal(fun: Callable[..., GradValue], has_aux: bool) -> Callable[..., GradValue]:
     """Return function for primal evaluation.
 
     Args:
-        fun (Callable): The original function.
-        has_aux (bool): Whether the function has auxiliary outputs.
+        fun (Callable): The fun parameter.
+        has_aux (bool): The has_aux parameter.
 
     Returns:
-        Callable: The primal-only function wrapper.
+        Callable: Result.
     """
     if has_aux:
 
-        def fun_primal(*args):
+        def fun_primal(*args: GradValue) -> GradValue:
             """Evaluate fun_primal operation.
 
             Args:
-            *args (object): Positional args.
+                *args: Positional args.
 
             Returns:
-            tuple[int, ...]: Result.
+                GradValue: Result.
             """
-            out_val = fun(*args)
-            return out_val[0] if isinstance(out_val, tuple) else out_val
+            out_val: GradValue = fun(*args)
+            return cast(tuple[GradValue, ...], out_val)[0] if isinstance(out_val, tuple) else out_val
 
         return fun_primal
+
     return fun
+
+
+def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
+    """Convert the computed gradient to match the original input's type.
+
+    Args:
+        val: The calculated gradient array/value.
+        orig: The original input argument.
+
+    Returns:
+        GradValue: The gradient converted to the original type.
+    """
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+    if isinstance(orig, Tensor):
+        from ml_switcheroo_compiler.core.device import Device
+
+        arr = cast(BackendArray, get_active_backend().asarray(val))
+        dt = DType.Float32
+        if str(arr.dtype) == "float64":
+            dt = DType.Float64
+        elif "int" in str(arr.dtype):
+            dt = DType.Int32
+        elif str(arr.dtype) == "bool":
+            dt = DType.Bool
+        return Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu")))
+    return val
+
+
+def _compute_grad_and_value(
+    fun: Callable[..., GradValue],
+    options: GradOptions,
+    args: tuple[GradValue, ...],
+) -> tuple[GradValue, GradValue]:
+    """Evaluate _compute_grad_and_value operation.
+
+    Args:
+        fun: The fun parameter.
+        options: The options parameter.
+        args: The args parameter.
+
+    Returns:
+        tuple: Result.
+    """
+    from .jvp_vjp import vjp
+
+    val, vjp_fn = vjp(fun, *args, has_aux=getattr(options, "has_aux", False))
+
+    if getattr(options, "has_aux", False):
+        primal_val, _ = cast(tuple[GradValue, GradValue], val)
+    else:
+        primal_val = val
+
+    primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
+    cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
+
+    grads = vjp_fn(cotangent)
+
+    argnums = getattr(options, "argnums", 0)
+    if isinstance(argnums, int):
+        res_grad = _to_original_type(grads[argnums], args[argnums])
+    elif isinstance(argnums, (tuple, list)):
+        res_grad = cast(GradValue, tuple(_to_original_type(cast(tuple[GradValue, ...], grads)[idx], args[idx]) for idx in cast(tuple[int, ...], argnums)))
+    else:
+        res_grad = _to_original_type(grads[0], args[0])
+
+    return val, res_grad

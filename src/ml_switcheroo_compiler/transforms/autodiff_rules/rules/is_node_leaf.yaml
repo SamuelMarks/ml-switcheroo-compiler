@@ -1,0 +1,4 @@
+is_node_leaf:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,5 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module registry.py."""
+
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+import typing
+from typing import Any, Callable
+
+AnyType = typing.Union[int, float, str, bool, list, tuple, dict, None, type, typing.Callable]
 
 import os
 
@@ -14,20 +19,18 @@ def _load_yaml_registry(force: bool = False) -> None:
     """_load_yaml_registry function.
 
     Args:
-        force (object): The force parameter.
+        force (Any): The force parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
-        yaml_path = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
-        if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                from ml_switcheroo_compiler.ops.config_models import OpsRegistry
+        from ml_switcheroo_compiler.ops.config_models import OpsRegistry
+        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
-                raw_yaml = yaml.safe_load(f)
-                _YAML_REGISTRY = OpsRegistry(root=raw_yaml).model_dump()
+        _YAML_REGISTRY.clear()
+        _YAML_REGISTRY.update(OpsRegistry(root=OPS_REGISTRY).model_dump())
 
 
 def register_op(name: str):
@@ -37,10 +40,10 @@ def register_op(name: str):
         """Decorator function.
 
         Args:
-        cls (object): The cls parameter.
+        cls (Any): The cls parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
@@ -58,10 +61,10 @@ def register_util(name: str):
         """Decorator function.
 
         Args:
-        func (object): The func parameter.
+        func (Any): The func parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         _UTIL_REGISTRY[name] = func
         return func
@@ -103,10 +106,10 @@ def get_op(op_name: str) -> type:
                 """get_yaml_data function.
 
                 Args:
-                cls (object): The cls parameter.
+                cls (Any): The cls parameter.
 
                 Returns:
-                object: Result.
+                Any: Result.
                 """
                 return cls._yaml_data
 
@@ -114,12 +117,12 @@ def get_op(op_name: str) -> type:
                 """Infer shape precisely using heuristics.
 
                 Args:
-                    self (object): The self parameter.
-                    *args (object): Positional args.
-                    **kwargs (object): Keyword args.
+                    self (Any): The self parameter.
+                    *args (Any): Positional args.
+                    **kwargs (Any): Keyword args.
 
                 Returns:
-                    object: Result shape tuple.
+                    Any: Result shape tuple.
                 """
                 inputs = kwargs.get("inputs", [])
 
@@ -186,11 +189,11 @@ class _RegistryShim:
         """__init__ function.
 
         Args:
-        self (object): The self parameter.
-        data (object): The data parameter.
+        self (Any): The self parameter.
+        data (Any): The data parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         self.operations = data
 
@@ -198,12 +201,12 @@ class _RegistryShim:
         """get_generator_mapping function.
 
         Args:
-        self (object): The self parameter.
-        prefix (object): The prefix parameter.
-        op_name (object): The op_name parameter.
+        self (Any): The self parameter.
+        prefix (Any): The prefix parameter.
+        op_name (Any): The op_name parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         op = self.operations.get(op_name, {})
         if not op:
@@ -222,10 +225,10 @@ def get_backend_mapping(op_name: str):
     """get_backend_mapping function.
 
     Args:
-        op_name (object): The op_name parameter.
+        op_name (Any): The op_name parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     op = _YAML_REGISTRY.get(op_name)
     if op:
@@ -233,7 +236,7 @@ def get_backend_mapping(op_name: str):
     return {}
 
 
-# Dummy frontend registration
+# Frontend registration
 _FRONTENDS = {}
 
 
@@ -241,20 +244,20 @@ def register_frontend(name: str):
     """register_frontend function.
 
     Args:
-        name (object): The name parameter.
+        name (Any): The name parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
 
     def decorator(cls):
         """Decorator function.
 
         Args:
-        cls (object): The cls parameter.
+        cls (Any): The cls parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         _FRONTENDS[name] = cls
         return cls
@@ -266,10 +269,10 @@ def get_frontend(name: str):
     """get_frontend function.
 
     Args:
-        name (object): The name parameter.
+        name (Any): The name parameter.
 
     Returns:
-        object: Result.
+        Any: Result.
     """
     if name not in _FRONTENDS:
         raise KeyError(f"Frontend {name} not found")
@@ -284,11 +287,11 @@ class _RegistryShimFix:
         """__init__ function.
 
         Args:
-        self (object): The self parameter.
-        data (object): The data parameter.
+        self (Any): The self parameter.
+        data (Any): The data parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         self.operations = data
 
@@ -296,12 +299,12 @@ class _RegistryShimFix:
         """get_generator_mapping function.
 
         Args:
-        self (object): The self parameter.
-        prefix (object): The prefix parameter.
-        op_name (object): The op_name parameter.
+        self (Any): The self parameter.
+        prefix (Any): The prefix parameter.
+        op_name (Any): The op_name parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         op = self.operations.get(op_name, {})
         if not op:
@@ -314,12 +317,12 @@ class _RegistryShimFix:
         """get_eager_mapping function.
 
         Args:
-        self (object): The self parameter.
-        prefix (object): The prefix parameter.
-        op_name (object): The op_name parameter.
+        self (Any): The self parameter.
+        prefix (Any): The prefix parameter.
+        op_name (Any): The op_name parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         op = self.operations.get(op_name, {})
         if not op:
@@ -332,11 +335,11 @@ class _RegistryShimFix:
         """get_op function.
 
         Args:
-        self (object): The self parameter.
-        op_name (object): The op_name parameter.
+        self (Any): The self parameter.
+        op_name (Any): The op_name parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         return self.operations.get(op_name)
 

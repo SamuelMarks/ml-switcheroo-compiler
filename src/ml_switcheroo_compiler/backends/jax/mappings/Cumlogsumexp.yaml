@@ -1,0 +1,2 @@
+Cumlogsumexp:
+  target_api: jax.numpy.cumlogsumexp

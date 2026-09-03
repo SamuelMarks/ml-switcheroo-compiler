@@ -1,0 +1,5 @@
+Conv3D:
+  body: "\n// WASM SIMD Conv3D\nfor (size_t z = 0; z < {out_d}; ++z) {\n    for (size_t\
+    \ y = 0; y < {out_h}; ++y) {\n        for (size_t x = 0; x < {out_w}; ++x) {\n\
+    \            buf_out_f32[z * {out_h} * {out_w} + y * {out_w} + x] = 0.0f; // placeholder\n\
+    \        }\n    }\n}\n"

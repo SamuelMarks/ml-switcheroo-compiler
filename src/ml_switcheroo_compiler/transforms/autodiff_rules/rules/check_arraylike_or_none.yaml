@@ -1,0 +1,4 @@
+check_arraylike_or_none:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

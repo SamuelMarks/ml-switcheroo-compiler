@@ -1,0 +1,4 @@
+is_transformable_smem_memref:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

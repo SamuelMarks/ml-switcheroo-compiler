@@ -1,0 +1,4 @@
+Softmax:
+  custom_code: 'lambda *args, **kwargs: jax.nn.softmax(args[0], axis=kwargs.get(''axis'',
+    -1))'
+  target_api: custom_op

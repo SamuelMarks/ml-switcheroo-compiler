@@ -1,0 +1,8 @@
+BatchNorm:
+  jvp: BatchNormGradForward($input[0], $tangent[0], scale=$input[1], bias=$input[2],
+    mean=$input[3], var=$input[4])
+  vjp:
+  - '- BatchNormGradBackward_X($cotangent, $input[0], scale=$input[1], mean=$input[3],
+    var=$input[4])'
+  - '- BatchNormGradBackward_Scale($cotangent, $input[0], mean=$input[3], var=$input[4])'
+  - '- BatchNormGradBackward_Bias($cotangent)'

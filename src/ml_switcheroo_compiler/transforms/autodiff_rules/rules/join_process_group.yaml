@@ -1,0 +1,4 @@
+join_process_group:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

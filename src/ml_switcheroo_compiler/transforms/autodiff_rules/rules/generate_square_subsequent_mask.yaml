@@ -1,0 +1,4 @@
+generate_square_subsequent_mask:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

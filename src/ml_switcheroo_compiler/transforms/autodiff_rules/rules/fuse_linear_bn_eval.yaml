@@ -1,0 +1,4 @@
+fuse_linear_bn_eval:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

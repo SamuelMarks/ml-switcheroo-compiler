@@ -1,0 +1,4 @@
+array_function_errmsg_formatter:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

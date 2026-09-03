@@ -1,0 +1,4 @@
+per_example_global_norm_clip:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

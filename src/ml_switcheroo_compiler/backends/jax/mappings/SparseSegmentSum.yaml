@@ -1,0 +1,2 @@
+SparseSegmentSum:
+  target_api: jax.numpy.sparsesegmentsum

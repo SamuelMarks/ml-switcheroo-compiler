@@ -1,0 +1,4 @@
+await_cp_async_copy:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

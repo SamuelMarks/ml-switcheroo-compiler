@@ -1,0 +1,2 @@
+Bincount:
+  target_api: '''mx.bincount({0})'''

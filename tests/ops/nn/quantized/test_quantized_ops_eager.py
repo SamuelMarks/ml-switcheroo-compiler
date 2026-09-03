@@ -84,5 +84,18 @@ def test_quantized_ops_eager():
         conv_res = q_ops.quantized_conv(input_2d, qoc_conv, stride=1, padding="VALID")
         assert np.allclose(conv_res.data, [[[[2.0]], [[2.0]]], [[[2.0]], [[2.0]]]])
 
+        # Test fake_quantize_per_channel_affine
+        input_q_chan = Tensor(np.array([[[0.1, -0.1], [0.8, -0.8]]]), TensorConfig((1, 2, 2), DType.Float32, Device("cpu")))
+        scale_q_chan = Tensor(np.array([0.1, 0.2]), TensorConfig((2,), DType.Float32, Device("cpu")))
+        zero_point_q_chan = Tensor(np.array([0.0, 0.0]), TensorConfig((2,), DType.Int32, Device("cpu")))
+
+        fq_chan_res = q_ops.fake_quantize_per_channel_affine(input_q_chan, scale_q_chan, zero_point_q_chan, axis=2, quant_min=-128, quant_max=127)
+        assert fq_chan_res is not None
+
+        # Test fake_quantize_per_tensor_affine
+        input_q_tens = Tensor(np.array([0.1, -0.1, 0.8, -0.8]), TensorConfig((4,), DType.Float32, Device("cpu")))
+        fq_tens_res = q_ops.fake_quantize_per_tensor_affine(input_q_tens, scale=0.1, zero_point=0, quant_min=-128, quant_max=127)
+        assert fq_tens_res is not None
+
     finally:
         config.eager_mode = orig

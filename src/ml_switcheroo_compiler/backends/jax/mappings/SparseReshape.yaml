@@ -1,0 +1,2 @@
+SparseReshape:
+  target_api: jax.numpy.sparsereshape

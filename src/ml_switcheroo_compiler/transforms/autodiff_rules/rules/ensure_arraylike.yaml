@@ -1,0 +1,4 @@
+ensure_arraylike:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

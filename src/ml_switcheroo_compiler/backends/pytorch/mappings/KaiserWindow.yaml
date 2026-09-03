@@ -1,0 +1,3 @@
+KaiserWindow:
+  ast_template: torch.kaiser_window({window_length}, periodic={periodic}, beta={beta})
+  target_api: ''

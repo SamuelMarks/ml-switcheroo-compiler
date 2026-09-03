@@ -1,0 +1,4 @@
+max_scores:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

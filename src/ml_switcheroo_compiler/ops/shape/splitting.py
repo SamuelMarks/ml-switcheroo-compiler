@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
@@ -156,7 +156,7 @@ def split(
 
     Args:
         input (Tensor): The input parameter.
-        split_size_or_sections (object): The split_size_or_sections parameter.
+        split_size_or_sections (Any): The split_size_or_sections parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -210,7 +210,7 @@ def array_split(
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (object): The indices_or_sections parameter.
+        indices_or_sections (Any): The indices_or_sections parameter.
         axis (int): The axis parameter.
 
     Returns:
@@ -236,7 +236,7 @@ def vsplit(ary, indices_or_sections: int | Sequence[int]):
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (object): The indices_or_sections parameter.
+        indices_or_sections (Any): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -274,7 +274,7 @@ def hsplit(ary, indices_or_sections: int | Sequence[int]):
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (object): The indices_or_sections parameter.
+        indices_or_sections (Any): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -310,7 +310,7 @@ def dsplit(ary, indices_or_sections: int | Sequence[int]):
 
     Args:
         ary (Tensor): The ary parameter.
-        indices_or_sections (object): The indices_or_sections parameter.
+        indices_or_sections (Any): The indices_or_sections parameter.
 
     Returns:
         Sequence: Result.
@@ -349,9 +349,9 @@ class GetItemOp(OpDef):
         """Infer shape for Unstack.
 
         Args:
-            x (object): The x parameter.
+            x (Any): The x parameter.
             output_index (int): The output_index parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.
@@ -371,8 +371,8 @@ class Unstack(OpDef):
         """Infer shape for Unstack.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

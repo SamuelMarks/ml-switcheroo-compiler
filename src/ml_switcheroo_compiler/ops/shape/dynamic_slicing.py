@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 import builtins
 from collections.abc import Sequence
 
@@ -50,7 +50,7 @@ def dynamic_slice(
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
-        {"slice_sizes": tuple[object, ...](slice_sizes)},
+        {"slice_sizes": tuple(slice_sizes)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -109,8 +109,8 @@ class DynamicSlice(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -135,9 +135,9 @@ class DynamicUpdateSlice(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The input x tensor.
-            update (object): The update parameter for the operation.
-            start_indices (object): The start_indices parameter for the operation.
+            x (Any): The input x tensor.
+            update (Any): The update parameter for the operation.
+            start_indices (Any): The start_indices parameter for the operation.
             **kwargs: Additional keyword arguments.
 
         Returns: Tensor: The computed result.

@@ -26,8 +26,8 @@ class RaggedGather(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -49,8 +49,8 @@ class RaggedTensorToDense(OpDef):
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -124,8 +124,8 @@ class RaggedAdd(OpDef):
         """Calculate the output shape for a ragged addition operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -147,8 +147,8 @@ class RaggedMatMul(OpDef):
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -170,8 +170,8 @@ class RaggedDynamicBroadcast(OpDef):
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -193,8 +193,8 @@ class RaggedConstant(OpDef):
         """Calculate the output shape for a ragged constant operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -216,8 +216,8 @@ class RaggedCrossHashed(OpDef):
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -239,8 +239,8 @@ class RaggedRange(OpDef):
         """Calculate the output shape for a ragged range operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -262,8 +262,8 @@ class RaggedRowSplitsToSegmentIds(OpDef):
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -285,8 +285,8 @@ class RaggedSegmentIdsToRowSplits(OpDef):
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -308,8 +308,8 @@ class RaggedStack(OpDef):
         """Calculate the output shape for a ragged stack operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -331,8 +331,8 @@ class RaggedStackDynamicPartitions(OpDef):
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -372,8 +372,8 @@ class BooleanMask(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -391,9 +391,9 @@ class MapFlatValues(OpDef):
         """Infer shape.
 
         Args:
-            op (object): The op parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            op (Any): The op parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

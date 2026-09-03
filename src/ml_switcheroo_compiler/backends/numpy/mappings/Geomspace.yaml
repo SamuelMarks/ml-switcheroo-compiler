@@ -1,0 +1,3 @@
+Geomspace:
+  ast_template: np.geomspace
+  target_api: ''

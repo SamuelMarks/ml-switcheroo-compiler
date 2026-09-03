@@ -1,0 +1,4 @@
+smem_i32_elements:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

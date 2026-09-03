@@ -3,12 +3,18 @@
 
 import os
 import uuid
-from typing import Any, Optional
+from typing import Optional, TypeVar, Union
 
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+T = TypeVar("T")
+TensorProtoType = TypeVar("TensorProtoType")
+ValueInfoProtoType = TypeVar("ValueInfoProtoType")
+NodeProtoType = TypeVar("NodeProtoType")
+GraphProtoType = TypeVar("GraphProtoType")
 
 
 class ONNXCodeGenerator(BaseGenerator):
@@ -19,12 +25,12 @@ class ONNXCodeGenerator(BaseGenerator):
         var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
     """
 
-    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[T] = None) -> None:
         """Initialize ONNXCodeGenerator.
 
         Args:
             graph (IRGraph): The IR graph to process.
-            delegates (Any, optional): Visitor delegates.
+            delegates (Optional[T], optional): Visitor delegates.
         """
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
@@ -36,13 +42,13 @@ class ONNXCodeGenerator(BaseGenerator):
         else:
             self.schema = {}
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: str) -> str:
         """Process a node and return its generated ONNX variable name.
 
         Args:
             node (IRNode): The IR node.
             input_vars (list[str]): Names of the input variables.
-            **kwargs (Any): Additional attributes.
+            **kwargs (str): Additional attributes.
 
         Returns:
             str: Variable name of the evaluated node.
@@ -55,8 +61,16 @@ class ONNXCodeGenerator(BaseGenerator):
         return nid
 
     # ruff: noqa: PLR0911, PLR0912
-    def _get_proto_type(self, dt: str, TensorProto: Any) -> int:
-        """Map data type string to ONNX TensorProto primitive integer code."""
+    def _get_proto_type(self, dt: str, TensorProto: type[TensorProtoType]) -> int:
+        """Map data type string to ONNX TensorProto primitive integer code.
+
+        Args:
+            dt (str): The dtype string.
+            TensorProto (type[TensorProtoType]): The ONNX TensorProto namespace.
+
+        Returns:
+            int: The protobuf enum type.
+        """
         dt_str: str = str(dt).lower()
         dt_map: dict[str, int] = self.schema.get("types", {})
         return dt_map.get(dt_str, 1)
@@ -89,11 +103,11 @@ class ONNXCodeGenerator(BaseGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def _get_node_and_name(self, item: Any, is_output: bool) -> tuple[Optional[IRNode], str]:
+    def _get_node_and_name(self, item: Union[IRNode, str], is_output: bool) -> tuple[Optional[IRNode], str]:
         """Retrieve a node object and its ID name.
 
         Args:
-            item (Any): The IR node or its ID string.
+            item (Union[IRNode, str]): The IR node or its ID string.
             is_output (bool): True if looking up an output node by ID.
 
         Returns:
@@ -105,16 +119,17 @@ class ONNXCodeGenerator(BaseGenerator):
             return node, out_id
         return item, getattr(item, "id", "")
 
-    def _build_single_value_info(self, item: Any, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool) -> Any:
+    def _build_single_value_info(self, item: Union[IRNode, str], dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: type[TensorProtoType], is_output: bool) -> ValueInfoProtoType:
         """Construct an ONNX TensorValueInfoProto for a single node.
 
         Args:
-            item (Any): The IR node or output ID.
+            item (Union[IRNode, str]): The IR node or output ID.
             dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
-            TensorProto (Any): The ONNX TensorProto namespace object.
+            TensorProto (type[TensorProtoType]): The ONNX TensorProto namespace object.
             is_output (bool): True if building for an output.
 
-        Returns: Any: An ONNX ValueInfoProto object.
+        Returns:
+            ValueInfoProtoType: An ONNX ValueInfoProto object.
         """
         from onnx import helper
 
@@ -122,41 +137,41 @@ class ONNXCodeGenerator(BaseGenerator):
         shape: tuple[int, ...] = getattr(node, "shape_metadata", ()) or () if node else ()
         dt: str = getattr(node, "dtype", "float32") if node else "float32"
         proto_type: int = self._get_proto_type(dt, TensorProto)
-        shape_list: list[Any] = list(shape)
+        shape_list: list[int | str] = list(shape)
 
         if dynamic_axes and name in dynamic_axes:
             for axis_idx, axis_name in dynamic_axes[name].items():
                 shape_list[axis_idx] = axis_name
         return helper.make_tensor_value_info(name, proto_type, shape_list)
 
-    def _build_onnx_value_infos(self, nodes_or_ids: list[Any], dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool = False) -> list[Any]:
+    def _build_onnx_value_infos(self, nodes_or_ids: list[Union[IRNode, str]], dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: type[TensorProtoType], is_output: bool = False) -> list[ValueInfoProtoType]:
         """Construct a list of ONNX TensorValueInfoProtos.
 
         Args:
-            nodes_or_ids (list[Any]): List of IR nodes or output IDs.
+            nodes_or_ids (list[Union[IRNode, str]]): List of IR nodes or output IDs.
             dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
-            TensorProto (Any): The ONNX TensorProto namespace object.
+            TensorProto (type[TensorProtoType]): The ONNX TensorProto namespace object.
             is_output (bool): True if building for outputs.
 
         Returns:
-            list[Any]: A list of ONNX ValueInfoProto objects.
+            list[ValueInfoProtoType]: A list of ONNX ValueInfoProto objects.
         """
         return [self._build_single_value_info(item, dynamic_axes, TensorProto, is_output) for item in nodes_or_ids]
 
-    def _build_onnx_nodes(self, TensorProto: Any) -> list[Any]:
+    def _build_onnx_nodes(self, TensorProto: type[TensorProtoType]) -> list[NodeProtoType]:
         """Construct all intermediate ONNX NodeProtos for the graph.
 
         Args:
-            TensorProto (Any): The ONNX TensorProto namespace object.
+            TensorProto (type[TensorProtoType]): The ONNX TensorProto namespace object.
 
         Returns:
-            list[Any]: A list of ONNX NodeProto objects.
+            list[NodeProtoType]: A list of ONNX NodeProto objects.
         """
         import math
 
         from onnx import helper
 
-        onnx_nodes: list[Any] = []
+        onnx_nodes: list[NodeProtoType] = []
 
         # We now query ops definitions for edge_onnx mappings
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
@@ -165,10 +180,10 @@ class ONNXCodeGenerator(BaseGenerator):
             """get_onnx_op_name function.
 
             Args:
-            op_type (str): The op_type parameter.
+                op_type (str): The op_type parameter.
 
             Returns:
-            str: Result.
+                str: Result.
             """
             op_def = OPS_REGISTRY.get(op_type, {})
             variants = op_def.get("variants", {})
@@ -176,7 +191,11 @@ class ONNXCodeGenerator(BaseGenerator):
                 gen: str = variants["edge_onnx"].get("generator")
                 if gen:
                     return gen
-            return str(self.schema.get("operations", {}).get("fallback", op_type))
+            if op_type not in self.schema.get("operations", {}):
+                from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+                raise BackendNotSupportedError(f"Operation '{op_type}' not supported in ONNX schema.")
+            return str(op_type)
 
         for node in self.sorted_nodes:
             op_type: str = getattr(node, "op_type", "")
@@ -201,7 +220,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 onnx_nodes.append(helper.make_node("Constant", inputs=[], outputs=[nid], name=nid, value=tensor_proto))
             else:
                 onnx_op: str = get_onnx_op_name(op_type)
-                kwargs: dict[str, Any] = {}
+                kwargs: dict[str, str | int | float | list[int] | GraphProtoType] = {}
                 if op_type == "If":
                     if "then_branch" in node.attributes:
                         subgen = ONNXCodeGenerator(node.attributes["then_branch"])
@@ -221,13 +240,14 @@ class ONNXCodeGenerator(BaseGenerator):
                 onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
         return onnx_nodes
 
-    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> Any:
+    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]] = None) -> GraphProtoType:
         """Construct the full ONNX GraphProto.
 
         Args:
             dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
 
-        Returns: Any: The ONNX GraphProto object.
+        Returns:
+            GraphProtoType: The ONNX GraphProto object.
         """
         from onnx import TensorProto, helper
 
@@ -244,10 +264,10 @@ class ONNXCodeGenerator(BaseGenerator):
         """Generate a readable string/text-proto representation of the ONNX Graph.
 
         Args:
-        dynamic_axes (Optional[dict[str, dict[int, str]]]): The dynamic_axes parameter.
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): The dynamic_axes parameter.
 
         Returns:
-        str: Result.
+            str: Result.
         """
         try:
             from onnx import helper
@@ -273,10 +293,13 @@ class ONNXCodeGenerator(BaseGenerator):
             file_path (str): The file_path parameter.
             dynamic_axes (Optional[dict[str, dict[int, str]]]): The dynamic_axes parameter.
         """
-        from onnx import helper
+        from onnx import checker, helper
 
         graph_def = self._build_onnx_graph(dynamic_axes)
         model_def = helper.make_model(graph_def, producer_name="ml-switcheroo-compiler")
+
+        # Validate using official checker
+        checker.check_model(model_def)
 
         with open(file_path, "wb") as f:
             f.write(model_def.SerializeToString())

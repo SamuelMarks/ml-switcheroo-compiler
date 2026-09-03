@@ -1,0 +1,5 @@
+Greater:
+  jvp: Constant(0.0)
+  vjp:
+  - Constant(0.0)
+  - Constant(0.0)

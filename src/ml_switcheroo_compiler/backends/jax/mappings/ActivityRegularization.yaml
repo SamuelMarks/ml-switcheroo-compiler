@@ -1,0 +1,3 @@
+ActivityRegularization:
+  custom_code: 'lambda x, **kwargs: x'
+  target_api: custom_op

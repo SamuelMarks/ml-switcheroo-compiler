@@ -1,0 +1,12 @@
+Conv2D:
+  body: "\nlet x = global_id.x;\nlet y = global_id.y;\nif (x >= {out_w}u || y >= {out_h}u)\
+    \ { return; }\nvar acc: f32 = 0.0;\nfor (var ky = 0u; ky < {kernel_h}u; ky = ky\
+    \ + 1u) {\n    for (var kx = 0u; kx < {kernel_w}u; kx = kx + 1u) {\n        let\
+    \ in_x = x * {stride_w}u + kx;\n        let in_y = y * {stride_h}u + ky;\n   \
+    \     let in_idx = in_y * {in_w}u + in_x;\n        let w_idx = ky * {kernel_w}u\
+    \ + kx;\n        acc = acc + buf_in_f32[in_idx] * buf_weight_f32[w_idx];\n   \
+    \ }\n}\nlet out_idx = y * {out_w}u + x;\nbuf_out_f32[out_idx] = acc;\n"
+  workgroup_size:
+  - 8
+  - 8
+  - 1

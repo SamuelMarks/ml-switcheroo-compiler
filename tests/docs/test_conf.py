@@ -16,4 +16,4 @@ def test_setup(mock_setup_directive):
     result = conf.setup(app)
 
     mock_setup_directive.assert_called_once_with(app)
-    assert result is None
+    assert result is mock_setup_directive.return_value

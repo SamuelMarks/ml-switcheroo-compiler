@@ -1,0 +1,3 @@
+Polydiv:
+  ast_template: np.polydiv
+  target_api: ''

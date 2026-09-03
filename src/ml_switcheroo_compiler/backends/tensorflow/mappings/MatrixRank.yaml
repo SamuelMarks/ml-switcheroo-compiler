@@ -1,0 +1,2 @@
+MatrixRank:
+  target_api: tf.linalg.matrix_rank

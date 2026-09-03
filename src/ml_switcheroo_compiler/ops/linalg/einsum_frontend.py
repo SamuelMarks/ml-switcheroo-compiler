@@ -50,9 +50,9 @@ def _get_tensordot_output_string(a_letters: list[str], b_letters: list[str], con
     """Generate the output string for tensordot einsum routing.
 
     Args:
-        a_letters (object): The a_letters parameter.
-        b_letters (object): The b_letters parameter.
-        contracted (object): The contracted parameter.
+        a_letters (Any): The a_letters parameter.
+        b_letters (Any): The b_letters parameter.
+        contracted (Any): The contracted parameter.
 
     Returns:
         str: Result.
@@ -66,10 +66,10 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     """Generate einsum notation strings for tensordot routing.
 
     Args:
-        shape_a (object): The shape_a parameter.
-        shape_b (object): The shape_b parameter.
-        axes_a (object): The axes_a parameter.
-        axes_b (object): The axes_b parameter.
+        shape_a (Any): The shape_a parameter.
+        shape_b (Any): The shape_b parameter.
+        axes_a (Any): The axes_a parameter.
+        axes_b (Any): The axes_b parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -109,7 +109,7 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     Args:
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
-        axes (object): The axes parameter.
+        axes (Any): The axes parameter.
 
     Returns:
         Tensor: Result.
@@ -158,8 +158,8 @@ def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Seque
 
     Args:
         shape_len (int): The shape_len parameter.
-        contracting (object): The contracting parameter.
-        batch (object): The batch parameter.
+        contracting (Any): The contracting parameter.
+        batch (Any): The batch parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -177,9 +177,9 @@ def _infer_dot_general_shape(
     """Evaluate _infer_dot_general_shape operation.
 
     Args:
-        lhs_shape (object): The lhs_shape parameter.
-        rhs_shape (object): The rhs_shape parameter.
-        dimension_numbers (object): The dimension_numbers parameter.
+        lhs_shape (Any): The lhs_shape parameter.
+        rhs_shape (Any): The rhs_shape parameter.
+        dimension_numbers (Any): The dimension_numbers parameter.
 
     Returns:
             tuple[int, ...]: Result.

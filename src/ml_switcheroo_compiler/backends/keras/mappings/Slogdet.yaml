@@ -1,0 +1,2 @@
+Slogdet:
+  target_api: keras_ops.slogdet

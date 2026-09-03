@@ -1,0 +1,2 @@
+LogSoftmax:
+  target_api: tf.math.log_softmax

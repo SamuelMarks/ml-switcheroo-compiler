@@ -1,0 +1,2 @@
+CtcLoss:
+  target_api: tf.nn.ctc_loss

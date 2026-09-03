@@ -1,0 +1,3 @@
+MatrixExponential:
+  ast_template: getattr(backend_module.linalg, 'expm', None)
+  target_api: ''

@@ -1,0 +1,2 @@
+Pmean:
+  target_api: np.pmean

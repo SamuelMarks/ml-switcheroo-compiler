@@ -1,0 +1,2 @@
+L2Normalize:
+  target_api: tf.linalg.l2_normalize

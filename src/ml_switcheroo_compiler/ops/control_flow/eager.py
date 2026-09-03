@@ -7,7 +7,7 @@ from __future__ import annotations
 """Eager mode implementations for control flow operations."""
 
 
-from typing import Callable
+from typing import Any, Callable
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
@@ -37,9 +37,9 @@ def while_loop_eager(cond_fn, body_fn, init_val):
     """Evaluate while_loop_eager operation.
 
     Args:
-        cond_fn (object): The cond_fn parameter.
-        body_fn (object): The body_fn parameter.
-        init_val (object): The init_val parameter.
+        cond_fn (Any): The cond_fn parameter.
+        body_fn (Any): The body_fn parameter.
+        init_val (Any): The init_val parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -58,8 +58,8 @@ def _stack_scan_outputs(ys, init, last_y):
 
     Args:
         ys (list): The ys parameter.
-        init (object): The init parameter.
-        last_y (object): The last_y parameter.
+        init (Any): The init parameter.
+        last_y (Any): The last_y parameter.
 
     Returns:
         Tensor: Result.
@@ -87,9 +87,9 @@ def scan_eager(f, init, xs, length: int | None = None):
 
     Args:
         f (Callable): The f parameter.
-        init (object): The init parameter.
-        xs (object): The xs parameter.
-        length (object): The length parameter.
+        init (Any): The init parameter.
+        xs (Any): The xs parameter.
+        length (Any): The length parameter.
 
     Returns:
         tuple: Result.
@@ -143,7 +143,7 @@ def _map_fn_eager_stack(ys, elems: Tensor, dtype: DType | None):
     Args:
         ys (list): The ys parameter.
         elems (Tensor): The elems parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -163,7 +163,7 @@ def map_fn_eager(fn, elems: Tensor, dtype: DType | None = None):
     Args:
         fn (Callable): The fn parameter.
         elems (Tensor): The elems parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.
@@ -178,7 +178,7 @@ def pmap_eager(func, axis_name: str | None = None):
 
     Args:
         func (Callable): The func parameter.
-        axis_name (object): The axis_name parameter.
+        axis_name (Any): The axis_name parameter.
 
     Returns:
         Callable: Result.
@@ -188,7 +188,7 @@ def pmap_eager(func, axis_name: str | None = None):
         """Evaluate wrapped operation.
 
         Args:
-        *args (object): Positional args.
+        *args (Any): Positional args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -202,7 +202,7 @@ def stop_gradient_eager(x):
     """Evaluate stop_gradient_eager operation.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -214,7 +214,7 @@ def assert_value_eager(condition, message: str = "") -> None:
     """Evaluate assert_value_eager operation.
 
     Args:
-        condition (object): The condition parameter.
+        condition (Any): The condition parameter.
         message (str): The message parameter.
     """
     record_assertion(condition, message)

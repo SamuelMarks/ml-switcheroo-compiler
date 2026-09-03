@@ -1,0 +1,4 @@
+assert_is_supported_dtype:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

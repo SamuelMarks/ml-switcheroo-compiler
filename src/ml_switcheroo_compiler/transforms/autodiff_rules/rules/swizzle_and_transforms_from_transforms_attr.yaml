@@ -1,0 +1,4 @@
+swizzle_and_transforms_from_transforms_attr:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

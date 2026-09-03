@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for Tensor objects."""
+"""Shape operations for Tensor Anys."""
 from dataclasses import dataclass
 
 # pylint: disable=duplicate-code
@@ -132,8 +132,8 @@ def take_along_axis(arr, indices, axis: int):
     """Take values from the input array along a specified axis using 1D indices.
 
     Args:
-        arr (object): The source array or tensor
-        indices (object): The indices to take along the axis
+        arr (Any): The source array or tensor
+        indices (Any): The indices to take along the axis
         axis (int): The axis along which to take values
 
     Returns: Tensor: The selected values.
@@ -297,8 +297,8 @@ class Extract(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -317,10 +317,10 @@ class DynamicPartition(OpDef):
         """Infers the output shape for the dynamic partition operation.
 
         Args:
-            data (object): The tensor to be partitioned.
-            partitions (object): A tensor containing partition indices.
+            data (Any): The tensor to be partitioned.
+            partitions (Any): A tensor containing partition indices.
             num_partitions (int): The total number of output partitions.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: An empty tuple representing a placeholder shape for multiple outputs.
         """
@@ -338,9 +338,9 @@ class DynamicStitch(OpDef):
         """Infers the output shape for the dynamic stitch operation.
 
         Args:
-            indices (object): The indices tensor.
-            data (object): The data tensor.
-            **kwargs (object): Additional keyword arguments.
+            indices (Any): The indices tensor.
+            data (Any): The data tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: An empty tuple representing a placeholder shape.
         """
@@ -357,10 +357,10 @@ class TensorScatterSub(OpDef):
         """Infers the output shape for the tensor scatter sub operation.
 
         Args:
-            tensor (object): The input tensor.
-            indices (object): The indices tensor.
-            updates (object): The updates tensor.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The input tensor.
+            indices (Any): The indices tensor.
+            updates (Any): The updates tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
@@ -377,11 +377,11 @@ class ExtractVolumePatches(OpDef):
         """Infers the output shape for the extract volume patches operation.
 
         Args:
-            input (object): The input tensor.
+            input (Any): The input tensor.
             ksizes (list[int]): The size of the sliding window.
             strides (list[int]): How far the centers of two consecutive patches are in the input.
             padding (str): The type of padding algorithm to use.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: An empty tuple representing a placeholder shape.
         """
@@ -398,9 +398,9 @@ class UnravelIndex(OpDef):
         """Infers the output shape for the unravel index operation.
 
         Args:
-            indices (object): The indices tensor.
-            dims (object): The dimensions tensor.
-            **kwargs (object): Additional keyword arguments.
+            indices (Any): The indices tensor.
+            dims (Any): The dimensions tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: An empty tuple representing a placeholder shape for multiple outputs.
         """
@@ -418,11 +418,11 @@ class DynamicSliceInDim(OpDef):
         """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
-            operand (object): The operand parameter.
-            start_index (object): The start_index parameter.
+            operand (Any): The operand parameter.
+            start_index (Any): The start_index parameter.
             slice_size (int): The slice_size parameter.
             axis (int): The axis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -443,11 +443,11 @@ class DynamicUpdateSliceInDim(OpDef):
         """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
-            operand (object): The operand parameter.
-            update (object): The update parameter.
-            start_index (object): The start_index parameter.
+            operand (Any): The operand parameter.
+            update (Any): The update parameter.
+            start_index (Any): The start_index parameter.
             axis (int): The axis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -465,11 +465,11 @@ class DynamicIndexInDim(OpDef):
         """Infers the output shape for the dynamic index in axis operation.
 
         Args:
-            operand (object): The operand parameter.
-            index (object): The index parameter.
+            operand (Any): The operand parameter.
+            index (Any): The index parameter.
             axis (int): The axis parameter.
             keepdims (bool): The keepdims parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -493,11 +493,11 @@ class DynamicUpdateIndexInDim(OpDef):
         """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
-            operand (object): The operand parameter.
-            update (object): The update parameter.
-            index (object): The index parameter.
+            operand (Any): The operand parameter.
+            update (Any): The update parameter.
+            index (Any): The index parameter.
             axis (int): The axis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -520,9 +520,9 @@ class SliceInDim(OpDef):
         """Infers the output shape for the slice in axis operation.
 
         Args:
-            operand (object): The input tensor.
+            operand (Any): The input tensor.
             spec (IndexSpec): The index specification.
-            **kwargs (object): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The updated shape tuple.
         """
@@ -542,11 +542,11 @@ class ScatterApply(OpDef):
         """Infers the output shape for the scatter apply operation.
 
         Args:
-            tensor (object): The input tensor.
-            indices (object): The indices tensor.
-            updates (object): The updates tensor.
-            func (object): The function to apply.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The input tensor.
+            indices (Any): The indices tensor.
+            updates (Any): The updates tensor.
+            func (Any): The function to apply.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
@@ -563,10 +563,10 @@ class ScatterMax(OpDef):
         """Infers the output shape for the scatter max operation.
 
         Args:
-            tensor (object): The input tensor.
-            indices (object): The indices tensor.
-            updates (object): The updates tensor.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The input tensor.
+            indices (Any): The indices tensor.
+            updates (Any): The updates tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
@@ -583,10 +583,10 @@ class ScatterMin(OpDef):
         """Infers the output shape for the scatter min operation.
 
         Args:
-            tensor (object): The input tensor.
-            indices (object): The indices tensor.
-            updates (object): The updates tensor.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The input tensor.
+            indices (Any): The indices tensor.
+            updates (Any): The updates tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
@@ -603,10 +603,10 @@ class ScatterMul(OpDef):
         """Infers the output shape for the scatter mul operation.
 
         Args:
-            tensor (object): The input tensor.
-            indices (object): The indices tensor.
-            updates (object): The updates tensor.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The input tensor.
+            indices (Any): The indices tensor.
+            updates (Any): The updates tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input tensor.
         """
@@ -623,10 +623,10 @@ class PutAlongAxis(OpDef):
         """Infers the output shape for the put along axis operation.
 
         Args:
-            arr (object): The input array or tensor.
-            indices (object): The indices tensor.
-            values (object): The values tensor.
-            **kwargs (object): Additional keyword arguments.
+            arr (Any): The input array or tensor.
+            indices (Any): The indices tensor.
+            values (Any): The values tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The shape of the input array or tensor.
         """

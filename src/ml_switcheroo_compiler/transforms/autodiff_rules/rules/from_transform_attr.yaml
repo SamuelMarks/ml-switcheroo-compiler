@@ -1,0 +1,4 @@
+from_transform_attr:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

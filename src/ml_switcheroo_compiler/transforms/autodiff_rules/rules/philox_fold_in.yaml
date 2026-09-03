@@ -1,0 +1,4 @@
+philox_fold_in:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

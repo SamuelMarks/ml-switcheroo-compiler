@@ -1,0 +1,2 @@
+InvertPermutation:
+  target_api: tf.math.invert_permutation

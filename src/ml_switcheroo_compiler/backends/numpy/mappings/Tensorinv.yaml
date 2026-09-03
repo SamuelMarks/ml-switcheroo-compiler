@@ -1,0 +1,3 @@
+Tensorinv:
+  ast_template: np.linalg.tensorinv({0}, ind={ind})
+  target_api: ''

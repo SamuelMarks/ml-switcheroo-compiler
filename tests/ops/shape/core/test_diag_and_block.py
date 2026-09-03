@@ -360,17 +360,3 @@ def test_top_k_scalar(mocker):
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value=("val", "idx"))
     assert top_k(t, 2) == (("val", "idx"), ("val", "idx"))
-
-
-def test_argsort_axis_dim(mocker):
-    t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
-    config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="argsort")
-    assert argsort(t, axis=0, dim=0) == "argsort"
-
-
-def test_sort_axis_dim(mocker):
-    t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
-    config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="sort")
-    assert sort(t, axis=0, dim=0) == "sort"

@@ -1,0 +1,4 @@
+standard_multi_result_abstract_eval:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

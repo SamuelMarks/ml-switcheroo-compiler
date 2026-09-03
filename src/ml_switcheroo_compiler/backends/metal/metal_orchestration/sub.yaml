@@ -1,0 +1,10 @@
+sub:
+  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void sub(\n    const\
+    \ device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n \
+    \   device float* C [[buffer(2)]],\n    uint id [[thread_position_in_grid]],\n\
+    \    constant uint& N [[buffer(3)]])\n{\n    if (id < N) {\n        C[id] = A[id]\
+    \ - B[id];\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1

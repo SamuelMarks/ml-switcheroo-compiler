@@ -1,0 +1,4 @@
+measure_valued_estimation_mean:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

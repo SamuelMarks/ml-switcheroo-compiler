@@ -1,0 +1,4 @@
+use_side_stream_for_tensor_copies:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+Qr:
+  ast_template: np.linalg.qr
+  target_api: ''

@@ -1,0 +1,2 @@
+Swapaxes:
+  target_api: keras_ops.swapaxes

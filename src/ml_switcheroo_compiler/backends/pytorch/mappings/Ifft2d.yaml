@@ -1,0 +1,3 @@
+Ifft2d:
+  ast_template: torch.fft.ifft2({0}, s={s}, dim={axes})
+  target_api: ''

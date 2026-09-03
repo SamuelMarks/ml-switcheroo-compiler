@@ -1,0 +1,2 @@
+ArgSort:
+  target_api: '''mx.argsort({0}, axis={dimension})'''

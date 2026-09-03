@@ -1,0 +1,4 @@
+rows_sorted:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

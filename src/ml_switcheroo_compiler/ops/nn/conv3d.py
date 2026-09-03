@@ -3,7 +3,7 @@
 
 import typing
 from collections.abc import Sequence
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated

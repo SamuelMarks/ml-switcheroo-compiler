@@ -1,0 +1,2 @@
+SparseTranspose:
+  target_api: jax.numpy.sparsetranspose

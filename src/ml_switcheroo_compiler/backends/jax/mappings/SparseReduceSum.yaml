@@ -1,0 +1,2 @@
+SparseReduceSum:
+  target_api: jax.numpy.sparsereducesum

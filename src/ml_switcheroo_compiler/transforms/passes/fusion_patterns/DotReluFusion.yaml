@@ -1,0 +1,16 @@
+DotReluFusion:
+  pattern:
+    capture: relu
+    inputs:
+    - capture: dot
+      inputs:
+      - capture: x
+      - capture: y
+      op_type: Dot
+    op_type: Relu
+  replacement:
+    capture_to_replace: relu
+    inputs:
+    - x
+    - y
+    op_type: DotRelu

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# File: build_web_assets.sh
+# Description: Builds the wheel distributions for ml-switcheroo-compiler and ml-switcheroo-ir
+# and places them into the docs/_static directory for web deployment.
+
 set -e
 
 # Build the ml-switcheroo-compiler wheel

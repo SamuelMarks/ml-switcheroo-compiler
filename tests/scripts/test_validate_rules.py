@@ -1,4 +1,6 @@
 import os
+import runpy
+import sys
 import tempfile
 from unittest.mock import patch
 
@@ -40,3 +42,14 @@ def test_main(capsys):
         assert main() == 0
         captured = capsys.readouterr()
         assert "Found 2 operations violating" in captured.out
+
+
+def test_main_block(capsys):
+    with patch.object(sys, "argv", ["validate_rules.py"]):
+        with patch("glob.glob", return_value=[]):
+            try:
+                runpy.run_path("scripts/validate_rules.py", run_name="__main__")
+            except SystemExit as e:
+                assert e.code == 0
+    captured = capsys.readouterr()
+    assert "Found 0 operations violating" in captured.out

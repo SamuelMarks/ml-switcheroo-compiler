@@ -1,0 +1,4 @@
+entries_per_wg:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

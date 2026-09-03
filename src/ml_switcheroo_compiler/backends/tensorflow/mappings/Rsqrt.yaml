@@ -1,0 +1,2 @@
+Rsqrt:
+  target_api: tf.math.rsqrt

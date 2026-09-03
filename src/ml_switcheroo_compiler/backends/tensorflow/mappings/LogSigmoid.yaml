@@ -1,0 +1,2 @@
+LogSigmoid:
+  target_api: tf.math.log_sigmoid

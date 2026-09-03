@@ -1,0 +1,2 @@
+SparseResetShape:
+  target_api: jax.numpy.sparseresetshape

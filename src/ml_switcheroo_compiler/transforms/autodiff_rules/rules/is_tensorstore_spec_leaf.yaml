@@ -1,0 +1,4 @@
+is_tensorstore_spec_leaf:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

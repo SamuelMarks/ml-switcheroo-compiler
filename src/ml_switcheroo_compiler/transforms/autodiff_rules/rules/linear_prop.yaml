@@ -1,0 +1,4 @@
+linear_prop:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

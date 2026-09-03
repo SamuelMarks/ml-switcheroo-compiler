@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,12 +14,12 @@ def _det(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _det operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "det"):
@@ -34,12 +35,12 @@ def _eig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eig operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eig"):
@@ -55,12 +56,12 @@ def _eigh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigh operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigh"):
@@ -76,12 +77,12 @@ def _eigvals(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigvals operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvals"):
@@ -97,12 +98,12 @@ def _eigvalsh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigvalsh operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvalsh"):
@@ -118,12 +119,12 @@ def _cholesky(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cholesky"):
@@ -139,12 +140,12 @@ def _cholesky_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky_ex operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     chol = _cholesky(backend_module, *args, **kwargs)
     if hasattr(backend_module, "zeros"):
@@ -159,12 +160,12 @@ def _norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _norm operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "norm"):
@@ -180,12 +181,12 @@ def _pinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pinv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "pinv"):
@@ -201,12 +202,12 @@ def _qr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _qr operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "qr"):
@@ -222,12 +223,12 @@ def _svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _svd operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "svd"):
@@ -243,12 +244,12 @@ def _tensorinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tensorinv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorinv"):
@@ -264,12 +265,12 @@ def _inv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _inv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "inv"):
@@ -285,12 +286,12 @@ def _vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _vander operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.vander(*args, **kwargs)
 
@@ -300,12 +301,12 @@ def _np_schur(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_schur operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "schur", getattr(backend_module, "schur", None))
     if func is not None:
@@ -320,12 +321,12 @@ def _np_svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_svd operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "svd", getattr(backend_module, "svd", None))
     if func is not None:
@@ -340,12 +341,12 @@ def _np_svdvals(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_svdvals operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "svdvals", getattr(backend_module, "svdvals", None))
     if func is not None:
@@ -360,12 +361,12 @@ def _np_tensorinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorinv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tensorinv", getattr(backend_module, "tensorinv", None))
     if func is not None:
@@ -380,12 +381,12 @@ def _np_triinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_triinv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "triinv", getattr(backend_module, "triinv", None))
     if func is not None:
@@ -400,12 +401,12 @@ def _np_uniqueinverse(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_uniqueinverse operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "uniqueinverse", getattr(backend_module, "uniqueinverse", None))
     if func is not None:
@@ -420,12 +421,12 @@ def _np_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_vander operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "vander", getattr(backend_module, "vander", None))
     if func is not None:
@@ -440,12 +441,12 @@ def _np_vectornorm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_vectornorm operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "vectornorm", getattr(backend_module, "vectornorm", None))
     if func is not None:

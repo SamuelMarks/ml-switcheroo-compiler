@@ -14,7 +14,7 @@ intermediate representation (IR) graph for compilation.
 
 
 import uuid
-from typing import Callable
+from typing import Any, Callable
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -35,8 +35,8 @@ def _eager_vmap(
 
     Args:
         func (Callable): The func parameter.
-        in_axes (object): The in_axes parameter.
-        out_axes (object): The out_axes parameter.
+        in_axes (Any): The in_axes parameter.
+        out_axes (Any): The out_axes parameter.
         args (tuple): The args parameter.
 
     Returns:
@@ -61,7 +61,7 @@ def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
     """Evaluate _resolve_vmap_axis operation.
 
     Args:
-        in_axes (object): The in_axes parameter.
+        in_axes (Any): The in_axes parameter.
         i (int): The i parameter.
 
     Returns:
@@ -75,7 +75,7 @@ def _compute_vmap_shape(a: Tensor, axis: int | None):
 
     Args:
         a (Tensor): The a parameter.
-        axis (object): The axis parameter.
+        axis (Any): The axis parameter.
 
     Returns:
         tuple: Result.
@@ -89,8 +89,8 @@ def _create_vmap_symbolic_args(args, in_axes: int | tuple[int, ...]):
     """Evaluate _create_vmap_symbolic_args operation.
 
     Args:
-        args (object): The args parameter.
-        in_axes (object): The in_axes parameter.
+        args (Any): The args parameter.
+        in_axes (Any): The in_axes parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -117,8 +117,8 @@ def _trace_vmap(
 
     Args:
         func (Callable): The func parameter.
-        in_axes (object): The in_axes parameter.
-        out_axes (object): The out_axes parameter.
+        in_axes (Any): The in_axes parameter.
+        out_axes (Any): The out_axes parameter.
         args (tuple): The args parameter.
 
     Returns:
@@ -149,8 +149,8 @@ def vmap(
 
     Args:
         func (Callable): The func parameter.
-        in_axes (object): The in_axes parameter.
-        out_axes (object): The out_axes parameter.
+        in_axes (Any): The in_axes parameter.
+        out_axes (Any): The out_axes parameter.
 
     Returns:
         Callable: Result.
@@ -160,7 +160,7 @@ def vmap(
         """Wrap.
 
         Args:
-            *args (object): Positional args.
+            *args (Any): Positional args.
 
         Returns:
             tuple[int, ...]: Result.

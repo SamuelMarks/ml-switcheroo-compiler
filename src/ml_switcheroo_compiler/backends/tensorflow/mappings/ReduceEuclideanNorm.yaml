@@ -1,0 +1,2 @@
+ReduceEuclideanNorm:
+  target_api: tf.math.reduce_euclidean_norm

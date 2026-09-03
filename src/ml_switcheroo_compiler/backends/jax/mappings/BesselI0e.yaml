@@ -1,0 +1,2 @@
+BesselI0e:
+  target_api: jax.scipy.special.i0e

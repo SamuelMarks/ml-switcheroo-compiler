@@ -1,0 +1,4 @@
+refine_polymorphic_shapes:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

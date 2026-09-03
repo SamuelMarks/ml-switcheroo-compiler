@@ -26,7 +26,11 @@ from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 from typing import Optional
 from ml_switcheroo_compiler.backends.tensorflow import TensorFlowCodeGenerator
-from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
+
+try:
+    from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
+except ImportError:
+    CupyGenerator = None
 from ml_switcheroo_compiler.backends.mlx import MLXCodeGenerator
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -921,7 +925,8 @@ def test_jax_generator_send_recv() -> None:
     n_send.attributes = {"dst_rank": 2}
 
     n_recv = LogicalNode(id="n_recv", op_type="Recv", inputs=[])
-    n_recv.attributes = {"src_rank": 3, "shape": (4, 4), "dtype": "float32"}
+    n_recv.attributes = {"src_rank": 3, "dtype": "float32"}
+    n_recv.shape_metadata = (4, 4)
 
     gen = JAXCodeGenerator(graph)
 

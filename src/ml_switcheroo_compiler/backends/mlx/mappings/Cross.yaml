@@ -1,0 +1,2 @@
+Cross:
+  target_api: '''mx.linalg.cross({0}, {1}, axis={axis})'''

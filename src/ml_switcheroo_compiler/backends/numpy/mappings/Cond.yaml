@@ -1,0 +1,3 @@
+Cond:
+  ast_template: np.linalg.cond
+  target_api: ''

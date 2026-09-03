@@ -1,0 +1,2 @@
+GammaPdf:
+  target_api: jax.scipy.stats.gamma.pdf

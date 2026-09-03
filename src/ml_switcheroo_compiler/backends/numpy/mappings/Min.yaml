@@ -1,0 +1,3 @@
+Min:
+  ast_template: np.min
+  target_api: ''

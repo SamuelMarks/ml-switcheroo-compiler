@@ -1,0 +1,2 @@
+Sigmoid:
+  target_api: tf.sigmoid

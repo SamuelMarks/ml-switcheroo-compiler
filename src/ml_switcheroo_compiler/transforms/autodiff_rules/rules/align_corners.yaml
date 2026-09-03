@@ -1,0 +1,4 @@
+align_corners:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

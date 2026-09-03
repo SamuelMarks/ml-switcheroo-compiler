@@ -1,0 +1,2 @@
+RandomNormal:
+  target_api: '''mx.random.normal(shape={shape}, key={0})'''

@@ -6,7 +6,7 @@ from .common_ops import _emit_signal_node
 """Signal processing operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -24,8 +24,8 @@ class Welch(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -134,7 +134,7 @@ class WindowHann(OpDef):
 
         Args:
             length (int): The length parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -151,7 +151,7 @@ class WindowHamming(OpDef):
 
         Args:
             length (int): The length parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -167,10 +167,10 @@ class Stft(OpDef):
         """infer_shape function.
 
         Args:
-            x (object): The x parameter.
+            x (Any): The x parameter.
             nfft (int): The nfft parameter.
             noverlap (int): The noverlap parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -195,10 +195,10 @@ class Istft(OpDef):
         """infer_shape function.
 
         Args:
-            x (object): The x parameter.
+            x (Any): The x parameter.
             nfft (int): The nfft parameter.
             noverlap (int): The noverlap parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

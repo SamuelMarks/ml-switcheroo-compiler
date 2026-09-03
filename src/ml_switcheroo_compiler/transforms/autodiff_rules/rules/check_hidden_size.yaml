@@ -1,0 +1,4 @@
+check_hidden_size:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

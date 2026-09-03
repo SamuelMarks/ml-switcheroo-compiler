@@ -1,0 +1,4 @@
+has_in_layouts_set:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

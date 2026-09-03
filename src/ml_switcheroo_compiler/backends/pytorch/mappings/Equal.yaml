@@ -1,0 +1,2 @@
+Equal:
+  target_api: torch.eq

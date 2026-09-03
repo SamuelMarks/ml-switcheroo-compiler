@@ -1,0 +1,2 @@
+Lstsq:
+  target_api: da.linalg.lstsq

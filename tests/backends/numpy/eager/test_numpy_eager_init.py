@@ -127,3 +127,11 @@ def test_equal() -> None:
 def test_equal_exception_fix() -> None:
     res = equal(np, [1], "string")
     assert not res
+
+
+def test_execute_op_attribute_error_raise():
+    from ml_switcheroo_compiler.backends.numpy.eager.__init__ import execute_op
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
+    with pytest.raises(UnimplementedMathError):
+        execute_op(None, "OpThatThrowsAttr12345", 5)

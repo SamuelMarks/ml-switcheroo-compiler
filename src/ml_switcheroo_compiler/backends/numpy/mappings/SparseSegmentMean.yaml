@@ -1,0 +1,3 @@
+SparseSegmentMean:
+  ast_template: tf.sparse.segment_mean
+  target_api: ''

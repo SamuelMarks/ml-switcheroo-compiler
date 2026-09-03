@@ -1,0 +1,4 @@
+get_named_sharding:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

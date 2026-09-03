@@ -1,0 +1,2 @@
+LogicalXor:
+  target_api: cp.logical_xor

@@ -1,0 +1,4 @@
+BLOCK_M:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

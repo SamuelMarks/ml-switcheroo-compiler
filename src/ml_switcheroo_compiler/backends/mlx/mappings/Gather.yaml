@@ -1,0 +1,2 @@
+Gather:
+  target_api: '''mx.take({0}, {1}, {dim})'''

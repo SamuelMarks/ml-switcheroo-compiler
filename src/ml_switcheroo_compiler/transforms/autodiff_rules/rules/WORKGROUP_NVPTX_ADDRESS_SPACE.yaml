@@ -1,0 +1,4 @@
+WORKGROUP_NVPTX_ADDRESS_SPACE:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

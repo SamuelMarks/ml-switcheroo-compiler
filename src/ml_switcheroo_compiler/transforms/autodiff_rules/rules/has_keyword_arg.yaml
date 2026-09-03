@@ -1,0 +1,4 @@
+has_keyword_arg:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

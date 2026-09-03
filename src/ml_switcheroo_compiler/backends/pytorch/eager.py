@@ -290,6 +290,12 @@ def _get_custom_torch_op_map():
         dict: The evaluated or processed output.
     """
     return {
+        "AllGather": _torch_all_gather,
+        "AllReduce": _torch_all_reduce,
+        "NcclAllReduce": _torch_all_reduce,
+        "HierarchicalCopyAllReduce": _torch_all_reduce,
+        "ReduceScatter": _torch_reduce_scatter,
+        "AllToAll": _torch_all_to_all,
         "RaggedTensorToDense": _execute_ragged_tensor_to_dense,
         "TensorScatterUpdate": _execute_tensor_scatter_update,
         "TensorScatterAdd": _execute_tensor_scatter_add,

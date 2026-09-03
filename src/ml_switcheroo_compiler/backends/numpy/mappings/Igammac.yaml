@@ -1,0 +1,3 @@
+Igammac:
+  ast_template: getattr(backend_module, 'gammaincc', None)
+  target_api: ''

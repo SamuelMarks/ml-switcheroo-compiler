@@ -1,0 +1,3 @@
+Polygamma:
+  ast_template: getattr(backend_module, 'polygamma', None)
+  target_api: ''

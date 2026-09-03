@@ -1,0 +1,2 @@
+CumulativeLogsumexp:
+  target_api: np.cumulativelogsumexp

@@ -1,0 +1,3 @@
+Inv:
+  ast_template: np.linalg.inv
+  target_api: ''

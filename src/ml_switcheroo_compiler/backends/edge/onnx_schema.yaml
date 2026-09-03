@@ -13,7 +13,6 @@ types:
   uint8: 2
   bool: 9
 operations:
-  fallback: CustomOp
   BatchNormalization:
     op_type: BatchNormalization
     domain: ''
@@ -4003,12 +4002,6 @@ operations:
     inputs:
     - X
     attributes: []
-  ExportToDot:
-    op_type: ExportToDot
-    domain: ''
-    inputs:
-    - X
-    attributes: []
   Exporter:
     op_type: Exporter
     domain: ''
@@ -5475,12 +5468,6 @@ operations:
     attributes: []
   Histogramdd:
     op_type: Histogramdd
-    domain: ''
-    inputs:
-    - X
-    attributes: []
-  HloPass:
-    op_type: HloPass
     domain: ''
     inputs:
     - X
@@ -29770,6 +29757,12 @@ operations:
   when:
     op_type: when
     domain: ''
+    inputs:
+    - X
+    attributes: []
+  Where:
+    op_type: Where
+    domain: ""
     inputs:
     - X
     attributes: []

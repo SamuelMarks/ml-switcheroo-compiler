@@ -1,0 +1,3 @@
+SparseResetShape:
+  ast_template: tf.sparse.reset_shape
+  target_api: ''

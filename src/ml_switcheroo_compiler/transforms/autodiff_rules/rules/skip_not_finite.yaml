@@ -1,0 +1,4 @@
+skip_not_finite:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

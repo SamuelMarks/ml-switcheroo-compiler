@@ -148,3 +148,12 @@ def test_update_readme_no_coverage_returned():
     written = "".join([call.args[0] for call in m_open().write.call_args_list])
     assert "test_coverage-50%25-red" in written
     assert "doc_coverage-50%25-red" in written
+
+
+def test_main_block():
+    import runpy
+    import sys
+
+    with patch.object(sys, "argv", ["update_badges.py"]):
+        with patch("os.path.exists", return_value=False):
+            runpy.run_path("scripts/update_badges.py", run_name="__main__")

@@ -5,7 +5,9 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for conv.py."""
+import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
@@ -22,6 +24,10 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 @dataclass
 class ConvLocalHyperparams:
     """ConvLocalHyperparams."""
+
+    window_strides: Any | None = None
+    padding: Any | None = None
+    filter_shape: Any | None = None
 
 
 @dispatch_eager("ConvGeneralDilated")
@@ -73,7 +79,7 @@ def conv_general_dilated_local(
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
         config (ConvLocalHyperparams): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -97,10 +103,10 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape, window_strides, padd
 
     Args:
         lhs (Tensor): The lhs parameter.
-        filter_shape (object): The filter_shape parameter.
-        window_strides (object): The window_strides parameter.
-        padding (object): The padding parameter.
-        **kwargs (object): Keyword args.
+        filter_shape (Any): The filter_shape parameter.
+        window_strides (Any): The window_strides parameter.
+        padding (Any): The padding parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -124,9 +130,9 @@ def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides, padding,
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        window_strides (object): The window_strides parameter.
-        padding (object): The padding parameter.
-        **kwargs (object): Keyword args.
+        window_strides (Any): The window_strides parameter.
+        padding (Any): The padding parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.

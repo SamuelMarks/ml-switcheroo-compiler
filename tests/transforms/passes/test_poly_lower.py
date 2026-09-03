@@ -41,9 +41,13 @@ def test_ctc_greedy_decoder_lowering():
     modified = polyfill_lowering_pass(g)
     assert modified
 
-    assert g.nodes["n1"].op_type == "CollapseRepeated"
+    assert g.nodes["n1"].op_type == "Select"
     op_types = [node.op_type for node in g.nodes.values()]
     assert "Argmax" in op_types
+    assert "Transpose" in op_types
+    assert "Roll" in op_types
+    assert "NotEqual" in op_types
+    assert "LogicalAnd" in op_types
 
 
 def test_no_poly_lower():
@@ -76,3 +80,13 @@ def test_rest_poly_lowering():
     assert g.nodes["dwi"].op_type == "Conv2D"
     assert g.nodes["dil"].op_type == "MaxPool2D"
     assert g.nodes["ero"].op_type == "MinPool2D"
+
+
+def test_missing_yaml(monkeypatch):
+    import os
+
+    import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
+
+    monkeypatch.setattr(os.path, "exists", lambda x: False)
+    g = IRGraph()
+    assert not poly_lower.polyfill_lowering_pass(g)

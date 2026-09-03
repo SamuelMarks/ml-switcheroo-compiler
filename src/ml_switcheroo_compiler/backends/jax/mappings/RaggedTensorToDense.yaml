@@ -1,0 +1,2 @@
+RaggedTensorToDense:
+  target_api: _execute_ragged_tensor_to_dense

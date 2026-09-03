@@ -1,0 +1,4 @@
+will_sync_module_buffers:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

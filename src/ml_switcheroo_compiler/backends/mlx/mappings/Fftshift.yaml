@@ -1,0 +1,2 @@
+Fftshift:
+  target_api: '''mx.fft.fftshift({0})'''

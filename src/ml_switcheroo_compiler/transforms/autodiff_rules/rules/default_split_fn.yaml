@@ -1,0 +1,4 @@
+default_split_fn:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

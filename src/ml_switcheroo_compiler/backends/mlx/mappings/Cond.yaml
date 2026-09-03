@@ -1,0 +1,2 @@
+Cond:
+  target_api: '''mx.linalg.cond({0}, p={p})'''

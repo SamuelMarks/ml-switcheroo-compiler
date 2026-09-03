@@ -25,10 +25,10 @@ def _build_linalg_output_tensors(
     """Evaluate _build_linalg_output_tensors operation.
 
     Args:
-        out_ids (object): The out_ids parameter.
-        out_shapes (object): The out_shapes parameter.
-        out_dtypes (object): The out_dtypes parameter.
-        device (object): The device parameter.
+        out_ids (Any): The out_ids parameter.
+        out_shapes (Any): The out_shapes parameter.
+        out_dtypes (Any): The out_dtypes parameter.
+        device (Any): The device parameter.
 
     Returns:
             tuple[int, ...]: Result.

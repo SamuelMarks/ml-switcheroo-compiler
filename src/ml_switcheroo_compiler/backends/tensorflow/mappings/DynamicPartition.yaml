@@ -1,0 +1,2 @@
+DynamicPartition:
+  target_api: tf.dynamic_partition

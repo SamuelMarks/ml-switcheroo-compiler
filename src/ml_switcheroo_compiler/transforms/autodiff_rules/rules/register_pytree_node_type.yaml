@@ -1,0 +1,4 @@
+register_pytree_node_type:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

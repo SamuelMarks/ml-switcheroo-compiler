@@ -20,7 +20,7 @@ def read_file(filename: str | Tensor, name=None):
     """Read file.
 
     Args:
-        filename (object): The filename parameter.
+        filename (Any): The filename parameter.
         name (str): The name parameter.
 
     Returns:
@@ -41,7 +41,7 @@ def write_file(filename: str | Tensor, contents: Tensor, name=None) -> None:
     """Write file.
 
     Args:
-        filename (object): The filename parameter.
+        filename (Any): The filename parameter.
         contents (Tensor): The contents parameter.
         name (str): The name parameter.
 
@@ -119,8 +119,8 @@ class ReadFile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -146,8 +146,8 @@ class WriteFile(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,2 @@
+PRNGKey:
+  target_api: '''mx.random.key({seed})'''

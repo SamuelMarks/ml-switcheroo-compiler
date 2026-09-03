@@ -709,7 +709,6 @@ op_mapping:
   Expm1_: stablehlo.custom_call
   Exponential: stablehlo.custom_call
   ExportFunction: stablehlo.custom_call
-  ExportToDot: stablehlo.custom_call
   Exporter: stablehlo.custom_call
   Expr: stablehlo.custom_call
   ExtractVolumePatches: stablehlo.custom_call
@@ -955,7 +954,6 @@ op_mapping:
   Histogram2d: stablehlo.custom_call
   HistogramBinEdges: stablehlo.custom_call
   Histogramdd: stablehlo.custom_call
-  HloPass: stablehlo.custom_call
   Hsmm: stablehlo.custom_call
   Hspmm: stablehlo.custom_call
   HuberLoss: stablehlo.custom_call
@@ -1487,7 +1485,6 @@ op_mapping:
   PartitionName: stablehlo.custom_call
   PartitionState: stablehlo.custom_call
   PartitionsOrReplicated: stablehlo.custom_call
-  Pass: stablehlo.custom_call
   PathContains: stablehlo.custom_call
   PathIn: stablehlo.custom_call
   PcaLowRank: stablehlo.custom_call

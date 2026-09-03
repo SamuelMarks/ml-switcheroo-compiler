@@ -1,3 +1,9 @@
+"""aot module."""
+
+from typing import Optional, TypeVar, Union
+
+T = TypeVar("T")
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Ahead-of-Time compilation hooks for frontend integrations."""
 
@@ -89,7 +95,7 @@ def _capture_outputs(out) -> None:
     """Capture outputs in the active tracing graph.
 
     Args:
-        out (object): The out parameter.
+        out (T): The out parameter.
     """
     if isinstance(out, Tensor):
         out_id, _ = TracingNodeBuilder.extract_from_tensor(out)
@@ -142,8 +148,8 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
         """Wrap that traces and compiles the function on first call.
 
         Args:
-            *args (object): Positional arguments for the function.
-            **kw (object): Keyword arguments for the function.
+            *args (T): Positional arguments for the function.
+            **kw (T): Keyword arguments for the function.
 
         Returns: Tensor: The result of the compiled (or eager) function.
         """
@@ -205,8 +211,8 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
                     """Wrap to invoke the generated apply_model function.
 
                     Args:
-                        *w_args (object): Positional arguments.
-                        **w_kw (object): Keyword arguments.
+                        *w_args (T): Positional arguments.
+                        **w_kw (T): Keyword arguments.
 
                     Returns: Tensor: The result.
                     """
@@ -219,8 +225,8 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
                     """Wrap to invoke the generated evaluate function.
 
                     Args:
-                        *w_args (object): Positional arguments.
-                        **w_kw (object): Keyword arguments.
+                        *w_args (T): Positional arguments.
+                        **w_kw (T): Keyword arguments.
 
                     Returns: Tensor: The result.
                     """

@@ -1,0 +1,4 @@
+hlo_to_stablehlo:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

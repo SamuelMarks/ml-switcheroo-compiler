@@ -1,0 +1,4 @@
+AdaptiveLogSoftmaxWithLoss:
+  custom_code: 'lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((),
+    dtype=target.dtype))'
+  target_api: custom_op

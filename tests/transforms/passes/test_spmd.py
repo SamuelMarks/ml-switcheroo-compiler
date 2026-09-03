@@ -20,6 +20,32 @@ class DummySharding:
         self.mesh_mapping = mapping
 
 
+def test_get_spmd_rules_yaml_fallback():
+    from pathlib import Path
+    from unittest.mock import mock_open, patch
+
+    import yaml
+
+    import ml_switcheroo_compiler.transforms.passes.spmd as spmd_mod
+    from ml_switcheroo_compiler.transforms.passes.spmd import _get_spmd_rules
+
+    spmd_mod._SPMD_RULES = None
+
+    def mock_exists(self):
+        if self.name == "spmd_mappings":
+            return False
+        if self.name == "spmd_mappings.yaml":
+            return True
+        return False
+
+    with patch.object(Path, "exists", mock_exists):
+        with patch("builtins.open", mock_open(read_data=yaml.dump({"fallback": "rule"}))):
+            rules = _get_spmd_rules()
+            assert "fallback" in rules
+
+    spmd_mod._SPMD_RULES = None
+
+
 def test_is_boundary_transition() -> None:
     assert _is_boundary_transition(DummySharding([None]), DummySharding([None])) == (False, False)
     assert _is_boundary_transition(DummySharding(["x"]), DummySharding([None])) == (True, False)
@@ -86,6 +112,7 @@ def test_process_spmd_input() -> None:
     # 1. inp_sharded, not node_sharded, not grad/reduction => all_gather
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
     res_ag = _process_spmd_input(node1, 0, "in1", graph, sharding_unsharded)
+    # The default yaml has Add -> inject: AllGather
     assert res_ag is not None and res_ag.op_type == "AllGather"
 
     # 2. inp_sharded, not node_sharded, reduction => all_reduce
@@ -198,3 +225,33 @@ def test_spmd_empty_conditions(mocker):
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=DummySharding(["y"]))
     res = _process_spmd_input(node1, 0, "in1", graph, DummySharding(["y"]))
     assert res is None
+
+
+def test_spmd_load_rules_branches():
+    from unittest.mock import mock_open, patch
+
+    from ml_switcheroo_compiler.transforms.passes import spmd
+
+    # reset rules
+    spmd._SPMD_RULES = None
+
+    class MockPathExistsDir:
+        def __init__(self, path):
+            self.path = path
+
+        def exists(self):
+            return True
+
+        def __truediv__(self, other):
+            return self.path / other
+
+    with patch("pathlib.Path.exists", return_value=True), patch("os.listdir", return_value=["test.txt", "valid.yaml", "invalid.yaml"]), patch("builtins.open", mock_open()) as mocked_file, patch("yaml.safe_load", side_effect=[{"Add": {}}, ["not a dict"]]):
+        # Test branches 184->183 (test.txt) and 187->183 (invalid.yaml returning a list)
+        rules = spmd._get_spmd_rules()
+        assert "Add" in rules
+
+    # Test 191->194 (yaml_path does not exist when yaml_dir does not exist)
+    spmd._SPMD_RULES = None
+    with patch("pathlib.Path.exists", side_effect=[False, False]):  # first for yaml_dir, second for yaml_path
+        rules = spmd._get_spmd_rules()
+        assert rules == {}

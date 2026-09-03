@@ -67,7 +67,7 @@ def test_np_affine_transform() -> None:
     np.testing.assert_allclose(res, images)
 
 
-"Core abstractions and logic definitions for test_numpy_eager_vision_geometry_extra.py."
+"Core abstractions and logic definitions for test_numpy_eager_vision_geometry_edge_cases.py."
 
 
 def test_numpy_vision_geometry_eager_extra():

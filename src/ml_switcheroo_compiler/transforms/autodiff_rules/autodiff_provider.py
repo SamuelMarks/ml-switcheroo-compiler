@@ -1,7 +1,7 @@
 """Autodiff Provider for Data-Driven Rules."""
 
 import re
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -95,18 +95,40 @@ def _fallback_finite_difference_jvp(graph, node, tangents) -> str:
     return emit_ir_node(graph, "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
-def get_vjp_from_data(op_type: str):
+def get_vjp_from_data(op_type: str) -> Any:
     """Get vjp."""
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+    from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
-    op_def = _YAML_REGISTRY.get(op_type, {})
+    op_def = OPS_REGISTRY.get(op_type, {})
     ad_rules = op_def.get("autodiff", {})
+
+    if not ad_rules or "vjp" not in ad_rules:
+        # Fallback to independent yaml config if not in the consolidated registry
+        import os
+
+        import yaml
+
+        rules_dir = os.path.join(os.path.dirname(__file__), "rules")
+        yaml_path = os.path.join(rules_dir, f"{op_type}.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                rules = yaml.safe_load(f)
+                if isinstance(rules, dict) and op_type in rules:
+                    ad_rules = rules[op_type]
+        else:
+            legacy_path = os.path.join(os.path.dirname(__file__), "autodiff_rules.yaml")
+            if os.path.exists(legacy_path):
+                with open(legacy_path) as f:
+                    rules = yaml.safe_load(f)
+                    if isinstance(rules, dict) and op_type in rules:
+                        ad_rules = rules[op_type]
+
     if not ad_rules or "vjp" not in ad_rules:
         return None
 
     vjp_exprs = ad_rules["vjp"]
 
-    def data_vjp(graph, node, cotangent: str):
+    def data_vjp(graph: Any, node: Any, cotangent: str) -> Any:
         """data_vjp function.
 
         Args:
@@ -125,12 +147,33 @@ def get_vjp_from_data(op_type: str):
     return data_vjp
 
 
-def get_jvp_from_data(op_type: str):
+def get_jvp_from_data(op_type: str) -> Any:
     """Get jvp."""
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+    from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
-    op_def = _YAML_REGISTRY.get(op_type, {})
+    op_def = OPS_REGISTRY.get(op_type, {})
     ad_rules = op_def.get("autodiff", {})
+
+    if not ad_rules or "jvp" not in ad_rules:
+        import os
+
+        import yaml
+
+        rules_dir = os.path.join(os.path.dirname(__file__), "rules")
+        yaml_path = os.path.join(rules_dir, f"{op_type}.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                rules = yaml.safe_load(f)
+                if isinstance(rules, dict) and op_type in rules:
+                    ad_rules = rules[op_type]
+        else:
+            legacy_path = os.path.join(os.path.dirname(__file__), "autodiff_rules.yaml")
+            if os.path.exists(legacy_path):
+                with open(legacy_path) as f:
+                    rules = yaml.safe_load(f)
+                    if isinstance(rules, dict) and op_type in rules:
+                        ad_rules = rules[op_type]
+
     if not ad_rules or "jvp" not in ad_rules:
         return _fallback_finite_difference_jvp
 

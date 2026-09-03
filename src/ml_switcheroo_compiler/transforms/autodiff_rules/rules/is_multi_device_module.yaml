@@ -1,0 +1,4 @@
+is_multi_device_module:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

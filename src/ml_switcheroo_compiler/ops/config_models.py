@@ -1,6 +1,6 @@
 """Pydantic models for ops registry configuration files."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -25,12 +25,20 @@ class OpArgConfig(BaseModel):
     is_variadic: Optional[bool] = False
 
 
+class AutodiffConfig(BaseModel):
+    """Configuration for autodiff rules."""
+
+    jvp: Optional[str] = None
+    vjp: Optional[list[str]] = None
+
+
 class OpRegistryConfig(BaseModel):
     """Configuration for a specific op in the registry."""
 
     description: Optional[str] = None
     operation: Optional[str] = None
-    std_args: Optional[list[object]] = None
+    std_args: Optional[list[Any]] = None
+    autodiff: Optional[AutodiffConfig] = None
     variants: dict[str, VariantConfig] = Field(default_factory=dict)
     model_config: dict[str, str] = {"extra": "allow"}
 

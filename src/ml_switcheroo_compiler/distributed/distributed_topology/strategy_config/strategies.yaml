@@ -1,0 +1,26 @@
+strategies:
+  CentralStorageStrategy:
+    pin_memory: true
+    registry_hooks:
+      fetch: fetch_from_central
+      init: init_central_storage
+      update: update_central
+  MultiWorkerMirroredStrategy:
+    all_reduce_algorithm: ring
+    cross_device_ops: nccl
+    registry_hooks:
+      init: init_process_group
+      sync: all_reduce
+  ParameterServerStrategy:
+    async_pull: true
+    gradient_push_method: async
+    registry_hooks:
+      init: init_parameter_server
+      pull: ps_pull_weights
+      push: ps_push_gradients
+    sync_interval_steps: 1
+  TPUStrategy:
+    registry_hooks:
+      init: init_tpu_system
+      sync: tpu_cross_replica_sum
+    topology: auto

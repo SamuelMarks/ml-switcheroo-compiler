@@ -1,0 +1,3 @@
+Argmax:
+  ast_template: torch.argmax({0}, dim={axis}, keepdim={keepdims})
+  target_api: ''

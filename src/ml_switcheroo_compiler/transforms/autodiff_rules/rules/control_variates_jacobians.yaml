@@ -1,0 +1,4 @@
+control_variates_jacobians:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

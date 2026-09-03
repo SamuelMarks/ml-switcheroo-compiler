@@ -4,12 +4,17 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for indexing.py."""
 
+import typing
 from dataclasses import dataclass
 
 
 @dataclass
 class IndexTarget:
     """Index target container."""
+
+    operand: typing.Any = None
+    update: typing.Any = None
+    index: typing.Any = None
 
 
 import threading
@@ -314,7 +319,7 @@ def gather_eager(np_mod, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    t: threading.Thread = args[0]
+    t: threading.Thread = args[0] if len(args) > 0 else kwargs.get("tensor")
     dim: int = args[1] if len(args) > 1 else kwargs.get("dim")
     index: np.ndarray = args[2] if len(args) > 2 else kwargs.get("index")
     if hasattr(t, "numpy"):

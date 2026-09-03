@@ -1,0 +1,4 @@
+NLLLoss:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

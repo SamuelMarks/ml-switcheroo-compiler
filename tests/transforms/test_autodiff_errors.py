@@ -1,3 +1,5 @@
+from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
 # ruff: noqa: E501
 """Provides required module functionality."""
 
@@ -22,7 +24,7 @@ def test_real_exception() -> None:
             g.nodes[n.id] = n
         g.inputs = ["n1"]
         g.outputs = ["n2"]
-        with pytest.raises(ValueError):
+        with pytest.raises(MissingJVPRuleError):
             grad(g, ["n1"], "n2")
     except (NotImplementedError, AttributeError, TypeError, AssertionError, ImportError):
         pass

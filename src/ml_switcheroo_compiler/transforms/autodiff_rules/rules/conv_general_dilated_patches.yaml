@@ -1,0 +1,4 @@
+conv_general_dilated_patches:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

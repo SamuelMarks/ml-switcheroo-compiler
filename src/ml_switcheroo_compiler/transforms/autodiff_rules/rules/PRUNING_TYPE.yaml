@@ -1,0 +1,4 @@
+PRUNING_TYPE:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

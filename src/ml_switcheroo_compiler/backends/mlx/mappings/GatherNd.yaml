@@ -1,0 +1,2 @@
+GatherNd:
+  target_api: '''mx.gather_nd({0}, {1})'''

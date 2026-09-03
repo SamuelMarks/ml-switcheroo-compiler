@@ -1,0 +1,2 @@
+IsNonDecreasing:
+  target_api: tf.math.is_non_decreasing

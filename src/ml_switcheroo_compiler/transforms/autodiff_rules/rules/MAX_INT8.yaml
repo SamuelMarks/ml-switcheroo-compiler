@@ -1,0 +1,4 @@
+MAX_INT8:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -3,8 +3,18 @@
 
 """Dead Code Elimination pass."""
 
+import os
+
+import yaml
+
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+from ml_switcheroo_compiler.transforms.passes.config_models import BehaviorDescriptorsConfig
+
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "pass_config", "behavior_descriptors.yaml")
+with open(_CONFIG_PATH) as f:
+    _config = BehaviorDescriptorsConfig(**yaml.safe_load(f))
+SIDE_EFFECT_OPS: set[str] = set(_config.side_effect_ops)
 
 
 def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
@@ -16,8 +26,7 @@ def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
     Returns:
         set: Result.
     """
-    side_effect_ops = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
-    return {node.id for node in graph.nodes.values() if node.op_type in side_effect_ops}
+    return {node.id for node in graph.nodes.values() if node.op_type in SIDE_EFFECT_OPS}
 
 
 def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str]:

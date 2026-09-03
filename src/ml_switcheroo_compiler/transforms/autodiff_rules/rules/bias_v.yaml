@@ -1,0 +1,4 @@
+bias_v:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

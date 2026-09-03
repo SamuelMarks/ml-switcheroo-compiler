@@ -1,0 +1,4 @@
+async_copy_smem_to_tmem:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

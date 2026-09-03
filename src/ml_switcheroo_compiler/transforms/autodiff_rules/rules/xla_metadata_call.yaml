@@ -1,0 +1,4 @@
+xla_metadata_call:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

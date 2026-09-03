@@ -1,0 +1,3 @@
+Rfftn:
+  ast_template: np.fft.rfftn
+  target_api: ''

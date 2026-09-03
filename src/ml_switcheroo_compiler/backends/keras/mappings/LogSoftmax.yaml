@@ -1,0 +1,2 @@
+LogSoftmax:
+  target_api: keras_ops.log_softmax

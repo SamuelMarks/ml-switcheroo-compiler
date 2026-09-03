@@ -1,0 +1,10 @@
+kernel_headers:
+  body: '#include <wasm_simd128.h>
+
+    #include <cmath>
+
+    #include <cstdlib>
+
+    #include <algorithm>
+
+    '

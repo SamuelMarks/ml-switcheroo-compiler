@@ -1,28 +1,27 @@
 """Distributed AST Mixin."""
 
-from typing import Any
-
+from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
 class DistributedASTVisitor:
     """Provide shared AST visitors for distributed pipeline primitives."""
 
-    def __init__(self, generator: Any) -> None:
+    def __init__(self, generator: BaseGenerator) -> None:
         """Initialize the visitor.
 
         Args:
-            generator (Any): The generator instance.
+            generator: The generator instance.
         """
         self.generator = generator
 
-    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate code for the Send operation.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): Input variable names.
-            **kwargs (Any): Extra arguments.
+            **kwargs: Extra arguments.
 
         Returns:
             str: Generated code.
@@ -42,13 +41,13 @@ class DistributedASTVisitor:
             return f"keras.distribution.send({input_vars[0]}, target={target})"
         return f"send({input_vars[0]}, target={target})"
 
-    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate code for the Recv operation.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): Input variable names.
-            **kwargs (Any): Extra arguments.
+            **kwargs: Extra arguments.
 
         Returns:
             str: Generated code.

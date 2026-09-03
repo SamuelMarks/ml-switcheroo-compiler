@@ -1,0 +1,2 @@
+AdaptiveMaxPool2D:
+  target_api: _execute_adaptive_max_pool

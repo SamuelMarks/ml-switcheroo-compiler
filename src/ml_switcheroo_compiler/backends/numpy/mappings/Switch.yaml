@@ -1,0 +1,2 @@
+Switch:
+  target_api: np.switch

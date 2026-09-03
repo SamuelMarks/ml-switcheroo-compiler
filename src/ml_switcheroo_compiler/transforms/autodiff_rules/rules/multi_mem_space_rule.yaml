@@ -1,0 +1,4 @@
+multi_mem_space_rule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

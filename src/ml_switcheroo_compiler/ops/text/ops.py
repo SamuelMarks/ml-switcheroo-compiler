@@ -25,8 +25,8 @@ class StringToHash(OpDef):
         """Infer the output shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -354,7 +354,7 @@ class EditDistance(OpDef):
             **kwargs: Arbitrary keyword arguments configuring the distance calculation.
 
         Returns:
-            An object or tuple representing the output shape.
+            An Any or tuple representing the output shape.
         """
         return getattr(hypothesis, "shape", ())
 
@@ -371,7 +371,7 @@ class AsString(OpDef):
             **kwargs: Arbitrary keyword arguments for formatting the output strings.
 
         Returns:
-            An object or tuple representing the output shape.
+            An Any or tuple representing the output shape.
         """
         return getattr(input_tensor, "shape", ())
 
@@ -386,8 +386,8 @@ class ArrayRepr(OpDef):
         """Infer the output shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -405,8 +405,8 @@ class ArrayStr(OpDef):
         """Infer the output shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

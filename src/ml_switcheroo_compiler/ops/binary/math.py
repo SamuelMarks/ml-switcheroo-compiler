@@ -25,8 +25,8 @@ class BinaryMathOp(OpDef):
         """Infer shape.
 
         Args:
-            *shapes (object): Positional args.
-            **kwargs (object): Keyword args.
+            *shapes (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -370,8 +370,8 @@ class Diff(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -390,8 +390,8 @@ class Digitize(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -412,8 +412,8 @@ class ArrayEquiv(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -473,10 +473,10 @@ class Betainc(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            x (object): The x parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            x (Any): The x parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -546,8 +546,8 @@ class Polyadd(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -571,8 +571,8 @@ class Polysub(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -596,8 +596,8 @@ class Polymul(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -621,8 +621,8 @@ class Polydiv(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -646,8 +646,8 @@ class Polyval(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -671,8 +671,8 @@ class Poly(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -696,8 +696,8 @@ class Polyder(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -721,8 +721,8 @@ class Polyfit(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -746,8 +746,8 @@ class Polyint(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -771,8 +771,8 @@ class Roots(BinaryMathOp):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -822,8 +822,8 @@ class Clip(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -837,10 +837,10 @@ def clip(x, min_val=None, max_val=None, **kwargs):
     """Clip values in a tensor.
 
     Args:
-        x (object): The x parameter.
-        min_val (object): The min_val parameter.
-        max_val (object): The max_val parameter.
-        **kwargs (object): Keyword args.
+        x (Any): The x parameter.
+        min_val (Any): The min_val parameter.
+        max_val (Any): The max_val parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -862,8 +862,8 @@ def rem(*args, **kwargs):
     """Evaluate rem operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -947,8 +947,8 @@ def igamma_grad_a(*args, **kwargs):
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -962,8 +962,8 @@ def random_gamma_grad(*args, **kwargs):
     """Compute the derivative of a Gamma random variable.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -977,8 +977,8 @@ def sort_key_val(*args, **kwargs):
     """Sort keys and values.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,4 @@
+kaiming_normal:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+mha_reference_bwd:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

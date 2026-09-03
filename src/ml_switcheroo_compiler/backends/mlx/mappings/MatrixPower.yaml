@@ -1,0 +1,2 @@
+MatrixPower:
+  target_api: '''mx.linalg.matrix_power({0}, {n})'''

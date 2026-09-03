@@ -1,0 +1,2 @@
+MatrixNorm:
+  target_api: '''mx.linalg.norm({0}, keepdims={keepdims})'''

@@ -1,0 +1,13 @@
+LayerNorm:
+  body: "\nlet idx = global_id.x;\nif (idx >= {batch_size}u) { return; }\nvar sum\
+    \ = 0.0;\nvar sq_sum = 0.0;\nlet offset = idx * {hidden_size}u;\nfor (var i =\
+    \ 0u; i < {hidden_size}u; i = i + 1u) {\n    let val = buf_in_f32[offset + i];\n\
+    \    sum = sum + val;\n    sq_sum = sq_sum + val * val;\n}\nlet mean = sum / f32({hidden_size}u);\n\
+    let var_val = (sq_sum / f32({hidden_size}u)) - (mean * mean);\nfor (var i = 0u;\
+    \ i < {hidden_size}u; i = i + 1u) {\n    let val = buf_in_f32[offset + i];\n \
+    \   buf_out_f32[offset + i] = ((val - mean) / sqrt(var_val + {eps})) * buf_weight_f32[i]\
+    \ + buf_bias_f32[i];\n}\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

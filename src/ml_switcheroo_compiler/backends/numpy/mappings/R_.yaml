@@ -1,0 +1,3 @@
+R_:
+  ast_template: np.r_
+  target_api: ''

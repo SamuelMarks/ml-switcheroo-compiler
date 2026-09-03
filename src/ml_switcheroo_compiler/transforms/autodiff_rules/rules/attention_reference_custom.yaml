@@ -1,0 +1,4 @@
+attention_reference_custom:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

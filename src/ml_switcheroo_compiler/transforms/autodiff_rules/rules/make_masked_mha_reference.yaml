@@ -1,0 +1,4 @@
+make_masked_mha_reference:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

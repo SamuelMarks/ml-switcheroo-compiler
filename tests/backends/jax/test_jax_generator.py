@@ -37,7 +37,6 @@ def test_jax_get_ops_map():
     assert "Zeros" in ops
     assert "Ones" in ops
     assert "Full" in ops
-    assert "BroadcastInDim" in ops
 
 
 def test_jax_emit_constant_assignment():

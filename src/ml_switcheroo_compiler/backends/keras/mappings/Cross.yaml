@@ -1,0 +1,2 @@
+Cross:
+  target_api: keras_ops.cross

@@ -1,0 +1,4 @@
+clean_command:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

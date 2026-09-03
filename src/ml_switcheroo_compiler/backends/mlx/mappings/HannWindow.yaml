@@ -1,0 +1,2 @@
+HannWindow:
+  target_api: '''mx.linalg.hann_window({window_length})'''

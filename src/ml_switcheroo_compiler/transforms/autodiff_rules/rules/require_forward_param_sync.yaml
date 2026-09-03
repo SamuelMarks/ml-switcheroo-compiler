@@ -1,0 +1,4 @@
+require_forward_param_sync:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

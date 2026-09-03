@@ -1,0 +1,3 @@
+SparseRetain:
+  ast_template: tf.sparse.retain
+  target_api: ''

@@ -1,0 +1,2 @@
+ExtractVolumePatches:
+  target_api: tf.extract_volume_patches

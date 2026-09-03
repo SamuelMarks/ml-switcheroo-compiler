@@ -1,0 +1,2 @@
+MultiplyNoNan:
+  target_api: tf.math.multiply_no_nan

@@ -1,0 +1,3 @@
+RaggedRange:
+  ast_template: tf.ragged.range
+  target_api: ''

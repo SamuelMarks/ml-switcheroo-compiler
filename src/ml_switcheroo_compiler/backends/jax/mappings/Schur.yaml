@@ -1,0 +1,2 @@
+Schur:
+  target_api: jax.scipy.linalg.schur

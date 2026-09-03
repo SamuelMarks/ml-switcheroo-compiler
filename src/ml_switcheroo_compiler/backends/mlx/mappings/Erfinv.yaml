@@ -1,0 +1,2 @@
+Erfinv:
+  target_api: '''mx.erfinv({0})'''

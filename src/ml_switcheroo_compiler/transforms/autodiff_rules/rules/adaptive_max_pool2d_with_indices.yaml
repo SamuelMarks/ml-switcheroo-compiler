@@ -1,0 +1,4 @@
+adaptive_max_pool2d_with_indices:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,14 @@
+ConsecutiveElementwiseFusion:
+  pattern:
+    capture: op2
+    inputs:
+    - capture: op1
+      inputs:
+      - capture: in
+      op_type: Log
+    op_type: Exp
+  replacement:
+    capture_to_replace: op2
+    inputs:
+    - in
+    op_type: FusedLogExp

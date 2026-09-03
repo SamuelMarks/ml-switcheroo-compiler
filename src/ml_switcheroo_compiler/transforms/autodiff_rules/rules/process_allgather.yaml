@@ -1,0 +1,4 @@
+process_allgather:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

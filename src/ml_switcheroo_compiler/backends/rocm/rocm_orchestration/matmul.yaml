@@ -1,0 +1,11 @@
+matmul:
+  body: "#include <hip/hip_runtime.h>\n__global__ void matmul(const float* A, const\
+    \ float* B, float* C, int M, int N, int K) {\n    int row = hipBlockIdx_y * hipBlockDim_y\
+    \ + hipThreadIdx_y;\n    int col = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+    \    if (row < M && col < N) {\n        float sum = 0.0f;\n        for (int i\
+    \ = 0; i < K; ++i) {\n            sum += A[row * K + i] * B[i * N + col];\n  \
+    \      }\n        C[row * N + col] = sum;\n    }\n}\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1

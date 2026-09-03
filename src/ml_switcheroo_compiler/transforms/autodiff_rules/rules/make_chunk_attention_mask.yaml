@@ -1,0 +1,4 @@
+make_chunk_attention_mask:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

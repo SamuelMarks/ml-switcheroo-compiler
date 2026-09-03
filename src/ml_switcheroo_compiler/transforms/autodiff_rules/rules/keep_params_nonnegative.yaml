@@ -1,0 +1,4 @@
+keep_params_nonnegative:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

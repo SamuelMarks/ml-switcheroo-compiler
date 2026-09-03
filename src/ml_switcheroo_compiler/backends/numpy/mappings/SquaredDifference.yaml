@@ -1,0 +1,2 @@
+SquaredDifference:
+  target_api: np.squareddifference

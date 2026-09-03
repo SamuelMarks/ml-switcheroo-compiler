@@ -17,7 +17,7 @@ class SobolSample(OpDef):
         dim (int): The dim parameter.
         num_results (int): The num_results parameter.
         skip (int): The skip parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

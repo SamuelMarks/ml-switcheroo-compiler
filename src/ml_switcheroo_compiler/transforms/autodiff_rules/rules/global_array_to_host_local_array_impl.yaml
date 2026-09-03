@@ -1,0 +1,4 @@
+global_array_to_host_local_array_impl:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

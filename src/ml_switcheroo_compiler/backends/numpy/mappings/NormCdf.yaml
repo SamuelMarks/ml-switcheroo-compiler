@@ -1,0 +1,2 @@
+NormCdf:
+  target_api: np.normcdf

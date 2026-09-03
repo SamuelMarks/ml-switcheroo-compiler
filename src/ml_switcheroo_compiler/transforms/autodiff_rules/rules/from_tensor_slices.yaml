@@ -1,0 +1,4 @@
+from_tensor_slices:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

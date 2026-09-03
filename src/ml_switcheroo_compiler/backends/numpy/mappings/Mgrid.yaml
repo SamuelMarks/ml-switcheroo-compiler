@@ -1,0 +1,3 @@
+Mgrid:
+  ast_template: np.mgrid
+  target_api: ''

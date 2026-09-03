@@ -1,0 +1,2 @@
+Pinv:
+  target_api: tf.linalg.pinv

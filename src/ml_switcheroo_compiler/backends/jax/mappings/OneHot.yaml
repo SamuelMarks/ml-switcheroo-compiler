@@ -1,0 +1,4 @@
+OneHot:
+  custom_code: 'lambda *args, **kwargs: jax.nn.one_hot(args[0], kwargs.get(''depth'',
+    args[1] if len(args) > 1 else 1))'
+  target_api: custom_op

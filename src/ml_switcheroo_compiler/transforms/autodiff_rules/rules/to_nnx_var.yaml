@@ -1,0 +1,4 @@
+to_nnx_var:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

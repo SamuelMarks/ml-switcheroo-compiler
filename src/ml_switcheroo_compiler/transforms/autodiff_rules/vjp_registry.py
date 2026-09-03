@@ -1,6 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module vjp_registry.py."""
 
+from collections.abc import Sequence
+from typing import Any, Callable, Optional, Union
+
 """Provide a registry for Vector-Jacobian Product (VJP) rules used in reverse-mode automatic differentiation.
 
 This module allows registering and retrieving VJP functions for various mathematical
@@ -13,7 +16,7 @@ from typing import Callable
 _VJP_REGISTRY = {}
 
 
-def register_vjp(op_name: str):
+def register_vjp(op_name: str) -> Any:
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
@@ -23,7 +26,7 @@ def register_vjp(op_name: str):
         Callable: Result.
     """
 
-    def decorator(func):
+    def decorator(func: Any) -> Any:
         """Evaluate decorator operation.
 
         Args:
@@ -44,7 +47,7 @@ def register_vjp(op_name: str):
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
 
-def get_vjp(op_name: str):
+def get_vjp(op_name: str) -> Any:
     """Get the VJP rule.
 
     Args:

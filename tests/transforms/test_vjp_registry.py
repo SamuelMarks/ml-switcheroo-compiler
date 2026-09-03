@@ -68,3 +68,21 @@ def test_vjp_registry_lazy_load():
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
         res = get_vjp("test_lazy_op")
         assert res == "lazy_loaded_vjp"
+
+
+def test_has_vjp_not_in_registry_or_data():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=None):
+        assert has_vjp("AbsolutelyMissingOpTypeXYZ123") is False
+
+
+def test_has_vjp_data():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=lambda x: x):
+        assert has_vjp("AbsolutelyMissingOpTypeXYZ123_Data") is True

@@ -1,0 +1,4 @@
+jax_to_ir:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

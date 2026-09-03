@@ -28,19 +28,19 @@ class CreationOp(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            shape (object): The shape parameter.
-            **kwargs (object): Keyword args.
+            shape (Any): The shape parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -81,20 +81,20 @@ class Full(CreationOp):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
-            shape (object): The shape of the tensor.
-            fill_value (object): The fill_value to process.
-            **kwargs (object): Additional keyword arguments.
+            shape (Any): The shape of the tensor.
+            fill_value (Any): The fill_value to process.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -121,19 +121,19 @@ class Arange(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -157,19 +157,19 @@ class Rand(CreationOp):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -204,19 +204,19 @@ class Randint(CreationOp):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -238,8 +238,8 @@ class ManualSeed(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            seed (object): The seed to process.
-            **kwargs (object): Additional keyword arguments.
+            seed (Any): The seed to process.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -290,8 +290,8 @@ class Blackman(OpDef):
         """Infer the output shape.
 
         Args:
-            M (object): The M parameter.
-            **kwargs (object): Keyword args.
+            M (Any): The M parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -307,8 +307,8 @@ class Bartlett(OpDef):
         """Infer the output shape.
 
         Args:
-            M (object): The M parameter.
-            **kwargs (object): Keyword args.
+            M (Any): The M parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -324,8 +324,8 @@ class Hamming(OpDef):
         """Infer the output shape.
 
         Args:
-            M (object): The M parameter.
-            **kwargs (object): Keyword args.
+            M (Any): The M parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -341,8 +341,8 @@ class Hanning(OpDef):
         """Infer the output shape.
 
         Args:
-            M (object): The M parameter.
-            **kwargs (object): Keyword args.
+            M (Any): The M parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -358,8 +358,8 @@ class Kaiser(OpDef):
         """Infer the output shape.
 
         Args:
-            M (object): The M parameter.
-            **kwargs (object): Keyword args.
+            M (Any): The M parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -383,19 +383,19 @@ class TrilIndices(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -418,19 +418,19 @@ class TrilIndicesFrom(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -453,19 +453,19 @@ class TriuIndices(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -488,19 +488,19 @@ class TriuIndicesFrom(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -523,19 +523,19 @@ class Logspace(CreationOp):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -557,19 +557,19 @@ class Frombuffer(OpDef):
         Args:
             message (str): The message.
             input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
 
         Returns:
-        object: Result.
+        Any: Result.
         """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

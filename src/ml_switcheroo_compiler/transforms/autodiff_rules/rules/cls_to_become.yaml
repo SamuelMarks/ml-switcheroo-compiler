@@ -1,0 +1,4 @@
+cls_to_become:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

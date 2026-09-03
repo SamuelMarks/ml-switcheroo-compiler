@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_nd import GenericConvConfig, conv, conv_transpose, depthwise_conv, separable_conv
 
-"Core abstractions and logic definitions for test_nn_conv_nd_extra.py."
+"Core abstractions and logic definitions for test_nn_conv_nd_edge_cases.py."
 
 
 def test_conv_nd_extra():

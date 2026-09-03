@@ -98,8 +98,8 @@ class Packbits(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -125,8 +125,8 @@ class Unpackbits(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -188,7 +188,7 @@ class Isreal(UnaryMathOp):
 
 @register_op("Iscomplexobj")
 class Iscomplexobj(OpDef):
-    """Tests element-wise for complex object type."""
+    """Tests element-wise for complex Any type."""
 
     op_name = "Iscomplexobj"
     np_op_name = "iscomplexobj"
@@ -197,8 +197,8 @@ class Iscomplexobj(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The x parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -208,7 +208,7 @@ class Iscomplexobj(OpDef):
 
 @register_op("Isrealobj")
 class Isrealobj(OpDef):
-    """Tests element-wise for real object type."""
+    """Tests element-wise for real Any type."""
 
     op_name = "Isrealobj"
     np_op_name = "isrealobj"
@@ -217,8 +217,8 @@ class Isrealobj(OpDef):
         """Infer shape.
 
         Args:
-            x (object): The x parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -237,8 +237,8 @@ class Issubdtype(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -256,8 +256,8 @@ class Isin(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -267,10 +267,10 @@ class Isin(OpDef):
 
 
 def _get_size_from_shape(obj) -> int | None:
-    """Calculate the total number of elements from an object's shape.
+    """Calculate the total number of elements from an Any's shape.
 
     Args:
-        obj (object): The object.
+        obj (Any): The Any.
 
     Returns:
         int | None: The size.
@@ -297,8 +297,8 @@ class Ediff1d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -326,8 +326,8 @@ def population_count(*args, **kwargs):
     """Calculate element-wise population count (a.k.a. popcount, bitsum, bitcount).
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -341,8 +341,8 @@ def isin(*args, **kwargs):
     """Calculate element in test_elements, broadcasting over element only.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -356,8 +356,8 @@ def iscomplex(*args, **kwargs):
     """Return a bool array, where True if input element is complex.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -371,8 +371,8 @@ def iscomplexobj(*args, **kwargs):
     """Check for a complex type or an array of complex numbers.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -386,8 +386,8 @@ def isreal(*args, **kwargs):
     """Return a bool array, where True if input element is real.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -401,8 +401,8 @@ def isrealobj(*args, **kwargs):
     """Return True if x is a not complex type or an array of complex numbers.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -416,8 +416,8 @@ def issubdtype(*args, **kwargs):
     """Return True if first argument is a typecode lower/equal in type hierarchy.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -431,8 +431,8 @@ def reduce_precision(*args, **kwargs):
     """Reduce precision operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

@@ -10,5 +10,5 @@ def test_evaluation_strategy_base():
         def evaluate(self, ctx):
             return super().evaluate(ctx)
 
-    ctx = EvaluationContext(op_cls=None, op_type="foo", raw_args=[], kwargs={}, backend=None)
+    ctx = EvaluationContext(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     assert DummyStrategy().evaluate(ctx) is None

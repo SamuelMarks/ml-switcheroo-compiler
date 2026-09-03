@@ -1,0 +1,2 @@
+Negative:
+  target_api: torch.neg

@@ -1,0 +1,4 @@
+Ifft:
+  ast_template: torch.fft.ifft({0}, n={n}, dim={axis})
+  custom_code: 'lambda *args, **kwargs: torch.fft.ifft(args[0], **kwargs)'
+  target_api: custom_op

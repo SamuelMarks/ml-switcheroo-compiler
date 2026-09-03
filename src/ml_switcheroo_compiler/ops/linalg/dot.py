@@ -13,7 +13,7 @@ def _has_valid_shape(obj) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
-        obj (object): The obj parameter.
+        obj (Any): The obj parameter.
 
     Returns:
         bool: Result.
@@ -32,9 +32,9 @@ class Dot(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -55,8 +55,8 @@ class DotGeneral(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -104,9 +104,9 @@ class Tensordot(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The first input tensor.
+            b (Any): The second input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -124,9 +124,9 @@ class Inner(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The first input tensor.
+            b (Any): The second input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -144,9 +144,9 @@ class Outer(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The first input tensor.
+            b (Any): The second input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -186,8 +186,8 @@ class Pdot(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -203,8 +203,8 @@ def pdot(*args, **kwargs):
     """Evaluate pdot operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

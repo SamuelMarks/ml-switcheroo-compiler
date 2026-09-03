@@ -1,0 +1,4 @@
+parameters_to_ignore:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

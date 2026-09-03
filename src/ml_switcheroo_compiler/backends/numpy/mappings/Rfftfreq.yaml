@@ -1,0 +1,3 @@
+Rfftfreq:
+  ast_template: np.fft.rfftfreq({0}, d={d})
+  target_api: ''

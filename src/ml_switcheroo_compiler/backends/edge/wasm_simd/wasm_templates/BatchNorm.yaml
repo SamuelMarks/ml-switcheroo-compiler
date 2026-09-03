@@ -1,0 +1,5 @@
+BatchNorm:
+  body: "\n// WASM SIMD BatchNorm\nfor (size_t i = 0; i < {nelem}; i += 4) {\n   \
+    \ v128_t val = wasm_v128_load(&buf_in_f32[i]);\n    // load mean, var, weight,\
+    \ bias ...\n    // compute ((val - mean) / sqrt(var + eps)) * weight + bias\n\
+    }\n"

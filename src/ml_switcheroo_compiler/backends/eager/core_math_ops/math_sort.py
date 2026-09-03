@@ -3,23 +3,24 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argsort")
-def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
+def _argsort(backend_module: Any, a: object, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argsort operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        a (Any): The a parameter.
+        backend_module: The backend_module parameter.
+        a: The a parameter.
         axis (int): The axis parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.argsort(a, axis=axis)
 
@@ -29,12 +30,12 @@ def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _lexsort operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
@@ -44,12 +45,12 @@ def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _searchsorted operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.searchsorted(*args, **kwargs)
 
@@ -59,11 +60,11 @@ def _sortcomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _sortcomplex operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)

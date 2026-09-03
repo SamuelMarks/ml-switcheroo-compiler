@@ -1,0 +1,4 @@
+Cast:
+  jvp: Cast($tangent[0])
+  vjp:
+  - Cast($cotangent)

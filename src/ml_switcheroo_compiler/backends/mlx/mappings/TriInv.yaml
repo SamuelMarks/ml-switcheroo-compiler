@@ -1,0 +1,2 @@
+TriInv:
+  target_api: '''mx.linalg.inv({0})'''

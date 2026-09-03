@@ -1,5 +1,7 @@
 """HDF5 weight serialization format."""
 
+from __future__ import annotations
+
 import h5py
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field

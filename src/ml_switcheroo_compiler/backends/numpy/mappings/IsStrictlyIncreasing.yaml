@@ -1,0 +1,2 @@
+IsStrictlyIncreasing:
+  target_api: np.isstrictlyincreasing

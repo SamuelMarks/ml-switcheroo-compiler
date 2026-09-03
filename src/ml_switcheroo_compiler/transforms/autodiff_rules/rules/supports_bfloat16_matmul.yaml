@@ -1,0 +1,4 @@
+supports_bfloat16_matmul:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+NormPdf:
+  target_api: jax.scipy.stats.norm.pdf

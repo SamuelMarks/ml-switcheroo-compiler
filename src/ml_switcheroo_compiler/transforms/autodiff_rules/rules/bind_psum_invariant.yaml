@@ -1,0 +1,4 @@
+bind_psum_invariant:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

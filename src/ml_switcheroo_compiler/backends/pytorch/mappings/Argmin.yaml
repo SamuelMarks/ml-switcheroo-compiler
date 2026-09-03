@@ -1,0 +1,3 @@
+Argmin:
+  ast_template: torch.argmin({0}, dim={axis}, keepdim={keepdims})
+  target_api: ''

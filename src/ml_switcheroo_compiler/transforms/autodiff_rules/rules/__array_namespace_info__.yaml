@@ -1,0 +1,4 @@
+__array_namespace_info__:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

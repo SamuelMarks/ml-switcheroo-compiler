@@ -1,0 +1,4 @@
+to_sparse_tracer:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

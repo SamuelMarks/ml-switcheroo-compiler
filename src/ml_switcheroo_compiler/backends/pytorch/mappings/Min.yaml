@@ -1,0 +1,3 @@
+Min:
+  ast_template: torch.min({0}, dim={axis}, keepdim={keepdims})
+  target_api: torch.min

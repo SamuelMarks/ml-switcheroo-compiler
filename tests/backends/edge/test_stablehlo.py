@@ -159,3 +159,14 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         assert "stablehlo.convolution" in output
         assert "stablehlo.reduce" in output
         assert "stablehlo.maximum" in output
+
+
+import pytest
+
+
+def test_stablehlo_no_schema():
+    with pytest.MonkeyPatch.context() as m:
+        m.setattr("os.path.exists", lambda x: False)
+        graph = IRGraph()
+        gen = StableHLOCodeGenerator(graph)
+        assert gen.schema == {}

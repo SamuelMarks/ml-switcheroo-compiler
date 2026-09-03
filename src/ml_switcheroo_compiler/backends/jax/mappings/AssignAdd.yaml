@@ -1,0 +1,3 @@
+AssignAdd:
+  custom_code: 'lambda ref, value, **kwargs: ref + value'
+  target_api: custom_op

@@ -1,0 +1,4 @@
+bcsr_extract_p:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,2 @@
+Vecdot:
+  target_api: '''mx.sum({0} * {1}, axis={axis})'''

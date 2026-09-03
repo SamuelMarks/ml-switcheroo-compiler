@@ -1,0 +1,4 @@
+is_valid_smem_layout_assignment:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

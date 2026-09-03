@@ -1,0 +1,4 @@
+promote_dtypes_numeric:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

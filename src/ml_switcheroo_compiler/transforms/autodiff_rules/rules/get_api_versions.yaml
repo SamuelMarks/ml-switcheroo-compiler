@@ -1,0 +1,4 @@
+get_api_versions:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

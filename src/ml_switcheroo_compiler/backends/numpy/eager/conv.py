@@ -30,6 +30,9 @@ class ConvDimSpecs:
 class ConvExecutionState:
     """Configuration class for conv execution state."""
 
+    lhs_pad: object
+    rhs_c: object
+    out: object
     config: ConvConfig
     spatial_dims: int
 

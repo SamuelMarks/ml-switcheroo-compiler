@@ -1,0 +1,4 @@
+setup_tpu:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

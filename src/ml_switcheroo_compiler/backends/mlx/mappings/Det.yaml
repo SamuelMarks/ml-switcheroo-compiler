@@ -1,0 +1,2 @@
+Det:
+  target_api: '''mx.linalg.det({0})'''

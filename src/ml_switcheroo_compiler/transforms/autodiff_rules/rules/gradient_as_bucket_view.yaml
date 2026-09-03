@@ -1,0 +1,4 @@
+gradient_as_bucket_view:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

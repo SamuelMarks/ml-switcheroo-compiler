@@ -1,0 +1,18 @@
+Erf:
+  body: '
+
+    let idx = global_id.x;
+
+    if (idx >= {nelem}u) { return; }
+
+    let x = buf_in_f32[idx];
+
+    // approx
+
+    buf_out_f32[idx] = sign(x) * sqrt(1.0 - exp(-1.27323954 * x * x));
+
+    '
+  workgroup_size:
+  - 64
+  - 1
+  - 1

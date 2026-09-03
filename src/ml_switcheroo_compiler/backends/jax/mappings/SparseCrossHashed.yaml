@@ -1,0 +1,2 @@
+SparseCrossHashed:
+  target_api: jax.numpy.sparsecrosshashed

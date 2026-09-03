@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 import tempfile
+import typing
 import zipfile
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, TypeVar
@@ -343,6 +344,10 @@ class KerasSerializationContext:
     """
 
     filepath: str
+    config_dict: typing.Optional[typing.Any] = None
+    metadata: typing.Optional[typing.Any] = None
+    weights_store: typing.Optional[typing.Any] = None
+    state_store: typing.Optional[typing.Any] = None
 
 
 def _write_keras_zip(ctx: KerasSerializationContext) -> None:

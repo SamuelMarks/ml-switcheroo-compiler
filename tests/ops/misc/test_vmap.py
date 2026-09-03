@@ -148,3 +148,10 @@ def test_vmap_trace():
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph"):
         res = _trace_vmap(my_func, 0, 0, (t,))
         assert res.shape == (2,)
+
+
+def test_vmap_non_tensor_arg():
+    from ml_switcheroo_compiler.ops.vmap import _create_vmap_symbolic_args
+
+    res = _create_vmap_symbolic_args(in_axes=0, args=(1, 2))
+    assert res == [1, 2]

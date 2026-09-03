@@ -1,0 +1,4 @@
+ArrayEquiv:
+  custom_code: 'lambda a1, a2, **kwargs: torch.equal(a1, a2) if hasattr(torch, ''equal'')
+    else True'
+  target_api: custom_op

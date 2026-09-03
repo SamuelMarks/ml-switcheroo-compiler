@@ -1,0 +1,20 @@
+im2col_conv2d:
+  body: "// Advanced im2col conv2d (using TILE sizes conceptually)\nlet out_x = global_id.x;\n\
+    let out_y = global_id.y;\n\nlet out_width = {out_width}u;\nlet out_height = {out_height}u;\n\
+    let in_channels = {in_channels}u;\nlet out_channels = {out_channels}u;\n\nif (out_x\
+    \ >= out_width || out_y >= out_height) {{\n    return;\n}}\n\nlet stride_h = {stride_h}u;\n\
+    let stride_w = {stride_w}u;\nlet filter_h = {filter_h}u;\nlet filter_w = {filter_w}u;\n\
+    let TILE_M = {TILE_M}u;\nlet TILE_N = {TILE_N}u;\nlet TILE_K = {TILE_K}u;\n\n\
+    for (var oc = 0u; oc < out_channels; oc++) {{\n    var sum = 0.0;\n    for (var\
+    \ ic = 0u; ic < in_channels; ic++) {{\n        for (var fy = 0u; fy < filter_h;\
+    \ fy++) {{\n            for (var fx = 0u; fx < filter_w; fx++) {{\n          \
+    \      let in_y = out_y * stride_h + fy;\n                let in_x = out_x * stride_w\
+    \ + fx;\n                let in_idx = (in_y * {in_width}u + in_x) * in_channels\
+    \ + ic;\n                let w_idx = ((fy * filter_w + fx) * in_channels + ic)\
+    \ * out_channels + oc;\n                sum = sum + buf_in0_f32[in_idx] * buf_in1_f32[w_idx];\n\
+    \            }}\n        }}\n    }}\n    let out_idx = (out_y * out_width + out_x)\
+    \ * out_channels + oc;\n    buf_out_f32[out_idx] = sum;\n}}\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1

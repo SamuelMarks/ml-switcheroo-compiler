@@ -1,0 +1,3 @@
+RaggedStackDynamicPartitions:
+  ast_template: tf.ragged.stack_dynamic_partitions
+  target_api: ''

@@ -28,13 +28,24 @@ class FusionPatternConfig(BaseModel):
     replacement: ReplacementConfig
 
 
+class ComputeCosts(BaseModel):
+    """Compute costs configuration."""
+
+    heavy_ops: list[str]
+    light_ops: list[str]
+    heavy_cost: int
+    light_cost: int
+    default_cost: int
+
+
 class CostModelConfig(BaseModel):
     """Configuration for cost modeling in graph scheduling."""
 
-    memory_costs: dict[str, int]
-    compute_costs: dict[str, int]
-    default_memory_cost: int
-    default_compute_cost: int
+    memory_sizes: dict[str, int]
+    compute_costs: ComputeCosts
+    compute_heavy_threshold: int
+    heavy_interleave_penalty: int
+    light_interleave_penalty: int
 
 
 class PassConfig(BaseModel):
@@ -58,3 +69,15 @@ class RematerializationRulesConfig(BaseModel):
     target_ops: list[str]
     high_cost_ops: list[str]
     thresholds: RematerializationThresholds
+
+
+class OptimizationHeuristicsConfig(BaseModel):
+    """Configuration for optimization heuristics."""
+
+    in_place_safe_ops: list[str]
+
+
+class BehaviorDescriptorsConfig(BaseModel):
+    """Configuration for behavior descriptors."""
+
+    side_effect_ops: list[str]

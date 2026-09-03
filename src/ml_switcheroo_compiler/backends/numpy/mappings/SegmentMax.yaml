@@ -1,0 +1,2 @@
+SegmentMax:
+  target_api: np.segmentmax

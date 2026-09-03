@@ -1,0 +1,4 @@
+moving_avg_baseline:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

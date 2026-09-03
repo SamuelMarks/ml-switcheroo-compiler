@@ -1,0 +1,4 @@
+make_group_metadata:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

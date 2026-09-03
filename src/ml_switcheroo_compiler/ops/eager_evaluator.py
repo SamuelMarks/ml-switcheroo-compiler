@@ -2,7 +2,9 @@
 """Eager evaluation logic."""
 
 import abc
+import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
@@ -10,9 +12,13 @@ from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
 @dataclass
 class EvaluationContext:
-    """Provide context object for eager evaluation containing operation details."""
+    """Provide context Any for eager evaluation containing operation details."""
 
+    op_cls: type
     op_type: str
+    args: list
+    kwargs: dict
+    backend: type
 
 
 class EvaluationStrategy(abc.ABC):
@@ -43,7 +49,7 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         Returns:
             tuple[int, ...]: Result.
         """
-        return ctx.op_cls().eager_eval(*ctx.raw_args, **ctx.kwargs)
+        return ctx.op_cls().eager_eval(*ctx.args, **ctx.kwargs)
 
 
 class BackendExecuteOpStrategy(EvaluationStrategy):
@@ -58,7 +64,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             tuple[int, ...]: Result.
         """
-        return ctx.backend.execute_op(ctx.op_type, *ctx.raw_args, **ctx.kwargs)
+        return ctx.backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs)
 
 
 class EagerEvaluator:
@@ -69,7 +75,7 @@ class EagerEvaluator:
         """Get the evaluation strategy for a given operation class.
 
         Args:
-            op_cls (object): The operation class.
+            op_cls (Any): The operation class.
 
         Returns:
             EvaluationStrategy: The determined evaluation strategy.
@@ -87,12 +93,12 @@ class EagerEvaluator:
 
     @staticmethod
     def _pack_outputs(res_data, first_tensor, device):
-        """Pack raw output data into Tensor objects.
+        """Pack raw output data into Tensor Anys.
 
         Args:
-            res_data (object): The raw data returned by the backend.
-            first_tensor (object): The first input tensor, used for dtype resolution.
-            device (object): The execution device.
+            res_data (Any): The raw data returned by the backend.
+            first_tensor (Any): The first input tensor, used for dtype resolution.
+            device (Any): The execution device.
 
         Returns: Tensor: A Tensor or a tuple of Tensors.
         """
@@ -119,8 +125,8 @@ class EagerEvaluator:
 
         Args:
             op_type (str): The op_type parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

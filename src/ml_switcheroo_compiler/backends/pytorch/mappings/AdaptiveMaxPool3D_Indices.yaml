@@ -1,0 +1,4 @@
+AdaptiveMaxPool3D_Indices:
+  custom_code: 'lambda x, sz, **kwargs: torch.nn.functional.adaptive_max_pool3d(x,
+    sz, return_indices=True)'
+  target_api: custom_op

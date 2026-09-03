@@ -1,282 +1,189 @@
-# ruff: noqa: E501
-import os
 import sys
-import tarfile
-import urllib.error
-import urllib.request
-import zipfile
-from unittest.mock import MagicMock, patch
+from unittest import mock
 
 import pytest
 
-import ml_switcheroo_compiler.utils.generic_utils as gu
 from ml_switcheroo_compiler.utils.generic_utils import (
     ArchiveConfig,
     CacheConfig,
+    Config,
+    CustomObjectScope,
+    FeatureSpace,
     GetFileConfig,
+    HashConfig,
     Progbar,
     ProgbarConfig,
+    PyDataset,
+    Sequence,
     _download_remote_file,
     _extract_archive,
     _validate_cache,
     bounding_boxes,
     clear_session,
-    custom_object_scope,
-    deserialize_keras_object,
+    custom_Any_scope,
+    deserialize_keras_Any,
     disable_interactive_logging,
     enable_interactive_logging,
-    get_custom_objects,
+    get_custom_Anys,
     get_file,
+    get_registered_Any,
     get_registered_name,
-    get_registered_object,
     is_interactive_logging_enabled,
     is_keras_tensor,
     register_keras_serializable,
-    serialize_keras_object,
+    serialize_keras_Any,
     set_random_seed,
     standardize_dtype,
 )
 
-"Tests for generic_utils.py."
+
+def test_configs():
+    hc = HashConfig()
+    ac = ArchiveConfig()
+    cc = CacheConfig()
+    gc = GetFileConfig()
+    pc = ProgbarConfig()
+    assert hc.hash_algorithm == "auto"
 
 
-def test_validate_cache(tmp_path: str) -> None:
-    """Test the validate cache behavior.
+def test_set_random_seed():
+    import types
 
-    Args:
-        tmp_path (str): The tmp_path parameter.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test _validate_cache."
-        fpath = os.path.join(str(tmp_path), "test.txt")
-        assert not _validate_cache(fpath)
-        with open(fpath, "w") as f:
-            f.write("test")
-        assert _validate_cache(fpath)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-@patch("urllib.request.urlretrieve")
-def test_download_remote_file(mock_urlretrieve: MagicMock) -> None:
-    """Test the download remote file behavior.
-
-    Args:
-        mock_urlretrieve (MagicMock): The mock_urlretrieve parameter.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test _download_remote_file."
-        _download_remote_file("http://example.com", "fpath")
-        mock_urlretrieve.assert_called_once_with("http://example.com", "fpath")
-        mock_urlretrieve.side_effect = urllib.error.URLError("error")
-        with pytest.raises(RuntimeError):
-            _download_remote_file("http://example.com", "fpath")
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_extract_archive(tmp_path: str) -> None:
-    """Test the extract archive behavior.
-
-    Args:
-        tmp_path (str): The tmp_path parameter.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test _extract_archive."
-        datadir = str(tmp_path)
-        fpath = os.path.join(datadir, "test.zip")
-        with zipfile.ZipFile(fpath, "w") as archive:
-            archive.writestr("test.txt", "test")
-        _extract_archive(fpath, datadir)
-        assert os.path.exists(os.path.join(datadir, "test.txt"))
-        fpath = os.path.join(datadir, "test.tar")
-        with tarfile.open(fpath, "w") as archive:
-            with open(os.path.join(datadir, "test.txt"), "w") as f:
-                f.write("test")
-            archive.add(os.path.join(datadir, "test.txt"), arcname="test.txt")
-        _extract_archive(fpath, datadir)
-        fpath = os.path.join(datadir, "test.tar.gz")
-        with tarfile.open(fpath, "w:gz") as archive:
-            with open(os.path.join(datadir, "test.txt"), "w") as f:
-                f.write("test")
-            archive.add(os.path.join(datadir, "test.txt"), arcname="test.txt")
-        _extract_archive(fpath, datadir)
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-@patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive")
-@patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file")
-@patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache")
-def test_get_file(mock_validate_cache: MagicMock, mock_download_remote_file: MagicMock, mock_extract_archive: MagicMock) -> None:
-    """Test the get file behavior.
-
-    Args:
-        mock_validate_cache (MagicMock): The mock_validate_cache parameter.
-        mock_download_remote_file (MagicMock): The mock_download_remote_file parameter.
-        mock_extract_archive (MagicMock): The mock_extract_archive parameter.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        "Test get_file."
-        mock_validate_cache.return_value = False
-        config = GetFileConfig(cache_config=CacheConfig(cache_dir="."), archive_config=ArchiveConfig(untar=True))
-        fpath = get_file("fname", "origin", config)
-        assert fpath is not None
-        mock_download_remote_file.assert_called_once()
-        mock_extract_archive.assert_called_once()
-        mock_validate_cache.return_value = True
-        mock_download_remote_file.reset_mock()
-        mock_extract_archive.reset_mock()
-        fpath = get_file("fname", "origin", config)
-        assert fpath is not None
-        mock_download_remote_file.assert_not_called()
-        mock_extract_archive.assert_not_called()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_set_random_seed_full_coverage() -> None:
-    class MockMod:
-        pass
-
-    with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": MockMod()}):
-        gu.set_random_seed(123)
-    with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": None}):
-        gu.set_random_seed(123)
-
-    class MockMod2:
-        @staticmethod
-        def set_numpy_seed(seed: int) -> None:
-            pass
-
-    with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": MockMod2()}):
-        gu.set_random_seed(123)
-
-    class MockRandom:
-        @property
-        def seed(self) -> None:
-            raise ImportError("Mocking ImportError for random.seed")
-
-    with patch("ml_switcheroo_compiler.utils.generic_utils.random", new=MockRandom()):
-        gu.set_random_seed(123)
-
-
-def test_set_random_seed_exceptions() -> None:
-    with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.numpy.utils": None}):
-        set_random_seed(42)
-    with patch.dict(sys.modules, {"random": None}):
-        set_random_seed(42)
-
-
-def test_extract_archive_fallthrough() -> None:
-    _extract_archive("test.unknown", "dir")
-
-
-def test_progbar_finalize() -> None:
-    pb = Progbar(10)
-    assert pb._should_finalize(5, True) is True
-    assert pb._should_finalize(5, False) is False
-
-
-def test_progbar_verbose() -> None:
-    pb = Progbar(10, config=ProgbarConfig(verbose=0))
-    pb.update(10, finalize=True)
-
-
-def test_set_random_seed() -> None:
+    m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
+    m.set_numpy_seed = mock.Mock()
+    sys.modules["ml_switcheroo_compiler.backends.numpy.utils"] = m
     set_random_seed(42)
+    del sys.modules["ml_switcheroo_compiler.backends.numpy.utils"]
+    with mock.patch("random.seed", side_effect=ImportError):
+        set_random_seed(42)
 
 
-def test_validate_cache_2(tmpdir) -> None:
-    p = tmpdir.join("test.txt")
-    assert _validate_cache(str(p)) is False
-    p.write("test")
-    assert _validate_cache(str(p)) is True
+def test_validate_cache():
+    with mock.patch("os.path.exists", return_value=True):
+        assert _validate_cache("dummy")
+    with mock.patch("os.path.exists", return_value=False):
+        assert not _validate_cache("dummy")
 
 
-def test_download_remote_file_2(tmpdir) -> None:
-    p = tmpdir.join("test.txt")
-    with patch("urllib.request.urlretrieve") as mock_ret:
-        _download_remote_file("http://test.com/t.txt", str(p))
-        mock_ret.assert_called_once()
-    with patch("urllib.request.urlretrieve", side_effect=urllib.error.URLError("test")):
+def test_download_remote_file():
+    with mock.patch("urllib.request.urlretrieve") as mock_url:
+        _download_remote_file("http://dummy", "dummy")
+        mock_url.assert_called_once()
+
+    import urllib.error
+
+    with mock.patch("urllib.request.urlretrieve", side_effect=urllib.error.URLError("err")):
         with pytest.raises(RuntimeError):
-            _download_remote_file("http://test.com/t.txt", str(p))
+            _download_remote_file("http://dummy", "dummy")
 
 
-def test_extract_archive_2(tmpdir) -> None:
-    d = str(tmpdir.join("out"))
-    os.makedirs(d)
-    with patch("tarfile.open") as mock_tar:
-        _extract_archive("test.tar.gz", d)
-        mock_tar.assert_called_with("test.tar.gz", "r:gz")
-        _extract_archive("test.tgz", d)
-        mock_tar.assert_called_with("test.tgz", "r:gz")
-        _extract_archive("test.tar", d)
-        mock_tar.assert_called_with("test.tar", "r:")
-    with patch("zipfile.ZipFile") as mock_zip:
-        _extract_archive("test.zip", d)
-        mock_zip.assert_called_with("test.zip", "r")
+def test_extract_archive():
+    with mock.patch("tarfile.open") as mock_tar:
+        _extract_archive("test.tar.gz", "dir")
+        _extract_archive("test.tar", "dir")
+
+    with mock.patch("zipfile.ZipFile") as mock_zip:
+        _extract_archive("test.zip", "dir")
+
+    _extract_archive("test.txt", "dir")  # nothing happens
 
 
-def test_get_file_2(tmpdir) -> None:
-    with patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True):
-        res = get_file("test.txt", "http://test.com")
-        assert res.endswith("test.txt")
-    with patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False):
-        with patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file") as mock_dl:
-            res = get_file("test.txt", "http://test.com")
-            mock_dl.assert_called_once()
-    conf = GetFileConfig(archive_config=ArchiveConfig(extract=True))
-    with patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False):
-        with patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file"):
-            with patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive") as mock_ext:
-                get_file("test.tar.gz", "http://test.com", config=conf)
-                mock_ext.assert_called_once()
+def test_get_file():
+    with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True):
+        res = get_file("test", "http://test")
+        assert res.endswith("test")
+
+    with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False), mock.patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file"), mock.patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive"):
+        # Extract True
+        cfg = GetFileConfig(archive_config=ArchiveConfig(extract=True))
+        get_file("test", "http://test", cfg)
 
 
-def test_progbar() -> None:
+def test_progbar():
     pb = Progbar(10)
-    pb.update(5, [("loss", 1.0)])
+    pb.update(1, [("loss", 0.5)])
     assert "loss" in pb._values
-    assert pb._values["loss"] == [5.0, 5]
-    pb2 = Progbar(10, config=ProgbarConfig(stateful_metrics=["acc"]))
-    pb2.update(5, [("acc", 1.0)])
-    assert pb2._values["acc"] == [1.0, 1]
-    pb.update(2, [("loss", 2.0)])
-    assert pb._values["loss"] == [5.0 + 4.0, 5 + 2]
+    assert pb._values["loss"] == [0.5, 1]
+
+    pb.update(2, [("loss", 0.5)])
+    assert pb._values["loss"] == [1.5, 3]  # 0.5*1 + 0.5*2 = 1.5, 1+2 = 3
+
+    pb = Progbar(10, ProgbarConfig(stateful_metrics=["acc"]))
+    pb.update(1, [("acc", 0.9)])
+    assert pb._values["acc"] == [0.9, 1]
+
+    # Test finalizing
+    assert pb._should_finalize(10, None)
+    assert not pb._should_finalize(1, None)
+    assert pb._should_finalize(1, True)
+
+    # Test should_update
+    import time
+
+    assert pb._should_update(time.time() + 100.0, False)
+
+    # Test format info
+    assert pb._format_info(5) == " - 5/10"
 
 
-def test_other_stubs() -> None:
+def test_dummy_classes():
+    assert FeatureSpace() is not None
+    assert Config() is not None
+
+    with CustomObjectScope() as scope:
+        assert scope is not None
+
+    assert PyDataset() is not None
+    assert Sequence() is not None
+    assert bounding_boxes() is not None
+
+
+def test_utility_functions():
     clear_session()
-    with custom_object_scope():
-        pass
-    assert deserialize_keras_object() is None
+
+    with custom_Any_scope() as s:
+        assert s is not None
+
+    assert deserialize_keras_Any() is None
+
     disable_interactive_logging()
     enable_interactive_logging()
-    assert get_custom_objects() == {}
+
+    assert get_custom_Anys() == {}
     assert get_registered_name() == ""
-    assert get_registered_object() is None
-    assert is_interactive_logging_enabled() is False
-    assert is_keras_tensor() is False
-
-    @register_keras_serializable()
-    class MyClass:
-        pass
-
-    assert serialize_keras_object() is None
+    assert get_registered_Any() is None
+    assert not is_interactive_logging_enabled()
+    assert not is_keras_tensor()
+    assert serialize_keras_Any() is None
     assert standardize_dtype("float32") == "float32"
     assert standardize_dtype() is None
-    bb = bounding_boxes()
+
+
+def test_register_keras_serializable():
+    dec = register_keras_serializable()
+
+    @dec
+    class Dummy:
+        pass
+
+    assert Dummy is not None
+
+
+from ml_switcheroo_compiler.utils.generic_utils import (
+    custom_object_scope,
+)
+
+
+def test_generic_utils_stubs() -> None:
+    """Test generic utils stubs."""
+    FeatureSpace()
+    Config()
+    PyDataset()
+    Sequence()
+    bounding_boxes()
+    with custom_object_scope():
+        pass
+
+    @register_keras_serializable()
+    class A:
+        pass

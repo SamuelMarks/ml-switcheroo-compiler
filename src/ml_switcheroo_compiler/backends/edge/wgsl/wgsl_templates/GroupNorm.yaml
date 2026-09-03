@@ -1,0 +1,14 @@
+GroupNorm:
+  body: "\n// GroupNorm WGSL template\nlet idx = global_id.x;\nif (idx >= {batch_groups}u)\
+    \ { return; }\nvar sum = 0.0;\nvar sq_sum = 0.0;\nlet offset = idx * {group_size}u;\n\
+    for (var i = 0u; i < {group_size}u; i = i + 1u) {\n    let val = buf_in_f32[offset\
+    \ + i];\n    sum = sum + val;\n    sq_sum = sq_sum + val * val;\n}\nlet mean =\
+    \ sum / f32({group_size}u);\nlet var_val = (sq_sum / f32({group_size}u)) - (mean\
+    \ * mean);\nfor (var i = 0u; i < {group_size}u; i = i + 1u) {\n    let c = (idx\
+    \ % {num_groups}u) * ({group_size}u / {inner_size}u) + (i / {inner_size}u);\n\
+    \    let val = buf_in_f32[offset + i];\n    buf_out_f32[offset + i] = ((val -\
+    \ mean) / sqrt(var_val + {eps})) * buf_weight_f32[c] + buf_bias_f32[c];\n}\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

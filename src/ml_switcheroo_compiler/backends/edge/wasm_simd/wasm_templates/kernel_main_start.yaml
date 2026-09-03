@@ -1,0 +1,6 @@
+kernel_main_start:
+  body: 'extern "C" {{
+
+    void main_kernel({params_str}) {{
+
+    '

@@ -14,8 +14,8 @@ class Indices(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -37,8 +37,8 @@ class Ix(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -65,8 +65,8 @@ class MaskIndices(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -84,8 +84,8 @@ class Mgrid(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -103,8 +103,8 @@ class Ogrid(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -114,7 +114,7 @@ class Ogrid(OpDef):
 
 @register_op("R")
 class R(OpDef):
-    """Translate slice objects to concatenation along the first axis."""
+    """Translate slice Anys to concatenation along the first axis."""
 
     op_name = "R"
 
@@ -122,8 +122,8 @@ class R(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -135,8 +135,8 @@ def mgrid(*args, **kwargs):
     """nd_grid instance which returns a dense multi-dimensional 'meshgrid'.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -150,8 +150,8 @@ def ogrid(*args, **kwargs):
     """nd_grid instance which returns an open multi-dimensional 'meshgrid'.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -162,11 +162,11 @@ def ogrid(*args, **kwargs):
 
 
 def r_(*args, **kwargs):
-    """Translate slice objects to concatenation along the first axis.
+    """Translate slice Anys to concatenation along the first axis.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -180,8 +180,8 @@ def indices(*args, **kwargs):
     """Return an array representing the indices of a grid.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -195,8 +195,8 @@ def ix_(*args, **kwargs):
     """Construct an open mesh from multiple sequences.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -210,8 +210,8 @@ def mask_indices(*args, **kwargs):
     """Return the indices to access (n, n) arrays.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

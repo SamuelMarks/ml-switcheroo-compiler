@@ -1,0 +1,2 @@
+Squeeze:
+  target_api: keras_ops.squeeze

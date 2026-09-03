@@ -1,0 +1,4 @@
+DEFAULT_NATIVE_SERIALIZATION:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

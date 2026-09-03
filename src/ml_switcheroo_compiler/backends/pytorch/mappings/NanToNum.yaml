@@ -1,0 +1,3 @@
+NanToNum:
+  ast_template: torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})
+  target_api: ''

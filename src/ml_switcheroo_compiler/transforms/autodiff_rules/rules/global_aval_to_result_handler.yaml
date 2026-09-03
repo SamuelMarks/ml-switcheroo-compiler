@@ -1,0 +1,4 @@
+global_aval_to_result_handler:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

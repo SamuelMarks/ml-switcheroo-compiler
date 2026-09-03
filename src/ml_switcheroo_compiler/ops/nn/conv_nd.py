@@ -3,7 +3,7 @@
 
 import typing
 from collections.abc import Sequence
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -60,7 +60,7 @@ def conv(
     Args:
         inputs (Tensor): The inputs parameter.
         kernel (Tensor): The kernel parameter.
-        config (object): The config parameter.
+        config (Any): The config parameter.
 
     Returns:
         Tensor: Result.
@@ -124,7 +124,7 @@ def depthwise_conv(
     Args:
         inputs (Tensor): The inputs parameter.
         kernel (Tensor): The kernel parameter.
-        config (object): The config parameter.
+        config (Any): The config parameter.
 
     Returns:
         Tensor: Result.
@@ -182,7 +182,7 @@ def separable_conv(
         inputs (Tensor): The inputs parameter.
         depthwise_kernel (Tensor): The depthwise_kernel parameter.
         pointwise_kernel (Tensor): The pointwise_kernel parameter.
-        config (object): The config parameter.
+        config (Any): The config parameter.
 
     Returns:
         Tensor: Result.

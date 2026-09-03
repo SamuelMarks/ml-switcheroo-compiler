@@ -1,0 +1,4 @@
+generate_sourcemaps:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

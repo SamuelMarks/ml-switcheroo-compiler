@@ -1,0 +1,3 @@
+MatrixRank:
+  ast_template: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
+  target_api: ''

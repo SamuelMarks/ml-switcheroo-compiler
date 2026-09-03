@@ -1,0 +1,3 @@
+C_:
+  ast_template: np.c_
+  target_api: ''

@@ -2,7 +2,8 @@
 """Common autodiff rules definitions."""
 
 import enum
-from typing import Callable
+from collections.abc import Sequence
+from typing import Any, Callable, Optional, Union
 
 
 class UnconnectedGradients(enum.Enum):
@@ -12,7 +13,7 @@ class UnconnectedGradients(enum.Enum):
     ZERO = "zero"
 
 
-def make_zero_vjp(name: str):
+def make_zero_vjp(name: str) -> Any:
     """Create a VJP function that returns zero gradients for a given operation.
 
     Args:
@@ -22,7 +23,7 @@ def make_zero_vjp(name: str):
         Callable: The generated VJP function.
     """
 
-    def vjp(graph, node, cotangent: str):
+    def vjp(graph: Any, node: Any, cotangent: str) -> Any:
         """Return zero gradients for all inputs.
 
         Args:
@@ -38,7 +39,7 @@ def make_zero_vjp(name: str):
     return vjp
 
 
-def make_zero_jvp(name: str):
+def make_zero_jvp(name: str) -> Any:
     """Create a JVP function that returns zero gradients for a given operation.
 
     Args:

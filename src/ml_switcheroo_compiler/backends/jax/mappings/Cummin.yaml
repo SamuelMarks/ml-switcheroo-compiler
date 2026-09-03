@@ -1,0 +1,2 @@
+Cummin:
+  target_api: jax.numpy.cummin

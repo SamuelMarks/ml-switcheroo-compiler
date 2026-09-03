@@ -1,0 +1,4 @@
+array_mapping_to_axis_resources:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+HistogramBinEdges:
+  ast_template: np.histogram_bin_edges
+  target_api: ''

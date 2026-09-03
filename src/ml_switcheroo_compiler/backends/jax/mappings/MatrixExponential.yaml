@@ -1,0 +1,2 @@
+MatrixExponential:
+  target_api: jax.scipy.linalg.expm

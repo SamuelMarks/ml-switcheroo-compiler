@@ -1,0 +1,17 @@
+ReshapeReshapeFusion:
+  pattern:
+    capture: reshape2
+    inputs:
+    - capture: reshape1
+      inputs:
+      - capture: input
+      - capture: shape1
+      op_type: Reshape
+    - capture: shape2
+    op_type: Reshape
+  replacement:
+    capture_to_replace: reshape2
+    inputs:
+    - input
+    - shape2
+    op_type: Reshape

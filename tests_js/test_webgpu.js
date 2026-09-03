@@ -1,7 +1,5 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const fs = require('fs');
-const path = require('path');
 
 const webgpuModule = require('../docs/_static/webgpu_runner.js');
 
@@ -68,6 +66,7 @@ test('createComputePipeline uses correct configuration', () => {
     assert.strictEqual(capturedModule.id, 'module');
 });
 
+// Polyfill WebGPU Constants
 global.GPUBufferUsage = {
     STORAGE: 1,
     COPY_DST: 2,
@@ -78,8 +77,9 @@ global.GPUMapMode = {
     READ: 1
 };
 
-test('runWebGPUCompute flows correctly', async () => {
-    // We mock the entire GPU pipeline
+test('runWebGPUCompute flows correctly and maps memory', async () => {
+    // We mock the entire GPU pipeline since we are running in headless Node.js
+    // without a native WGPU backend available in this test environment.
     let buffersDestroyed = 0;
 
     class MockBuffer {
@@ -128,6 +128,6 @@ test('runWebGPUCompute flows correctly', async () => {
     const result = await webgpuModule.runWebGPUCompute(nav, "wgsl code", inputData, 4);
 
     assert.strictEqual(result.length, 1);
-    assert.strictEqual(result[0], 42);
-    assert.strictEqual(buffersDestroyed, 3); // input, output, staging
+    assert.strictEqual(result[0], 42); // Asserts our mock buffer value surfaced
+    assert.strictEqual(buffersDestroyed, 3); // input, output, staging must be cleaned up
 });

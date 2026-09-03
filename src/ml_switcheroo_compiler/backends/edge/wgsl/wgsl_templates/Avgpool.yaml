@@ -1,0 +1,9 @@
+AvgPool:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar sum_val\
+    \ = 0.0;\nfor (var k = 0u; k < {kernel_size}u; k = k + 1u) {\n    let in_idx =\
+    \ idx * {stride}u + k;\n    sum_val = sum_val + buf_in_f32[in_idx];\n}\nbuf_out_f32[idx]\
+    \ = sum_val / f32({kernel_size}u);\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

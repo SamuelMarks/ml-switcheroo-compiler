@@ -1,0 +1,4 @@
+d_model:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

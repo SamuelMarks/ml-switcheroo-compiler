@@ -4,7 +4,7 @@
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -274,8 +274,8 @@ def stateless_parameterized_truncated_normal(shape, seed, config: Optional[Rando
     """Generate random values from a truncated normal distribution with custom config.
 
     Args:
-        shape (object): The shape of the output tensor.
-        seed (object): The seed object for the generator.
+        shape (Any): The shape of the output tensor.
+        seed (Any): The seed Any for the generator.
         config (Optional[RandomGenerationConfig]): Configuration containing distribution parameters.
 
     Returns:
@@ -309,9 +309,9 @@ class Generator:
         """Initialize the random number generator.
 
         Args:
-            copy_from (object): The copy_from parameter.
-            state (object): The state parameter.
-            alg (object): The alg parameter.
+            copy_from (Any): The copy_from parameter.
+            state (Any): The state parameter.
+            alg (Any): The alg parameter.
         """
         self.state = state
 
@@ -320,8 +320,8 @@ class Generator:
         """Create a Generator instance from a given seed.
 
         Args:
-            seed (object): The seed parameter.
-            alg (object): The alg parameter.
+            seed (Any): The seed parameter.
+            alg (Any): The alg parameter.
 
         Returns:
             tuple[int, ...]: Result.
@@ -332,10 +332,10 @@ class Generator:
         """Draws samples from a normal distribution using the generator's state.
 
         Args:
-            shape (object): The shape parameter.
+            shape (Any): The shape parameter.
             config (Optional): The config parameter.
-            dtype (object): The dtype parameter.
-            name (object): The name parameter.
+            dtype (Any): The dtype parameter.
+            name (Any): The name parameter.
 
         Returns:
             Tensor: Result.
@@ -356,10 +356,10 @@ class Generator:
         """Draws samples from a uniform distribution using the generator's state.
 
         Args:
-            shape (object): The shape parameter.
+            shape (Any): The shape parameter.
             config (Optional): The config parameter.
-            dtype (object): The dtype parameter.
-            name (object): The name parameter.
+            dtype (Any): The dtype parameter.
+            name (Any): The name parameter.
 
         Returns:
             Tensor: Result.
@@ -381,8 +381,8 @@ def create_rng_state(seed, alg=None):
     """Create a random number generator state from a seed.
 
     Args:
-        seed (object): The seed parameter.
-        alg (object): The alg parameter.
+        seed (Any): The seed parameter.
+        alg (Any): The alg parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -409,7 +409,7 @@ def set_global_generator(generator) -> None:
     """Register a globally accessible random number generator.
 
     Args:
-        generator (object): The generator instance to set globally.
+        generator (Any): The generator instance to set globally.
     """
     _GLOBAL_GENERATOR_STATE["generator"] = generator
 
@@ -418,9 +418,9 @@ def index_shuffle(index, seed, max_index):
     """Shuffles an index safely within the defined bounds.
 
     Args:
-        index (object): The index value to shuffle.
-        seed (object): The random seed.
-        max_index (object): The maximum allowed index.
+        index (Any): The index value to shuffle.
+        seed (Any): The random seed.
+        max_index (Any): The maximum allowed index.
 
     Returns: Tensor: The resulting shuffled index.
     """
@@ -431,8 +431,8 @@ def stateless_fold_in(seed, data):
     """Folds new data into an existing seed to produce a combined seed.
 
     Args:
-        seed (object): The original seed value.
-        data (object): The additional data to mix into the seed.
+        seed (Any): The original seed value.
+        data (Any): The additional data to mix into the seed.
 
     Returns: Tensor: The combined seed.
     """
@@ -443,8 +443,8 @@ def stateless_split(seed, num=2):
     """Split a single seed into multiple independent seeds.
 
     Args:
-        seed (object): The seed parameter.
-        num (object): The num parameter.
+        seed (Any): The seed parameter.
+        num (Any): The num parameter.
 
     Returns:
             tuple[int, ...]: Result.

@@ -14,7 +14,7 @@ intermediate representation (IR) graph for compilation
 
 
 import uuid
-from typing import Callable
+from typing import Any, Callable
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -28,8 +28,8 @@ def _wrap_proxy_inputs(args, subgraph):
     """Evaluate _wrap_proxy_inputs operation.
 
     Args:
-        args (object): The args parameter.
-        subgraph (object): The subgraph parameter.
+        args (Any): The args parameter.
+        subgraph (Any): The subgraph parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -64,7 +64,7 @@ def _get_tensor_ids(obj) -> list[str]:
     """Evaluate _get_tensor_ids operation.
 
     Args:
-        obj (object): The obj parameter.
+        obj (Any): The obj parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -88,7 +88,7 @@ def _process_trace_outputs(out, subgraph: IRBlock) -> str:
     """Evaluate _process_trace_outputs operation.
 
     Args:
-        out (object): The out parameter.
+        out (Any): The out parameter.
         subgraph (IRBlock): The subgraph parameter.
 
     Returns:

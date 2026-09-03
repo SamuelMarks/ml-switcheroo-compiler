@@ -1,0 +1,3 @@
+Sort:
+  ast_template: torch.sort({0}, dim={dimension})
+  target_api: ''

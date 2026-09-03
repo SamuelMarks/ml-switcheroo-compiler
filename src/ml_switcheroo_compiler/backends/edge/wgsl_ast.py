@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """WGSL AST definitions for robust code generation."""
 
-from typing import Any, Union
+from typing import Optional, Union
 
 
 class WGSLNode:
@@ -93,14 +93,14 @@ class WGSLAssign(WGSLNode):
 class WGSLDecl(WGSLNode):
     """WGSL Variable Declaration (let or var)."""
 
-    def __init__(self, kind: str, name: str, value: Any = None, type_annotation: Any = None) -> None:
+    def __init__(self, kind: str, name: str, value: Optional[Union[str, "WGSLNode"]] = None, type_annotation: Optional[str] = None) -> None:
         """__init__ function.
 
         Args:
             kind (str): The kind parameter.
             name (str): The name parameter.
-            value (Any): The value parameter.
-            type_annotation (Any): The type_annotation parameter.
+            value: The value parameter.
+            type_annotation: The type_annotation parameter.
         """
         self.kind = kind
         self.name = name
@@ -143,14 +143,14 @@ class WGSLFor(WGSLNode):
 class WGSLFunction(WGSLNode):
     """WGSL Function Definition."""
 
-    def __init__(self, name: str, params: list[str], body: list["WGSLNode"], attrs: Any = None) -> None:
+    def __init__(self, name: str, params: list[str], body: list["WGSLNode"], attrs: Optional[list[str]] = None) -> None:
         """__init__ function.
 
         Args:
             name (str): The name parameter.
             params (list[str]): The params parameter.
             body (list[WGSLNode]): The body parameter.
-            attrs (Any): The attrs parameter.
+            attrs: The attrs parameter.
         """
         self.name = name
         self.params = params

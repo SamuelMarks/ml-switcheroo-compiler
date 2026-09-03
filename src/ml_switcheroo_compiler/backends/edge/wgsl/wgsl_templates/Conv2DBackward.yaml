@@ -1,0 +1,7 @@
+Conv2DBackward:
+  body: |
+    // WGSL Conv2DBackward
+    let id = global_id.x;
+    if (id < {nelem}u) {{
+        buf_{clean_id}[id] = buf_{in0}[id]; // Simplified fallback
+    }}

@@ -1,0 +1,4 @@
+cosine_similarity:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

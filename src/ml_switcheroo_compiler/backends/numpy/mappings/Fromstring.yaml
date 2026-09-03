@@ -1,0 +1,3 @@
+Fromstring:
+  ast_template: np.fromstring
+  target_api: ''

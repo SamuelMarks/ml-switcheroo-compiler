@@ -1,0 +1,2 @@
+RNNCellResidualWrapper:
+  target_api: jax.numpy.rnncellresidualwrapper

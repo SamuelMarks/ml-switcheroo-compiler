@@ -1,0 +1,4 @@
+register_jax_array_methods:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

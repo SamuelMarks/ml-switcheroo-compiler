@@ -1,0 +1,2 @@
+BandPart:
+  target_api: '''tf.linalg.band_part'''

@@ -1,0 +1,2 @@
+VectorNorm:
+  target_api: '''mx.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})'''

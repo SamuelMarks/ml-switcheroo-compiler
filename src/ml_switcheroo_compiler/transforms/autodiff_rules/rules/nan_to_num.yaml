@@ -1,0 +1,4 @@
+nan_to_num:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+piecewise_constant_schedule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

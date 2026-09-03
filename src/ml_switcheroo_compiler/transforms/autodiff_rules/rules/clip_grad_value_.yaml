@@ -1,0 +1,4 @@
+clip_grad_value_:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

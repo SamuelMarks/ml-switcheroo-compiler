@@ -1,0 +1,4 @@
+take_current_trace:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

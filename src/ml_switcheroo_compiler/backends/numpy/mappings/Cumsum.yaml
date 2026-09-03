@@ -1,0 +1,3 @@
+Cumsum:
+  ast_template: np.cumsum
+  target_api: ''

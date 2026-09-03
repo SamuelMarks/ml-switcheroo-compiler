@@ -1,0 +1,2 @@
+ScatterNd:
+  target_api: tf.scatter_nd

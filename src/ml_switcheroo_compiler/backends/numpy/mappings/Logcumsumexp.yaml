@@ -1,0 +1,3 @@
+Logcumsumexp:
+  ast_template: getattr(backend_module, 'logsumexp', None)
+  target_api: ''

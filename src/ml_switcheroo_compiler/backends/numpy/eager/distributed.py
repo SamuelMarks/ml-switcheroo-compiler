@@ -147,11 +147,11 @@ class TCPDistributedContext:
     def shutdown(self) -> None:
         """Shutdown connections."""
         if self.world_size > 1:
-            if self.recv_conns:
+            if self.recv_conns and hasattr(self.recv_conns[0], "close"):
                 self.recv_conns[0].close()
-            if self.send_conns:
+            if self.send_conns and hasattr(self.send_conns[0], "close"):
                 self.send_conns[0].close()
-            if self.listener:
+            if self.listener and hasattr(self.listener, "close"):
                 self.listener.close()
 
 

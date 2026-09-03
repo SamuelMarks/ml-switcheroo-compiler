@@ -62,6 +62,10 @@ def test_error_templates() -> None:
         err3 = SwitcherooError("no kwargs message")
         assert str(err3) == "no kwargs message"
 
+        # Test KeyError fallback when kwarg is missing
+        err4 = SwitcherooError(bad_arg="val")
+        assert str(err4) == "Error: {arg}"
+
     os.remove(temp_file_name)
 
 

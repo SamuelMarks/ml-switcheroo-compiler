@@ -1,0 +1,4 @@
+in_specs_leaves:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

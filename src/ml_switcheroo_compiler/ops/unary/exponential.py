@@ -77,8 +77,8 @@ class NanToNum(UnaryMathOp):
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        x (Any): The x parameter.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,2 @@
+AccumulateN:
+  target_api: tf.math.accumulate_n

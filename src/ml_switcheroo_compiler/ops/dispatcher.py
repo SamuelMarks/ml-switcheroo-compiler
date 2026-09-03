@@ -12,8 +12,8 @@ def dispatch_op(op_type: str, *args, **kwargs):
 
     Args:
         op_type (str): The op_type parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

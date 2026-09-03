@@ -1,0 +1,3 @@
+SparseMinimum:
+  ast_template: tf.sparse.minimum
+  target_api: ''

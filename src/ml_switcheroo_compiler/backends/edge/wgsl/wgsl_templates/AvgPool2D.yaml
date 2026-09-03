@@ -1,0 +1,16 @@
+AvgPool2D:
+  body: "let out_x = global_id.x;\nlet out_y = global_id.y;\n\nlet out_width = {out_width}u;\n\
+    let out_height = {out_height}u;\nlet in_channels = {in_channels}u;\n\nif (out_x\
+    \ >= out_width || out_y >= out_height) {{\n    return;\n}}\n\nlet stride_h = {stride_h}u;\n\
+    let stride_w = {stride_w}u;\nlet window_h = {window_h}u;\nlet window_w = {window_w}u;\n\
+    \nfor (var c = 0u; c < in_channels; c++) {{\n    var sum = 0.0;\n    for (var\
+    \ fy = 0u; fy < window_h; fy++) {{\n        for (var fx = 0u; fx < window_w; fx++)\
+    \ {{\n            let in_y = out_y * stride_h + fy;\n            let in_x = out_x\
+    \ * stride_w + fx;\n            let in_idx = (in_y * {in_width}u + in_x) * in_channels\
+    \ + c;\n            sum = sum + buf_in0_f32[in_idx];\n        }}\n    }}\n   \
+    \ let out_idx = (out_y * out_width + out_x) * in_channels + c;\n    let pool_size\
+    \ = f32(window_h * window_w);\n    buf_out_f32[out_idx] = sum / pool_size;\n}}\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1

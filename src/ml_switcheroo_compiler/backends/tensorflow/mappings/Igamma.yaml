@@ -1,0 +1,2 @@
+Igamma:
+  target_api: tf.math.igamma

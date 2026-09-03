@@ -1,0 +1,2 @@
+Polyfit:
+  target_api: '''mx.polyfit({0})'''

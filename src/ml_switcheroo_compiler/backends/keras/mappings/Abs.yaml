@@ -1,0 +1,2 @@
+Abs:
+  target_api: keras_ops.abs

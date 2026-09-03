@@ -3,29 +3,18 @@
 
 """Buffer Allocation pass for edge execution."""
 
+import os
+
+import yaml
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+from ml_switcheroo_compiler.transforms.passes.config_models import OptimizationHeuristicsConfig
 
-
-def _get_dtype_size(dtype_str: str) -> int:
-    """Get the size in bytes of a given dtype.
-
-    Args:
-        dtype_str (str): The dtype string.
-
-    Returns:
-        int: The size in bytes.
-    """
-    import os
-
-    import yaml
-
-    yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
-    if os.path.exists(yaml_path):
-        with open(yaml_path) as f:
-            data = yaml.safe_load(f)
-            return int(data.get("memory_sizes", {}).get(dtype_str, 4))
-    return 4
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "pass_config", "optimization_heuristics.yaml")
+with open(_CONFIG_PATH) as f:
+    _config = OptimizationHeuristicsConfig(**yaml.safe_load(f))
+IN_PLACE_SAFE_OPS: set[str] = set(_config.in_place_safe_ops)
 
 
 def _get_node_byte_size(node: IRNode):
@@ -37,50 +26,11 @@ def _get_node_byte_size(node: IRNode):
     Returns:
         int | str: The size in bytes (int) or a symbolic expression (str).
     """
-    dtype = node.attributes.get("dtype", "float32")
-    dtype_size = _get_dtype_size(dtype)
+    from ml_switcheroo_compiler.transforms.passes.graph_scheduling import DefaultCostModel
 
-    shape = getattr(node, "shape_metadata", None)
-    if shape is None:
-        return str(dtype_size)
-
-    is_dynamic = getattr(node, "is_dynamic_shape", False)
-    # Check if any dim is a string (symbolic)
-    has_symbolic_dim = any(isinstance(d, str) for d in shape)
-
-    if not is_dynamic and not has_symbolic_dim:
-        elements = 1
-        for dim in shape:
-            elements *= max(1, int(dim))
-        return elements * dtype_size
-
-    # Build symbolic math string
-    dims = [str(d) for d in shape]
-    if dims:
-        symbolic_math = " * ".join(dims) + f" * {dtype_size}"
-        return symbolic_math
-    return str(dtype_size)
-
-
-IN_PLACE_SAFE_OPS: set[str] = {
-    "Add",
-    "Sub",
-    "Mul",
-    "Div",
-    "Relu",
-    "Exp",
-    "Log",
-    "Tanh",
-    "Sigmoid",
-    "Cast",
-    "Reshape",
-    "Squeeze",
-    "Unsqueeze",
-    "Sqrt",
-    "Abs",
-    "Maximum",
-    "Minimum",
-}
+    cost_model = DefaultCostModel()
+    cost = cost_model.get_memory_cost(node)
+    return cost if isinstance(cost, (int, str)) else str(cost)
 
 
 class GreedyOffsetAllocator:

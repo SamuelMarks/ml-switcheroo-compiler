@@ -1,0 +1,4 @@
+pairwise_distance:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

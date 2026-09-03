@@ -1,12 +1,12 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared utilities for extracting audio node attributes."""
 
-from typing import Any
+from typing import Optional
 
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def extract_stft_attributes(node: IRNode) -> tuple[Any, Any, Any, str, bool, str]:
+def extract_stft_attributes(node: IRNode) -> tuple[Optional[int], Optional[int], Optional[int], str, bool, str]:
     """Extract standard STFT attributes from a node.
 
     Args:
@@ -24,7 +24,7 @@ def extract_stft_attributes(node: IRNode) -> tuple[Any, Any, Any, str, bool, str
     return frame_length, frame_step, fft_length, window, center, fft_len_str
 
 
-def extract_mel_attributes(node: IRNode) -> tuple[int, Any, Any, float, float, int]:
+def extract_mel_attributes(node: IRNode) -> tuple[int, Optional[int], Optional[int], float, float, int]:
     """Extract standard Mel filterbank attributes from a node.
 
     Args:

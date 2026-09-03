@@ -1,0 +1,2 @@
+OneHot:
+  target_api: '''mx.eye({depth})[{0}]'''

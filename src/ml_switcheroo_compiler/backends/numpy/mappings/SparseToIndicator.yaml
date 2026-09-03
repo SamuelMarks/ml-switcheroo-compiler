@@ -1,0 +1,3 @@
+SparseToIndicator:
+  ast_template: tf.sparse.to_indicator
+  target_api: ''

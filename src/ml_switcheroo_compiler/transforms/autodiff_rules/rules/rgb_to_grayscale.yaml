@@ -1,0 +1,4 @@
+rgb_to_grayscale:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

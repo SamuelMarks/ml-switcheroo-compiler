@@ -3,7 +3,7 @@
 
 import uuid
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -421,7 +421,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]):
     """Convert AsStringConfig to a dictionary.
 
     Args:
-        conf (object): The conf parameter.
+        conf (Any): The conf parameter.
 
     Returns:
             tuple[int, ...]: Result.

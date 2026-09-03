@@ -1,0 +1,2 @@
+DynamicUpdateSlice:
+  target_api: np.dynamicupdateslice

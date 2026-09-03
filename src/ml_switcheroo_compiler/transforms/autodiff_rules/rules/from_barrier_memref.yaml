@@ -1,0 +1,4 @@
+from_barrier_memref:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

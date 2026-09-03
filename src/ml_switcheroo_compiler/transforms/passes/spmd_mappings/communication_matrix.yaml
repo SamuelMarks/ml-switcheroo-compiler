@@ -1,0 +1,28 @@
+communication_matrix:
+- conditions:
+  - inject: AllReduce
+    is_reduction: true
+  - inject: AllReduce
+    is_grad: true
+  - default: true
+    inject: AllGather
+  state:
+  - true
+  - false
+- conditions:
+  - inject: ReduceScatter
+    is_grad: true
+  - default: true
+    inject: none
+  state:
+  - false
+  - true
+- conditions:
+  - axes_length_match: true
+    axes_match: false
+    inject: AllToAll
+  - default: true
+    inject: none
+  state:
+  - true
+  - true

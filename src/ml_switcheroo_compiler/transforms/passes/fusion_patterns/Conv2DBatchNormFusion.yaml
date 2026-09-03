@@ -1,0 +1,24 @@
+Conv2DBatchNormFusion:
+  pattern:
+    capture: bn
+    inputs:
+    - capture: conv
+      inputs:
+      - capture: x
+      - capture: w
+      op_type: Conv2D
+    - capture: gamma
+    - capture: beta
+    - capture: mean
+    - capture: var
+    op_type: BatchNorm
+  replacement:
+    capture_to_replace: bn
+    inputs:
+    - x
+    - w
+    - gamma
+    - beta
+    - mean
+    - var
+    op_type: Conv2DBatchNorm

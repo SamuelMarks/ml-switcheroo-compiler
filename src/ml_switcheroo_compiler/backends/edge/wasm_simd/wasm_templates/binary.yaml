@@ -1,0 +1,7 @@
+binary:
+  body: "// SIMD Binary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+    for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);\n\
+    \    v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);\n    v128_t res = {simd_expr};\n\
+    \    wasm_v128_store(&buf_{clean_id}[i], res);\n}}\nfor (int j = limit_{clean_id};\
+    \ j < {nelem}; ++j) {{\n    float in0_val = buf_{in0}[j];\n    float in1_val =\
+    \ buf_{in1}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"

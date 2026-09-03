@@ -1,0 +1,2 @@
+ExportToDot:
+  body: "// ExportToDot is a symbolic/offline op, replacing with Identity copy\nlet idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx] = buf_in0_f32[idx];\n"

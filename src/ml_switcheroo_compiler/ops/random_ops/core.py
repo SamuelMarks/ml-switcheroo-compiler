@@ -14,8 +14,8 @@ class Rademacher(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -33,8 +33,8 @@ def rademacher(*args, **kwargs):
     """Draw samples from a Rademacher distribution.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

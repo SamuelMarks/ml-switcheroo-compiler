@@ -1,0 +1,4 @@
+Sigmoid:
+  jvp: Mul($tangent[0], Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))
+  vjp:
+  - '- Mul($cotangent, Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))'

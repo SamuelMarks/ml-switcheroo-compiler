@@ -1,0 +1,3 @@
+Cummin:
+  ast_template: np.minimum.accumulate
+  target_api: ''

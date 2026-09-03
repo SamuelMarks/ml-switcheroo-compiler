@@ -1,0 +1,2 @@
+BitwiseNot:
+  target_api: cp.bitwise_not

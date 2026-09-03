@@ -16,8 +16,8 @@ class RawOp(OpDef):
         """Infer shape dynamically or fallback to unknown.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

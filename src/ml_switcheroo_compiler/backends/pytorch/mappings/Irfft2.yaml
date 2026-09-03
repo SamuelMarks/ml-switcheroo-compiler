@@ -1,0 +1,3 @@
+Irfft2:
+  custom_code: 'lambda *args, **kwargs: torch.fft.irfft2(args[0], **kwargs)'
+  target_api: custom_op

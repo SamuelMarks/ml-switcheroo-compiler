@@ -1,0 +1,4 @@
+expand_dims:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

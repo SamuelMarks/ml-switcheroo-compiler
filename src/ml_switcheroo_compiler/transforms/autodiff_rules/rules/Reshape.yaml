@@ -1,0 +1,4 @@
+Reshape:
+  jvp: Reshape($tangent[0])
+  vjp:
+  - Reshape($cotangent)

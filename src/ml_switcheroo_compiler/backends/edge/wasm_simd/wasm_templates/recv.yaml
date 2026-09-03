@@ -1,0 +1,4 @@
+recv:
+  body: '// Recv primitive: No-op in WASM, handled by JS orchestrator
+
+    '

@@ -1,0 +1,4 @@
+HammingWindow:
+  ast_template: torch.hamming_window({window_length}, periodic={periodic}, alpha={alpha},
+    beta={beta})
+  target_api: ''

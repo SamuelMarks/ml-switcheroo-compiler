@@ -1,0 +1,3 @@
+Asinh:
+  ast_template: np.arcsinh
+  target_api: ''

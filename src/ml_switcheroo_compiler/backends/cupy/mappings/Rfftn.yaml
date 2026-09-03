@@ -1,0 +1,2 @@
+Rfftn:
+  target_api: cp.fft.rfftn

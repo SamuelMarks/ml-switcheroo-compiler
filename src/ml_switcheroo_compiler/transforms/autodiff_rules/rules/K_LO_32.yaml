@@ -1,0 +1,4 @@
+K_LO_32:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+entries_per_warpgroup:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

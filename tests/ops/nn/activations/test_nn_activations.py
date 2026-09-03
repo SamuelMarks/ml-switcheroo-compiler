@@ -31,9 +31,9 @@ def test_nn_activations_coverage():
     assert LogSoftmax().infer_shape() == ()
     assert Sigmoid().infer_shape(DummyShape()) == (1, 2)
     assert Sigmoid().infer_shape() == ()
-    assert OneHot().infer_shape(DummyShape(), DummyShape(), 5) == (1, 2)
-    assert OneHot().infer_shape(DummyShape(), DummyShape(), depth=5) == (1, 2)
-    assert OneHot().infer_shape() == ()
+    assert OneHot().infer_shape(DummyShape(), 5) == (1, 2, 5)
+    assert OneHot().infer_shape(DummyShape(), depth=5) == (1, 2, 5)
+    assert OneHot().infer_shape() == (1,)
     assert Rrelu().infer_shape(DummyShape()) == (1, 2)
     assert Rrelu().infer_shape() == ()
 

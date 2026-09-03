@@ -1,0 +1,25 @@
+profiles:
+  default_wgsl:
+    tiling:
+      matmul:
+        threshold_M: 64
+        threshold_N: 64
+        TILE_M: 16
+        TILE_N: 16
+        TILE_K: 16
+      conv2d:
+        threshold_HW: 256
+        TILE_H: 16
+        TILE_W: 16
+  default_wasm:
+    tiling:
+      matmul:
+        threshold_M: 32
+        threshold_N: 32
+        TILE_M: 8
+        TILE_N: 8
+        TILE_K: 8
+      conv2d:
+        threshold_HW: 128
+        TILE_H: 8
+        TILE_W: 8

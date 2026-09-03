@@ -1,0 +1,4 @@
+Quint2x4:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

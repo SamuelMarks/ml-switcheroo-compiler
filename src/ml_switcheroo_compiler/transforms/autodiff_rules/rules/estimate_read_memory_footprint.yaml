@@ -1,0 +1,4 @@
+estimate_read_memory_footprint:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

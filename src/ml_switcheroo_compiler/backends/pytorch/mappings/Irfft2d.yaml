@@ -1,0 +1,3 @@
+Irfft2d:
+  ast_template: torch.fft.irfft2({0}, s={s}, dim={axes})
+  target_api: ''

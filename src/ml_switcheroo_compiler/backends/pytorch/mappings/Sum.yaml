@@ -1,0 +1,3 @@
+Sum:
+  ast_template: torch.sum({0}, dim={axis}, keepdim={keepdims})
+  target_api: torch.sum

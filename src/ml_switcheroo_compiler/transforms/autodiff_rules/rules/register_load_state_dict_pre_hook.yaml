@@ -1,0 +1,4 @@
+register_load_state_dict_pre_hook:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

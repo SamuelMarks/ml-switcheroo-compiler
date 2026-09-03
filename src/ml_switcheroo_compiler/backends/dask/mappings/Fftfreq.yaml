@@ -1,0 +1,2 @@
+Fftfreq:
+  target_api: da.fft.fftfreq

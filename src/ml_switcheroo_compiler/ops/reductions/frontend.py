@@ -43,8 +43,8 @@ def sum(a, axis=None, keepdims: bool = False):
     """Sum.
 
     Args:
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -60,8 +60,8 @@ def max(a, axis=None, keepdims: bool = False):
     """Max.
 
     Args:
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -77,8 +77,8 @@ def min(a, axis=None, keepdims: bool = False):
     """Min.
 
     Args:
-        a (object): The a parameter.
-        axis (object): The axis parameter.
+        a (Any): The a parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:

@@ -1,0 +1,3 @@
+Igamma:
+  ast_template: getattr(backend_module, 'gammainc', None)
+  target_api: ''

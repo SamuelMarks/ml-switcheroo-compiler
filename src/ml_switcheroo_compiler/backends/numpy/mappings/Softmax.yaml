@@ -1,0 +1,3 @@
+Softmax:
+  ast_template: getattr(backend_module, 'softmax', None)({0}, axis={axis})
+  target_api: ''

@@ -1,0 +1,11 @@
+execution_order:
+- polyfill_lowering
+- type_promotion_explicitizer
+- broadcast_explicitizer
+- constant_folding
+- dead_code_elimination
+- common_subexpression_elimination
+- operator_fusion
+- graph_scheduling
+- buffer_allocation
+- spmd

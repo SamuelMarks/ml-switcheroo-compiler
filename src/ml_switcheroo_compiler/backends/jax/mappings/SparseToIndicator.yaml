@@ -1,0 +1,2 @@
+SparseToIndicator:
+  target_api: jax.numpy.sparsetoindicator

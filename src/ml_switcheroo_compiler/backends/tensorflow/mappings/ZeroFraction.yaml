@@ -1,0 +1,2 @@
+ZeroFraction:
+  target_api: tf.math.zero_fraction

@@ -1,0 +1,2 @@
+RandomRandint:
+  target_api: np.randomrandint

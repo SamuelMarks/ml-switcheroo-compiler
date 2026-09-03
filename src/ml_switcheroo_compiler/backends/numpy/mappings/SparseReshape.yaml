@@ -1,0 +1,3 @@
+SparseReshape:
+  ast_template: tf.sparse.reshape
+  target_api: ''

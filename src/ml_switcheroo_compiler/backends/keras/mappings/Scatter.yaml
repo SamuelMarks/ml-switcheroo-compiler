@@ -1,0 +1,2 @@
+Scatter:
+  target_api: keras_ops.scatter

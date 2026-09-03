@@ -1,0 +1,4 @@
+linen_rngs_dict:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

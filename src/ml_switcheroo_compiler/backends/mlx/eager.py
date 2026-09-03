@@ -182,7 +182,7 @@ def _mlx_tensor_scatter_max(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    import mlx.core as mx
+    mx = backend_module
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res: str = backend_module.array(tensor)
@@ -203,7 +203,7 @@ def _mlx_tensor_scatter_min(backend_module, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    import mlx.core as mx
+    mx = backend_module
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res: str = backend_module.array(tensor)
@@ -590,7 +590,7 @@ def _mlx_all_reduce(backend_module, tensor, **kwargs):
 
     Returns: mx.array: The reduced tensor.
     """
-    import mlx.core as mx
+    mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
         return mx.distributed.all_sum(tensor)
@@ -608,7 +608,7 @@ def _mlx_all_gather(backend_module, tensor, **kwargs):
 
     Returns: mx.array: The gathered tensor.
     """
-    import mlx.core as mx
+    mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_gather"):
         return mx.distributed.all_gather(tensor)
@@ -626,7 +626,7 @@ def _mlx_all_to_all(backend_module, tensor, **kwargs):
 
     Returns: mx.array: The distributed tensor.
     """
-    import mlx.core as mx
+    mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_to_all"):
         return mx.distributed.all_to_all(tensor)
@@ -644,11 +644,34 @@ def _mlx_reduce_scatter(backend_module, tensor, **kwargs):
 
     Returns: mx.array: The scattered tensor.
     """
-    import mlx.core as mx
+    mx = backend_module
 
-    if hasattr(mx, "distributed") and hasattr(mx.distributed, "recv"):
-        # Not natively supported in early MLX, we fallback
-        import warnings
+    # Emulate ReduceScatter via AllReduce followed by slicing the relevant chunk for the local rank.
+    # Note: Proper distributed operations require group orchestration, so we rely on mx.distributed where possible.
+    if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
+        reduced = mx.distributed.all_sum(tensor)
 
-        warnings.warn("MLX distributed recv not fully implemented yet; returning tensor unmodified as mock.", stacklevel=2)
-    return tensor
+        # Get rank and world size to slice
+        group = kwargs.get("group")
+        try:
+            # Fallbacks if distributed isn't fully initialized
+            rank = group.rank() if group else (mx.distributed.init().rank() if hasattr(mx.distributed, "init") else 0)
+            world_size = group.size() if group else (mx.distributed.init().size() if hasattr(mx.distributed, "init") else 1)
+        except Exception:
+            rank = 0
+            world_size = 1
+
+        scatter_dim = kwargs.get("scatter_dim", 0)
+        dim_size = reduced.shape[scatter_dim]
+        chunk_size = dim_size // world_size
+
+        start_idx = rank * chunk_size
+        end_idx = start_idx + chunk_size
+
+        slices = [slice(None)] * reduced.ndim
+        slices[scatter_dim] = slice(start_idx, end_idx)
+        return reduced[tuple(slices)]
+
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    raise BackendNotSupportedError("ReduceScatter is not supported in the current MLX version.")

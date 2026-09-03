@@ -1,0 +1,2 @@
+Polymul:
+  target_api: '''mx.polymul({0})'''

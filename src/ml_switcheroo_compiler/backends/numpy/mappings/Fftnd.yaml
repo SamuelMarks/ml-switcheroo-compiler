@@ -1,0 +1,3 @@
+Fftnd:
+  ast_template: np.fft.fftn({0})
+  target_api: ''

@@ -1,0 +1,4 @@
+Full:
+  ast_template: torch.full({shape}, {fill_value})' + (", dtype=getattr(torch, '" +
+    str(kwargs.get('dtype')) + "', torch.float32)" if 'dtype' in kwargs else '')
+  target_api: ''

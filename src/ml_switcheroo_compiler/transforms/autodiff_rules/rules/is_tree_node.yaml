@@ -1,0 +1,4 @@
+is_tree_node:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

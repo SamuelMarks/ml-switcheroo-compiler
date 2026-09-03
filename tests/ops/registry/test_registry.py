@@ -18,7 +18,7 @@ def test_registry_register_op():
         def infer_shape(self):
             return ()
 
-    # re-registration with same name but DIFFERENT class name is ValueError
+    # re-registration with same name but DIFFERENT class name is KeyError
     with pytest.raises(ValueError, match="already registered"):
 
         @register_op("TestRegistryOp1")
@@ -53,7 +53,7 @@ def test_get_op_not_found():
     with pytest.raises(KeyError, match="not found"):
         get_op("NonExistentOp")
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(KeyError, match="not found"):
         get_op("OtherNonExistentOp")
 
 

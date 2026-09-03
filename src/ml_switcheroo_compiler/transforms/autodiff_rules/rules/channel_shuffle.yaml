@@ -1,0 +1,4 @@
+channel_shuffle:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

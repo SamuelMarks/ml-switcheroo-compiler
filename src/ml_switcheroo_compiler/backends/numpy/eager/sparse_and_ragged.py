@@ -102,6 +102,26 @@ def _np_sparse_segment_sum(backend_module, data, indices, segment_ids, **kwargs)
     return np.sum(np.asarray(data))
 
 
+@numpy_eager_registry.register("SparseExpandDims")
+def _np_sparse_expand_dims(backend_module, x, axis=None, **kwargs):
+    """Implement sparse expand dims in Numpy.
+
+    Args:
+        backend_module (object): The backend module.
+        x (object): The input array.
+        axis (int | None): The axis to expand.
+        **kwargs (object): Keyword arguments.
+
+    Returns: np.ndarray: The expanded array.
+    """
+    import numpy as np
+
+    ax = kwargs.get("axis", axis)
+    if ax is None:
+        ax = -1
+    return np.expand_dims(np.asarray(x), axis=ax)
+
+
 @numpy_eager_registry.register("RaggedDot")
 def _np_ragged_dot(backend_module, a, b, **kwargs):
     """Implement ragged dot in Numpy.

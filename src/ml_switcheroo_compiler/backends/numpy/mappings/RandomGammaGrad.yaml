@@ -1,0 +1,3 @@
+RandomGammaGrad:
+  ast_template: 'lambda a, x: a'
+  target_api: ''

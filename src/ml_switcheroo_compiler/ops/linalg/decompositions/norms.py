@@ -36,8 +36,8 @@ def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None
     """Evaluate _norm_out_shape operation.
 
     Args:
-        x_shape (object): The x_shape parameter.
-        axis (object): The axis parameter.
+        x_shape (Any): The x_shape parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -59,8 +59,8 @@ def norm(
 
     Args:
         x (Tensor): The x parameter.
-        ord (object): The ord parameter.
-        axis (object): The axis parameter.
+        ord (Any): The ord parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -119,7 +119,7 @@ def _power_iteration_eager(
     Args:
         input (Tensor): The input parameter.
         num_iters (int): The num_iters parameter.
-        u (object): The u parameter.
+        u (Any): The u parameter.
 
     Returns:
         tuple: Result.
@@ -152,7 +152,7 @@ def power_iteration(
     Args:
         input (Tensor): The input parameter.
         num_iters (int): The num_iters parameter.
-        u (object): The u parameter.
+        u (Any): The u parameter.
 
     Returns:
         tuple: Result.

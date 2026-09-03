@@ -1,0 +1,4 @@
+Squareplus:
+  custom_code: 'lambda x: jax.nn.squareplus(x) if hasattr(jax.nn, ''squareplus'')
+    else 0.5 * (x + jax.numpy.sqrt(x ** 2 + 4.0))'
+  target_api: custom_op

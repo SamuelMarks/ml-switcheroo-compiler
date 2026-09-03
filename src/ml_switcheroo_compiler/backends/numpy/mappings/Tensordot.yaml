@@ -1,0 +1,3 @@
+Tensordot:
+  ast_template: np.tensordot({0}, {1}, axes={axes})
+  target_api: ''

@@ -1,0 +1,15 @@
+1f1b:
+  dependencies:
+  - offset_mb: 0
+    source_stage: forward
+    target_stage: backward
+  - offset_mb: -1
+    source_stage: backward
+    target_stage: forward
+  mesh_mapping:
+    devices_per_stage: 1
+  microbatch_splitting:
+    num_microbatches: 4
+    strategy: 1f1b
+  stage_communication:
+    protocol: sync

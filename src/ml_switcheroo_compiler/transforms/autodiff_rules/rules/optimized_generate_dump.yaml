@@ -1,0 +1,4 @@
+optimized_generate_dump:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

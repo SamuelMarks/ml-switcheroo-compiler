@@ -1,0 +1,4 @@
+check_no_float0s:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

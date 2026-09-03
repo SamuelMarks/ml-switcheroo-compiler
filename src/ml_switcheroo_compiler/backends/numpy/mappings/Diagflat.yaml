@@ -1,0 +1,2 @@
+Diagflat:
+  target_api: np.diagflat

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
-"""Shape operations for advanced indexing and sorting Tensor objects."""
+"""Shape operations for advanced indexing and sorting Tensor Anys."""
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -14,7 +14,7 @@ def _normalize_k(k):
     """Evaluate _normalize_k operation.
 
     Args:
-        k (object): The k parameter.
+        k (Any): The k parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -41,9 +41,9 @@ class TopK(OpDef):
         """Infer the output shape for the operation.
 
         Args:
-            x (object): The x parameter.
-            k (object): The k parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            k (Any): The k parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -75,10 +75,10 @@ class Argsort(OpDef):
         """Infer the output shape for sorting indices.
 
         Args:
-            x (object): The x parameter.
-            dimension (object): The dimension parameter.
-            is_stable (object): The is_stable parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            dimension (Any): The dimension parameter.
+            is_stable (Any): The is_stable parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -104,10 +104,10 @@ class Sort(OpDef):
         """Infer the output shape for the sorting operation.
 
         Args:
-            x (object): The x parameter.
-            dimension (object): The dimension parameter.
-            is_stable (object): The is_stable parameter.
-            **kwargs (object): Keyword args.
+            x (Any): The x parameter.
+            dimension (Any): The dimension parameter.
+            is_stable (Any): The is_stable parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -123,8 +123,8 @@ class Where(OpDef):
         """Infer the output shape for conditionally chosen elements.
 
         Args:
-            *args (object): Positional arguments, typically condition, x, and y.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically condition, x, and y.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple.
@@ -142,8 +142,8 @@ class Gather(OpDef):
         """Infer the output shape for gathered slices.
 
         Args:
-            *args (object): Positional arguments, typically params and indices.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically params and indices.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -159,8 +159,8 @@ class Take(OpDef):
         """Infer the output shape for taken elements.
 
         Args:
-            *args (object): Positional arguments, typically the input tensor and indices.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input tensor and indices.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -176,8 +176,8 @@ class TakeAlongAxis(OpDef):
         """Infer the output shape for elements taken along an axis.
 
         Args:
-            *args (object): Positional arguments, typically the input array, indices, and axis.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input array, indices, and axis.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -193,8 +193,8 @@ class GatherNd(OpDef):
         """Infer the output shape for n-dimensional gathered slices.
 
         Args:
-            *args (object): Positional arguments, typically params and n-dimensional indices.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically params and n-dimensional indices.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -210,8 +210,8 @@ class Scatter(OpDef):
         """Infer the output shape for scattered updates.
 
         Args:
-            *args (object): Positional arguments, typically input tensor, indices, and updates.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically input tensor, indices, and updates.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -227,8 +227,8 @@ class ScatterNd(OpDef):
         """Infer the output shape for n-dimensional scattered updates.
 
         Args:
-            *args (object): Positional arguments, typically tensor, indices, and updates.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically tensor, indices, and updates.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -244,8 +244,8 @@ class ScatterAdd(OpDef):
         """Infer the output shape after adding scattered updates.
 
         Args:
-            *args (object): Positional arguments, typically tensor, indices, and updates.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically tensor, indices, and updates.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -261,8 +261,8 @@ class Vdot(OpDef):
         """Infer the output shape for the vector dot product.
 
         Args:
-            *args (object): Positional arguments, typically the two input vectors.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the two input vectors.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -278,8 +278,8 @@ class SearchSorted(OpDef):
         """Infer the output shape for searched sorted indices.
 
         Args:
-            *args (object): Positional arguments, typically sorted sequence and values to insert.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically sorted sequence and values to insert.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -295,8 +295,8 @@ class Select(OpDef):
         """Infer the output shape for the selected elements.
 
         Args:
-            *args (object): Positional arguments, typically condition, x, and y.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically condition, x, and y.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -312,8 +312,8 @@ class Assign(OpDef):
         """Infer the output shape after assignment.
 
         Args:
-            *args (object): Positional arguments, typically the variable and the value.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the variable and the value.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -329,8 +329,8 @@ class AssignAdd(OpDef):
         """Infer the output shape after addition assignment.
 
         Args:
-            *args (object): Positional arguments, typically the variable and the value to add.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the variable and the value to add.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -346,8 +346,8 @@ class AssignSub(OpDef):
         """Infer the output shape after subtraction assignment.
 
         Args:
-            *args (object): Positional arguments, typically the variable and the value to subtract.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the variable and the value to subtract.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
@@ -363,10 +363,10 @@ class TensorScatterUpdate(OpDef):
         """Infer the output shape for scattered multidimensional updates.
 
         Args:
-            tensor (object): The initial tensor to be updated.
-            indices (object): The multidimensional indices for the updates.
-            updates (object): The values to be updated in the tensor.
-            **kwargs (object): Additional keyword arguments.
+            tensor (Any): The initial tensor to be updated.
+            indices (Any): The multidimensional indices for the updates.
+            updates (Any): The values to be updated in the tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
@@ -384,10 +384,10 @@ class Argpartition(OpDef):
         """Infer the output shape for the partitioned indices.
 
         Args:
-            a (object): The a parameter.
-            kth (object): The kth parameter.
+            a (Any): The a parameter.
+            kth (Any): The kth parameter.
             axis (int): The axis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -406,10 +406,10 @@ class Partition(OpDef):
         """Infer the output shape for the partitioned array.
 
         Args:
-            a (object): The a parameter.
-            kth (object): The kth parameter.
+            a (Any): The a parameter.
+            kth (Any): The kth parameter.
             axis (int): The axis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -428,11 +428,11 @@ class Compress(OpDef):
         """Infer the output shape for the compressed array.
 
         Args:
-            condition (object): The condition parameter.
-            a (object): The a parameter.
+            condition (Any): The condition parameter.
+            a (Any): The a parameter.
             axis (int): The axis parameter.
-            out (object): The out parameter.
-            **kwargs (object): Keyword args.
+            out (Any): The out parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -451,11 +451,11 @@ class Diagonal(OpDef):
         """Infer the output shape for the diagonal extraction.
 
         Args:
-            a (object): The a parameter.
+            a (Any): The a parameter.
             offset (int): The offset parameter.
             axis1 (int): The axis1 parameter.
             axis2 (int): The axis2 parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -474,9 +474,9 @@ class Diagflat(OpDef):
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
-            v (object): The v parameter.
+            v (Any): The v parameter.
             k (int): The k parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -497,7 +497,7 @@ class DiagIndices(OpDef):
         Args:
             n (int): The n parameter.
             naxis (int): The naxis parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -516,8 +516,8 @@ class DiagIndicesFrom(OpDef):
         """Infer the output shape for the n-dimensional diagonal indices.
 
         Args:
-            arr (object): The array for which the indices will be generated.
-            **kwargs (object): Additional keyword arguments.
+            arr (Any): The array for which the indices will be generated.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple representing a dynamic 1D size.
         """
@@ -534,10 +534,10 @@ class BooleanMask(OpDef):
         """Infer the output shape for the boolean masked array.
 
         Args:
-            tensor (object): The tensor parameter.
-            mask (object): The mask parameter.
-            axis (object): The axis parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            mask (Any): The mask parameter.
+            axis (Any): The axis parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -556,8 +556,8 @@ class InvertPermutation(OpDef):
         """Infer the output shape for the inverted permutation.
 
         Args:
-            x (object): The 1-D tensor indicating the permutation to invert.
-            **kwargs (object): Additional keyword arguments.
+            x (Any): The 1-D tensor indicating the permutation to invert.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """

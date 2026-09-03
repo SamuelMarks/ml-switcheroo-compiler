@@ -7,7 +7,9 @@ from __future__ import annotations
 """Frontend reductions ops."""
 
 
+import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -24,7 +26,7 @@ class UnpoolOptions:
     kernel_size: int | tuple
     stride: int | tuple | None = None
     padding: int | tuple = 0
-    output_size = None
+    output_size: Any | None = None
 
 
 def fractional_max_pool2d(

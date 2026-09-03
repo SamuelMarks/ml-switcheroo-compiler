@@ -40,88 +40,120 @@ def decode_image(contents: Tensor, channels=0, dtype=DType.UInt8, name=None, exp
     return _emit_shape_node("DecodeImage", [contents], {"channels": channels, "dtype": dtype, "name": name, "expand_animations": expand_animations}, getattr(contents, "shape", ()), getattr(contents, "dtype", "float32"))
 
 
+def _decode_image_with_pil(contents, channels: int = 0):
+    """Helper to decode an image buffer using Pillow.
+
+    Args:
+        contents (Any): The byte content of the image.
+        channels (int): Expected number of channels.
+
+    Returns:
+        Tensor: Resulting decoded image tensor.
+    """
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    data = getattr(contents, "data", contents)
+    if not data:
+        return Tensor(None, TensorConfig((), None, None))
+
+    try:
+        if isinstance(data, str):
+            with open(data, "rb") as f:
+                img = Image.open(f)
+                img.load()
+        else:
+            img = Image.open(io.BytesIO(data))
+    except Exception as e:
+        raise ValueError(f"Failed to decode image: {e}") from e
+
+    # Convert to standard format
+    if channels == 1:
+        img = img.convert("L")
+    elif channels == 3:
+        img = img.convert("RGB")
+    elif channels == 4:
+        img = img.convert("RGBA")
+
+    arr = np.array(img)
+    return Tensor(arr, TensorConfig(arr.shape, DType.UInt8, None))
+
+
 def decode_jpeg(contents, channels: int = 0, ratio: int = 1):
     """Decode JPEG image.
 
     Args:
-        contents (object): The contents parameter.
+        contents (Any): The contents parameter.
         channels (int): The channels parameter.
         ratio (int): The ratio parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_jpeg"):
         return backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio)
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, TensorConfig((), None, None))
+    return _decode_image_with_pil(contents, channels)
 
 
 def decode_png(contents, channels: int = 0, dtype=None):
     """Decode PNG image.
 
     Args:
-        contents (object): The contents parameter.
+        contents (Any): The contents parameter.
         channels (int): The channels parameter.
-        like (object): The like parameter.
-        dtype (object): The dtype parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_png"):
         return backend_cls.decode_png(contents, channels=channels, dtype=dtype)
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, TensorConfig((), None, None))
+    return _decode_image_with_pil(contents, channels)
 
 
-def decode_gif(
-    contents,
-):
+def decode_gif(contents):
     """Decode GIF image.
 
     Args:
-        contents (object): The contents parameter.
+        contents (Any): The contents parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_gif"):
         return backend_cls.decode_gif(contents)
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, TensorConfig((), None, None))
+    return _decode_image_with_pil(contents)
 
 
 def decode_bmp(contents, channels: int = 0):
     """Decode BMP image.
 
     Args:
-        contents (object): The contents parameter.
+        contents (Any): The contents parameter.
         channels (int): The channels parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_bmp"):
         return backend_cls.decode_bmp(contents, channels=channels)
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, TensorConfig((), None, None))
+    return _decode_image_with_pil(contents, channels)
 
 
 @register_op("DecodeImage")
@@ -134,8 +166,8 @@ class DecodeImage(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

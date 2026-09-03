@@ -1,0 +1,9 @@
+default:
+  dependencies: []
+  mesh_mapping:
+    devices_per_stage: 1
+  microbatch_splitting:
+    num_microbatches: 4
+    strategy: chunk
+  stage_communication:
+    protocol: p2p_queue

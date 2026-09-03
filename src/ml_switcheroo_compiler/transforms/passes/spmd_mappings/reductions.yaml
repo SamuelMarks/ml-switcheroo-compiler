@@ -1,0 +1,9 @@
+reductions:
+- ReduceSum
+- ReduceMean
+- ReduceMax
+- ReduceMin
+- ReduceProd
+- MatMul
+- Einsum
+- DotGeneral

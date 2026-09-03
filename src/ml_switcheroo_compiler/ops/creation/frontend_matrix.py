@@ -80,8 +80,8 @@ def _diag_eager(input: Tensor, diagonal: int, device, dtype):
     Args:
         input (Tensor): The input parameter.
         diagonal (int): The diagonal parameter.
-        device (object): The device parameter.
-        dtype (object): The dtype parameter.
+        device (Any): The device parameter.
+        dtype (Any): The dtype parameter.
 
     Returns:
         Tensor: Result.

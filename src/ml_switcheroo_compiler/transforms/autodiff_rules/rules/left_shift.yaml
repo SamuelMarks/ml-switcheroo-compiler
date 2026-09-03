@@ -1,0 +1,4 @@
+left_shift:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

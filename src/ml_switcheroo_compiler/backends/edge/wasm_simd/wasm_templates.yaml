@@ -1,169 +1,4 @@
 templates:
-  binary:
-    body: "// SIMD Binary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} %\
-      \ 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val\
-      \ = wasm_v128_load(&buf_{in0}[i]);\n    v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);\n\
-      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
-      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
-      \ buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j] =\
-      \ {scalar_expr};\n}}\n"
-  binary_scalar:
-    body: "// Scalar Binary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n   \
-      \ float in0_val = buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j]\
-      \ = {scalar_expr};\n}}\n"
-  cond:
-    body: "// Cond\nif ({condition_expr}) {{\n    {true_body}\n}} else {{\n    {false_body}\n\
-      }}\n"
-  conv2d:
-    body: "// Naive Conv2D for WASM\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b)\
-      \ {{\n    for (int oc = 0; oc < {out_channels}; ++oc) {{\n        for (int oy\
-      \ = 0; oy < {out_height}; ++oy) {{\n            for (int ox = 0; ox < {out_width};\
-      \ ++ox) {{\n                float sum = 0.0f;\n                for (int ic =\
-      \ 0; ic < {in_channels}; ++ic) {{\n                    for (int fy = 0; fy <\
-      \ {filter_h}; ++fy) {{\n                        for (int fx = 0; fx < {filter_w};\
-      \ ++fx) {{\n                            int in_y = oy * {stride_h} + fy;\n \
-      \                           int in_x = ox * {stride_w} + fx;\n             \
-      \               int in_idx = ((b * {in_channels} + ic) * {in_height} + in_y)\
-      \ * {in_width} + in_x;\n                            int w_idx = ((oc * {in_channels}\
-      \ + ic) * {filter_h} + fy) * {filter_w} + fx;\n                            sum\
-      \ += buf_{in0}[in_idx] * buf_{in1}[w_idx];\n                        }}\n   \
-      \                 }}\n                }}\n                buf_{clean_id}[out_idx++]\
-      \ = sum;\n            }}\n        }}\n    }}\n}}\n"
-  conv_pool_1d_flat:
-    body: "// Dummy Pool/Conv (identity) placeholder\nfor (int i = 0; i < {nelem};\
-      \ ++i) {{\n    buf_{clean_id}[i] = buf_{in0}[0] {math_op};\n}}\n"
-  fallback_copy:
-    body: "// SIMD Fallback Copy\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t val = wasm_v128_load(&buf_{in0}[i]);\n\
-      \    wasm_v128_store(&buf_{clean_id}[i], val);\n}}\nfor (int j = limit_{clean_id};\
-      \ j < {nelem}; ++j) {{\n    buf_{clean_id}[j] = buf_{in0}[j];\n}}\n"
-  im2col_conv2d:
-    body: |
-      // SIMD Conv2D (Direct Loop Peeling)
-      int out_width = {out_width};
-      int out_height = {out_height};
-      int in_channels = {in_channels};
-      int out_channels = {out_channels};
-      int stride_h = {stride_h};
-      int stride_w = {stride_w};
-      int filter_h = {filter_h};
-      int filter_w = {filter_w};
-
-      int limit_c = out_channels - (out_channels % 4);
-      for (int out_y = 0; out_y < out_height; out_y++) {{
-          for (int out_x = 0; out_x < out_width; out_x++) {{
-              // SIMD Vectorized Output Channels
-              for (int oc = 0; oc < limit_c; oc += 4) {{
-                  v128_t sum_vec = wasm_f32x4_splat(0.0f);
-                  for (int ic = 0; ic < in_channels; ic++) {{
-                      for (int fy = 0; fy < filter_h; fy++) {{
-                          for (int fx = 0; fx < filter_w; fx++) {{
-                              int in_y = out_y * stride_h + fy;
-                              int in_x = out_x * stride_w + fx;
-                              int in_idx = (in_y * {in_width} + in_x) * in_channels + ic;
-                              v128_t in_val = wasm_f32x4_splat(buf_{in0}[in_idx]);
-
-                              int w_idx = ((fy * filter_w + fx) * in_channels + ic) * out_channels + oc;
-                              v128_t w_val = wasm_v128_load(&buf_{in1}[w_idx]);
-
-                              sum_vec = wasm_f32x4_add(sum_vec, wasm_f32x4_mul(in_val, w_val));
-                          }}
-                      }}
-                  }}
-                  int out_idx = (out_y * out_width + out_x) * out_channels + oc;
-                  wasm_v128_store(&buf_{clean_id}[out_idx], sum_vec);
-              }}
-              // Remainder loop
-              for (int oc = limit_c; oc < out_channels; oc++) {{
-                  float sum = 0.0f;
-                  for (int ic = 0; ic < in_channels; ic++) {{
-                      for (int fy = 0; fy < filter_h; fy++) {{
-                          for (int fx = 0; fx < filter_w; fx++) {{
-                              int in_y = out_y * stride_h + fy;
-                              int in_x = out_x * stride_w + fx;
-                              int in_idx = (in_y * {in_width} + in_x) * in_channels + ic;
-                              int w_idx = ((fy * filter_w + fx) * in_channels + ic) * out_channels + oc;
-                              sum += buf_{in0}[in_idx] * buf_{in1}[w_idx];
-                          }}
-                      }}
-                  }}
-                  int out_idx = (out_y * out_width + out_x) * out_channels + oc;
-                  buf_{clean_id}[out_idx] = sum;
-              }}
-          }}
-      }}
-  kernel_headers:
-    body: '#include <wasm_simd128.h>
-
-      #include <cmath>
-
-      #include <cstdlib>
-
-      #include <algorithm>
-
-      '
-  kernel_main_start:
-    body: 'extern "C" {{
-
-      void main_kernel({params_str}) {{
-
-      '
-  matmul:
-    body: "// SIMD MatMul\nfor (int i = 0; i < {M}; ++i) {{\n    for (int j = 0; j\
-      \ < {N}; ++j) {{\n        float sum = 0.0f;\n        // naive matmul for now\
-      \ in wasm\n        for (int k = 0; k < {K}; ++k) {{\n            sum += buf_{in0}[i\
-      \ * {K} + k] * buf_{in1}[k * {N} + j];\n        }}\n        buf_{clean_id}[i\
-      \ * {N} + j] = sum;\n    }}\n}}\n"
-  recv:
-    body: '// Recv primitive: No-op in WASM, handled by JS orchestrator
-
-      '
-  reduction:
-    body: "// SIMD Reduction: {op_type}\nv128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);\n\
-      float scalar_sum_{clean_id} = {init_val}f;\nint limit_{clean_id} = {nelem_in}\
-      \ - ({nelem_in} % 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n  \
-      \  v128_t val = wasm_v128_load(&buf_{in0}[i]);\n    sum_{clean_id} = {simd_expr};\n\
-      }}\nfor (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{\n    float val =\
-      \ buf_{in0}[j];\n    scalar_sum_{clean_id} = {scalar_expr};\n}}\n// Final combine\
-      \ across lanes\nbuf_{clean_id}[0] = {final_combine};\n"
-  scan:
-    body: |
-      // Scan (ND Tensor State)
-      for (int i = 0; i < {nelem}; ++i) {{
-          // scan_op_expr handles ND buffers directly
-          {scan_op_expr}
-      }}
-  send:
-    body: '// Send primitive: No-op in WASM, handled by JS orchestrator
-
-      '
-  tiled_matmul:
-    body: "// SIMD Tiled MatMul\nfor (int i = 0; i < {M}; i += {TILE_M}) {{\n    for\
-      \ (int j = 0; j < {N}; j += {TILE_N}) {{\n        for (int k = 0; k < {K}; k\
-      \ += {TILE_K}) {{\n            // unrolled block\n            for (int ti =\
-      \ 0; ti < {TILE_M}; ++ti) {{\n                // we load vectors\n         \
-      \       v128_t a_val = wasm_v128_load(&buf_{in0}[(i+ti) * {K} + k]);\n     \
-      \           v128_t b_val = wasm_v128_load(&buf_{in1}[k * {N} + j]);\n      \
-      \          v128_t res = wasm_f32x4_mul(a_val, b_val);\n                res =\
-      \ wasm_f32x4_add(res, wasm_f32x4_splat(0.0f));\n            }}\n        }}\n\
-      \    }}\n}}\n"
-  unary:
-    body: "// SIMD Unary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);\n\
-      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
-      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
-      \ buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
-  unary_scalar:
-    body: "// Scalar Unary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n    float\
-      \ in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
-  while_loop:
-    body: |
-      // WhileLoop (ND Tensor State)
-      for (int i = 0; i < {max_iters}; ++i) {{
-          if (!({condition_expr})) break;
-          {loop_body}
-      }}
-      // Output data is expected to be written within loop_body or orchestrated externally
   A:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -397,17 +232,11 @@ templates:
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
   AllGather:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: '// JS Orcherstrator: \n// {js_code}'
   AllReduce:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: '// JS Orcherstrator: \n// {js_code}'
   AllToAll:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: '// JS Orcherstrator: \n// {js_code}'
   AllToShardedLinear:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -6785,9 +6614,7 @@ templates:
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
   ReduceScatter:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: '// JS Orcherstrator: \n// {js_code}'
   ReduceStd:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -10241,9 +10068,20 @@ templates:
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
   avg_pool2d:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: "// AvgPool2D\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b) {{\n    for\
+      \ (int c = 0; c < {C}; ++c) {{\n        for (int oy = 0; oy < {out_height};\
+      \ ++oy) {{\n            for (int ox = 0; ox < {out_width}; ++ox) {{\n      \
+      \          float sum_val = 0.0f;\n                int count = 0;\n         \
+      \       for (int ky = 0; ky < {kernel_h}; ++ky) {{\n                    for\
+      \ (int kx = 0; kx < {kernel_w}; ++kx) {{\n                        int in_y =\
+      \ oy * {stride_h} + ky;\n                        int in_x = ox * {stride_w}\
+      \ + kx;\n                        if (in_y < {in_height} && in_x < {in_width})\
+      \ {{\n                            int in_idx = ((b * {C} + c) * {in_height}\
+      \ + in_y) * {in_width} + in_x;\n                            sum_val += buf_{in0}[in_idx];\n\
+      \                            count++;\n                        }}\n        \
+      \            }}\n                }}\n                buf_{clean_id}[out_idx++]\
+      \ = count > 0 ? sum_val / (float)count : 0.0f;\n            }}\n        }}\n\
+      \    }}\n}}\n"
   avg_pool3d:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -10600,6 +10438,14 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  binary:
+    body: "// SIMD Binary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} %\
+      \ 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val\
+      \ = wasm_v128_load(&buf_{in0}[i]);\n    v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);\n\
+      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
+      \ buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j] =\
+      \ {scalar_expr};\n}}\n"
   binary_cross_entropy:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -10620,6 +10466,10 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  binary_scalar:
+    body: "// Scalar Binary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n   \
+      \ float in0_val = buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j]\
+      \ = {scalar_expr};\n}}\n"
   binary_ufunc:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -11492,6 +11342,9 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  cond:
+    body: "// Cond\nif ({condition_expr}) {{\n    {true_body}\n}} else {{\n    {false_body}\n\
+      }}\n"
   conditionally_mask:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -11556,6 +11409,21 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  conv2d:
+    body: "// Naive Conv2D for WASM\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b)\
+      \ {{\n    for (int oc = 0; oc < {out_channels}; ++oc) {{\n        for (int oy\
+      \ = 0; oy < {out_height}; ++oy) {{\n            for (int ox = 0; ox < {out_width};\
+      \ ++ox) {{\n                float sum = 0.0f;\n                for (int ic =\
+      \ 0; ic < {in_channels}; ++ic) {{\n                    for (int fy = 0; fy <\
+      \ {filter_h}; ++fy) {{\n                        for (int fx = 0; fx < {filter_w};\
+      \ ++fx) {{\n                            int in_y = oy * {stride_h} + fy;\n \
+      \                           int in_x = ox * {stride_w} + fx;\n             \
+      \               int in_idx = ((b * {in_channels} + ic) * {in_height} + in_y)\
+      \ * {in_width} + in_x;\n                            int w_idx = ((oc * {in_channels}\
+      \ + ic) * {filter_h} + fy) * {filter_w} + fx;\n                            sum\
+      \ += buf_{in0}[in_idx] * buf_{in1}[w_idx];\n                        }}\n   \
+      \                 }}\n                }}\n                buf_{clean_id}[out_idx++]\
+      \ = sum;\n            }}\n        }}\n    }}\n}}\n"
   conv2d_input:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -11596,6 +11464,9 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  conv_pool_1d_flat:
+    body: "// Basic 1D Pool fallback\nfor (int i = 0; i < {nelem}; ++i) {{\n    buf_{clean_id}[i]\
+      \ = buf_{in0}[i]; // Requires proper 1D pool params\n}}\n"
   conv_shape_tuple:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -12748,6 +12619,11 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  fallback_copy:
+    body: "// SIMD Fallback Copy\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t val = wasm_v128_load(&buf_{in0}[i]);\n\
+      \    wasm_v128_store(&buf_{clean_id}[i], val);\n}}\nfor (int j = limit_{clean_id};\
+      \ j < {nelem}; ++j) {{\n    buf_{clean_id}[j] = buf_{in0}[j];\n}}\n"
   feature_alpha_dropout:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -14092,6 +13968,39 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  im2col_conv2d:
+    body: "// SIMD Conv2D (Direct Loop Peeling)\nint out_width = {out_width};\nint\
+      \ out_height = {out_height};\nint in_channels = {in_channels};\nint out_channels\
+      \ = {out_channels};\nint stride_h = {stride_h};\nint stride_w = {stride_w};\n\
+      int filter_h = {filter_h};\nint filter_w = {filter_w};\n\nint limit_c = out_channels\
+      \ - (out_channels % 4);\nfor (int out_y = 0; out_y < out_height; out_y++) {{\n\
+      \    for (int out_x = 0; out_x < out_width; out_x++) {{\n        // SIMD Vectorized\
+      \ Output Channels\n        for (int oc = 0; oc < limit_c; oc += 4) {{\n    \
+      \        v128_t sum_vec = wasm_f32x4_splat(0.0f);\n            for (int ic =\
+      \ 0; ic < in_channels; ic++) {{\n                for (int fy = 0; fy < filter_h;\
+      \ fy++) {{\n                    for (int fx = 0; fx < filter_w; fx++) {{\n \
+      \                       int in_y = out_y * stride_h + fy;\n                \
+      \        int in_x = out_x * stride_w + fx;\n                        int in_idx\
+      \ = (in_y * {in_width} + in_x) * in_channels + ic;\n                       \
+      \ v128_t in_val = wasm_f32x4_splat(buf_{in0}[in_idx]);\n\n                 \
+      \       int w_idx = ((fy * filter_w + fx) * in_channels + ic) * out_channels\
+      \ + oc;\n                        v128_t w_val = wasm_v128_load(&buf_{in1}[w_idx]);\n\
+      \n                        sum_vec = wasm_f32x4_add(sum_vec, wasm_f32x4_mul(in_val,\
+      \ w_val));\n                    }}\n                }}\n            }}\n   \
+      \         int out_idx = (out_y * out_width + out_x) * out_channels + oc;\n \
+      \           wasm_v128_store(&buf_{clean_id}[out_idx], sum_vec);\n        }}\n\
+      \        // Remainder loop\n        for (int oc = limit_c; oc < out_channels;\
+      \ oc++) {{\n            float sum = 0.0f;\n            for (int ic = 0; ic <\
+      \ in_channels; ic++) {{\n                for (int fy = 0; fy < filter_h; fy++)\
+      \ {{\n                    for (int fx = 0; fx < filter_w; fx++) {{\n       \
+      \                 int in_y = out_y * stride_h + fy;\n                      \
+      \  int in_x = out_x * stride_w + fx;\n                        int in_idx = (in_y\
+      \ * {in_width} + in_x) * in_channels + ic;\n                        int w_idx\
+      \ = ((fy * filter_w + fx) * in_channels + ic) * out_channels + oc;\n       \
+      \                 sum += buf_{in0}[in_idx] * buf_{in1}[w_idx];\n           \
+      \         }}\n                }}\n            }}\n            int out_idx =\
+      \ (out_y * out_width + out_x) * out_channels + oc;\n            buf_{clean_id}[out_idx]\
+      \ = sum;\n        }}\n    }}\n}}\n"
   imag:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -14824,6 +14733,22 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  kernel_headers:
+    body: '#include <wasm_simd128.h>
+
+      #include <cmath>
+
+      #include <cstdlib>
+
+      #include <algorithm>
+
+      '
+  kernel_main_start:
+    body: 'extern "C" {{
+
+      void main_kernel({params_str}) {{
+
+      '
   kernel_size:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -15500,6 +15425,12 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  matmul:
+    body: "// SIMD MatMul\nfor (int i = 0; i < {M}; ++i) {{\n    for (int j = 0; j\
+      \ < {N}; ++j) {{\n        float sum = 0.0f;\n        // naive matmul for now\
+      \ in wasm\n        for (int k = 0; k < {K}; ++k) {{\n            sum += buf_{in0}[i\
+      \ * {K} + k] * buf_{in1}[k * {N} + j];\n        }}\n        buf_{clean_id}[i\
+      \ * {N} + j] = sum;\n    }}\n}}\n"
   matmul_kernel:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -15557,9 +15488,19 @@ templates:
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
   max_pool2d:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
+    body: "// MaxPool2D\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b) {{\n    for\
+      \ (int c = 0; c < {C}; ++c) {{\n        for (int oy = 0; oy < {out_height};\
+      \ ++oy) {{\n            for (int ox = 0; ox < {out_width}; ++ox) {{\n      \
+      \          float max_val = -1e9f;\n                for (int ky = 0; ky < {kernel_h};\
+      \ ++ky) {{\n                    for (int kx = 0; kx < {kernel_w}; ++kx) {{\n\
+      \                        int in_y = oy * {stride_h} + ky;\n                \
+      \        int in_x = ox * {stride_w} + kx;\n                        if (in_y\
+      \ < {in_height} && in_x < {in_width}) {{\n                            int in_idx\
+      \ = ((b * {C} + c) * {in_height} + in_y) * {in_width} + in_x;\n            \
+      \                float val = buf_{in0}[in_idx];\n                          \
+      \  if (val > max_val) max_val = val;\n                        }}\n         \
+      \           }}\n                }}\n                buf_{clean_id}[out_idx++]\
+      \ = max_val;\n            }}\n        }}\n    }}\n}}\n"
   max_pool2d_with_indices:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -17292,6 +17233,10 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  recv:
+    body: '// Recv primitive: No-op in WASM, handled by JS orchestrator
+
+      '
   reduce:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -17380,6 +17325,14 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  reduction:
+    body: "// SIMD Reduction: {op_type}\nv128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);\n\
+      float scalar_sum_{clean_id} = {init_val}f;\nint limit_{clean_id} = {nelem_in}\
+      \ - ({nelem_in} % 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n  \
+      \  v128_t val = wasm_v128_load(&buf_{in0}[i]);\n    sum_{clean_id} = {simd_expr};\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{\n    float val =\
+      \ buf_{in0}[j];\n    scalar_sum_{clean_id} = {scalar_expr};\n}}\n// Final combine\
+      \ across lanes\nbuf_{clean_id}[0] = {final_combine};\n"
   ref:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -18000,6 +17953,9 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  scan:
+    body: "// Scan (ND Tensor State)\nfor (int i = 0; i < {nelem}; ++i) {{\n    //\
+      \ scan_op_expr handles ND buffers directly\n    {scan_op_expr}\n}}\n"
   scatter:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -18112,6 +18068,10 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  send:
+    body: '// Send primitive: No-op in WASM, handled by JS orchestrator
+
+      '
   separable_conv:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -19064,6 +19024,16 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  tiled_matmul:
+    body: "// SIMD Tiled MatMul\nfor (int i = 0; i < {M}; i += {TILE_M}) {{\n    for\
+      \ (int j = 0; j < {N}; j += {TILE_N}) {{\n        for (int k = 0; k < {K}; k\
+      \ += {TILE_K}) {{\n            // unrolled block\n            for (int ti =\
+      \ 0; ti < {TILE_M}; ++ti) {{\n                // we load vectors\n         \
+      \       v128_t a_val = wasm_v128_load(&buf_{in0}[(i+ti) * {K} + k]);\n     \
+      \           v128_t b_val = wasm_v128_load(&buf_{in1}[k * {N} + j]);\n      \
+      \          v128_t res = wasm_f32x4_mul(a_val, b_val);\n                res =\
+      \ wasm_f32x4_add(res, wasm_f32x4_splat(0.0f));\n            }}\n        }}\n\
+      \    }}\n}}\n"
   tiled_memref_shape:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -19500,6 +19470,15 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  unary:
+    body: "// SIMD Unary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);\n\
+      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
+      \ buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
+  unary_scalar:
+    body: "// Scalar Unary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n    float\
+      \ in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
   unary_ufunc:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -20000,6 +19979,10 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
+  while_loop:
+    body: "// WhileLoop (ND Tensor State)\nfor (int i = 0; i < {max_iters}; ++i) {{\n\
+      \    if (!({condition_expr})) break;\n    {loop_body}\n}}\n// Output data is\
+      \ expected to be written within loop_body or orchestrated externally\n"
   will_sync_module_buffers:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\

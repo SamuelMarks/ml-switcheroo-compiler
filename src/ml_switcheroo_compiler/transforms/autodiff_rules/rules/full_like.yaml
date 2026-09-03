@@ -1,0 +1,4 @@
+full_like:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

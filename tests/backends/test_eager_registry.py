@@ -21,7 +21,7 @@ def test_eager_registry():
     assert r.dispatch("foo", 1) == 2
 
     with pytest.raises(ValueError):
-        r.dispatch("bar", 1)
+        r.dispatch("bar_unique_not_existing", 1)
 
 
 def test_eager_registry_fallback():
@@ -127,6 +127,9 @@ def test_dynamic_fallback():
     assert global_eager_registry.dispatch("My_Backend_Op", 1, backend_module=DummyBackend()) == 43
     assert global_eager_registry.dispatch("sub", DummyBackend(), backend_module=DummyBackend()) == 44
 
+    with pytest.raises(ValueError, match="not found in registry and no universal fallback"):
+        global_eager_registry.dispatch("missing_op_on_backend", backend_module=DummyBackend())
+
 
 def test_custom_vjp_and_tuple():
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -138,5 +141,7 @@ def test_custom_vjp_and_tuple():
         return sum(args)
 
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
+    assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn="not callable") is None
 
     assert global_eager_registry.dispatch("TupleGetItem", None, (10, 20), index=1) == 20
+    assert global_eager_registry.dispatch("TupleGetItem", None, "not a tuple", index=0) is None

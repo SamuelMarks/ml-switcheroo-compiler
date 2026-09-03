@@ -1,0 +1,7 @@
+Conv2DBackward:
+  body: |
+    // WASM SIMD Conv2DBackward
+    if ({nelem} > size) return;
+    for (int i = 0; i < {nelem}; ++i) {{
+        buf_{clean_id}[i] = buf_{in0}[i]; // Simplified fallback
+    }}

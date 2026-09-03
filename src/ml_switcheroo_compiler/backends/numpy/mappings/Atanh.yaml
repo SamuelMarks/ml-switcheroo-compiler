@@ -1,0 +1,3 @@
+Atanh:
+  ast_template: np.arctanh
+  target_api: ''

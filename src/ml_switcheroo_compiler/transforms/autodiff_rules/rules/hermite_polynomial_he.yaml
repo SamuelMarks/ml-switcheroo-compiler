@@ -1,0 +1,4 @@
+hermite_polynomial_he:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

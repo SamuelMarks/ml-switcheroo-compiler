@@ -1,0 +1,4 @@
+libdevice_path:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

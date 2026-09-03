@@ -1,0 +1,4 @@
+peak_hbm_bytes:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+npy_ctypes_check:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

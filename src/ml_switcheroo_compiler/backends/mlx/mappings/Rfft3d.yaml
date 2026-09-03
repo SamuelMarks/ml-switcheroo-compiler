@@ -1,0 +1,2 @@
+Rfft3d:
+  target_api: '''mx.fft.rfftn({0}, s={s}, axes={axes})'''

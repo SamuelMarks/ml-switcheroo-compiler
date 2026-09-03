@@ -1,0 +1,26 @@
+BatchNorm:
+  body: '
+
+    let idx = global_id.x;
+
+    if (idx >= {nelem}u) { return; }
+
+    let c = (idx / {inner_size}u) % {channels}u;
+
+    let val = buf_in_f32[idx];
+
+    let mean = buf_mean_f32[c];
+
+    let var_val = buf_var_f32[c];
+
+    let weight = buf_weight_f32[c];
+
+    let bias = buf_bias_f32[c];
+
+    buf_out_f32[idx] = ((val - mean) / sqrt(var_val + {eps})) * weight + bias;
+
+    '
+  workgroup_size:
+  - 64
+  - 1
+  - 1

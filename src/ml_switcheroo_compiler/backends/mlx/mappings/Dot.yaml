@@ -1,0 +1,2 @@
+Dot:
+  target_api: '''mx.dot({0}, {1})'''

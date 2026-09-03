@@ -1,0 +1,3 @@
+Eigh:
+  ast_template: np.linalg.eigh
+  target_api: ''

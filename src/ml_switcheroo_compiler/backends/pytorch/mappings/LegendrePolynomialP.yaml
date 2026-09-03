@@ -1,0 +1,2 @@
+LegendrePolynomialP:
+  target_api: torch.special.legendre_polynomial_p

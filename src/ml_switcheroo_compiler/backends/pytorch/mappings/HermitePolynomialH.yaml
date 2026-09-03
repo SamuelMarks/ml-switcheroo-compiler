@@ -1,0 +1,2 @@
+HermitePolynomialH:
+  target_api: torch.special.hermite_polynomial_h

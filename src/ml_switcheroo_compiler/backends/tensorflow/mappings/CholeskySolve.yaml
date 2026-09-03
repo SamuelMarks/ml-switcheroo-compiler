@@ -1,0 +1,2 @@
+CholeskySolve:
+  target_api: tf.linalg.cholesky_solve

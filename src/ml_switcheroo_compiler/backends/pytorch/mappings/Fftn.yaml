@@ -1,0 +1,3 @@
+Fftn:
+  custom_code: 'lambda *args, **kwargs: torch.fft.fftn(args[0], **kwargs)'
+  target_api: custom_op

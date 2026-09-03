@@ -1,0 +1,4 @@
+finalize_array_function_like:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

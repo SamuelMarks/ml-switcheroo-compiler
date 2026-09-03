@@ -1,0 +1,5 @@
+AllToAll:
+  custom_code: 'lambda tensor, *args, **kwargs: jax.lax.all_to_all(tensor, kwargs.get(''axis_name'',
+    ''i''), kwargs.get(''split_axis'', 0), kwargs.get(''concat_axis'', 0)) if hasattr(jax.lax,
+    ''all_to_all'') else tensor'
+  target_api: custom_op

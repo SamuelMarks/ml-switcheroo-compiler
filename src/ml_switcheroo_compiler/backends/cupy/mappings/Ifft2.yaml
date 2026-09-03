@@ -1,0 +1,2 @@
+Ifft2:
+  target_api: cp.fft.ifft2

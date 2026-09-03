@@ -1,0 +1,4 @@
+div_value:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

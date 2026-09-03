@@ -1,0 +1,8 @@
+reduction:
+  body: "// SIMD Reduction: {op_type}\nv128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);\n\
+    float scalar_sum_{clean_id} = {init_val}f;\nint limit_{clean_id} = {nelem_in}\
+    \ - ({nelem_in} % 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t\
+    \ val = wasm_v128_load(&buf_{in0}[i]);\n    sum_{clean_id} = {simd_expr};\n}}\n\
+    for (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{\n    float val = buf_{in0}[j];\n\
+    \    scalar_sum_{clean_id} = {scalar_expr};\n}}\n// Final combine across lanes\n\
+    buf_{clean_id}[0] = {final_combine};\n"

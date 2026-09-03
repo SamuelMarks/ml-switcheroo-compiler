@@ -1,0 +1,4 @@
+factory_kwargs:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+transfer_parametrizations_and_params:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

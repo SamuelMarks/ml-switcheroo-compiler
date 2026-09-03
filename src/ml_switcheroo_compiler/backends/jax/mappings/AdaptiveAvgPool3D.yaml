@@ -1,0 +1,2 @@
+AdaptiveAvgPool3D:
+  target_api: _execute_adaptive_avg_pool

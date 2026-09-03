@@ -1,0 +1,2 @@
+SegmentSum:
+  target_api: jax.ops.segment_sum

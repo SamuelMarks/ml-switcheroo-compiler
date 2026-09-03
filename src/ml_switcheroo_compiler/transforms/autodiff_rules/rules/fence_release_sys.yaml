@@ -1,0 +1,4 @@
+fence_release_sys:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

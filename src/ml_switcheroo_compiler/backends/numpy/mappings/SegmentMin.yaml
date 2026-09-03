@@ -1,0 +1,2 @@
+SegmentMin:
+  target_api: np.segmentmin

@@ -20,8 +20,8 @@ class TriangularSolve(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -37,8 +37,8 @@ class Lu(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -53,8 +53,8 @@ class LuSolve(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -69,8 +69,8 @@ class Norm(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -85,8 +85,8 @@ class MatrixExponential(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -101,8 +101,8 @@ class Cross(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: The shape.
         """
@@ -117,8 +117,8 @@ class PowerIteration(OpDef):
         """Infer shape for Power Iteration.
 
         Args:
-            *args (object): The positional arguments.
-            **kwargs (object): The keyword arguments.
+            *args (Any): The positional arguments.
+            **kwargs (Any): The keyword arguments.
 
         Returns: Tensor: The tuple containing output shapes and dtypes.
         """
@@ -137,8 +137,8 @@ class Polar(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -154,8 +154,8 @@ class TridiagonalSolve(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -258,11 +258,11 @@ class TridiagonalMatmul(OpDef):
         """Infer shape.
 
         Args:
-            dl (object): The dl parameter.
-            d (object): The d parameter.
-            du (object): The du parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            dl (Any): The dl parameter.
+            d (Any): The d parameter.
+            du (Any): The du parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

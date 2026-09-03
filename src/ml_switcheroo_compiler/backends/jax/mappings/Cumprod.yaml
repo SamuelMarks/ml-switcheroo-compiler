@@ -1,0 +1,3 @@
+Cumprod:
+  custom_code: 'lambda *a, **k: jax.numpy.cumprod(*a, **k)'
+  target_api: custom_op

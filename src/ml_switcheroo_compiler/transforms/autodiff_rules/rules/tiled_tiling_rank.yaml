@@ -1,0 +1,4 @@
+tiled_tiling_rank:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

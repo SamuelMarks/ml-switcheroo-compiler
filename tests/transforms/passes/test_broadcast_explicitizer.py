@@ -29,10 +29,8 @@ def test_process_broadcast_node() -> None:
     # Op doesn't exist
     node1 = IRNode(id="node1", op_type="UnknownOp", inputs=[])
     graph = IRGraph(name="test", nodes={"node1": node1}, outputs=[])
-    import pytest
 
-    with pytest.raises(ValueError):
-        _process_broadcast_node(graph, node1)
+    assert _process_broadcast_node(graph, node1) is False
 
     node1_key = IRNode(id="node1_key", op_type="NonExistentOp", inputs=[])
     graph_key = IRGraph(name="test_key", nodes={"node1_key": node1_key}, outputs=[])

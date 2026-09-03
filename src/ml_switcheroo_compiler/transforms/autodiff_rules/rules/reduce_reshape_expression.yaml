@@ -1,0 +1,4 @@
+reduce_reshape_expression:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

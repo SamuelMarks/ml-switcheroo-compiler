@@ -1,0 +1,4 @@
+fit_4th_order_polynomial:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

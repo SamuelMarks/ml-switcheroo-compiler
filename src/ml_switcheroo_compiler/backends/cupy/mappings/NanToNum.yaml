@@ -1,0 +1,2 @@
+NanToNum:
+  target_api: cp.nan_to_num

@@ -3,24 +3,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import logging
+import typing
+from typing import Any
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
-from .math_misc_ext import _get_np_arg
+from .math_general import _get_np_arg
 
 
 @numpy_eager_registry.register("DiagIndices")
-def _np_diag_indices_(backend_module, *args, **kwargs):
+def _np_diag_indices_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement DiagIndices via diag_indices.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -28,13 +30,13 @@ def _np_diag_indices_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("DiagIndicesFrom")
-def _np_diag_indices_from_(backend_module, *args, **kwargs):
+def _np_diag_indices_from_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement DiagIndicesFrom via diag_indices_from.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -42,13 +44,13 @@ def _np_diag_indices_from_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Diagflat")
-def _np_diagflat_(backend_module, *args, **kwargs):
+def _np_diagflat_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement Diagflat via diagflat.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -56,13 +58,13 @@ def _np_diagflat_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Diagonal")
-def _np_diagonal_(backend_module, *args, **kwargs):
+def _np_diagonal_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement Diagonal via diagonal.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -70,13 +72,13 @@ def _np_diagonal_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Indices")
-def _np_indices_(backend_module, *args, **kwargs):
+def _np_indices_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement Indices via indices.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -84,13 +86,13 @@ def _np_indices_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("MaskIndices")
-def _np_mask_indices_(backend_module, *args, **kwargs):
+def _np_mask_indices_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement MaskIndices via mask_indices.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        backend_module: The backend_module parameter.
+        *args: Variable positional arguments.
+        **kwargs: Arbitrary keyword arguments.
 
     Returns: np.ndarray: The computed result.
     """
@@ -98,16 +100,16 @@ def _np_mask_indices_(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorBlockDiag")
-def _np_linearoperatorblockdiag(backend_module, *args, **kwargs):
+def _np_linearoperatorblockdiag(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement LinearOperatorBlockDiag.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockDiag
 
@@ -115,16 +117,16 @@ def _np_linearoperatorblockdiag(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("LinearOperatorDiag")
-def _np_linearoperatordiag(backend_module, *args, **kwargs):
+def _np_linearoperatordiag(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Implement LinearOperatorDiag.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
     """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorDiag
 
@@ -132,16 +134,16 @@ def _np_linearoperatordiag(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("confusion_matrix")
-def _np_confusion_matrix(backend_module, *args, **kwargs):
+def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_confusion_matrix operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -151,22 +153,23 @@ def _np_confusion_matrix(backend_module, *args, **kwargs):
 
         if hasattr(_ops, "confusion_matrix"):
             cls_or_func = _ops.confusion_matrix
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
+            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
                 return cls_or_func(*args, **kwargs)
     except Exception:
-        pass
+        # Ignore dynamic load errors
+        logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
     if hasattr(backend_module, "confusion_matrix"):
         return backend_module.confusion_matrix(*args, **kwargs)
     y_true = np.asarray(args[0]).flatten()
     y_pred = np.asarray(args[1]).flatten()
-    num_classes = kwargs.get("num_classes", args[2] if len(args) > 2 else None)
+    num_classes = kwargs.get("num_classes", args[2] if len(args) > 2 else None) if hasattr(kwargs, "get") else None
     if num_classes is None:
         num_classes = max(np.max(y_true), np.max(y_pred)) + 1
     return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape(num_classes, num_classes)
 
 
 @numpy_eager_registry.register("distributions")
-def _np_distributions(backend_module, *args, **kwargs):
+def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """_np_distributions function.
 
     Args:
@@ -174,26 +177,20 @@ def _np_distributions(backend_module, *args, **kwargs):
         args: Positional args.
         kwargs: Keyword args.
 
-    Args:
-        message (str): The message.
-        input_vars (list): The input vars.
-        node (object): The node.
-        **kwargs (object): Keyword arguments.
-        backend_module (object): The backend_module parameter.
-
     Returns:
-        object: Result.
+        Any: Result.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "distributions"):
             cls_or_func = _ops.distributions
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", object))):
+            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
                 return cls_or_func(*args, **kwargs)
     except Exception as e:
         print("EXCEPTION IN _np_distributions:", repr(e))
-        pass
+        # Ignore dynamic load errors
+        logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
     if hasattr(backend_module, "distributions"):
         return backend_module.distributions(*args, **kwargs)
     arr = np.asarray(args[0]) if args else np.zeros((1,))
@@ -201,7 +198,7 @@ def _np_distributions(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix_cap(backend_module, *args, **kwargs):
+def _np_confusion_matrix_cap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """_np_confusion_matrix_cap function.
 
     Args:
@@ -209,15 +206,8 @@ def _np_confusion_matrix_cap(backend_module, *args, **kwargs):
         args: Positional args.
         kwargs: Keyword args.
 
-    Args:
-        message (str): The message.
-        input_vars (list): The input vars.
-        node (object): The node.
-        **kwargs (object): Keyword arguments.
-        backend_module (object): The backend_module parameter.
-
     Returns:
-        object: Result.
+        Any: Result.
     """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)

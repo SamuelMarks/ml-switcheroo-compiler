@@ -1,0 +1,5 @@
+AllReduce:
+  custom_code: 'lambda tensor, *args, **kwargs: jax.lax.psum(tensor, axis_name=kwargs.get(''axis_name'',
+    ''i'')) if kwargs.get(''op_type'', ''sum'').lower() == ''sum'' else jax.lax.pmax(tensor,
+    axis_name=kwargs.get(''axis_name'', ''i''))'
+  target_api: custom_op

@@ -1,0 +1,4 @@
+dtype_to_string:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+splat_is_compatible_with_tiled:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

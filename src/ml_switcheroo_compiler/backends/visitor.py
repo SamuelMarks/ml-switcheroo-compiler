@@ -11,9 +11,6 @@ if TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRNode
 
-if TYPE_CHECKING:
-    pass
-
 
 class CodeGeneratorVisitor:
     """Define base visitor for code generation."""

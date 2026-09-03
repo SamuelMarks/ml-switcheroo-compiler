@@ -1,0 +1,4 @@
+to_remote:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

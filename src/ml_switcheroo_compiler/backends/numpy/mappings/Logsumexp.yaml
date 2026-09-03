@@ -1,0 +1,2 @@
+Logsumexp:
+  target_api: np.logsumexp

@@ -1,0 +1,4 @@
+make_splash_mha:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

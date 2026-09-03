@@ -1,0 +1,4 @@
+reduce_window_shape_tuple:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

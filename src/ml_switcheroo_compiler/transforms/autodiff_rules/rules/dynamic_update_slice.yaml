@@ -1,0 +1,4 @@
+dynamic_update_slice:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

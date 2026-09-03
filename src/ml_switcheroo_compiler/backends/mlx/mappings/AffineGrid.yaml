@@ -1,0 +1,2 @@
+AffineGrid:
+  target_api: '''mx.image.affine_grid({0}, {size})'''

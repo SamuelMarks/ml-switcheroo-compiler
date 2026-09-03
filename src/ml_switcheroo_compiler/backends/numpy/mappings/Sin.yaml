@@ -1,0 +1,3 @@
+Sin:
+  ast_template: np.sin
+  target_api: ''

@@ -1,0 +1,4 @@
+device_put_sharded:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

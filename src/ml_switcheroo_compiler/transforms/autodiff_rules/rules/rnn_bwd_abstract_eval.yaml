@@ -1,0 +1,4 @@
+rnn_bwd_abstract_eval:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -111,3 +111,22 @@ def test_randn_coverage_auto():
             return "randn_" + str(args)
 
     assert randn(ModRandn(), shape=(2, 3)) == "randn_(2, 3)"
+
+
+from unittest.mock import MagicMock
+
+
+def test_rand_uniform():
+    mod = MagicMock()
+    mod.random = MagicMock()
+    mod.random.uniform = MagicMock(return_value="uniform_val")
+    del mod.random.rand  # ensure it hits uniform
+    assert rand(mod, shape=(2, 2)) == "uniform_val"
+
+
+def test_randn_normal():
+    mod = MagicMock()
+    mod.random = MagicMock()
+    mod.random.normal = MagicMock(return_value="normal_val")
+    del mod.random.randn  # ensure it hits normal
+    assert randn(mod, shape=(2, 2)) == "normal_val"

@@ -1,10 +1,13 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Serialization utilities."""
 
+from collections.abc import Sequence
+from typing import Any, Optional, Union
+
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-def _extract_numpy_weights(weights):
+def _extract_numpy_weights(weights: Any) -> Any:
     """Extract numpy weights.
 
     Args:
@@ -30,7 +33,7 @@ def _extract_numpy_weights(weights):
     return weights_np
 
 
-def to_numpy(tensor):
+def to_numpy(tensor: Any) -> Any:
     """Convert tensor to numpy array.
 
     Args:
@@ -50,7 +53,7 @@ def to_numpy(tensor):
         return tensor
 
 
-def concatenate_arrays(arrays):
+def concatenate_arrays(arrays: Any) -> Any:
     """Concatenate numpy arrays.
 
     Args:
@@ -110,7 +113,7 @@ def _dtype_to_descr(dtype) -> str:
     return "<f4"
 
 
-def _extract_arr_shape_dtype(arr):
+def _extract_arr_shape_dtype(arr: Any) -> Any:
     """Extract shape and dtype string from an array object.
 
     Args:
@@ -123,7 +126,7 @@ def _extract_arr_shape_dtype(arr):
     return getattr(arr, "shape", ()), dtype
 
 
-def _get_shape_and_dtype(tensor):
+def _get_shape_and_dtype(tensor: Any) -> Any:
     """Get shape and dtype from a generic tensor object.
 
     Args:
@@ -227,7 +230,7 @@ def get_npz_bytes(weights) -> bytes:
     return buf.getvalue()
 
 
-def parse_npz(file_obj):
+def parse_npz(file_obj: Any) -> Any:
     """Parse npz file.
 
     Args:
@@ -246,7 +249,7 @@ def parse_npz(file_obj):
         return {}
 
 
-def load_npz(file_obj):
+def load_npz(file_obj: Any) -> Any:
     """Load weights from a .npz file object.
 
     Args:
@@ -285,7 +288,7 @@ def save_ir_graph(graph: IRGraph, filepath: str) -> None:
         f.write(graph_to_json(graph))
 
 
-def load_ir_graph(filepath: str):
+def load_ir_graph(filepath: str) -> Any:
     """Load an IR graph configuration from a file reliably.
 
     Args:

@@ -1,0 +1,4 @@
+bcsr_sum_duplicates:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

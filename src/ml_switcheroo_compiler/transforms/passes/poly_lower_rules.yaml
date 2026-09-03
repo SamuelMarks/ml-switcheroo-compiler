@@ -1,0 +1,32 @@
+# Configuration for Polyfill Lowering pass
+rules:
+  InTopK:
+    type: "python"
+    func: "_lower_in_top_k"
+  CtcGreedyDecoder:
+    type: "python"
+    func: "_lower_ctc_greedy_decoder"
+  IsotonicRegression:
+    type: "python"
+    func: "_lower_isotonic_regression"
+  ConvTranspose:
+    type: "rewrite"
+    op_type: "Conv2D"
+    attributes:
+      padding: "TRANSposed_LOWERED"
+  DepthwiseConv2dBackpropFilter:
+    type: "rewrite"
+    op_type: "Conv2D"
+    attributes:
+      feature_group_count: "LOWERED"
+  DepthwiseConv2dBackpropInput:
+    type: "rewrite"
+    op_type: "Conv2D"
+    attributes:
+      feature_group_count: "LOWERED_INP"
+  Dilation2d:
+    type: "rewrite"
+    op_type: "MaxPool2D"
+  Erosion2d:
+    type: "rewrite"
+    op_type: "MinPool2D"

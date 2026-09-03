@@ -4,7 +4,7 @@
 """Gradient norm clipping primitive."""
 
 from collections.abc import Iterable
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power
@@ -19,7 +19,7 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
     """Compute the global norm of an iterable of parameters.
 
     Args:
-        parameters (object): The parameters parameter.
+        parameters (Any): The parameters parameter.
         norm_type (float): The norm_type parameter.
 
     Returns:

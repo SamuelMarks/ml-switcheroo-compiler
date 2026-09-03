@@ -1,0 +1,2 @@
+LogicalOr:
+  target_api: cp.logical_or

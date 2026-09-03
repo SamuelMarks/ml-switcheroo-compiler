@@ -1,0 +1,3 @@
+Solve:
+  ast_template: np.linalg.solve
+  target_api: ''

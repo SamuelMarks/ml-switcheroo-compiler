@@ -19,7 +19,7 @@ class WeightLoader(ABC):
         Returns:
             dict: The loaded weights.
         """
-        pass
+        ...
 
 
 class WeightSaver(ABC):
@@ -33,4 +33,4 @@ class WeightSaver(ABC):
             weights_np (dict): The weights to save.
             filepath (str): Path to the file.
         """
-        pass
+        ...

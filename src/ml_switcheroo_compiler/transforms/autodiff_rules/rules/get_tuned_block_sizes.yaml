@@ -1,0 +1,4 @@
+get_tuned_block_sizes:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

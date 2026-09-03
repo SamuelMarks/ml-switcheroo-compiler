@@ -1,0 +1,3 @@
+Bitcast:
+  ast_template: '{0}.view(getattr(torch, str(''{dtype}'')))'
+  target_api: ''

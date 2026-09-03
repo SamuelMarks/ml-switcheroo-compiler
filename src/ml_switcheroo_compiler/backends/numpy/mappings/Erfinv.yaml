@@ -1,0 +1,3 @@
+Erfinv:
+  ast_template: getattr(backend_module, 'erfinv', None)
+  target_api: ''

@@ -1,0 +1,4 @@
+KERNEL_ARG_ID_ATTR:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

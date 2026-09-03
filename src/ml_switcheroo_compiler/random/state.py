@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+from typing import Any, Optional, Union
+
+from ml_switcheroo_compiler.core.tensor import Tensor
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Generate random operations."""
@@ -59,7 +64,7 @@ def _emit_random_node(
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def _dispatch_random_eager(func_name: str, op_name: str, *args, **kwargs):
+def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: Any) -> Tensor:
     """Help to dispatch random functions in eager mode.
 
     Args:
@@ -69,13 +74,13 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     backend = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)
 
 
-def _dispatch_random(func_name: str, *args, **kwargs):
+def _dispatch_random(func_name: str, *args: Any, **kwargs: Any) -> Tensor:
     """Evaluate _dispatch_random operation.
 
     Args:
@@ -84,7 +89,7 @@ def _dispatch_random(func_name: str, *args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Result.
     """
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
@@ -98,7 +103,7 @@ def _dispatch_random(func_name: str, *args, **kwargs):
     return _emit_shape_node(op_name, list(args), kwargs, (), "float32")
 
 
-def rng_uniform(a, b, shape, dtype=None):
+def rng_uniform(a: Any, b: Any, shape: Any, dtype: Any | None = None) -> Tensor:
     """Generate uniform random values.
 
     Args:
@@ -112,7 +117,7 @@ def rng_uniform(a, b, shape, dtype=None):
     return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)
 
 
-def _get_numpy_rng(*args, **kwargs):
+def _get_numpy_rng(*args: Any, **kwargs: Any) -> Tensor:
     """Get the NumPy RNG instance from the numpy backend.
 
     Args:

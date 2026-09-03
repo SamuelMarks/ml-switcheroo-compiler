@@ -1,0 +1,2 @@
+Gradient:
+  target_api: '''mx.gradient({0})'''

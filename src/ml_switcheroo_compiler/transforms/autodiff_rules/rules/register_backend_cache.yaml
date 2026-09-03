@@ -1,0 +1,4 @@
+register_backend_cache:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

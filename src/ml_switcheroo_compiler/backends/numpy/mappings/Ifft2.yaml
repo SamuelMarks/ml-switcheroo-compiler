@@ -1,0 +1,3 @@
+Ifft2:
+  ast_template: np.fft.ifft2
+  target_api: ''

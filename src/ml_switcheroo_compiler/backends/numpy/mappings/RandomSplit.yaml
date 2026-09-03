@@ -1,0 +1,2 @@
+RandomSplit:
+  target_api: np.randomsplit

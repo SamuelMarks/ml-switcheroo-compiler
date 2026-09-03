@@ -1,0 +1,4 @@
+pin_rhs_in_vmem:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

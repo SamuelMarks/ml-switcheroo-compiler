@@ -1,0 +1,2 @@
+Gather:
+  target_api: tf.gather

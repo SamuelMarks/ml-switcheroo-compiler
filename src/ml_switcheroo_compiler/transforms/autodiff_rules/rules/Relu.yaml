@@ -1,0 +1,4 @@
+Relu:
+  jvp: Mul($tangent[0], Greater($input[0], Constant(0.0)))
+  vjp:
+  - '- Mul($cotangent, Greater($input[0], Constant(0.0)))'

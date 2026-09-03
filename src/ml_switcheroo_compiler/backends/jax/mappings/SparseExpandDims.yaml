@@ -1,0 +1,2 @@
+SparseExpandDims:
+  target_api: jax.numpy.sparseexpanddims

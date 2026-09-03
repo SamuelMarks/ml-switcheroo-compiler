@@ -1,0 +1,4 @@
+is_vector:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

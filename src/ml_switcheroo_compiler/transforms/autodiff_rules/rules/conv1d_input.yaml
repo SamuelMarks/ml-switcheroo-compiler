@@ -1,0 +1,4 @@
+conv1d_input:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

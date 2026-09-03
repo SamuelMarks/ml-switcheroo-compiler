@@ -15,10 +15,17 @@ def test_inject_cast_node():
 
 
 def test_needs_cast():
-    assert _needs_cast(None, "float32") is None
-    assert _needs_cast("float32", "float32") is None
-    assert _needs_cast("int32", "float32") == "float32"
-    assert _needs_cast("unknown", "float32") is None
+    from ml_switcheroo_compiler.core.config import config
+
+    old_jax = config.jax_enable_x64
+    config.jax_enable_x64 = False
+    try:
+        assert _needs_cast(None, "float32") is None
+        assert _needs_cast("float32", "float32") is None
+        assert _needs_cast("int32", "float32") == "float32"
+        assert _needs_cast("unknown", "float32") is None
+    finally:
+        config.jax_enable_x64 = old_jax
 
 
 def test_type_promotion_explicitizer_pass(mocker):

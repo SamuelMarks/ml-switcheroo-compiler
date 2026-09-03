@@ -2,7 +2,7 @@
 """Core abstractions and logic definitions for kernels.py."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -22,8 +22,8 @@ class CudaKernelOp(OpDef):
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -41,8 +41,8 @@ class MetalKernelOp(OpDef):
         """Infer shape for MetalKernel.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -60,8 +60,8 @@ class PrecompiledCudaKernelOp(OpDef):
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -83,6 +83,7 @@ class KernelContext:
     """Provide context for kernel execution."""
 
     op_type: str
+    code_or_binary: str
     output_shapes: list[tuple[int, ...]]
     output_dtypes: list[DType]
     launch_config: KernelLaunchConfig

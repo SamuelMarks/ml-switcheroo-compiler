@@ -1,0 +1,4 @@
+WGMMA_LAYOUT_UPCAST_2X:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

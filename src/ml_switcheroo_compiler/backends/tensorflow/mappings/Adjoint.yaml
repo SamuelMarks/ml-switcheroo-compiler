@@ -1,0 +1,2 @@
+Adjoint:
+  target_api: tf.linalg.adjoint

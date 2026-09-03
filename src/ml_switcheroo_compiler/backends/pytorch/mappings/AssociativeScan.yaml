@@ -1,0 +1,4 @@
+AssociativeScan:
+  custom_code: 'lambda *args, **kwargs: args[1] if len(args) > 1 and callable(args[0])
+    else args[0]'
+  target_api: custom_op

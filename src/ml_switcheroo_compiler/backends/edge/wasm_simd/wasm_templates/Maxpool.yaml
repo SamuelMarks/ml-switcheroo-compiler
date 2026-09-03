@@ -1,0 +1,4 @@
+MaxPool:
+  body: "\n// WASM SIMD MaxPool\nfor (size_t i = 0; i < {out_size}; ++i) {\n    v128_t\
+    \ max_vec = wasm_f32x4_splat(-3.402823466e+38f);\n    // ... loop over kernel\
+    \ window\n}\n"

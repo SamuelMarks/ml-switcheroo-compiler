@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 import typing
 from typing import Any
 
@@ -14,13 +15,13 @@ def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> 
     """Evaluate _all_gather operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        tensor (Any): The tensor parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        tensor: The tensor parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if hasattr(backend_module, "stack"):
         return backend_module.stack([tensor])
@@ -30,16 +31,16 @@ def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> 
 
 
 @global_eager_registry.register("Argwhere")
-def _argwhere(backend_module: Any, a: Any, **kwargs: Any) -> Any:
+def _argwhere(backend_module: Any, a: object, **kwargs: Any) -> Any:
     """Evaluate _argwhere operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        a (Any): The a parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        a: The a parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.argwhere(a)
 
@@ -49,12 +50,12 @@ def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _extract operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "extract", None)
     if func:
@@ -70,12 +71,12 @@ def _pswapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pswapaxes operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pswapaxes"):
         return backend_module.lax.pswapaxes(*args, **kwargs)
@@ -87,12 +88,12 @@ def _rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _rot90 operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.rot90(*args, **kwargs)
 
@@ -102,12 +103,12 @@ def _nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _nonzero operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.nonzero(*args, **kwargs)
 
@@ -117,12 +118,12 @@ def _repeat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _repeat operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.repeat(*args, **kwargs)
 
@@ -132,12 +133,12 @@ def _tile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tile operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.tile(*args, **kwargs)
 
@@ -147,12 +148,12 @@ def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _updateslice operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -173,12 +174,12 @@ def _flatnonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _flatnonzero operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "flatnonzero", None)
     if func:
@@ -191,12 +192,12 @@ def _fliplr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fliplr operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "fliplr", None)
     if func:
@@ -209,12 +210,12 @@ def _flipud(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _flipud operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "flipud", None)
     if func:
@@ -227,12 +228,12 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_hsplit operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
@@ -247,12 +248,12 @@ def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_scatterapply operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -270,12 +271,12 @@ def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_scatternd operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
     if func is not None:
@@ -290,12 +291,12 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorarraystack operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
@@ -310,12 +311,12 @@ def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> A
     """Evaluate _np_tensorscatterupdate operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
     if func is not None:
@@ -330,12 +331,12 @@ def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_unfold operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
     if func is not None:
@@ -350,19 +351,19 @@ def _np_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_unstack operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
 
-    axis = int(kwargs.get("axis", 0))
+    axis: int = int(kwargs.get("axis", 0))
     return np.split(args[0], args[0].shape[axis], axis=axis)
 
 
@@ -371,12 +372,12 @@ def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_updateslice operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -395,12 +396,12 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_vsplit operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:

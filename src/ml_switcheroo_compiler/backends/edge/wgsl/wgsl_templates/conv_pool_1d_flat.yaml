@@ -1,0 +1,7 @@
+conv_pool_1d_flat:
+  body: "let idx = global_id.x + global_id.y * 64u;\nif (idx >= {nelem}u) {{{{\n \
+    \   return;\n}}}}\nbuf_out_f32[idx] = {expr};\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

@@ -1,0 +1,55 @@
+templates:
+  allgather_emit: '// Trigger WebRTC AllGather
+
+    const localData = {local_tensor_data};
+
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+
+    await waitForGather(''{op_id}'');
+
+    '
+  allreduce_emit: '// Trigger WebRTC AllReduce
+
+    const localData = {local_tensor_data};
+
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+
+    await waitForReduction(''{op_id}'');
+
+    '
+  alltoall_emit: '// Trigger WebRTC AllToAll
+
+    const localData = {local_tensor_data};
+
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+
+    await waitForAllToAll(''{op_id}'');
+
+    '
+  init_peer_connection: "const peerId = Math.random().toString(36).substring(7);\n\
+    const signalingUrl = \"http://127.0.0.1:8080\";\nconst peerConnection = new RTCPeerConnection({config});\n\
+    const dataChannel = peerConnection.createDataChannel(\"ml_switcheroo_collective\"\
+    );\n\npeerConnection.onicecandidate = async (event) => {{\n    if (event.candidate)\
+    \ {{\n        await fetch(`${{signalingUrl}}/candidate`, {{\n            method:\
+    \ 'POST',\n            body: JSON.stringify({{ peer_id: peerId, candidate: event.candidate\
+    \ }})\n        }});\n    }}\n}};\n\n// Setup message handler for distributed ops\n\
+    dataChannel.onmessage = async (event) => {{\n    const message = JSON.parse(event.data);\n\
+    \    if (message.type === 'ALLREDUCE') {{\n        // Handle AllReduce reduction\
+    \ logic\n        {allreduce_handler}\n    }} else if (message.type === 'ALLGATHER')\
+    \ {{\n        // Handle AllGather concatenation logic\n        {allgather_handler}\n\
+    \    }} else if (message.type === 'ALLTOALL') {{\n        // Handle AllToAll split/concat\
+    \ logic\n        {alltoall_handler}\n    }} else if (message.type === 'REDUCESCATTER')\
+    \ {{\n        // Handle ReduceScatter logic\n        {reducescatter_handler}\n\
+    \    }}\n}};\n\n// Initiate signaling\nconst offer = await peerConnection.createOffer();\n\
+    await peerConnection.setLocalDescription(offer);\nawait fetch(`${{signalingUrl}}/offer`,\
+    \ {{\n    method: 'POST',\n    body: JSON.stringify({{ peer_id: peerId, offer:\
+    \ offer }})\n}});\n"
+  reducescatter_emit: '// Trigger WebRTC ReduceScatter
+
+    const localData = {local_tensor_data};
+
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+
+    await waitForReduceScatter(''{op_id}'');
+
+    '

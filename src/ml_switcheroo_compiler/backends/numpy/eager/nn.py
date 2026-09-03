@@ -86,18 +86,19 @@ def _np_activity_regularization(backend_module, x, **kwargs):
 
 
 @numpy_eager_registry.register("Dropout")
-def _np_dropout(backend_module, x, **kwargs):
+def _np_dropout(backend_module, x, rate=0.5, **kwargs):
     """Evaluate _np_dropout operation.
 
     Args:
         backend_module (object): The backend_module parameter.
         x (object): The x parameter.
+        rate (float): The dropout rate.
         **kwargs (object): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    rate = kwargs.get("rate", 0.5)
+    rate = kwargs.get("rate", rate)
     training = kwargs.get("training", False)
     if not training or rate == 0.0:
         return x

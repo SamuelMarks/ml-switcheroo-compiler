@@ -1,0 +1,4 @@
+score_function_jacobians:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

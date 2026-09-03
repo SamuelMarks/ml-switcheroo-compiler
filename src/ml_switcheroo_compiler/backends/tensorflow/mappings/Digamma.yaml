@@ -1,0 +1,2 @@
+Digamma:
+  target_api: tf.math.digamma

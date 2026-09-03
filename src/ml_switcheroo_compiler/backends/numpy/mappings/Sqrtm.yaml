@@ -1,0 +1,2 @@
+Sqrtm:
+  target_api: np.sqrtm

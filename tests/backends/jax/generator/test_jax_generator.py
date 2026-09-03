@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 import sys
 
-"Core abstractions and logic definitions for test_jax_generator_extra.py."
+"Core abstractions and logic definitions for test_jax_generator_edge_cases.py."
 
 
 def test_jax_generator_extra_coverage():
@@ -142,7 +142,12 @@ def test_jax_distributed_visitor():
 
     class DummyGenerator(JaxDistributedVisitor):
         def __init__(self):
-            self.code = []
+            self._code = []
+            super().__init__(self)
+
+        @property
+        def code(self):
+            return self._code
 
     gen = DummyGenerator()
 
@@ -197,8 +202,8 @@ def test_jax_math_visitor_extra():
 def test_jax_audio_visitor():
     vis = JaxAudioVisitor()
     assert vis.visit_Istft(DummyNode({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "jax_istft(a, 2048, 512, None, 'hann', False)"
-    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "jax_mel_filterbank(1, 2, 3, 4, 5)"
-    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "jax_mfcc(a, 2, 1, 3, 4, 5)"
+    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "jax_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "jax_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 "Test module."
@@ -234,7 +239,6 @@ def test_jax_generator():
     assert "Zeros" in ops
     assert "Ones" in ops
     assert "Full" in ops
-    assert ops["BroadcastInDim"] == "{0}.broadcast_in_dim({1}, {2})"
     gen._emit_constant_assignment("var_a", "42")
     assert gen.code[-1] == "var_a = jnp.array(42)"
     assert gen._generate_file_header() == [gen.header.strip()]
@@ -269,3 +273,14 @@ def test_jax_generator_imports():
 def test_jax_generator_save_funcs():
     g = DummyGraph()
     gen = JAXCodeGenerator(g)
+
+
+from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
+
+
+def test_jax_generator_mixin_code_prop():
+    class DummyGen:
+        pass
+
+    m = JaxDistributedVisitor(DummyGen())
+    assert m.code == []

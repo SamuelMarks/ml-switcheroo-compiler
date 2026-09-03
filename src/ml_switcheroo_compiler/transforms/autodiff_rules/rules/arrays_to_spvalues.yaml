@@ -1,0 +1,4 @@
+arrays_to_spvalues:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

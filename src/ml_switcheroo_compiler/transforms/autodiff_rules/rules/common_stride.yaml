@@ -1,0 +1,4 @@
+common_stride:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

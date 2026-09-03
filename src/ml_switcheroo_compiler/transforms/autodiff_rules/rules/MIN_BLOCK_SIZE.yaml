@@ -1,0 +1,4 @@
+MIN_BLOCK_SIZE:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

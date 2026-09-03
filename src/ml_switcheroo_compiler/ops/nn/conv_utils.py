@@ -5,7 +5,7 @@ import math
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -133,8 +133,8 @@ def _prepare_depthwise_conv(
         rhs (Tensor): The rhs parameter.
         spatial_dims (int): The spatial_dims parameter.
         dimension_numbers (tuple): The dimension_numbers parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         tuple: Result.
@@ -174,11 +174,11 @@ def atrous_conv2d(value, filters, rate, padding, name=None):
     """Atrous convolution.
 
     Args:
-        value (object): The value parameter.
-        filters (object): The filters parameter.
-        rate (object): The rate parameter.
-        padding (object): The padding parameter.
-        name (object): The name parameter.
+        value (Any): The value parameter.
+        filters (Any): The filters parameter.
+        rate (Any): The rate parameter.
+        padding (Any): The padding parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -198,11 +198,11 @@ def atrous_conv2d_transpose(
     """Atrous convolution transpose.
 
     Args:
-        value (object): The value parameter.
-        filters (object): The filters parameter.
-        output_shape (object): The output_shape parameter.
-        config (object): The config parameter.
-        name (object): The name parameter.
+        value (Any): The value parameter.
+        filters (Any): The filters parameter.
+        output_shape (Any): The output_shape parameter.
+        config (Any): The config parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -218,10 +218,10 @@ def bias_add(value, bias, data_format=None, name=None):
     """Add `bias` to `value`.
 
     Args:
-        value (object): The value parameter.
-        bias (object): The bias parameter.
-        data_format (object): The data_format parameter.
-        name (object): The name parameter.
+        value (Any): The value parameter.
+        bias (Any): The bias parameter.
+        data_format (Any): The data_format parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -233,9 +233,9 @@ def collapse_repeated(labels, seq_length, name=None):
     """Merge repeated labels into single labels.
 
     Args:
-        labels (object): The labels parameter.
-        seq_length (object): The seq_length parameter.
-        name (object): The name parameter.
+        labels (Any): The labels parameter.
+        seq_length (Any): The seq_length parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -257,9 +257,9 @@ def compute_average_loss(per_example_loss, sample_weight=None, global_batch_size
     """Compute the average loss.
 
     Args:
-        per_example_loss (object): The per_example_loss parameter.
-        sample_weight (object): The sample_weight parameter.
-        global_batch_size (object): The global_batch_size parameter.
+        per_example_loss (Any): The per_example_loss parameter.
+        sample_weight (Any): The sample_weight parameter.
+        global_batch_size (Any): The global_batch_size parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -280,8 +280,8 @@ def depthwise_conv2d(
     Args:
         input (Tensor): The input parameter.
         filter (Tensor): The filter parameter.
-        config (object): The config parameter.
-        name (object): The name parameter.
+        config (Any): The config parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -310,11 +310,11 @@ def depthwise_conv2d_backprop_filter(
     """Compute the gradients of depthwise convolution with respect to the filter.
 
     Args:
-        input (object): The input parameter.
-        filter_sizes (object): The filter_sizes parameter.
-        out_backprop (object): The out_backprop parameter.
-        config (object): The config parameter.
-        name (object): The name parameter.
+        input (Any): The input parameter.
+        filter_sizes (Any): The filter_sizes parameter.
+        out_backprop (Any): The out_backprop parameter.
+        config (Any): The config parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -332,11 +332,11 @@ def depthwise_conv2d_backprop_input(
     """Compute the gradients of depthwise convolution with respect to the input.
 
     Args:
-        input_sizes (object): The input_sizes parameter.
-        filter (object): The filter parameter.
-        out_backprop (object): The out_backprop parameter.
-        config (object): The config parameter.
-        name (object): The name parameter.
+        input_sizes (Any): The input_sizes parameter.
+        filter (Any): The filter parameter.
+        out_backprop (Any): The out_backprop parameter.
+        config (Any): The config parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -364,9 +364,9 @@ def dilation2d(
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
     Args:
-        input (object): The input parameter.
-        filter (object): The filter parameter.
-        args (object): The args parameter.
+        input (Any): The input parameter.
+        filter (Any): The filter parameter.
+        args (Any): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -390,9 +390,9 @@ def erosion2d(
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
     Args:
-        value (object): The value parameter.
-        kernel (object): The kernel parameter.
-        args (object): The args parameter.
+        value (Any): The value parameter.
+        kernel (Any): The kernel parameter.
+        args (Any): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -416,9 +416,9 @@ def convolution(
     """Compute sums of N-D convolutions (actually cross-correlation).
 
     Args:
-        input (object): The input parameter.
-        filters (object): The filters parameter.
-        args (object): The args parameter.
+        input (Any): The input parameter.
+        filters (Any): The filters parameter.
+        args (Any): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -447,10 +447,10 @@ def conv_transpose(
     """Return the transpose of `convolution`.
 
     Args:
-        input (object): The input parameter.
-        filters (object): The filters parameter.
-        output_shape (object): The output_shape parameter.
-        args (object): The args parameter.
+        input (Any): The input parameter.
+        filters (Any): The filters parameter.
+        output_shape (Any): The output_shape parameter.
+        args (Any): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,4 @@
+jax_buffer_type:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

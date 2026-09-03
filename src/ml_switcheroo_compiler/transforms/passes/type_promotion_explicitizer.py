@@ -43,11 +43,11 @@ def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
     """Evaluate _needs_cast operation.
 
     Args:
-        dt1 (object): The dt1 parameter.
-        dt2 (object): The dt2 parameter.
+        dt1 (Optional[str]): The dt1 parameter.
+        dt2 (Optional[str]): The dt2 parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+            Optional[str]: Result.
     """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None

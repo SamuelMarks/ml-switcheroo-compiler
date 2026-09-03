@@ -1,0 +1,2 @@
+RandomBernoulli:
+  target_api: np.randombernoulli

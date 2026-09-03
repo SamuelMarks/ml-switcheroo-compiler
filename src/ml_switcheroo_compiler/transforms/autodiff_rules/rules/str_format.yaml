@@ -1,0 +1,4 @@
+str_format:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

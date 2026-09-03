@@ -1,0 +1,4 @@
+MUL_A:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

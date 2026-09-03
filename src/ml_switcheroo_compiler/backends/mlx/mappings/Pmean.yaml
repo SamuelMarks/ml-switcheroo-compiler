@@ -1,0 +1,2 @@
+Pmean:
+  target_api: '''{0}.pmean({1})'''

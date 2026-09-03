@@ -1,0 +1,3 @@
+AnyOp:
+  ast_template: torch.any({0}, dim={axis}, keepdim={keepdims})
+  target_api: ''

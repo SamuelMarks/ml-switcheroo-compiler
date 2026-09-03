@@ -1,0 +1,4 @@
+recursive_map:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

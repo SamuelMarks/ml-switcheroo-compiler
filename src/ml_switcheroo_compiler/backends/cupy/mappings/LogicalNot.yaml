@@ -1,0 +1,2 @@
+LogicalNot:
+  target_api: cp.logical_not

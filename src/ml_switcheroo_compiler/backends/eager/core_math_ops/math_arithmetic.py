@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,12 +14,12 @@ def _true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _true_divide operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
@@ -29,12 +30,12 @@ def _fmod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmod operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
@@ -45,12 +46,12 @@ def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _accumulate_n operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -64,33 +65,33 @@ def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("AssignAdd")
-def _assign_add(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
+def _assign_add(backend_module: Any, ref: object, value: object, **kwargs: Any) -> Any:
     """Evaluate _assign_add operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        ref (Any): The ref parameter.
-        value (Any): The value parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        ref: The ref parameter.
+        value: The value parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return ref + value
 
 
 @global_eager_registry.register("AssignSub")
-def _assign_sub(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
+def _assign_sub(backend_module: Any, ref: object, value: object, **kwargs: Any) -> Any:
     """Evaluate _assign_sub operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        ref (Any): The ref parameter.
-        value (Any): The value parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        ref: The ref parameter.
+        value: The value parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return ref - value
 
@@ -100,12 +101,12 @@ def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _add_n operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -123,12 +124,12 @@ def _modf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _modf operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.modf(*args, **kwargs)
 
@@ -138,12 +139,12 @@ def _ravelmultiindex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ravelmultiindex operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.ravel_multi_index(*args, **kwargs)
 
@@ -153,12 +154,12 @@ def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_scattermul operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
     if func is not None:
@@ -173,12 +174,12 @@ def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_stringsubstr operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
@@ -193,12 +194,12 @@ def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tensorscattersub operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
     if func is not None:
@@ -213,12 +214,12 @@ def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_truncatediv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
@@ -233,12 +234,12 @@ def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_truncatemod operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
@@ -253,12 +254,12 @@ def _np_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_xdivy operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:

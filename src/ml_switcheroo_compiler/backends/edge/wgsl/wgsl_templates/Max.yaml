@@ -1,0 +1,9 @@
+Max:
+  body: "\nlet idx = global_id.x;\nif (idx >= {out_size}u) { return; }\nvar max_val\
+    \ = -3.402823466e+38f;\nfor (var i = 0u; i < {reduce_size}u; i = i + 1u) {\n \
+    \   let val = buf_in_f32[idx * {reduce_size}u + i];\n    if (val > max_val) {\
+    \ max_val = val; }\n}\nbuf_out_f32[idx] = max_val;\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

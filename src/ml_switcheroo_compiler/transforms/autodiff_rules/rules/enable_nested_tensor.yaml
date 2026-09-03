@@ -1,0 +1,4 @@
+enable_nested_tensor:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

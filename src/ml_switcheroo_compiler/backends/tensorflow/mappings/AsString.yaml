@@ -1,0 +1,2 @@
+AsString:
+  target_api: tf.as_string

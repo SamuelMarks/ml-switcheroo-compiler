@@ -1,0 +1,4 @@
+ctc_decode:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

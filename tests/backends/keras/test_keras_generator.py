@@ -36,8 +36,8 @@ def test_keras_vision_visitor():
 def test_keras_audio_visitor():
     vis = KerasAudioVisitor()
     assert vis.visit_Istft(DummyNode({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
-    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4, 5)"
-    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3, 4, 5)"
+    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 "Test module."
@@ -99,7 +99,9 @@ def test_keras_generator():
     assert gen.keras_input_vars == []
     gen.keras_input_vars = ["i"]
     gen.keras_output_vars = ["o"]
-    gen._generate_return_block()
+    from ml_switcheroo_compiler.backends.keras.generator import KerasSignatureBuilder
+
+    gen.code.append(KerasSignatureBuilder.get_return_block(gen.keras_input_vars, gen.keras_output_vars))
     assert "return keras.Model(inputs=[i], outputs=[o])" in gen.code[-1]
 
 
@@ -168,3 +170,15 @@ def test_keras_generator_empty_prefix_yaml():
     with patch("yaml.safe_load", return_value={}):
         lines = gen._resolve_imports()
         assert lines == ["import keras\n"]
+
+
+from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
+from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+def test_keras_generator_generate_cst():
+    graph = IRGraph()
+    gen = KerasCodeGenerator(graph)
+    code = gen.generate()
+    assert isinstance(code, str)
+    assert "evaluate(" in code

@@ -15,12 +15,27 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 class CostModel(Protocol):
     """Backend-agnostic Cost Model interface for nodes."""
 
-    def get_memory_cost(self, node: IRNode) -> int:
+    @property
+    def compute_heavy_threshold(self) -> int:
+        """Threshold for heavy compute cost."""
+        ...
+
+    @property
+    def heavy_interleave_penalty(self) -> int:
+        """Penalty for sequential heavy nodes."""
+        ...
+
+    @property
+    def light_interleave_penalty(self) -> int:
+        """Penalty for sequential light nodes."""
+        ...
+
+    def get_memory_cost(self, node: IRNode) -> int | str:
         """Get the memory cost of a node in bytes.
 
         Args:
             node (IRNode): The node parameter.
-            int: Result.
+            int | str: Result.
         """
         ...
 
@@ -38,39 +53,68 @@ import os
 
 import yaml
 
+from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
+
 
 class DefaultCostModel:
     """Default implementation of the cost model."""
 
     def __init__(self) -> None:
-        """__init__ function.
-
-        Args:
-        self (object): The self parameter.
+        """Initialize default cost model.
 
         Returns:
-        object: Result.
+            None: Result.
         """
         yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
         with open(yaml_path) as f:
-            self.config = yaml.safe_load(f)
+            self.config = CostModelConfig(**yaml.safe_load(f))
 
-    def get_memory_cost(self, node: IRNode) -> int:
+    @property
+    def compute_heavy_threshold(self) -> int:
+        """Threshold for heavy compute cost."""
+        return self.config.compute_heavy_threshold
+
+    @property
+    def heavy_interleave_penalty(self) -> int:
+        """Penalty for sequential heavy nodes."""
+        return self.config.heavy_interleave_penalty
+
+    @property
+    def light_interleave_penalty(self) -> int:
+        """Penalty for sequential light nodes."""
+        return self.config.light_interleave_penalty
+
+    def get_memory_cost(self, node: IRNode) -> int | str:
         """Calculate memory cost (byte size of output).
 
         Args:
             node (IRNode): The node.
 
         Returns:
-            int: Memory size in bytes.
+            int | str: Memory size in bytes.
         """
-        size = 1
-        if node.shape_metadata and not node.is_dynamic_shape:
-            for dim in node.static_shape:
-                size *= max(1, int(dim))
         dtype = node.attributes.get("dtype", "float32")
-        sizes = self.config.get("memory_sizes", {})
-        return size * sizes.get(dtype, 4)
+        sizes = self.config.memory_sizes
+        dtype_size = sizes.get(dtype, 4)
+
+        shape = getattr(node, "shape_metadata", None)
+        if shape is None:
+            return dtype_size
+
+        is_dynamic = getattr(node, "is_dynamic_shape", False)
+        has_symbolic_dim = any(isinstance(d, str) for d in shape)
+
+        if not is_dynamic and not has_symbolic_dim:
+            size = 1
+            for dim in shape:
+                size *= max(1, int(dim))
+            return size * dtype_size
+
+        dims = [str(d) for d in shape]
+        if dims:
+            symbolic_math = " * ".join(dims) + f" * {dtype_size}"
+            return symbolic_math
+        return dtype_size
 
     def get_compute_cost(self, node: IRNode) -> int:
         """Calculate compute cost.
@@ -81,12 +125,12 @@ class DefaultCostModel:
         Returns:
             int: The compute cost heuristic.
         """
-        costs = self.config.get("compute_costs", {})
-        if node.op_type in costs.get("heavy_ops", []):
-            return costs.get("heavy_cost", 1000)
-        if node.op_type in costs.get("light_ops", []):
-            return costs.get("light_cost", 10)
-        return costs.get("default_cost", 50)
+        costs = self.config.compute_costs
+        if node.op_type in costs.heavy_ops:
+            return costs.heavy_cost
+        if node.op_type in costs.light_ops:
+            return costs.light_cost
+        return costs.default_cost
 
 
 def _build_adjacency_lists(graph: IRGraph) -> tuple[dict[str, list[str]], dict[str, int], dict[str, int]]:
@@ -131,12 +175,12 @@ def _score_node(node_id: str, graph: IRGraph, cost_model: CostModel, remaining_u
             mem_freed += cost_model.get_memory_cost(graph.nodes[inp])
     net_mem = mem_cost - mem_freed
     comp_cost = cost_model.get_compute_cost(node)
-    is_compute_heavy = comp_cost > 100
+    is_compute_heavy = comp_cost > cost_model.compute_heavy_threshold
     interleave_penalty = 0
     if is_compute_heavy and last_was_compute_heavy:
-        interleave_penalty = 500
+        interleave_penalty = cost_model.heavy_interleave_penalty
     elif not is_compute_heavy and not last_was_compute_heavy:
-        interleave_penalty = 100
+        interleave_penalty = cost_model.light_interleave_penalty
     return float(net_mem + interleave_penalty)
 
 
@@ -210,7 +254,7 @@ def graph_scheduling_pass(graph: IRGraph) -> bool:
         scheduled_order.append(best_node_id)
         node = graph.nodes[best_node_id]
         comp_cost = cost_model.get_compute_cost(node)
-        last_was_compute_heavy = comp_cost > 100
+        last_was_compute_heavy = comp_cost > cost_model.compute_heavy_threshold
         _update_degrees_and_uses(node, best_node_id, consumers, remaining_uses, in_degree, ready_nodes)
     if len(scheduled_order) != len(graph.nodes):
         return False

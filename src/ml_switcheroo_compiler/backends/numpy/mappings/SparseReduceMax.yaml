@@ -1,0 +1,3 @@
+SparseReduceMax:
+  ast_template: tf.sparse.reduce_max
+  target_api: ''

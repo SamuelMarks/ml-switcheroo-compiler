@@ -1,0 +1,3 @@
+Sum:
+  ast_template: np.sum
+  target_api: ''

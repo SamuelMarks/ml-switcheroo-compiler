@@ -1,0 +1,4 @@
+is_array_ref:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -35,9 +35,9 @@ def _sparse_op(op_name, *args, **kwargs):
     """Evaluate _sparse_op operation.
 
     Args:
-        op_name (object): The op_name parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        op_name (Any): The op_name parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -66,8 +66,8 @@ def sparse_bincount(*args, **kwargs):
     """Evaluate sparse_bincount operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -79,8 +79,8 @@ def sparse_cross_hashed(*args, **kwargs):
     """Evaluate sparse_cross_hashed operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -92,8 +92,8 @@ def sparse_expand_dims(*args, **kwargs):
     """Evaluate sparse_expand_dims operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -105,8 +105,8 @@ def sparse_eye(*args, **kwargs):
     """Evaluate sparse_eye operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -118,8 +118,8 @@ def sparse_fill_empty_rows(*args, **kwargs):
     """Evaluate sparse_fill_empty_rows operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -131,8 +131,8 @@ def sparse_map_values(*args, **kwargs):
     """Evaluate sparse_map_values operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -144,8 +144,8 @@ def sparse_mask(*args, **kwargs):
     """Evaluate sparse_mask operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -157,8 +157,8 @@ def sparse_maximum(*args, **kwargs):
     """Evaluate sparse_maximum operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -170,8 +170,8 @@ def sparse_minimum(*args, **kwargs):
     """Evaluate sparse_minimum operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -183,8 +183,8 @@ def sparse_reduce_max(*args, **kwargs):
     """Evaluate sparse_reduce_max operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -196,8 +196,8 @@ def sparse_reduce_sum(*args, **kwargs):
     """Evaluate sparse_reduce_sum operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -209,8 +209,8 @@ def sparse_reorder(*args, **kwargs):
     """Evaluate sparse_reorder operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -222,8 +222,8 @@ def sparse_reset_shape(*args, **kwargs):
     """Evaluate sparse_reset_shape operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -235,8 +235,8 @@ def sparse_reshape(*args, **kwargs):
     """Evaluate sparse_reshape operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -248,8 +248,8 @@ def sparse_retain(*args, **kwargs):
     """Evaluate sparse_retain operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -261,8 +261,8 @@ def sparse_segment_mean(*args, **kwargs):
     """Evaluate sparse_segment_mean operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -274,8 +274,8 @@ def sparse_segment_sqrt_n(*args, **kwargs):
     """Evaluate sparse_segment_sqrt_n operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -287,8 +287,8 @@ def sparse_segment_sum(*args, **kwargs):
     """Evaluate sparse_segment_sum operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -300,8 +300,8 @@ def sparse_slice(*args, **kwargs):
     """Evaluate sparse_slice operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -313,8 +313,8 @@ def sparse_softmax(*args, **kwargs):
     """Evaluate sparse_softmax operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -326,8 +326,8 @@ def sparse_to_indicator(*args, **kwargs):
     """Evaluate sparse_to_indicator operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -339,8 +339,8 @@ def sparse_transpose(*args, **kwargs):
     """Evaluate sparse_transpose operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -352,8 +352,8 @@ def sparse_add(*args, **kwargs):
     """Evaluate sparse_add operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -365,8 +365,8 @@ def sparse_dense_matmul(*args, **kwargs):
     """Evaluate sparse_dense_matmul operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -378,8 +378,8 @@ def sparse_sampled_add(*args, **kwargs):
     """Evaluate sparse_sampled_add operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -391,8 +391,8 @@ def smm(*args, **kwargs):
     """Evaluate smm operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -404,8 +404,8 @@ def sparse_concat(*args, **kwargs):
     """Sparse concat.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -417,8 +417,8 @@ def sparse_split(*args, **kwargs):
     """Sparse split.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -430,8 +430,8 @@ def sparse_to_dense(*args, **kwargs):
     """Sparse to dense.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.

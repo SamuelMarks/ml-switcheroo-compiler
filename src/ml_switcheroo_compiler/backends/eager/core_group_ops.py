@@ -1,8 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
+import builtins
 import typing
-from typing import Any
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -20,17 +21,17 @@ def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
 
-def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: Any, reduction_axes: tuple[int, ...]) -> Any:
+def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: object, reduction_axes: tuple[int, ...]) -> Any:
     """Evaluate _invoke_grouped_op operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
+        backend_module: The backend_module parameter.
         op_name (str): The op_name parameter.
-        reshaped_x (Any): The reshaped_x parameter.
+        reshaped_x: The reshaped_x parameter.
         reduction_axes (tuple[int, ...]): The reduction_axes parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
 
     Raises:
         ValueError: An exception.
@@ -49,17 +50,17 @@ def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: Any, reduc
     raise ValueError(msg)
 
 
-def _apply_grouped_reduction(backend_module: Any, op_name: str, x: Any, **kwargs: int) -> Any:
+def _apply_grouped_reduction(backend_module: Any, op_name: str, x: object, **kwargs: int) -> Any:
     """Evaluate _apply_grouped_reduction operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
+        backend_module: The backend_module parameter.
         op_name (str): The op_name parameter.
-        x (Any): The x parameter.
-        **kwargs (int): Keyword args.
+        x: The x parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     groups: int = kwargs["groups"]
     axis: int = kwargs["axis"]
@@ -81,15 +82,15 @@ def _group_mean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _group_mean operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
-    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(str(args[1])))())
     axis: int = int(kwargs.get("axis", -1))
     return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
@@ -99,30 +100,30 @@ def _group_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _group_variance operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x = args[0]
-    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(str(args[1])))())
     axis: int = int(kwargs.get("axis", -1))
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
-def _apply_affine_transform(backend_module: Any, out: Any, axis: int, **kwargs: Any) -> Any:
+def _apply_affine_transform(backend_module: Any, out: object, axis: int, **kwargs: Any) -> Any:
     """Apply affine transform scaling to normalized output.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        out (Any): The out parameter.
+        backend_module: The backend_module parameter.
+        out: The out parameter.
         axis (int): The axis parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")
@@ -141,18 +142,18 @@ def _apply_affine_transform(backend_module: Any, out: Any, axis: int, **kwargs: 
     return out
 
 
-def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, int, Any, Any, int, float]:
+def _parse_group_norm_args(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[object, int, Optional[object], Optional[object], int, float]:
     """Evaluate _parse_group_norm_args operation.
 
     Args:
-        args (tuple[Any, ...]): The args parameter.
-        kwargs (dict[str, Any]): The kwargs parameter.
+        args: The args parameter.
+        kwargs: The kwargs parameter.
 
     Returns:
-        tuple[Any, int, Any, Any, int, float]: Result.
+        tuple[object, int, Optional[object], Optional[object], int, float]: Result.
     """
     x = args[0]
-    groups: int = int(kwargs.get("groups") if "groups" in kwargs else args[1])
+    groups: int = int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(str(args[1])))())
     weight = kwargs.get("weight", None)
     bias = kwargs.get("bias", None)
     axis: int = int(kwargs.get("axis", -1))
@@ -160,18 +161,18 @@ def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tup
     return (x, groups, weight, bias, axis, epsilon)
 
 
-def _compute_group_norm(backend_module: Any, x: Any, shape: list[int], group_params: tuple[int, int], stats: tuple[Any, Any, float]) -> Any:
+def _compute_group_norm(backend_module: Any, x: object, shape: list[int], group_params: tuple[int, int], stats: tuple[object, object, float]) -> Any:
     """Evaluate _compute_group_norm operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        x (Any): The x parameter.
+        backend_module: The backend_module parameter.
+        x: The x parameter.
         shape (list[int]): The shape parameter.
         group_params (tuple[int, int]): The group_params parameter.
-        stats (tuple[Any, Any, float]): The stats parameter.
+        stats: The stats parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     axis, groups = group_params
     mean, var, epsilon = stats
@@ -188,12 +189,12 @@ def _group_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _group_norm operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
     shape: list[int] = list(x.shape)

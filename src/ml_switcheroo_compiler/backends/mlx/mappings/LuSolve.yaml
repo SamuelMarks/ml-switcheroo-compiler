@@ -1,0 +1,2 @@
+LuSolve:
+  target_api: '''mx.linalg.lu_solve({0}, {1})'''

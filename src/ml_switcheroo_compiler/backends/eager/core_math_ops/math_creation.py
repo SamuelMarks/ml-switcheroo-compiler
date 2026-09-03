@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 import typing
 from typing import Any
 
@@ -14,12 +15,12 @@ def _fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromfunction operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.fromfunction(*args, **kwargs)
 
@@ -29,12 +30,12 @@ def _from_dlpack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _from_dlpack operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.from_dlpack(*args, **kwargs)
 
@@ -44,12 +45,12 @@ def _fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromiter operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.fromiter(*args, **kwargs)
 
@@ -59,12 +60,12 @@ def _frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _frompyfunc operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.frompyfunc(*args, **kwargs)
 
@@ -74,12 +75,12 @@ def _geomspace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _geomspace operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.geomspace(*args, **kwargs)
 
@@ -89,12 +90,12 @@ def _mgrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mgrid operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.mgrid(*args, **kwargs)
 
@@ -104,12 +105,12 @@ def _ogrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ogrid operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.ogrid(*args, **kwargs)
 
@@ -119,14 +120,19 @@ def _np_fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fromfunction operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return backend_module.fromfunction(*args, **kwargs)
+    func = getattr(backend_module, "fromfunction", None)
+    if func:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.fromfunction(*args, **kwargs)
 
 
 @global_eager_registry.register("NpFromiter")
@@ -134,14 +140,19 @@ def _np_fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fromiter operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return backend_module.fromiter(*args, **kwargs)
+    func = getattr(backend_module, "fromiter", None)
+    if func:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.fromiter(*args, **kwargs)
 
 
 @global_eager_registry.register("NpFrompyfunc")
@@ -149,11 +160,16 @@ def _np_frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_frompyfunc operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
-    return backend_module.frompyfunc(*args, **kwargs)
+    func = getattr(backend_module, "frompyfunc", None)
+    if func:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.frompyfunc(*args, **kwargs)

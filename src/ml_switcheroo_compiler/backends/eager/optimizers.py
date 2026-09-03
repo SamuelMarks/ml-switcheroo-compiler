@@ -6,19 +6,19 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("ApplyAdam")
-def apply_adam(backend_module: Any, param: Any, m: Any, v: Any, grad: Any, lr: float) -> Any:
+def apply_adam(backend_module: Any, param: object, m: object, v: object, grad: Any, lr: float) -> tuple[object, object, object]:
     """Apply Adam update using backend operations.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        param (Any): The param parameter.
-        m (Any): The m parameter.
-        v (Any): The v parameter.
-        grad (Any): The grad parameter.
+        backend_module: The backend_module parameter.
+        param: The param parameter.
+        m: The m parameter.
+        v: The v parameter.
+        grad: The grad parameter.
         lr (float): The lr parameter.
 
     Returns:
-            Any: Result.
+            tuple[object, object, object]: Result.
     """
     beta1, beta2, eps = 0.9, 0.999, 1e-8
     m_new = backend_module.add(backend_module.multiply(m, beta1), backend_module.multiply(grad, 1.0 - beta1))
@@ -29,18 +29,18 @@ def apply_adam(backend_module: Any, param: Any, m: Any, v: Any, grad: Any, lr: f
 
 
 @global_eager_registry.register("ApplyAdagrad")
-def apply_adagrad(backend_module: Any, param: Any, accum: Any, grad: Any, lr: float) -> Any:
+def apply_adagrad(backend_module: Any, param: object, accum: object, grad: Any, lr: float) -> tuple[object, object]:
     """Apply Adagrad update using backend operations.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        param (Any): The param parameter.
-        accum (Any): The accum parameter.
-        grad (Any): The grad parameter.
+        backend_module: The backend_module parameter.
+        param: The param parameter.
+        accum: The accum parameter.
+        grad: The grad parameter.
         lr (float): The lr parameter.
 
     Returns:
-            Any: Result.
+            tuple[object, object]: Result.
     """
     accum_new = backend_module.add(accum, backend_module.multiply(grad, grad))
     update = backend_module.divide(grad, backend_module.add(backend_module.sqrt(accum_new), 1e-10))
@@ -49,19 +49,19 @@ def apply_adagrad(backend_module: Any, param: Any, accum: Any, grad: Any, lr: fl
 
 
 @global_eager_registry.register("ApplyFtrl")
-def apply_ftrl(backend_module: Any, param: Any, accum: Any, linear: Any, grad: Any, lr: float) -> Any:
+def apply_ftrl(backend_module: Any, param: object, accum: object, linear: object, grad: Any, lr: float) -> tuple[object, object, object]:
     """Apply FTRL update using backend operations.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        param (Any): The param parameter.
-        accum (Any): The accum parameter.
-        linear (Any): The linear parameter.
-        grad (Any): The grad parameter.
+        backend_module: The backend_module parameter.
+        param: The param parameter.
+        accum: The accum parameter.
+        linear: The linear parameter.
+        grad: The grad parameter.
         lr (float): The lr parameter.
 
     Returns:
-            Any: Result.
+            tuple[object, object, object]: Result.
     """
     accum_new = backend_module.add(accum, backend_module.multiply(grad, grad))
     sigma = backend_module.divide(backend_module.subtract(backend_module.sqrt(accum_new), backend_module.sqrt(accum)), lr)
@@ -71,19 +71,19 @@ def apply_ftrl(backend_module: Any, param: Any, accum: Any, linear: Any, grad: A
 
 
 @global_eager_registry.register("ApplyRMSProp")
-def apply_rmsprop(backend_module: Any, param: Any, ms: Any, mom: Any, grad: Any, lr: float) -> Any:
+def apply_rmsprop(backend_module: Any, param: object, ms: object, mom: object, grad: Any, lr: float) -> tuple[object, object, object]:
     """Apply RMSProp update using backend operations.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        param (Any): The param parameter.
-        ms (Any): The ms parameter.
-        mom (Any): The mom parameter.
-        grad (Any): The grad parameter.
+        backend_module: The backend_module parameter.
+        param: The param parameter.
+        ms: The ms parameter.
+        mom: The mom parameter.
+        grad: The grad parameter.
         lr (float): The lr parameter.
 
     Returns:
-            Any: Result.
+            tuple[object, object, object]: Result.
     """
     rho, momentum, eps = 0.9, 0.0, 1e-8
     ms_new = backend_module.add(backend_module.multiply(ms, rho), backend_module.multiply(backend_module.multiply(grad, grad), 1.0 - rho))

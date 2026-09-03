@@ -1,0 +1,4 @@
+n_clusters:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

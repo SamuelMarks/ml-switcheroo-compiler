@@ -1,0 +1,4 @@
+current_flash_attention_impl:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

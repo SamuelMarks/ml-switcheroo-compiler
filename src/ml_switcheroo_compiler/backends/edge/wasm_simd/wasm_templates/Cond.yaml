@@ -1,0 +1,3 @@
+cond:
+  body: "// Cond\nif ({condition_expr}) {{\n    {true_body}\n}} else {{\n    {false_body}\n\
+    }}\n"

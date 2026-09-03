@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -26,8 +26,8 @@ class ReduceWindow:
         """infer_shape function.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.
@@ -77,7 +77,7 @@ def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computatio
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (object): The init_value parameter.
+        init_value (Any): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
@@ -100,7 +100,7 @@ def _build_reduce_window_attributes(init_value: Tensor | float, computation: str
     """Evaluate _build_reduce_window_attributes operation.
 
     Args:
-        init_value (object): The init_value parameter.
+        init_value (Any): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
@@ -125,7 +125,7 @@ def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computatio
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (object): The init_value parameter.
+        init_value (Any): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
@@ -154,7 +154,7 @@ def reduce_window(
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (object): The init_value parameter.
+        init_value (Any): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 

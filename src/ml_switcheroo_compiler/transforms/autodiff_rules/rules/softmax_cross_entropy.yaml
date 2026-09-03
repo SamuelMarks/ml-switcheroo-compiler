@@ -1,0 +1,4 @@
+softmax_cross_entropy:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

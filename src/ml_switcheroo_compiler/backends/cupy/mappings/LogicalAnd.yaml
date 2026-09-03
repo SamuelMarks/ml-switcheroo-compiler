@@ -1,0 +1,2 @@
+LogicalAnd:
+  target_api: cp.logical_and

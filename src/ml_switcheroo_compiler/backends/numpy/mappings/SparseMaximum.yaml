@@ -1,0 +1,3 @@
+SparseMaximum:
+  ast_template: tf.sparse.maximum
+  target_api: ''

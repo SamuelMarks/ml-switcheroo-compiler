@@ -1,0 +1,4 @@
+target_block_shape:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

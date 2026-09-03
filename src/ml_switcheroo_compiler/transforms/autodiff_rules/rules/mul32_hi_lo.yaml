@@ -1,0 +1,4 @@
+mul32_hi_lo:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

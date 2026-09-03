@@ -1,0 +1,3 @@
+SparseEye:
+  ast_template: tf.sparse.eye
+  target_api: ''

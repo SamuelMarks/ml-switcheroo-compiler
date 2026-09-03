@@ -2,7 +2,7 @@
 """Implementations of functional optimizer update steps for various algorithms."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, maximum, multiply, subtract
@@ -549,11 +549,11 @@ class ApplyAdam(OpDef):
         """Infer shape.
 
         Args:
-            param (object): The param parameter.
-            m (object): The m parameter.
-            v (object): The v parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            param (Any): The param parameter.
+            m (Any): The m parameter.
+            v (Any): The v parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -571,10 +571,10 @@ class ApplyAdagrad(OpDef):
         """Infer shape.
 
         Args:
-            param (object): The param parameter.
-            accum (object): The accum parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            param (Any): The param parameter.
+            accum (Any): The accum parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -592,11 +592,11 @@ class ApplyFtrl(OpDef):
         """Infer shape.
 
         Args:
-            param (object): The param parameter.
-            accum (object): The accum parameter.
-            linear (object): The linear parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            param (Any): The param parameter.
+            accum (Any): The accum parameter.
+            linear (Any): The linear parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -614,11 +614,11 @@ class ApplyRMSProp(OpDef):
         """Infer shape.
 
         Args:
-            param (object): The param parameter.
-            ms (object): The ms parameter.
-            mom (object): The mom parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            param (Any): The param parameter.
+            ms (Any): The ms parameter.
+            mom (Any): The mom parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -716,9 +716,9 @@ class LionConfigOp(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -736,9 +736,9 @@ class AdamaxHyperparamsOp(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

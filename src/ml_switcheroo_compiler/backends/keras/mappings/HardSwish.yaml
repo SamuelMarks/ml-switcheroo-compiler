@@ -1,0 +1,2 @@
+HardSwish:
+  target_api: keras_ops.hard_swish

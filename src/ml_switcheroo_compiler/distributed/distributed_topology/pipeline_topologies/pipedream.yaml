@@ -1,0 +1,9 @@
+pipedream:
+  dependencies: []
+  mesh_mapping:
+    devices_per_stage: 1
+  microbatch_splitting:
+    num_microbatches: 16
+    strategy: interleaved
+  stage_communication:
+    protocol: async_rpc

@@ -1,0 +1,2 @@
+Outer:
+  target_api: '''mx.outer({0}, {1})'''

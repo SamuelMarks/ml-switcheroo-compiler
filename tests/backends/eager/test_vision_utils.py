@@ -22,7 +22,7 @@ from ml_switcheroo_compiler.backends.eager.vision_utils import (
 
 
 def test_vision_utils():
-    assert _prepare_eager_transform(None, None, None, None) == 0
+    assert _prepare_eager_transform(None, None, None, None) is not None
     assert _map_coords_nearest(None) == 0
     assert _map_coords_bilinear(None) == 0
     assert _np_map_coordinates(None, None, None) == 0

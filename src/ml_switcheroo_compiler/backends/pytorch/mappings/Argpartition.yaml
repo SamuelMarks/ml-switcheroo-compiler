@@ -1,0 +1,3 @@
+Argpartition:
+  custom_code: 'lambda a, kth, axis=-1, **kwargs: torch.argsort(a, dim=axis)'
+  target_api: custom_op

@@ -1,0 +1,2 @@
+SegmentMax:
+  target_api: jax.ops.segment_max

@@ -1,8 +1,6 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """CuPy code generator and eager execution backend."""
 
-from typing import Any
-
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 try:
@@ -49,13 +47,13 @@ class CupyGenerator(PythonStringGenerator):
     _import_header = "import cupy as cp"
     _func_name = "evaluate"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Fallback for generic nodes.
 
         Args:
             node (IRNode): The node to process.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Extra attributes.
+            **kwargs: Extra attributes.
 
         Returns:
             str: Generated code.

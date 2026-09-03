@@ -7,20 +7,20 @@ except ImportError:
     cp = None
 
 
-from typing import Any
+from typing import Optional
 
 
-def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
+def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
     """Execute an eager operation using the CuPy backend.
 
     Args:
         cls (type): The tensor class.
         op_type (str): The name of the operation to execute.
-        *args (Any): Positional arguments for the operation.
-        **kwargs (Any): Keyword arguments for the operation.
+        *args: Positional arguments for the operation.
+        **kwargs: Keyword arguments for the operation.
 
     Returns:
-        Any: The result of the operation execution.
+        object: The result of the operation execution.
 
     Raises:
         BackendNotSupportedError: If the operation is not supported by the CuPy backend.

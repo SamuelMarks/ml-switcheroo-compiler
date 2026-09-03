@@ -1,0 +1,21 @@
+ScaledDotProductAttention:
+  body: '
+
+    // Minimal Scaled Dot Product Attention
+
+    let b = global_id.z;
+
+    let h = global_id.y;
+
+    let i = global_id.x;
+
+    if (b >= {batch}u || h >= {heads}u || i >= {seq_len}u) { return; }
+
+    buf_out_f32[b * {heads}u * {seq_len}u * {head_dim}u + h * {seq_len}u * {head_dim}u
+    + i * {head_dim}u] = 0.0;
+
+    '
+  workgroup_size:
+  - 8
+  - 8
+  - 1

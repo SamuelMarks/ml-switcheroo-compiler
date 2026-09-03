@@ -1,0 +1,6 @@
+matmul:
+  body: "// SIMD MatMul\nfor (int i = 0; i < {M}; ++i) {{\n    for (int j = 0; j <\
+    \ {N}; ++j) {{\n        float sum = 0.0f;\n        // naive matmul for now in\
+    \ wasm\n        for (int k = 0; k < {K}; ++k) {{\n            sum += buf_{in0}[i\
+    \ * {K} + k] * buf_{in1}[k * {N} + j];\n        }}\n        buf_{clean_id}[i *\
+    \ {N} + j] = sum;\n    }}\n}}\n"

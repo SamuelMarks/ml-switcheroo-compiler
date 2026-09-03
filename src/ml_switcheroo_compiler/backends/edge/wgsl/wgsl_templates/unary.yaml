@@ -1,0 +1,7 @@
+unary:
+  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n{out_offset_code}\n\
+    {in0_offset_code}\nbuf_out_f32[out_offset] = {expr};\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

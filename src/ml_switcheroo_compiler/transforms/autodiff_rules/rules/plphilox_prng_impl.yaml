@@ -1,0 +1,4 @@
+plphilox_prng_impl:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

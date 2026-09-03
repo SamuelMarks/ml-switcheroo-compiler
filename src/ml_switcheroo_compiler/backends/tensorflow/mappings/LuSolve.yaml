@@ -1,0 +1,2 @@
+LuSolve:
+  target_api: tf.linalg.lu_solve

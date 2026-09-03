@@ -4,7 +4,7 @@
 import typing
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -27,8 +27,8 @@ def conv2d(lhs: Tensor, rhs: Tensor, config_obj=None, **kwargs):
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -67,8 +67,8 @@ def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj=None, **kwargs):
     Args:
         lhs (Tensor): The lhs parameter.
         rhs (Tensor): The rhs parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -92,7 +92,7 @@ def separable_conv2d(
         depthwise_filter (Tensor): The depthwise_filter parameter.
         pointwise_filter (Tensor): The pointwise_filter parameter.
         config (ConvHyperparams): The config parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.

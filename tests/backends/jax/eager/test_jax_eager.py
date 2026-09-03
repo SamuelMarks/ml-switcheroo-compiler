@@ -1,5 +1,10 @@
 import pytest
 
+try:
+    import jax  # noqa: F401
+except ImportError:
+    pytest.skip("JAX not available", allow_module_level=True)
+
 from ml_switcheroo_compiler.backends.jax.eager import (
     _execute_accumulate_n,
     _execute_adaptive_avg_pool,

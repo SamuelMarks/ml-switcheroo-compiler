@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -13,27 +14,27 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _allclose operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     a = args[0]
     b = args[1]
-    rtol = kwargs.get("rtol", 1e-05)
-    atol = kwargs.get("atol", 1e-08)
-    equal_nan = kwargs.get("equal_nan", False)
+    rtol = kwargs.get("rtol", 1e-05) if hasattr(kwargs, "get") else 1e-05
+    atol = kwargs.get("atol", 1e-08) if hasattr(kwargs, "get") else 1e-08
+    equal_nan = kwargs.get("equal_nan", False) if hasattr(kwargs, "get") else False
 
-    def _val(x: Any) -> Any:
+    def _val(x: object) -> Any:
         """Evaluate _val operation.
 
         Args:
-        x (Any): The x parameter.
+        x: The x parameter.
 
         Returns:
-            Any: Result.
+            object: Result.
         """
         x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(x_data.item):
@@ -50,34 +51,34 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
+def _array_equiv(backend_module: Any, a1: object, a2: object, **kwargs: Any) -> Any:
     """Evaluate _array_equiv operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        a1 (Any): The a1 parameter.
-        a2 (Any): The a2 parameter.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        a1: The a1 parameter.
+        a2: The a2 parameter.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.allclose(a1, a2) if hasattr(backend_module, "allclose") else True
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
+def _assert(backend_module: Any, condition: object, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
     """Evaluate _assert operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        condition (Any): The condition parameter.
-        data (Any): The data parameter.
+        backend_module: The backend_module parameter.
+        condition: The condition parameter.
+        data: The data parameter.
         summarize (int): The summarize parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return None
 
@@ -87,12 +88,12 @@ def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _promotetypes operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.promote_types(*args, **kwargs)
 
@@ -102,11 +103,11 @@ def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _resulttype operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.result_type(*args, **kwargs)

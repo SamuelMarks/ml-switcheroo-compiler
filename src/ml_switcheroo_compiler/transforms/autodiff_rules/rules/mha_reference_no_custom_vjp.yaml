@@ -1,0 +1,4 @@
+mha_reference_no_custom_vjp:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

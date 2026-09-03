@@ -1,0 +1,4 @@
+tree_l2_norm:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

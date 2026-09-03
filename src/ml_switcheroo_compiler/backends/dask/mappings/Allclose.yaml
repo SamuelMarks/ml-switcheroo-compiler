@@ -1,0 +1,2 @@
+Allclose:
+  target_api: da.allclose

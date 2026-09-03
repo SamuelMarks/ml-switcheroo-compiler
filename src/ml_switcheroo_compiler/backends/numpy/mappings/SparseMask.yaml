@@ -1,0 +1,3 @@
+SparseMask:
+  ast_template: tf.sparse.mask
+  target_api: ''

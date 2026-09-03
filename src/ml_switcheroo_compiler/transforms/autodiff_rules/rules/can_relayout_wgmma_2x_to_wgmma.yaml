@@ -1,0 +1,4 @@
+can_relayout_wgmma_2x_to_wgmma:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

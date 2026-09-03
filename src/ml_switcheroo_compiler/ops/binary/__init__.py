@@ -209,8 +209,8 @@ def divide_no_nan(x, y):
     """Divide no nan.
 
     Args:
-        x (object): The x parameter.
-        y (object): The y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -225,8 +225,8 @@ def polar(abs, angle):
     """Polar.
 
     Args:
-        abs (object): The abs parameter.
-        angle (object): The angle parameter.
+        abs (Any): The abs parameter.
+        angle (Any): The angle parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -241,7 +241,7 @@ def view_as_complex(x):
     """View as complex.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -256,7 +256,7 @@ def view_as_real(x):
     """View as real.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
 
     Returns:
             tuple[int, ...]: Result.

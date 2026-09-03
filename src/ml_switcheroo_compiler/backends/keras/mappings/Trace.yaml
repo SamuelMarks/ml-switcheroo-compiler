@@ -1,0 +1,2 @@
+Trace:
+  target_api: keras_ops.trace

@@ -208,6 +208,8 @@ class RotationConfig:
     theta: float
     H: int
     W: int
+    x: object
+    y: object
 
 
 def _calculate_rotation_matrix(np, cfg: RotationConfig):
@@ -253,8 +255,14 @@ def _nearest_interpolation(np, images, coords, shape, b_c):
 class InterpPixelsConfig:
     """InterpPixelsConfig class."""
 
+    images: object
+    y0: object
+    y1: object
+    x0: object
+    x1: object
     H: int
     W: int
+    b_c: tuple
 
 
 def _get_interp_pixels(np, cfg: InterpPixelsConfig):
@@ -327,6 +335,11 @@ def _bilinear_interpolation(np, images, coords, shape, b_c):
 class AffineConfig:
     """Affine configuration."""
 
+    coords: tuple
+    shape: tuple
+    b_c: tuple
+    options: tuple
+
 
 def _apply_affine_grid(np, images, cfg: AffineConfig):
     """Apply affine grid sampling.
@@ -354,8 +367,13 @@ def _apply_affine_grid(np, images, cfg: AffineConfig):
 class BatchRotationConfig:
     """Batch rotation configuration."""
 
+    images: object
+    angles: object
     H: int
     W: int
+    x: object
+    y: object
+    options: tuple
 
 
 def _process_batch_item(np, cfg: BatchRotationConfig, b: int, out) -> None:

@@ -1,0 +1,3 @@
+Negative:
+  ast_template: np.negative
+  target_api: ''

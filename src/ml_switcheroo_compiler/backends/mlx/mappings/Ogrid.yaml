@@ -1,0 +1,2 @@
+Ogrid:
+  target_api: '''mx.ogrid({0})'''

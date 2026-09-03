@@ -14,7 +14,7 @@ def _load_error_templates() -> None:
     """_load_error_templates function.
 
     Returns:
-        object: Result.
+        None: Result.
     """
     global _ERROR_TEMPLATES
     if not _ERROR_TEMPLATES:
@@ -27,30 +27,21 @@ def _load_error_templates() -> None:
 class SwitcherooError(Exception):
     """Define base class for all ml-switcheroo errors."""
 
-    def __init__(self, message: str = "", **kwargs) -> None:
-        """__init__ function.
+    def __init__(self, message: str = "", **kwargs: dict[str, str]) -> None:
+        """Initialize the base compiler exception.
 
         Args:
-            message: The message.
-            kwargs: Additional kwargs.
-
-        Args:
-            input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
-        message (object): The message parameter.
-
-        Returns:
-        object: Result.
+            message (str): The explicit message.
+            kwargs: Values to inject into predefined error templates.
         """
         _load_error_templates()
         template = _ERROR_TEMPLATES.get(self.__class__.__name__)
-        if template and kwargs:
+        if template and kwargs and not message:
             try:
                 message = template.format(**kwargs)
             except KeyError:
-                pass
+                # If a key is missing from kwargs for the format string, just use it as is or fallback
+                message = template
         super().__init__(message)
 
 

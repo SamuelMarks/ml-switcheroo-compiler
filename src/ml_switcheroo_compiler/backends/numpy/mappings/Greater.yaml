@@ -1,0 +1,3 @@
+Greater:
+  ast_template: np.greater
+  target_api: ''

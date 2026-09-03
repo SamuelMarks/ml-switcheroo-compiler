@@ -1,0 +1,4 @@
+actual_start:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,3 @@
+Rfftfreq:
+  custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfftfreq(*args, **kwargs)'
+  target_api: custom_op

@@ -1,0 +1,2 @@
+RandomUniform:
+  target_api: np.randomuniform

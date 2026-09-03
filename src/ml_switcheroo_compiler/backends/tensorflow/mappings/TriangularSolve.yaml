@@ -1,0 +1,2 @@
+TriangularSolve:
+  target_api: tf.linalg.triangular_solve

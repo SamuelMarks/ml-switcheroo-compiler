@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated_local
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-"Core abstractions and logic definitions for test_conv_extra.py."
+"Core abstractions and logic definitions for test_conv_edge_cases.py."
 
 
 def test_conv_general_dilated_local_coverage():

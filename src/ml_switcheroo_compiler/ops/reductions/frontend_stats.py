@@ -117,11 +117,11 @@ def corrcoef(x, y=None, rowvar: bool = True, bias=None, ddof=None):
     """Return Pearson product-moment correlation coefficients.
 
     Args:
-        x (object): The x parameter.
-        y (object): The y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
         rowvar (bool): The rowvar parameter.
-        bias (object): The bias parameter.
-        ddof (object): The ddof parameter.
+        bias (Any): The bias parameter.
+        ddof (Any): The ddof parameter.
 
     Returns:
         Tensor: Result.
@@ -140,8 +140,8 @@ def correlate(a, v, mode: str = "valid"):
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
-        a (object): The a parameter.
-        v (object): The v parameter.
+        a (Any): The a parameter.
+        v (Any): The v parameter.
         mode (str): The mode parameter.
 
     Returns:
@@ -159,9 +159,9 @@ def cov(
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        m (object): The m parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        m (Any): The m parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.

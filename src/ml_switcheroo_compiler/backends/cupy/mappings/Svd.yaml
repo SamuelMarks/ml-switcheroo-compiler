@@ -1,0 +1,2 @@
+Svd:
+  target_api: cp.linalg.svd

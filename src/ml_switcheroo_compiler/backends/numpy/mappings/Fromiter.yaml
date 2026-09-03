@@ -1,0 +1,3 @@
+Fromiter:
+  ast_template: np.fromiter
+  target_api: ''

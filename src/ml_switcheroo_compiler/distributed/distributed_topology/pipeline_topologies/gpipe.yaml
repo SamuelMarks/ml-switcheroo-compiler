@@ -1,0 +1,12 @@
+gpipe:
+  dependencies:
+  - offset_mb: -1
+    source_stage: forward
+    target_stage: forward
+  mesh_mapping:
+    devices_per_stage: 1
+  microbatch_splitting:
+    num_microbatches: 8
+    strategy: sequential
+  stage_communication:
+    protocol: rpc

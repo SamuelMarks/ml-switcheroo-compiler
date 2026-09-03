@@ -10,8 +10,8 @@ def resolve_dtype(res_data, first_tensor):
     """Resolve the dtype for the eager result.
 
     Args:
-        res_data (object): The raw result data.
-        first_tensor (object): The first input tensor, used as fallback.
+        res_data (Any): The raw result data.
+        first_tensor (Any): The first input tensor, used as fallback.
 
     Returns: Tensor: The resolved DType.
     """
@@ -37,11 +37,11 @@ def resolve_output_dtype_and_device(first_tensor, kwargs):
     """Resolve output dtype and device based on inputs and kwargs.
 
     Args:
-        first_tensor (object): The first input tensor.
+        first_tensor (Any): The first input tensor.
         kwargs (dict): The keyword arguments passed to the operation.
 
     Returns:
-        tuple[object, object]: A tuple containing the resolved dtype and device.
+        tuple[Any, Any]: A tuple containing the resolved dtype and device.
     """
     out_dtype = None
     if "dtype" in kwargs:

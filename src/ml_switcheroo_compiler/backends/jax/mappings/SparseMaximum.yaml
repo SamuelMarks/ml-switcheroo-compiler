@@ -1,0 +1,2 @@
+SparseMaximum:
+  target_api: jax.numpy.sparsemaximum

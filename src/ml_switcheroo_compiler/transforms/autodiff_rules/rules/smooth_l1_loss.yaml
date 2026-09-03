@@ -1,0 +1,4 @@
+smooth_l1_loss:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

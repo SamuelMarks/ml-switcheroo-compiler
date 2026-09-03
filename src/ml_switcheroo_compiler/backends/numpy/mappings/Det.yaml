@@ -1,0 +1,3 @@
+Det:
+  ast_template: np.linalg.det
+  target_api: ''

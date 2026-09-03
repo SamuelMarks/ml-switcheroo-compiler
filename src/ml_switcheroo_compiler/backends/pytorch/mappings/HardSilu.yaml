@@ -1,0 +1,4 @@
+HardSilu:
+  custom_code: 'lambda x: torch.nn.functional.hardsilu(x) if hasattr(torch.nn.functional,
+    ''hardsilu'') else torch.nn.functional.hardswish(x)'
+  target_api: custom_op

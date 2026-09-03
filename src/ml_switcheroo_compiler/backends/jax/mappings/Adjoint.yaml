@@ -1,0 +1,3 @@
+Adjoint:
+  custom_code: 'lambda x, **kwargs: jax.numpy.conj(jax.numpy.transpose(x))'
+  target_api: custom_op

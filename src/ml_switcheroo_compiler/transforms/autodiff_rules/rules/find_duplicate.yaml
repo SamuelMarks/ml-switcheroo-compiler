@@ -1,0 +1,4 @@
+find_duplicate:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

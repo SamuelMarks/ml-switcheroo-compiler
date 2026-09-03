@@ -1,0 +1,2 @@
+IsStrictlyIncreasing:
+  target_api: tf.math.is_strictly_increasing

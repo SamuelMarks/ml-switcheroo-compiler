@@ -1,0 +1,3 @@
+Histogramdd:
+  ast_template: np.histogramdd
+  target_api: ''

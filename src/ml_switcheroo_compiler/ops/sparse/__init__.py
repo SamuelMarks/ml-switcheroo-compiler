@@ -44,9 +44,9 @@ class SparseDenseMatMul(OpDef):
         """Infers the output shape for the sparse to dense operation.
 
         Args:
-            sp_a (object): The sp_a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            sp_a (Any): The sp_a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -68,9 +68,9 @@ class SparseAdd(OpDef):
         """Infers the output shape for the sparse add operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -88,9 +88,9 @@ class SparseSampledAdd(OpDef):
         """Infers the output shape for the sparse sampled add operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -108,9 +108,9 @@ class Smm(OpDef):
         """Infers the output shape for the smm operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -132,8 +132,8 @@ class SparseReduceSum(OpDef):
         """Infers the output shape for the sparse reduce sum operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -151,8 +151,8 @@ class SparseSoftmax(OpDef):
         """Infers the output shape for the sparse softmax operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -170,8 +170,8 @@ class SparseReduceMax(OpDef):
         """Infers the output shape for the sparse reduce max operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -189,8 +189,8 @@ class SparseBincount(OpDef):
         """Infers the output shape for the sparse bincount operation.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -208,8 +208,8 @@ class SparseCrossHashed(OpDef):
         """Infers the output shape for the sparse cross hashed operation.
 
         Args:
-            inputs (object): The inputs parameter.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -227,8 +227,8 @@ class SparseExpandDims(OpDef):
         """Infers the output shape for the sparse expand dims operation.
 
         Args:
-            a (object): The a parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -246,8 +246,8 @@ class SparseEye(OpDef):
         """Infers the output shape for the sparse eye operation.
 
         Args:
-            num_rows (object): The num_rows parameter.
-            **kwargs (object): Keyword args.
+            num_rows (Any): The num_rows parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -265,9 +265,9 @@ class SparseFillEmptyRows(OpDef):
         """Infers the output shape for the sparse fill empty rows operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            default_value (object): The default_value parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            default_value (Any): The default_value parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -285,8 +285,8 @@ class SparseMapValues(OpDef):
         """Infers the output shape for the sparse map values operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -304,9 +304,9 @@ class SparseMask(OpDef):
         """Infers the output shape for the sparse mask operation.
 
         Args:
-            a (object): The a parameter.
-            mask (object): The mask parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            mask (Any): The mask parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -324,9 +324,9 @@ class SparseMaximum(OpDef):
         """Infers the output shape for the sparse maximum operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -344,9 +344,9 @@ class SparseMinimum(OpDef):
         """Infers the output shape for the sparse minimum operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -364,8 +364,8 @@ class SparseReorder(OpDef):
         """Infers the output shape for the sparse reorder operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -383,8 +383,8 @@ class SparseResetShape(OpDef):
         """Infers the output shape for the sparse reset shape operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -402,9 +402,9 @@ class SparseReshape(OpDef):
         """Infers the output shape for the sparse reshape operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            shape (object): The shape parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            shape (Any): The shape parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -422,9 +422,9 @@ class SparseRetain(OpDef):
         """Infers the output shape for the sparse retain operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            to_retain (object): The to_retain parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            to_retain (Any): The to_retain parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -442,10 +442,10 @@ class SparseSegmentMean(OpDef):
         """Infers the output shape for the sparse segment mean operation.
 
         Args:
-            data (object): The data parameter.
-            indices (object): The indices parameter.
-            segment_ids (object): The segment_ids parameter.
-            **kwargs (object): Keyword args.
+            data (Any): The data parameter.
+            indices (Any): The indices parameter.
+            segment_ids (Any): The segment_ids parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -463,10 +463,10 @@ class SparseSegmentSqrtN(OpDef):
         """Infers the output shape for the sparse segment sqrt n operation.
 
         Args:
-            data (object): The data parameter.
-            indices (object): The indices parameter.
-            segment_ids (object): The segment_ids parameter.
-            **kwargs (object): Keyword args.
+            data (Any): The data parameter.
+            indices (Any): The indices parameter.
+            segment_ids (Any): The segment_ids parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -484,10 +484,10 @@ class SparseSegmentSum(OpDef):
         """Infers the output shape for the sparse segment sum operation.
 
         Args:
-            data (object): The data parameter.
-            indices (object): The indices parameter.
-            segment_ids (object): The segment_ids parameter.
-            **kwargs (object): Keyword args.
+            data (Any): The data parameter.
+            indices (Any): The indices parameter.
+            segment_ids (Any): The segment_ids parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -505,10 +505,10 @@ class SparseSlice(OpDef):
         """Infers the output shape for the sparse slice operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            start (object): The start parameter.
-            size (object): The size parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            start (Any): The start parameter.
+            size (Any): The size parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -526,9 +526,9 @@ class SparseToIndicator(OpDef):
         """Infers the output shape for the sparse to indicator operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            vocab_size (object): The vocab_size parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            vocab_size (Any): The vocab_size parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -546,8 +546,8 @@ class SparseTranspose(OpDef):
         """Infers the output shape for the sparse transpose operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -588,9 +588,9 @@ class RaggedDot(OpDef):
         """Infers the output shape for the ragged dot operation.
 
         Args:
-            a (object): The a parameter.
-            b (object): The b parameter.
-            **kwargs (object): Keyword args.
+            a (Any): The a parameter.
+            b (Any): The b parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -608,8 +608,8 @@ class SparseConcat(OpDef):
         """Infers the output shape for the sparse concat operation.
 
         Args:
-            sp_inputs (object): The sp_inputs parameter.
-            **kwargs (object): Keyword args.
+            sp_inputs (Any): The sp_inputs parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -627,9 +627,9 @@ class SparseSplit(OpDef):
         """Infers the output shape for the sparse split operation.
 
         Args:
-            sp_input (object): The sp_input parameter.
-            num_split (object): The num_split parameter.
-            **kwargs (object): Keyword args.
+            sp_input (Any): The sp_input parameter.
+            num_split (Any): The num_split parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -647,11 +647,11 @@ class SparseToDense(OpDef):
         """Infers the output shape for the sparse to dense operation.
 
         Args:
-            sparse_indices (object): The sparse_indices parameter.
-            output_shape (object): The output_shape parameter.
-            sparse_values (object): The sparse_values parameter.
-            default_value (object): The default_value parameter.
-            **kwargs (object): Keyword args.
+            sparse_indices (Any): The sparse_indices parameter.
+            output_shape (Any): The output_shape parameter.
+            sparse_values (Any): The sparse_values parameter.
+            default_value (Any): The default_value parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

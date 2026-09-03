@@ -1,0 +1,4 @@
+next_power_of_2:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

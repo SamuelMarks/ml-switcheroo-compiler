@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import functools
 import uuid
-from typing import Callable, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -31,56 +31,39 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Universal dispatcher for the operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """infer_shape function.
 
         Args:
             args: Positional args.
             kwargs: Keyword args.
 
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
-
-        Returns:
-        object: Result.
-        """
-        return tuple()
-        """Infer the output shape(s) and dtype(s) of the operation.
-
-        Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
-
         Returns:
             tuple[int, ...]: Result.
         """
-        ...
+        return tuple()
 
-    def eager_eval(self, *args, **kwargs):
+    def eager_eval(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate eager_eval operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -89,20 +72,20 @@ class OpDef:
 
 
 def emit_ir_node(
-    graph,
+    graph: Any,
     op_type: str,
     inputs: list[str],
-    shape_metadata=None,
-    attributes=None,
+    shape_metadata: Any | None = None,
+    attributes: dict[str, Any] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 
     Args:
-        graph (object): The graph parameter.
+        graph: The graph parameter.
         op_type (str): The op_type parameter.
         inputs (list): The inputs parameter.
-        shape_metadata (object): The shape_metadata parameter.
-        attributes (object): The attributes parameter.
+        shape_metadata: The shape_metadata parameter.
+        attributes: The attributes parameter.
 
     Returns:
         str: Result.
@@ -124,7 +107,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str):
+def dispatch_eager(op_name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Evaluate dispatch_eager operation.
 
     Args:
@@ -134,7 +117,7 @@ def dispatch_eager(op_name: str):
         Callable: Result.
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         """Evaluate decorator operation.
 
         Args:
@@ -145,15 +128,15 @@ def dispatch_eager(op_name: str):
         """
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             """Evaluate wrapper operation.
 
             Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args: Positional args.
+            **kwargs: Keyword args.
 
             Returns:
-            tuple[int, ...]: Result.
+            Any: Result.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

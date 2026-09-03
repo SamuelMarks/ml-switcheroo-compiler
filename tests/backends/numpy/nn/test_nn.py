@@ -85,7 +85,7 @@ def test_np_rrelu() -> None:
     assert -1.0 / 3.0 <= res2[0] <= -1.0 / 8.0
 
 
-"Core abstractions and logic definitions for test_numpy_eager_nn_extra.py."
+"Core abstractions and logic definitions for test_numpy_eager_nn_edge_cases.py."
 
 
 def test_numpy_nn_eager_extra():

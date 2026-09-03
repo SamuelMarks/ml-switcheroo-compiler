@@ -1,0 +1,4 @@
+do_generate_api:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

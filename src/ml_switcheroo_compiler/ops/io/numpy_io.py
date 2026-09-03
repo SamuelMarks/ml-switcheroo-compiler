@@ -20,7 +20,7 @@ def _fallback_load(filepath):
     """Fallback mechanism to load weights based on file extension.
 
     Args:
-        filepath (object): The file path.
+        filepath (Any): The file path.
 
     Returns: np.ndarray: The loaded weights or None.
     """
@@ -36,11 +36,11 @@ def _fallback_load(filepath):
 
 
 def load(*args, **kwargs):
-    """Load arrays or pickled objects from files.
+    """Load arrays or pickled Anys from files.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -61,8 +61,8 @@ def save(*args, **kwargs) -> None:
     """Save.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         NoneType: Result.
@@ -82,8 +82,8 @@ def save_gguf(*args, **kwargs) -> None:
     """Save gguf.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         NoneType: Result.
@@ -113,8 +113,8 @@ def savez(*args, **kwargs) -> None:
     """Savez.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         NoneType: Result.
@@ -134,8 +134,8 @@ def savez_compressed(*args, **kwargs) -> None:
     """Savez compressed.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         NoneType: Result.
@@ -161,8 +161,8 @@ class Load(OpDef):
         """Infer shape.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -188,8 +188,8 @@ class Save(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -215,8 +215,8 @@ class SaveGguf(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -242,8 +242,8 @@ class Savez(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -269,8 +269,8 @@ class SavezCompressed(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

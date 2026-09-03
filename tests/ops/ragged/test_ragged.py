@@ -4,7 +4,7 @@ from unittest.mock import patch
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
 from ml_switcheroo_compiler.ops.ragged.frontend import ragged_dot, ragged_stack, ragged_stack_dynamic_partitions
 
-"Core abstractions and logic definitions for test_ragged_extra.py."
+"Core abstractions and logic definitions for test_ragged_edge_cases.py."
 
 
 def test_ragged_ops():

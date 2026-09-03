@@ -1,0 +1,3 @@
+Reshape:
+  ast_template: torch.reshape({0}, {shape})
+  target_api: torch.reshape

@@ -1,0 +1,4 @@
+bcoo_todense:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

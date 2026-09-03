@@ -1,0 +1,2 @@
+Eigvals:
+  target_api: np.eigvals

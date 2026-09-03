@@ -1,0 +1,4 @@
+conv_with_general_padding:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

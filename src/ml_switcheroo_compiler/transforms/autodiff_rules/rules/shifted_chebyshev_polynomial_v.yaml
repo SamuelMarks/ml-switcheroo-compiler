@@ -1,0 +1,4 @@
+shifted_chebyshev_polynomial_v:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

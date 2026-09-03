@@ -1,0 +1,2 @@
+ChebyshevPolynomialU:
+  target_api: np.chebyshevpolynomialu

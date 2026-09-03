@@ -1,0 +1,5 @@
+Istft:
+  ast_template: torch.istft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length},
+    window={window}, center={center}, normalized={normalized}, onesided={onesided},
+    length={length}, return_complex={return_complex})
+  target_api: ''

@@ -1,0 +1,2 @@
+Fftconvolve:
+  target_api: np.fftconvolve

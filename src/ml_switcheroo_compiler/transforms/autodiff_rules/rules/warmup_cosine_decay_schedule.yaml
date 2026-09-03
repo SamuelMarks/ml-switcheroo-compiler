@@ -1,0 +1,4 @@
+warmup_cosine_decay_schedule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

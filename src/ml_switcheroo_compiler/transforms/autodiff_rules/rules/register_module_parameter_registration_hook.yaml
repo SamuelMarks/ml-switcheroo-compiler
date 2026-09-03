@@ -1,0 +1,4 @@
+register_module_parameter_registration_hook:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

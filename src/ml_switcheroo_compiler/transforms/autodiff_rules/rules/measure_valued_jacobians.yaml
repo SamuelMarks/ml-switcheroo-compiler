@@ -1,0 +1,4 @@
+measure_valued_jacobians:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

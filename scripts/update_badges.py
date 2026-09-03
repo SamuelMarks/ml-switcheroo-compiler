@@ -9,6 +9,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from typing import Optional
 
 
@@ -69,11 +70,20 @@ def get_test_coverage() -> Optional[float]:
     """
     try:
         # Run coverage json, check=True will raise an exception if it fails (e.g. no .coverage file)
-        subprocess.run(["coverage", "json", "-o", "coverage.json"], check=True, capture_output=True)
+        subprocess.run(
+            [sys.executable, "-m", "coverage", "json", "-o", "coverage.json"],
+            check=True,
+            capture_output=True,
+        )
         with open("coverage.json") as f:
             data = json.load(f)
-            return float(data["totals"]["percent_covered"])
-    except Exception:
+
+        if os.path.exists("coverage.json"):
+            os.remove("coverage.json")
+
+        return float(data["totals"]["percent_covered"])
+    except Exception as e:
+        print(f"Warning: Could not parse test coverage: {e}")
         return None
 
 
@@ -92,7 +102,11 @@ def get_doc_coverage() -> float:
         """Visitor to count AST nodes and their docstrings."""
 
         def __init__(self) -> None:
-            """Initialize the visitor."""
+            """Initialize the visitor.
+
+            Returns:
+                None
+            """
             self.total_nodes: int = 0
             self.nodes_with_docstrings: int = 0
 
@@ -101,6 +115,9 @@ def get_doc_coverage() -> float:
 
             Args:
                 node (ast.ClassDef): The class definition node.
+
+            Returns:
+                None
             """
             if not node.name.startswith("_"):
                 self.total_nodes += 1
@@ -114,6 +131,9 @@ def get_doc_coverage() -> float:
 
             Args:
                 node (ast.FunctionDef): The function definition node.
+
+            Returns:
+                None
             """
             if not node.name.startswith("_"):
                 self.total_nodes += 1
@@ -126,6 +146,9 @@ def get_doc_coverage() -> float:
 
             Args:
                 node (ast.AsyncFunctionDef): The async function definition node.
+
+            Returns:
+                None
             """
             if not node.name.startswith("_"):
                 self.total_nodes += 1

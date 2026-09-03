@@ -1,0 +1,2 @@
+TakeAlongAxis:
+  target_api: keras_ops.take_along_axis

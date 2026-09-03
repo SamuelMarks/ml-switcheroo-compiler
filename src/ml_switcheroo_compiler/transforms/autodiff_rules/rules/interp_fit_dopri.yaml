@@ -1,0 +1,4 @@
+interp_fit_dopri:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

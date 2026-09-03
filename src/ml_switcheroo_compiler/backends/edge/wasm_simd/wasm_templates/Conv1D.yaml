@@ -1,0 +1,8 @@
+Conv1D:
+  body: "\n// WASM SIMD Conv1D\nfor (size_t i = 0; i < {out_size}; ++i) {\n    v128_t\
+    \ acc = wasm_f32x4_splat(0.0f);\n    // Simplified inner loop for demonstration\n\
+    \    for (size_t k = 0; k < {kernel_size}; ++k) {\n        size_t in_idx = i *\
+    \ {stride} + k;\n        v128_t in_vec = wasm_v128_load(&buf_in_f32[in_idx]);\n\
+    \        v128_t w_vec = wasm_v128_load(&buf_weight_f32[k]);\n        acc = wasm_f32x4_add(acc,\
+    \ wasm_f32x4_mul(in_vec, w_vec));\n    }\n    // horizontal sum of acc to buf_out_f32[i]\n\
+    }\n"

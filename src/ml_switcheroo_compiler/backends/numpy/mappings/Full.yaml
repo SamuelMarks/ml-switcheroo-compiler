@@ -1,0 +1,3 @@
+Full:
+  ast_template: np.full
+  target_api: ''

@@ -1,0 +1,4 @@
+Convolution3dTranspose:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

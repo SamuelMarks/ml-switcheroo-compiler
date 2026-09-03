@@ -1,0 +1,25 @@
+max_pool2d:
+  body: |
+    // WASM SIMD MaxPool2D
+    int out_idx = 0;
+    for (int b = 0; b < {B}; ++b) {{
+        for (int c = 0; c < {C}; ++c) {{
+            for (int oy = 0; oy < {out_height}; ++oy) {{
+                for (int ox = 0; ox < {out_width}; ++ox) {{
+                    float max_val = -3.402823466e+38f;
+                    for (int ky = 0; ky < {kernel_h}; ++ky) {{
+                        for (int kx = 0; kx < {kernel_w}; ++kx) {{
+                            int in_y = oy * {stride_h} + ky;
+                            int in_x = ox * {stride_w} + kx;
+                            if (in_y < {in_height} && in_x < {in_width}) {{
+                                int in_idx = ((b * {C} + c) * {in_height} + in_y) * {in_width} + in_x;
+                                float val = buf_{in0}[in_idx];
+                                if (val > max_val) max_val = val;
+                            }}
+                        }}
+                    }}
+                    buf_{clean_id}[out_idx++] = max_val;
+                }}
+            }}
+        }}
+    }}

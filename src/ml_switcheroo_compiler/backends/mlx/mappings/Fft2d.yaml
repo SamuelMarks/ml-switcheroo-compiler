@@ -1,0 +1,2 @@
+Fft2d:
+  target_api: '''mx.fft.fft2({0}, s={s}, axes={axes})'''

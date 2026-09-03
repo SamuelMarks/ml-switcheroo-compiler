@@ -1,0 +1,4 @@
+parse_shape_str:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

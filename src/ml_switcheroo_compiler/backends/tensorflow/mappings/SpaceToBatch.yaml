@@ -1,0 +1,2 @@
+SpaceToBatch:
+  target_api: tf.space_to_batch

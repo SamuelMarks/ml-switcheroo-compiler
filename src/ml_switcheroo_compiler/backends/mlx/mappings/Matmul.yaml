@@ -1,0 +1,2 @@
+Matmul:
+  target_api: '''mx.matmul({0}, {1})'''

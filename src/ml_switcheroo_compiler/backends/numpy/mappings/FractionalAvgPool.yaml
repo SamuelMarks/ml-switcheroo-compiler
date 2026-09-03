@@ -1,0 +1,2 @@
+FractionalAvgPool:
+  target_api: np.fractionalavgpool

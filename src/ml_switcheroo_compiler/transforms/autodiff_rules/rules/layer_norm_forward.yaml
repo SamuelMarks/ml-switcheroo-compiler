@@ -1,0 +1,4 @@
+layer_norm_forward:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

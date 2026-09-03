@@ -1,0 +1,4 @@
+NT_DIM_NUMBERS:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

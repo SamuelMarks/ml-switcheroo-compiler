@@ -1,0 +1,3 @@
+VectorNorm:
+  ast_template: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
+  target_api: ''

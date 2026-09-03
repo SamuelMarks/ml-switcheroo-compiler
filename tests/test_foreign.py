@@ -62,7 +62,7 @@ def test_generic_utils_stubs():
     clear_session()
     with CustomObjectScope():
         pass
-    assert deserialize_keras_object() is None
+    assert deserialize_keras_object() == {}
     disable_interactive_logging()
     enable_interactive_logging()
     assert get_custom_objects() == {}
@@ -75,7 +75,7 @@ def test_generic_utils_stubs():
     class Dummy:
         pass
 
-    assert serialize_keras_object() is None
+    assert serialize_keras_object() == {}
     assert standardize_dtype() is None
 
 

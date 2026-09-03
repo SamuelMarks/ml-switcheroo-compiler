@@ -1,0 +1,2 @@
+TridiagonalMatmul:
+  target_api: tf.linalg.tridiagonal_matmul

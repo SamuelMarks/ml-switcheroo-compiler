@@ -1,0 +1,4 @@
+call_shape_dtype_sharding_rule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

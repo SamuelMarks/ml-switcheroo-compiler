@@ -39,7 +39,7 @@ class Dropout(OpDef):
         """Determine the output shape of the dropout operation based on the input.
 
         Args:
-            x: The input object, typically a tensor, from which to extract the shape.
+            x: The input Any, typically a tensor, from which to extract the shape.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -62,7 +62,7 @@ def dropout(
     Args:
         x: The tensor to apply dropout to.
         rate: The probability of zeroing out an element.
-        config: Optional configuration object specifying behavior.
+        config: Optional configuration Any specifying behavior.
 
     Returns:
         A new tensor with dropout applied.
@@ -78,7 +78,7 @@ class AlphaDropout(OpDef):
         """Determine the output shape for alpha dropout based on the input.
 
         Args:
-            x: The input object, typically a tensor, from which to extract the shape.
+            x: The input Any, typically a tensor, from which to extract the shape.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -117,7 +117,7 @@ class ActivityRegularization(OpDef):
         """Determine the output shape for activity regularization based on the input.
 
         Args:
-            x: The input object, which may be a tensor or a tuple/list of tensors.
+            x: The input Any, which may be a tensor or a tuple/list of tensors.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -159,7 +159,7 @@ class Dropout1d(OpDef):
         """Determine the output shape of the 1D dropout operation.
 
         Args:
-            x: The input object, typically a tensor.
+            x: The input Any, typically a tensor.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -200,7 +200,7 @@ class Dropout2d(OpDef):
         """Determine the output shape of the 2D dropout operation.
 
         Args:
-            x: The input object, typically a tensor.
+            x: The input Any, typically a tensor.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -246,7 +246,7 @@ class Dropout3d(OpDef):
         """Determine the output shape of the 3D dropout operation.
 
         Args:
-            x: The input object, typically a tensor.
+            x: The input Any, typically a tensor.
             **kwargs: Additional keyword arguments.
 
         Returns:

@@ -1,0 +1,3 @@
+Bincount:
+  ast_template: np.bincount
+  target_api: ''

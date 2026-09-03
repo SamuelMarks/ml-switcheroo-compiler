@@ -1,0 +1,6 @@
+side_effect_ops:
+  - Assert
+  - AssignVariable
+  - Print
+  - Seed
+  - ManualSeed

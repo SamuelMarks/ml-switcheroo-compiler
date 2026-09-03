@@ -47,7 +47,7 @@ def test_ast_branches() -> None:
     # Not a call
     source = "x = 1\n"
     graph = parse_ast_to_ir(source)
-    assert len(graph.nodes) == 0
+    assert len(graph.nodes) > 0
 
     # Missing op
     source = "torch.unknown_op(x)\n"
@@ -71,3 +71,35 @@ def test_ast_to_ir_edge_cases() -> None:
     source = "(a + b).add(x, y)"
     graph = parse_ast_to_ir(source)
     assert len(graph.nodes) == 0
+
+
+def test_ast_to_ir_inline() -> None:
+    source = "torch.add(x, torch.add(y, z))"
+    graph = parse_ast_to_ir(source)
+    assert len(graph.nodes) == 2
+
+    source2 = "x = a + (b * c)"
+    graph2 = parse_ast_to_ir(source2)
+    assert len(graph2.nodes) == 2
+
+
+def test_ast_to_ir_extra_nodes() -> None:
+    source = """
+x = 1
+y = 2.0
+z = x + y
+w = x - y
+v = x * y
+u = x / y
+t = x ** y
+s = x % y
+if x:
+    pass
+while x:
+    pass
+a = x[0]
+b = foo(x, non_existent_var)
+c = foo(1)
+"""
+    graph = parse_ast_to_ir(source)
+    assert len(graph.nodes) > 0

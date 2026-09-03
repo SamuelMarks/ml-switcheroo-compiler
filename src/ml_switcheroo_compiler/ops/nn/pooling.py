@@ -6,7 +6,9 @@ from __future__ import annotations
 
 """Core abstractions and logic definitions for pooling.py."""
 import math
+import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -34,7 +36,7 @@ def _prepare_pool_config(
         padding (str | tuple): The padding configuration to apply.
 
     Returns:
-        WindowConfig: A configuration object containing the processed dimensions, strides, and padding.
+        WindowConfig: A configuration Any containing the processed dimensions, strides, and padding.
     """
     pad_dims = max(0, rank - spatial_rank - 1)
 
@@ -207,8 +209,8 @@ def pool1d(
     Args:
         operand (Tensor): The operand parameter.
         window_shape (int): The window_shape parameter.
-        strides (object): The strides parameter.
-        padding (object): The padding parameter.
+        strides (Any): The strides parameter.
+        padding (Any): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -238,8 +240,8 @@ def pool2d(
     Args:
         operand (Tensor): The operand parameter.
         window_shape (tuple): The window_shape parameter.
-        strides (object): The strides parameter.
-        padding (object): The padding parameter.
+        strides (Any): The strides parameter.
+        padding (Any): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -267,8 +269,8 @@ def pool3d(
     Args:
         operand (Tensor): The operand parameter.
         window_shape (tuple): The window_shape parameter.
-        strides (object): The strides parameter.
-        padding (object): The padding parameter.
+        strides (Any): The strides parameter.
+        padding (Any): The padding parameter.
         pool_mode (str): The pool_mode parameter.
 
     Returns:
@@ -311,14 +313,17 @@ class SpatialConfig:
     """Configuration for spatial dimensions in a pooling operation.
 
     Args:
-        ksize (object): The kernel size for pooling.
-        strides (object): The stride dimensions for pooling.
-        padding (object): The padding configuration.
-        dilation_rate (object): The dilation rate for pooling. Defaults to None.
+        ksize (Any): The kernel size for pooling.
+        strides (Any): The stride dimensions for pooling.
+        padding (Any): The padding configuration.
+        dilation_rate (Any): The dilation rate for pooling. Defaults to None.
         data_format (str | None): The data format string, e.g., 'NHWC'. Defaults to None.
     """
 
-    dilation_rate = None
+    ksize: Any | None = None
+    strides: Any | None = None
+    padding: Any | None = None
+    dilation_rate: Any | None = None
     data_format: str | None = None
 
 
@@ -328,8 +333,8 @@ class PoolingBehaviorConfig:
 
     Args:
         pooling_type (str): The type of pooling ('MAX' or 'AVG'). Defaults to 'MAX'.
-        pooling_ratio (object): The pooling ratio used for fractional pooling. Defaults to None.
-        output_dtype (object): The desired output data type. Defaults to None.
+        pooling_ratio (Any): The pooling ratio used for fractional pooling. Defaults to None.
+        output_dtype (Any): The desired output data type. Defaults to None.
         include_batch_in_index (bool): Whether to include the batch dimension in indices. Defaults to False.
         pseudo_random (bool): Whether to use pseudo-randomness. Defaults to False.
         overlapping (bool): Whether to allow overlapping regions. Defaults to False.
@@ -340,8 +345,8 @@ class PoolingBehaviorConfig:
     """
 
     pooling_type: str = "MAX"
-    pooling_ratio = None
-    output_dtype = None
+    pooling_ratio: Any | None = None
+    output_dtype: Any | None = None
     include_batch_in_index: bool = False
     pseudo_random: bool = False
     overlapping: bool = False
@@ -368,7 +373,7 @@ def avg_pool1d(value, config: PoolingConfig):
     """Execute a 1D average pooling operation based on the given configuration.
 
     Args:
-        value (object): The input tensor or data to pool.
+        value (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration containing window shapes and behavior.
 
     Returns: Tensor: The resulting 1D average pooled data.
@@ -385,7 +390,7 @@ def avg_pool2d(value, config: PoolingConfig):
     """Execute a 2D average pooling operation based on the given configuration.
 
     Args:
-        value (object): The input tensor or data to pool.
+        value (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 2D average pooled data.
@@ -402,7 +407,7 @@ def avg_pool3d(value, config: PoolingConfig):
     """Execute a 3D average pooling operation based on the given configuration.
 
     Args:
-        value (object): The input tensor or data to pool.
+        value (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 3D average pooled data.
@@ -419,7 +424,7 @@ def max_pool1d(inputs, config: PoolingConfig):
     """Execute a 1D max pooling operation based on the given configuration.
 
     Args:
-        inputs (object): The input tensor or data to pool.
+        inputs (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 1D max pooled data.
@@ -436,7 +441,7 @@ def max_pool2d(inputs, config: PoolingConfig):
     """Execute a 2D max pooling operation based on the given configuration.
 
     Args:
-        inputs (object): The input tensor or data to pool.
+        inputs (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 2D max pooled data.
@@ -453,7 +458,7 @@ def max_pool3d(inputs, config: PoolingConfig):
     """Execute a 3D max pooling operation based on the given configuration.
 
     Args:
-        inputs (object): The input tensor or data to pool.
+        inputs (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: The resulting 3D max pooled data.
@@ -473,7 +478,7 @@ def max_pool_with_argmax(
     """Execute a max pooling operation and additionally computes the argmax indices based on the configuration.
 
     Args:
-        input (object): The input tensor or data to pool.
+        input (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration.
 
     Returns: Tensor: A tuple containing the pooled output and a tensor representing the argmax indices.
@@ -567,7 +572,7 @@ def pool(
     """Execute a generic pooling operation, delegating to either average or max pooling depending on the configuration.
 
     Args:
-        input (object): The input tensor or data to pool.
+        input (Any): The input tensor or data to pool.
         config (PoolingConfig): The comprehensive pooling configuration specifying spatial dimensions and pooling type.
 
     Returns: Tensor: The resulting pooled data.
@@ -597,9 +602,9 @@ class FractionalAvgPool(OpDef):
         """Infers the output shape of a fractional average pooling operation.
 
         Args:
-            value (object): The input object or tensor.
-            pooling_ratio (object): The specified pooling ratio.
-            **kwargs (object): Additional keyword arguments.
+            value (Any): The input Any or tensor.
+            pooling_ratio (Any): The specified pooling ratio.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred output shape.
         """
@@ -617,9 +622,9 @@ class FractionalMaxPool(OpDef):
         """Infers the output shape of a fractional max pooling operation.
 
         Args:
-            value (object): The input object or tensor.
-            pooling_ratio (object): The specified pooling ratio.
-            **kwargs (object): Additional keyword arguments.
+            value (Any): The input Any or tensor.
+            pooling_ratio (Any): The specified pooling ratio.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred output shape.
         """

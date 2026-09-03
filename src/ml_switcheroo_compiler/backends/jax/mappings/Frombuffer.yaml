@@ -1,0 +1,3 @@
+Frombuffer:
+  custom_code: 'lambda *args, **kwargs: jax.numpy.frombuffer(args[0], **kwargs)'
+  target_api: custom_op

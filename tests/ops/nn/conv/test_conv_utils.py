@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_utils import _calc_same_pad, _calc_valid_pad, _calculate_conv_transpose_padding, _prepare_depthwise_conv
 
-"Core abstractions and logic definitions for test_nn_conv_utils_extra.py."
+"Core abstractions and logic definitions for test_nn_conv_utils_edge_cases.py."
 
 
 def test_conv_utils_extra():

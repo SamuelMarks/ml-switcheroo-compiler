@@ -1,0 +1,2 @@
+Irfftnd:
+  target_api: '''mx.fft.irfftn({0})'''

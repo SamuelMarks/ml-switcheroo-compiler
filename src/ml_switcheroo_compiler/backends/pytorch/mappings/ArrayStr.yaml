@@ -1,0 +1,3 @@
+ArrayStr:
+  custom_code: 'lambda arr, **kwargs: str(arr)'
+  target_api: custom_op

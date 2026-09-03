@@ -1,0 +1,4 @@
+philox_4x32_kernel:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

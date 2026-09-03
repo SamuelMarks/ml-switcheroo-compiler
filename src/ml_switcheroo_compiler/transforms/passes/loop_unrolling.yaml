@@ -1,0 +1,5 @@
+default_unroll_limit: 10
+max_unroll_nodes: 100
+heuristics:
+  - op_type: "WhileLoop"
+    max_iterations: 10

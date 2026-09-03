@@ -1,0 +1,2 @@
+Lbeta:
+  target_api: tf.math.lbeta

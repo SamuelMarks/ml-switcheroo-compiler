@@ -1,0 +1,2 @@
+ArrayRepr:
+  target_api: np.arrayrepr

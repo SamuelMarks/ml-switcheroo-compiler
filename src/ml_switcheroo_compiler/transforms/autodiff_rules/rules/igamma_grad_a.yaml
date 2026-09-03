@@ -1,0 +1,4 @@
+igamma_grad_a:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

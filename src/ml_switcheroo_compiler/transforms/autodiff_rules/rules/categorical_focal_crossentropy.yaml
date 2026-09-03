@@ -1,0 +1,4 @@
+categorical_focal_crossentropy:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

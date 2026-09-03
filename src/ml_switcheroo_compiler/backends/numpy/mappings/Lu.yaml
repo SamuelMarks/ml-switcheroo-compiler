@@ -1,0 +1,3 @@
+Lu:
+  ast_template: getattr(backend_module.linalg, 'lu', None)
+  target_api: ''

@@ -1,0 +1,3 @@
+MatrixNorm:
+  ast_template: np.linalg.norm({0}, keepdims={keepdims})
+  target_api: ''

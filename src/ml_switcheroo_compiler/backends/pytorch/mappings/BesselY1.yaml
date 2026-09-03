@@ -1,0 +1,2 @@
+BesselY1:
+  target_api: torch.special.bessel_y1

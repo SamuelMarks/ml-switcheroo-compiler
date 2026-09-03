@@ -1,0 +1,2 @@
+Tensordot:
+  target_api: '''mx.tensordot({0}, {1}, axes={axes})'''

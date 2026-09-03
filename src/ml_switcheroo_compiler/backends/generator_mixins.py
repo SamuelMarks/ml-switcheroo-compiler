@@ -1,7 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixins for code generators."""
 
-from typing import Any
+from typing import Optional
 
 
 class GeneratorLifecycleMixin:
@@ -69,27 +69,27 @@ class EagerExecutionMixin:
     """Provide mixin for eager execution classmethods."""
 
     @classmethod
-    def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
+    def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
         """Execute an operation eagerly.
 
         Args:
             op_type (str): The operation type.
-            *args (Any): Positional arguments.
-            **kwargs (Any): Keyword arguments.
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
 
-        Returns: Any: The eager evaluation result.
+        Returns: object: The eager evaluation result.
         """
         return None
 
     @classmethod
-    def zeros(cls: type, shape: tuple[int, ...]) -> Any:
+    def zeros(cls: type, shape: tuple[int, ...]) -> object:
         """Evaluate zeros operation.
 
         Args:
             shape (tuple[int, ...]): The shape parameter.
 
         Returns:
-            Any: Result.
+            object: Result.
         """
         import numpy
 
@@ -98,15 +98,15 @@ class EagerExecutionMixin:
         return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else numpy, shape)
 
     @classmethod
-    def array(cls: type, data: Any, dtype: Any = None) -> Any:
+    def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
         """Evaluate array operation.
 
         Args:
-            data (Any): The data parameter.
-            dtype (Any): The dtype parameter.
+            data: The data parameter.
+            dtype: The dtype parameter.
 
         Returns:
-            Any: Result.
+            object: Result.
         """
         import numpy
 
@@ -115,14 +115,14 @@ class EagerExecutionMixin:
         return generic_array(cls.get_module() if hasattr(cls, "get_module") else numpy, data, dtype)
 
     @classmethod
-    def asarray(cls: type, data: Any) -> Any:
+    def asarray(cls: type, data: object) -> object:
         """Evaluate asarray operation.
 
         Args:
-            data (Any): The data parameter.
+            data: The data parameter.
 
         Returns:
-            Any: Result.
+            object: Result.
         """
         import numpy
 
@@ -131,11 +131,11 @@ class EagerExecutionMixin:
         return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
 
     @classmethod
-    def item(cls: type, data: Any) -> float:
+    def item(cls: type, data: object) -> float:
         """Evaluate item operation.
 
         Args:
-            data (Any): The data parameter.
+            data: The data parameter.
 
         Returns:
             float: Result.

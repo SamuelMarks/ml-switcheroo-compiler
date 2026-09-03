@@ -1,0 +1,3 @@
+SparseCrossHashed:
+  ast_template: tf.sparse.cross_hashed
+  target_api: ''

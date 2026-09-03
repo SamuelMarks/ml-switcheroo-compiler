@@ -1,0 +1,2 @@
+Fromfile:
+  target_api: '''mx.fromfile({0})'''

@@ -1,0 +1,13 @@
+matmul:
+  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void matmul(\n  \
+    \  const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+    \    device float* C [[buffer(2)]],\n    uint2 thread_position_in_grid [[thread_position_in_grid]],\n\
+    \    constant uint& M [[buffer(3)]],\n    constant uint& N [[buffer(4)]],\n  \
+    \  constant uint& K [[buffer(5)]])\n{\n    uint row = thread_position_in_grid.y;\n\
+    \    uint col = thread_position_in_grid.x;\n    if (row >= M || col >= N) return;\n\
+    \    float sum = 0.0;\n    for (uint i = 0; i < K; ++i) {\n        sum += A[row\
+    \ * K + i] * B[i * N + col];\n    }\n    C[row * N + col] = sum;\n}\n"
+  workgroup_size:
+  - 32
+  - 32
+  - 1

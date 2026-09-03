@@ -1,0 +1,8 @@
+sigmoid:
+  body: "__global__ void sigmoid(const float* A, float* C, int N) {\n    int id =\
+    \ blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = 1.0f\
+    \ / (1.0f + expf(-A[id]));\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1

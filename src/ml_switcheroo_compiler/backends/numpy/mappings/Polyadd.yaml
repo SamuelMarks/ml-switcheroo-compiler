@@ -1,0 +1,3 @@
+Polyadd:
+  ast_template: np.polyadd
+  target_api: ''

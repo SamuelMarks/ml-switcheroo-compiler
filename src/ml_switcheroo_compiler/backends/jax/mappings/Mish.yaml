@@ -1,0 +1,3 @@
+Mish:
+  custom_code: 'lambda x: jax.nn.mish(x) if hasattr(jax.nn, ''mish'') else x * jax.numpy.tanh(jax.numpy.log1p(jax.numpy.exp(x)))'
+  target_api: custom_op

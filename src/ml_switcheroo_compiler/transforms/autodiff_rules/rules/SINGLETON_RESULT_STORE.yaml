@@ -1,0 +1,4 @@
+SINGLETON_RESULT_STORE:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

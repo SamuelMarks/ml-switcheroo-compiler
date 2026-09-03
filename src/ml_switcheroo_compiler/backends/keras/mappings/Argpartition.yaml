@@ -1,0 +1,2 @@
+Argpartition:
+  target_api: keras_ops.argpartition

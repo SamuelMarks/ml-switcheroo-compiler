@@ -1,0 +1,2 @@
+Sigmoid:
+  target_api: '''mx.sigmoid({0})'''

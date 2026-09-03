@@ -1,0 +1,2 @@
+DynamicUpdateSlice:
+  target_api: '''{0}.dynamic_update_slice({1}, {2})'''

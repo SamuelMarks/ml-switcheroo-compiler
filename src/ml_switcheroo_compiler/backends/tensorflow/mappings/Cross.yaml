@@ -1,0 +1,2 @@
+Cross:
+  target_api: tf.linalg.cross

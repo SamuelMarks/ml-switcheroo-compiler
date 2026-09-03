@@ -261,3 +261,7 @@ def test_tcp_distributed_context_initialize_none_listener():
                 with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
                     ctx = TCPDistributedContext(world_size=2, rank=0)
                     ctx.initialize()
+
+
+def test_dummy():
+    pass

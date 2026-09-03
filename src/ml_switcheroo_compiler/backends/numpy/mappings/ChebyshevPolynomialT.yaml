@@ -1,0 +1,2 @@
+ChebyshevPolynomialT:
+  target_api: np.chebyshevpolynomialt

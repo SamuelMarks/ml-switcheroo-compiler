@@ -20,8 +20,8 @@ def gaussian_blur(images: Tensor, config_obj=None, **kwargs):
 
     Args:
         images (Tensor): The images parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -65,9 +65,9 @@ def median_filter(
 
     Args:
         images (Tensor): The images parameter.
-        kernel_size (object): The kernel_size parameter.
+        kernel_size (Any): The kernel_size parameter.
         padding (str): The padding parameter.
-        data_format (object): The data_format parameter.
+        data_format (Any): The data_format parameter.
 
     Returns:
         Tensor: Result.
@@ -209,9 +209,9 @@ def random_gaussian_blur(
 
     Args:
         images (Tensor): The images parameter.
-        kernel_size (object): The kernel_size parameter.
-        sigma (object): The sigma parameter.
-        **kwargs (object): Keyword args.
+        kernel_size (Any): The kernel_size parameter.
+        sigma (Any): The sigma parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -247,8 +247,8 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
 
     Args:
         images (Tensor): The images parameter.
-        factor (object): The factor parameter.
-        **kwargs (object): Keyword args.
+        factor (Any): The factor parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.

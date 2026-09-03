@@ -1,0 +1,2 @@
+RNNCellDeviceWrapper:
+  target_api: jax.numpy.rnncelldevicewrapper

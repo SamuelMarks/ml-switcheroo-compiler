@@ -1,6 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module jvp_registry.py."""
 
+from collections.abc import Sequence
+from typing import Any, Callable, Optional, Union
+
 """Provide a registry for Jacobian-Vector Product (JVP) rules used in forward-mode automatic differentiation.
 
 This module allows registering and retrieving JVP functions for various mathematical
@@ -13,7 +16,7 @@ from typing import Callable
 _JVP_REGISTRY = {}
 
 
-def register_jvp(op_name: str):
+def register_jvp(op_name: str) -> Any:
     """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical.
 
     Args:
@@ -23,7 +26,7 @@ def register_jvp(op_name: str):
         Callable: Result.
     """
 
-    def decorator(func):
+    def decorator(func: Any) -> Any:
         """Evaluate decorator operation.
 
         Args:
@@ -44,7 +47,7 @@ def register_jvp(op_name: str):
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
 
-def get_jvp(op_name: str):
+def get_jvp(op_name: str) -> Any:
     """Get the JVP rule.
 
     Args:

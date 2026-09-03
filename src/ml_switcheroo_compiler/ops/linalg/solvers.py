@@ -70,11 +70,11 @@ def conjugate_gradient(
     """Solve a system of linear equations using the conjugate gradient method.
 
     Args:
-        operator (object): The linear operator or matrix A.
-        rhs (object): The right-hand side vector.
-        tol (object): The tolerance for convergence. Defaults to 1e-05.
-        max_iter (object): The maximum number of iterations. Defaults to 20.
-        name (object): The name of the operation. Defaults to "conjugate_gradient".
+        operator (Any): The linear operator or matrix A.
+        rhs (Any): The right-hand side vector.
+        tol (Any): The tolerance for convergence. Defaults to 1e-05.
+        max_iter (Any): The maximum number of iterations. Defaults to 20.
+        name (Any): The name of the operation. Defaults to "conjugate_gradient".
 
     Returns: Tensor: The approximate solution to the system.
     """
@@ -92,8 +92,8 @@ class Lstsq(OpDef):
         """Infer the shape of the output tensor for the least squares operation.
 
         Args:
-            *args (object): Positional arguments, typically the input matrices A and B.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input matrices A and B.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -117,7 +117,7 @@ def lstsq(
     Args:
         a (Tensor): The a parameter.
         b (Tensor): The b parameter.
-        rcond (object): The rcond parameter.
+        rcond (Any): The rcond parameter.
 
     Returns:
         Tensor: Result.
@@ -137,9 +137,9 @@ def lu(input, output_idx_type=None, name=None):
     """Evaluate lu operation.
 
     Args:
-        input (object): The input parameter.
-        output_idx_type (object): The output_idx_type parameter.
-        name (object): The name parameter.
+        input (Any): The input parameter.
+        output_idx_type (Any): The output_idx_type parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -203,11 +203,11 @@ def lu_solve(
     """Solve a system of linear equations using the LU decomposition of the matrix.
 
     Args:
-        lower_upper (object): The LU factorized matrix.
-        perm (object): The permutation vector or matrix.
-        rhs (object): The right-hand side tensor.
-        validate_args (object): Whether to validate the inputs. Defaults to False.
-        name (object): Optional name for the operation. Defaults to None.
+        lower_upper (Any): The LU factorized matrix.
+        perm (Any): The permutation vector or matrix.
+        rhs (Any): The right-hand side tensor.
+        validate_args (Any): Whether to validate the inputs. Defaults to False.
+        name (Any): Optional name for the operation. Defaults to None.
 
     Returns: Tensor: The solution to the linear system.
     """
@@ -251,11 +251,11 @@ def tridiagonal_solve(
     """Solve systems of linear equations with tridiagonal matrices.
 
     Args:
-        diagonals (object): The diagonals of the tridiagonal matrix.
-        rhs (object): The right-hand side tensor.
-        diagonals_format (object): The format of the diagonals representation. Defaults to "...".
-        partial_pivoting (object): Whether to use partial pivoting. Defaults to True.
-        name (object): Optional name for the operation. Defaults to None.
+        diagonals (Any): The diagonals of the tridiagonal matrix.
+        rhs (Any): The right-hand side tensor.
+        diagonals_format (Any): The format of the diagonals representation. Defaults to "...".
+        partial_pivoting (Any): Whether to use partial pivoting. Defaults to True.
+        name (Any): Optional name for the operation. Defaults to None.
 
     Returns: Tensor: The solution to the tridiagonal system.
     """
@@ -286,7 +286,7 @@ def tensorsolve(a: Tensor, b: Tensor, axes=None, name=None):
     Args:
         a (Tensor): The coefficient tensor.
         b (Tensor): The right-hand side tensor.
-        axes (object): The axes of `a` to sum over. Defaults to None.
+        axes (Any): The axes of `a` to sum over. Defaults to None.
         name (str): Optional name for the operation. Defaults to None.
 
     Returns:
@@ -310,8 +310,8 @@ class Pinv(OpDef):
         """Infer the output shape of the pseudo-inverse operation.
 
         Args:
-            a (object): The input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The computed result.
         """
@@ -336,8 +336,8 @@ class Sqrtm(OpDef):
         """Infer the shape of the output tensor for the square root operation.
 
         Args:
-            a (object): The input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -357,9 +357,9 @@ class CholeskySolve(OpDef):
         """Infer the shape of the output tensor for the Cholesky solve operation.
 
         Args:
-            chol (object): The Cholesky factorization tensor.
-            rhs (object): The right-hand side tensor.
-            **kwargs (object): Additional keyword arguments.
+            chol (Any): The Cholesky factorization tensor.
+            rhs (Any): The right-hand side tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -379,9 +379,9 @@ class BandedTriangularSolve(OpDef):
         """Infer the shape of the output tensor for the banded triangular solve operation.
 
         Args:
-            bands (object): The banded triangular matrix tensor.
-            rhs (object): The right-hand side tensor.
-            **kwargs (object): Additional keyword arguments.
+            bands (Any): The banded triangular matrix tensor.
+            rhs (Any): The right-hand side tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -401,9 +401,9 @@ class EighTridiagonal(OpDef):
         """Infer the shape of the output tensor for the eigensolver operation.
 
         Args:
-            alpha (object): The diagonal elements of the tridiagonal matrix.
-            beta (object): The off-diagonal elements of the tridiagonal matrix.
-            **kwargs (object): Additional keyword arguments.
+            alpha (Any): The diagonal elements of the tridiagonal matrix.
+            beta (Any): The off-diagonal elements of the tridiagonal matrix.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: A tuple containing the inferred shapes for the eigenvalues and eigenvectors.
         """
@@ -424,8 +424,8 @@ class MatrixNorm(OpDef):
         """Infer the shape of the output tensor for the matrix norm operation.
 
         Args:
-            *args (object): Positional arguments, typically the input matrix.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input matrix.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -445,8 +445,8 @@ class VectorNorm(OpDef):
         """Infer the shape of the output tensor for the vector norm operation.
 
         Args:
-            *args (object): Positional arguments, typically the input vector.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input vector.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -466,8 +466,8 @@ class Svdvals(OpDef):
         """Infer the shape of the output tensor for the singular values operation.
 
         Args:
-            *args (object): Positional arguments, typically the input matrix.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Positional arguments, typically the input matrix.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -488,8 +488,8 @@ class Tensorinv(OpDef):
         """Infer the shape of the output tensor for the tensor inverse operation.
 
         Args:
-            a (object): The input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -511,9 +511,9 @@ class Tensorsolve(OpDef):
         """Infer the shape of the output tensor for the tensor solve operation.
 
         Args:
-            a (object): The coefficient tensor.
-            b (object): The right-hand side tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (Any): The coefficient tensor.
+            b (Any): The right-hand side tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -533,9 +533,9 @@ class LuMatrixInverse(OpDef):
         """Infer the shape of the output tensor for the LU matrix inverse operation.
 
         Args:
-            lower_upper (object): The LU factorized matrix.
-            perm (object): The permutation vector or matrix.
-            **kwargs (object): Additional keyword arguments.
+            lower_upper (Any): The LU factorized matrix.
+            perm (Any): The permutation vector or matrix.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
@@ -555,9 +555,9 @@ class LuReconstruct(OpDef):
         """Infer the shape of the output tensor for the LU reconstruct operation.
 
         Args:
-            lower_upper (object): The LU factorized matrix.
-            perm (object): The permutation vector or matrix.
-            **kwargs (object): Additional keyword arguments.
+            lower_upper (Any): The LU factorized matrix.
+            perm (Any): The permutation vector or matrix.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns: Tensor: The inferred shape of the output tensor.
         """

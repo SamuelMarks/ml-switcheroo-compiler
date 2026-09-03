@@ -95,3 +95,48 @@ def test_determine_node_shape_keyerror_and_not_found() -> None:
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference._infer_op_shape", side_effect=TypeError("boom")):
         with pytest.raises(CompilationError):
             _determine_node_shape(node1, {})
+
+
+def test_shape_inference_keyerror():
+    # Unknown op -> KeyError -> returns shape_metadata
+    node = IRNode(id="n1", op_type="UnknownOp2", inputs=[], attributes={}, shape_metadata=(10, 20))
+    assert _determine_node_shape(node, {}) == (10, 20)
+
+
+def test_shape_inference_valueerror_not_found(monkeypatch):
+    # If something raises ValueError with "Operation ... not found", it returns shape_metadata
+    from ml_switcheroo_compiler.transforms.passes import shape_inference
+
+    def mock_infer_op_shape(*args, **kwargs):
+        raise ValueError("Operation 'Foo' not found")
+
+    monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
+
+    node = IRNode(id="n1", op_type="Foo", inputs=[], attributes={}, shape_metadata=(30, 40))
+    assert _determine_node_shape(node, {}) == (30, 40)
+
+
+def test_shape_inference_valueerror_other(monkeypatch):
+    # If something raises ValueError without "Operation not found", raises CompilationError
+    from ml_switcheroo_compiler.transforms.passes import shape_inference
+
+    def mock_infer_op_shape(*args, **kwargs):
+        raise ValueError("Some other error")
+
+    monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
+
+    node = IRNode(id="n1", op_type="Foo", inputs=[], attributes={}, shape_metadata=(30, 40))
+    with pytest.raises(CompilationError):
+        _determine_node_shape(node, {})
+
+
+def test_shape_inference_keyerror_explicit(monkeypatch):
+    from ml_switcheroo_compiler.transforms.passes import shape_inference
+
+    def mock_infer_op_shape(*args, **kwargs):
+        raise KeyError("foo")
+
+    monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
+
+    node = IRNode(id="n1", op_type="Foo", inputs=[], attributes={}, shape_metadata=(50, 60))
+    assert _determine_node_shape(node, {}) == (50, 60)

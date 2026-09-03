@@ -3,7 +3,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import (
@@ -159,12 +159,12 @@ def batch_norm_with_global_normalization(
     """Batch normalization with global normalization.
 
     Args:
-        t (object): The t parameter.
-        m (object): The m parameter.
-        v (object): The v parameter.
-        beta (object): The beta parameter.
-        gamma (object): The gamma parameter.
-        **kwargs (object): Keyword args.
+        t (Any): The t parameter.
+        m (Any): The m parameter.
+        v (Any): The v parameter.
+        beta (Any): The beta parameter.
+        gamma (Any): The gamma parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -188,9 +188,9 @@ def lrn(input, config=None, name=None):
     """Evaluate lrn operation.
 
     Args:
-        input (object): The input parameter.
+        input (Any): The input parameter.
         config (LRNConfig): The config parameter.
-        name (object): The name parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -210,11 +210,11 @@ def l2_normalize(x, axis=None, epsilon=1e-12, name=None):
     """Normalize along dimension axis using an L2 norm.
 
     Args:
-        x (object): The x parameter.
-        axis (object): The axis parameter.
-        epsilon (object): The epsilon parameter.
-        name (object): The name parameter.
-        axis (object): The axis parameter.
+        x (Any): The x parameter.
+        axis (Any): The axis parameter.
+        epsilon (Any): The epsilon parameter.
+        name (Any): The name parameter.
+        axis (Any): The axis parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -228,11 +228,11 @@ def moments(x, axes, shift=None, keepdims=False, name=None):
     """Calculate the mean and variance of x.
 
     Args:
-        x (object): The x parameter.
-        axes (object): The axes parameter.
-        shift (object): The shift parameter.
-        keepdims (object): The keepdims parameter.
-        name (object): The name parameter.
+        x (Any): The x parameter.
+        axes (Any): The axes parameter.
+        shift (Any): The shift parameter.
+        keepdims (Any): The keepdims parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -244,11 +244,11 @@ def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
     """Calculate the mean and variance of based on the sufficient statistics.
 
     Args:
-        counts (object): The counts parameter.
-        mean_ss (object): The mean_ss parameter.
-        variance_ss (object): The variance_ss parameter.
-        shift (object): The shift parameter.
-        name (object): The name parameter.
+        counts (Any): The counts parameter.
+        mean_ss (Any): The mean_ss parameter.
+        variance_ss (Any): The variance_ss parameter.
+        shift (Any): The shift parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -292,11 +292,11 @@ def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
     """Calculate the sufficient statistics for the mean and variance of x.
 
     Args:
-        x (object): The x parameter.
-        axes (object): The axes parameter.
-        shift (object): The shift parameter.
-        keepdims (object): The keepdims parameter.
-        name (object): The name parameter.
+        x (Any): The x parameter.
+        axes (Any): The axes parameter.
+        shift (Any): The shift parameter.
+        keepdims (Any): The keepdims parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -348,11 +348,11 @@ def weighted_moments(
     """Return the frequency-weighted mean and variance of x.
 
     Args:
-        x (object): The x parameter.
-        axes (object): The axes parameter.
-        frequency_weights (object): The frequency_weights parameter.
-        name (object): The name parameter.
-        keepdims (object): The keepdims parameter.
+        x (Any): The x parameter.
+        axes (Any): The axes parameter.
+        frequency_weights (Any): The frequency_weights parameter.
+        name (Any): The name parameter.
+        keepdims (Any): The keepdims parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -396,8 +396,8 @@ def zero_fraction(value, name=None):
     """Return the fraction of zeros in value.
 
     Args:
-        value (object): The value parameter.
-        name (object): The name parameter.
+        value (Any): The value parameter.
+        name (Any): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.

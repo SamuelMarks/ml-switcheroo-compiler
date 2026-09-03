@@ -1,0 +1,18 @@
+in_place_safe_ops:
+  - Add
+  - Subtract
+  - Mul
+  - Div
+  - Relu
+  - Exp
+  - Log
+  - Tanh
+  - Sigmoid
+  - Cast
+  - Reshape
+  - Squeeze
+  - Unsqueeze
+  - Sqrt
+  - Abs
+  - Maximum
+  - Minimum

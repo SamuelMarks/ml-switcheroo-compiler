@@ -28,13 +28,22 @@ def test_default_cost_model_memory() -> None:
     )
     assert model.get_memory_cost(node_f64) == 10 * 8
 
+    # Test line 85 empty dynamic shape
+    node_dyn = IRNode(
+        id="n_dyn",
+        op_type="Add",
+        shape_metadata=(),
+        attributes={"dtype": DType.Float32.value, "is_dynamic": True},
+    )
+    assert model.get_memory_cost(node_dyn) == 4
+
     node_dyn = IRNode(
         id="n3",
         op_type="Add",
         shape_metadata=("B", 10),
         attributes={"dtype": DType.Float32.value},
     )
-    assert model.get_memory_cost(node_dyn) == 4
+    assert model.get_memory_cost(node_dyn) == "B * 10 * 4"
 
     node_none = IRNode(
         id="n4",
@@ -110,3 +119,20 @@ def test_graph_scheduling_missing_branches():
     graph.nodes["n4"] = IRNode(id="n4", op_type="Add", inputs=["n2", "n3"], shape_metadata=(100, 100), attributes={"dtype": DType.Float32.value})
 
     modified = graph_scheduling_pass(graph)
+
+
+def test_graph_scheduling_extra_coverage():
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.transforms.passes.graph_scheduling import DefaultCostModel
+
+    cm = DefaultCostModel()
+
+    node = MagicMock()
+    node.attributes = {"dtype": "float32"}
+    node.shape_metadata = tuple()
+    node.is_dynamic_shape = True
+
+    cost = cm.get_memory_cost(node)
+    # The get_memory_cost calls _get_symbolic_memory_size, which should return the string of dtype_size if shape is empty
+    assert cost == 4 or cost == "4"

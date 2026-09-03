@@ -3,6 +3,7 @@
 
 import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.binary import divide
@@ -14,13 +15,13 @@ class NormConfig:
     """Configuration for normalization operations.
 
     Attributes:
-        weight (object): Optional scale tensor.
-        bias (object): Optional shift tensor.
+        weight (Any): Optional scale tensor.
+        bias (Any): Optional shift tensor.
         epsilon (float): Small value to avoid division by zero.
     """
 
-    weight = None
-    bias = None
+    weight: typing.Optional[Any] = None
+    bias: typing.Optional[Any] = None
     epsilon: float = 1e-5
 
 
@@ -33,9 +34,9 @@ def group_mean(
     """Compute the mean over groups.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
         groups (int): The groups parameter.
-        axis (object): The axis parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -53,9 +54,9 @@ def group_variance(
     """Compute the variance over groups.
 
     Args:
-        x (object): The x parameter.
+        x (Any): The x parameter.
         groups (int): The groups parameter.
-        axis (object): The axis parameter.
+        axis (Any): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
     Returns:
@@ -73,7 +74,7 @@ def group_norm(
     """Compute the group normalization.
 
     Args:
-        x (object): Input tensor.
+        x (Any): Input tensor.
         groups (int): Number of groups.
         config (Optional[NormConfig]): Normalization configuration.
         axis (Union[int, tuple[int, ...]]): Axis to normalize over.
@@ -93,12 +94,12 @@ def spectral_normalization(
     """Compute the spectral normalization.
 
     Args:
-        w (object): Weight tensor.
-        u (object): Left singular vector estimate.
+        w (Any): Weight tensor.
+        u (Any): Left singular vector estimate.
         num_iters (int): Number of power iterations.
 
     Returns:
-        tuple[object, object]: Normalized weight and new u.
+        tuple[Any, Any]: Normalized weight and new u.
     """
     _, u_new, sigma = power_iteration(w, num_iters=num_iters, u=u)
     return divide(w, sigma), u_new

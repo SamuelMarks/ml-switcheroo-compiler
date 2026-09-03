@@ -1,0 +1,3 @@
+Arange:
+  ast_template: np.arange
+  target_api: ''

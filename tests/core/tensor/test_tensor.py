@@ -130,3 +130,37 @@ def test_tensor_non_eager_and_index() -> None:
         t.__index__()
     except Exception:
         pass
+
+
+def test_tensor_config_list_shape() -> None:
+    """Test initializing TensorConfig with list shape."""
+    config = TensorConfig(shape=[2, 2], dtype=DType("float32"), device=Device("cpu"))
+    assert config.shape == (2, 2)
+
+
+def test_tensor_view() -> None:
+    """Test tensor view with different shape args."""
+    config = TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu"))
+    t = Tensor(42, config=config)
+    from unittest.mock import patch
+
+    with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_frontend:
+        mock_frontend.return_value = lambda x, s: x
+        res = t.view(2, 2)
+        assert res is t
+
+        res2 = t.view([2, 2])
+        assert res2 is t
+
+
+def test_valid_force_edge_cases() -> None:
+    """Verify that edge inputs like zero-length arrays and empty shapes are handled correctly."""
+    # Verify that a 0-D empty array handles operations correctly
+    t1 = Tensor(np.array(0.0), TensorConfig((), DType.Float32, "cpu"))
+    assert t1.shape == ()
+    assert t1.data == 0.0
+
+    # Verify that a zero-length array handles shape mappings
+    t2 = Tensor(np.zeros((0, 5)), TensorConfig((0, 5), DType.Float32, "cpu"))
+    assert t2.shape == (0, 5)
+    assert t2.data.size == 0

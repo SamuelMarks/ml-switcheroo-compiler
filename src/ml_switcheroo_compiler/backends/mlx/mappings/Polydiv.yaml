@@ -1,0 +1,2 @@
+Polydiv:
+  target_api: '''mx.polydiv({0})'''

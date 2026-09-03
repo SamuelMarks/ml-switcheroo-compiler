@@ -1,0 +1,6 @@
+ReduceScatter:
+  custom_code: 'lambda tensor, *args, **kwargs: jax.lax.reduce_scatter(tensor, jax.lax.add
+    if kwargs.get(''op_type'', ''sum'').lower() == ''sum'' else jax.lax.max, scatter_dimension=kwargs.get(''axis'',
+    0), axis_name=kwargs.get(''axis_name'', ''i'')) if hasattr(jax.lax, ''reduce_scatter'')
+    else tensor'
+  target_api: custom_op

@@ -1,0 +1,3 @@
+AllReduce:
+  custom_code: 'lambda tensor, *args, **kwargs: _torch_all_reduce(tensor, **kwargs)'
+  target_api: custom_op

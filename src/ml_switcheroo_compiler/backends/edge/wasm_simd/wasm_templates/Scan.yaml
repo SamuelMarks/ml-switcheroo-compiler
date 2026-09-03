@@ -1,0 +1,3 @@
+scan:
+  body: "// Scan (ND Tensor State)\nfor (int i = 0; i < {nelem}; ++i) {{\n    // scan_op_expr\
+    \ handles ND buffers directly\n    {scan_op_expr}\n}}\n"

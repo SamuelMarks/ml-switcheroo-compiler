@@ -1,146 +1,66 @@
-# ruff: noqa
-from ml_switcheroo_compiler.backends.registry import BackendRegistry, _load_cupy, _load_dask, _load_jax, _load_keras, _load_mlx, _load_numpy, _load_pure_python, _load_pytorch, _load_tensorflow
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch
-from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
-"Core abstractions and logic definitions for test_registry_coverage.py."
 
 
-def test_registry_import_error():
-    """Test the registry import error behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        if "fake" in BackendRegistry._registry:
-            del BackendRegistry._registry["fake"]
-        BackendRegistry._LAZY_MODULES["fake"] = "fake_module"
-        with pytest.raises(ValueError, match="Backend 'fake' not found"):
-            BackendRegistry.get("fake")
-        BackendRegistry.get_all()
-        del BackendRegistry._LAZY_MODULES["fake"]
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_registry_torch_alias():
-    """Test the registry torch alias behavior.
-
-    Returns:
-        object: The inferred shape or computed result.
-    """
-    try:
-        if "torch" in BackendRegistry._registry:
-            del BackendRegistry._registry["torch"]
-        BackendRegistry._registry["pytorch"] = "mock_class"
-
-        assert BackendRegistry.get("torch") == "mock_class"
-        del BackendRegistry._registry["pytorch"]
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
-
-
-def test_loaders() -> None:
-    for loader in [_load_numpy, _load_pytorch, _load_jax, _load_tensorflow, _load_mlx, _load_dask, _load_keras, _load_cupy, _load_pure_python]:
-        try:
-            loader()
-        except Exception:
-            pass
-
-
-def test_ensure_loaded_import_error() -> None:
-    from ml_switcheroo_compiler.backends.registry import _LOADERS
-
-    def failing_loader():
-        raise ImportError("Fake import error")
-
-    original_loaders = dict(_LOADERS)
-    original_lazy = dict(BackendRegistry._LAZY_MODULES)
-    _LOADERS["fake_backend"] = failing_loader
-    BackendRegistry._LAZY_MODULES["fake_backend"] = "fake_module_name"
-    try:
-        BackendRegistry.get("fake_backend")
-    except ValueError:
-        pass
-    _LOADERS.clear()
-    _LOADERS.update(original_loaders)
-    BackendRegistry._LAZY_MODULES.clear()
-    BackendRegistry._LAZY_MODULES.update(original_lazy)
-
-
-def test_backend_registry_import_error():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-    import builtins
-
-    BackendRegistry._registry.pop("mock_import_fail", None)
-    BackendRegistry._LAZY_MODULES["mock_import_fail"] = "mock_import_fail_module"
-
-    def mock_loader():
-        raise ImportError("mocked import error")
-
-    from ml_switcheroo_compiler.backends.registry import _LOADERS
-
-    _LOADERS["mock_import_fail"] = mock_loader
-
-    import pytest
-
-    with pytest.raises(ValueError):
-        BackendRegistry.get("mock_import_fail")
-
-
-def test_get_active_backend():
-    from ml_switcheroo_compiler.backends.registry import get_active_backend, BackendRegistry
+def test_backend_registry():
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend, register_backend
     from ml_switcheroo_compiler.core.config import config
 
-    old_backend = config.backend
-    try:
+    # Test register decorator
+    @register_backend("dummy_decorator")
+    class DummyBackend:
+        pass
 
-        class DummyBackend:
+    assert BackendRegistry.get("dummy_decorator") == DummyBackend
+
+    # Test active backend
+    old_backend = config.backend
+    config.backend = "dummy_decorator"
+    assert get_active_backend() == DummyBackend
+    config.backend = old_backend
+
+    # Test missing backend
+    with pytest.raises(ValueError):
+        BackendRegistry.get("missing_backend_xyz")
+
+
+def test_safe_import_backend():
+    from ml_switcheroo_compiler.backends import _safe_import_backend
+
+    with patch("importlib.import_module", side_effect=ImportError):
+        # Should not raise
+        _safe_import_backend("missing")
+
+
+def test_loaders_and_lazy_loading():
+    from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
+
+    for name, loader in _LOADERS.items():
+        try:
+            loader()
+        except ImportError:
             pass
 
-        BackendRegistry.register("dummy_active_backend", DummyBackend)
-        config.backend = "dummy_active_backend"
-        assert get_active_backend() is DummyBackend
-    finally:
-        config.backend = old_backend
+    # Test _try_load_lazy for an error condition
+    with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module"}):
+        with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
+            # Should not raise, just logs error
+            BackendRegistry._try_load_lazy("test_lazy_fail")
 
 
-def test_available_backends_missing_loader():
+def test_resolve_alias():
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    BackendRegistry._registry.pop("mock_no_loader", None)
-    BackendRegistry._LAZY_MODULES["mock_no_loader"] = "mock_no_loader_module"
-
-    backends = BackendRegistry.get_all()
-    assert "mock_no_loader" not in backends
+    assert BackendRegistry._resolve_alias("torch") in ("pytorch", "torch")
 
 
-def test_load_llvm_cpp():
-    from ml_switcheroo_compiler.backends.registry import _load_llvm_cpp, _load_edge_onnx, _load_edge_stablehlo, _load_edge_wgsl, _load_edge_wasm_simd, _load_pure_python
+def test_get_all_loaders():
+    from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
 
-    try:
-        _load_llvm_cpp()
-    except Exception:
-        pass
-    try:
-        _load_edge_onnx()
-    except Exception:
-        pass
-    try:
-        _load_edge_stablehlo()
-    except Exception:
-        pass
-    try:
-        _load_edge_wgsl()
-    except Exception:
-        pass
-    try:
-        _load_edge_wasm_simd()
-    except Exception:
-        pass
-    try:
-        _load_pure_python()
-    except Exception:
-        pass
+    with patch.dict(BackendRegistry._registry, {}):
+        with patch.dict(_LOADERS, {"fake_backend": MagicMock(side_effect=ImportError)}):
+            with patch.dict(BackendRegistry._LAZY_MODULES, {"fake_backend": "fake"}):
+                # get_all should suppress ImportError
+                all_backends = BackendRegistry.get_all()
+                assert "fake_backend" not in all_backends

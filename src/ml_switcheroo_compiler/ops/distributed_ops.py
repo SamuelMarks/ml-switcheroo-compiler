@@ -13,8 +13,8 @@ def shard_tensor(tensor: Tensor, device_mesh, layout):
 
     Args:
         tensor (Tensor): The tensor parameter.
-        device_mesh (object): The device_mesh parameter.
-        layout (object): The layout parameter.
+        device_mesh (Any): The device_mesh parameter.
+        layout (Any): The layout parameter.
 
     Returns:
         Tensor: Result.
@@ -41,8 +41,8 @@ class ShardTensor(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -77,8 +77,8 @@ class NcclAllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -113,8 +113,8 @@ class HierarchicalCopyAllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -149,8 +149,8 @@ class Broadcast(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -185,8 +185,8 @@ class AllGather(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -227,8 +227,8 @@ class Reduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -263,8 +263,8 @@ class AllReduce(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -300,8 +300,8 @@ class ReduceScatter(OpDef):
         """Infer shape.
 
         Args:
-            tensor (object): The tensor parameter.
-            **kwargs (object): Keyword args.
+            tensor (Any): The tensor parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -319,8 +319,8 @@ class AllToAll(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -346,8 +346,8 @@ class BroadcastArrays(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -373,8 +373,8 @@ class BroadcastTo(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -402,8 +402,8 @@ class BroadcastToRank(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -425,8 +425,8 @@ class BroadcastedIota(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -452,8 +452,8 @@ class Pbroadcast(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -473,8 +473,8 @@ def all_to_all(*args, **kwargs):
     """AllToAll frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -488,8 +488,8 @@ def broadcast_arrays(*args, **kwargs):
     """BroadcastArrays frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -503,8 +503,8 @@ def broadcast_to(*args, **kwargs):
     """BroadcastTo frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -518,8 +518,8 @@ def broadcast_to_rank(*args, **kwargs):
     """BroadcastToRank frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -533,8 +533,8 @@ def broadcasted_iota(*args, **kwargs):
     """BroadcastedIota frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -548,8 +548,8 @@ def pbroadcast(*args, **kwargs):
     """Pbroadcast frontend.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -569,8 +569,8 @@ class Pmax(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -589,8 +589,8 @@ class Pmin(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -609,8 +609,8 @@ class Outfeed(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -628,8 +628,8 @@ class Pshuffle(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -648,8 +648,8 @@ class Pswapaxes(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -672,8 +672,8 @@ class Ppermute(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -692,8 +692,8 @@ class PsumScatter(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -710,8 +710,8 @@ def outfeed(*args, **kwargs):
     """Write to the outfeed queue.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -725,8 +725,8 @@ def pmax(*args, **kwargs):
     """Evaluate pmax operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -740,8 +740,8 @@ def pmin(*args, **kwargs):
     """Evaluate pmin operation.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -755,8 +755,8 @@ def ppermute(*args, **kwargs):
     """Permute data across the mapped axis.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -770,8 +770,8 @@ def pshuffle(*args, **kwargs):
     """Shuffle data across the mapped axis.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -785,8 +785,8 @@ def psum_scatter(*args, **kwargs):
     """Scatter sum across a mapped axis.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -800,8 +800,8 @@ def pswapaxes(*args, **kwargs):
     """Swap axes of the data.
 
     Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -821,8 +821,8 @@ class Send(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: Empty tuple as Send does not return tensor data.
         """
@@ -839,8 +839,8 @@ class Recv(OpDef):
         """Infer shape based on expected kwargs.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns: Tensor: Expected received tensor shape.
         """

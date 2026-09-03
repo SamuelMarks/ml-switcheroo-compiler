@@ -1,0 +1,2 @@
+Cumsum:
+  target_api: torch.cumsum

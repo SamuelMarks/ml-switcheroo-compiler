@@ -14,8 +14,8 @@ class Setdiff1d(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -33,8 +33,8 @@ class Setxor1d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -51,8 +51,8 @@ class Union1d(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -69,8 +69,8 @@ class UniqueAll(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -87,8 +87,8 @@ class UniqueCounts(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -105,8 +105,8 @@ class UniqueInverse(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """
@@ -123,8 +123,8 @@ class UniqueValues(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (Any): Arguments.
+            **kwargs (Any): Keyword arguments.
 
         Returns: Tensor: Computed shape.
         """

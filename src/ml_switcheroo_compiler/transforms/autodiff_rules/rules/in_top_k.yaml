@@ -1,0 +1,4 @@
+in_top_k:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

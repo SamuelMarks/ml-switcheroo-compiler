@@ -1,0 +1,2 @@
+HammingWindow:
+  target_api: np.hammingwindow

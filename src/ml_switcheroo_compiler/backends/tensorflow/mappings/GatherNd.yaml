@@ -1,0 +1,2 @@
+GatherNd:
+  target_api: tf.gather_nd

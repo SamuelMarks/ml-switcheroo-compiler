@@ -18,8 +18,8 @@ class TimeDistributed(OpDef):
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        x (object): The x parameter.
-        **kwargs (object): Keyword args.
+        x (Any): The x parameter.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

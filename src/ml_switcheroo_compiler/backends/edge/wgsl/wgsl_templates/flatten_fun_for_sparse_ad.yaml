@@ -1,0 +1,7 @@
+flatten_fun_for_sparse_ad:
+  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
+    \ = {expr};\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

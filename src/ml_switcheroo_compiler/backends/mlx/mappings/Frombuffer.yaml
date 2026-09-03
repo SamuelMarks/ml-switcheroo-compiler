@@ -1,0 +1,2 @@
+Frombuffer:
+  target_api: '''mx.frombuffer({0}, dtype={dtype}, count={count}, offset={offset})'''

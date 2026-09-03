@@ -1,0 +1,4 @@
+SWIZZLE_32_4_4:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

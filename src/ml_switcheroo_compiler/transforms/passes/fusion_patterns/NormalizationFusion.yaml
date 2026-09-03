@@ -1,0 +1,25 @@
+NormalizationFusion:
+  pattern:
+    capture: div
+    inputs:
+    - capture: sub
+      inputs:
+      - capture: in
+      - capture: mean1
+        op_type: ReduceMean
+      op_type: Subtract
+    - capture: sqrt
+      inputs:
+      - capture: add_eps
+        inputs:
+        - capture: mean2
+          op_type: ReduceMean
+        - capture: eps
+        op_type: Add
+      op_type: Sqrt
+    op_type: Divide
+  replacement:
+    capture_to_replace: div
+    inputs:
+    - in
+    op_type: LayerNorm

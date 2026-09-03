@@ -1,0 +1,4 @@
+remove_weight_norm:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+jax_to_tf:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+q_proj_weight:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

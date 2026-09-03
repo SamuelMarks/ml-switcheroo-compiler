@@ -1,0 +1,3 @@
+AllGather:
+  custom_code: 'lambda tensor, *args, **kwargs: _torch_all_gather(tensor, **kwargs)'
+  target_api: custom_op

@@ -33,7 +33,20 @@ def test_all_candidate_sampler():
     assert sampled_exp.shape == (2,)
 
 
-def test_ctc_beam_search_decoder():
+def test_ctc_beam_search_decoder_extend_path():
+    import numpy as np
+
+    inputs = np.array(
+        [
+            [[0.1, 0.4, 0.5]],
+            [[0.1, 0.8, 0.1]],
+            [[0.1, 0.8, 0.1]],  # Duplicate
+        ]
+    )
+    inputs = np.log(inputs)
+    seq_len = np.array([3])
+    sparse, log_probs = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5)
+    assert len(sparse) == 3
     inputs = np.random.rand(5, 2, 4)
     seq_len = np.array([5, 4])
     sparse, log_probs = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=2)
@@ -111,3 +124,28 @@ def test_ctc_beam_step_edge_cases():
     next_beam = _np_ctc_beam_step(beam, log_p, num_classes=3, blank=2, beam_width=2)
     assert (1,) in next_beam
     assert (1, 0) in next_beam
+
+
+def test_ctc_beam_search_merge_paths():
+    """Test merge paths in ctc beam search."""
+    import numpy as np
+
+    # inputs: [max_time, batch_size, num_classes]
+    # To have () and (1,) in the beam, the first step should give prob to blank (class 0) and class 1.
+    # The second step should give prob to class 1.
+
+    # Let num_classes = 3, blank = 2
+    # step 0:
+    # prob(0) = 0.2
+    # prob(1) = 0.4
+    # prob(blank=2) = 0.4
+
+    # step 1:
+    # prob(1) = 0.9, others small
+
+    inputs = np.array([[[0.2, 0.4, 0.4]], [[0.05, 0.9, 0.05]]])
+    # log probs
+    inputs = np.log(inputs)
+    seq_len = np.array([2])
+    sparse, log_probs = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5)
+    assert len(sparse) == 3

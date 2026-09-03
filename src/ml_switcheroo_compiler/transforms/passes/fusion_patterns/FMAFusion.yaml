@@ -1,0 +1,18 @@
+FMAFusion:
+  pattern:
+    capture: add
+    inputs:
+    - capture: mul
+      inputs:
+      - capture: a
+      - capture: b
+      op_type: Multiply
+    - capture: c
+    op_type: Add
+  replacement:
+    capture_to_replace: add
+    inputs:
+    - a
+    - b
+    - c
+    op_type: FusedMultiplyAdd

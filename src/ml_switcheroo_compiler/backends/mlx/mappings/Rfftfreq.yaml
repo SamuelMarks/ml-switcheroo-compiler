@@ -1,0 +1,2 @@
+Rfftfreq:
+  target_api: '''mx.fft.rfftfreq({0}, d={d})'''

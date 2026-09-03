@@ -1,0 +1,2 @@
+OneHot:
+  target_api: tf.one_hot

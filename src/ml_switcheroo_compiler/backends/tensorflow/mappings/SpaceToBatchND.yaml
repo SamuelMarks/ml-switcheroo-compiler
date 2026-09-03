@@ -1,0 +1,2 @@
+SpaceToBatchND:
+  target_api: tf.space_to_batch_nd

@@ -1,0 +1,2 @@
+SquaredDifference:
+  target_api: tf.math.squared_difference

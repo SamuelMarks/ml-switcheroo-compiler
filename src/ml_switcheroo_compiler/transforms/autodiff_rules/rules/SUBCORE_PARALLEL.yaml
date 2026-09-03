@@ -1,0 +1,4 @@
+SUBCORE_PARALLEL:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

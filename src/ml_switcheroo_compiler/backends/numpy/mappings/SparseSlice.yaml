@@ -1,0 +1,3 @@
+SparseSlice:
+  ast_template: tf.sparse.slice
+  target_api: ''

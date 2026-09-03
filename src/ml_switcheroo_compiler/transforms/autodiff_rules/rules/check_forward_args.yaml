@@ -1,0 +1,4 @@
+check_forward_args:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -64,3 +64,125 @@ def test_isotonic_regression_eager():
             assert res == "eager_iso"
     finally:
         config.eager_mode = False
+
+
+from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, rrelu, softmax
+
+
+def test_activations_eager_mode(mocker):
+    """Test function."""
+    config.eager_mode = True
+
+    class DummyBackend:
+        def execute_op(self, op_name, *args, **kwargs):
+            return op_name
+
+    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend())
+
+    assert softmax("x", axis=1) == "Softmax"
+
+    config.eager_mode = False
+
+
+def test_rrelu_non_eager_mode():
+    """Test function."""
+    config.eager_mode = False
+
+    class DummyNode:
+        id = "n"
+
+    res = rrelu(DummyNode())
+    assert res is not None
+
+
+def test_activations_infer_shape_broadcast():
+    """Test function."""
+
+    class DummyTensor:
+        def __init__(self, shape):
+            self.shape = shape
+
+    t1 = DummyTensor((2, 3))
+    t2 = DummyTensor((2, 1))
+
+    op = Softmax()
+    res = op.infer_shape(t1, t2)
+    assert res == (2, 3)
+
+    op2 = LogSoftmax()
+    res2 = op2.infer_shape(t1, t2)
+    assert res2 == (2, 3)
+
+    op3 = Sigmoid()
+    res3 = op3.infer_shape(t1, t2)
+    assert res3 == (2, 3)
+
+    op4 = Rrelu()
+    res4 = op4.infer_shape(t1, t2)
+    assert res4 == (2, 3)
+
+
+def test_onehot_infer_shape():
+    """Test function."""
+    op = OneHot()
+
+    class DummyTensor:
+        def __init__(self, shape):
+            self.shape = shape
+
+    t1 = DummyTensor((2, 3))
+
+    res = op.infer_shape(t1, 5, axis=1)
+    assert res == (2, 5, 3)
+
+
+from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, Squareplus, log_softmax, one_hot, sigmoid
+
+
+def test_activations_non_eager_mode():
+    """Test function."""
+    config.eager_mode = False
+
+    class DummyNode:
+        id = "n"
+
+        class DummyShape:
+            shape = (1,)
+
+        shape_metadata = DummyShape()
+
+    res = softmax(DummyNode())
+    assert res is not None
+
+    res = log_softmax(DummyNode())
+    assert res is not None
+
+    res = sigmoid(DummyNode())
+    assert res is not None
+
+    res = one_hot(DummyNode(), 5)
+    assert res is not None
+
+    res = rrelu(DummyNode())
+    assert res is not None
+
+
+def test_activations_infer_shape_missing():
+    """Test function."""
+    # Rrelu missing shapes
+    assert Rrelu().infer_shape() == ()
+
+    class DummyTensor:
+        def __init__(self, shape):
+            self.shape = shape
+
+    t = DummyTensor((2, 2))
+
+    assert HardSilu().infer_shape(t) == (2, 2)
+    assert HardSilu().infer_shape() == ()
+
+    assert HardSwish().infer_shape(t) == (2, 2)
+    assert HardSwish().infer_shape() == ()
+
+    assert Squareplus().infer_shape(t) == (2, 2)
+    assert Squareplus().infer_shape() == ()

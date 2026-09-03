@@ -1,0 +1,3 @@
+RNNCellDropoutWrapper:
+  ast_template: tf.nn.rnn_cell.DropoutWrapper
+  target_api: ''

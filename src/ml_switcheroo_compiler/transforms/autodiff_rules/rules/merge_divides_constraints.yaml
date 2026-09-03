@@ -1,0 +1,4 @@
+merge_divides_constraints:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

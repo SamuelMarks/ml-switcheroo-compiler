@@ -1,0 +1,2 @@
+Lu:
+  target_api: '''mx.linalg.lu({0})'''

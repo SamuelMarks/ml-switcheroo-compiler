@@ -1,0 +1,4 @@
+bucket_bytes_cap_default:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

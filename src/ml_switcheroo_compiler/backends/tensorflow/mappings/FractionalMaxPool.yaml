@@ -1,0 +1,2 @@
+FractionalMaxPool:
+  target_api: tf.nn.fractional_max_pool

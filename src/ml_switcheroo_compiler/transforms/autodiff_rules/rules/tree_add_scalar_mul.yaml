@@ -1,0 +1,4 @@
+tree_add_scalar_mul:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

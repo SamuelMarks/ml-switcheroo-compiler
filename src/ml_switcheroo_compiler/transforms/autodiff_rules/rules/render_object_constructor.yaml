@@ -1,0 +1,4 @@
+render_object_constructor:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -38,7 +38,7 @@ def crop_and_resize(
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
         crop_size (tuple): The crop_size parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -81,7 +81,7 @@ def _extract_bounding_boxes_eager(
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
-        config_obj (object): The config_obj parameter.
+        config_obj (Any): The config_obj parameter.
 
     Returns:
         Tensor: Result.
@@ -112,8 +112,8 @@ def extract_bounding_boxes(
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
         box_indices (Tensor): The box_indices parameter.
-        config_obj (object): The config_obj parameter.
-        **kwargs (object): Keyword args.
+        config_obj (Any): The config_obj parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         Tensor: Result.
@@ -254,8 +254,8 @@ def draw_bounding_boxes(
     Args:
         images (Tensor): The images parameter.
         boxes (Tensor): The boxes parameter.
-        colors (object): The colors parameter.
-        texts (object): The texts parameter.
+        colors (Any): The colors parameter.
+        texts (Any): The texts parameter.
 
     Returns:
         Tensor: Result.
@@ -439,9 +439,9 @@ class ExtractBoundingBoxes(OpDef):
         """Infer shape.
 
         Args:
-        inputs (object): The inputs parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        inputs (Any): The inputs parameter.
+        *args (Any): Positional args.
+        **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -459,9 +459,9 @@ class Iou(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -479,9 +479,9 @@ class Nms(OpDef):
         """Infer shape.
 
         Args:
-            inputs (object): The inputs parameter.
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

@@ -1,0 +1,2 @@
+AlphaDropout:
+  target_api: np.alphadropout

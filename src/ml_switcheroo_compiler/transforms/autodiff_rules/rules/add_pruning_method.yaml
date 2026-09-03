@@ -1,0 +1,4 @@
+add_pruning_method:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

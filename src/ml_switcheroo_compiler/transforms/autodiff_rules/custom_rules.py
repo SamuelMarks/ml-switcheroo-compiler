@@ -1,6 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Autodiff rules for custom and platform-specific kernel operations."""
 
+from collections.abc import Sequence
+from typing import Any, Optional, Union
+
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import make_zero_jvp, make_zero_vjp
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -116,7 +119,7 @@ def _inline_grad_subgraph(graph: IRGraph, sg_grad, sg, node, cotangent_mapping: 
 
 
 @register_vjp("Checkpoint")
-def checkpoint_vjp(graph: IRGraph, node, cotangent: str):
+def checkpoint_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for Checkpoint operation.
 
     Args:
@@ -158,7 +161,7 @@ def checkpoint_vjp(graph: IRGraph, node, cotangent: str):
 
 
 @register_vjp("If")
-def _if_vjp(graph: IRGraph, node, cotangent: str):
+def _if_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for If operation.
 
     Args:
@@ -175,7 +178,7 @@ def _if_vjp(graph: IRGraph, node, cotangent: str):
 
 
 @register_vjp("Loop")
-def _loop_vjp(graph: IRGraph, node, cotangent: str):
+def _loop_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for Loop operation.
 
     Args:
@@ -192,7 +195,7 @@ def _loop_vjp(graph: IRGraph, node, cotangent: str):
 
 
 @register_vjp("Scan")
-def _scan_vjp(graph: IRGraph, node, cotangent: str):
+def _scan_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for Scan operation.
 
     Args:
@@ -209,7 +212,7 @@ def _scan_vjp(graph: IRGraph, node, cotangent: str):
 
 
 @register_vjp("AssociativeScan")
-def _assoc_scan_vjp(graph: IRGraph, node, cotangent: str):
+def _assoc_scan_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for AssociativeScan operation.
 
     Args:
@@ -301,7 +304,7 @@ def _assoc_scan_jvp(graph: IRGraph, node, tangents) -> str:
 
 
 @register_vjp("Recompute")
-def recompute_vjp(graph: IRGraph, node, cotangent: str):
+def recompute_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for Recompute operation.
 
     Delegates to the original operation's VJP rule.
@@ -331,7 +334,7 @@ def recompute_vjp(graph: IRGraph, node, cotangent: str):
 
 
 @register_vjp("CustomVJP")
-def custom_vjp_vjp(graph: IRGraph, node, cotangent: str):
+def custom_vjp_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     """VJP for CustomVJP operation.
 
     Args:

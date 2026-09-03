@@ -5,16 +5,16 @@ import typing
 from typing import Any, Optional
 
 
-def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
+def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
     """Convert tensor to numpy array.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        x (Any): The x parameter.
+        np_mod: The np_mod parameter.
+        x: The x parameter.
         name (str): The name parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if hasattr(x, "numpy"):
         return x.numpy()
@@ -23,17 +23,17 @@ def _to_numpy_array(np_mod: Any, x: Any, name: str) -> Any:
     return np_mod.asarray(x)
 
 
-def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor: Any = None) -> Any:
+def _from_numpy_array(backend_module: object, out: object, name: str, original_tensor: Optional[object] = None) -> object:
     """Convert numpy array back to backend tensor.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        out (Any): The out parameter.
+        backend_module: The backend_module parameter.
+        out: The out parameter.
         name (str): The name parameter.
-        original_tensor (Any): The original_tensor parameter.
+        original_tensor: The original_tensor parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     if name == "torch":
         return _torch_from_numpy(out, original_tensor)
@@ -46,68 +46,68 @@ def _from_numpy_array(backend_module: Any, out: Any, name: str, original_tensor:
     return backend_module.array(out)
 
 
-def _torch_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _torch_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
     """Convert to torch tensor.
 
     Args:
-        out (Any): The out parameter.
-        original_tensor (Any): The original_tensor parameter.
+        out: The out parameter.
+        original_tensor: The original_tensor parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return out
 
 
-def _mlx_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _mlx_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
     """Convert to mlx tensor.
 
     Args:
-        out (Any): The out parameter.
-        original_tensor (Any): The original_tensor parameter.
+        out: The out parameter.
+        original_tensor: The original_tensor parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return out
 
 
-def _jax_from_numpy(out: Any, original_tensor: Any = None) -> Any:
+def _jax_from_numpy(out: object, original_tensor: Optional[object] = None) -> object:
     """Convert to jax tensor.
 
     Args:
-        out (Any): The out parameter.
-        original_tensor (Any): The original_tensor parameter.
+        out: The out parameter.
+        original_tensor: The original_tensor parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return out
 
 
-def _to_channels_last(np_mod: Any, imgs: Any, data_format: Optional[str]) -> Any:
+def _to_channels_last(np_mod: object, imgs: object, data_format: Optional[str]) -> object:
     """Transpose images from channels_first to channels_last if needed.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        imgs (Any): The imgs parameter.
+        np_mod: The np_mod parameter.
+        imgs: The imgs parameter.
         data_format (Optional[str]): The data_format parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return imgs
 
 
-def _from_channels_last(np_mod: Any, out: Any, data_format: Optional[str]) -> Any:
+def _from_channels_last(np_mod: object, out: object, data_format: Optional[str]) -> object:
     """Transpose images from channels_last to channels_first if needed.
 
     Args:
-        np_mod (Any): The np_mod parameter.
-        out (Any): The out parameter.
+        np_mod: The np_mod parameter.
+        out: The out parameter.
         data_format (Optional[str]): The data_format parameter.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return out

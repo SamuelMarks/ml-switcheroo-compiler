@@ -1,0 +1,4 @@
+reduce_window_sharding_rule:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

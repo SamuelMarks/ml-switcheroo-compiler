@@ -1,0 +1,3 @@
+ReduceScatter:
+  custom_code: 'lambda tensor, *args, **kwargs: _torch_reduce_scatter(tensor, **kwargs)'
+  target_api: custom_op

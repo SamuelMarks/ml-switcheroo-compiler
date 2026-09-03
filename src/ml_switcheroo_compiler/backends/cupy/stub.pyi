@@ -1,1 +1,3 @@
 """Auto-generated type stubs from snapshot."""
+
+class Tensor: ...

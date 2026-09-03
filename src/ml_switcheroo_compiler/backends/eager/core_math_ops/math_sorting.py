@@ -3,24 +3,25 @@
 
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
+def _argpartition(backend_module: Any, a: object, kth: object, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argpartition operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        a (Any): The a parameter.
-        kth (Any): The kth parameter.
+        backend_module: The backend_module parameter.
+        a: The a parameter.
+        kth: The kth parameter.
         axis (int): The axis parameter.
-        **kwargs (Any): Keyword args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.argsort(a, axis=axis) if hasattr(backend_module, "argsort") else a
 
@@ -30,12 +31,12 @@ def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _median operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.median(*args, **kwargs)
 
@@ -45,12 +46,12 @@ def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _percentile operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.percentile(*args, **kwargs)
 
@@ -60,12 +61,12 @@ def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _quantile operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     return backend_module.quantile(*args, **kwargs)
 
@@ -75,12 +76,12 @@ def _np_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_partition operation.
 
     Args:
-        backend_module (Any): The backend_module parameter.
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
 
     Returns:
-            Any: Result.
+            object: Result.
     """
     func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:

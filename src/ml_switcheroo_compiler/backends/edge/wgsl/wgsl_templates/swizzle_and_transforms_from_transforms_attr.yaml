@@ -1,0 +1,7 @@
+swizzle_and_transforms_from_transforms_attr:
+  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
+    \ = {expr};\n"
+  workgroup_size:
+  - 64
+  - 1
+  - 1

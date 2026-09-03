@@ -3,7 +3,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 
 @dataclass
@@ -14,7 +14,7 @@ class ConvConfig:
     padding: Union[Sequence[tuple[int, int]], str]
     lhs_dilation: Optional[Sequence[int]] = None
     rhs_dilation: Optional[Sequence[int]] = None
-    dimension_numbers = None
+    dimension_numbers: Optional[Union[tuple, str]] = None
     feature_group_count: int = 1
     batch_group_count: int = 1
 
@@ -40,7 +40,7 @@ class InitializerConfig:
     in_axis: Union[int, Sequence[int]] = -2
     out_axis: Union[int, Sequence[int]] = -1
     batch_axis: Union[int, Sequence[int]] = ()
-    dtype = None
+    dtype: Optional[Union[str, type]] = None
 
 
 @dataclass
@@ -50,7 +50,7 @@ class SpaceConfig:
     num: int = 50
     endpoint: bool = True
     base: float = 10.0
-    dtype = None
+    dtype: Optional[Union[str, type]] = None
     axis: int = 0
 
 

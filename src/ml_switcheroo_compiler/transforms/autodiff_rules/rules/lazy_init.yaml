@@ -1,0 +1,4 @@
+lazy_init:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

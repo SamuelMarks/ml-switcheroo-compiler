@@ -1,0 +1,4 @@
+pack_padded_sequence:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

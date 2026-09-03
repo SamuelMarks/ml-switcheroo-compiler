@@ -1,0 +1,4 @@
+nnx_attrs_to_linen_vars:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

@@ -1,0 +1,4 @@
+bcoo_squeeze:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

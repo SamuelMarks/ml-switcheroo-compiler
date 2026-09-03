@@ -2,7 +2,7 @@
 """RNN operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -83,7 +83,7 @@ def scan(
     """Scan loop construct.
 
     Args:
-        f (object): The f parameter.
+        f (Any): The f parameter.
         init (tuple): The init parameter.
         xs (Tensor): The xs parameter.
         config (Optional): The config parameter.
@@ -125,7 +125,7 @@ def bidirectional(
 
     Args:
         inputs (BidirectionalInputs): The bidirectional inputs.
-        cell_fn (object): The RNN cell function.
+        cell_fn (Any): The RNN cell function.
         config (Optional[BidirectionalConfig]): Configuration.
         config (Optional[ScanConfig]): Configuration for scan.
 
@@ -189,7 +189,7 @@ def rnn(
     Args:
         inputs (Tensor): The inputs parameter.
         initial_state (tuple): The initial_state parameter.
-        cell_fn (object): The cell_fn parameter.
+        cell_fn (Any): The cell_fn parameter.
         config (Optional): The config parameter.
 
     Returns:
@@ -234,9 +234,9 @@ class RNNCellDeviceWrapper:
         """Init.
 
         Args:
-            cell (object): The cell parameter.
-            device (object): The device parameter.
-            **kwargs (object): Keyword args.
+            cell (Any): The cell parameter.
+            device (Any): The device parameter.
+            **kwargs (Any): Keyword args.
         """
         self._cell = cell
         self._device = device
@@ -245,9 +245,9 @@ class RNNCellDeviceWrapper:
         """Call.
 
         Args:
-        inputs (object): The inputs parameter.
-        state (object): The state parameter.
-        **kwargs (object): Keyword args.
+        inputs (Any): The inputs parameter.
+        state (Any): The state parameter.
+        **kwargs (Any): Keyword args.
 
         Returns:
         tuple: Result.
@@ -281,9 +281,9 @@ class RNNCellDropoutWrapper:
         """Initialize the RNNCellDropoutWrapper.
 
         Args:
-            cell (object): The RNN cell to wrap.
+            cell (Any): The RNN cell to wrap.
             config (Optional[DropoutWrapperConfig]): Configuration for dropout.
-            kwargs (object): Additional keyword arguments.
+            kwargs (Any): Additional keyword arguments.
         """
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
@@ -294,7 +294,7 @@ class RNNCellDropoutWrapper:
         Args:
             inputs (Tensor): Input tensor.
             state (tuple[Tensor, ...]): Current state.
-            kwargs (object): Additional keyword arguments.
+            kwargs (Any): Additional keyword arguments.
 
         Returns:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
@@ -314,9 +314,9 @@ class RNNCellResidualWrapper:
         """Init.
 
         Args:
-            cell (object): The cell parameter.
-            residual_fn (object): The residual_fn parameter.
-            **kwargs (object): Keyword args.
+            cell (Any): The cell parameter.
+            residual_fn (Any): The residual_fn parameter.
+            **kwargs (Any): Keyword args.
         """
         self._cell = cell
         self._residual_fn = residual_fn
@@ -325,9 +325,9 @@ class RNNCellResidualWrapper:
         """Call.
 
         Args:
-            inputs (object): The inputs parameter.
-            state (object): The state parameter.
-            **kwargs (object): Keyword args.
+            inputs (Any): The inputs parameter.
+            state (Any): The state parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple: Result.

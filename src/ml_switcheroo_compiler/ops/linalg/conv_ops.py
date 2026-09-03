@@ -17,8 +17,8 @@ class ConvGeneralDilated(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -26,7 +26,7 @@ class ConvGeneralDilated(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): lhs, rhs, config.
+            *args (Any): lhs, rhs, config.
             **kwargs: Additional keyword arguments.
 
         Returns: Tensor: The evaluated output resulting from this operation.
@@ -57,10 +57,10 @@ class Convolve(OpDef):
         """Infer the output shape.
 
         Args:
-            a (object): The a parameter.
-            v (object): The v parameter.
+            a (Any): The a parameter.
+            v (Any): The v parameter.
             mode (str): The mode parameter.
-            **kwargs (object): Keyword args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -78,8 +78,8 @@ class ConvGeneralDilatedLocal(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -97,8 +97,8 @@ class ConvGeneralDilatedPatches(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -116,8 +116,8 @@ class ConvWithGeneralPadding(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -135,8 +135,8 @@ class ConvTransposeShapeTuple(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -154,9 +154,9 @@ class ConvTranspose(OpDef):
         """Infer shape.
 
         Args:
-            lhs (object): The lhs parameter.
-            rhs (object): The rhs parameter.
-            **kwargs (object): Keyword args.
+            lhs (Any): The lhs parameter.
+            rhs (Any): The rhs parameter.
+            **kwargs (Any): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

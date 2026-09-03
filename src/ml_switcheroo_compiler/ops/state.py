@@ -18,8 +18,8 @@ class ReadVariable(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (Any): Additional keyword arguments.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
@@ -38,8 +38,8 @@ class AssignVariable(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The first input tensor.
-            **kwargs (object): Additional keyword arguments.
+            x (Any): The first input tensor.
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.

@@ -1,0 +1,3 @@
+Mean:
+  ast_template: torch.mean({0}, dim={axis}, keepdim={keepdims})
+  target_api: torch.mean

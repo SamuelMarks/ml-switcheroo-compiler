@@ -1,0 +1,4 @@
+while_loop:
+  body: "// WhileLoop (ND Tensor State)\nfor (int i = 0; i < {max_iters}; ++i) {{\n\
+    \    if (!({condition_expr})) break;\n    {loop_body}\n}}\n// Output data is expected\
+    \ to be written within loop_body or orchestrated externally\n"

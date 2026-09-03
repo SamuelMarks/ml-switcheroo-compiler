@@ -1,0 +1,2 @@
+Eigh:
+  target_api: '''mx.linalg.eigh({0})'''

@@ -1,0 +1,4 @@
+unreduced_psum_scatter:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

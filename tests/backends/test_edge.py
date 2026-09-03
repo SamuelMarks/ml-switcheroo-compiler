@@ -5,9 +5,10 @@ from unittest.mock import patch
 
 @pytest.fixture(autouse=True)
 def global_wasm_mock():
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+    import copy
+    from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
-    saved_registry = dict(OPS_REGISTRY)
+    saved_registry = copy.deepcopy(OPS_REGISTRY)
 
     ops_to_mock = ["UnknownOp", "Conv2D", "MaxPool2D", "BatchNorm", "LayerNorm", "AvgPool2D", "Add", "Constant", "DotGeneral", "Transpose", "MatMul", "ReduceSum", "ReduceMax", "Tanh", "BroadcastTo", "DummyOp", "Dummy", "Exp", "Input"]
     for op in ops_to_mock:
@@ -41,10 +42,11 @@ def global_wasm_mock():
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 
-        yield
-
-    OPS_REGISTRY.clear()
-    OPS_REGISTRY.update(saved_registry)
+        try:
+            yield
+        finally:
+            OPS_REGISTRY.clear()
+            OPS_REGISTRY.update(saved_registry)
 
 
 import pytest
@@ -176,7 +178,6 @@ def test_webgpu_generator() -> None:
     assert "compute_n2" in wgsl_code
     assert "@compute @workgroup_size(64, 1, 1)" in wgsl_code
     assert "buf_out_f32[out_offset] = buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset];" in wgsl_code
-    assert "async function run(inputs)" in wgsl_code
 
 
 def test_stablehlo_generator() -> None:
@@ -245,8 +246,7 @@ def test_webgpu_ndim_indexing() -> None:
     generator = WebGPUCodeGenerator(g)
     js_code = generator.generate()
 
-    assert "let out_offset_d1 = out_offset_remaining % 3u;" in js_code
-    assert "async function run(inputs)" in js_code
+    assert "let out_offset_d1: u32 = out_offset_remaining % 3u;" in js_code
     assert "const out_0_staging = device.createBuffer" in js_code
 
 

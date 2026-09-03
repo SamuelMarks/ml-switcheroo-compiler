@@ -1,0 +1,4 @@
+binary_cross_entropy_with_logits:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

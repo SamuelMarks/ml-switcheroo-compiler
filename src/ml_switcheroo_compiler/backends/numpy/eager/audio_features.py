@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Extra audio ops for eager numpy execution."""
 
+from typing import Any
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -59,7 +61,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 
 @numpy_eager_registry.register("Dct")
-def _np_dct(backend_module, *args, **kwargs):
+def _np_dct(backend_module: Any, *args, **kwargs):
     """Evaluate _np_dct operation.
 
     Args:
@@ -120,7 +122,7 @@ def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 
 @numpy_eager_registry.register("Idct")
-def _np_idct(backend_module, *args, **kwargs):
+def _np_idct(backend_module: Any, *args, **kwargs):
     """Evaluate _np_idct operation.
 
     Args:
@@ -144,7 +146,7 @@ def _np_idct(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Mdct")
-def _np_mdct(backend_module, *args, **kwargs):
+def _np_mdct(backend_module: Any, *args, **kwargs):
     """Implement MDCT eagerly in numpy.
 
     Args:
@@ -172,7 +174,7 @@ def _np_mdct(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("InverseMdct")
-def _np_inverse_mdct(backend_module, *args, **kwargs):
+def _np_inverse_mdct(backend_module: Any, *args, **kwargs):
     """Implement Inverse MDCT eagerly in numpy.
 
     Args:
@@ -194,7 +196,7 @@ def _np_inverse_mdct(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("Frame")
-def _np_frame(backend_module, *args, **kwargs):
+def _np_frame(backend_module: Any, *args, **kwargs):
     """Implement Frame eagerly in numpy.
 
     Args:
@@ -217,7 +219,7 @@ def _np_frame(backend_module, *args, **kwargs):
 
 
 @numpy_eager_registry.register("OverlapAndAdd")
-def _np_overlap_and_add(backend_module, *args, **kwargs):
+def _np_overlap_and_add(backend_module: Any, *args, **kwargs):
     """Implement OverlapAndAdd eagerly in numpy.
 
     Args:

@@ -1,0 +1,4 @@
+AssignVariable:
+  ast_template: '{0}'
+  custom_code: 'lambda ref, value, **kwargs: value'
+  target_api: custom_op

@@ -1,0 +1,2 @@
+SobolSample:
+  target_api: tf.math.sobol_sample

@@ -1,0 +1,4 @@
+DEFAULT_NUM_TRACING_ATTEMPTS:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

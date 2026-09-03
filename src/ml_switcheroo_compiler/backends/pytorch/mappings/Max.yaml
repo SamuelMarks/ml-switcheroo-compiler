@@ -1,0 +1,3 @@
+Max:
+  ast_template: torch.max({0}, dim={axis}, keepdim={keepdims})
+  target_api: torch.max

@@ -1,0 +1,3 @@
+RaggedRowSplitsToSegmentIds:
+  ast_template: tf.ragged.row_splits_to_segment_ids
+  target_api: ''

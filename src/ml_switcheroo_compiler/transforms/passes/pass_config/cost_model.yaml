@@ -1,0 +1,11 @@
+cost_model:
+  compute_costs:
+    Conv2D: 1500
+    MatMul: 1000
+    MultiHeadAttention: 5000
+  default_compute_cost: 10
+  default_memory_cost: 10
+  memory_costs:
+    Conv2D: 150
+    MatMul: 100
+    MultiHeadAttention: 300

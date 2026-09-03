@@ -1,0 +1,3 @@
+Atan:
+  ast_template: np.arctan
+  target_api: ''

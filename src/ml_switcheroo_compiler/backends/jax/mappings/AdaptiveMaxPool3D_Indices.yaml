@@ -1,0 +1,4 @@
+AdaptiveMaxPool3D_Indices:
+  custom_code: 'lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs),
+    _execute_adaptive_max_pool(*args, **kwargs))'
+  target_api: custom_op

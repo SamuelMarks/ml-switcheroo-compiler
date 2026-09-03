@@ -1,163 +1,130 @@
-"""Tests for distributed collective operations."""
-
-import pickle
-from unittest.mock import MagicMock, patch
-
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.distributed.collectives import (
-    DistributedBarrier,
-    _recv_data,
-    _send_data,
-    all_gather,
-    all_reduce,
-    broadcast,
-    reduce_scatter,
-)
+from ml_switcheroo_compiler.distributed.collectives import DistributedBarrier, _recv_data, _send_data, all_gather, all_reduce, broadcast, reduce_scatter
 
 
-def test_send_recv():
-    """Test send and recv logic."""
-    data = np.array([1, 2, 3])
+class MockWebRTCDatachannel:
+    def __init__(self):
+        self.sent = []
+        self.recv_data = []
 
-    conn = MagicMock()
-    _send_data(conn, data)
+    async def send(self, data):
+        self.sent.append(data)
 
-    payload = pickle.dumps(data)
-    expected_data = len(payload).to_bytes(8, "big") + payload
-    conn.sendall.assert_called_once_with(expected_data)
-
-    # Test recv
-    conn2 = MagicMock()
-    # Mock recv to return data_len, then chunk, then empty chunk
-    conn2.recv.side_effect = [
-        len(payload).to_bytes(8, "big"),
-        payload,
-        b"",
-    ]
-
-    res = _recv_data(conn2)
-    np.testing.assert_array_equal(res, data)
+    async def recv(self):
+        if not self.recv_data:
+            return b""
+        chunk = self.recv_data.pop(0)
+        return chunk
 
 
-def test_all_reduce():
-    """Test all_reduce."""
-    tensor = np.array([1, 2, 3, 4])
+@pytest.mark.asyncio
+async def test_collectives_send_recv():
+    data = np.array([1.0, 2.0], dtype=np.float32)
+    conn = MockWebRTCDatachannel()
 
-    # World size 1
-    res = all_reduce(tensor, None, None, 0, 1)
-    np.testing.assert_array_equal(res, tensor)
+    await _send_data(conn, data)
+    assert len(conn.sent) == 2  # Meta and data
 
-    # World size 2
-    next_conn = MagicMock()
-    prev_conn = MagicMock()
-
-    with patch("ml_switcheroo_compiler.distributed.collectives._send_data") as mock_send, patch("ml_switcheroo_compiler.distributed.collectives._recv_data") as mock_recv:
-        mock_recv.return_value = np.array([10, 20])  # Dummy received chunk
-
-        res = all_reduce(tensor, next_conn, prev_conn, 0, 2)
-
-        # 1 step scatter-reduce, 1 step all-gather
-        assert mock_send.call_count == 2
-        assert mock_recv.call_count == 2
-
-        assert len(res) == 4
+    # Simulate receiving
+    conn.recv_data = conn.sent.copy()
+    received = await _recv_data(conn)
+    assert np.array_equal(data, received)
 
 
-def test_all_gather():
-    """Test all_gather."""
-    tensor = np.array([1, 2])
+@pytest.mark.asyncio
+async def test_collectives_broadcast():
+    data = np.array([1.0, 2.0], dtype=np.float32)
+    conn0, conn1 = MockWebRTCDatachannel(), MockWebRTCDatachannel()
 
-    res = all_gather(tensor, None, None, 0, 1)
-    np.testing.assert_array_equal(res, tensor)
+    # Leader broadcast
+    res = await broadcast(data, 0, [conn0, conn1], 0)
+    assert np.array_equal(res, data)
+    assert len(conn1.sent) == 2
 
-    next_conn = MagicMock()
-    prev_conn = MagicMock()
-
-    with patch("ml_switcheroo_compiler.distributed.collectives._send_data") as mock_send, patch("ml_switcheroo_compiler.distributed.collectives._recv_data") as mock_recv:
-        mock_recv.return_value = np.array([3, 4])
-
-        res = all_gather(tensor, next_conn, prev_conn, 0, 2)
-
-        assert mock_send.call_count == 1
-        assert mock_recv.call_count == 1
-
-        assert len(res) == 4
+    # Follower receive (needs to receive from root_rank, which is 0)
+    conn0.recv_data = conn1.sent.copy()
+    res2 = await broadcast(np.zeros(2), 0, [conn0, conn1], 1)
+    assert np.array_equal(res2, data)
 
 
-def test_reduce_scatter():
-    """Test reduce_scatter."""
-    tensor = np.array([1, 2, 3, 4])
+@pytest.mark.asyncio
+async def test_collectives_all_reduce():
+    data = np.array([1.0, 2.0], dtype=np.float32)
+    conn0, conn1 = MockWebRTCDatachannel(), MockWebRTCDatachannel()
 
-    res = reduce_scatter(tensor, None, None, 0, 1)
-    np.testing.assert_array_equal(res, tensor)
+    # SUM
+    conn0.recv_data = [b"2|float32", np.array([3.0, 4.0], dtype=np.float32).tobytes()]
+    conn1.recv_data = [b"2|float32", np.array([3.0, 4.0], dtype=np.float32).tobytes()]
+    res = await all_reduce(data, "SUM", [conn0, conn1], 0)
+    assert np.array_equal(res, np.array([4.0, 6.0], dtype=np.float32))
 
-    next_conn = MagicMock()
-    prev_conn = MagicMock()
+    # PROD
+    conn1.recv_data = [b"2|float32", np.array([3.0, 4.0], dtype=np.float32).tobytes()]
+    res = await all_reduce(data, "PROD", [conn0, conn1], 0)
+    assert np.array_equal(res, np.array([3.0, 8.0], dtype=np.float32))
 
-    with patch("ml_switcheroo_compiler.distributed.collectives._send_data") as mock_send, patch("ml_switcheroo_compiler.distributed.collectives._recv_data") as mock_recv:
-        mock_recv.return_value = np.array([10, 20])
+    # MAX
+    conn1.recv_data = [b"2|float32", np.array([3.0, 1.0], dtype=np.float32).tobytes()]
+    res = await all_reduce(data, "MAX", [conn0, conn1], 0)
+    assert np.array_equal(res, np.array([3.0, 2.0], dtype=np.float32))
 
-        res = reduce_scatter(tensor, next_conn, prev_conn, 0, 2)
-
-        assert mock_send.call_count == 1
-        assert mock_recv.call_count == 1
-
-        assert len(res) == 2
-
-
-def test_broadcast():
-    """Test broadcast."""
-    tensor = np.array([1, 2])
-
-    conn1 = MagicMock()
-    conn2 = MagicMock()
-
-    with patch("ml_switcheroo_compiler.distributed.collectives._send_data") as mock_send, patch("ml_switcheroo_compiler.distributed.collectives._recv_data") as mock_recv:
-        # I am root
-        res = broadcast(tensor, 0, [conn1, conn2], 0)
-        assert mock_send.call_count == 2
-        np.testing.assert_array_equal(res, tensor)
-
-        # I am NOT root
-        mock_recv.return_value = np.array([3, 4])
-        res = broadcast(tensor, 0, [conn1, conn2], 1)
-        assert mock_recv.call_count == 1
-        np.testing.assert_array_equal(res, np.array([3, 4]))
+    # MIN
+    conn1.recv_data = [b"2|float32", np.array([3.0, 1.0], dtype=np.float32).tobytes()]
+    res = await all_reduce(data, "MIN", [conn0, conn1], 0)
+    assert np.array_equal(res, np.array([1.0, 1.0], dtype=np.float32))
 
 
-def test_distributed_barrier():
-    """Test DistributedBarrier."""
-    barrier = DistributedBarrier(0, 1, [])
-    barrier.wait()  # Should return immediately
+@pytest.mark.asyncio
+async def test_collectives_all_gather():
+    data = np.array([1.0], dtype=np.float32)
+    conn0, conn1 = MockWebRTCDatachannel(), MockWebRTCDatachannel()
 
-    conn = MagicMock()
-    barrier = DistributedBarrier(0, 2, [conn])
+    conn1.recv_data = [b"1|float32", np.array([3.0], dtype=np.float32).tobytes()]
 
-    with patch("ml_switcheroo_compiler.distributed.collectives._send_data") as mock_send, patch("ml_switcheroo_compiler.distributed.collectives._recv_data") as mock_recv:
-        barrier.wait(timeout=1.0)
-        assert mock_send.call_count == 1
-        assert mock_recv.call_count == 1
-
-        # Check timeout was set and unset
-        conn.settimeout.assert_any_call(1.0)
-        conn.settimeout.assert_any_call(None)
+    res = await all_gather(data, 0, [conn0, conn1], 0)
+    assert len(res) == 2
+    assert res[0] == 1.0
+    assert res[1] == 3.0
 
 
-def test_recv_break():
-    import pickle
+@pytest.mark.asyncio
+async def test_collectives_reduce_scatter():
+    data = np.array([1.0, 2.0], dtype=np.float32)
+    conn0, conn1 = MockWebRTCDatachannel(), MockWebRTCDatachannel()
 
-    data = np.array([1, 2, 3])
-    payload = pickle.dumps(data)
+    # Fake peer
+    conn1.recv_data = [b"2|float32", np.array([3.0, 4.0], dtype=np.float32).tobytes()]
 
-    conn = MagicMock()
-    conn.recv.side_effect = [
-        (len(payload) + 10).to_bytes(8, "big"),  # fake longer length
-        payload,
-        b"",  # triggers break
-    ]
+    res = await reduce_scatter(data, "SUM", 0, [conn0, conn1], 0)
+    # The reduced tensor is [4.0, 6.0], we split into 2 chunks of len 1, and take rank 0.
+    assert len(res) == 1
+    assert res[0] == 4.0
 
-    try:
-        _recv_data(conn)
-    except BaseException:
-        pass
+
+@pytest.mark.asyncio
+async def test_barrier():
+    b = DistributedBarrier(world_size=2, rank=1, leader_rank=0)
+    conns = [MockWebRTCDatachannel(), MockWebRTCDatachannel()]
+
+    # Leader says go
+    conns[0].recv_data = [b"g"]
+    await b.wait(conns)
+    assert b.rank == 1
+    assert conns[0].sent[0] == b"r"
+
+    # Leader test
+    b_leader = DistributedBarrier(world_size=2, rank=0, leader_rank=0)
+    conns[1].recv_data = [b"r"]
+    await b_leader.wait(conns)
+    assert conns[1].sent[0] == b"g"
+
+    # Missing connection test
+    b_leader = DistributedBarrier(world_size=2, rank=0, leader_rank=0)
+    conns = [MockWebRTCDatachannel(), None]
+    await b_leader.wait(conns)  # Should not crash
+
+    b_follower = DistributedBarrier(world_size=2, rank=1, leader_rank=0)
+    conns = [None, MockWebRTCDatachannel()]
+    await b_follower.wait(conns)  # Should not crash

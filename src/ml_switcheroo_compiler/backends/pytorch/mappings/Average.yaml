@@ -1,0 +1,3 @@
+Average:
+  custom_code: 'lambda a, *args, **kwargs: torch.mean(a)'
+  target_api: custom_op

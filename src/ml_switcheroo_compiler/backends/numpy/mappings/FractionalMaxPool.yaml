@@ -1,0 +1,2 @@
+FractionalMaxPool:
+  target_api: np.fractionalmaxpool

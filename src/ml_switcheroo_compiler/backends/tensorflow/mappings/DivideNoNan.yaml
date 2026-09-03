@@ -1,0 +1,2 @@
+DivideNoNan:
+  target_api: tf.math.divide_no_nan

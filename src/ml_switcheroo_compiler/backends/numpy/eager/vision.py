@@ -1,6 +1,7 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision operations for the numpy backend."""
 
+import typing
 from dataclasses import dataclass
 from typing import Optional
 
@@ -38,8 +39,11 @@ class InterpolationConfig:
         W: Original width.
     """
 
-    H: int
-    W: int
+    images: typing.Optional[typing.Any] = None
+    src_y: typing.Optional[typing.Any] = None
+    src_x: typing.Optional[typing.Any] = None
+    H: int = 0
+    W: int = 0
 
 
 def _calculate_bilinear_coords(np, cfg: ResizeConfig):
@@ -72,6 +76,11 @@ def _calculate_bilinear_coords(np, cfg: ResizeConfig):
 @dataclass
 class BilinearCoords:
     """Coordinates for bilinear interpolation."""
+
+    y0: typing.Any = None
+    y1: typing.Any = None
+    x0: typing.Any = None
+    x1: typing.Any = None
 
 
 def _compute_bilinear_pixels(np, images, coords: BilinearCoords):
@@ -325,8 +334,11 @@ class RotationInterpolationConfig:
         fill_value: Fill value.
     """
 
-    fill_mode: str
-    fill_value: float
+    img: typing.Optional[typing.Any] = None
+    src_x: typing.Optional[typing.Any] = None
+    src_y: typing.Optional[typing.Any] = None
+    fill_mode: str = "nearest"
+    fill_value: float = 0.0
 
 
 def _get_rotation_coords(np, src_x_clip, src_y_clip, W: int, H: int):

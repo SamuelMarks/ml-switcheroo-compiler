@@ -5,7 +5,6 @@ from __future__ import annotations
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Provide mixin module."""
 
-from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -16,13 +15,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Control flow AST generator mixin."""
 
-    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate visit_Scan operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs: Keyword args.
 
         Returns:
             str: Result.
@@ -31,13 +30,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Natively, backends implement this as a specific scan.
         return f"{pfx}_scan({', '.join(input_vars)})"
 
-    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Switch(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate visit_Switch operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs: Keyword args.
 
         Returns:
             str: Result.
@@ -46,13 +45,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback to a custom runner
         return f"{pfx}_switch({', '.join(input_vars)})"
 
-    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_TimeDistributed(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate visit_TimeDistributed operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs: Keyword args.
 
         Returns:
             str: Result.
@@ -62,13 +61,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # For simplicity in this mixin, we return a function call to a backend-specific time_distributed utility.
         return f"{self.generator.get_fallback_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
 
-    def visit_Assert(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Assert(self, node: IRNode, input_vars: list[str], **kwargs: list[str]) -> str:
         """Evaluate visit_Assert operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs: Keyword args.
 
         Returns:
             str: Result.
@@ -77,13 +76,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         data = kwargs.get("data", ["Assertion failed."])
         return f"{pfx}_assert({input_vars[0]}, data={data})"
 
-    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AssociativeScan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate visit_AssociativeScan operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs (Any): Keyword args.
+            **kwargs: Keyword args.
 
         Returns:
             str: Result.
@@ -91,13 +90,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
 
-    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_WhileLoop function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -138,13 +137,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_Cond function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -179,13 +178,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
 
-    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_ForiLoop function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -217,13 +216,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"loop_val_{node.id}"
 
-    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Map(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_Map function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -247,13 +246,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # map usually means array mapping over first dimension
         return f"{pfx}.stack([map_fn_{node.id}(x) for x in {xs}])"
 
-    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Fold(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_Fold function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -282,13 +281,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
 
         return f"fold_val_{node.id}"
 
-    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Vmap(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_Vmap function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.
@@ -296,13 +295,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         pfx: str = self.generator.get_fallback_prefix()
         return f"{pfx}_vmap({', '.join(input_vars)})"
 
-    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_Pmap(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """visit_Pmap function.
 
         Args:
             node (IRNode): The node.
             input_vars (list[str]): The input variables.
-            **kwargs (Any): Additional kwargs.
+            **kwargs: Additional kwargs.
 
         Returns:
             str: Result.

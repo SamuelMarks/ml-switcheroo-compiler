@@ -1,0 +1,4 @@
+assert_int_or_pair:
+  jvp: ZerosLike($tangent[0])
+  vjp:
+  - ZerosLike($cotangent)

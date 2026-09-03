@@ -1,0 +1,3 @@
+SparseExpandDims:
+  ast_template: tf.sparse.expand_dims
+  target_api: ''

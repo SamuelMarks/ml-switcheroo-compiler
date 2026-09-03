@@ -49,7 +49,9 @@ def test_accumulate_gradients(mocker):
     _accumulate_gradients(g, n1, "adj", adj)
     assert adj == {"a": "added", "b": "added"}
     mock_get_vjp.side_effect = ValueError
-    with pytest.raises(ValueError):
+    from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
+    with pytest.raises(MissingJVPRuleError):
         _accumulate_gradients(g, n1, "adj", adj)
     mock_get_vjp.side_effect = None
     mock_get_vjp.return_value = lambda g, n, adj: ["da"]
