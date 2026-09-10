@@ -1,2 +1,2 @@
 SegmentMin:
-  target_api: np.segmentmin
+  target_api: custom_op

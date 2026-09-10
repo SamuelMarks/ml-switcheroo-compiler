@@ -1,4 +1,5 @@
-mul:
-  jvp: ZerosLike($tangent[0])
+Mul:
+  jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])

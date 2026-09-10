@@ -1,19 +1,19 @@
 operation: Aminmax
 description: Computes the minimum and maximum values of the input tensor.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: keepdims
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   numpy: {}
   cupy: {}
@@ -23,11 +23,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Aminmax
-  edge_stablehlo:
-
-    opcode: stablehlo.aminmax
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

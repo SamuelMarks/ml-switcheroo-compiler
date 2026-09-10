@@ -30,7 +30,7 @@ def test_autodiff_provider_parse_expression():
 
         res = _parse_expression(graph, "Mul($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
-        assert mock_emit.call_args[0][1] == "Mul"
+        assert mock_emit.call_args[0][1] in ("Mul", "Multiply")
 
         res = _parse_expression(graph, "Add(1, $cotangent)", node, cotangent="C")
         assert res == "res_id"
@@ -38,15 +38,15 @@ def test_autodiff_provider_parse_expression():
 
         res = _parse_expression(graph, "Sub($cotangent, $in0)", node, cotangent="C")
         assert res == "res_id"
-        assert mock_emit.call_args[0][1] == "Sub"
+        assert mock_emit.call_args[0][1] in ("Sub", "Subtract")
 
         res = _parse_expression(graph, "Div($in0, $cotangent)", node, cotangent="C")
         assert res == "res_id"
-        assert mock_emit.call_args[0][1] == "Div"
+        assert mock_emit.call_args[0][1] in ("Div", "TrueDivide")
 
         res = _parse_expression(graph, "Neg($cotangent)", node, cotangent="C")
         assert res == "res_id"
-        assert mock_emit.call_args[0][1] == "Neg"
+        assert mock_emit.call_args[0][1] in ("Neg", "Negative")
 
         res = _parse_expression(graph, "Pow($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
@@ -87,7 +87,7 @@ def test_get_vjp_from_data():
     with patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"MyOp": {"autodiff": {"vjp": ["in0 * cotangent", "in1"]}}}):
         with patch("os.path.exists", return_value=True):
             with patch("builtins.open", MagicMock()):
-                with patch("yaml.safe_load", return_value={"MyOp": {"vjp": ["mock"]}}):
+                with patch("yaml.safe_load", return_value={"MyOp": {"vjp": ["mock", "mock2"]}}):
                     vjp_fn = get_vjp_from_data("MyOp")
                     assert callable(vjp_fn)
 

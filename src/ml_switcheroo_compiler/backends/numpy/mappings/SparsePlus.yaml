@@ -1,2 +1,2 @@
 SparsePlus:
-  target_api: np.sparseplus
+  target_api: custom_op

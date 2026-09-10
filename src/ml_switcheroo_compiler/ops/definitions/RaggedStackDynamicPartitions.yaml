@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.raggedstackdynamicpartitions
   mlx:
     eager: mlx.core.raggedstackdynamicpartitions
-  edge_onnx:
-    generator: RaggedStackDynamicPartitions
-  edge_stablehlo:
-
-    opcode: stablehlo.ragged_stack_dynamic_partitions
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

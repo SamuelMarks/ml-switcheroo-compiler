@@ -1,2 +1,2 @@
 GammaCdf:
-  target_api: np.gammacdf
+  target_api: custom_op

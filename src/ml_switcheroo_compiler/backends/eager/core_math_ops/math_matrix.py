@@ -12,6 +12,66 @@ from .math_matrix_utils import _apply_causal_mask
 from .math_reduction import _apply_softmax
 
 
+@global_eager_registry.register("MatMul")
+@global_eager_registry.register("Matmul")
+def _matmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate matrix multiplication.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (A, B).
+        **kwargs: Keyword arguments.
+
+    Returns:
+        Any: Matrix product result.
+    """
+    a = args[0]
+    b = args[1]
+    kw = dict(kwargs)
+    if kw.pop("transpose_a", False):
+        a = backend_module.swapaxes(a, -1, -2)
+    if kw.pop("transpose_b", False):
+        b = backend_module.swapaxes(b, -1, -2)
+    if hasattr(backend_module, "matmul"):
+        return backend_module.matmul(a, b, **kw)
+    return a @ b
+
+
+@global_eager_registry.register("BatchMatMul")
+@global_eager_registry.register("BatchMatmul")
+def _batch_matmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate batched matrix multiplication.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (A, B).
+        **kwargs: Keyword arguments.
+
+    Returns:
+        Any: Batched matrix product result.
+    """
+    if hasattr(backend_module, "matmul"):
+        return backend_module.matmul(*args, **kwargs)
+    return args[0] @ args[1]
+
+
+@global_eager_registry.register("Dot")
+def _dot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate dot product.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (A, B).
+        **kwargs: Keyword arguments.
+
+    Returns:
+        Any: Dot product result.
+    """
+    if hasattr(backend_module, "dot"):
+        return backend_module.dot(*args, **kwargs)
+    return args[0] @ args[1]
+
+
 @global_eager_registry.register("Einsum")
 def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _einsum operation.

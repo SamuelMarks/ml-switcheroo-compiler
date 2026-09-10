@@ -1,4 +1,4 @@
 AvgPool2D:
-  jvp: ZerosLike($tangent[0])
+  jvp: AvgPool2D($tangent[0])
   vjp:
-  - ZerosLike($cotangent)
+  - Div(BroadcastLike($cotangent, $input[0]), Cast(Numel($input[0]), Constant(1.0)))

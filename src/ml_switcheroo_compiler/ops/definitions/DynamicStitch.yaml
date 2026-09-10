@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: DynamicStitch
-  edge_stablehlo:
-
-    opcode: stablehlo.dynamic_stitch
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

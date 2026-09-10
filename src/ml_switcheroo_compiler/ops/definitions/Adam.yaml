@@ -1,8 +1,8 @@
 operation: Adam
 description: 'Auto-discovered via Consensus (Score: 4.0)'
 std_args:
-  - eps
-  - lr
+- eps
+- lr
 type: function
 variants:
   numpy: {}
@@ -13,11 +13,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Adam
-  edge_stablehlo:
-
-    opcode: stablehlo.adam
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

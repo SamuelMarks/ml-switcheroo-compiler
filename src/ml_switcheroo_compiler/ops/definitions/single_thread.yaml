@@ -1,9 +1,0 @@
-operation: single_thread
-description: Runs the context only from a single thread.
-std_args:
-  - scope
-type: function
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

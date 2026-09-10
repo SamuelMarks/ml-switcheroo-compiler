@@ -11,74 +11,6 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor
 
 
-class PyTorchVisionVisitor:
-    """Handle vision ops for PyTorch."""
-
-    handled_ops = {
-        "ElasticTransform",
-        "PerspectiveTransform",
-        "ExtractBoundingBoxes",
-        "IoU",
-        "NonMaxSuppression",
-        "ResizeBicubic",
-        "ResizeLanczos3",
-        "GaussianBlur",
-        "MedianFilter",
-    }
-    _handlers = {
-        "ElasticTransform": lambda vars: f"torchvision.transforms.functional.elastic_transform({vars[0]}, {vars[1]})",
-        "PerspectiveTransform": lambda vars: f"torchvision.transforms.functional.perspective({vars[0]}, {vars[1]}, {vars[2]})",
-        "ExtractBoundingBoxes": lambda vars: f"torchvision.ops.roi_align({vars[0]}, {vars[1]}, 1.0)",
-        "IoU": lambda vars: f"torchvision.ops.box_iou({vars[0]}, {vars[1]})",
-        "NonMaxSuppression": lambda vars: f"torchvision.ops.nms({vars[0]}, {vars[1]}, 0.5)",
-        "ResizeBicubic": lambda vars: f"torch.nn.functional.interpolate({vars[0]}, mode='bicubic')",
-        "ResizeLanczos3": lambda vars: f"torch.nn.functional.interpolate({vars[0]}, mode='linear')",
-        "GaussianBlur": lambda vars: f"torchvision.transforms.functional.gaussian_blur({vars[0]})",
-        "MedianFilter": lambda vars: f"torchaudio.functional.median_filter({vars[0]})",
-    }
-
-    def visit(self, node, input_vars: list[str], **kwargs) -> str:
-        """Process a vision operation node and produce corresponding PyTorch code.
-
-        Args:
-            node (object): The IR node representing the vision operation to process.
-            input_vars (list[str]): The names of the variables used as inputs for the operation.
-            **kwargs (object): Additional keyword arguments representing operation attributes.
-
-        Returns:
-            str: The generated PyTorch code for the given node.
-        """
-        op_type = getattr(node, "op_type", "")
-        handler = self._handlers.get(op_type)
-        return handler(input_vars) if handler else ""
-
-
-class PyTorchAudioVisitor:
-    """Handle audio ops for PyTorch."""
-
-    handled_ops = {"Istft", "MelFilterbank", "Mfcc"}
-    _handlers = {
-        "Istft": lambda vars: f"torch.istft({vars[0]})",
-        "MelFilterbank": lambda vars: f"torchaudio.functional.melscale_fbanks({vars[0]})",
-        "Mfcc": lambda vars: f"torchaudio.transforms.MFCC()({vars[0]})",
-    }
-
-    def visit(self, node, input_vars: list[str], **kwargs) -> str:
-        """Process an audio operation node and produce corresponding PyTorch code.
-
-        Args:
-            node (object): The IR node representing the audio operation to process.
-            input_vars (list[str]): The names of the variables used as inputs for the operation.
-            **kwargs (object): Additional keyword arguments representing operation attributes.
-
-        Returns:
-            str: The generated PyTorch code for the given node.
-        """
-        op_type = getattr(node, "op_type", "")
-        handler = self._handlers.get(op_type)
-        return handler(input_vars) if handler else ""
-
-
 @register_backend("pytorch")
 class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerator):
     """PyTorch code generator."""
@@ -92,8 +24,6 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             graph (object): The computation graph to compile.
         """
         super().__init__(graph)
-        self.vision_visitor = PyTorchVisionVisitor()
-        self.audio_visitor = PyTorchAudioVisitor()
         self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor()])
 
     def visit(self, node, input_vars: list[str], **kwargs) -> str:
@@ -107,11 +37,6 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code string.
         """
-        op_type = getattr(node, "op_type", "")
-        if op_type in self.vision_visitor.handled_ops:
-            return self.vision_visitor.visit(node, input_vars, **kwargs)
-        if op_type in self.audio_visitor.handled_ops:
-            return self.audio_visitor.visit(node, input_vars, **kwargs)
         return super().visit(node, input_vars, **kwargs)
 
     def visit_PowerIteration(self, node, input_vars: list[str], **kwargs) -> str:
@@ -158,13 +83,12 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return f"torch.einsum('{eq}', {args_str})"
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string."""
-        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
-        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+        """Generate PyTorch code directly from the IR graph as an nn.Module class.
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
-        return transpile_source(base_code, target_framework="pytorch")
+        Returns:
+            str: The generated PyTorch nn.Module source code.
+        """
+        return super().generate()
 
     def get_fallback_prefix(self) -> str:
         """Retrieve the fallback library prefix used for missing generic operations.

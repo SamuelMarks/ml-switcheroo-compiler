@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AxisIndex
-  edge_stablehlo:
-
-    opcode: stablehlo.axis_index
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -27,10 +27,6 @@ variants:
     eager: mlx.core.truncatediv
   mx:
     generator: mx.trunc(mx.divide({0}, {1}))
-  edge_onnx:
-    generator: TruncateDiv
-  edge_stablehlo:
-    opcode: stablehlo.truncate_div
   edge_wgsl:
     template: binary
     expr: buf_in0_f32[in0_offset] / buf_in1_f32[in1_offset]

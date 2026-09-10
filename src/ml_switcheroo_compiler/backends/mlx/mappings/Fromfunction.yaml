@@ -1,2 +1,2 @@
 Fromfunction:
-  target_api: '''mx.fromfunction({0})'''
+  target_api: custom_op

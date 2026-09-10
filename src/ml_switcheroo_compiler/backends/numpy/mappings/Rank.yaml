@@ -1,2 +1,2 @@
 Rank:
-  target_api: np.rank
+  target_api: custom_op

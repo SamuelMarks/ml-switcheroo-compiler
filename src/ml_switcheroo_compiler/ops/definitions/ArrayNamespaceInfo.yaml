@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.arraynamespaceinfo
   mlx:
     eager: mlx.core.arraynamespaceinfo
-  edge_onnx:
-    generator: ArrayNamespaceInfo
-  edge_stablehlo:
-
-    opcode: stablehlo.array_namespace_info
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

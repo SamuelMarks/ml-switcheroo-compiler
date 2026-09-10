@@ -1,14 +1,14 @@
 operation: ExpandDims
 description: The ExpandDims operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: a
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
 variants:
   cupy:
     eager: cp.expand_dims
@@ -22,11 +22,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ExpandDims
-  edge_stablehlo:
-
-    opcode: stablehlo.expand_dims
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

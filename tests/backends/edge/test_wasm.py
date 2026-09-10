@@ -880,3 +880,57 @@ def test_wasm_missing_coverage_empty_branches():
     n1 = IRNode("if_node", "If", inputs=["in1"], attributes={"branch_graphs": []})
     gen = WasmCodeGenerator(graph)
     gen.visit_If(n1, "If", "if_node", ["in1"], [10], 10)
+
+
+def test_wasm_compile_aot_impl():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph1 = IRGraph()
+    n1 = IRNode("x", "Input", inputs=[])
+    graph1.nodes["x"] = n1
+    graph1.inputs = ["x"]
+    graph1.outputs = ["x"]
+
+    gen = WasmCodeGenerator(graph1)
+
+    graph2 = IRGraph()
+    n2 = IRNode("y", "Input", inputs=[])
+    graph2.nodes["y"] = n2
+    graph2.inputs = ["y"]
+    graph2.outputs = ["y"]
+
+    with patch.object(gen, "compile_wasm", return_value=("a.js", "b.wasm")):
+        res = gen._compile_aot_impl(graph2, output_dir="/tmp/wasm_out")
+        assert res == ("a.js", "b.wasm")
+        assert gen.graph == graph2
+
+    with patch.object(gen, "compile_wasm", return_value=None):
+        res2 = gen._compile_aot_impl(graph2)
+        assert res2 == ("", "")
+
+
+def test_wasm_shape_telemetry():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph = IRGraph()
+    n_in = IRNode("in0", "Input", inputs=[], shape_metadata=[2, 4])
+    n_mul = IRNode("mul0", "Mul", inputs=["in0", "in0"], shape_metadata=[2, 4])
+    graph.nodes["in0"] = n_in
+    graph.nodes["mul0"] = n_mul
+    graph.inputs = ["in0"]
+    graph.outputs = ["mul0"]
+
+    gen = WasmCodeGenerator(graph)
+    payload = gen.export_graph_payload()
+
+    assert payload["inputs"] == ["in0"]
+    assert payload["outputs"] == ["mul0"]
+    assert len(payload["nodes"]) == 2
+    assert payload["nodes"][0]["id"] == "in0"
+    assert payload["nodes"][0]["shape_metadata"] == [2, 4]
+
+    # Test applying telemetry back
+    gen.apply_shape_telemetry({"mul0": [4, 8]})
+    assert n_mul.shape_metadata == (4, 8)

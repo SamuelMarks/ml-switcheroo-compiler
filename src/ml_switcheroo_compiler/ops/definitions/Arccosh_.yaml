@@ -1,10 +1,10 @@
 operation: Arccosh_
 description: In-place version of Arccosh.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
 variants:
   numpy: {}
   cupy: {}
@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Arccosh_
-  edge_stablehlo:
-
-    opcode: stablehlo.arccosh_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

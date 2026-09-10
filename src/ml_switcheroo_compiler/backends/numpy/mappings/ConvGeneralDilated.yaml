@@ -1,2 +1,2 @@
 ConvGeneralDilated:
-  target_api: np.convgeneraldilated
+  target_api: custom_op

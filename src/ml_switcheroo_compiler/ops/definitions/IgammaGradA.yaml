@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.igammagrada
   mlx:
     eager: mlx.core.igammagrada
-  edge_onnx:
-    generator: IgammaGradA
-  edge_stablehlo:
-
-    opcode: stablehlo.igamma_grad_a
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

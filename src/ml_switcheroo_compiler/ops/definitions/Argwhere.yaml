@@ -12,11 +12,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: argwhere
-  edge_stablehlo:
-
-    opcode: stablehlo.argwhere
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

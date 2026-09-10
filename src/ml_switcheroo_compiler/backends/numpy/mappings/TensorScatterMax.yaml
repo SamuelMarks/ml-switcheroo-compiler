@@ -1,2 +1,2 @@
 TensorScatterMax:
-  target_api: np.tensorscattermax
+  target_api: custom_op

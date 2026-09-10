@@ -1,2 +1,2 @@
 EditDistance:
-  target_api: np.editdistance
+  target_api: custom_op

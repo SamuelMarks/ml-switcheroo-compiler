@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.hstack
   mlx:
     eager: mlx.core.hstack
-  edge_onnx:
-    generator: hstack
-  edge_stablehlo:
-
-    opcode: stablehlo.hstack
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

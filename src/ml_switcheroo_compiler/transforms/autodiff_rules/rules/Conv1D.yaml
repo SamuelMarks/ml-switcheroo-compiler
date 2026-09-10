@@ -1,4 +1,5 @@
 Conv1D:
-  jvp: ZerosLike($tangent[0])
+  jvp: Add(Conv1D($tangent[0], $input[1]), Conv1D($input[0], $tangent[1]))
   vjp:
-  - ZerosLike($cotangent)
+  - ConvTranspose1D($cotangent, $input[1])
+  - Conv1D($input[0], $cotangent)

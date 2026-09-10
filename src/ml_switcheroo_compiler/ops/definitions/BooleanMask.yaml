@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: BooleanMask
-  edge_stablehlo:
-
-    opcode: stablehlo.boolean_mask
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

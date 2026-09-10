@@ -1,2 +1,2 @@
 SparseSlice:
-  target_api: jax.numpy.sparseslice
+  target_api: custom_op

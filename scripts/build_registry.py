@@ -27,6 +27,9 @@ def build(definitions_dir: str = "src/ml_switcheroo_compiler/ops/definitions", o
                 if "operation" in data:
                     op_name: str = str(data["operation"])
                     ops_data[op_name] = data
+                    if "aliases" in data and isinstance(data["aliases"], list):
+                        for alias in data["aliases"]:
+                            ops_data[str(alias)] = data
                 else:
                     for op_name_inner, op_info in data.items():
                         if isinstance(op_info, dict):

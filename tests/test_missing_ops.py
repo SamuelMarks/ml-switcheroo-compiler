@@ -4,6 +4,7 @@ import os
 
 import yaml
 
+from ml_switcheroo_compiler.diagnostics.types_registry import is_non_math_type
 from ml_switcheroo_compiler.ops import get_op
 from tests.test_models import AllOpsManifest
 
@@ -21,6 +22,8 @@ def test_all_missing_ops() -> None:
     """
     missing: list[str] = []
     for op_name in ALL_OPS:
+        if is_non_math_type(op_name):
+            continue
         try:
             get_op(op_name)
         except KeyError:

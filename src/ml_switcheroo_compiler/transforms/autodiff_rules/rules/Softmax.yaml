@@ -1,4 +1,5 @@
 Softmax:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul($output, Sub($tangent[0], ReduceSum(Mul($tangent[0], $output), axis=-1,
+    keepdims=True)))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))

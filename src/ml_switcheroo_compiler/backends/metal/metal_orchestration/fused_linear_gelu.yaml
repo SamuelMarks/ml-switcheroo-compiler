@@ -1,0 +1,19 @@
+fused_linear_gelu:
+  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void fused_linear_gelu(\n\
+    \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+    \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1
+  grid_calc:
+    x: '{N_dim}'
+    y: '{M}'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: half
+    bfloat16: bfloat
+    int32: int
+    int64: long
+    bool: bool

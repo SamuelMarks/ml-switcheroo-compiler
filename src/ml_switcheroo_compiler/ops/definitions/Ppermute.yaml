@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.ppermute
   mlx:
     eager: mlx.core.ppermute
-  edge_onnx:
-    generator: ppermute
-  edge_stablehlo:
-
-    opcode: stablehlo.ppermute
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

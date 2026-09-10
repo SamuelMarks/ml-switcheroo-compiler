@@ -1,4 +1,8 @@
 MSELoss:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul(Constant(2.0), Div(ReduceMean(Mul(Sub($input[0], $input[1]), $tangent[0])),
+    Constant(1.0)))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Mul(Constant(2.0), Div(Sub($input[0], $input[1]), Cast(Numel($input[0]),
+    Constant(1.0)))))
+  - Mul($cotangent, Mul(Constant(-2.0), Div(Sub($input[0], $input[1]), Cast(Numel($input[0]),
+    Constant(1.0)))))

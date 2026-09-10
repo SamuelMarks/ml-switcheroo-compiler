@@ -1,10 +1,10 @@
 operation: Atanh_
 description: In-place version of Atanh.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   numpy:
     eager: numpy.atanh_
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.atanh_
   mlx:
     eager: mlx.core.atanh_
-  edge_onnx:
-    generator: Atanh_
-  edge_stablehlo:
-
-    opcode: stablehlo.atanh_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

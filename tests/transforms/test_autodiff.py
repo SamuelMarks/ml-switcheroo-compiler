@@ -355,3 +355,262 @@ def test_jvp_hvp():
         mock_jvp_out.outputs = ["out1", "out2"]
         with pytest.raises(ValueError):
             hvp(graph, ["p1"], ["t1"], ["out1"], mode="reverse-over-forward")
+
+
+def test_autodiff_remaining_coverage_branches():
+    """Test lines 27, 30, 32, 48, 50, 93->92, 115-117, 137, 309-317, and 582 in autodiff.py."""
+    from ml_switcheroo_compiler.transforms.autodiff import (
+        _add_nodes,
+        _get_reachable_from_output,
+        _is_zero_node,
+        _load_rematerialization_rules,
+        _process_jvp_node,
+        _should_rematerialize,
+        grad,
+    )
+
+    g_zero = LogicalGraph("g_zero")
+    # 27: node_id not in graph.nodes
+    assert _is_zero_node(g_zero, "nonexistent") is False
+
+    # 30: Zeros / ZerosLike op_type
+    n_zeros = LogicalNode("zeros_1", "Zeros", shape_metadata=())
+    g_zero.nodes["zeros_1"] = n_zeros
+    assert _is_zero_node(g_zero, "zeros_1") is True
+
+    # 32: Constant 0.0
+    n_const_0 = LogicalNode("const_0", "Constant", attributes={"value": 0.0}, shape_metadata=())
+    g_zero.nodes["const_0"] = n_const_0
+    assert _is_zero_node(g_zero, "const_0") is True
+
+    # 48 & 50: _add_nodes with zero node
+    n_other = LogicalNode("n_other", "Input", shape_metadata=())
+    g_zero.nodes["n_other"] = n_other
+    assert _add_nodes(g_zero, "zeros_1", "n_other") == "n_other"
+    assert _add_nodes(g_zero, "n_other", "const_0") == "n_other"
+
+    # 93->92: _get_reachable_from_output with unreachable node
+    n_unreachable = LogicalNode("unreachable", "Input")
+    n_out = LogicalNode("out_node", "Input")
+    reachable = _get_reachable_from_output([n_unreachable, n_out], "out_node")
+    assert "unreachable" not in reachable
+
+    # 115-116: _load_rematerialization_rules exception during open
+    with mock.patch("os.path.exists", return_value=True):
+        with mock.patch("builtins.open", side_effect=PermissionError("mocked read error")):
+            assert _load_rematerialization_rules() == {}
+
+    # 117: yaml file does not exist
+    with mock.patch("os.path.exists", return_value=False):
+        assert _load_rematerialization_rules() == {}
+
+    # 135: rules is empty dict
+    node_chk = LogicalNode("node_chk", "Relu")
+    assert _should_rematerialize(node_chk, rules={}) is False
+
+    # 137: node in high_cost_ops
+    node_high = LogicalNode("node_high", "Conv2D")
+    rules_high = {"high_cost_ops": ["Conv2D"], "target_ops": ["Conv2D"]}
+    assert _should_rematerialize(node_high, rules=rules_high) is False
+
+    # 309-317: Vmap node vectorization lowering in grad
+    g_vmap = LogicalGraph("g_vmap")
+    g_vmap.inputs = ["in1"]
+    g_vmap.outputs = ["v1"]
+    g_vmap.nodes["in1"] = LogicalNode("in1", "Input", shape_metadata=(2, 4))
+    g_vmap.nodes["v1"] = LogicalNode("v1", "Vmap", inputs=["in1"], shape_metadata=(2, 4))
+
+    g_lowered = LogicalGraph("g_lowered")
+    g_lowered.inputs = ["in1"]
+    g_lowered.outputs = ["v1"]
+    g_lowered.nodes["in1"] = LogicalNode("in1", "Input", shape_metadata=(2, 4))
+    g_lowered.nodes["v1"] = LogicalNode("v1", "Identity", inputs=["in1"], shape_metadata=(2, 4))
+
+    with mock.patch("ml_switcheroo_compiler.transforms.passes.vectorization.vectorization_pass", return_value=g_lowered):
+        with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]):
+            out_g = grad(g_vmap, ["in1"], "v1")
+            assert out_g is not None
+
+    # 582->exit: JVP rule returns None
+    g_jvp = LogicalGraph("g_jvp")
+    node_inp = LogicalNode("inp", "Input", shape_metadata=())
+    g_jvp.nodes["inp"] = node_inp
+    node_none = LogicalNode("n_none", "CustomOp", inputs=["inp"], shape_metadata=())
+    g_jvp.nodes["n_none"] = node_none
+    tangents = {"inp": "inp_tan"}
+    with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda graph, node, tangents: None):
+        _process_jvp_node(g_jvp, node_none, tangents)
+        assert "n_none" not in tangents
+
+
+def test_autodiff_extended_vjp_and_hvp_coverage():
+    """Test cotangent_id variations, projected_tangents in hvp, and neural network VJP rules."""
+    from ml_switcheroo_compiler.transforms.autodiff import (
+        UnconnectedGradients,
+        _avg_pool2d_vjp,
+        _batch_norm_vjp,
+        _conv2d_vjp_rule,
+        _group_norm_vjp,
+        _layer_norm_vjp,
+        _max_pool2d_with_argmax_vjp,
+        _rms_norm_vjp,
+        conv2d_vjp_input,
+        conv2d_vjp_weight,
+        grad,
+        hvp,
+    )
+
+    # cotangent_id as list, tuple, and scalar for multi-output grad
+    g_multi = LogicalGraph("g_multi")
+    g_multi.inputs = ["x"]
+    g_multi.outputs = ["out1", "out2"]
+    g_multi.nodes["x"] = LogicalNode("x", "Input", shape_metadata=(2,))
+    g_multi.nodes["out1"] = LogicalNode("out1", "Identity", inputs=["x"], shape_metadata=(2,))
+    g_multi.nodes["out2"] = LogicalNode("out2", "Identity", inputs=["x"], shape_metadata=(2,))
+    g_multi.nodes["c1"] = LogicalNode("c1", "Input", shape_metadata=(2,))
+    g_multi.nodes["c2"] = LogicalNode("c2", "Input", shape_metadata=(2,))
+
+    with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp", return_value=lambda g, n, c: [c]):
+        out_list = grad(g_multi, ["x"], ["out1", "out2"], cotangent_id=["c1", "c2"])
+        assert out_list is not None
+
+        out_tuple = grad(g_multi, ["x"], ["out1", "out2"], cotangent_id=("c1", "c2"))
+        assert out_tuple is not None
+
+        out_single_for_multi = grad(g_multi, ["x"], ["out1", "out2"], cotangent_id="c1")
+        assert out_single_for_multi is not None
+
+    # hvp forward-over-reverse and reverse-over-forward with projected_tangents
+    g_hvp = LogicalGraph("g_hvp")
+    g_hvp.inputs = ["x"]
+    g_hvp.outputs = ["y1", "y2"]
+    g_hvp.nodes["x"] = LogicalNode("x", "Input", shape_metadata=(2,))
+    g_hvp.nodes["y1"] = LogicalNode("y1", "Identity", inputs=["x"], shape_metadata=(2,))
+    g_hvp.nodes["y2"] = LogicalNode("y2", "Identity", inputs=["x"], shape_metadata=(2,))
+
+    with mock.patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_g, mock.patch("ml_switcheroo_compiler.transforms.autodiff.jvp") as mock_j:
+        m_graph = LogicalGraph("mock_graph")
+        m_graph.outputs = ["y1", "y2"]
+        mock_g.return_value = m_graph
+        mock_j.return_value = m_graph
+
+        hvp_for = hvp(g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="forward-over-reverse", projected_tangents=["pt1", "pt2"])
+        assert hvp_for is m_graph
+
+        hvp_rof = hvp(g_hvp, ["x"], ["vx"], ["y1", "y2"], mode="reverse-over-forward", projected_tangents=["pt1", "pt2"])
+        assert hvp_rof is m_graph
+
+    # Neural network VJP rules
+    g_nn = LogicalGraph("g_nn")
+    g_nn.nodes["x"] = LogicalNode("x", "Input", shape_metadata=(1, 3, 16, 16))
+    g_nn.nodes["w"] = LogicalNode("w", "Input", shape_metadata=(8, 3, 3, 3))
+    g_nn.nodes["b"] = LogicalNode("b", "Input", shape_metadata=(8,))
+    g_nn.nodes["cot"] = LogicalNode("cot", "Input", shape_metadata=(1, 8, 16, 16))
+
+    # Conv2D VJP with strides tuple, dilations tuple
+    conv_node_2 = LogicalNode(
+        "conv_node_2",
+        "Conv2D",
+        inputs=["x", "w"],
+        shape_metadata=(1, 8, 16, 16),
+        attributes={"strides": (2, 2), "dilations": (1, 1), "padding": "SAME", "groups": 1},
+    )
+    in_adj = conv2d_vjp_input(g_nn, conv_node_2, "cot")
+    w_adj = conv2d_vjp_weight(g_nn, conv_node_2, "cot")
+    assert g_nn.nodes[in_adj].op_type == "Conv2DInputGrad"
+    assert g_nn.nodes[w_adj].op_type == "Conv2DWeightGrad"
+
+    res_rule_2 = _conv2d_vjp_rule(g_nn, conv_node_2, "cot")
+    assert len(res_rule_2) == 2
+    assert g_nn.nodes[res_rule_2[0]].op_type == "Conv2DInputGrad"
+    assert g_nn.nodes[res_rule_2[1]].op_type == "Conv2DWeightGrad"
+
+    # Conv2D VJP with 3 inputs (bias) and stride/dilation as keys
+    conv_node_3 = LogicalNode(
+        "conv_node_3",
+        "Conv2D",
+        inputs=["x", "w", "b"],
+        shape_metadata=(1, 8, 16, 16),
+        attributes={"stride": (1, 1), "dilation": (1, 1), "padding": "VALID", "groups": 1},
+    )
+    res_rule_3 = _conv2d_vjp_rule(g_nn, conv_node_3, "cot")
+    assert len(res_rule_3) == 3
+    assert g_nn.nodes[res_rule_3[0]].op_type == "Conv2DInputGrad"
+    assert g_nn.nodes[res_rule_3[1]].op_type == "Conv2DWeightGrad"
+    assert g_nn.nodes[res_rule_3[2]].op_type == "Conv2DBiasGrad"
+
+    # MaxPool2DWithArgmax VJP (1 input and 2 inputs)
+    mp_1 = LogicalNode("mp_1", "MaxPool2DWithArgmax", inputs=["x"], shape_metadata=(1, 3, 8, 8), attributes={})
+    res_mp_1 = _max_pool2d_with_argmax_vjp(g_nn, mp_1, "cot")
+    assert len(res_mp_1) == 1
+
+    mp_2 = LogicalNode("mp_2", "MaxPool2DWithArgmax", inputs=["x", "w"], shape_metadata=(1, 3, 8, 8), attributes={})
+    res_mp_2 = _max_pool2d_with_argmax_vjp(g_nn, mp_2, "cot")
+    assert len(res_mp_2) == 2
+    assert res_mp_2[1] == UnconnectedGradients.NONE
+
+    # AvgPool2D VJP
+    ap_node = LogicalNode("ap_node", "AvgPool2D", inputs=["x"], shape_metadata=(1, 3, 8, 8), attributes={})
+    res_ap = _avg_pool2d_vjp(g_nn, ap_node, "cot")
+    assert len(res_ap) == 1
+
+    # BatchNorm VJP with 1, 2, 3, and 4 inputs
+    g_nn.nodes["gamma"] = LogicalNode("gamma", "Input", shape_metadata=(3,))
+    g_nn.nodes["beta"] = LogicalNode("beta", "Input", shape_metadata=(3,))
+    g_nn.nodes["extra"] = LogicalNode("extra", "Input", shape_metadata=(3,))
+
+    bn_1 = LogicalNode("bn_1", "BatchNorm", inputs=["x"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_batch_norm_vjp(g_nn, bn_1, "cot")) == 1
+
+    bn_2 = LogicalNode("bn_2", "BatchNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_batch_norm_vjp(g_nn, bn_2, "cot")) == 2
+
+    bn_3 = LogicalNode("bn_3", "BatchNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_batch_norm_vjp(g_nn, bn_3, "cot")) == 3
+
+    bn_4 = LogicalNode("bn_4", "BatchNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    res_bn_4 = _batch_norm_vjp(g_nn, bn_4, "cot")
+    assert len(res_bn_4) == 4
+    assert res_bn_4[3] == UnconnectedGradients.NONE
+
+    # LayerNorm VJP with 1, 2, 3, and 4 inputs
+    ln_1 = LogicalNode("ln_1", "LayerNorm", inputs=["x"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_layer_norm_vjp(g_nn, ln_1, "cot")) == 1
+
+    ln_2 = LogicalNode("ln_2", "LayerNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_layer_norm_vjp(g_nn, ln_2, "cot")) == 2
+
+    ln_3 = LogicalNode("ln_3", "LayerNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_layer_norm_vjp(g_nn, ln_3, "cot")) == 3
+
+    ln_4 = LogicalNode("ln_4", "LayerNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    res_ln_4 = _layer_norm_vjp(g_nn, ln_4, "cot")
+    assert len(res_ln_4) == 4
+    assert res_ln_4[3] == UnconnectedGradients.NONE
+
+    # RMSNorm VJP with 1, 2, and 3 inputs
+    rms_1 = LogicalNode("rms_1", "RMSNorm", inputs=["x"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_rms_norm_vjp(g_nn, rms_1, "cot")) == 1
+
+    rms_2 = LogicalNode("rms_2", "RMSNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_rms_norm_vjp(g_nn, rms_2, "cot")) == 2
+
+    rms_3 = LogicalNode("rms_3", "RMSNorm", inputs=["x", "gamma", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    res_rms_3 = _rms_norm_vjp(g_nn, rms_3, "cot")
+    assert len(res_rms_3) == 3
+    assert res_rms_3[2] == UnconnectedGradients.NONE
+
+    # GroupNorm VJP with 1, 2, 3, and 4 inputs
+    gn_1 = LogicalNode("gn_1", "GroupNorm", inputs=["x"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_group_norm_vjp(g_nn, gn_1, "cot")) == 1
+
+    gn_2 = LogicalNode("gn_2", "GroupNorm", inputs=["x", "gamma"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_group_norm_vjp(g_nn, gn_2, "cot")) == 2
+
+    gn_3 = LogicalNode("gn_3", "GroupNorm", inputs=["x", "gamma", "beta"], shape_metadata=(1, 3, 16, 16), attributes={})
+    assert len(_group_norm_vjp(g_nn, gn_3, "cot")) == 3
+
+    gn_4 = LogicalNode("gn_4", "GroupNorm", inputs=["x", "gamma", "beta", "extra"], shape_metadata=(1, 3, 16, 16), attributes={})
+    res_gn_4 = _group_norm_vjp(g_nn, gn_4, "cot")
+    assert len(res_gn_4) == 4
+    assert res_gn_4[3] == UnconnectedGradients.NONE

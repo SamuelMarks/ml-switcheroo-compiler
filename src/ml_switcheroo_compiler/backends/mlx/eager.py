@@ -88,6 +88,27 @@ def _mlx_cast(backend_module, *args, **kwargs):
     return tensor.astype(dtype)
 
 
+@mlx_eager_registry.register("Relu")
+def _mlx_relu(backend_module, x, *args, **kwargs):
+    """Evaluate ReLU activation using MLX.
+
+    Args:
+        backend_module (object): The MLX core module.
+        x (object): Input tensor array.
+        *args (object): Additional positional arguments.
+        **kwargs (object): Additional keyword arguments.
+
+    Returns:
+        object: Rectified linear activated tensor array.
+    """
+    try:
+        import mlx.nn as nn
+
+        return nn.relu(x)
+    except (ImportError, AttributeError):
+        return backend_module.maximum(x, 0)
+
+
 @mlx_eager_registry.register("RaggedTensorToDense")
 def _mlx_ragged_tensor_to_dense(backend_module, rt_input, **kwargs):
     """Convert a ragged tensor to dense using MLX (stubbed).

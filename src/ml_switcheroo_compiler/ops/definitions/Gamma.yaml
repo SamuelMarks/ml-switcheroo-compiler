@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.gamma
   mlx:
     eager: mlx.core.gamma
-  edge_onnx:
-    generator: gamma
-  edge_stablehlo:
-
-    opcode: stablehlo.gamma
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.rank
   mlx:
     eager: mlx.core.rank
-  edge_onnx:
-    generator: rank
-  edge_stablehlo:
-
-    opcode: stablehlo.rank
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

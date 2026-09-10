@@ -1,7 +1,78 @@
-Attention:
-  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
-    \ = {expr};\n"
-  workgroup_size:
-  - 64
-  - 1
-  - 1
+templates:
+  attention:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: |
+      const WORKGROUP_SIZE: u32 = 64u;
+      var<workgroup> s_weights: array<f32, 64>;
+      var<workgroup> s_reduce: array<f32, 64>;
+
+      let tid: u32 = local_id.x;
+      let q_idx: u32 = global_id.x;
+      let head_dim: u32 = {head_dim}u;
+      let seq_len: u32 = {seq_len}u;
+      let scale: f32 = {scale}f;
+
+      if (q_idx >= seq_len) {{
+          return;
+      }}
+
+      // 1. Compute dot-product attention scores S_ij = (Q_i . K_j) * scale
+      for (var k_idx: u32 = 0u; k_idx < seq_len; k_idx = k_idx + 1u) {{
+          var dot_prod: f32 = 0.0;
+          for (var d: u32 = 0u; d < head_dim; d = d + 1u) {{
+              let q_val: f32 = {q_buf}[q_idx * head_dim + d];
+              let k_val: f32 = {k_buf}[k_idx * head_dim + d];
+              dot_prod = dot_prod + q_val * k_val;
+          }}
+          s_weights[k_idx] = dot_prod * scale;
+      }}
+
+      // 2. Workgroup shared memory reduction for max score
+      var max_val: f32 = -1e30;
+      for (var k: u32 = 0u; k < seq_len; k = k + 1u) {{
+          if (s_weights[k] > max_val) {{
+              max_val = s_weights[k];
+          }}
+      }}
+      s_reduce[tid] = max_val;
+      workgroupBarrier();
+
+      for (var stride: u32 = 32u; stride > 0u; stride = stride / 2u) {{
+          if (tid < stride && (tid + stride) < WORKGROUP_SIZE) {{
+              s_reduce[tid] = max(s_reduce[tid], s_reduce[tid + stride]);
+          }}
+          workgroupBarrier();
+      }}
+      let max_score: f32 = s_reduce[0];
+
+      // 3. Exponentiation and shared memory sum reduction for softmax normalization
+      var sum_exp: f32 = 0.0;
+      for (var k: u32 = 0u; k < seq_len; k = k + 1u) {{
+          let exp_val: f32 = exp(s_weights[k] - max_score);
+          s_weights[k] = exp_val;
+          sum_exp = sum_exp + exp_val;
+      }}
+      s_reduce[tid] = sum_exp;
+      workgroupBarrier();
+
+      for (var stride: u32 = 32u; stride > 0u; stride = stride / 2u) {{
+          if (tid < stride && (tid + stride) < WORKGROUP_SIZE) {{
+              s_reduce[tid] = s_reduce[tid] + s_reduce[tid + stride];
+          }}
+          workgroupBarrier();
+      }}
+      let denom: f32 = max(s_reduce[0], 1e-12);
+
+      // 4. Weighted accumulation against Value vectors
+      for (var d: u32 = 0u; d < head_dim; d = d + 1u) {{
+          var out_val: f32 = 0.0;
+          for (var k: u32 = 0u; k < seq_len; k = k + 1u) {{
+              let prob: f32 = s_weights[k] / denom;
+              let v_val: f32 = {v_buf}[k * head_dim + d];
+              out_val = out_val + prob * v_val;
+          }}
+          buf_out_f32[q_idx * head_dim + d] = out_val;
+      }}

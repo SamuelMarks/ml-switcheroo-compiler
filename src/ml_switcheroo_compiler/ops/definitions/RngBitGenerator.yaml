@@ -10,10 +10,7 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: RngBitGenerator
   edge_stablehlo:
-
     opcode: stablehlo.rng_bit_generator
   llvm_cpp:
     template: unary

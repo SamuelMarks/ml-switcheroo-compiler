@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.polyint
   mlx:
     eager: mlx.core.polyint
-  edge_onnx:
-    generator: polyint
-  edge_stablehlo:
-
-    opcode: stablehlo.polyint
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

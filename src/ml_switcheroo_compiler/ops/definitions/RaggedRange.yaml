@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.raggedrange
   mlx:
     eager: mlx.core.raggedrange
-  edge_onnx:
-    generator: RaggedRange
-  edge_stablehlo:
-
-    opcode: stablehlo.ragged_range
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

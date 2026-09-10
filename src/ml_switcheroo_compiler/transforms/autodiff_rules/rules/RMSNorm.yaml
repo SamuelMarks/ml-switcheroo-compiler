@@ -1,4 +1,7 @@
 RMSNorm:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))),
+    Constant(1e-5)))))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Div($input[0], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))),
+    Constant(1e-5))))))

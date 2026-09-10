@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.polyval
   mlx:
     eager: mlx.core.polyval
-  edge_onnx:
-    generator: polyval
-  edge_stablehlo:
-
-    opcode: stablehlo.polyval
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

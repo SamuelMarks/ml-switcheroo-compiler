@@ -49,3 +49,9 @@ handlers:
     }
     window.collectiveBuffers[message.op_id] = currentData;
     window.collectiveState[message.op_id].push(message.peer_id);
+
+  broadcast_handler: |
+    // Strict ArrayBuffer parsing for Broadcast
+    const view = new Float32Array(message.data);
+    window.collectiveBuffers[message.op_id] = view;
+    window.collectiveState[message.op_id].push(message.peer_id);

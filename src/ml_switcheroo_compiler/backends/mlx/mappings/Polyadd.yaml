@@ -1,2 +1,2 @@
 Polyadd:
-  target_api: '''mx.polyadd({0})'''
+  target_api: custom_op

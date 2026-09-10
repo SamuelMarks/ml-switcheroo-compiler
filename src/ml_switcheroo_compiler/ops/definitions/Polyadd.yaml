@@ -11,11 +11,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: polyadd
-  edge_stablehlo:
-
-    opcode: stablehlo.polyadd
   edge_wgsl:
     template: binary
     expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]

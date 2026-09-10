@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: BandedTriangularSolve
-  edge_stablehlo:
-
-    opcode: stablehlo.banded_triangular_solve
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

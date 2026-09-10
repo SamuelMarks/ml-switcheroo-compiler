@@ -1,0 +1,5 @@
+BatchMatmul:
+  jvp: Add(BatchMatMul($tangent[0], $input[1]), BatchMatMul($input[0], $tangent[1]))
+  vjp:
+  - BatchMatMul($cotangent, Transpose($input[1]))
+  - BatchMatMul(Transpose($input[0]), $cotangent)

@@ -1,2 +1,2 @@
 UnsortedSegmentMax:
-  target_api: np.unsortedsegmentmax
+  target_api: custom_op

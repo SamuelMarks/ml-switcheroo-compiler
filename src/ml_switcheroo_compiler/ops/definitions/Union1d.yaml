@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.union1d
   mlx:
     eager: mlx.core.union1d
-  edge_onnx:
-    generator: union1d
-  edge_stablehlo:
-
-    opcode: stablehlo.union1d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

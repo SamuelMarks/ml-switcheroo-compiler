@@ -1,2 +1,2 @@
 Ndtri:
-  target_api: np.ndtri
+  target_api: custom_op

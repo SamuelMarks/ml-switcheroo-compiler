@@ -7,11 +7,9 @@ from typing import Optional
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
-    JaxAudioVisitor,
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
     JaxMathVisitor,
-    JaxVisionVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -88,10 +86,8 @@ class JAXCodeGenerator(BaseGenerator):
         self.visitors.extend(
             [
                 *get_shared_ast_visitors(generator=self),
-                JaxAudioVisitor(),
                 JaxControlFlowVisitor(generator=self),
                 JaxMathVisitor(generator=self),
-                JaxVisionVisitor(generator=self),
                 JaxDistributedVisitor(generator=self),
             ]
         )
@@ -126,14 +122,16 @@ class JAXCodeGenerator(BaseGenerator):
         return res
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string."""
-        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
-        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+        """Generate functional JAX code directly from the IR graph.
 
-        gen: NumpyGenerator = NumpyGenerator(self.graph)
-        base_code: str = gen.generate()
-        transpiled: object = transpile_source(base_code, target_framework="jax")
-        return str(transpiled)
+        Returns:
+            str: Generated JAX source code.
+        """
+        self.code = [self.header]
+        self.code.extend(self._resolve_imports())
+        self._generate_function_signature()
+        self._generate_body("args")
+        return "\n".join(self.code)
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
@@ -156,6 +154,12 @@ class JAXCodeGenerator(BaseGenerator):
         ops["Zeros"] = self._format_zeros_like("zeros", kwargs)
         ops["Ones"] = self._format_zeros_like("ones", kwargs)
         ops["Full"] = self._format_full(kwargs)
+        ops["Relu"] = "jax.nn.relu({0})"
+        ops["Gelu"] = "jax.nn.gelu({0})"
+        ops["Silu"] = "jax.nn.silu({0})"
+        ops["Softmax"] = "jax.nn.softmax({0})" if "axis" not in kwargs else "jax.nn.softmax({0}, axis={axis})"
+        ops["LogSoftmax"] = "jax.nn.log_softmax({0})" if "axis" not in kwargs else "jax.nn.log_softmax({0}, axis={axis})"
+        ops["Sigmoid"] = "jax.nn.sigmoid({0})"
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:

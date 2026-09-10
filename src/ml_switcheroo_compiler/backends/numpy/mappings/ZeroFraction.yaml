@@ -1,2 +1,2 @@
 ZeroFraction:
-  target_api: np.zerofraction
+  target_api: custom_op

@@ -1,0 +1,137 @@
+cst_rewrite_rules:
+  method_substitutions:
+    - match:
+        pattern: "view"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "reshape"
+        target_framework: "all"
+      description: "Convert PyTorch tensor.view to functional reshape"
+
+    - match:
+        pattern: "permute"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "transpose"
+        target_framework: "all"
+      description: "Convert tensor.permute to functional transpose"
+
+    - match:
+        pattern: "dim"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "ndim"
+        target_framework: "all"
+      description: "Convert tensor.dim() to ndim property"
+
+    - match:
+        pattern: "size"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "shape"
+        target_framework: "all"
+      description: "Convert tensor.size() to shape attribute"
+
+  chain_removals:
+    - match:
+        pattern: "contiguous"
+        source_framework: "pytorch"
+      description: "Strip non-functional PyTorch contiguous() calls"
+
+  in_place_mutations:
+    - match:
+        pattern: "add_"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "add"
+        target_framework: "all"
+      description: "Convert in-place add_ to functional add"
+
+    - match:
+        pattern: "sub_"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "subtract"
+        target_framework: "all"
+      description: "Convert in-place sub_ to functional subtract"
+
+    - match:
+        pattern: "mul_"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "multiply"
+        target_framework: "all"
+      description: "Convert in-place mul_ to functional multiply"
+
+    - match:
+        pattern: "div_"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "divide"
+        target_framework: "all"
+      description: "Convert in-place div_ to functional divide"
+
+    - match:
+        pattern: "relu_"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "relu"
+        target_framework: "all"
+      description: "Convert in-place relu_ to functional relu"
+
+  tensor_creation_rewrites:
+    - match:
+        pattern: "tensor"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "array"
+        target_framework: "all"
+      description: "Convert torch.tensor to target_module.array"
+
+    - match:
+        pattern: "randn"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "random.normal"
+        target_framework: "jax"
+      description: "Convert torch.randn to jax.random.normal"
+
+    - match:
+        pattern: "empty"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "empty"
+        target_framework: "all"
+      description: "Convert torch.empty to target_module.empty"
+
+  slice_normalizations:
+    - match:
+        pattern: "narrow"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "slice"
+        target_framework: "all"
+      description: "Rewrite tensor.narrow into explicit slicing"
+
+  broadcasting_rules:
+    - source_method: "expand"
+      target_method: "broadcast_to"
+      source_framework: "pytorch"
+      target_framework: "all"
+    - source_method: "broadcast_to"
+      target_method: "expand"
+      source_framework: "jax"
+      target_framework: "pytorch"
+
+  argument_permutations:
+    - match:
+        pattern: "dim_to_axis"
+      permutation:
+        source_arg: "dim"
+        target_arg: "axis"
+
+    - match:
+        pattern: "keepdim_to_keepdims"
+      permutation:
+        source_arg: "keepdim"
+        target_arg: "keepdims"

@@ -27,10 +27,6 @@ variants:
     eager: mlx.core.truncatemod
   mx:
     generator: mx.fmod({0}, {1})
-  edge_onnx:
-    generator: TruncateMod
-  edge_stablehlo:
-    opcode: stablehlo.truncate_mod
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

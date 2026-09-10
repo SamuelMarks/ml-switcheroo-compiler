@@ -12,10 +12,7 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: rsqrt
   edge_stablehlo:
-
     opcode: stablehlo.rsqrt
   edge_wgsl:
     template: unary

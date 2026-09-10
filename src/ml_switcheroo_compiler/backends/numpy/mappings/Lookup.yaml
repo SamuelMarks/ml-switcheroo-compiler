@@ -1,2 +1,2 @@
 Lookup:
-  target_api: np.lookup
+  target_api: custom_op

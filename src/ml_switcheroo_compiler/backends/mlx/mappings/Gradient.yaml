@@ -1,2 +1,2 @@
 Gradient:
-  target_api: '''mx.gradient({0})'''
+  target_api: custom_op

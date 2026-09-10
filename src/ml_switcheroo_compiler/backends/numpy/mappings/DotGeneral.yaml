@@ -1,2 +1,2 @@
 DotGeneral:
-  target_api: np.dotgeneral
+  target_api: custom_op

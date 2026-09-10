@@ -1,0 +1,26 @@
+# Associative rules for converting sequential Scan into parallel scan trees
+associative_ops:
+  Add:
+    neutral_element: 0
+    parallel_primitive: CumSum
+  Multiply:
+    neutral_element: 1
+    parallel_primitive: CumProd
+  Mul:
+    neutral_element: 1
+    parallel_primitive: CumProd
+  Maximum:
+    neutral_element: -inf
+    parallel_primitive: CumMax
+  Minimum:
+    neutral_element: inf
+    parallel_primitive: CumMin
+  LogicalAnd:
+    neutral_element: true
+    parallel_primitive: CumAnd
+  LogicalOr:
+    neutral_element: false
+    parallel_primitive: CumOr
+
+parallel_scan_threshold: 4
+tree_depth_reduction: true

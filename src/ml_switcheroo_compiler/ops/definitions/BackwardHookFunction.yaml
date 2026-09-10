@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.backwardhookfunction
   mlx:
     eager: mlx.core.backwardhookfunction
-  edge_onnx:
-    generator: BackwardHookFunction
-  edge_stablehlo:
-
-    opcode: stablehlo.backward_hook_function
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

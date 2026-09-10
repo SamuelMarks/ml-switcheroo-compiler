@@ -60,6 +60,27 @@ class OpFormatter:
                     args.append(f"{context.keepdims_kwarg}={v}")
             elif k in ["shape_metadata", "metadata", "node_id"]:
                 continue
+            elif k == "shape" and context.op_type not in [
+                "Reshape",
+                "Zeros",
+                "Ones",
+                "Full",
+                "BroadcastTo",
+                "Expand",
+                "Empty",
+                "Tile",
+            ]:
+                continue
+            elif k in ["dtype", "device", "is_weight"] and context.op_type not in [
+                "Zeros",
+                "Ones",
+                "Full",
+                "Empty",
+                "Eye",
+                "Cast",
+                "Input",
+            ]:
+                continue
             else:
                 if isinstance(v, str) and not v.startswith("("):
                     args.append(f"{k}='{v}'")

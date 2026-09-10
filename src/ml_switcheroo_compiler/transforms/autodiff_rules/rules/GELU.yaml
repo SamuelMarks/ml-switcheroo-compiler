@@ -1,4 +1,8 @@
-GELU:
-  jvp: ZerosLike($tangent[0])
+Gelu:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5),
+    Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0],
+    Constant(0.7071067811)))))))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5),
+    Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0],
+    Constant(0.7071067811)))))))

@@ -1,0 +1,208 @@
+# Declarative Vectorization (vmap) Rules Schema
+rules:
+  # Elementwise Unary Operations
+  Abs:
+    lift_op: Abs
+    batch_axis_policy: preserve
+  Exp:
+    lift_op: Exp
+    batch_axis_policy: preserve
+  Log:
+    lift_op: Log
+    batch_axis_policy: preserve
+  Neg:
+    lift_op: Neg
+    batch_axis_policy: preserve
+  Negative:
+    lift_op: Negative
+    batch_axis_policy: preserve
+  Relu:
+    lift_op: Relu
+    batch_axis_policy: preserve
+  GELU:
+    lift_op: GELU
+    batch_axis_policy: preserve
+  SiLU:
+    lift_op: SiLU
+    batch_axis_policy: preserve
+  Sigmoid:
+    lift_op: Sigmoid
+    batch_axis_policy: preserve
+  Tanh:
+    lift_op: Tanh
+    batch_axis_policy: preserve
+  Sqrt:
+    lift_op: Sqrt
+    batch_axis_policy: preserve
+  Square:
+    lift_op: Square
+    batch_axis_policy: preserve
+  Reciprocal:
+    lift_op: Reciprocal
+    batch_axis_policy: preserve
+  Erf:
+    lift_op: Erf
+    batch_axis_policy: preserve
+  Sin:
+    lift_op: Sin
+    batch_axis_policy: preserve
+  Cos:
+    lift_op: Cos
+    batch_axis_policy: preserve
+  Floor:
+    lift_op: Floor
+    batch_axis_policy: preserve
+  Ceil:
+    lift_op: Ceil
+    batch_axis_policy: preserve
+  Round:
+    lift_op: Round
+    batch_axis_policy: preserve
+  Sign:
+    lift_op: Sign
+    batch_axis_policy: preserve
+  Identity:
+    lift_op: Identity
+    batch_axis_policy: preserve
+  StopGradient:
+    lift_op: StopGradient
+    batch_axis_policy: preserve
+  Cast:
+    lift_op: Cast
+    batch_axis_policy: preserve
+
+  # Elementwise Binary Operations
+  Add:
+    lift_op: Add
+    batch_axis_policy: broadcast_align
+  Subtract:
+    lift_op: Subtract
+    batch_axis_policy: broadcast_align
+  Sub:
+    lift_op: Subtract
+    batch_axis_policy: broadcast_align
+  Multiply:
+    lift_op: Multiply
+    batch_axis_policy: broadcast_align
+  Mul:
+    lift_op: Multiply
+    batch_axis_policy: broadcast_align
+  TrueDivide:
+    lift_op: TrueDivide
+    batch_axis_policy: broadcast_align
+  Div:
+    lift_op: TrueDivide
+    batch_axis_policy: broadcast_align
+  Maximum:
+    lift_op: Maximum
+    batch_axis_policy: broadcast_align
+  Minimum:
+    lift_op: Minimum
+    batch_axis_policy: broadcast_align
+  Power:
+    lift_op: Power
+    batch_axis_policy: broadcast_align
+  Pow:
+    lift_op: Power
+    batch_axis_policy: broadcast_align
+  Equal:
+    lift_op: Equal
+    batch_axis_policy: broadcast_align
+  NotEqual:
+    lift_op: NotEqual
+    batch_axis_policy: broadcast_align
+  Less:
+    lift_op: Less
+    batch_axis_policy: broadcast_align
+  LessEqual:
+    lift_op: LessEqual
+    batch_axis_policy: broadcast_align
+  Greater:
+    lift_op: Greater
+    batch_axis_policy: broadcast_align
+  GreaterEqual:
+    lift_op: GreaterEqual
+    batch_axis_policy: broadcast_align
+  LogicalAnd:
+    lift_op: LogicalAnd
+    batch_axis_policy: broadcast_align
+  LogicalOr:
+    lift_op: LogicalOr
+    batch_axis_policy: broadcast_align
+
+  # Matrix & Linear Algebra Operations
+  MatMul:
+    lift_op: BatchMatMul
+    batch_axis_policy: batch_matmul
+  Matmul:
+    lift_op: BatchMatMul
+    batch_axis_policy: batch_matmul
+  BatchMatMul:
+    lift_op: BatchMatMul
+    batch_axis_policy: batch_matmul
+  Dot:
+    lift_op: BatchMatMul
+    batch_axis_policy: batch_matmul
+
+  # Reduction Operations
+  ReduceSum:
+    lift_op: ReduceSum
+    batch_axis_policy: shift_axis
+  ReduceMean:
+    lift_op: ReduceMean
+    batch_axis_policy: shift_axis
+  ReduceProd:
+    lift_op: ReduceProd
+    batch_axis_policy: shift_axis
+  ReduceMax:
+    lift_op: ReduceMax
+    batch_axis_policy: shift_axis
+  ReduceMin:
+    lift_op: ReduceMin
+    batch_axis_policy: shift_axis
+  Norm:
+    lift_op: Norm
+    batch_axis_policy: shift_axis
+  L2Normalize:
+    lift_op: L2Normalize
+    batch_axis_policy: shift_axis
+  ArgMax:
+    lift_op: ArgMax
+    batch_axis_policy: shift_axis
+  ArgMin:
+    lift_op: ArgMin
+    batch_axis_policy: shift_axis
+
+  # Activations & Normalizations with Axis Attributes
+  Softmax:
+    lift_op: Softmax
+    batch_axis_policy: shift_axis
+  LogSoftmax:
+    lift_op: LogSoftmax
+    batch_axis_policy: shift_axis
+  LayerNorm:
+    lift_op: LayerNorm
+    batch_axis_policy: preserve
+  RMSNorm:
+    lift_op: RMSNorm
+    batch_axis_policy: preserve
+  BatchNorm:
+    lift_op: BatchNorm
+    batch_axis_policy: preserve
+
+  # Tensor Shape & Transformation Operations
+  Transpose:
+    lift_op: Transpose
+    batch_axis_policy: shift_permutation
+  Permute:
+    lift_op: Transpose
+    batch_axis_policy: shift_permutation
+  Reshape:
+    lift_op: Reshape
+    batch_axis_policy: prepend_batch_dim
+  Expand:
+    lift_op: Expand
+    batch_axis_policy: prepend_batch_dim
+  BroadcastTo:
+    lift_op: BroadcastTo
+    batch_axis_policy: prepend_batch_dim

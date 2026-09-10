@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 from pytest import CaptureFixture
 
-from scripts.lint_numpy_leak import check_for_architectural_imports, check_for_numpy_leaks, main
+from scripts.lint_numpy_leak import (
+    check_for_architectural_imports,
+    check_for_numpy_leaks,
+    check_for_third_party_leaks,
+    main,
+)
 
 
 def test_check_for_numpy_leaks() -> None:
@@ -42,6 +47,11 @@ def test_check_for_numpy_leaks() -> None:
             f.write("import numpy as np\n")
 
         with open(os.path.join(backends_dir, "generator_mixins.py"), "w") as f:
+            f.write("import numpy as np\n")
+
+        webrtc_dir: str = os.path.join(backends_dir, "distributed_webrtc")
+        os.makedirs(webrtc_dir)
+        with open(os.path.join(webrtc_dir, "good.py"), "w") as f:
             f.write("import numpy as np\n")
 
         with open(os.path.join(grad_dir, "bad.py"), "w") as f:
@@ -115,11 +125,55 @@ def test_main_failure_arch(capsys: CaptureFixture[str]) -> None:
     Args:
         capsys: Pytest fixture.
     """
-    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=["arch1"]):
+    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=["arch1"]), patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=[]):
         assert main() == 1
         captured = capsys.readouterr()
         assert "Architectural Boundaries failed" in captured.out
         assert "arch1" in captured.out
+
+
+def test_main_failure_third_party(capsys: CaptureFixture[str]) -> None:
+    """Test main block with third-party dependency violations.
+
+    Args:
+        capsys: Pytest fixture.
+    """
+    with patch("scripts.lint_numpy_leak.check_for_numpy_leaks", return_value=[]), patch("scripts.lint_numpy_leak.check_for_architectural_imports", return_value=[]), patch("scripts.lint_numpy_leak.check_for_third_party_leaks", return_value=["dep1"]):
+        assert main() == 1
+        captured = capsys.readouterr()
+        assert "Third-Party Dependency Isolation failed" in captured.out
+        assert "dep1" in captured.out
+
+
+def test_check_for_third_party_leaks() -> None:
+    """Test checking for third-party leaks via delegated lint_dependencies."""
+    with patch("scripts.lint_dependencies.check_dependencies", return_value=["violation1"]):
+        res = check_for_third_party_leaks("some_dir")
+        assert res == ["violation1"]
+
+
+def test_check_for_third_party_leaks_import_fallback() -> None:
+    """Test fallback import path when scripts.lint_dependencies raises ImportError on initial import."""
+    import builtins
+    import sys
+    from typing import Any
+
+    orig_import = builtins.__import__
+    first_call = True
+
+    def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        nonlocal first_call
+        if "scripts.lint_dependencies" in name and first_call:
+            first_call = False
+            raise ImportError("Mocked initial import error")
+        return orig_import(name, *args, **kwargs)
+
+    if "scripts.lint_dependencies" in sys.modules:
+        del sys.modules["scripts.lint_dependencies"]
+
+    with patch("builtins.__import__", side_effect=mock_import):
+        res = check_for_third_party_leaks("src")
+        assert isinstance(res, list)
 
 
 def test_main_block(capsys: CaptureFixture[str]) -> None:
@@ -130,8 +184,9 @@ def test_main_block(capsys: CaptureFixture[str]) -> None:
     with patch.object(sys, "argv", ["lint_numpy_leak.py"]):
         with patch("glob.glob", return_value=[]):
             try:
-                runpy.run_path("scripts/lint_numpy_leak.py", run_name="__main__")
+                runpy.run_module("scripts.lint_numpy_leak", run_name="__main__")
             except SystemExit as e:
                 assert e.code == 0
+
     captured = capsys.readouterr()
     assert "Linting passed" in captured.out

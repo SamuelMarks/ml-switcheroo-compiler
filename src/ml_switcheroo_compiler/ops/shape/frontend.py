@@ -425,7 +425,8 @@ def diag_indices(n: int, ndim: int = 2):
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("DiagIndices")().infer_shape(n, ndim=ndim)
-    node = _emit_shape_node("DiagIndices", [n], {"ndim": ndim}, out_shape, "int64")
+    t_n = Tensor(n, TensorConfig((), "int64", None))
+    node = _emit_shape_node("DiagIndices", [t_n], {"ndim": ndim}, out_shape, "int64")
     out_tensors = []
     from ml_switcheroo_compiler.tracing import builder
 

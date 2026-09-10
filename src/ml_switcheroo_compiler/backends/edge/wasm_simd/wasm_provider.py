@@ -79,3 +79,40 @@ def get_cpp_helpers() -> list[str]:
     if isinstance(helpers, list):
         return [str(h) for h in helpers]
     return []
+
+
+_WASM_SIMD_OPS: dict[str, object] = {}
+
+
+def get_wasm_simd_ops() -> dict[str, object]:
+    """Retrieve full WASM SIMD operation mappings.
+
+    Returns:
+        dict[str, object]: Raw or parsed WASM SIMD operations dictionary.
+    """
+    global _WASM_SIMD_OPS
+    if not _WASM_SIMD_OPS:
+        simd_path: Path = Path(__file__).parent / "wasm_simd_ops.yaml"
+        if simd_path.is_file():
+            with open(simd_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                if isinstance(data, dict):
+                    _WASM_SIMD_OPS = data
+    return _WASM_SIMD_OPS
+
+
+def get_wasm_simd_op(op_name: str) -> dict[str, Union[str, int, float, None]]:
+    """Retrieve SIMD intrinsic specification for an operation.
+
+    Args:
+        op_name (str): Operation name.
+
+    Returns:
+        dict[str, Union[str, int, float, None]]: Op SIMD configuration or empty dict.
+    """
+    ops = get_wasm_simd_ops().get("operations", {})
+    if isinstance(ops, dict) and op_name in ops:
+        val = ops[op_name]
+        if isinstance(val, dict):
+            return val
+    return {}

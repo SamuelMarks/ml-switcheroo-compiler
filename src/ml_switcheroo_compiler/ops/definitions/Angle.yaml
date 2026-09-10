@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.angle
   mlx:
     eager: mlx.core.angle
-  edge_onnx:
-    generator: angle
-  edge_stablehlo:
-
-    opcode: stablehlo.angle
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

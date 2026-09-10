@@ -1,7 +1,0 @@
-operation: DiffState
-description: Auto-generated mapping for DiffState.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

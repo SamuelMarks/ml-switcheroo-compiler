@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.polyfit
   mlx:
     eager: mlx.core.polyfit
-  edge_onnx:
-    generator: polyfit
-  edge_stablehlo:
-
-    opcode: stablehlo.polyfit
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

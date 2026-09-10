@@ -1,2 +1,2 @@
 AlphaDropout:
-  target_api: np.alphadropout
+  target_api: custom_op

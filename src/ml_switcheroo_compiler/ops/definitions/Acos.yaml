@@ -1,10 +1,10 @@
 operation: acos
 description: The Acos operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     generator: cp.arccos
@@ -24,9 +24,6 @@ variants:
     eager: mlx.core.acos
   edge_onnx:
     generator: Acos
-  edge_stablehlo:
-
-    opcode: stablehlo.acos
   edge_wgsl:
     template: unary
     expr: acos(buf_in0_f32[in0_offset])

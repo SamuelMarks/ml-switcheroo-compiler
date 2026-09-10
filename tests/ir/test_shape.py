@@ -36,8 +36,14 @@ def test_broadcast_shapes() -> None:
         with pytest.raises((ValueError, ShapeMismatchError)):
             broadcast_shapes((2, 3), (4, 3))
         assert broadcast_shapes(("B", 3), ("B", 3)) == ("B", 3)
+        assert broadcast_shapes(("B", 3), ("T", 3)) == ("B", 3)
+        from ml_switcheroo_compiler.ir.shape_system import SymbolicConstraintTracker
+
+        tracker = SymbolicConstraintTracker()
+        tracker.add_constraint("B", 4)
+        tracker.add_constraint("T", 5)
         with pytest.raises((ValueError, ShapeMismatchError)):
-            broadcast_shapes(("B", 3), ("T", 3))
+            broadcast_shapes(("B", 3), ("T", 3), tracker=tracker)
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
 

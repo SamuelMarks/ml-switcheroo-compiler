@@ -1,0 +1,24 @@
+benchmarks:
+  - name: "mlp_cross_backend"
+    description: "Multi-layer perceptron forward benchmark comparing NumPy, PyTorch, JAX, and MLX."
+    models:
+      - "mlp_model"
+    batch_sizes:
+      - 1
+      - 16
+      - 64
+    num_iterations: 20
+    warmup_iterations: 5
+    dtypes:
+      - "float32"
+    input_shapes:
+      in_0: [128]
+    targets:
+      - backend: "numpy"
+        device: "cpu"
+      - backend: "pytorch"
+        device: "cpu"
+      - backend: "jax"
+        device: "cpu"
+      - backend: "mlx"
+        device: "cpu"

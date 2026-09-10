@@ -1,2 +1,2 @@
 GammaPdf:
-  target_api: np.gammapdf
+  target_api: custom_op

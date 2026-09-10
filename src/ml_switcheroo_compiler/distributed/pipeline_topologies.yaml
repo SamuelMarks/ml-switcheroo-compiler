@@ -18,3 +18,105 @@ default:
       - type: "cooldown"
         operations: ["backward"]
         count_expression: "num_stages - 1"
+
+1f1b:
+  microbatch_splitting:
+    num_microbatches: 4
+    strategy: "1f1b"
+  mesh_mapping:
+    devices_per_stage: 1
+  stage_communication:
+    protocol: "sync"
+  dependencies:
+    - offset_mb: 0
+      source_stage: "forward"
+      target_stage: "backward"
+    - offset_mb: -1
+      source_stage: "backward"
+      target_stage: "forward"
+  schedule:
+    phases:
+      - type: "warmup"
+        operations: ["forward"]
+        count_expression: "num_stages - 1"
+      - type: "steady"
+        operations: ["forward", "backward"]
+        count_expression: "num_microbatches - num_stages + 1"
+      - type: "cooldown"
+        operations: ["backward"]
+        count_expression: "num_stages - 1"
+
+gpipe:
+  microbatch_splitting:
+    num_microbatches: 8
+    strategy: "sequential"
+  mesh_mapping:
+    devices_per_stage: 1
+  stage_communication:
+    protocol: "rpc"
+  dependencies:
+    - offset_mb: -1
+      source_stage: "forward"
+      target_stage: "forward"
+  schedule:
+    phases:
+      - type: "forward_flush"
+        operations: ["forward"]
+        count_expression: "num_microbatches"
+      - type: "backward_flush"
+        operations: ["backward"]
+        count_expression: "num_microbatches"
+
+pipedream:
+  microbatch_splitting:
+    num_microbatches: 16
+    strategy: "interleaved"
+  mesh_mapping:
+    devices_per_stage: 1
+  stage_communication:
+    protocol: "async_rpc"
+  dependencies: []
+  schedule:
+    phases:
+      - type: "steady"
+        operations: ["forward", "backward"]
+        count_expression: "num_microbatches"
+
+webrtc_pipeline:
+  microbatch_splitting:
+    num_microbatches: 4
+    strategy: "1f1b"
+  mesh_mapping:
+    devices_per_stage: 1
+  stage_communication:
+    protocol: "webrtc"
+  dependencies:
+    - offset_mb: 0
+      source_stage: "forward"
+      target_stage: "backward"
+  schedule:
+    phases:
+      - type: "warmup"
+        operations: ["forward"]
+        count_expression: "num_stages - 1"
+      - type: "steady"
+        operations: ["forward", "backward"]
+        count_expression: "num_microbatches - num_stages + 1"
+      - type: "cooldown"
+        operations: ["backward"]
+        count_expression: "num_stages - 1"
+
+zero_bubble:
+  microbatch_splitting:
+    num_microbatches: 8
+    strategy: "zero_bubble"
+  mesh_mapping:
+    devices_per_stage: 1
+  stage_communication:
+    protocol: "webrtc"
+  dependencies: []
+  schedule:
+    phases:
+      - type: "scheduled_1f1b"
+        operations: ["forward", "backward_weights", "backward_inputs"]
+        count_expression: "num_microbatches"

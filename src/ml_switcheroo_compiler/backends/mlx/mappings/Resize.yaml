@@ -1,2 +1,2 @@
 Resize:
-  target_api: '''mx.image.resize({0}, {size})'''
+  target_api: custom_op

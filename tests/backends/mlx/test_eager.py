@@ -3,18 +3,37 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Force mlx.core to be a mock so we have a consistent test environment
-mock_mx = MagicMock()
+try:
+    import mlx.core as real_mx
 
-# Inject into sys.modules BEFORE importing eager.py
-sys.modules["mlx"] = MagicMock()
-sys.modules["mlx.core"] = mock_mx
-sys.modules["mlx.core.distributed"] = MagicMock()
+    _has_real_mlx = True
+except ImportError:
+    _has_real_mlx = False
+    real_mx = None
+
+mock_mx = MagicMock()
+mock_pkg = MagicMock()
+mock_pkg.__spec__ = MagicMock()
+
+if not _has_real_mlx:
+    sys.modules["mlx"] = mock_pkg
+    sys.modules["mlx.core"] = mock_mx
+    sys.modules["mlx.core.distributed"] = MagicMock()
 
 import ml_switcheroo_compiler.backends.mlx.eager as eager
 
-# also override any local reference eager.mx
-eager.mx = mock_mx
+
+@pytest.fixture(autouse=True, scope="module")
+def _cleanup_mlx_modules():
+    """Setup and restore eager.mx and sys.modules for test module execution."""
+    orig_eager_mx = eager.mx
+    eager.mx = mock_mx
+    yield
+    eager.mx = orig_eager_mx
+    if not _has_real_mlx:
+        sys.modules.pop("mlx", None)
+        sys.modules.pop("mlx.core", None)
+        sys.modules.pop("mlx.core.distributed", None)
 
 
 def test_get_mlx_func():
@@ -377,3 +396,38 @@ def test_mlx_cum_ops_dtype_fallbacks():
         _mlx_cummax(mx, "t", dtype=MockDtype())
         _mlx_cummin(mx, "t", dtype="float16")
         _mlx_cumprod(mx, "t", dtype=MockDtype())
+
+
+def test_mlx_relu_and_zeros_and_reduce_scatter_coverage():
+    """Test _mlx_relu fallback, scalar shape in _mlx_zeros, and _mlx_reduce_scatter exception fallback."""
+    # 1. _mlx_relu with mlx.nn present
+    mock_nn = MagicMock()
+    mock_nn.relu.return_value = "relu_out"
+    with patch.dict(sys.modules, {"mlx.nn": mock_nn}):
+        assert eager._mlx_relu(mock_mx, "x") == "relu_out"
+
+    # 2. _mlx_relu fallback to maximum
+    with patch.dict(sys.modules, {"mlx.nn": None}):
+        mock_mx.maximum.return_value = "max_relu"
+        assert eager._mlx_relu(mock_mx, "x") == "max_relu"
+
+    # 3. int shape in _mlx_zeros with resolved dtype (line 333)
+    with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):
+        mock_mx.zeros.return_value = "zeros_scalar"
+        res = eager._mlx_zeros(mock_mx, shape=5, dtype="float32")
+        assert res == "zeros_scalar"
+
+    # 4. _mlx_reduce_scatter exception fallback (lines 681-683)
+    class FailingGroup:
+        def rank(self):
+            raise RuntimeError("rank error")
+
+    mock_tensor = MagicMock()
+    mock_tensor.ndim = 2
+    mock_tensor.shape = (4, 4)
+    mock_tensor.__getitem__.return_value = "sliced"
+    mock_dist = MagicMock()
+    mock_dist.all_sum.return_value = mock_tensor
+    mock_mx.distributed = mock_dist
+    out = eager._mlx_reduce_scatter(mock_mx, mock_tensor, group=FailingGroup(), op="sum")
+    assert out == "sliced"

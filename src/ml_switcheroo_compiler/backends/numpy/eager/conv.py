@@ -307,7 +307,11 @@ def _apply_conv_padding_helper(lhs_c, rhs_c, config: ConvConfig):
     """
     pad_list: list = _calculate_conv_padding(config, lhs_c.shape, rhs_c.shape)
     pad_width: tuple = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
-    return np.pad(lhs_c, pad_width, mode="constant", constant_values=0)
+    new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(lhs_c.shape, pad_width))
+    padded = np.zeros(new_shape, dtype=lhs_c.dtype)
+    slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(lhs_c.shape, pad_width))
+    padded[slices] = lhs_c
+    return padded
 
 
 def _preprocess_conv_tensors(lhs, rhs, config: ConvConfig, specs: ConvDimSpecs):
@@ -371,7 +375,7 @@ def _get_inv_out_spec(out_spec: tuple[int, ...]) -> list[int]:
     Returns:
         object: Result.
     """
-    inv_out_spec: tuple = [0] * len(out_spec)
+    inv_out_spec: list[int] = [0] * len(out_spec)
     for i, p in enumerate(out_spec):
         inv_out_spec[p] = i
     return inv_out_spec
@@ -420,6 +424,44 @@ def _np_conv_general_dilated(backend_module, *args, **kwargs):
         config: ConvConfig = ConvConfig(window_strides=window_strides, padding=padding)
         return _conv_general_dilated(lhs, rhs, config, **kwargs)
     return _conv_general_dilated(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Conv2D")
+def _np_conv2d(backend_module, *args, **kwargs):
+    """Evaluate Conv2D operation in NumPy eager mode.
+
+    Args:
+        backend_module (object): The backend module (np).
+        *args (object): Positional args (lhs, rhs).
+        **kwargs (object): Keyword args (stride, padding, groups).
+
+    Returns:
+        object: Result of 2D convolution.
+    """
+    from ml_switcheroo_compiler.ops.configs import ConvConfig
+
+    lhs, rhs = np.asarray(args[0]), np.asarray(args[1])
+    stride = kwargs.get("stride", kwargs.get("strides", [1, 1]))
+    if isinstance(stride, int):
+        stride = [stride, stride]
+    padding = kwargs.get("padding", "SAME")
+    if isinstance(padding, (list, tuple)):
+        padding = "SAME"
+    groups = int(kwargs.get("groups", 1))
+
+    if groups > 1:
+        c_in_g = lhs.shape[1] // groups
+        c_out_g = rhs.shape[0] // groups
+        outs = []
+        for g in range(groups):
+            lhs_g = lhs[:, g * c_in_g : (g + 1) * c_in_g, :, :]
+            rhs_g = rhs[g * c_out_g : (g + 1) * c_out_g, :, :, :]
+            cfg = ConvConfig(window_strides=stride, padding=padding)
+            outs.append(_conv_general_dilated(lhs_g, rhs_g, cfg))
+        return np.concatenate(outs, axis=1)
+
+    config: ConvConfig = ConvConfig(window_strides=stride, padding=padding)
+    return _conv_general_dilated(lhs, rhs, config)
 
 
 def _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding: str):
@@ -480,6 +522,8 @@ def _build_conv_transpose_config(spatial_in, spatial_k, strides, pads):
 
 
 @numpy_eager_registry.register("ConvTranspose")
+@numpy_eager_registry.register("ConvTranspose2D")
+@numpy_eager_registry.register("Conv2DTranspose")
 def _np_conv_transpose(backend_module, *args, **kwargs):
     """Evaluate _np_conv_transpose operation.
 
@@ -493,7 +537,7 @@ def _np_conv_transpose(backend_module, *args, **kwargs):
     """
     lhs: np.ndarray = np.asarray(args[0])
     rhs: np.ndarray = np.asarray(args[1])
-    strides: list = args[2] if len(args) > 2 else kwargs.get("strides", 1)
+    strides: list = args[2] if len(args) > 2 else kwargs.get("strides", kwargs.get("stride", 1))
     padding: str = args[3] if len(args) > 3 else kwargs.get("padding", "VALID")
     spatial_in: np.ndarray = lhs.shape[2:]
     spatial_k: np.ndarray = rhs.shape[2:]
@@ -503,3 +547,200 @@ def _np_conv_transpose(backend_module, *args, **kwargs):
     slices, config_obj = _build_conv_transpose_config(spatial_in, spatial_k, strides, pads)
     rhs_rev: np.ndarray = rhs[slices]
     return _np_conv_general_dilated(backend_module, lhs, rhs_rev, config_obj)
+
+
+def _compute_conv2d_padding_values(
+    in_h: int,
+    in_w: int,
+    k_h: int,
+    k_w: int,
+    s_h: int,
+    s_w: int,
+    d_h: int,
+    d_w: int,
+    padding: object,
+    out_h: int,
+    out_w: int,
+) -> tuple[int, int, int, int]:
+    """Calculate 4-sided padding values (top, bottom, left, right) for 2D convolution.
+
+    Args:
+        in_h (int): Input height.
+        in_w (int): Input width.
+        k_h (int): Kernel height.
+        k_w (int): Kernel width.
+        s_h (int): Stride height.
+        s_w (int): Stride width.
+        d_h (int): Dilation height.
+        d_w (int): Dilation width.
+        padding (object): Padding specification ("SAME", "VALID", int, or tuple).
+        out_h (int): Output height.
+        out_w (int): Output width.
+
+    Returns:
+        tuple[int, int, int, int]: Padding tuple (p_top, p_bottom, p_left, p_right).
+    """
+    if isinstance(padding, (list, tuple)):
+        if len(padding) == 2:
+            return int(padding[0]), int(padding[0]), int(padding[1]), int(padding[1])
+        if len(padding) == 4:
+            return int(padding[0]), int(padding[1]), int(padding[2]), int(padding[3])
+    if isinstance(padding, int):
+        return padding, padding, padding, padding
+    if isinstance(padding, str) and padding.upper() == "SAME":
+        p_h = max(0, (out_h - 1) * s_h + (k_h - 1) * d_h + 1 - in_h)
+        p_w = max(0, (out_w - 1) * s_w + (k_w - 1) * d_w + 1 - in_w)
+        p_top = p_h // 2
+        p_bottom = p_h - p_top
+        p_left = p_w // 2
+        p_right = p_w - p_left
+        return p_top, p_bottom, p_left, p_right
+    return 0, 0, 0, 0
+
+
+@numpy_eager_registry.register("Conv2DInputGrad")
+def _np_conv2d_input_grad(backend_module, *args, **kwargs) -> np.ndarray:
+    """Compute exact gradient of Conv2D with respect to the input tensor.
+
+    Supports arbitrary strides, padding, dilation, and group convolutions.
+
+    Args:
+        backend_module (object): Backend provider module.
+        *args (object): Positional args [d_out, weight].
+        **kwargs (object): Conv attributes (stride, padding, dilation, groups, target_shape).
+
+    Returns:
+        np.ndarray: Computed gradient tensor with shape matching the original input.
+    """
+    d_out: np.ndarray = np.asarray(args[0])
+    weight: np.ndarray = np.asarray(args[1])
+
+    stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (stride[0], stride[1])
+
+    dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (dilation[0], dilation[1])
+
+    groups = int(kwargs.get("groups", 1))
+    padding = kwargs.get("padding", "SAME")
+
+    target_shape = kwargs.get("target_shape")
+    if target_shape is not None:
+        n_batch, c_in, in_h, in_w = (int(s) for s in target_shape)
+    else:
+        n_batch = d_out.shape[0]
+        c_in = weight.shape[1] * groups
+        in_h = (d_out.shape[2] - 1) * s_h + 1
+        in_w = (d_out.shape[3] - 1) * s_w + 1
+
+    c_out = weight.shape[0]
+    k_h, k_w = weight.shape[2], weight.shape[3]
+    out_h, out_w = d_out.shape[2], d_out.shape[3]
+
+    p_top, p_bottom, p_left, p_right = _compute_conv2d_padding_values(in_h, in_w, k_h, k_w, s_h, s_w, d_h, d_w, padding, out_h, out_w)
+
+    pad_h = in_h + p_top + p_bottom
+    pad_w = in_w + p_left + p_right
+    dx_pad = np.zeros((n_batch, c_in, pad_h, pad_w), dtype=d_out.dtype)
+
+    c_in_g = c_in // groups
+    c_out_g = c_out // groups
+
+    for g in range(groups):
+        dy_g = d_out[:, g * c_out_g : (g + 1) * c_out_g, :, :]
+        w_g = weight[g * c_out_g : (g + 1) * c_out_g, :, :, :]
+
+        for kh in range(k_h):
+            h_start = kh * d_h
+            h_end = h_start + out_h * s_h
+            for kw in range(k_w):
+                w_start = kw * d_w
+                w_end = w_start + out_w * s_w
+                w_sub = w_g[:, :, kh, kw]
+                term = np.einsum("n o h w, o i -> n i h w", dy_g, w_sub)
+                dx_pad[:, g * c_in_g : (g + 1) * c_in_g, h_start:h_end:s_h, w_start:w_end:s_w] += term
+
+    return dx_pad[:, :, p_top : p_top + in_h, p_left : p_left + in_w]
+
+
+@numpy_eager_registry.register("Conv2DWeightGrad")
+def _np_conv2d_weight_grad(backend_module, *args, **kwargs) -> np.ndarray:
+    """Compute exact gradient of Conv2D with respect to the weight tensor.
+
+    Supports arbitrary strides, padding, dilation, and group convolutions.
+
+    Args:
+        backend_module (object): Backend provider module.
+        *args (object): Positional args [input, d_out].
+        **kwargs (object): Conv attributes (stride, padding, dilation, groups, target_shape).
+
+    Returns:
+        np.ndarray: Computed gradient tensor with shape matching original weight.
+    """
+    x: np.ndarray = np.asarray(args[0])
+    d_out: np.ndarray = np.asarray(args[1])
+
+    stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (stride[0], stride[1])
+
+    dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (dilation[0], dilation[1])
+
+    groups = int(kwargs.get("groups", 1))
+    padding = kwargs.get("padding", "SAME")
+
+    target_shape = kwargs.get("target_shape")
+    if target_shape is not None:
+        c_out, c_in_g, k_h, k_w = (int(s) for s in target_shape)
+    else:
+        c_out = d_out.shape[1]
+        c_in_g = x.shape[1] // groups
+        k_h, k_w = 3, 3
+
+    in_h, in_w = x.shape[2], x.shape[3]
+    out_h, out_w = d_out.shape[2], d_out.shape[3]
+
+    p_top, p_bottom, p_left, p_right = _compute_conv2d_padding_values(in_h, in_w, k_h, k_w, s_h, s_w, d_h, d_w, padding, out_h, out_w)
+
+    if p_top > 0 or p_bottom > 0 or p_left > 0 or p_right > 0:
+        pad_h = in_h + p_top + p_bottom
+        pad_w = in_w + p_left + p_right
+        x_pad = np.zeros((x.shape[0], x.shape[1], pad_h, pad_w), dtype=x.dtype)
+        x_pad[:, :, p_top : p_top + in_h, p_left : p_left + in_w] = x
+    else:
+        x_pad = x
+
+    dw = np.zeros((c_out, c_in_g, k_h, k_w), dtype=x.dtype)
+
+    c_out_g = c_out // groups
+
+    for g in range(groups):
+        x_g = x_pad[:, g * c_in_g : (g + 1) * c_in_g, :, :]
+        dy_g = d_out[:, g * c_out_g : (g + 1) * c_out_g, :, :]
+
+        for kh in range(k_h):
+            h_start = kh * d_h
+            h_end = h_start + out_h * s_h
+            for kw in range(k_w):
+                w_start = kw * d_w
+                w_end = w_start + out_w * s_w
+                x_slice = x_g[:, :, h_start:h_end:s_h, w_start:w_end:s_w]
+                dw[g * c_out_g : (g + 1) * c_out_g, :, kh, kw] = np.einsum("n o h w, n i h w -> o i", dy_g, x_slice)
+
+    return dw
+
+
+@numpy_eager_registry.register("Conv2DBiasGrad")
+def _np_conv2d_bias_grad(backend_module, *args, **kwargs) -> np.ndarray:
+    """Compute exact gradient of Conv2D with respect to bias vector.
+
+    Args:
+        backend_module (object): Backend provider module.
+        *args (object): Positional args [d_out].
+        **kwargs (object): Optional keyword args.
+
+    Returns:
+        np.ndarray: Bias gradient vector.
+    """
+    d_out: np.ndarray = np.asarray(args[0])
+    return np.sum(d_out, axis=(0, 2, 3))

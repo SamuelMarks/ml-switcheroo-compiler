@@ -1,0 +1,338 @@
+backend_name: tensorflow
+operations:
+  Abs:
+    target_api: tensorflow.math.abs
+  Neg:
+    target_api: tensorflow.math.negative
+  Sin:
+    target_api: tensorflow.math.sin
+  Cos:
+    target_api: tensorflow.math.cos
+  Tan:
+    target_api: tensorflow.math.tan
+  Sinh:
+    target_api: tensorflow.math.sinh
+  Cosh:
+    target_api: tensorflow.math.cosh
+  Tanh:
+    target_api: tensorflow.math.tanh
+  Exp:
+    target_api: tensorflow.math.exp
+  Log:
+    target_api: tensorflow.math.log
+  Log1p:
+    target_api: tensorflow.math.log1p
+  Sqrt:
+    target_api: tensorflow.math.sqrt
+  Square:
+    target_api: tensorflow.math.square
+  Floor:
+    target_api: tensorflow.math.floor
+  Ceil:
+    target_api: tensorflow.math.ceil
+  Round:
+    target_api: tensorflow.math.round
+  Sign:
+    target_api: tensorflow.math.sign
+  Reciprocal:
+    target_api: tensorflow.math.reciprocal
+  Add:
+    target_api: tensorflow.add
+  Subtract:
+    target_api: tensorflow.math.subtract
+  Multiply:
+    target_api: tensorflow.math.multiply
+  Divide:
+    target_api: tensorflow.math.divide
+  TrueDivide:
+    target_api: tensorflow.math.truediv
+  FloorDivide:
+    target_api: tensorflow.math.floordiv
+  Power:
+    target_api: tensorflow.math.pow
+  Maximum:
+    target_api: tensorflow.math.maximum
+  Minimum:
+    target_api: tensorflow.math.minimum
+  Equal:
+    target_api: tensorflow.math.equal
+  NotEqual:
+    target_api: tensorflow.math.not_equal
+  Greater:
+    target_api: tensorflow.math.greater
+  GreaterEqual:
+    target_api: tensorflow.math.greater_equal
+  Less:
+    target_api: tensorflow.math.less
+  LessEqual:
+    target_api: tensorflow.math.less_equal
+  LogicalAnd:
+    target_api: tensorflow.math.logical_and
+  LogicalOr:
+    target_api: tensorflow.math.logical_or
+  LogicalNot:
+    target_api: tensorflow.math.logical_not
+  Sum:
+    target_api: tensorflow.math.reduce_sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Prod:
+    target_api: tensorflow.math.reduce_prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Mean:
+    target_api: tensorflow.math.reduce_mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Max:
+    target_api: tensorflow.math.reduce_max
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Min:
+    target_api: tensorflow.math.reduce_min
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Argmax:
+    target_api: tensorflow.math.argmax
+    kwarg_translations:
+      dim: axis
+  Argmin:
+    target_api: tensorflow.math.argmin
+    kwarg_translations:
+      dim: axis
+  Any:
+    target_api: tensorflow.math.reduce_any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  All:
+    target_api: tensorflow.math.reduce_all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Var:
+    target_api: tensorflow.math.reduce_variance
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Std:
+    target_api: tensorflow.math.reduce_std
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Matmul:
+    target_api: tensorflow.linalg.matmul
+  Transpose:
+    target_api: tensorflow.transpose
+  Reshape:
+    target_api: tensorflow.reshape
+  Squeeze:
+    target_api: tensorflow.squeeze
+    kwarg_translations:
+      dim: axis
+  ExpandDims:
+    target_api: tensorflow.expand_dims
+    kwarg_translations:
+      dim: axis
+  Concat:
+    target_api: tensorflow.concat
+    kwarg_translations:
+      dim: axis
+  Concatenate:
+    target_api: tensorflow.concat
+    kwarg_translations:
+      dim: axis
+  Stack:
+    target_api: tensorflow.stack
+    kwarg_translations:
+      dim: axis
+  Split:
+    target_api: tensorflow.split
+    kwarg_translations:
+      dim: axis
+  Tile:
+    target_api: tensorflow.tile
+  Pad:
+    target_api: tensorflow.pad
+  Where:
+    target_api: tensorflow.where
+  Zeros:
+    target_api: tensorflow.zeros
+  Ones:
+    target_api: tensorflow.ones
+  Eye:
+    target_api: tensorflow.eye
+  Relu:
+    target_api: tensorflow.nn.relu
+  Sigmoid:
+    target_api: tensorflow.math.sigmoid
+  Silu:
+    target_api: tensorflow.nn.silu
+  Softmax:
+    target_api: tensorflow.nn.softmax
+    kwarg_translations:
+      dim: axis
+  LogSoftmax:
+    target_api: tensorflow.nn.log_softmax
+    kwarg_translations:
+      dim: axis
+  SiLU:
+    target_api: tensorflow.nn.silu
+  GELU:
+    target_api: tensorflow.nn.gelu
+  Gelu:
+    target_api: tensorflow.nn.gelu
+  ELU:
+    target_api: tensorflow.nn.elu
+  Elu:
+    target_api: tensorflow.nn.elu
+  LeakyReLU:
+    target_api: tensorflow.nn.leaky_relu
+    kwarg_translations:
+      negative_slope: alpha
+  LeakyRelu:
+    target_api: tensorflow.nn.leaky_relu
+    kwarg_translations:
+      negative_slope: alpha
+  Softplus:
+    target_api: tensorflow.math.softplus
+  MatMul:
+    target_api: tensorflow.matmul
+  BatchMatMul:
+    target_api: tensorflow.matmul
+  BatchMatmul:
+    target_api: tensorflow.matmul
+  Dot:
+    target_api: tensorflow.tensordot
+  Einsum:
+    target_api: tensorflow.einsum
+  SVD:
+    target_api: tensorflow.linalg.svd
+  QR:
+    target_api: tensorflow.linalg.qr
+  Cholesky:
+    target_api: tensorflow.linalg.cholesky
+  Solve:
+    target_api: tensorflow.linalg.solve
+  Det:
+    target_api: tensorflow.linalg.det
+  Norm:
+    target_api: tensorflow.norm
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  L2Normalize:
+    target_api: tensorflow.math.l2_normalize
+    kwarg_translations:
+      dim: axis
+  ReduceSum:
+    target_api: tensorflow.reduce_sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMean:
+    target_api: tensorflow.reduce_mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceProd:
+    target_api: tensorflow.reduce_prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMax:
+    target_api: tensorflow.reduce_max
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMin:
+    target_api: tensorflow.reduce_min
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAll:
+    target_api: tensorflow.reduce_all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAny:
+    target_api: tensorflow.reduce_any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceL2:
+    target_api: tensorflow.math.reduce_euclidean_norm
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  CumSum:
+    target_api: tensorflow.math.cumsum
+    kwarg_translations:
+      dim: axis
+  CumProd:
+    target_api: tensorflow.math.cumprod
+    kwarg_translations:
+      dim: axis
+  Cond:
+    target_api: tensorflow.cond
+  If:
+    target_api: tensorflow.cond
+  WhileLoop:
+    target_api: tensorflow.while_loop
+  While:
+    target_api: tensorflow.while_loop
+  ArgMax:
+    target_api: tensorflow.argmax
+    kwarg_translations:
+      dim: axis
+  ArgMin:
+    target_api: tensorflow.argmin
+    kwarg_translations:
+      dim: axis
+  LayerNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, b=0.0, **kw: ((x - backend_module.reduce_mean(x, axis=-1, keepdims=True)) / backend_module.math.sqrt(backend_module.math.reduce_variance(x, axis=-1, keepdims=True) + 1e-5)) * g + b"
+  BatchNorm:
+    target_api: custom_op
+    custom_code: "lambda x, m=0.0, v=1.0, g=1.0, b=0.0, **kw: ((x - m) / backend_module.math.sqrt(v + 1e-5)) * g + b"
+  RMSNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, **kw: (x / backend_module.math.sqrt(backend_module.reduce_mean(x**2, axis=-1, keepdims=True) + 1e-5)) * g"
+  MultiheadAttention:
+    target_api: custom_op
+    custom_code: "lambda q, k, v, **kw: backend_module.matmul(backend_module.nn.softmax(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if len(k.shape) == 4 else (0, 2, 1))) / backend_module.math.sqrt(float(q.shape[-1]))), v)"
+  Conv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: backend_module.nn.conv2d(x, w, strides=kw.get('strides', [1, 1, 1, 1]), padding=kw.get('padding', 'SAME')) if hasattr(backend_module, 'nn') else x"
+  DepthwiseConv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: backend_module.nn.depthwise_conv2d(x, w, strides=kw.get('strides', [1, 1, 1, 1]), padding=kw.get('padding', 'SAME')) if hasattr(backend_module, 'nn') else x"
+  MaxPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.nn.max_pool2d(x, ksize=kw.get('ksize', [1, 2, 2, 1]), strides=kw.get('strides', [1, 2, 2, 1]), padding=kw.get('padding', 'SAME')) if hasattr(backend_module, 'nn') else x"
+  AvgPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.nn.avg_pool2d(x, ksize=kw.get('ksize', [1, 2, 2, 1]), strides=kw.get('strides', [1, 2, 2, 1]), padding=kw.get('padding', 'SAME')) if hasattr(backend_module, 'nn') else x"
+  ResizeBilinear:
+    target_api: custom_op
+    custom_code: "lambda x, size=None, **kw: backend_module.image.resize(x, size=size, method='bilinear') if hasattr(backend_module, 'image') else x"
+  MSELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.reduce_mean((p - t)**2)"
+  CrossEntropyLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.reduce_mean(backend_module.reduce_sum(t * backend_module.math.log(p + 1e-12), axis=-1))"
+  BCELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.reduce_mean(t * backend_module.math.log(p + 1e-12) + (1.0 - t) * backend_module.math.log(1.0 - p + 1e-12))"
+  HuberLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, delta=1.0, **kw: backend_module.reduce_mean(backend_module.where(backend_module.abs(p - t) < delta, 0.5 * ((p - t)**2), delta * (backend_module.abs(p - t) - 0.5 * delta)))"
+  KLDivergenceLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.reduce_mean(backend_module.reduce_sum(t * (backend_module.math.log(t + 1e-12) - backend_module.math.log(p + 1e-12)), axis=-1))"

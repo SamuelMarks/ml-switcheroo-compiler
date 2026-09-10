@@ -19,11 +19,6 @@ variants:
     eager: jax.numpy.append
   mlx:
     eager: mlx.core.concatenate
-  edge_onnx:
-    generator: append
-  edge_stablehlo:
-
-    opcode: stablehlo.append
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -142,3 +142,54 @@ def test_buffer_allocation_branch_coverage():
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n4]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="size_expr"):
             buffer_allocation_pass(g2)
+
+
+def test_buffer_allocation_pass_class():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.buffer_allocation import BufferAllocationPass
+
+    alloc_pass = BufferAllocationPass(alignment=16)
+
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input", shape_metadata=(16, 16))
+    n1.attributes["dtype"] = "float32"
+    n2 = IRNode(id="n2", op_type="Add", inputs=["n1"], shape_metadata=(16, 16))
+    n2.attributes["dtype"] = "float32"
+    n3 = IRNode(id="n3", op_type="Relu", inputs=["n2"], shape_metadata=(16, 16))
+    n3.attributes["dtype"] = "float32"
+
+    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.outputs = ["n3"]
+
+    intervals = alloc_pass.compute_liveness_intervals(g)
+    assert intervals["n1"][0] == 0
+    assert intervals["n1"][1] == 1  # used by n2 at step 1
+    assert intervals["n2"][0] == 1
+    assert intervals["n2"][1] == 2  # used by n3 at step 2
+    assert intervals["n3"][1] == 3  # graph output, alive at end
+
+    offsets = alloc_pass.calculate_arena_offsets(g, alignment=16)
+    assert "n1" in offsets
+    assert "n2" in offsets
+    assert "n3" in offsets
+    # Offsets must be multiples of 16
+    for off in offsets.values():
+        assert off % 16 == 0
+
+    modified = alloc_pass.run(g)
+    assert modified is True
+    assert "buffer_offset" in n1.attributes
+
+    # Coverage for lines 194->193, 199->198, and 227
+    from unittest.mock import patch
+
+    g_extra = IRGraph()
+    n_extra = IRNode(id="n_extra", op_type="Input", inputs=["external_non_node"], shape_metadata=(16, 16))
+    g_extra.nodes = {"n_extra": n_extra}
+    g_extra.outputs = ["n_extra", "missing_out_id"]
+    intervals_extra = alloc_pass.compute_liveness_intervals(g_extra)
+    assert "n_extra" in intervals_extra
+
+    with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="symbolic_dim"):
+        offsets_symbolic = alloc_pass.calculate_arena_offsets(g_extra)
+        assert len(offsets_symbolic) == 0

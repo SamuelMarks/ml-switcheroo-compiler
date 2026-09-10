@@ -1,2 +1,2 @@
 Welch:
-  target_api: np.welch
+  target_api: custom_op

@@ -1,11 +1,11 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module tensor_mixins.py."""
-
 """Mixins for Tensor."""
 
+from __future__ import annotations
+
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -34,11 +34,11 @@ class TensorPropertiesMixin:
         return len(self._shape)
 
     @property
-    def size(self) -> int:
+    def size(self) -> int | None:
         """Get the number of elements in the tensor.
 
         Returns:
-            int: The size of the tensor.
+            int | None: The size of the tensor, or None if dimensions are symbolic.
         """
         # if there are strings in shape (unknown dims), return a ProxyTensor?
         # for eager evaluation, size should evaluate natively.
@@ -220,7 +220,7 @@ class TensorConversionMixin:
 class TensorIndexingMixin:
     """Tensor indexing mixin."""
 
-    def __getitem__(self, key) -> "Tensor":
+    def __getitem__(self, key) -> Tensor:
         """Retrieve elements from the tensor.
 
         Args:
@@ -297,7 +297,7 @@ class TensorIndexingMixin:
             raise TypeError(msg)
 
     @property
-    def at(self) -> "ArrayAtIndexer":
+    def at(self) -> ArrayAtIndexer:
         """Get ArrayAtIndexer for the tensor.
 
         Returns:

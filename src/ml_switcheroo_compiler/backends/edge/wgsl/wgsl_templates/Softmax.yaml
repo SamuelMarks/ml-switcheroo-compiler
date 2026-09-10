@@ -1,7 +1,27 @@
-Softmax:
-  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
-    \ = {expr};\n"
-  workgroup_size:
-  - 64
-  - 1
-  - 1
+templates:
+  softmax:
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    body: "let row: u32 = global_id.x;\nif (row >= {M}u) {{\n    return;\n}}\nlet\
+      \ base: u32 = row * {N}u;\nvar max_val: f32 = -1e30;\nfor (var j: u32 = 0u;\
+      \ j < {N}u; j = j + 1u) {{\n    let v = buf_in0_f32[base + j];\n    if (v >\
+      \ max_val) {{\n        max_val = v;\n    }}\n}}\nvar sum_exp: f32 = 0.0;\nfor\
+      \ (var j: u32 = 0u; j < {N}u; j = j + 1u) {{\n    sum_exp = sum_exp + exp(buf_in0_f32[base\
+      \ + j] - max_val);\n}}\nfor (var j: u32 = 0u; j < {N}u; j = j + 1u) {{\n   \
+      \ buf_out_f32[base + j] = exp(buf_in0_f32[base + j] - max_val) / sum_exp;\n\
+      }}\n"
+  Softmax:
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    body: "let row: u32 = global_id.x;\nif (row >= {M}u) {{\n    return;\n}}\nlet\
+      \ base: u32 = row * {N}u;\nvar max_val: f32 = -1e30;\nfor (var j: u32 = 0u;\
+      \ j < {N}u; j = j + 1u) {{\n    let v = buf_in0_f32[base + j];\n    if (v >\
+      \ max_val) {{\n        max_val = v;\n    }}\n}}\nvar sum_exp: f32 = 0.0;\nfor\
+      \ (var j: u32 = 0u; j < {N}u; j = j + 1u) {{\n    sum_exp = sum_exp + exp(buf_in0_f32[base\
+      \ + j] - max_val);\n}}\nfor (var j: u32 = 0u; j < {N}u; j = j + 1u) {{\n   \
+      \ buf_out_f32[base + j] = exp(buf_in0_f32[base + j] - max_val) / sum_exp;\n\
+      }}\n"

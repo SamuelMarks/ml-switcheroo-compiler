@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.randomcategorical
   mlx:
     eager: mlx.core.randomcategorical
-  edge_onnx:
-    generator: RandomCategorical
-  edge_stablehlo:
-
-    opcode: stablehlo.random_categorical
   edge_wgsl:
     template: unary
     expr: '0.5'

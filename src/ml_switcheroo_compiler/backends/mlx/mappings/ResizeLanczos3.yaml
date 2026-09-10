@@ -1,0 +1,3 @@
+ResizeLanczos3:
+  ast_template: mlx_resize_lanczos3({0})
+  target_api: ''

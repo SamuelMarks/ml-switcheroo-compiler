@@ -937,3 +937,45 @@ def test_jax_generator_send_recv() -> None:
     out_recv = JaxDistributedVisitor.visit_Recv(gen, n_recv, [])
     assert out_recv == "v_n_recv"
     assert any("v_n_recv = jnp.zeros([4, 4], dtype=jnp.float32) # JAX Recv from 3" in line for line in gen.code)
+
+
+def test_nn_primitives_emission_cross_backend() -> None:
+    """Verify native code generation for neural network primitives across PyTorch, JAX, and MLX."""
+    from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+    from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
+    from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    pt_gen = PyTorchCodeGenerator(graph)
+    jax_gen = JAXCodeGenerator(graph)
+    mlx_gen = MLXCodeGenerator(graph)
+
+    ops_to_test = [
+        ("Conv1D", ["x", "w"], {"stride": 1, "padding": 0}),
+        ("Conv2D", ["x", "w"], {"stride": 2, "padding": 1}),
+        ("Conv3D", ["x", "w"], {"stride": 1, "padding": 0}),
+        ("MultiHeadAttention", ["q", "k", "v"], {"is_causal": True}),
+        ("ScaledDotProductAttention", ["q", "k", "v"], {}),
+        ("BatchNorm", ["x", "mean", "var"], {"eps": 1e-5}),
+        ("LayerNorm", ["x"], {"normalized_shape": [128], "eps": 1e-5}),
+        ("RMSNorm", ["x"], {"eps": 1e-5}),
+        ("GroupNorm", ["x"], {"num_groups": 4}),
+        ("MaxPool2D", ["x"], {"kernel_size": 2, "stride": 2}),
+        ("AvgPool2D", ["x"], {"kernel_size": 2, "stride": 2}),
+        ("AdaptiveAvgPool2D", ["x"], {"output_size": [7, 7]}),
+        ("Linear", ["x", "w", "b"], {}),
+        ("Linear", ["x", "w"], {}),
+    ]
+
+    for op_name, inputs, attrs in ops_to_test:
+        node = LogicalNode(id=f"n_{op_name}", op_type=op_name, inputs=inputs, attributes=attrs)
+
+        pt_code = pt_gen.visit(node, inputs)
+        assert len(pt_code) > 0, f"PyTorch emission failed for {op_name}"
+
+        jax_code = jax_gen.visit(node, inputs)
+        assert len(jax_code) > 0, f"JAX emission failed for {op_name}"
+
+        mlx_code = mlx_gen.visit(node, inputs)
+        assert len(mlx_code) > 0, f"MLX emission failed for {op_name}"

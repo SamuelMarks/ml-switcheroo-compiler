@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.raggedcrosshashed
   mlx:
     eager: mlx.core.raggedcrosshashed
-  edge_onnx:
-    generator: RaggedCrossHashed
-  edge_stablehlo:
-
-    opcode: stablehlo.ragged_cross_hashed
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

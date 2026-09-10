@@ -125,9 +125,51 @@ def test_strategy_more_coverage():
         assert c.update() == "updated"
 
     # PreemptionCheckpointHandler
-    p = PreemptionCheckpointHandler("res", "dir")
-    assert p.cluster_resolver == "res"
-    assert p.checkpoint_dir == "dir"
+    import os
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp_cp_dir:
+        p = PreemptionCheckpointHandler("res", tmp_cp_dir)
+        assert p.cluster_resolver == "res"
+        assert p.checkpoint_dir == tmp_cp_dir
+        assert p.restore_latest_checkpoint() is None
+
+        cp_path = p.save_preemption_checkpoint({"step": 42}, "preempt_cp_test")
+        assert os.path.exists(cp_path)
+
+        restored = p.restore_latest_checkpoint()
+        assert restored is not None
+        assert restored["checkpoint_id"] == "preempt_cp_test"
+        assert restored["data"]["step"] == 42
+
+        p.register_signal_handlers()
+        with patch("signal.signal", side_effect=ValueError):
+            p.register_signal_handlers()
+        p._handle_preemption_signal(15, None)
+        latest = p.restore_latest_checkpoint()
+        assert latest is not None
+        assert latest["data"]["signal"] == 15
+
+    with tempfile.TemporaryDirectory() as empty_dir:
+        p_empty = PreemptionCheckpointHandler("res", empty_dir)
+        assert p_empty.restore_latest_checkpoint() is None
+
+    p_nonexist = PreemptionCheckpointHandler("res", "/non/existent/dir/for/testing")
+    assert p_nonexist.restore_latest_checkpoint() is None
+
+    from ml_switcheroo_compiler.distributed.config_models import (
+        load_distributed_topologies,
+    )
+
+    dt_cfg = load_distributed_topologies()
+    assert "mesh_dp_tp" in dt_cfg.cluster_meshes
+    assert "host_0" in dt_cfg.device_topologies
+    assert "default_webrtc" in dt_cfg.signaling_topologies
+
+    explicit_dt_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "distributed", "distributed_topologies.yaml")
+    if os.path.exists(explicit_dt_path):
+        dt_cfg2 = load_distributed_topologies(path=explicit_dt_path)
+        assert "mesh_dp_tp" in dt_cfg2.cluster_meshes
 
     # PerWorkerValue
     pwv = PerWorkerValue([1, 2])

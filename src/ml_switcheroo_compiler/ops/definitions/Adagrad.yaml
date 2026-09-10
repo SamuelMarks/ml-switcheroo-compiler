@@ -1,9 +1,9 @@
 operation: Adagrad
 description: 'Auto-discovered via Consensus (Score: 4.0)'
 std_args:
-  - eps
-  - initial_accumulator_value
-  - lr
+- eps
+- initial_accumulator_value
+- lr
 type: function
 variants:
   numpy: {}
@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Adagrad
-  edge_stablehlo:
-
-    opcode: stablehlo.adagrad
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

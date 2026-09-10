@@ -1,0 +1,105 @@
+# Declarative Linear Algebra Transpilation Rules
+ast_to_ir_ops:
+  torch.matmul: MatMul
+  torch.mm: MatMul
+  jax.numpy.matmul: MatMul
+  mlx.core.matmul: MatMul
+  numpy.matmul: MatMul
+  keras.ops.matmul: MatMul
+  torch.bmm: BatchMatMul
+  jax.lax.batch_matmul: BatchMatMul
+  torch.dot: Dot
+  jax.numpy.dot: Dot
+  mlx.core.dot: Dot
+  numpy.dot: Dot
+  torch.einsum: Einsum
+  jax.numpy.einsum: Einsum
+  mlx.core.einsum: Einsum
+  numpy.einsum: Einsum
+  torch.linalg.svd: SVD
+  jax.numpy.linalg.svd: SVD
+  mlx.core.linalg.svd: SVD
+  numpy.linalg.svd: SVD
+  torch.linalg.qr: QR
+  jax.numpy.linalg.qr: QR
+  mlx.core.linalg.qr: QR
+  numpy.linalg.qr: QR
+  torch.linalg.cholesky: Cholesky
+  jax.numpy.linalg.cholesky: Cholesky
+  mlx.core.linalg.cholesky: Cholesky
+  numpy.linalg.cholesky: Cholesky
+  torch.linalg.solve: Solve
+  jax.numpy.linalg.solve: Solve
+  mlx.core.linalg.solve: Solve
+  numpy.linalg.solve: Solve
+  torch.linalg.det: Det
+  jax.numpy.linalg.det: Det
+  numpy.linalg.det: Det
+  torch.linalg.inv: Inv
+  jax.numpy.linalg.inv: Inv
+  mlx.core.linalg.inv: Inv
+  numpy.linalg.inv: Inv
+  torch.linalg.norm: Norm
+  jax.numpy.linalg.norm: Norm
+  mlx.core.linalg.norm: Norm
+  numpy.linalg.norm: Norm
+
+ir_to_ast_ops:
+  MatMul:
+    pytorch: [torch, matmul]
+    jax: [jax, numpy, matmul]
+    mlx: [mlx, core, matmul]
+    numpy: [numpy, matmul]
+  BatchMatMul:
+    pytorch: [torch, bmm]
+    jax: [jax, numpy, matmul]
+    mlx: [mlx, core, matmul]
+    numpy: [numpy, matmul]
+  Dot:
+    pytorch: [torch, dot]
+    jax: [jax, numpy, dot]
+    mlx: [mlx, core, dot]
+    numpy: [numpy, dot]
+  Einsum:
+    pytorch: [torch, einsum]
+    jax: [jax, numpy, einsum]
+    mlx: [mlx, core, einsum]
+    numpy: [numpy, einsum]
+  SVD:
+    pytorch: [torch, linalg, svd]
+    jax: [jax, numpy, linalg, svd]
+    mlx: [mlx, core, linalg, svd]
+    numpy: [numpy, linalg, svd]
+  QR:
+    pytorch: [torch, linalg, qr]
+    jax: [jax, numpy, linalg, qr]
+    mlx: [mlx, core, linalg, qr]
+    numpy: [numpy, linalg, qr]
+  Cholesky:
+    pytorch: [torch, linalg, cholesky]
+    jax: [jax, numpy, linalg, cholesky]
+    mlx: [mlx, core, linalg, cholesky]
+    numpy: [numpy, linalg, cholesky]
+  Solve:
+    pytorch: [torch, linalg, solve]
+    jax: [jax, numpy, linalg, solve]
+    mlx: [mlx, core, linalg, solve]
+    numpy: [numpy, linalg, solve]
+  Det:
+    pytorch: [torch, linalg, det]
+    jax: [jax, numpy, linalg, det]
+    numpy: [numpy, linalg, det]
+  Inv:
+    pytorch: [torch, linalg, inv]
+    jax: [jax, numpy, linalg, inv]
+    mlx: [mlx, core, linalg, inv]
+    numpy: [numpy, linalg, inv]
+  Norm:
+    pytorch: [torch, linalg, norm]
+    jax: [jax, numpy, linalg, norm]
+    mlx: [mlx, core, linalg, norm]
+    numpy: [numpy, linalg, norm]
+
+kwarg_translations:
+  ord: ord
+  dim: axis

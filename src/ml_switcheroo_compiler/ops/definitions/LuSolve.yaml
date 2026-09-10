@@ -1,18 +1,18 @@
 operation: LUSolve
 description: The LuSolve operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: b
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: LU_data
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: LU_pivots
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: b
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: LU_data
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: LU_pivots
+  type: Tensor
 variants:
   numpy:
     generator: scipy.linalg.lu_solve
@@ -24,11 +24,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: LUSolve
-  edge_stablehlo:
-
-    opcode: stablehlo.l_u_solve
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

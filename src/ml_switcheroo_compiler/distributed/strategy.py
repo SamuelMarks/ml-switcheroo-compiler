@@ -11,7 +11,7 @@ import yaml
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.distributed import Distribution
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def _load_strategy_config():
@@ -22,6 +22,21 @@ def _load_strategy_config():
             from typing import cast
 
             return cast(dict[str, "AttrType"], yaml.safe_load(f).get("strategies", {}))
+    return {}
+
+
+def _load_device_mesh_config() -> dict[str, object]:
+    """Load cluster device mesh configuration from YAML.
+
+    Returns:
+        dict[str, object]: Parsed device mesh configuration.
+    """
+    yaml_path: str = os.path.join(os.path.dirname(__file__), "device_mesh.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path) as f:
+            from typing import cast
+
+            return cast(dict[str, object], yaml.safe_load(f) or {})
     return {}
 
 
@@ -48,6 +63,35 @@ class ParameterServerStrategy(Distribution):
         super().__init__()
         self.cluster_resolver = cluster_resolver
         self.config = _load_strategy_config().get("ParameterServerStrategy", {})
+        self.device_mesh = _load_device_mesh_config()
+        self.ps_mesh = self.device_mesh.get("cluster_meshes", {}).get("default", {})
+
+    @staticmethod
+    def _is_parameter_node(node: IRNode) -> bool:
+        """Explicitly identify whether an IRNode represents a trainable model parameter.
+
+        Args:
+            node (IRNode): The node to evaluate.
+
+        Returns:
+            bool: True if the node is a parameter.
+        """
+        if node.attributes.get("is_parameter") is False:
+            return False
+        if node.attributes.get("is_scalar") is True or node.attributes.get("is_scalar_constant") is True:
+            return False
+        if node.op_type in ("Parameter", "Variable", "Weight"):
+            return True
+        if node.attributes.get("is_parameter") is True or node.attributes.get("trainable") is True:
+            return True
+        if node.attributes.get("role") in ("parameter", "weight", "bias"):
+            return True
+        if node.op_type == "Constant":
+            shape = getattr(node, "shape_metadata", None)
+            if shape is not None and len(shape) == 0 and not node.attributes.get("is_parameter", False):
+                return False
+            return True
+        return False
 
     def pull_weights(self, graph: IRGraph) -> bool:
         """Asynchronously pull weights from parameter servers by injecting Recv ops.
@@ -70,11 +114,22 @@ class ParameterServerStrategy(Distribution):
         modified = False
         new_nodes = dict(graph.nodes)
 
+        devices = self.ps_mesh.get("devices", [0]) if isinstance(self.ps_mesh, dict) else [0]
+        ps_rank = devices[0] if devices else 0
+        tag_counter = 0
+
         for node in list(graph.nodes.values()):
-            if node.op_type == "Constant":
+            if self._is_parameter_node(node):
                 # Inject a Recv node for weights
                 recv_id = f"{node.id}_recv"
-                recv_node = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"src_rank": 0, "tag": 0, "async_pull": self.config.get("async_pull", True)})
+                recv_node = IRNode(
+                    id=recv_id,
+                    op_type="Recv",
+                    inputs=[],
+                    shape_metadata=getattr(node, "shape_metadata", None),
+                    attributes={"src_rank": ps_rank, "tag": tag_counter, "async_pull": self.config.get("async_pull", True)},
+                )
+                tag_counter += 1
                 new_nodes[recv_id] = recv_node
 
                 # Rewire consumers
@@ -110,10 +165,21 @@ class ParameterServerStrategy(Distribution):
         modified = False
         new_nodes = dict(graph.nodes)
 
+        devices = self.ps_mesh.get("devices", [0]) if isinstance(self.ps_mesh, dict) else [0]
+        ps_rank = devices[0] if devices else 0
+        tag_counter = 0
+
         for node in list(graph.nodes.values()):
             if node.op_type == "Grad":
                 send_id = f"{node.id}_send"
-                send_node = IRNode(id=send_id, op_type="Send", inputs=[node.id], attributes={"dst_rank": 0, "tag": 0, "method": self.config.get("gradient_push_method", "async")})
+                send_node = IRNode(
+                    id=send_id,
+                    op_type="Send",
+                    inputs=[node.id],
+                    shape_metadata=getattr(node, "shape_metadata", None),
+                    attributes={"dst_rank": ps_rank, "tag": tag_counter, "method": self.config.get("gradient_push_method", "async")},
+                )
+                tag_counter += 1
                 new_nodes[send_id] = send_node
                 modified = True
 
@@ -175,7 +241,7 @@ class MultiWorkerMirroredStrategy(Distribution):
                 # Rewire consumers of Grad to AllReduce
                 for consumer in list(graph.nodes.values()):
                     if node.id in consumer.inputs:
-                        consumer.inputs = [ar_id if inp == node.id else inp for inp in consumer.inputs]  # pragma: no cover
+                        consumer.inputs = [ar_id if inp == node.id else inp for inp in consumer.inputs]
 
         if modified:
             graph.nodes = new_nodes
@@ -233,15 +299,82 @@ class TPUStrategy(Distribution):
 class PreemptionCheckpointHandler:
     """Handle asynchronous checkpointing for preemptible instances."""
 
-    def __init__(self, cluster_resolver, checkpoint_dir: str) -> None:
+    def __init__(self, cluster_resolver: object, checkpoint_dir: str) -> None:
         """Initialize PreemptionCheckpointHandler.
 
         Args:
-            cluster_resolver (Union[TFConfigClusterResolver, KubernetesClusterResolver, SlurmClusterResolver, dict, None]): The cluster resolver.
+            cluster_resolver (object): The cluster resolver.
             checkpoint_dir (str): The directory to save checkpoints.
         """
         self.cluster_resolver = cluster_resolver
         self.checkpoint_dir = checkpoint_dir
+
+    def save_preemption_checkpoint(
+        self,
+        checkpoint_data: Optional[dict[str, object]] = None,
+        checkpoint_id: Optional[str] = None,
+    ) -> str:
+        """Save a preemption checkpoint file containing cluster and state metadata.
+
+        Args:
+            checkpoint_data (Optional[dict[str, object]]): Optional dictionary of tensor states or parameters.
+            checkpoint_id (Optional[str]): Optional custom checkpoint identifier.
+
+        Returns:
+            str: Path to the saved checkpoint file.
+        """
+        import json
+        import time
+
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        cp_id: str = checkpoint_id or f"preempt_cp_{int(time.time() * 1000)}"
+        cp_path: str = os.path.join(self.checkpoint_dir, f"{cp_id}.json")
+        payload: dict[str, object] = {
+            "checkpoint_id": cp_id,
+            "timestamp": time.time(),
+            "cluster_resolver": getattr(self.cluster_resolver, "__class__", type(self.cluster_resolver)).__name__,
+            "data": checkpoint_data or {},
+        }
+        with open(cp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f)
+        return cp_path
+
+    def restore_latest_checkpoint(self) -> Optional[dict[str, object]]:
+        """Find and restore the latest checkpoint dictionary from the checkpoint directory.
+
+        Returns:
+            Optional[dict[str, object]]: Parsed checkpoint payload, or None if no checkpoints exist.
+        """
+        import json
+
+        if not os.path.isdir(self.checkpoint_dir):
+            return None
+        cp_files: list[str] = [f for f in os.listdir(self.checkpoint_dir) if f.startswith("preempt_cp_") and f.endswith(".json")]
+        if not cp_files:
+            return None
+        latest_file = sorted(cp_files, key=lambda f: os.path.getmtime(os.path.join(self.checkpoint_dir, f)))[-1]
+        with open(os.path.join(self.checkpoint_dir, latest_file), encoding="utf-8") as f:
+            data: dict[str, object] = json.load(f)
+        return data
+
+    def register_signal_handlers(self) -> None:
+        """Register signal handlers for graceful cluster preemption."""
+        import signal
+
+        try:
+            signal.signal(signal.SIGTERM, self._handle_preemption_signal)
+            signal.signal(signal.SIGINT, self._handle_preemption_signal)
+        except (ValueError, AttributeError):
+            pass
+
+    def _handle_preemption_signal(self, signum: int, frame: object) -> None:
+        """Internal callback invoked upon receiving a preemption signal.
+
+        Args:
+            signum (int): The received signal number.
+            frame (object): Current execution frame.
+        """
+        self.save_preemption_checkpoint({"signal": signum, "status": "preempted"})
 
 
 class Server:
@@ -311,7 +444,7 @@ class Server:
                         conn.setblocking(True)
                         header_len_b = conn.recv(4)
                         if not header_len_b:
-                            continue  # pragma: no cover
+                            continue
                         header_len = int.from_bytes(header_len_b, "big")
                         header_str = conn.recv(header_len).decode("utf-8")
                         header = json.loads(header_str)
@@ -335,13 +468,13 @@ class Server:
                         elif action in ("push", "send"):
                             data_len_b = conn.recv(8)
                             if not data_len_b:
-                                continue  # pragma: no cover
+                                continue
                             data_len = int.from_bytes(data_len_b, "big")
                             payload = bytearray()
                             while len(payload) < data_len:
                                 chunk = conn.recv(min(4096, data_len - len(payload)))
                                 if not chunk:
-                                    break  # pragma: no cover
+                                    break
                                 payload.extend(chunk)
                             bio = io.BytesIO(bytes(payload))
                             arr = np.load(bio, allow_pickle=False)
@@ -463,7 +596,7 @@ class SlurmClusterResolver:
                     for i in range(int(start), int(end) + 1):
                         nodes.append(f"{prefix}{str(i).zfill(width)}")
                 else:
-                    nodes.append(f"{prefix}{r}")  # pragma: no cover
+                    nodes.append(f"{prefix}{r}")
         else:
             nodes = nodelist.split(",")
 
@@ -546,7 +679,7 @@ class PipelineParallelismStrategy(Distribution):
             for stage_idx in range(num_stages):
                 for node_id in stages_nodes[stage_idx]:
                     if node_id not in graph.nodes:
-                        continue  # pragma: no cover
+                        continue
                     n = graph.nodes[node_id]
                     new_n = deepcopy(n)
                     new_n.id = f"{n.id}_mb{mb}"
@@ -646,7 +779,7 @@ class PipelineParallelismStrategy(Distribution):
         from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
         if self.num_microbatches <= 1:
-            return  # pragma: no cover
+            return
 
         inputs = [n for n in graph.nodes.values() if n.op_type == "Input"]
         compute_nodes = {nid: n for nid, n in graph.nodes.items() if n.op_type != "Input"}
@@ -656,18 +789,18 @@ class PipelineParallelismStrategy(Distribution):
         body_graph = IRGraph()
         body_inputs = []
         for inp in inputs:
-            body_in = IRNode(id=f"{inp.id}_b", op_type="Input")  # pragma: no cover
-            body_graph.nodes[body_in.id] = body_in  # pragma: no cover
-            body_inputs.append(body_in)  # pragma: no cover
-            # pragma: no cover
-            slice_id = f"{inp.id}_slice"  # pragma: no cover
-            slice_node = IRNode(id=slice_id, op_type="Slice", inputs=[body_in.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})  # pragma: no cover
-            body_graph.nodes[slice_id] = slice_node  # pragma: no cover
-            # pragma: no cover
-            for n in compute_nodes.values():  # pragma: no cover
-                for i, in_id in enumerate(n.inputs):  # pragma: no cover
-                    if in_id == inp.id:  # pragma: no cover
-                        n.inputs[i] = slice_id  # pragma: no cover
+            body_in = IRNode(id=f"{inp.id}_b", op_type="Input")
+            body_graph.nodes[body_in.id] = body_in
+            body_inputs.append(body_in)
+
+            slice_id = f"{inp.id}_slice"
+            slice_node = IRNode(id=slice_id, op_type="Slice", inputs=[body_in.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})
+            body_graph.nodes[slice_id] = slice_node
+
+            for n in compute_nodes.values():
+                for i, in_id in enumerate(n.inputs):
+                    if in_id == inp.id:
+                        n.inputs[i] = slice_id
 
         for n in compute_nodes.values():
             body_graph.nodes[n.id] = n
@@ -708,17 +841,17 @@ class PipelineParallelismStrategy(Distribution):
 
         if not hasattr(self, "config") or not getattr(self.config, "schedule", None):
             # Fallback 1F1B schedule
-            for i in range(num_stages - 1):  # pragma: no cover
-                schedule.append(("forward", i))  # pragma: no cover
-            for _ in range(self.num_microbatches - num_stages + 1):  # pragma: no cover
-                schedule.append(("forward", num_stages - 1))  # pragma: no cover
-                schedule.append(("backward", num_stages - 1))  # pragma: no cover
-                for j in reversed(range(num_stages - 1)):  # pragma: no cover
-                    schedule.append(("forward", j))  # pragma: no cover
-                    schedule.append(("backward", j))  # pragma: no cover
-            for j in reversed(range(num_stages - 1)):  # pragma: no cover
-                schedule.append(("backward", j))  # pragma: no cover
-            return schedule  # pragma: no cover
+            for i in range(num_stages - 1):
+                schedule.append(("forward", i))
+            for _ in range(self.num_microbatches - num_stages + 1):
+                schedule.append(("forward", num_stages - 1))
+                schedule.append(("backward", num_stages - 1))
+                for j in reversed(range(num_stages - 1)):
+                    schedule.append(("forward", j))
+                    schedule.append(("backward", j))
+            for j in reversed(range(num_stages - 1)):
+                schedule.append(("backward", j))
+            return schedule
 
         # Execute YAML-driven schedule
         for phase in self.config.schedule.phases:
@@ -832,9 +965,9 @@ class MeshShardingStrategy(Distribution):
                     break
 
             if self.layout_map:
-                spec = self.layout_map.get(node.id)  # pragma: no cover
-                if spec:  # pragma: no cover
-                    node.sharding = spec  # pragma: no cover
+                spec = self.layout_map.get(node.id)
+                if spec:
+                    node.sharding = spec
 
     def lower_sharding(self, graph: IRGraph) -> bool:
         """Execute SPMD graph partitioning, lowering 1D/2D mesh sharding to explicit collectives.
@@ -847,6 +980,6 @@ class MeshShardingStrategy(Distribution):
         """
         self.propagate_layouts(graph)
 
-        from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
+        from ml_switcheroo_compiler.transforms.passes.spmd import spmd_partitioning_pass
 
-        return inject_spmd_communication_pass(graph)
+        return spmd_partitioning_pass(graph)

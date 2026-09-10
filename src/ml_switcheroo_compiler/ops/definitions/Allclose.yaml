@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.allclose
   mlx:
     eager: mlx.core.allclose
-  edge_onnx:
-    generator: allclose
-  edge_stablehlo:
-
-    opcode: stablehlo.allclose
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

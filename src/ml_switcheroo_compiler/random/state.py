@@ -64,7 +64,7 @@ def _emit_random_node(
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: Any) -> Tensor:
+def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: Any) -> Any:
     """Help to dispatch random functions in eager mode.
 
     Args:
@@ -74,7 +74,7 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: Any, **kwargs: A
         **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Result.
+        Any: Result.
     """
     backend = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)

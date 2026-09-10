@@ -1,5 +1,11 @@
+class DummyGraph:
+    def __init__(self):
+        self.nodes = {}
+        self.outputs = []
+
+
 # ruff: noqa
-from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxAudioVisitor, JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor, JaxVisionVisitor
+from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor
 from unittest.mock import MagicMock, patch
 
 from unittest.mock import MagicMock
@@ -115,117 +121,6 @@ def test_jax_control_flow_visitor():
     assert vis.visit_Scan(DummyNode(), ["a", "b"]) == "jax.lax.scan(lambda c, x: (c, x), a, b)"
 
 
-def test_jax_vision_visitor():
-    vis = JaxVisionVisitor()
-    assert vis.visit_ElasticTransform(DummyNode({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "jax_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
-    assert vis.visit_ElasticTransform(DummyNode(), ["a", "b"]) == "jax_elastic_transform(a, b, 'bilinear', 0.0, None)"
-    assert vis.visit_GaussianBlur(DummyNode({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "jax_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
-    assert vis.visit_GaussianBlur(DummyNode(), ["a"]) == "jax_gaussian_blur(a, None, None, 'same', None)"
-    assert vis.visit_MedianFilter(DummyNode({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "jax_median_filter(a, 3, 'same', \"df\")"
-    assert vis.visit_MedianFilter(DummyNode(), ["a"]) == "jax_median_filter(a, None, 'same', None)"
-    assert vis.visit_IoU(DummyNode({"bounding_box_format": "cxywh"}), ["a", "b"]) == "jax_iou(a, b, 'cxywh')"
-    assert vis.visit_IoU(DummyNode(), ["a", "b"]) == "jax_iou(a, b, 'xyxy')"
-    assert vis.visit_NonMaxSuppression(DummyNode({"max_output_size": 10}), ["a", "b"]) == "jax_nms(a, b, 10, 0.5, -inf)"
-    assert vis.visit_NonMaxSuppression(DummyNode(), ["a", "b"]) == "jax_nms(a, b, None, 0.5, -inf)"
-    assert vis.visit_ResizeBicubic(DummyNode({"size": 10, "align_corners": True}), ["a"]) == "jax_resize(a, 10, 'bicubic', True)"
-    assert vis.visit_ResizeBicubic(DummyNode(), ["a"]) == "jax_resize(a, None, 'bicubic', False)"
-    assert vis.visit_ResizeLanczos3(DummyNode({"size": 10, "align_corners": True}), ["a"]) == "jax_resize(a, 10, 'lanczos3', True)"
-    assert vis.visit_ResizeLanczos3(DummyNode(), ["a"]) == "jax_resize(a, None, 'lanczos3', False)"
-    assert vis.visit_ExtractBoundingBoxes(DummyNode({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"]) == "jax_extract_bounding_boxes(a, b, c, 10, 'bilinear', 0.0, \"df\")"
-    assert vis.visit_ExtractBoundingBoxes(DummyNode(), ["a", "b", "c"]) == "jax_extract_bounding_boxes(a, b, c, None, 'bilinear', 0.0, None)"
-    assert vis.visit_PerspectiveTransform(DummyNode({"data_format": "df"}), ["a", "b", "c"]) == "jax_perspective_transform(a, b, c, 'bilinear', 0.0, \"df\")"
-    assert vis.visit_PerspectiveTransform(DummyNode(), ["a", "b", "c"]) == "jax_perspective_transform(a, b, c, 'bilinear', 0.0, None)"
-
-
-def test_jax_distributed_visitor():
-    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
-
-    class DummyGenerator(JaxDistributedVisitor):
-        def __init__(self):
-            self._code = []
-            super().__init__(self)
-
-        @property
-        def code(self):
-            return self._code
-
-    gen = DummyGenerator()
-
-    # Send
-    node_send = IRNode("send", "Send", inputs=["in1"], attributes={"dst_rank": 1})
-    res = gen.visit_Send(node_send, ["in1"])
-    assert res == ""
-    assert "Send to 1" in gen.code[0]
-
-    # Recv
-    node_recv = IRNode("recv", "Recv", inputs=[], attributes={"src_rank": 2, "shape": (2, 2), "dtype": "float32"})
-    res = gen.visit_Recv(node_recv, [])
-    assert res == "v_recv"
-    assert "Recv from 2" in gen.code[1]
-
-    # AllGather
-    node_allgather = IRNode("ag", "AllGather", inputs=["in1"], attributes={"axis_name": "'x'"})
-    res = gen.visit_AllGather(node_allgather, ["in1"])
-    assert res == "jax.lax.all_gather(in1, axis_name='x')"
-
-    # ReduceScatter
-    node_rs = IRNode("rs", "ReduceScatter", inputs=["in1"], attributes={"axis": 0, "axis_name": "'x'", "op": "jax.lax.psum"})
-    res = gen.visit_ReduceScatter(node_rs, ["in1"])
-    assert res == "jax.lax.reduce_scatter(in1, jax.lax.psum, scatter_dimension=0, axis_name='x')"
-
-    # AllReduce
-    node_ar = IRNode("ar", "AllReduce", inputs=["in1"], attributes={"axis_name": "'x'", "op": "psum"})
-    res = gen.visit_AllReduce(node_ar, ["in1"])
-    assert res == "jax.lax.psum(in1, axis_name='x')"
-
-
-def test_jax_math_visitor_extra():
-    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxMathVisitor
-
-    class DummyGenerator(JaxMathVisitor):
-        def __init__(self):
-            pass
-
-    gen = DummyGenerator()
-
-    # RaggedDot
-    node_rd = IRNode("rd", "RaggedDot", inputs=["in1", "in2"])
-    res = gen.visit_RaggedDot(node_rd, ["in1", "in2"])
-    assert res == "jax_ragged_dot(in1, in2)"
-
-    # Einsum
-    node_einsum = IRNode("einsum", "Einsum", inputs=["in1", "in2"])
-    res = gen.visit_Einsum(node_einsum, ["in1", "in2"], equation="ij,jk->ik")
-    assert res == "jnp.einsum('ij,jk->ik', in1, in2)"
-
-
-def test_jax_audio_visitor():
-    vis = JaxAudioVisitor()
-    assert vis.visit_Istft(DummyNode({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "jax_istft(a, 2048, 512, None, 'hann', False)"
-    assert vis.visit_MelFilterbank(DummyNode({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "jax_mel_filterbank(1, 2, 3, 4.0, 5.0)"
-    assert vis.visit_Mfcc(DummyNode({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "jax_mfcc(a, 2, 1, 3.0, 4.0, 5)"
-
-
-"Test module."
-
-sys.modules["jax.scipy"] = MagicMock()
-
-sys.modules["jax.scipy.special"] = MagicMock()
-
-sys.modules["jax.scipy.signal"] = MagicMock()
-
-sys.modules["jax.scipy.stats"] = MagicMock()
-
-sys.modules["jax.scipy.linalg"] = MagicMock()
-
-sys.modules["jax.nn"] = MagicMock()
-
-
-class DummyGraph:
-    def __init__(self):
-        self.nodes = []
-
-
 def test_jax_generator():
     g = DummyGraph()
     gen = JAXCodeGenerator(g)
@@ -284,3 +179,33 @@ def test_jax_generator_mixin_code_prop():
 
     m = JaxDistributedVisitor(DummyGen())
     assert m.code == []
+
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    n_ata = IRNode(id="ata", op_type="AllToAll", inputs=["t"], attributes={"axis_name": "'data'", "split_axis": 0, "concat_axis": 1})
+    res_ata = m.visit_AllToAll(n_ata, ["t"])
+    assert "jax.lax.all_to_all(t, axis_name='data', split_axis=0, concat_axis=1)" in res_ata
+
+    n_bc = IRNode(id="bc", op_type="Broadcast", inputs=["t"], attributes={"axis_name": "'model'"})
+    res_bc = m.visit_Broadcast(n_bc, ["t"])
+    assert "jax.lax.pbroadcast(t, axis_name='model')" in res_bc
+
+
+def test_jax_ragged_dot_and_einsum():
+    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxMathVisitor
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    class DummyGenerator:
+        pass
+
+    mixin = JaxMathVisitor(generator=DummyGenerator())
+
+    # Test RaggedDot
+    node1 = IRNode(id="rd", op_type="RaggedDot", inputs=["a", "b"])
+    res1 = mixin.visit_RaggedDot(node1, ["x", "y"])
+    assert "jax_ragged_dot(x, y)" in res1
+
+    # Test Einsum
+    node2 = IRNode(id="ein", op_type="Einsum", inputs=["a", "b"])
+    res2 = mixin.visit_Einsum(node2, ["x", "y"], equation="ij,jk->ik")
+    assert "jnp.einsum('ij,jk->ik', x, y)" in res2

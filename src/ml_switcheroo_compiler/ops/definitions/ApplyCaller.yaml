@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ApplyCaller
-  edge_stablehlo:
-
-    opcode: stablehlo.apply_caller
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

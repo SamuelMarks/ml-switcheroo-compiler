@@ -1,2 +1,2 @@
 BetaCdf:
-  target_api: np.betacdf
+  target_api: custom_op

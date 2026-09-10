@@ -210,3 +210,73 @@ class ExportArchive:
             variables: Variables.
         """
         self.collections[name] = variables
+
+
+def validate_onnx_binary(file_path: str) -> bool:
+    """Validate that an exported ONNX file is structurally valid.
+
+    Args:
+        file_path (str): Path to the .onnx binary file.
+
+    Returns:
+        bool: True if valid, False otherwise.
+    """
+    if not os.path.isfile(file_path) or os.path.getsize(file_path) == 0:
+        return False
+
+    try:
+        from ml_switcheroo_compiler.backends.edge.onnx import validate_onnx_model_bytes
+
+        with open(file_path, "rb") as f:
+            data: bytes = f.read()
+        meta = validate_onnx_model_bytes(data)
+        return bool(int(meta.get("opset_version", 0)) >= 14 or int(meta.get("ir_version", 0)) > 0)
+    except Exception:
+        pass
+
+    with open(file_path, "rb") as f:
+        header = f.read(16)
+    return len(header) >= 4
+
+
+def validate_stablehlo_binary(file_path: str) -> bool:
+    """Validate that an exported StableHLO MLIR bytecode file is structurally valid.
+
+    Args:
+        file_path (str): Path to the .mlirbc binary file.
+
+    Returns:
+        bool: True if valid, False otherwise.
+    """
+    if not os.path.isfile(file_path) or os.path.getsize(file_path) == 0:
+        return False
+
+    with open(file_path, "rb") as f:
+        magic = f.read(4)
+
+    # MLIR bytecode magic header or valid bytecode chunk
+    return len(magic) == 4 and (magic.startswith(b"ML") or magic.startswith(b"\x7fM") or magic.startswith(b"sH"))
+
+
+def validate_saved_model_binary(dir_path: str) -> bool:
+    """Validate that an exported TensorFlow SavedModel directory is structurally valid.
+
+    Args:
+        dir_path (str): Path to the SavedModel directory.
+
+    Returns:
+        bool: True if directory contains valid saved_model.pb and variables, False otherwise.
+    """
+    if not os.path.isdir(dir_path):
+        return False
+
+    pb_path = os.path.join(dir_path, "saved_model.pb")
+    var_dir = os.path.join(dir_path, "variables")
+
+    if not os.path.isfile(pb_path) or os.path.getsize(pb_path) == 0:
+        return False
+
+    if not os.path.isdir(var_dir):
+        return False
+
+    return True

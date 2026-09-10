@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.split
   mlx:
     eager: mlx.core.split
-  edge_onnx:
-    generator: split
-  edge_stablehlo:
-
-    opcode: stablehlo.split
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

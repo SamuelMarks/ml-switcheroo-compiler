@@ -503,7 +503,6 @@ def test_math_string_io_sparsemapvalues():
 def test_math_string_io_sparsedensematmul_fallback():
     import numpy as np
 
-    import ml_switcheroo_compiler.ops as ops
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_sparsedensematmul
 
     class DummyBackend:
@@ -513,30 +512,14 @@ def test_math_string_io_sparsedensematmul_fallback():
     # hit backend branch
     assert _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2))) == "hit_bk"
 
-    class MockSDM:
-        def __new__(cls, *args, **kwargs):
-            return "hit_mock"
+    class EmptyBackend:
+        pass
 
-    if not hasattr(ops, "OpDef"):
-
-        class DummyOpDef:
-            pass
-
-        ops.OpDef = DummyOpDef
-
-    ops.SparseDenseMatMul = MockSDM
-    assert _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2))) == "hit_mock"
-
-    # Exception branch
-    from unittest.mock import patch
-
-    with patch("builtins.issubclass", side_effect=Exception("Test")):
-        try:
-            _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2)))
-        except RuntimeError:
-            pass
-
-    del ops.SparseDenseMatMul
+    # fallback to np.matmul
+    a = np.array([[1.0, 2.0], [3.0, 4.0]])
+    b = np.array([[5.0, 6.0], [7.0, 8.0]])
+    res = _np_sparsedensematmul(EmptyBackend(), a, b)
+    np.testing.assert_allclose(res, a @ b)
 
 
 def test_math_string_io_csv_edge_cases():
@@ -589,6 +572,10 @@ def test_math_string_io_vision_formats():
 
 
 def test_math_string_io_decode_image_exceptions():
+    import io
+
+    from PIL import Image
+
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image_camel
 
     class DummyBackend:
@@ -605,6 +592,13 @@ def test_math_string_io_decode_image_exceptions():
         _np_decode_image_camel(DummyBackend(), b"invalid_image_data")
     except RuntimeError:
         pass
+
+    # 370->373 (channels=0 on 3-channel RGB image where arr.ndim == 3)
+    buf = io.BytesIO()
+    Image.new("RGB", (10, 10)).save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+    res_zero = _np_decode_image_camel(DummyBackend(), png_bytes, channels=0)
+    assert res_zero.shape == (10, 10, 3)
 
 
 def test_math_string_io_read_write_file_camel_success(tmp_path):

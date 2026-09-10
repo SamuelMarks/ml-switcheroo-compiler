@@ -57,6 +57,14 @@ dispatch_rules:
     x: "Math.ceil({nelem} / {wg_x})"
     y: "1"
     z: "1"
+  softmax:
+    x: "Math.ceil({N} / {wg_x})"
+    y: "Math.ceil({M} / {wg_y})"
+    z: "1"
+  layer_norm:
+    x: "Math.ceil({N} / {wg_x})"
+    y: "Math.ceil({M} / {wg_y})"
+    z: "1"
   default:
     x: "Math.ceil({nelem} / ({wg_x} * {wg_y} * {wg_z}))"
     y: "1"

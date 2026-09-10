@@ -61,30 +61,17 @@ def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:
     """
 
     def decorator(f: F) -> F:
-        """Mark a function to skip AutoGraph conversion.
+        """Attach the do-not-convert attribute to the function.
 
         Args:
-            f (F): The inner function being wrapped by the decorator.
+            f (F): The function to be marked.
 
         Returns:
             F: The original function with the skip flag attached.
         """
         f._autograph_do_not_convert = True
-
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            """Execute the uncoverted function directly.
-
-            Args:
-                *args (object): Positional arguments passed to the function.
-                **kwargs (object): Keyword arguments passed to the function.
-
-            Returns:
-                object: The return value of the wrapped function.
-            """
-            return f(*args, **kwargs)
-
-        return wrapper
+        f.__wrapped__ = f
+        return f
 
     if func is not None:
         return decorator(func)

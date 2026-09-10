@@ -1,0 +1,14 @@
+templates:
+  vector_unrolled_op:
+    body: |
+      // Bounds check
+      if ({nelem} > size) return; // Out of bounds
+      int i_{clean_id} = 0;
+      for(; i_{clean_id} <= {nelem} - 4; i_{clean_id} += 4) {{
+          v128_t vec_in = wasm_v128_load(&buf_{in_id}[i_{clean_id}]);
+          v128_t vec_out = {simd_macro}(vec_in);
+          wasm_v128_store(&buf_{clean_id}[i_{clean_id}], vec_out);
+      }}
+      for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{
+          buf_{clean_id}[i_{clean_id}] = {scalar_expr};
+      }}

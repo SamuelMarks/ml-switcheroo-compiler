@@ -1,2 +1,2 @@
 GridSample:
-  target_api: '''mx.image.grid_sample({0}, {1})'''
+  target_api: custom_op

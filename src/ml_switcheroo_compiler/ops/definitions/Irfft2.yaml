@@ -19,11 +19,6 @@ variants:
     eager: jax.numpy.irfft2
   mlx:
     eager: mlx.core.irfft2
-  edge_onnx:
-    generator: irfft2
-  edge_stablehlo:
-
-    opcode: stablehlo.irfft2
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

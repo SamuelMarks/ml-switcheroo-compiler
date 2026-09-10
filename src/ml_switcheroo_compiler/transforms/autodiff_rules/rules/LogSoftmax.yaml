@@ -1,4 +1,4 @@
 LogSoftmax:
-  jvp: ZerosLike($tangent[0])
+  jvp: Sub($tangent[0], ReduceSum($tangent[0], axis=-1, keepdims=True))
   vjp:
-  - ZerosLike($cotangent)
+  - Sub($cotangent, Mul(Exp($output), ReduceSum($cotangent, axis=-1, keepdims=True)))

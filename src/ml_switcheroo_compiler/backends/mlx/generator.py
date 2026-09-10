@@ -3,6 +3,7 @@
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.registry import register_backend
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
 
@@ -97,6 +98,7 @@ _MLX_POWER_ITERATION_TMPL = """def mlx_power_iteration(w, num_iters, u=None):
 """
 
 
+@register_backend("mlx")
 class MLXCodeGenerator(ClassBasedGenerator):
     """Emit MLX-compatible code from IR."""
 
@@ -120,17 +122,22 @@ class MLXCodeGenerator(ClassBasedGenerator):
         )
 
     @classmethod
-    def save_gguf(cls, file: str, arrays) -> None:
+    def save_gguf(cls, file: str, arrays, metadata=None) -> None:
         """Save a dictionary of arrays to GGUF format.
 
         Args:
             file (str): The file parameter.
             arrays (dict): The arrays parameter.
+            metadata (Optional[dict]): Optional metadata dictionary.
         """
         import mlx.core as mx
 
         if hasattr(mx, "save_gguf"):
-            mx.save_gguf(file, arrays)
+            try:
+                mx.save_gguf(file, arrays, metadata or {})
+            except TypeError:
+                save_args: list[object] = [file, arrays]
+                mx.save_gguf(*save_args)  # type: ignore[call-arg]
 
     @classmethod
     def set_default_stream(cls, stream) -> None:
@@ -169,13 +176,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
             mx.metal.set_wired_limit(limit)
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string."""
-        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
-        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+        """Generate MLX class definition directly from the IR graph.
 
-        gen: int = NumpyGenerator(self.graph)
-        base_code: str = gen.generate()
-        return transpile_source(base_code, target_framework="mlx")
+        Returns:
+            str: Generated MLX source code.
+        """
+        return super().generate()
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
@@ -202,7 +208,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         Returns:
             list: The evaluated or processed output.
         """
-        res: str = [
+        res: list[str] = [
             "import mlx.core as mx",
             "import mlx.nn as nn\n",
             *_MLX_RESIZE_TMPL.split("\n"),

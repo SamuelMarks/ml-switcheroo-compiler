@@ -90,3 +90,26 @@ def test_missing_yaml(monkeypatch):
     monkeypatch.setattr(os.path, "exists", lambda x: False)
     g = IRGraph()
     assert not poly_lower.polyfill_lowering_pass(g)
+
+
+def test_poly_lower_edge_rules(monkeypatch):
+    import ml_switcheroo_compiler.transforms.passes.poly_lower as poly_lower
+
+    mock_rules = {
+        "CustomPythonMissing": {"type": "python", "func": "missing_handler"},
+        "CustomUnknownType": {"type": "unknown"},
+        "CustomRewriteNoAttrs": {"type": "rewrite", "op_type": "NewOp"},
+    }
+    monkeypatch.setattr(poly_lower, "_load_poly_rules", lambda: mock_rules)
+
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="CustomPythonMissing", inputs=[])
+    n2 = IRNode(id="n2", op_type="CustomUnknownType", inputs=[])
+    n3 = IRNode(id="n3", op_type="CustomRewriteNoAttrs", inputs=[])
+    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+
+    modified = poly_lower.polyfill_lowering_pass(g)
+    assert modified
+    assert g.nodes["n1"].op_type == "CustomPythonMissing"
+    assert g.nodes["n2"].op_type == "CustomUnknownType"
+    assert g.nodes["n3"].op_type == "NewOp"

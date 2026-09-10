@@ -252,3 +252,125 @@ def test_pass_manager_nodes_list():
 
     h = _graph_hash(mock_g)
     assert isinstance(h, str)
+
+
+def test_pass_pipeline_load_and_prerequisites():
+    pm = PassManager()
+    pm.load_from_config()
+    assert len(pm.passes) > 0
+    assert "dead_code_elimination" in pm.pass_names
+
+
+def test_pass_pipeline_missing_prerequisite_raises():
+    import tempfile
+
+    import yaml
+
+    invalid_pipeline = {
+        "execution_order": ["pass_b", "pass_a"],
+        "convergence_criteria": {"max_iterations": 5},
+        "prerequisites": {"pass_b": ["pass_a"]},
+    }
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump(invalid_pipeline, f)
+        temp_path = f.name
+
+    pm = PassManager()
+    with pytest.raises(CompilationError, match="Pass 'pass_b' requires prerequisite 'pass_a'"):
+        pm.load_from_config(config_path=temp_path)
+
+
+def test_pass_manager_cyclic_oscillation_detection_and_rollback():
+    pm = PassManager()
+    graph = IRGraph()
+    node_a = IRNode(id="A", op_type="Op1", inputs=[])
+    node_a.shape_metadata = ()
+    graph.nodes["A"] = node_a
+
+    # Construct an oscillating pass: Op1 -> Op2 -> Op1 -> Op2 ...
+    def oscillating_pass(g: IRGraph) -> bool:
+        node = g.nodes["A"]
+        if node.op_type == "Op1":
+            node.op_type = "Op2"
+        else:
+            node.op_type = "Op1"
+        return True
+
+    pm.add_pass(oscillating_pass)
+    # With cyclic oscillation detection, run_until_converged should detect the cycle,
+    # roll back to the first occurrence in the cycle, and terminate cleanly without running forever.
+    result_graph = pm.run_until_converged(graph, max_iterations=100)
+    assert result_graph.nodes["A"].op_type in ("Op1", "Op2")
+
+
+def test_pass_manager_coverage_branches():
+    """Test remaining branch coverage in pass_manager.py."""
+    import tempfile
+
+    import yaml
+
+    from ml_switcheroo_compiler.transforms.pass_manager import (
+        _restore_graph,
+        _snapshot_graph,
+    )
+
+    # 1. _snapshot_graph and _restore_graph with list nodes (lines 88-89, 109)
+    g_list = IRGraph()
+    n_item = IRNode(id="n1", op_type="Input")
+    g_list.nodes = [n_item]  # type: ignore[assignment]
+    snap = _snapshot_graph(g_list)
+    assert "n1" in snap["nodes"]
+    _restore_graph(g_list, snap)
+    assert len(g_list.nodes) == 1
+
+    # 2. _restore_graph with graph missing inputs/outputs attributes, and with non-dict snapshot nodes
+    class DummyGraphWithoutIO:
+        def __init__(self):
+            self.nodes = {}
+
+    dg = DummyGraphWithoutIO()
+    _restore_graph(dg, snap)  # type: ignore[arg-type]
+
+    # Non-dict nodes in snapshot (line 104 False -> line 110)
+    _restore_graph(dg, {"nodes": [], "inputs": [], "outputs": []})  # type: ignore[arg-type]
+
+    # LogicalGraph with inputs and outputs (lines 111 and 113)
+    from ml_switcheroo_ir import LogicalGraph
+
+    lg = LogicalGraph("test_lg")
+    lg.inputs = ["in1"]
+    lg.outputs = ["out1"]
+    snap_lg = _snapshot_graph(lg)
+    _restore_graph(lg, snap_lg)
+    assert lg.inputs == ["in1"]
+    assert lg.outputs == ["out1"]
+
+    # 3. load_from_config with plain execution_order (lines 200-201)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump({"execution_order": ["dead_code_elimination"]}, f)
+        temp_plain = f.name
+
+    pm_plain = PassManager()
+    pm_plain.load_from_config(config_path=temp_plain)
+    assert "dead_code_elimination" in pm_plain.pass_names
+
+    # 4. load_from_config with empty dict or non-matching dict (line 203)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump({"other_key": 123}, f)
+        temp_other = f.name
+
+    pm_other = PassManager()
+    pm_other.load_from_config(config_path=temp_other)
+    assert len(pm_other.passes) == 0
+
+    # 5. run_until_converged with custom convergence_criteria (line 252)
+    pm_conv = PassManager()
+
+    class MockConvergence:
+        max_iterations = 2
+
+    pm_conv.convergence_criteria = MockConvergence()
+    g_conv = IRGraph()
+    g_conv.nodes["n"] = IRNode(id="n", op_type="Input", shape_metadata=())
+    res_conv = pm_conv.run_until_converged(g_conv)
+    assert res_conv is not None

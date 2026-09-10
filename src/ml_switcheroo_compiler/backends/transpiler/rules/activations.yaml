@@ -1,0 +1,74 @@
+# Declarative Activation Functions Transpilation Rules
+ast_to_ir_ops:
+  torch.relu: Relu
+  torch.nn.functional.relu: Relu
+  jax.nn.relu: Relu
+  mlx.core.nn.relu: Relu
+  torch.sigmoid: Sigmoid
+  torch.nn.functional.sigmoid: Sigmoid
+  jax.nn.sigmoid: Sigmoid
+  mlx.core.nn.sigmoid: Sigmoid
+  torch.tanh: Tanh
+  torch.nn.functional.tanh: Tanh
+  jax.numpy.tanh: Tanh
+  mlx.core.tanh: Tanh
+  torch.nn.functional.gelu: GELU
+  jax.nn.gelu: GELU
+  mlx.core.nn.gelu: GELU
+  torch.nn.functional.silu: SiLU
+  jax.nn.silu: SiLU
+  mlx.core.nn.silu: SiLU
+  torch.nn.functional.elu: ELU
+  jax.nn.elu: ELU
+  mlx.core.nn.elu: ELU
+  torch.nn.functional.leaky_relu: LeakyReLU
+  jax.nn.leaky_relu: LeakyReLU
+  mlx.core.nn.leaky_relu: LeakyReLU
+  torch.nn.functional.softmax: Softmax
+  jax.nn.softmax: Softmax
+  mlx.core.nn.softmax: Softmax
+  torch.nn.functional.log_softmax: LogSoftmax
+  jax.nn.log_softmax: LogSoftmax
+  mlx.core.nn.log_softmax: LogSoftmax
+
+ir_to_ast_ops:
+  Relu:
+    pytorch: [torch, relu]
+    jax: [jax, numpy, relu]
+    mlx: [mlx, core, nn, relu]
+  Sigmoid:
+    pytorch: [torch, sigmoid]
+    jax: [jax, nn, sigmoid]
+    mlx: [mlx, core, nn, sigmoid]
+  Tanh:
+    pytorch: [torch, tanh]
+    jax: [jax, numpy, tanh]
+    mlx: [mlx, core, tanh]
+  GELU:
+    pytorch: [torch, nn, functional, gelu]
+    jax: [jax, nn, gelu]
+    mlx: [mlx, core, nn, gelu]
+  SiLU:
+    pytorch: [torch, nn, functional, silu]
+    jax: [jax, nn, silu]
+    mlx: [mlx, core, nn, silu]
+  ELU:
+    pytorch: [torch, nn, functional, elu]
+    jax: [jax, nn, elu]
+    mlx: [mlx, core, nn, elu]
+  LeakyReLU:
+    pytorch: [torch, nn, functional, leaky_relu]
+    jax: [jax, nn, leaky_relu]
+    mlx: [mlx, core, nn, leaky_relu]
+  Softmax:
+    pytorch: [torch, nn, functional, softmax]
+    jax: [jax, nn, softmax]
+    mlx: [mlx, core, nn, softmax]
+  LogSoftmax:
+    pytorch: [torch, nn, functional, log_softmax]
+    jax: [jax, nn, log_softmax]
+    mlx: [mlx, core, nn, log_softmax]
+
+kwarg_translations:
+  dim: axis
+  axis: dim

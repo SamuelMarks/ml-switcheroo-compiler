@@ -70,6 +70,7 @@ def test_config_more_props():
 
     config.jax_enable_x64 = True
     assert config.jax_enable_x64 is True
+    config.jax_enable_x64 = False
 
     c2 = config.clone()
     assert c2.execution.backend == "mlx"

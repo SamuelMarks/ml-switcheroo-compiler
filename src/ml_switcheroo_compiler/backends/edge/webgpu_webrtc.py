@@ -29,7 +29,16 @@ def emit_webrtc_init() -> str:
     templates = data.get("templates", {})
     init_tpl = templates.get("init_peer_connection", "")
 
-    return str(init_tpl.format(config=config, allreduce_handler=handlers.get("allreduce_handler", ""), allgather_handler=handlers.get("allgather_handler", ""), alltoall_handler=handlers.get("alltoall_handler", ""), reducescatter_handler=handlers.get("reducescatter_handler", "")))
+    return str(
+        init_tpl.format(
+            config=config,
+            allreduce_handler=handlers.get("allreduce_handler", ""),
+            allgather_handler=handlers.get("allgather_handler", ""),
+            alltoall_handler=handlers.get("alltoall_handler", ""),
+            reducescatter_handler=handlers.get("reducescatter_handler", ""),
+            broadcast_handler=handlers.get("broadcast_handler", ""),
+        )
+    )
 
 
 def emit_webrtc_op(op_type: str, local_tensor_var: str, op_id: str) -> str:
@@ -58,6 +67,8 @@ def emit_webrtc_op(op_type: str, local_tensor_var: str, op_id: str) -> str:
         tpl = str(templates.get("alltoall_emit", ""))
     elif op_type == "ReduceScatter":
         tpl = str(templates.get("reducescatter_emit", ""))
+    elif op_type == "Broadcast":
+        tpl = str(templates.get("broadcast_emit", ""))
     else:
         return ""
 

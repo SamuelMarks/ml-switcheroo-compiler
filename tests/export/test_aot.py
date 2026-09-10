@@ -262,3 +262,138 @@ def test_aot_no_func_wrapper_tensor():
     # But generator returns "x = 1", so apply_model and evaluate are missing!
     res = c(t1)
     assert res is t1
+
+
+def test_aot_all_remaining_branches():
+    """Test lines 130-132, 213-217, 221-226, 232-242, 280-282, and 288-293 in export/aot.py."""
+    import pytest
+
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    from ml_switcheroo_compiler.core.errors import CompilationError
+    from ml_switcheroo_compiler.export.aot import _get_namespace
+
+    t1 = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
+
+    def simple_identity(x):
+        return x
+
+    # 1. _get_namespace fallback for numpy (lines 130-132)
+    class GeneratorNoGetModule:
+        pass
+
+    ns = _get_namespace("numpy", GeneratorNoGetModule)
+    assert "numpy" in ns
+
+    # 2. static compile_aot returns non-callable or raises Exception (lines 213->219 and 216-217)
+    class BackendStaticNonCallable:
+        @staticmethod
+        def compile_aot(graph, **kwargs):
+            return "not_a_callable"
+
+        def __init__(self, graph):
+            pass
+
+        def generate(self):
+            return "def apply_model(x): return x"
+
+    BackendRegistry.register("backend_static_non_callable", BackendStaticNonCallable)
+    c_non_call = compile_function(simple_identity, backend="backend_static_non_callable")
+    assert c_non_call(t1) is not None
+
+    class BackendStaticRaises:
+        @staticmethod
+        def compile_aot(graph, **kwargs):
+            raise RuntimeError("static aot error")
+
+        def __init__(self, graph):
+            pass
+
+        def generate(self):
+            return "def apply_model(x): return x"
+
+    BackendRegistry.register("backend_static_raises", BackendStaticRaises)
+    c_raises = compile_function(simple_identity, backend="backend_static_raises")
+    assert c_raises(t1) is not None
+
+    # 3. generator_cls(graph) fails with strict=True and strict=False (lines 221-226)
+    class BackendInitFails:
+        def __init__(self, graph):
+            raise RuntimeError("init failure")
+
+    BackendRegistry.register("backend_init_fails", BackendInitFails)
+    with pytest.raises(CompilationError, match="Failed to instantiate generator"):
+        compile_function(simple_identity, backend="backend_init_fails", strict=True)(t1)
+
+    c_fallback_init = compile_function(simple_identity, backend="backend_init_fails", strict=False)
+    assert c_fallback_init(t1) is t1
+
+    # 4. Instance compile_aot hook (lines 232-242)
+    class BackendInstanceAot:
+        def __init__(self, graph):
+            self.mode = "non_callable"
+
+        def compile_aot(self, graph, **kwargs):
+            if self.mode == "non_callable":
+                return 123
+            elif self.mode == "not_implemented":
+                raise NotImplementedError()
+            else:
+                raise RuntimeError("instance aot fail")
+
+        def generate(self):
+            return "def apply_model(x): return x"
+
+    BackendRegistry.register("backend_instance_aot", BackendInstanceAot)
+    # 232->244: returns non-callable
+    c_inst_noncall = compile_function(simple_identity, backend="backend_instance_aot")
+    assert c_inst_noncall(t1) is not None
+
+    # 235-236: NotImplementedError
+    class BackendInstNotImpl(BackendInstanceAot):
+        def __init__(self, graph):
+            super().__init__(graph)
+            self.mode = "not_implemented"
+
+    BackendRegistry.register("backend_inst_not_impl", BackendInstNotImpl)
+    c_inst_notimpl = compile_function(simple_identity, backend="backend_inst_not_impl")
+    assert c_inst_notimpl(t1) is not None
+
+    # 238-242: Exception with strict=True and False
+    class BackendInstError(BackendInstanceAot):
+        def __init__(self, graph):
+            super().__init__(graph)
+            self.mode = "error"
+
+    BackendRegistry.register("backend_inst_error", BackendInstError)
+    with pytest.raises(CompilationError, match="AOT compilation failed"):
+        compile_function(simple_identity, backend="backend_inst_error", strict=True)(t1)
+
+    c_inst_err_fallback = compile_function(simple_identity, backend="backend_inst_error", strict=False)
+    assert c_inst_err_fallback(t1) is t1
+
+    # 5. Missing entrypoint with strict=True (lines 280-282)
+    class BackendNoEntrypoint:
+        def __init__(self, graph):
+            pass
+
+        def generate(self):
+            return "some_var = 1"
+
+    BackendRegistry.register("backend_no_entrypoint", BackendNoEntrypoint)
+    with pytest.raises(CompilationError, match="No executable entrypoint found"):
+        compile_function(simple_identity, backend="backend_no_entrypoint", strict=True)(t1)
+
+    # 6. Execution of compiled code failed (lines 288-293)
+    class BackendExecFails:
+        def __init__(self, graph):
+            pass
+
+        def generate(self):
+            return "def apply_model(x):\n    raise RuntimeError('runtime execution fail')"
+
+    BackendRegistry.register("backend_exec_fails", BackendExecFails)
+    with pytest.raises(CompilationError, match="Execution of compiled code failed"):
+        compile_function(simple_identity, backend="backend_exec_fails", strict=True)(t1)
+
+    c_exec_fallback = compile_function(simple_identity, backend="backend_exec_fails", strict=False)
+    assert c_exec_fallback(t1) is t1

@@ -7,29 +7,19 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_b
 
 # Import all backends to register them with the backend registry dynamically
 # but gracefully handle missing dependencies by failing registry instead of import
-def _safe_import_backend(name: str):
+def _safe_import_backend(name: str) -> None:
+    """Safe import."""
     import importlib
 
     try:
         importlib.import_module(f"ml_switcheroo_compiler.backends.{name}")
-    except ImportError:
+    except Exception:
         pass
 
 
-# Force dynamic backend linking imports
+# Force dynamic backend linking imports - only foundational numpy is loaded eagerly;
+# all other backends are loaded lazily on demand via BackendRegistry._try_load_lazy.
 _safe_import_backend("numpy")
-_safe_import_backend("pytorch")
-_safe_import_backend("jax")
-_safe_import_backend("mlx")
-_safe_import_backend("keras")
-_safe_import_backend("tensorflow")
-_safe_import_backend("cupy")
-_safe_import_backend("dask")
-_safe_import_backend("llvm_cpp")
-_safe_import_backend("rocm")
-_safe_import_backend("metal")
-_safe_import_backend("cuda")
-_safe_import_backend("edge")
 
 __all__ = [
     "BackendRegistry",

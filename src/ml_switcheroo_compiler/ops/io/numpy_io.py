@@ -6,6 +6,7 @@ from __future__ import annotations
 import glob
 import os
 import shutil
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -57,7 +58,7 @@ def load(*args, **kwargs):
     return _emit_shape_node("Load", list(args), kwargs, getattr(_first, "shape", ()), getattr(_first, "dtype", "float32"))
 
 
-def save(*args, **kwargs) -> None:
+def save(*args, **kwargs) -> Any:
     """Save.
 
     Args:
@@ -65,7 +66,7 @@ def save(*args, **kwargs) -> None:
         **kwargs (Any): Keyword args.
 
     Returns:
-        NoneType: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -78,7 +79,7 @@ def save(*args, **kwargs) -> None:
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args, **kwargs) -> None:
+def save_gguf(*args, **kwargs) -> Any:
     """Save gguf.
 
     Args:
@@ -86,7 +87,7 @@ def save_gguf(*args, **kwargs) -> None:
         **kwargs (Any): Keyword args.
 
     Returns:
-        NoneType: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -109,7 +110,7 @@ def save_safetensors(file: str, arrays) -> None:
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args, **kwargs) -> None:
+def savez(*args, **kwargs) -> Any:
     """Savez.
 
     Args:
@@ -117,7 +118,7 @@ def savez(*args, **kwargs) -> None:
         **kwargs (Any): Keyword args.
 
     Returns:
-        NoneType: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -130,7 +131,7 @@ def savez(*args, **kwargs) -> None:
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args, **kwargs) -> None:
+def savez_compressed(*args, **kwargs) -> Any:
     """Savez compressed.
 
     Args:
@@ -138,7 +139,7 @@ def savez_compressed(*args, **kwargs) -> None:
         **kwargs (Any): Keyword args.
 
     Returns:
-        NoneType: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 

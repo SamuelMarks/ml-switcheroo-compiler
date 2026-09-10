@@ -118,7 +118,9 @@ class WasmCodeGenerator(BaseGenerator):
                 intrinsics: dict[str, dict[str, str]] = data.get("intrinsics", {})
                 for _op, intrinsic_data in intrinsics.items():
                     if intrinsic_data.get("macro_name") and intrinsic_data.get("simd_expr"):
-                        helpers.append(f"inline v128_t {intrinsic_data['macro_name']}(v128_t x) {{")
+                        is_binary: bool = "b" in intrinsic_data["simd_expr"]
+                        arg_sig: str = "v128_t a, v128_t b" if is_binary else "v128_t x"
+                        helpers.append(f"inline v128_t {intrinsic_data['macro_name']}({arg_sig}) {{")
                         for line in intrinsic_data["simd_expr"].split("\n"):
                             if line.strip():
                                 helpers.append(f"    {line}")
@@ -255,6 +257,14 @@ class WasmCodeGenerator(BaseGenerator):
         js_code: str = emit_webrtc_op("ReduceScatter", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
+    def visit_Broadcast(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Emit WebRTC Broadcast."""
+        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
+
+        op_id: str = getattr(node, "id", "op")
+        js_code: str = emit_webrtc_op("Broadcast", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
+        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
+
     def visit_WhileLoop(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate WhileLoop."""
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
@@ -268,9 +278,15 @@ class WasmCodeGenerator(BaseGenerator):
             subgen = WasmCodeGenerator(body_graph)
             loop_body = subgen.generate()
 
-        condition_expr: str = f"buf_{inputs[0]}[0] > 0.0" if inputs else "1"
+        condition_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
 
-        body: str = template["body"].format(in0=inputs[0] if inputs else "dummy", clean_id=clean_id, condition_expr=condition_expr, max_iters=attrs.get("max_iters", 10), loop_body=loop_body)
+        body: str = template["body"].format(
+            in0=inputs[0] if inputs else "dummy",
+            clean_id=clean_id,
+            condition_expr=condition_expr,
+            max_iters=attrs.get("max_iters", 10),
+            loop_body=loop_body,
+        )
         for line in body.split("\n"):
             self.add_line(line)
 
@@ -329,7 +345,8 @@ class WasmCodeGenerator(BaseGenerator):
         true_body: str = _lower_branch(true_graph, inputs[1] if len(inputs) > 1 else inputs[0] if inputs else "dummy")
         false_body: str = _lower_branch(false_graph, inputs[2] if len(inputs) > 2 else inputs[0] if inputs else "dummy")
 
-        body: str = template["body"].format(condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", true_body=true_body, false_body=false_body)
+        cond_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
+        body: str = template["body"].format(condition_expr=cond_expr, true_body=true_body, false_body=false_body)
         for line in body.split("\n"):
             self.add_line(line)
 
@@ -350,8 +367,9 @@ class WasmCodeGenerator(BaseGenerator):
             subgen = WasmCodeGenerator(body_graph)
             loop_body = subgen.generate()
 
-        scan_op_expr: str = f"buf_{clean_id}[i] = buf_{inputs[0]}[i];\\n    " + loop_body.replace("\\n", "\\n    ") if inputs else f"buf_{clean_id}[i] = 1.0f;"
-        body: str = template["body"].format(clean_id=clean_id, nelem=nelem, init_val="0.0", scan_op_expr=scan_op_expr)
+        init_val: str = str(attrs.get("init_val", "0.0"))
+        scan_op_expr: str = str(attrs.get("scan_op_expr") or (f"buf_{clean_id}[i] = buf_{inputs[0]}[i];\\n    " + loop_body.replace("\\n", "\\n    ") if inputs else f"buf_{clean_id}[i] = 1.0f;"))
+        body: str = template["body"].format(clean_id=clean_id, nelem=nelem, init_val=init_val, scan_op_expr=scan_op_expr)
         for line in body.split("\n"):
             self.add_line(line)
 
@@ -544,7 +562,16 @@ class WasmCodeGenerator(BaseGenerator):
         self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
 
     def visit_ReduceSum(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate ReduceSum WASM."""
+        """Generate ReduceSum WASM.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template: dict[str, str] = get_wasm_template("ReduceSum")
@@ -555,6 +582,264 @@ class WasmCodeGenerator(BaseGenerator):
             if line.strip() or line == "":
                 self.add_line(f"  {line}")
 
+    def visit_Add(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Add WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Sub(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Sub WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Mul(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Mul WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Div(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Div WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Min(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Min WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Max(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Max WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Abs(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Abs WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Neg(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Neg WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Sqrt(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Sqrt WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Relu(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Relu WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Ceil(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Ceil WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Floor(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Floor WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Round(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Round WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Sin(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Sin WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def visit_Cos(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Cos WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): Operation type.
+            clean_id (str): Sanitized identifier.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+
+    def _generate_binary_simd_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate vector unrolled v128 binary operations with remainder loop peeling and bounds checking.
+
+        Args:
+            node (IRNode): The IR node.
+            op_type (str): The operation type name.
+            clean_id (str): Sanitized identifier for generated code variables.
+            inputs (list[str]): Input variable names.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        in0: str = inputs[0] if len(inputs) > 0 else "dummy"
+        in1: str = inputs[1] if len(inputs) > 1 else in0
+
+        import os
+
+        import yaml
+
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
+
+        simd_macro: str = ""
+        scalar_expr: str = ""
+
+        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
+                intr = data.get("intrinsics", {}).get(op_type)
+                if intr:
+                    simd_macro = intr.get("macro_name", "")
+                    if intr.get("scalar_fallback"):
+                        scalar_expr = intr["scalar_fallback"].format(f"buf_{in0}[i_{clean_id}]", f"buf_{in1}[i_{clean_id}]")
+        if not scalar_expr:
+            binary_scalars: dict[str, str] = {
+                "add": f"buf_{in0}[i_{clean_id}] + buf_{in1}[i_{clean_id}]",
+                "sub": f"buf_{in0}[i_{clean_id}] - buf_{in1}[i_{clean_id}]",
+                "mul": f"buf_{in0}[i_{clean_id}] * buf_{in1}[i_{clean_id}]",
+                "div": f"buf_{in0}[i_{clean_id}] / buf_{in1}[i_{clean_id}]",
+                "min": f"std::min(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])",
+                "max": f"std::max(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])",
+            }
+            scalar_expr = binary_scalars.get(op_type.lower(), f"buf_{in0}[i_{clean_id}]")
+
+        self.add_line("  // Bounds check")
+        self.add_line(f"  if ({nelem} > size) return; // Out of bounds")
+
+        if simd_macro:
+            self.add_line(f"  int i_{clean_id} = 0;")
+            self.add_line(f"  for(; i_{clean_id} <= {nelem} - 4; i_{clean_id} += 4) {{")
+            self.add_line(f"      v128_t vec_a = wasm_v128_load(&buf_{in0}[i_{clean_id}]);")
+            self.add_line(f"      v128_t vec_b = wasm_v128_load(&buf_{in1}[i_{clean_id}]);")
+            self.add_line(f"      v128_t vec_out = {simd_macro}(vec_a, vec_b);")
+            self.add_line(f"      wasm_v128_store(&buf_{clean_id}[i_{clean_id}], vec_out);")
+            self.add_line("  }")
+            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
+            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
+            self.add_line("  }")
+        else:
+            self.add_line(f"  int i_{clean_id} = 0;")
+            self.add_line(f"  for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{")
+            self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
+            self.add_line("  }")
+
     def _generate_vector_unrolled_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate vector unrolled v128 operations with remainder loop peeling and bounds checking."""
         in_id = inputs[0] if inputs else "dummy"
@@ -564,9 +849,10 @@ class WasmCodeGenerator(BaseGenerator):
         import yaml
 
         from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
+        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
         simd_macro = ""
-        scalar_expr = f"std::sin(buf_{in_id}[i_{clean_id}])"  # fallback
+        scalar_expr = ""
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
         if os.path.exists(yaml_path):
@@ -577,6 +863,31 @@ class WasmCodeGenerator(BaseGenerator):
                     simd_macro = intr.get("macro_name", "")
                     if intr.get("scalar_fallback"):
                         scalar_expr = intr["scalar_fallback"].format(f"buf_{in_id}[i_{clean_id}]")
+                if not scalar_expr:
+                    scalar_def = data.get("scalars", {}).get(op_type.lower())
+                    if scalar_def:
+                        body_str = scalar_def.replace("return ", "").rstrip(";")
+                        scalar_expr = body_str.replace("a", f"buf_{in_id}[i_{clean_id}]")
+        else:
+            builtins = {
+                "sin": "std::sin({0})",
+                "cos": "std::cos({0})",
+                "exp": "std::exp({0})",
+                "log": "std::log({0})",
+                "tanh": "std::tanh({0})",
+                "sqrt": "std::sqrt({0})",
+                "abs": "std::abs({0})",
+                "neg": "-{0}",
+                "relu": "std::max(0.0f, {0})",
+            }
+            if op_type.lower() in builtins:
+                scalar_expr = builtins[op_type.lower()].format(f"buf_{in_id}[i_{clean_id}]")
+
+        if not simd_macro and not scalar_expr:
+            raise UnimplementedMathError(f"Operation '{op_type}' lacks WASM SIMD intrinsics and scalar fallback.")
+
+        if simd_macro and not scalar_expr:
+            scalar_expr = f"wasm_f32x4_extract_lane({simd_macro}(wasm_f32x4_splat(buf_{in_id}[i_{clean_id}])), 0)"
 
         self.add_line("  // Bounds check")
         self.add_line(f"  if ({nelem} > size) return; // Out of bounds")
@@ -741,7 +1052,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         for node in self.sorted_nodes:
             op_type: str = getattr(node, "op_type", "")
-            if op_type == "Input":
+            if op_type in ("Input", "Output", "Constant"):
                 continue
 
             nid = getattr(node, "id", "")
@@ -824,3 +1135,158 @@ class WasmCodeGenerator(BaseGenerator):
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> tuple[str, str]:
+        """Compile IRGraph into a standalone .wasm binary via compile_wasm.
+
+        Args:
+            graph (IRGraph): Target computational graph.
+            **kwargs (object): Compiler options.
+
+        Returns:
+            tuple[str, str]: Paths to generated js loader and wasm binary files.
+        """
+        if graph != self.graph:
+            self.graph = graph
+            from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+
+            self.sorted_nodes = topological_sort(graph)
+
+        out_dir = str(kwargs.get("output_dir", "."))
+        res = self.compile_wasm(output_dir=out_dir)
+        return res if res is not None else ("", "")
+
+    def export_graph_payload(self) -> dict[str, Union[list[str], list[dict[str, Union[str, list[str], list[int]]]]]]:
+        """Export serialized graph definition for browser-side WASM execution.
+
+        Returns:
+            dict[str, Union[list[str], list[dict[str, Union[str, list[str], list[int]]]]]]: Graph payload containing nodes, inputs, outputs, and shape metadata.
+        """
+        nodes_list: list[dict[str, Union[str, list[str], list[int]]]] = []
+        for node in self.sorted_nodes:
+            nodes_list.append(
+                {
+                    "id": str(getattr(node, "id", "")),
+                    "op_type": str(getattr(node, "op_type", "")),
+                    "inputs": [str(i) for i in getattr(node, "inputs", [])],
+                    "shape_metadata": [int(s) for s in (getattr(node, "shape_metadata", ()) or ()) if isinstance(s, (int, float))],
+                }
+            )
+        return {
+            "inputs": [str(i) for i in getattr(self.graph, "inputs", [])],
+            "outputs": [str(o) for o in getattr(self.graph, "outputs", [])],
+            "nodes": nodes_list,
+        }
+
+    def apply_shape_telemetry(self, telemetry: dict[str, object]) -> None:
+        """Update IRGraph node shape metadata and refine symbolic dimensions from client telemetry.
+
+        Args:
+            telemetry (dict[str, object]): Mapping or payload containing learned concrete shapes.
+        """
+        shape_data: dict[str, object] = telemetry.get("shapes", telemetry) if isinstance(telemetry, dict) else {}
+        if not isinstance(shape_data, dict):
+            return
+
+        solved_env: dict[str, int] = {}
+        for node in self.sorted_nodes:
+            nid: str = getattr(node, "id", "")
+            if nid in shape_data:
+                concrete = shape_data[nid]
+                if isinstance(concrete, (list, tuple)):
+                    meta = getattr(node, "shape_metadata", None)
+                    if meta and isinstance(meta, (list, tuple)) and len(meta) == len(concrete):
+                        for m_dim, c_dim in zip(meta, concrete):
+                            if hasattr(m_dim, "node"):
+                                solved_env[str(m_dim.node)] = int(c_dim)
+                            elif isinstance(m_dim, str):
+                                solved_env[m_dim] = int(c_dim)
+                    node.shape_metadata = tuple(int(x) for x in concrete if isinstance(x, (int, float)))
+
+        # Refine symbolic dimensions across all nodes in the graph
+        for node in self.sorted_nodes:
+            meta = getattr(node, "shape_metadata", None)
+            if meta and isinstance(meta, (list, tuple)):
+                refined: list[int] = []
+                for dim in meta:
+                    if hasattr(dim, "node") and hasattr(dim.node, "eval"):
+                        try:
+                            refined.append(int(dim.node.eval(solved_env)))
+                        except Exception:
+                            refined.append(int(dim) if isinstance(dim, (int, float)) else 1)
+                    elif isinstance(dim, str) and dim in solved_env:
+                        refined.append(solved_env[dim])
+                    elif isinstance(dim, (int, float)):
+                        refined.append(int(dim))
+                if refined:
+                    node.shape_metadata = tuple(refined)
+
+    def generate_wat(self) -> str:
+        """Generate valid WebAssembly Text (WAT) module with SIMD-128 instructions.
+
+        Returns:
+            str: WAT module string suitable for wat2wasm compilation.
+        """
+        nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") != "Input"]
+        wat_lines: list[str] = [
+            "(module",
+            '  (memory (export "memory") 1)',
+            '  (func (export "compute") (param $in i32) (param $len i32) (param $out i32)',
+            "    (local $i i32)",
+            "    (local.set $i (i32.const 0))",
+            "    (block $B",
+            "      (loop $L",
+            "        (br_if $B (i32.ge_u (local.get $i) (local.get $len)))",
+        ]
+
+        op_map: dict[str, str] = {
+            "mul": "f32x4.mul",
+            "add": "f32x4.add",
+            "sub": "f32x4.sub",
+            "div": "f32x4.div",
+            "neg": "f32x4.neg",
+            "sqrt": "f32x4.sqrt",
+            "abs": "f32x4.abs",
+            "relu": "f32x4.max",
+            "max": "f32x4.max",
+            "min": "f32x4.min",
+        }
+
+        for node in nodes:
+            op_type = getattr(node, "op_type", "").lower()
+            simd_inst = op_map.get(op_type, "f32x4.mul")
+            if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs"):
+                wat_lines.extend(
+                    [
+                        "        (v128.store",
+                        "          (i32.add (local.get $out) (i32.shl (local.get $i) (i32.const 2)))",
+                        f"          ({simd_inst}",
+                        "            (v128.load (i32.add (local.get $in) (i32.shl (local.get $i) (i32.const 2))))",
+                        "          )",
+                        "        )",
+                    ]
+                )
+            else:
+                wat_lines.extend(
+                    [
+                        "        (v128.store",
+                        "          (i32.add (local.get $out) (i32.shl (local.get $i) (i32.const 2)))",
+                        f"          ({simd_inst}",
+                        "            (v128.load (i32.add (local.get $in) (i32.shl (local.get $i) (i32.const 2))))",
+                        "            (v128.load (i32.add (local.get $in) (i32.shl (local.get $i) (i32.const 2))))",
+                        "          )",
+                        "        )",
+                    ]
+                )
+
+        wat_lines.extend(
+            [
+                "        (local.set $i (i32.add (local.get $i) (i32.const 4)))",
+                "        (br $L)",
+                "      )",
+                "    )",
+                "  )",
+                ")",
+            ]
+        )
+        return "\n".join(wat_lines)

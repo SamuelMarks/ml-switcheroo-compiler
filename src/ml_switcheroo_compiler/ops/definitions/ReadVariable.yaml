@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.readvariable
   mlx:
     eager: mlx.core.readvariable
-  edge_onnx:
-    generator: ReadVariable
-  edge_stablehlo:
-
-    opcode: stablehlo.read_variable
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

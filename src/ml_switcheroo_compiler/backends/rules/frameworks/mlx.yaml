@@ -1,0 +1,10 @@
+target_module: mlx.core
+module_path:
+  - mlx
+  - core
+kwarg_map:
+  dim: axis
+  keepdim: keepdims
+class_bases: {}
+method_map: {}
+broadcast_method: broadcast_to

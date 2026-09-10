@@ -23,7 +23,7 @@ def check_for_numpy_leaks(directory: str) -> list[str]:
 
     for filepath in set(files_to_check):
         # Whitelisted directories/files
-        if "backends/numpy" in filepath or "generator_mixins.py" in filepath:
+        if "backends/numpy" in filepath or "backends/numba" in filepath or "backends/sparse" in filepath or "generator_mixins.py" in filepath or "distributed_webrtc" in filepath:
             continue
         if "backends/eager" in filepath:
             # Eager evaluators are allowed to use numpy for unbacked/fallback math
@@ -91,6 +91,26 @@ def check_for_architectural_imports(directory: str) -> list[str]:
     return violations
 
 
+def check_for_third_party_leaks(directory: str) -> list[str]:
+    """Check that no unapproved third-party dependencies are imported outside backend directories.
+
+    Args:
+        directory (str): The root source directory to scan.
+
+    Returns:
+        list[str]: A list of violation messages.
+    """
+    try:
+        from scripts.lint_dependencies import check_dependencies
+    except ImportError:
+        import os
+
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from scripts.lint_dependencies import check_dependencies
+
+    return check_dependencies(directory)
+
+
 def main() -> int:
     """Run linting.
 
@@ -100,8 +120,9 @@ def main() -> int:
     directory_to_check: str = "src/ml_switcheroo_compiler"
     numpy_violations: list[str] = check_for_numpy_leaks(directory_to_check)
     arch_violations: list[str] = check_for_architectural_imports(directory_to_check)
+    third_party_violations: list[str] = check_for_third_party_leaks(directory_to_check)
 
-    if numpy_violations or arch_violations:
+    if numpy_violations or arch_violations or third_party_violations:
         if numpy_violations:
             print("NumPy Leak Linting failed. Found restricted numpy references in backends:")
             for v in numpy_violations:
@@ -110,9 +131,13 @@ def main() -> int:
             print("Architectural Boundaries failed. Found restricted imports from backends:")
             for v_arch in arch_violations:
                 print(v_arch)
+        if third_party_violations:
+            print("Third-Party Dependency Isolation failed. Found unauthorized external imports:")
+            for v_dep in third_party_violations:
+                print(v_dep)
         return 1
 
-    print("NumPy Leak and Architectural Boundaries Linting passed.")
+    print("NumPy Leak, Third-Party Isolation, and Architectural Boundaries Linting passed.")
     return 0
 
 

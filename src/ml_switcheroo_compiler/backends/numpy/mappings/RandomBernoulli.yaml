@@ -1,2 +1,2 @@
 RandomBernoulli:
-  target_api: np.randombernoulli
+  target_api: custom_op

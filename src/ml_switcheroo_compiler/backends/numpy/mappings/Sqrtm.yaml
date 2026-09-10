@@ -1,2 +1,2 @@
 Sqrtm:
-  target_api: np.sqrtm
+  target_api: custom_op

@@ -44,11 +44,11 @@ def test_get_conv_defaults():
 
 def test_parse_conv_dimension_numbers():
     res1 = _parse_conv_dimension_numbers(4, 4, 2, None)
-    assert res1.lhs_spec == (0, 1, 2, 3)
+    assert tuple(res1.lhs_spec) == (0, 1, 2, 3)
     res2 = _parse_conv_dimension_numbers(4, 4, 2, ("NCHW", "OIHW", "NCHW"))
-    assert res2.lhs_spec == (0, 1, 2, 3)
+    assert tuple(res2.lhs_spec) == (0, 1, 2, 3)
     res2b = _parse_conv_dimension_numbers(4, 4, 2, ("NHWC", "HWIO", "NHWC"))
-    assert res2b.lhs_spec == (0, 3, 1, 2)
+    assert tuple(res2b.lhs_spec) == (0, 3, 1, 2)
 
     class MockDimSpec:
         def __init__(self):
@@ -57,7 +57,7 @@ def test_parse_conv_dimension_numbers():
             self.out_spec = (0, 1, 2, 3)
 
     res3 = _parse_conv_dimension_numbers(4, 4, 2, MockDimSpec())
-    assert res3.lhs_spec == (0, 1, 2, 3)
+    assert tuple(res3.lhs_spec) == (0, 1, 2, 3)
 
 
 def test_calculate_same_padding():
@@ -240,7 +240,10 @@ def test_np_conv_transpose():
 def test_numpy_conv_branch_coverage() -> None:
     """Test coverage for conv."""
     import numpy as np
-    from ml_switcheroo_compiler.backends.numpy.eager.conv import _preprocess_conv_tensors
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import (
+        _np_conv2d,
+        _preprocess_conv_tensors,
+    )
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     class MockDimSpecs:
@@ -257,3 +260,127 @@ def test_numpy_conv_branch_coverage() -> None:
         _preprocess_conv_tensors(lhs, rhs, config, specs)
     except Exception:
         pass
+
+    # Branch 334->340: rhs_c.shape[1] == expected_rhs_in
+    rhs_exact = np.random.rand(2, 2, 2, 2)
+    res_pad, res_rhs = _preprocess_conv_tensors(lhs, rhs_exact, config, specs)
+    assert res_pad is not None
+    assert res_rhs is not None
+
+    # _np_conv2d coverage
+    lhs_conv = np.ones((1, 1, 5, 5))
+    rhs_conv = np.ones((1, 1, 3, 3))
+    out1 = _np_conv2d(np, lhs_conv, rhs_conv, stride=1, padding=(1, 1))
+    assert out1 is not None
+    out2 = _np_conv2d(np, lhs_conv, rhs_conv, strides=[1, 1], padding="VALID")
+    assert out2 is not None
+
+
+def test_np_conv2d_groups() -> None:
+    """Test _np_conv2d execution with grouped convolutions."""
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d
+
+    lhs = np.ones((2, 4, 8, 8), dtype=np.float32)
+    rhs = np.ones((4, 2, 3, 3), dtype=np.float32)
+    out = _np_conv2d(np, lhs, rhs, stride=1, padding="SAME", groups=2)
+    assert out.shape == (2, 4, 8, 8)
+
+
+def test_compute_conv2d_padding_values() -> None:
+    """Test _compute_conv2d_padding_values under different padding spec types."""
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import _compute_conv2d_padding_values
+
+    # tuple len 2
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, (2, 3), 10, 10) == (2, 2, 3, 3)
+    # tuple len 4
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, (1, 2, 3, 4), 10, 10) == (1, 2, 3, 4)
+    # int
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, 2, 10, 10) == (2, 2, 2, 2)
+    # SAME
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, "SAME", 10, 10) == (1, 1, 1, 1)
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, "same", 10, 10) == (1, 1, 1, 1)
+    # list length other than 2 or 4
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, [1, 2, 3], 10, 10) == (0, 0, 0, 0)
+    # VALID or other
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, "VALID", 8, 8) == (0, 0, 0, 0)
+    assert _compute_conv2d_padding_values(10, 10, 3, 3, 1, 1, 1, 1, None, 10, 10) == (0, 0, 0, 0)
+
+
+def test_np_conv2d_input_grad() -> None:
+    """Test _np_conv2d_input_grad gradient evaluation for grouped and standard convolutions."""
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_input_grad
+
+    d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
+    weight = np.ones((4, 2, 3, 3), dtype=np.float32)
+
+    # With target_shape and groups=2
+    dx = _np_conv2d_input_grad(
+        np,
+        d_out,
+        weight,
+        stride=1,
+        dilation=1,
+        groups=2,
+        padding="SAME",
+        target_shape=(2, 4, 8, 8),
+    )
+    assert dx.shape == (2, 4, 8, 8)
+
+    # Without target_shape (target_shape is None), stride as tuple, dilation as tuple
+    weight_g1 = np.ones((4, 3, 1, 1), dtype=np.float32)
+    d_out_g1 = np.ones((2, 4, 6, 6), dtype=np.float32)
+    dx_g1 = _np_conv2d_input_grad(
+        np,
+        d_out_g1,
+        weight_g1,
+        strides=(1, 1),
+        dilations=(1, 1),
+        groups=1,
+        padding="VALID",
+    )
+    assert dx_g1.shape == (2, 3, 6, 6)
+
+
+def test_np_conv2d_weight_grad() -> None:
+    """Test _np_conv2d_weight_grad gradient evaluation for grouped and standard convolutions."""
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_weight_grad
+
+    x = np.ones((2, 4, 8, 8), dtype=np.float32)
+    d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
+
+    # With padding > 0, groups=2, target_shape
+    dw = _np_conv2d_weight_grad(
+        np,
+        x,
+        d_out,
+        stride=1,
+        dilation=1,
+        groups=2,
+        padding="SAME",
+        target_shape=(4, 2, 3, 3),
+    )
+    assert dw.shape == (4, 2, 3, 3)
+
+    # Without padding (VALID -> p_top==0, branches to x_pad = x), without target_shape
+    x_valid = np.ones((2, 3, 8, 8), dtype=np.float32)
+    d_out_valid = np.ones((2, 6, 6, 6), dtype=np.float32)
+    dw_valid = _np_conv2d_weight_grad(
+        np,
+        x_valid,
+        d_out_valid,
+        strides=(1, 1),
+        dilations=(1, 1),
+        groups=1,
+        padding="VALID",
+    )
+    assert dw_valid.shape == (6, 3, 3, 3)
+
+
+def test_np_conv2d_bias_grad() -> None:
+    """Test _np_conv2d_bias_grad gradient evaluation."""
+    from ml_switcheroo_compiler.backends.numpy.eager.conv import _np_conv2d_bias_grad
+
+    d_out = np.ones((2, 4, 8, 8), dtype=np.float32)
+    db = _np_conv2d_bias_grad(np, d_out)
+    assert db.shape == (4,)
+    assert np.allclose(db, 2 * 8 * 8)

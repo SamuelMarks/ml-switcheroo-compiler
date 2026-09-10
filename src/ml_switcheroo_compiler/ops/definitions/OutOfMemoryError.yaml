@@ -1,7 +1,0 @@
-operation: OutOfMemoryError
-description: Exception raised when device is out of memory.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

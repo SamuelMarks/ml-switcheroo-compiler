@@ -230,6 +230,84 @@ def _update_degrees_and_uses(node: IRNode, best_node_id: str, consumers: dict[st
             ready_nodes.append(consumer)
 
 
+class GraphSchedulingPass:
+    """Graph scheduling pass to minimize peak active tensor memory."""
+
+    def __init__(self, cost_model: CostModel | None = None) -> None:
+        """Initialize GraphSchedulingPass.
+
+        Args:
+            cost_model (CostModel, optional): Cost model instance.
+        """
+        self.cost_model: CostModel = cost_model if cost_model is not None else DefaultCostModel()
+
+    def calculate_peak_memory(self, graph: IRGraph, schedule: list[str]) -> int:
+        """Simulate execution along the given schedule and compute peak active memory in bytes.
+
+        Args:
+            graph (IRGraph): The intermediate representation graph.
+            schedule (list[str]): Topological node execution order.
+
+        Returns:
+            int: Peak active tensor memory in bytes.
+        """
+        consumers, remaining_uses, _ = _build_adjacency_lists(graph)
+        current_mem = 0
+        peak_mem = 0
+        for nid in schedule:
+            node = graph.nodes[nid]
+            current_mem += self.cost_model.get_memory_cost(node)
+            peak_mem = max(peak_mem, current_mem)
+            for inp in node.inputs:
+                if inp in remaining_uses:
+                    remaining_uses[inp] -= 1
+                    if remaining_uses[inp] == 0:
+                        current_mem -= self.cost_model.get_memory_cost(graph.nodes[inp])
+        return peak_mem
+
+    def schedule(self, graph: IRGraph) -> list[str]:
+        """Compute memory-minimizing topological schedule.
+
+        Args:
+            graph (IRGraph): The IR graph.
+
+        Returns:
+            list[str]: Scheduled node IDs.
+        """
+        consumers, remaining_uses, in_degree = _build_adjacency_lists(graph)
+        ready_nodes = [node_id for node_id, deg in in_degree.items() if deg == 0]
+        scheduled_order: list[str] = []
+        last_was_compute_heavy = False
+        while ready_nodes:
+            best_idx, best_node_id = _select_best_node(ready_nodes, graph, self.cost_model, remaining_uses, last_was_compute_heavy)
+            ready_nodes.pop(best_idx)
+            scheduled_order.append(best_node_id)
+            node = graph.nodes[best_node_id]
+            comp_cost = self.cost_model.get_compute_cost(node)
+            last_was_compute_heavy = comp_cost > self.cost_model.compute_heavy_threshold
+            _update_degrees_and_uses(node, best_node_id, consumers, remaining_uses, in_degree, ready_nodes)
+        return scheduled_order
+
+    def run(self, graph: IRGraph) -> bool:
+        """Reorder graph nodes for optimal execution schedule.
+
+        Args:
+            graph (IRGraph): The input graph to mutate.
+
+        Returns:
+            bool: True if the graph was modified, False otherwise.
+        """
+        scheduled_order = self.schedule(graph)
+        if len(scheduled_order) != len(graph.nodes):
+            return False
+        if scheduled_order == list(graph.nodes.keys()):
+            return False
+        new_nodes = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
+        graph.nodes.clear()
+        graph.nodes.update(new_nodes)
+        return True
+
+
 def graph_scheduling_pass(graph: IRGraph) -> bool:
     """Reorder graph nodes for optimal execution schedule.
 
@@ -243,24 +321,4 @@ def graph_scheduling_pass(graph: IRGraph) -> bool:
     Returns:
         bool: True if the graph was modified, False otherwise.
     """
-    cost_model = DefaultCostModel()
-    consumers, remaining_uses, in_degree = _build_adjacency_lists(graph)
-    ready_nodes = [node_id for node_id, deg in in_degree.items() if deg == 0]
-    scheduled_order = []
-    last_was_compute_heavy = False
-    while ready_nodes:
-        best_idx, best_node_id = _select_best_node(ready_nodes, graph, cost_model, remaining_uses, last_was_compute_heavy)
-        ready_nodes.pop(best_idx)
-        scheduled_order.append(best_node_id)
-        node = graph.nodes[best_node_id]
-        comp_cost = cost_model.get_compute_cost(node)
-        last_was_compute_heavy = comp_cost > cost_model.compute_heavy_threshold
-        _update_degrees_and_uses(node, best_node_id, consumers, remaining_uses, in_degree, ready_nodes)
-    if len(scheduled_order) != len(graph.nodes):
-        return False
-    if scheduled_order == list(graph.nodes.keys()):
-        return False
-    new_nodes = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
-    graph.nodes.clear()
-    graph.nodes.update(new_nodes)
-    return True
+    return GraphSchedulingPass().run(graph)

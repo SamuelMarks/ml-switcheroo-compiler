@@ -3,7 +3,7 @@
 
 import ast
 import builtins
-from typing import Protocol, TypeVar, Union, cast
+from typing import Optional, Protocol, TypeVar, Union, cast
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -30,15 +30,20 @@ class IndexableArray(Protocol):
         ...
 
 
-EvalValue = Union[int, float, str, bool, list, tuple, dict, None, slice, "builtins.ellipsis", IndexableArray]
+EvalValue = Union[int, float, complex, bytes, str, bool, list, tuple, dict, None, slice, "builtins.ellipsis", IndexableArray]
 
 
-def evaluate_graph(graph: LogicalGraph, inputs: dict[str, EvalValue]) -> dict[str, EvalValue]:
+def evaluate_graph(
+    graph: LogicalGraph,
+    inputs: dict[str, EvalValue],
+    backend: Optional[type[BaseGenerator]] = None,
+) -> dict[str, EvalValue]:
     """Execute a logical computation graph using eager mode evaluation.
 
     Args:
         graph (LogicalGraph): The directed acyclic graph defining the operations to evaluate.
-        inputs: A mapping of input node IDs to their corresponding concrete tensor values.
+        inputs (dict[str, EvalValue]): A mapping of input node IDs to their corresponding concrete tensor values.
+        backend (Optional[type[BaseGenerator]]): The compute backend generator class to dispatch ops to. Defaults to active backend.
 
     Returns:
         dict[str, EvalValue]: A dictionary mapping output node IDs to their computed tensor results.
@@ -48,10 +53,10 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, EvalValue]) -> dict[st
     """
     env = Environment(inputs)
     sorted_nodes = topological_sort(graph)
-    backend = get_active_backend()
+    active_backend = backend if backend is not None else get_active_backend()
 
     for node in sorted_nodes:
-        _evaluate_node(node, env, backend)
+        _evaluate_node(node, env, active_backend)
 
     outputs: dict[str, EvalValue] = {}
     for out_id in graph.outputs:
@@ -388,6 +393,45 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGener
         in_vals = [env.get(inp) for inp in node.inputs if inp]
         val = in_vals[0] if len(in_vals) == 1 else tuple(in_vals)
         env.set(node.id, val)
+    elif node.op_type == "Identity":
+        in_vals = [env.get(inp) for inp in node.inputs if inp]
+        val = in_vals[0] if in_vals else None
+        if hasattr(backend, "execute_op"):
+            try:
+                val = backend.execute_op("Identity", *in_vals)
+            except Exception:
+                pass
+        env.set(node.id, val)
+    elif node.op_type == "Vmap":
+        body_graph = node.attributes.get("body")
+        in_axes = node.attributes.get("in_axes", 0)
+        out_axes = node.attributes.get("out_axes", 0)
+
+        in_vals = [env.get(inp) for inp in node.inputs if inp]
+        first_val = in_vals[0] if in_vals else None
+        axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
+        batch_size = first_val.shape[axis] if hasattr(first_val, "shape") and axis < len(first_val.shape) else 1
+
+        from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+        if not isinstance(body_graph, IRGraph) and hasattr(body_graph, "nodes"):
+            b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
+            b_graph.inputs = list(getattr(body_graph, "inputs", []))
+            b_graph.outputs = list(getattr(body_graph, "outputs", []))
+            b_nodes = body_graph.nodes if isinstance(body_graph.nodes, list) else list(body_graph.nodes.values())
+            for n in b_nodes:
+                b_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
+            body_graph = b_graph
+
+        from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass, vectorize_graph
+
+        v_body = vectorize_graph(body_graph, in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+        v_body = vectorization_pass(v_body)
+
+        body_input_map = {b_in: in_val for b_in, in_val in zip(v_body.inputs, in_vals)}
+        body_env_map = evaluate_graph(v_body, body_input_map, backend=backend)
+        out_val = body_env_map[v_body.outputs[0]]
+        env.set(node.id, out_val)
     elif node.op_type in ("If", "Cond"):
         _evaluate_if_node(node, env, backend)
     elif node.op_type in ("WhileLoop", "Loop"):
@@ -443,7 +487,28 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, EvalVal
     Returns:
         dict: A mapping of argument names to values.
     """
-    kwargs = {**node.attributes}
+    kwargs = {k: v for k, v in node.attributes.items() if k not in ("var_name", "is_parameter", "param_name")}
+    if "strides" in kwargs and target_op not in {
+        "Conv",
+        "Conv1D",
+        "Conv2D",
+        "Conv3D",
+        "ConvTranspose",
+        "ConvTranspose2D",
+        "MaxPool",
+        "MaxPool1D",
+        "MaxPool2D",
+        "MaxPool3D",
+        "AvgPool",
+        "AvgPool1D",
+        "AvgPool2D",
+        "AvgPool3D",
+        "Pool1D",
+        "Pool2D",
+        "Pool3D",
+        "StridedSlice",
+    }:
+        kwargs.pop("strides", None)
     if getattr(node, "shape_metadata", None):
         if target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full") and "shape" not in kwargs:
             kwargs["shape"] = node.shape_metadata

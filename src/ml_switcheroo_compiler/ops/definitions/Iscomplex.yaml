@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.iscomplex
   mlx:
     eager: mlx.core.iscomplex
-  edge_onnx:
-    generator: iscomplex
-  edge_stablehlo:
-
-    opcode: stablehlo.iscomplex
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

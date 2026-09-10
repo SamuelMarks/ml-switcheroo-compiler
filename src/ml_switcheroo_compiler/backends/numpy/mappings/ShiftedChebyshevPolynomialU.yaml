@@ -1,2 +1,2 @@
 ShiftedChebyshevPolynomialU:
-  target_api: np.shiftedchebyshevpolynomialu
+  target_api: custom_op

@@ -1,2 +1,2 @@
 EighTridiagonal:
-  target_api: np.eightridiagonal
+  target_api: custom_op

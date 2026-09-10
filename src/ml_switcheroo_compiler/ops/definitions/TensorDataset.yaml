@@ -1,7 +1,7 @@
 operation: TensorDataset
 description: Definition for TensorDataset
 std_args:
-  - tensors
+- tensors
 variants:
   pytorch:
     eager: torch.utils.data.TensorDataset
@@ -17,11 +17,6 @@ variants:
     eager: jax.numpy.tensordataset
   mlx:
     eager: mlx.core.tensordataset
-  edge_onnx:
-    generator: TensorDataset
-  edge_stablehlo:
-
-    opcode: stablehlo.tensor_dataset
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

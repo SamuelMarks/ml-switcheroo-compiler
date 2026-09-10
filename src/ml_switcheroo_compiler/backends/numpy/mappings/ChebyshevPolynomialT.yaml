@@ -1,2 +1,2 @@
 ChebyshevPolynomialT:
-  target_api: np.chebyshevpolynomialt
+  target_api: custom_op

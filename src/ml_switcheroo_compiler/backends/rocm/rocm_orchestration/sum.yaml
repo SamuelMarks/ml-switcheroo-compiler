@@ -7,3 +7,14 @@ sum:
   - 256
   - 1
   - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

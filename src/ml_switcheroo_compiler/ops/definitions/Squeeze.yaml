@@ -1,14 +1,14 @@
 operation: Squeeze
 description: The Squeeze operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Union[int, Tuple[int, Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Union[int, Tuple[int, Ellipsis]]
 variants:
   cupy:
     eager: cp.squeeze
@@ -28,9 +28,6 @@ variants:
     eager: jax.numpy.squeeze
   mlx:
     eager: mlx.core.squeeze
-  edge_stablehlo:
-
-    opcode: stablehlo.squeeze
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

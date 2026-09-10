@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.unique
   mlx:
     eager: mlx.core.unique
-  edge_onnx:
-    generator: unique
-  edge_stablehlo:
-
-    opcode: stablehlo.unique
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

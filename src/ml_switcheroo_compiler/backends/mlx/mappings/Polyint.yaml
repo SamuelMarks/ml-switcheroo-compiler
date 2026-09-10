@@ -1,2 +1,2 @@
 Polyint:
-  target_api: '''mx.polyint({0})'''
+  target_api: custom_op

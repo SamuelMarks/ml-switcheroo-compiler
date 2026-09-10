@@ -1,0 +1,20 @@
+dce_patterns:
+  pure_ops:
+    - Add
+    - Sub
+    - Mul
+    - Div
+    - Exp
+    - Log
+    - Relu
+    - Tanh
+  side_effect_ops:
+    - Print
+    - Assert
+cse_patterns:
+  commutative_ops:
+    - Add
+    - Mul
+    - Equal
+  idempotent_ops:
+    - Relu

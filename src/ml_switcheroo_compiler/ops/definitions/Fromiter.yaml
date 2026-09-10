@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.fromiter
   mlx:
     eager: mlx.core.fromiter
-  edge_onnx:
-    generator: fromiter
-  edge_stablehlo:
-
-    opcode: stablehlo.fromiter
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

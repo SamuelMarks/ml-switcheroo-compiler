@@ -1,0 +1,649 @@
+# Declarative Shape Signatures and Propagation Rules
+operations:
+  # Elementwise Binary Ops
+  Add:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise addition with multi-operand broadcasting"
+  Subtract:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise subtraction"
+  Multiply:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise multiplication"
+  Divide:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise division"
+  TrueDivide:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise true division"
+  FloorDivide:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise floor division"
+  Power:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise exponentiation"
+  Maximum:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise maximum"
+  Minimum:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise minimum"
+  Equal:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise equality comparison"
+  NotEqual:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise not-equal comparison"
+  Greater:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise greater-than comparison"
+  GreaterEqual:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise greater-or-equal comparison"
+  Less:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise less-than comparison"
+  LessEqual:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise less-or-equal comparison"
+  LogicalAnd:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise logical AND"
+  LogicalOr:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise logical OR"
+  LogicalXor:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise logical XOR"
+  BitwiseAnd:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise bitwise AND"
+  BitwiseOr:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise bitwise OR"
+  BitwiseXor:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise bitwise XOR"
+  BitwiseLeftShift:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise left bitshift"
+  BitwiseRightShift:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise right bitshift"
+  Mod:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise modulo"
+  Remainder:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise remainder"
+  Fmod:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise floating-point remainder"
+  Copysign:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise copysign"
+  Nextafter:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise nextafter"
+  Hypot:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise hypotenuse"
+  Atan2:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise two-argument arctangent"
+  Logaddexp:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise logaddexp"
+  Logaddexp2:
+    category: elementwise
+    pattern: "broadcast(in0, in1)"
+    description: "Elementwise logaddexp2"
+
+  # Elementwise Unary Ops
+  Abs:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise absolute value"
+  Neg:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise negation"
+  Negative:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise negation"
+  Exp:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise exponential"
+  Exp2:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise base-2 exponential"
+  Expm1:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise exp(x) - 1"
+  Log:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise natural logarithm"
+  Log2:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise base-2 logarithm"
+  Log10:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise base-10 logarithm"
+  Log1p:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise log(1 + x)"
+  Sin:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise sine"
+  Cos:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise cosine"
+  Tan:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise tangent"
+  Asin:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise arcsine"
+  Acos:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise arccosine"
+  Atan:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise arctangent"
+  Sinh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise hyperbolic sine"
+  Cosh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise hyperbolic cosine"
+  Tanh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise hyperbolic tangent"
+  Asinh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise inverse hyperbolic sine"
+  Acosh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise inverse hyperbolic cosine"
+  Atanh:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise inverse hyperbolic tangent"
+  Sqrt:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise square root"
+  Rsqrt:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise reciprocal square root"
+  Square:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise square"
+  Ceil:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise ceiling"
+  Floor:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise floor"
+  Round:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise round"
+  Trunc:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise truncation"
+  Sign:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise sign"
+  Sgn:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise sign"
+  Erf:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise error function"
+  Erfc:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise complementary error function"
+  Relu:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise rectified linear unit"
+  Gelu:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise Gaussian error linear unit"
+  Silu:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise sigmoid linear unit"
+  Sigmoid:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise sigmoid"
+  Reciprocal:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise reciprocal"
+  LogicalNot:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise logical NOT"
+  BitwiseNot:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise bitwise NOT"
+  BitwiseInvert:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise bitwise inversion"
+  Cast:
+    category: elementwise
+    pattern: "in0"
+    description: "Elementwise type casting"
+  Identity:
+    category: elementwise
+    pattern: "in0"
+    description: "Identity pass-through"
+  Clone:
+    category: elementwise
+    pattern: "in0"
+    description: "Tensor clone"
+
+  # Contracting Operations
+  Matmul:
+    category: contracting
+    pattern: "(*B, M, K), (*B, K, N) -> (*B, M, N)"
+    description: "Matrix multiplication"
+  Mm:
+    category: contracting
+    pattern: "(M, K), (K, N) -> (M, N)"
+    description: "2D Matrix multiplication"
+  Bmm:
+    category: contracting
+    pattern: "(B, M, K), (B, K, N) -> (B, M, N)"
+    description: "Batched matrix multiplication"
+  BatchMatmul:
+    category: contracting
+    pattern: "(*B, M, K), (*B, K, N) -> (*B, M, N)"
+    description: "Batched matrix multiplication"
+  Dot:
+    category: contracting
+    pattern: "dot(in0, in1)"
+    description: "Vector or contracting dot product"
+  Vdot:
+    category: contracting
+    pattern: "vdot(in0, in1)"
+    description: "Conjugate vector dot product"
+  Vecdot:
+    category: contracting
+    pattern: "vecdot(in0, in1)"
+    description: "Vector dot product"
+  Inner:
+    category: contracting
+    pattern: "inner(in0, in1)"
+    description: "1D or multi-dim inner product"
+  Outer:
+    category: contracting
+    pattern: "(M,), (N,) -> (M, N)"
+    description: "Outer product of two vectors"
+
+  # Reductions
+  ReduceSum:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Sum reduction along axis"
+  ReduceMean:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Mean reduction along axis"
+  ReduceProd:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Product reduction along axis"
+  ReduceMax:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Maximum reduction along axis"
+  ReduceMin:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Minimum reduction along axis"
+  ReduceVariance:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Variance reduction along axis"
+  ReduceStd:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Standard deviation reduction along axis"
+  ReduceEuclideanNorm:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Euclidean L2 norm reduction along axis"
+  Sum:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Sum reduction"
+  Mean:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Mean reduction"
+  Prod:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Product reduction"
+  Max:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Max reduction"
+  Min:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Min reduction"
+  Argmax:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Indices of maximum along axis"
+  Argmin:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Indices of minimum along axis"
+  All:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Logical AND reduction"
+  Any:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Logical OR reduction"
+  CountNonzero:
+    category: reduction
+    pattern: "reduce(in0, axis, keepdims)"
+    description: "Count of non-zero elements"
+
+  # Reshaping and Axis Manipulations
+  Reshape:
+    category: reshape
+    pattern: "reshape(in0, shape)"
+    description: "Reshape tensor to target shape"
+  Transpose:
+    category: transpose
+    pattern: "transpose(in0, axes)"
+    description: "Permute tensor axes"
+  Permute:
+    category: transpose
+    pattern: "transpose(in0, axes)"
+    description: "Permute tensor axes"
+  PermuteDims:
+    category: transpose
+    pattern: "transpose(in0, axes)"
+    description: "Permute tensor axes"
+  MatrixTranspose:
+    category: transpose
+    pattern: "transpose(in0, axes=[-1, -2])"
+    description: "Transpose last two matrix dimensions"
+  Swapaxes:
+    category: transpose
+    pattern: "swapaxes(in0, axis1, axis2)"
+    description: "Swap two axes"
+  Swapdims:
+    category: transpose
+    pattern: "swapdims(in0, dim0, dim1)"
+    description: "Swap two dimensions"
+  Moveaxis:
+    category: transpose
+    pattern: "moveaxis(in0, source, destination)"
+    description: "Move axis from source to destination"
+  Movedim:
+    category: transpose
+    pattern: "movedim(in0, source, destination)"
+    description: "Move dimension from source to destination"
+  Squeeze:
+    category: squeeze
+    pattern: "squeeze(in0, axis)"
+    description: "Remove single-dimensional entries"
+  ExpandDims:
+    category: expand_dims
+    pattern: "expand_dims(in0, axis)"
+    description: "Insert a new axis at specified position"
+  Unsqueeze:
+    category: expand_dims
+    pattern: "unsqueeze(in0, axis)"
+    description: "Insert dimension of length 1"
+  BroadcastTo:
+    category: expand_dims
+    pattern: "broadcast_to(in0, shape)"
+    description: "Broadcast tensor to specified shape"
+  Broadcast:
+    category: expand_dims
+    pattern: "broadcast(in0, shape)"
+    description: "Broadcast tensor to specified shape"
+  Flatten:
+    category: flatten
+    pattern: "flatten(in0, start_dim, end_dim)"
+    description: "Flatten range of dimensions into 1D"
+  Ravel:
+    category: flatten
+    pattern: "flatten(in0, start_dim=0, end_dim=-1)"
+    description: "Flatten tensor completely"
+  Split:
+    category: split
+    pattern: "split(in0, num_or_size_splits, axis)"
+    description: "Split tensor into chunks"
+  Chunk:
+    category: split
+    pattern: "chunk(in0, chunks, axis)"
+    description: "Split tensor into number of chunks"
+  ArraySplit:
+    category: split
+    pattern: "split(in0, num_or_size_splits, axis)"
+    description: "Split array into sub-arrays"
+  TensorSplit:
+    category: split
+    pattern: "split(in0, num_or_size_splits, axis)"
+    description: "Split tensor into slices"
+  Concat:
+    category: concat
+    pattern: "concat(inputs, axis)"
+    description: "Concatenate tensors along existing axis"
+  Concatenate:
+    category: concat
+    pattern: "concat(inputs, axis)"
+    description: "Concatenate tensors along existing axis"
+  Stack:
+    category: stack
+    pattern: "stack(inputs, axis)"
+    description: "Stack tensors along a new axis"
+
+  # Spatial and Convolution Operations
+  Conv1D:
+    category: spatial
+    pattern: "conv1d(N, C_in, L), (C_out, C_in, K) -> (N, C_out, L_out)"
+    description: "1D Convolution"
+  conv1d:
+    category: spatial
+    pattern: "conv1d(N, C_in, L), (C_out, C_in, K) -> (N, C_out, L_out)"
+    description: "1D Convolution"
+  Conv2D:
+    category: spatial
+    pattern: "conv2d(N, C_in, H, W), (C_out, C_in, kH, kW) -> (N, C_out, H_out, W_out)"
+    description: "2D Convolution"
+  Convolution:
+    category: spatial
+    pattern: "conv2d(N, C_in, H, W), (C_out, C_in, kH, kW) -> (N, C_out, H_out, W_out)"
+    description: "Convolution"
+  conv2d:
+    category: spatial
+    pattern: "conv2d(N, C_in, H, W), (C_out, C_in, kH, kW) -> (N, C_out, H_out, W_out)"
+    description: "2D Convolution"
+  Conv3D:
+    category: spatial
+    pattern: "conv3d(N, C_in, D, H, W), (C_out, C_in, kD, kH, kW) -> (N, C_out, D_out, H_out, W_out)"
+    description: "3D Convolution"
+  conv3d:
+    category: spatial
+    pattern: "conv3d(N, C_in, D, H, W), (C_out, C_in, kD, kH, kW) -> (N, C_out, D_out, H_out, W_out)"
+    description: "3D Convolution"
+
+  # Pooling Operations
+  MaxPool1D:
+    category: pooling
+    pattern: "pool1d(N, C, L) -> (N, C, L_out)"
+    description: "1D Max Pooling"
+  AvgPool1D:
+    category: pooling
+    pattern: "pool1d(N, C, L) -> (N, C, L_out)"
+    description: "1D Average Pooling"
+  MaxPool1d:
+    category: pooling
+    pattern: "pool1d(N, C, L) -> (N, C, L_out)"
+    description: "1D Max Pooling"
+  AvgPool1d:
+    category: pooling
+    pattern: "pool1d(N, C, L) -> (N, C, L_out)"
+    description: "1D Average Pooling"
+  MaxPool2D:
+    category: pooling
+    pattern: "pool2d(N, C, H, W) -> (N, C, H_out, W_out)"
+    description: "2D Max Pooling"
+  AvgPool2D:
+    category: pooling
+    pattern: "pool2d(N, C, H, W) -> (N, C, H_out, W_out)"
+    description: "2D Average Pooling"
+  MaxPool2d:
+    category: pooling
+    pattern: "pool2d(N, C, H, W) -> (N, C, H_out, W_out)"
+    description: "2D Max Pooling"
+  AvgPool2d:
+    category: pooling
+    pattern: "pool2d(N, C, H, W) -> (N, C, H_out, W_out)"
+    description: "2D Average Pooling"
+  MaxPool3D:
+    category: pooling
+    pattern: "pool3d(N, C, D, H, W) -> (N, C, D_out, H_out, W_out)"
+    description: "3D Max Pooling"
+  AvgPool3D:
+    category: pooling
+    pattern: "pool3d(N, C, D, H, W) -> (N, C, D_out, H_out, W_out)"
+    description: "3D Average Pooling"
+  MaxPool3d:
+    category: pooling
+    pattern: "pool3d(N, C, D, H, W) -> (N, C, D_out, H_out, W_out)"
+    description: "3D Max Pooling"
+  AvgPool3d:
+    category: pooling
+    pattern: "pool3d(N, C, D, H, W) -> (N, C, D_out, H_out, W_out)"
+    description: "3D Average Pooling"
+  GlobalAvgPool1D:
+    category: reduction
+    pattern: "(N, C, L) -> (N, C, 1)"
+    description: "Global Average Pooling 1D"
+  GlobalAvgPool2D:
+    category: reduction
+    pattern: "(N, C, H, W) -> (N, C, 1, 1)"
+    description: "Global Average Pooling 2D"
+  GlobalAvgPool3D:
+    category: reduction
+    pattern: "(N, C, D, H, W) -> (N, C, 1, 1, 1)"
+    description: "Global Average Pooling 3D"
+  GlobalMaxPool1D:
+    category: reduction
+    pattern: "(N, C, L) -> (N, C, 1)"
+    description: "Global Max Pooling 1D"
+  GlobalMaxPool2D:
+    category: reduction
+    pattern: "(N, C, H, W) -> (N, C, 1, 1)"
+    description: "Global Max Pooling 2D"
+  GlobalMaxPool3D:
+    category: reduction
+    pattern: "(N, C, D, H, W) -> (N, C, 1, 1, 1)"
+    description: "Global Max Pooling 3D"
+
+  # Normalization
+  LayerNorm:
+    category: elementwise
+    pattern: "in0"
+    description: "Layer normalization preserves shape"
+  BatchNorm:
+    category: elementwise
+    pattern: "in0"
+    description: "Batch normalization preserves shape"
+  GroupNorm:
+    category: elementwise
+    pattern: "in0"
+    description: "Group normalization preserves shape"
+  RMSNorm:
+    category: elementwise
+    pattern: "in0"
+    description: "RMS normalization preserves shape"
+  InstanceNorm1d:
+    category: elementwise
+    pattern: "in0"
+    description: "Instance normalization 1D preserves shape"
+  InstanceNorm2d:
+    category: elementwise
+    pattern: "in0"
+    description: "Instance normalization 2D preserves shape"
+  InstanceNorm3d:
+    category: elementwise
+    pattern: "in0"
+    description: "Instance normalization 3D preserves shape"

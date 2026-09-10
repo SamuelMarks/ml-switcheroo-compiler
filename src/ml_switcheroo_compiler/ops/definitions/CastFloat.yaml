@@ -1,7 +1,7 @@
 operation: CastFloat
 description: Definition for CastFloat
 std_args:
-  - x
+- x
 variants:
   pytorch:
     eager: float
@@ -14,11 +14,6 @@ variants:
   tensorflow: {}
   keras: {}
   mlx: {}
-  edge_onnx:
-    generator: CastFloat
-  edge_stablehlo:
-
-    opcode: stablehlo.cast_float
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AliasDb
-  edge_stablehlo:
-
-    opcode: stablehlo.alias_db
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

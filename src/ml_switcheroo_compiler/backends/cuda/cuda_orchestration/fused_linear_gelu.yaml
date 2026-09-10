@@ -1,0 +1,24 @@
+fused_linear_gelu:
+  body: "__global__ void fused_linear_gelu(const float* A, const float* B, const float*\
+    \ bias, float* C, int M, int N, int K) {\n    int row = blockIdx.y * blockDim.y\
+    \ + threadIdx.y;\n    int col = blockIdx.x * blockDim.x + threadIdx.x;\n    if\
+    \ (row < M && col < N) {\n        float sum = bias ? bias[col] : 0.0f;\n     \
+    \   for (int i = 0; i < K; ++i) {\n            sum += A[row * K + i] * B[i * N\
+    \ + col];\n        }\n        float x = sum;\n        C[row * N + col] = 0.5f\
+    \ * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));\n    }\n\
+    }\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1
+  grid_calc:
+    x: ({N_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: ({M} + block_{node_idx}.y - 1) / block_{node_idx}.y
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

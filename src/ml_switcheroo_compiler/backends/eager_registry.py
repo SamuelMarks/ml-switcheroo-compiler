@@ -47,10 +47,6 @@ class BackendArray(Protocol):
         """Compare greater than or equal."""
         ...
 
-    def __eq__(self, other: "EagerValue") -> "EagerValue":
-        """Compare equality."""
-        ...
-
     def __pow__(self, other: "EagerValue") -> "BackendArray":
         """Power operation."""
         ...
@@ -179,13 +175,18 @@ pure_python_eager_registry = EagerOpRegistry()
 @global_eager_registry.register("CustomVJP")
 def _eager_custom_vjp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Custom vjp."""
-    # Just return args because hook fwd is identity or simple.
-    # Actually, for standard custom_vjp, we might need to run fwd_fn.
-    # In JAX custom_vjp, you return (primal, residual). But custom_vjp here intercepts the python call.
-    # The actual execution happens via the python function self.fwd in eager mode!
-    # If we are in trace execution (which we are now, because jit is evaluating the graph),
-    # the CustomVJP node shouldn't really execute its internal python function directly, but let's just return args[0].
-    # For hook_gradient, args[0] is `t`, we just return `t`.
+    return args[0] if len(args) == 1 else tuple(args)
+
+
+@global_eager_registry.register("CustomJVP")
+def _eager_custom_jvp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Custom jvp."""
+    fun = kwargs.get("fun")
+    if callable(fun):
+        from ml_switcheroo_compiler.core.config import ConfigContext
+
+        with ConfigContext(eager_mode=True):
+            return fun(*args)
     return args[0] if len(args) == 1 else tuple(args)
 
 
@@ -196,6 +197,27 @@ def _eager_process_custom_vjp_call(backend_module: EagerValue, *args: EagerValue
     if callable(bwd_fn):
         return bwd_fn.__call__(None, *args)
     return None
+
+
+@global_eager_registry.register("ProcessCustomJVPCall")
+def _eager_process_custom_jvp_call(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Process custom jvp."""
+    jvp_rule = kwargs.get("jvp_rule")
+    num_primals = kwargs.get("num_primals", len(args) // 2)
+    primals = args[:num_primals]
+    tangents = args[num_primals:]
+    if callable(jvp_rule):
+        from ml_switcheroo_compiler.core.config import ConfigContext
+
+        with ConfigContext(eager_mode=True):
+            try:
+                res = jvp_rule(primals, tangents)
+            except TypeError:
+                res = jvp_rule(*primals, *tangents)
+        if isinstance(res, (tuple, list)) and len(res) == 2:
+            return res
+        return (None, res)
+    return (None, None)
 
 
 @global_eager_registry.register("TupleGetItem")

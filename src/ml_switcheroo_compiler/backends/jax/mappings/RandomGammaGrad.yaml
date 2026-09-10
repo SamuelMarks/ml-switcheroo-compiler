@@ -1,2 +1,2 @@
 RandomGammaGrad:
-  target_api: jax.numpy.randomgammagrad
+  target_api: custom_op

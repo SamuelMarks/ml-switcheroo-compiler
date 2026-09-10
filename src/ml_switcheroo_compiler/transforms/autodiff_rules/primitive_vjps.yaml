@@ -1,0 +1,776 @@
+# Declarative Primitive VJP Rules for Unified IR Operators
+Add:
+  vjp:
+  - $cotangent
+  - $cotangent
+  description: Element-wise addition derivative.
+
+add:
+  vjp:
+  - $cotangent
+  - $cotangent
+  description: Element-wise addition derivative (lowercase alias).
+
+Subtract:
+  vjp:
+  - $cotangent
+  - Neg($cotangent)
+  description: Element-wise subtraction derivative.
+
+Sub:
+  vjp:
+  - $cotangent
+  - Neg($cotangent)
+  description: Element-wise subtraction derivative (alias).
+
+sub:
+  vjp:
+  - $cotangent
+  - Neg($cotangent)
+  description: Element-wise subtraction derivative (lowercase alias).
+
+Multiply:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+  description: Element-wise multiplication derivative.
+
+Mul:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+  description: Element-wise multiplication derivative (alias).
+
+mul:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+  description: Element-wise multiplication derivative (lowercase alias).
+
+Divide:
+  vjp:
+  - Div($cotangent, $input[1])
+  - Neg(Div(Mul($cotangent, $input[0]), Pow($input[1], Constant(2.0))))
+  description: Element-wise division derivative.
+
+Div:
+  vjp:
+  - Div($cotangent, $input[1])
+  - Neg(Div(Mul($cotangent, $input[0]), Pow($input[1], Constant(2.0))))
+  description: Element-wise division derivative (alias).
+
+TrueDivide:
+  vjp:
+  - Div($cotangent, $input[1])
+  - Neg(Div(Mul($cotangent, $input[0]), Pow($input[1], Constant(2.0))))
+  description: Element-wise true division derivative.
+
+div:
+  vjp:
+  - Div($cotangent, $input[1])
+  - Neg(Div(Mul($cotangent, $input[0]), Pow($input[1], Constant(2.0))))
+  description: Element-wise division derivative (lowercase alias).
+
+Negative:
+  vjp:
+  - Neg($cotangent)
+  description: Element-wise negation derivative.
+
+Neg:
+  vjp:
+  - Neg($cotangent)
+  description: Element-wise negation derivative (alias).
+
+neg:
+  vjp:
+  - Neg($cotangent)
+  description: Element-wise negation derivative (lowercase alias).
+
+Positive:
+  vjp:
+  - $cotangent
+  description: Element-wise identity / positive derivative.
+
+Abs:
+  vjp:
+  - Mul($cotangent, Sign($input[0]))
+  description: Element-wise absolute value derivative.
+
+abs:
+  vjp:
+  - Mul($cotangent, Sign($input[0]))
+  description: Element-wise absolute value derivative (lowercase alias).
+
+Sign:
+  vjp:
+  - ZerosLike($cotangent)
+  description: Element-wise sign derivative (almost everywhere zero).
+
+Pow:
+  vjp:
+  - Mul($cotangent, Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0)))))
+  - Mul($cotangent, Mul(Pow($input[0], $input[1]), Log($input[0])))
+  description: Element-wise power derivative.
+
+pow:
+  vjp:
+  - Mul($cotangent, Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0)))))
+  - Mul($cotangent, Mul(Pow($input[0], $input[1]), Log($input[0])))
+  description: Element-wise power derivative (lowercase alias).
+
+Square:
+  vjp:
+  - Mul($cotangent, Mul(Constant(2.0), $input[0]))
+  description: Element-wise square derivative.
+
+Sqrt:
+  vjp:
+  - Div($cotangent, Mul(Constant(2.0), Sqrt($input[0])))
+  description: Element-wise square root derivative.
+
+sqrt:
+  vjp:
+  - Div($cotangent, Mul(Constant(2.0), Sqrt($input[0])))
+  description: Element-wise square root derivative (lowercase alias).
+
+Rsqrt:
+  vjp:
+  - Mul($cotangent, Mul(Constant(-0.5), Pow($input[0], Constant(-1.5))))
+  description: Element-wise reciprocal square root derivative.
+
+Reciprocal:
+  vjp:
+  - Neg(Div($cotangent, Pow($input[0], Constant(2.0))))
+  description: Element-wise reciprocal derivative.
+
+Exp:
+  vjp:
+  - Mul($cotangent, Exp($input[0]))
+  description: Element-wise exponential derivative.
+
+exp:
+  vjp:
+  - Mul($cotangent, Exp($input[0]))
+  description: Element-wise exponential derivative (lowercase alias).
+
+Exp2:
+  vjp:
+  - Mul($cotangent, Mul(Exp2($input[0]), Constant(0.6931471805599453)))
+  description: Element-wise base-2 exponential derivative.
+
+Expm1:
+  vjp:
+  - Mul($cotangent, Exp($input[0]))
+  description: Element-wise expm1 derivative.
+
+Log:
+  vjp:
+  - Div($cotangent, $input[0])
+  description: Element-wise natural logarithm derivative.
+
+log:
+  vjp:
+  - Div($cotangent, $input[0])
+  description: Element-wise natural logarithm derivative (lowercase alias).
+
+Log2:
+  vjp:
+  - Div($cotangent, Mul($input[0], Constant(0.6931471805599453)))
+  description: Element-wise base-2 logarithm derivative.
+
+Log10:
+  vjp:
+  - Div($cotangent, Mul($input[0], Constant(2.302585092994046)))
+  description: Element-wise base-10 logarithm derivative.
+
+Log1p:
+  vjp:
+  - Div($cotangent, Add($input[0], Constant(1.0)))
+  description: Element-wise log1p derivative.
+
+Sin:
+  vjp:
+  - Mul($cotangent, Cos($input[0]))
+  description: Element-wise sine derivative.
+
+sin:
+  vjp:
+  - Mul($cotangent, Cos($input[0]))
+  description: Element-wise sine derivative (lowercase alias).
+
+Cos:
+  vjp:
+  - Neg(Mul($cotangent, Sin($input[0])))
+  description: Element-wise cosine derivative.
+
+cos:
+  vjp:
+  - Neg(Mul($cotangent, Sin($input[0])))
+  description: Element-wise cosine derivative (lowercase alias).
+
+Tan:
+  vjp:
+  - Div($cotangent, Pow(Cos($input[0]), Constant(2.0)))
+  description: Element-wise tangent derivative.
+
+tan:
+  vjp:
+  - Div($cotangent, Pow(Cos($input[0]), Constant(2.0)))
+  description: Element-wise tangent derivative (lowercase alias).
+
+Asin:
+  vjp:
+  - Div($cotangent, Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0)))))
+  description: Element-wise arcsine derivative.
+
+asin:
+  vjp:
+  - Div($cotangent, Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0)))))
+  description: Element-wise arcsine derivative (lowercase alias).
+
+Acos:
+  vjp:
+  - Neg(Div($cotangent, Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0))))))
+  description: Element-wise arccosine derivative.
+
+acos:
+  vjp:
+  - Neg(Div($cotangent, Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0))))))
+  description: Element-wise arccosine derivative (lowercase alias).
+
+Atan:
+  vjp:
+  - Div($cotangent, Add(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise arctangent derivative.
+
+atan:
+  vjp:
+  - Div($cotangent, Add(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise arctangent derivative (lowercase alias).
+
+Sinh:
+  vjp:
+  - Mul($cotangent, Cosh($input[0]))
+  description: Element-wise hyperbolic sine derivative.
+
+sinh:
+  vjp:
+  - Mul($cotangent, Cosh($input[0]))
+  description: Element-wise hyperbolic sine derivative (lowercase alias).
+
+Cosh:
+  vjp:
+  - Mul($cotangent, Sinh($input[0]))
+  description: Element-wise hyperbolic cosine derivative.
+
+cosh:
+  vjp:
+  - Mul($cotangent, Sinh($input[0]))
+  description: Element-wise hyperbolic cosine derivative (lowercase alias).
+
+Tanh:
+  vjp:
+  - Mul($cotangent, Sub(Constant(1.0), Pow($output, Constant(2.0))))
+  description: Element-wise hyperbolic tangent derivative.
+
+tanh:
+  vjp:
+  - Mul($cotangent, Sub(Constant(1.0), Pow($output, Constant(2.0))))
+  description: Element-wise hyperbolic tangent derivative (lowercase alias).
+
+Asinh:
+  vjp:
+  - Div($cotangent, Sqrt(Add(Pow($input[0], Constant(2.0)), Constant(1.0))))
+  description: Element-wise inverse hyperbolic sine derivative.
+
+Acosh:
+  vjp:
+  - Div($cotangent, Sqrt(Sub(Pow($input[0], Constant(2.0)), Constant(1.0))))
+  description: Element-wise inverse hyperbolic cosine derivative.
+
+Atanh:
+  vjp:
+  - Div($cotangent, Sub(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise inverse hyperbolic tangent derivative.
+
+Relu:
+  vjp:
+  - Mul($cotangent, Greater($input[0], Constant(0.0)))
+  description: Rectified Linear Unit activation derivative.
+
+relu:
+  vjp:
+  - Mul($cotangent, Greater($input[0], Constant(0.0)))
+  description: Rectified Linear Unit activation derivative (lowercase alias).
+
+GELU:
+  vjp:
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit activation derivative.
+
+Gelu:
+  vjp:
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit activation derivative (alias).
+
+gelu:
+  vjp:
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit activation derivative (lowercase alias).
+
+SiLU:
+  vjp:
+  - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit activation derivative.
+
+Silu:
+  vjp:
+  - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit activation derivative (alias).
+
+silu:
+  vjp:
+  - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit activation derivative (lowercase alias).
+
+Sigmoid:
+  vjp:
+  - Mul($cotangent, Mul($output, Sub(Constant(1.0), $output)))
+  description: Logistic sigmoid activation derivative.
+
+sigmoid:
+  vjp:
+  - Mul($cotangent, Mul($output, Sub(Constant(1.0), $output)))
+  description: Logistic sigmoid activation derivative (lowercase alias).
+
+ELU:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+  description: Exponential Linear Unit activation derivative.
+
+Elu:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+  description: Exponential Linear Unit activation derivative (alias).
+
+LeakyReLU:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+  description: Leaky Rectified Linear Unit derivative.
+
+LeakyRelu:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+  description: Leaky Rectified Linear Unit derivative (alias).
+
+Softplus:
+  vjp:
+  - Mul($cotangent, Sigmoid($input[0]))
+  description: Softplus activation derivative.
+
+Softmax:
+  vjp:
+  - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))
+  description: Softmax activation derivative.
+
+softmax:
+  vjp:
+  - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))
+  description: Softmax activation derivative (lowercase alias).
+
+LogSoftmax:
+  vjp:
+  - Sub($cotangent, Mul(Exp($output), ReduceSum($cotangent, axis=-1, keepdims=True)))
+  description: LogSoftmax activation derivative.
+
+MatMul:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+  description: Matrix multiplication derivative.
+
+Matmul:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+  description: Matrix multiplication derivative (alias).
+
+matmul:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+  description: Matrix multiplication derivative (lowercase alias).
+
+BatchMatMul:
+  vjp:
+  - BatchMatMul($cotangent, Transpose($input[1]))
+  - BatchMatMul(Transpose($input[0]), $cotangent)
+  description: Batched matrix multiplication derivative.
+
+BatchMatmul:
+  vjp:
+  - BatchMatMul($cotangent, Transpose($input[1]))
+  - BatchMatMul(Transpose($input[0]), $cotangent)
+  description: Batched matrix multiplication derivative (alias).
+
+Dot:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+  description: Vector dot product derivative.
+
+dot:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+  description: Vector dot product derivative (lowercase alias).
+
+Transpose:
+  vjp:
+  - Transpose($cotangent)
+  description: Transposition derivative.
+
+transpose:
+  vjp:
+  - Transpose($cotangent)
+  description: Transposition derivative (lowercase alias).
+
+Reshape:
+  vjp:
+  - Reshape($cotangent)
+  description: Reshape operation derivative.
+
+reshape:
+  vjp:
+  - Reshape($cotangent)
+  description: Reshape operation derivative (lowercase alias).
+
+Squeeze:
+  vjp:
+  - ExpandDims($cotangent)
+  description: Squeeze operation derivative.
+
+squeeze:
+  vjp:
+  - ExpandDims($cotangent)
+  description: Squeeze operation derivative (lowercase alias).
+
+ExpandDims:
+  vjp:
+  - Squeeze($cotangent)
+  description: Expand dimensions derivative.
+
+expand_dims:
+  vjp:
+  - Squeeze($cotangent)
+  description: Expand dimensions derivative (lowercase alias).
+
+Einsum:
+  vjp:
+  - Einsum($cotangent, $input[1])
+  - Einsum($input[0], $cotangent)
+  description: Einstein summation derivative.
+
+einsum:
+  vjp:
+  - Einsum($cotangent, $input[1])
+  - Einsum($input[0], $cotangent)
+  description: Einstein summation derivative (lowercase alias).
+
+ReduceSum:
+  vjp:
+  - BroadcastLike($cotangent, $input[0])
+  description: Sum reduction derivative.
+
+reduce_sum:
+  vjp:
+  - BroadcastLike($cotangent, $input[0])
+  description: Sum reduction derivative (lowercase alias).
+
+ReduceMean:
+  vjp:
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+  description: Mean reduction derivative.
+
+reduce_mean:
+  vjp:
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+  description: Mean reduction derivative (lowercase alias).
+
+ReduceProd:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Div(BroadcastLike($output, $input[0]), $input[0]))
+  description: Product reduction derivative.
+
+reduce_prod:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Div(BroadcastLike($output, $input[0]), $input[0]))
+  description: Product reduction derivative (lowercase alias).
+
+ReduceMax:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+  description: Maximum reduction derivative.
+
+reduce_max:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+  description: Maximum reduction derivative (lowercase alias).
+
+ReduceMin:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+  description: Minimum reduction derivative.
+
+reduce_min:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+  description: Minimum reduction derivative (lowercase alias).
+
+Norm:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Div($input[0], BroadcastLike($output, $input[0])))
+  description: Euclidean norm derivative.
+
+L2Normalize:
+  vjp:
+  - Div(Sub($cotangent, Mul($output, ReduceSum(Mul($output, $cotangent)))), Norm($input[0]))
+  description: L2 normalization derivative.
+
+Conv1D:
+  vjp:
+  - ConvTranspose1D($cotangent, $input[1])
+  - Conv1D($input[0], $cotangent)
+  description: 1D convolution derivative.
+
+Conv2D:
+  vjp:
+  - ConvTranspose2D($cotangent, $input[1])
+  - Conv2D($input[0], $cotangent)
+  description: 2D convolution derivative.
+
+Conv3D:
+  vjp:
+  - ConvTranspose3D($cotangent, $input[1])
+  - Conv3D($input[0], $cotangent)
+  description: 3D convolution derivative.
+
+ConvTranspose2D:
+  vjp:
+  - Conv2D($cotangent, $input[1])
+  - ConvTranspose2D($input[0], $cotangent)
+  description: 2D transposed convolution derivative.
+
+MaxPool2D:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+  description: 2D max pooling derivative.
+
+AvgPool2D:
+  vjp:
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+  description: 2D average pooling derivative.
+
+BatchNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+  description: Batch normalization derivative.
+
+LayerNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+  description: Layer normalization derivative.
+
+RMSNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Div($input[0], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5))))))
+  description: Root Mean Square layer normalization derivative.
+
+GroupNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+  description: Group normalization derivative.
+
+MSELoss:
+  vjp:
+  - Mul($cotangent, Mul(Constant(2.0), Div(Sub($input[0], $input[1]), Numel($input[0]))))
+  - Mul($cotangent, Mul(Constant(-2.0), Div(Sub($input[0], $input[1]), Numel($input[0]))))
+  description: Mean Squared Error loss derivative.
+
+CrossEntropyLoss:
+  vjp:
+  - Mul($cotangent, Div(Sub(Softmax($input[0]), $input[1]), Numel($input[0])))
+  - Mul($cotangent, Neg(LogSoftmax($input[0])))
+  description: Categorical cross entropy loss derivative.
+
+BCELoss:
+  vjp:
+  - Mul($cotangent, Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0), $input[0]))))
+  - Mul($cotangent, Sub(Log(Sub(Constant(1.0), $input[0])), Log($input[0])))
+  description: Binary cross entropy loss derivative.
+
+HuberLoss:
+  vjp:
+  - Mul($cotangent, Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1]))))
+  - Mul($cotangent, Neg(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1])))))
+  description: Huber / smooth L1 loss derivative.
+
+KLDivergenceLoss:
+  vjp:
+  - Mul($cotangent, Sub(Constant(1.0), Div($input[1], $input[0])))
+  - Mul($cotangent, Sub(Log($input[1]), Log($input[0])))
+  description: Kullback-Leibler divergence loss derivative.
+
+Outer:
+  vjp:
+  - MatMul($cotangent, $input[1])
+  - MatMul(Transpose($cotangent), $input[0])
+  description: Outer product reverse-mode derivative.
+
+outer:
+  vjp:
+  - MatMul($cotangent, $input[1])
+  - MatMul(Transpose($cotangent), $input[0])
+  description: Outer product reverse-mode derivative (lowercase alias).
+
+Cholesky:
+  vjp:
+  - Mul(Constant(0.5), Solve($input[0], Add($cotangent, Transpose($cotangent))))
+  description: Cholesky decomposition derivative.
+
+cholesky:
+  vjp:
+  - Mul(Constant(0.5), Solve($input[0], Add($cotangent, Transpose($cotangent))))
+  description: Cholesky decomposition derivative (lowercase alias).
+
+Solve:
+  vjp:
+  - Neg(MatMul(Solve(Transpose($input[0]), $cotangent), Transpose($output)))
+  - Solve(Transpose($input[0]), $cotangent)
+  description: Linear solve reverse-mode derivative.
+
+solve:
+  vjp:
+  - Neg(MatMul(Solve(Transpose($input[0]), $cotangent), Transpose($output)))
+  - Solve(Transpose($input[0]), $cotangent)
+  description: Linear solve reverse-mode derivative (lowercase alias).
+
+Det:
+  vjp:
+  - Mul($cotangent, Mul($output, Transpose(Inverse($input[0]))))
+  description: Matrix determinant reverse-mode derivative.
+
+det:
+  vjp:
+  - Mul($cotangent, Mul($output, Transpose(Inverse($input[0]))))
+  description: Matrix determinant reverse-mode derivative (lowercase alias).
+
+SVD:
+  vjp:
+  - SVDGrad($input[0], $output, $cotangent)
+  description: Singular Value Decomposition derivative.
+
+svd:
+  vjp:
+  - SVDGrad($input[0], $output, $cotangent)
+  description: Singular Value Decomposition derivative (lowercase alias).
+
+Slice:
+  vjp:
+  - Scatter($cotangent, $input[0])
+  description: Tensor slice reverse-mode derivative.
+
+slice:
+  vjp:
+  - Scatter($cotangent, $input[0])
+  description: Tensor slice reverse-mode derivative (lowercase alias).
+
+Concat:
+  vjp:
+  - Split($cotangent)
+  - Split($cotangent)
+  description: Tensor concatenation reverse-mode derivative.
+
+concat:
+  vjp:
+  - Split($cotangent)
+  - Split($cotangent)
+  description: Tensor concatenation reverse-mode derivative (lowercase alias).
+
+Split:
+  vjp:
+  - Concat($cotangent)
+  description: Tensor split reverse-mode derivative.
+
+split:
+  vjp:
+  - Concat($cotangent)
+  description: Tensor split reverse-mode derivative (lowercase alias).
+
+Gather:
+  vjp:
+  - Scatter($cotangent, $input[1], $input[0])
+  - ZerosLike($input[1])
+  description: Gather reverse-mode derivative.
+
+gather:
+  vjp:
+  - Scatter($cotangent, $input[1], $input[0])
+  - ZerosLike($input[1])
+  description: Gather reverse-mode derivative (lowercase alias).
+
+Scatter:
+  vjp:
+  - Scatter($cotangent, $input[1], ZerosLike($input[2]))
+  - ZerosLike($input[1])
+  - Gather($cotangent, $input[1])
+  description: Scatter reverse-mode derivative.
+
+scatter:
+  vjp:
+  - Scatter($cotangent, $input[1], ZerosLike($input[2]))
+  - ZerosLike($input[1])
+  - Gather($cotangent, $input[1])
+  description: Scatter reverse-mode derivative (lowercase alias).
+
+Erf:
+  vjp:
+  - Mul($cotangent, Mul(Constant(1.1283791670955126), Exp(Neg(Square($input[0])))))
+  description: Error function reverse-mode derivative.
+
+erf:
+  vjp:
+  - Mul($cotangent, Mul(Constant(1.1283791670955126), Exp(Neg(Square($input[0])))))
+  description: Error function reverse-mode derivative (lowercase alias).
+
+AllReduce:
+  vjp:
+  - AllReduce($cotangent)
+  description: Reverse-mode derivative for AllReduce.
+
+AllGather:
+  vjp:
+  - ReduceScatter($cotangent)
+  description: Reverse-mode derivative for AllGather is ReduceScatter.
+
+ReduceScatter:
+  vjp:
+  - AllGather($cotangent)
+  description: Reverse-mode derivative for ReduceScatter is AllGather.
+
+Broadcast:
+  vjp:
+  - AllReduce($cotangent)
+  description: Reverse-mode derivative for Broadcast is AllReduce to root.
+
+AllToAll:
+  vjp:
+  - AllToAll($cotangent)
+  description: Reverse-mode derivative for AllToAll.

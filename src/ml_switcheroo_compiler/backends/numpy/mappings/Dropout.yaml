@@ -1,2 +1,2 @@
 Dropout:
-  target_api: np.dropout
+  target_api: custom_op

@@ -223,9 +223,16 @@ def test_jax_eager_execute_op_lambdas():
 
 
 def test_jax_eager_execute_op_fallback():
+    import unittest.mock as mock
+
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.jax.eager import execute_op
+
+    with mock.patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
+        with mock.patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
+            with pytest.raises(Exception):
+                execute_op(None, "Mish", jnp.array([1.0]))
 
     res = execute_op(None, "Mul", jnp.array([1.0]), jnp.array([2.0]))
     assert res[0] == 2.0

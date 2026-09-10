@@ -1,2 +1,2 @@
 BesselK0e:
-  target_api: np.besselk0e
+  target_api: custom_op

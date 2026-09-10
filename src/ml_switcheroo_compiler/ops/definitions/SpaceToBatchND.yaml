@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: SpaceToBatchND
-  edge_stablehlo:
-
-    opcode: stablehlo.space_to_batch_n_d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

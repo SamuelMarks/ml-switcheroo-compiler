@@ -1,0 +1,18 @@
+# Declarative SPMD Multi-Axis Mesh Partitioning Configuration
+device_mesh_partitioning:
+  default_mesh:
+    shape: [2, 2, 1]
+    axis_names: ["dp", "tp", "pp"]
+    devices: [0, 1, 2, 3]
+  strategies:
+    data_parallel:
+      mesh_axis: "dp"
+      tensor_dim: 0
+    tensor_model_parallel:
+      mesh_axis: "tp"
+      row_parallel_dim: 0
+      col_parallel_dim: 1
+      contracting_dim: -1
+    pipeline_parallel:
+      mesh_axis: "pp"
+      stage_dim: null

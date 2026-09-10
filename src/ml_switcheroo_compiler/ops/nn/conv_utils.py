@@ -67,7 +67,7 @@ def _calculate_conv_transpose_padding(
     padding: Union[str, Sequence[tuple[int, int]]],
     k_sdims: tuple[int, ...],
     strides_tuple: tuple[int, ...],
-) -> Sequence[tuple[int, int]]:
+) -> Union[str, Sequence[tuple[int, int]]]:
     """Calculate padding for transposed convolution.
 
     Args:
@@ -76,12 +76,12 @@ def _calculate_conv_transpose_padding(
         strides_tuple (tuple[int, ...]): Strides tuple.
 
     Returns:
-        Sequence[tuple[int, int]]: The calculated padding sequence.
+        Union[str, Sequence[tuple[int, int]]]: The calculated padding sequence.
     """
     if not (isinstance(padding, str) and padding in {"SAME", "VALID"}):
         return padding
 
-    pads = []
+    pads: list[tuple[int, int]] = []
     for k, s in zip(k_sdims, strides_tuple):
         if padding == "SAME":
             pads.append(_calc_same_pad(k, s))

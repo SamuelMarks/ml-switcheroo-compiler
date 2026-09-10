@@ -1,6 +1,8 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module cst_transpiler.py."""
 
+from __future__ import annotations
+
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 import os
 from typing import cast
 
@@ -9,12 +11,18 @@ from typing import cast
 import libcst as cst
 import libcst.matchers as m
 
-from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
+from ml_switcheroo_compiler.backends.transpiler_config_models import (
+    load_cst_rewrite_rules,
+    load_transpiler_config,
+)
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
 
-KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow", "pytorch"}
+_CST_RULES_PATH = os.path.join(os.path.dirname(__file__), "cst_rewrite_rules.yaml")
+_CST_RULES = load_cst_rewrite_rules(_CST_RULES_PATH)
+
+KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow", "pytorch", "numba", "sparse"}
 
 
 def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
@@ -111,9 +119,26 @@ class CSTTransformer(cst.CSTTransformer):
         new_names: list[cst.ImportAlias] = []
         mutated: bool = False
         target_module: str = self.target_config.target_module
+
+        def _get_import_name(node: cst.BaseExpression) -> str:
+            """Recursively extract dotted import name string.
+
+            Args:
+                node (cst.BaseExpression): AST expression node.
+
+            Returns:
+                str: Dot-delimited import name string.
+            """
+            if isinstance(node, cst.Attribute):
+                base = _get_import_name(node.value)
+                return f"{base}.{node.attr.value}" if base else node.attr.value
+            return getattr(node, "value", "")
+
         for alias in updated_node.names:
-            if isinstance(alias.name, cst.Name) and alias.name.value in KNOWN_SOURCE_FRAMEWORKS:
-                if alias.name.value != target_module:
+            alias_full = _get_import_name(alias.name)
+            base_mod = alias_full.split(".")[0]
+            if base_mod in KNOWN_SOURCE_FRAMEWORKS:
+                if alias_full != target_module:
                     target_parts: list[str] = target_module.split(".")
                     new_alias: cst.ImportAlias = alias.with_changes(name=cast(cst.Name, _build_attribute_chain(target_parts)))
                     new_names.append(new_alias)
@@ -167,6 +192,29 @@ class CSTTransformer(cst.CSTTransformer):
 
         func_attr_value: str = final_node.func.attr.value
 
+        # Declarative method-to-function rewrites from config schema
+        for rewrite in _CONFIG.syntactic_patterns.method_to_function_rewrites:
+            if func_attr_value == rewrite.pattern:
+                if rewrite.replacement == "identity":
+                    return final_node.func.value
+                elif self.target_framework != "pytorch":
+                    return final_node.with_changes(func=final_node.func.with_changes(attr=cst.Name(rewrite.replacement)))
+
+        # Declarative chain removals from cst_rewrite_rules.yaml
+        for chain_rule in _CST_RULES.chain_removals:
+            if func_attr_value == chain_rule.match.pattern:
+                return final_node.func.value
+
+        # Declarative method substitutions from cst_rewrite_rules.yaml
+        for sub_rule in _CST_RULES.method_substitutions:
+            if func_attr_value == sub_rule.match.pattern and self.target_framework != "pytorch" and sub_rule.replacement:
+                return final_node.with_changes(func=final_node.func.with_changes(attr=cst.Name(sub_rule.replacement.target_name)))
+
+        # Declarative in-place mutation rewrites from cst_rewrite_rules.yaml
+        for inplace_rule in _CST_RULES.in_place_mutations:
+            if func_attr_value == inplace_rule.match.pattern and self.target_framework != "pytorch" and inplace_rule.replacement:
+                return final_node.with_changes(func=final_node.func.with_changes(attr=cst.Name(inplace_rule.replacement.target_name)))
+
         # Handle explicit broadcast translations
         for fw, fw_config in _CONFIG.frameworks.items():
             if fw_config.broadcast_method == func_attr_value and self.target_framework != fw:
@@ -193,6 +241,11 @@ class CSTTransformer(cst.CSTTransformer):
         src_call_base: str = _get_base_name(final_node.func)
 
         if src_call_base in KNOWN_SOURCE_FRAMEWORKS:
+            if func_attr_value == "tensor" and self.target_framework != "pytorch":
+                target_chain = self.target_config.module_path + ["array"]
+                new_func_expr = _build_attribute_chain(target_chain)
+                return final_node.with_changes(func=new_func_expr)
+
             target_chain: list[str] = self.target_config.module_path
             if target_chain != [src_call_base]:
                 new_value: cst.BaseExpression = _build_attribute_chain(target_chain)
@@ -279,11 +332,133 @@ class CSTTransformer(cst.CSTTransformer):
         if updated_node.name.value in method_map:
             if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
                 if updated_node.params.params and updated_node.params.params[0].name.value == "self":
-                    return updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
-                return updated_node
-            return updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
+                    updated_node = updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
+            else:
+                updated_node = updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
+
+        # Lower early returns: if cond: return a; return b -> return where(cond, a, b)
+        body_stmts = list(updated_node.body.body)
+        if len(body_stmts) == 2:
+            stmt1, stmt2 = body_stmts[0], body_stmts[1]
+            if (
+                isinstance(stmt1, cst.If)
+                and not stmt1.orelse
+                and len(stmt1.body.body) == 1
+                and isinstance(stmt1.body.body[0], cst.SimpleStatementLine)
+                and len(stmt1.body.body[0].body) == 1
+                and isinstance(stmt1.body.body[0].body[0], cst.Return)
+                and isinstance(stmt2, cst.SimpleStatementLine)
+                and len(stmt2.body) == 1
+                and isinstance(stmt2.body[0], cst.Return)
+            ):
+                cond = stmt1.test
+                ret1 = stmt1.body.body[0].body[0].value
+                ret2 = stmt2.body[0].value
+                if ret1 is not None and ret2 is not None:
+                    target_module_parts = self.target_config.module_path if self.target_config else ["jnp"]
+                    where_func = _build_attribute_chain(target_module_parts + ["where"])
+                    where_call = cst.Call(
+                        func=where_func,
+                        args=[cst.Arg(value=cond), cst.Arg(value=ret1), cst.Arg(value=ret2)],
+                    )
+                    new_return = cst.SimpleStatementLine(body=[cst.Return(value=where_call)])
+                    updated_node = updated_node.with_changes(body=updated_node.body.with_changes(body=[new_return]))
 
         return updated_node
+
+    def leave_ListComp(
+        self,
+        original_node: cst.ListComp,
+        updated_node: cst.ListComp,
+    ) -> cst.BaseExpression:
+        """Functionalize list comprehensions into map operations.
+
+        Args:
+            original_node (cst.ListComp): Original list comprehension node.
+            updated_node (cst.ListComp): Updated list comprehension node.
+
+        Returns:
+            cst.BaseExpression: Functionalized Map call.
+        """
+        for_clause = updated_node.for_in
+        elt = updated_node.elt
+        target = for_clause.target
+        iter_expr = for_clause.iter
+
+        if isinstance(target, cst.Name):
+            lambda_func = cst.Lambda(
+                params=cst.Parameters(params=[cst.Param(name=target)]),
+                body=elt,
+            )
+            map_call = cst.Call(
+                func=cst.Name("map"),
+                args=[cst.Arg(value=lambda_func), cst.Arg(value=iter_expr)],
+            )
+            return cst.Call(
+                func=cst.Name("list"),
+                args=[cst.Arg(value=map_call)],
+            )
+        return updated_node
+
+    def leave_GeneratorExp(
+        self,
+        original_node: cst.GeneratorExp,
+        updated_node: cst.GeneratorExp,
+    ) -> cst.BaseExpression:
+        """Functionalize generator expressions into Scan/Map operations.
+
+        Args:
+            original_node (cst.GeneratorExp): Original generator expression.
+            updated_node (cst.GeneratorExp): Updated generator expression.
+
+        Returns:
+            cst.BaseExpression: Functionalized generator expression.
+        """
+        for_clause = updated_node.for_in
+        elt = updated_node.elt
+        target = for_clause.target
+        iter_expr = for_clause.iter
+
+        if isinstance(target, cst.Name):
+            lambda_func = cst.Lambda(
+                params=cst.Parameters(params=[cst.Param(name=target)]),
+                body=elt,
+            )
+            return cst.Call(
+                func=cst.Name("map"),
+                args=[cst.Arg(value=lambda_func), cst.Arg(value=iter_expr)],
+            )
+        return updated_node
+
+    def leave_IfExp(
+        self,
+        original_node: cst.IfExp,
+        updated_node: cst.IfExp,
+    ) -> cst.BaseExpression:
+        """Lower ternary conditional expressions into functional Cond/where calls.
+
+        Args:
+            original_node (cst.IfExp): Original ternary if node.
+            updated_node (cst.IfExp): Updated ternary if node.
+
+        Returns:
+            cst.BaseExpression: Lowered functional where/Cond call.
+        """
+        test = updated_node.test
+        body = updated_node.body
+        orelse = updated_node.orelse
+
+        target_module_parts = self.target_config.module_path if self.target_config else ["jnp"]
+        where_func = _build_attribute_chain(target_module_parts + ["where"])
+
+        return cst.Call(
+            func=where_func,
+            args=[
+                cst.Arg(value=test),
+                cst.Arg(value=body),
+                cst.Arg(value=orelse),
+            ],
+        )
 
     def leave_Attribute(
         self,
@@ -302,6 +477,40 @@ class CSTTransformer(cst.CSTTransformer):
         if isinstance(updated_node.value, cst.Name) and updated_node.value.value == "self":
             attr_name: str = updated_node.attr.value
             return cst.Subscript(value=cst.Name("state"), slice=[cst.SubscriptElement(slice=cst.Index(value=cst.SimpleString(f'"{attr_name}"')))])
+        return updated_node
+
+    def leave_AugAssign(
+        self,
+        original_node: cst.AugAssign,
+        updated_node: cst.AugAssign,
+    ) -> cst.BaseSmallStatement:
+        """Functionalize in-place augmented assignments for functional target backends.
+
+        Args:
+            original_node (cst.AugAssign): The original augmented assignment node.
+            updated_node (cst.AugAssign): The updated augmented assignment node.
+
+        Returns:
+            cst.BaseSmallStatement: Functionalized assignment or unchanged node.
+        """
+        if self.target_framework == "jax":
+            op_map: dict[type[cst.BaseAugOp], cst.BaseBinaryOp] = {
+                cst.AddAssign: cst.Add(),
+                cst.SubtractAssign: cst.Subtract(),
+                cst.MultiplyAssign: cst.Multiply(),
+                cst.DivideAssign: cst.Divide(),
+            }
+            op_type = type(updated_node.operator)
+            if op_type in op_map:
+                bin_op = cst.BinaryOperation(
+                    left=updated_node.target,
+                    operator=op_map[op_type],
+                    right=updated_node.value,
+                )
+                return cst.Assign(
+                    targets=[cst.AssignTarget(target=updated_node.target)],
+                    value=bin_op,
+                )
         return updated_node
 
 
@@ -342,8 +551,11 @@ def transpile_source(source_code: str, target_framework: str = "jax") -> str:
     tree: cst.Module = cst.parse_module(source_code)
     wrapper: cst.MetadataWrapper = cst.MetadataWrapper(tree)
     transformer: CSTTransformer = CSTTransformer(target_framework=target_framework)
-    modified_tree: cst.Module = cast(cst.Module, wrapper.visit(transformer))
+    modified_tree: cst.Module = wrapper.visit(transformer)
     return modified_tree.code
+
+
+transpile_cst = transpile_source
 
 
 def validate_diff(source_code: str, transpiled_code: str) -> bool:

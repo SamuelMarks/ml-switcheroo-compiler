@@ -11,11 +11,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: argpartition
-  edge_stablehlo:
-
-    opcode: stablehlo.argpartition
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

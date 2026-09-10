@@ -1,14 +1,14 @@
 operation: FloatPower
 description: The FloatPower operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: exponent
-    type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: exponent
+  type: float
 variants:
   cupy:
     eager: cp.float_power
@@ -26,11 +26,6 @@ variants:
     eager: jax.numpy.floatpower
   mlx:
     eager: mlx.core.floatpower
-  edge_onnx:
-    generator: FloatPower
-  edge_stablehlo:
-
-    opcode: stablehlo.float_power
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,2 +1,2 @@
 ReduceEuclideanNorm:
-  target_api: np.reduceeuclideannorm
+  target_api: custom_op

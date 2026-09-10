@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.inner
   mlx:
     eager: mlx.core.inner
-  edge_onnx:
-    generator: inner
-  edge_stablehlo:
-
-    opcode: stablehlo.inner
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

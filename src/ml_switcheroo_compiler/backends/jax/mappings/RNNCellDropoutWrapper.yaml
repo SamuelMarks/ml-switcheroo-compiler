@@ -1,2 +1,2 @@
 RNNCellDropoutWrapper:
-  target_api: jax.numpy.rnncelldropoutwrapper
+  target_api: custom_op

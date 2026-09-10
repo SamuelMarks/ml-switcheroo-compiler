@@ -42,18 +42,22 @@ def test_eager_evaluator():
         def infer_shape(self, *a, **k):
             return ()
 
-    OpRegistry["Op1"] = Op1
-    OpRegistry["Op2"] = DummyOpBackend
+    try:
+        OpRegistry["Op1"] = Op1
+        OpRegistry["Op2"] = DummyOpBackend
 
-    from unittest.mock import patch
+        from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend()):
-        res2 = EagerEvaluator.evaluate("Op1", t)
-        assert isinstance(res2, Tensor)
-        assert res2.data == "data"
-        res3 = EagerEvaluator.evaluate("Op2", t)
-        assert isinstance(res3, Tensor)
-        assert res3.data == "Op2"
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=DummyBackend()):
+            res2 = EagerEvaluator.evaluate("Op1", t)
+            assert isinstance(res2, Tensor)
+            assert res2.data == "data"
+            res3 = EagerEvaluator.evaluate("Op2", t)
+            assert isinstance(res3, Tensor)
+            assert res3.data == "Op2"
+    finally:
+        OpRegistry.pop("Op1", None)
+        OpRegistry.pop("Op2", None)
 
 
 def test_eager_evaluator_pack_outputs():

@@ -15,11 +15,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: cumprod
-  edge_stablehlo:
-
-    opcode: stablehlo.cumprod
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

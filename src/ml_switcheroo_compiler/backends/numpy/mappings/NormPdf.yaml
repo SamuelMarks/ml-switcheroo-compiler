@@ -1,2 +1,2 @@
 NormPdf:
-  target_api: np.normpdf
+  target_api: custom_op

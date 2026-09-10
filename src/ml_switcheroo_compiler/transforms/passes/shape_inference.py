@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import typing
 
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -108,14 +111,11 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
 
     try:
         return _infer_op_shape(node, shapes)
-    except KeyError:
-        res3 = node.shape_metadata
-        return res3
+    except (KeyError, AttributeError):
+        return node.shape_metadata
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
-            # Known missing
-            res3 = node.shape_metadata
-            return res3
+            return node.shape_metadata
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:
@@ -132,6 +132,8 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     Returns:
         bool: Result.
     """
+    from ml_switcheroo_compiler.ops.shape_inference import compute_contiguous_strides
+
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     shapes: dict[str, tuple[int, ...] | None] = {}
@@ -140,8 +142,48 @@ def shape_inference_pass(graph: IRGraph) -> bool:
         out_shape = _determine_node_shape(node, shapes)
 
         shapes[node.id] = out_shape
-        if out_shape is not None and node.shape_metadata != out_shape:
-            node.shape_metadata = out_shape
-            modified = True
+        if out_shape is not None:
+            if node.shape_metadata != out_shape:
+                node.shape_metadata = out_shape
+                modified = True
+            strides = compute_contiguous_strides(out_shape)
+            node.attributes["strides"] = strides
+            try:
+                node.strides = strides
+            except AttributeError:
+                pass
+
+    return modified
+
+
+def annotate_learned_shapes(
+    graph: IRGraph,
+    observed_shapes: (dict[str, tuple[int, ...]] | dict[str, list[int]] | ShapeInspectionPayload),
+) -> bool:
+    """Annotate graph nodes with concrete runtime shapes captured during browser or hardware execution.
+
+    Args:
+        graph (IRGraph): The computation graph to annotate with learned shapes.
+        observed_shapes (typing.Union[dict[str, tuple[int, ...]], dict[str, list[int]], ShapeInspectionPayload]):
+            Mapping of node IDs to observed concrete shapes or full runtime payload.
+
+    Returns:
+        bool: True if any node shape metadata was updated, False otherwise.
+    """
+    from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
+
+    shape_map: dict[str, typing.Sequence[int]] = observed_shapes.observed_shapes if isinstance(observed_shapes, ShapeInspectionPayload) else observed_shapes
+
+    modified: bool = False
+    for nid, shape in shape_map.items():
+        if nid in graph.nodes:
+            node: IRNode = graph.nodes[nid]
+            norm_shape: tuple[int, ...] = tuple(int(s) for s in shape)
+            if node.shape_metadata != norm_shape:
+                node.shape_metadata = norm_shape
+                modified = True
+
+    if modified:
+        shape_inference_pass(graph)
 
     return modified

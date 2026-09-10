@@ -77,8 +77,10 @@ class EagerExecutionMixin:
             *args: Positional arguments.
             **kwargs: Keyword arguments.
 
-        Returns: object: The eager evaluation result.
+        Returns:
+            object: The eager evaluation result.
         """
+        del args, kwargs
         return None
 
     @classmethod

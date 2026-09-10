@@ -1,10 +1,10 @@
 operation: Arccos_
 description: In-place version of Arccos.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
 variants:
   numpy: {}
   cupy: {}
@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Arccos_
-  edge_stablehlo:
-
-    opcode: stablehlo.arccos_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

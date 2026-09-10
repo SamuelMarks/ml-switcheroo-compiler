@@ -59,7 +59,7 @@ def test_generate_stubs_success(capsys: CaptureFixture[str], tmp_path: Path) -> 
     captured = capsys.readouterr()
     assert "Generated" in captured.out
 
-    stub_path = numpy_dir / "stub.pyi"
+    stub_path = numpy_dir / "snapshot_stubs.pyi"
     assert stub_path.exists()
     written = stub_path.read_text()
 
@@ -81,7 +81,7 @@ def test_generate_stubs_malformed_categories(tmp_path: Path) -> None:
     numpy_dir.mkdir(parents=True)
 
     gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
-    assert (numpy_dir / "stub.pyi").exists()
+    assert (numpy_dir / "snapshot_stubs.pyi").exists()
 
 
 def test_generate_stubs_no_files(tmp_path: Path) -> None:
@@ -106,7 +106,7 @@ def test_generate_stubs_missing_backend_dir(tmp_path: Path) -> None:
     # we DO NOT create numpy directory inside out_base
 
     gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
-    assert not (out_base / "numpy" / "stub.pyi").exists()
+    assert not (out_base / "numpy" / "snapshot_stubs.pyi").exists()
 
 
 def test_main(capsys: CaptureFixture[str]) -> None:

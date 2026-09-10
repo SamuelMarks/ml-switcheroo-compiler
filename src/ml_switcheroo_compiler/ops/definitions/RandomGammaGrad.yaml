@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.randomgammagrad
   mlx:
     eager: mlx.core.randomgammagrad
-  edge_onnx:
-    generator: RandomGammaGrad
-  edge_stablehlo:
-
-    opcode: stablehlo.random_gamma_grad
   edge_wgsl:
     template: unary
     expr: '0.5'

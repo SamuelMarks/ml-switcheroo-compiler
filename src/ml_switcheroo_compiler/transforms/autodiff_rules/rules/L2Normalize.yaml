@@ -1,4 +1,4 @@
 L2Normalize:
-  jvp: ZerosLike($tangent[0])
+  jvp: Div(Sub($tangent[0], Mul($output, ReduceSum(Mul($output, $tangent[0])))), Norm($input[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Div(Sub($cotangent, Mul($output, ReduceSum(Mul($output, $cotangent)))), Norm($input[0]))

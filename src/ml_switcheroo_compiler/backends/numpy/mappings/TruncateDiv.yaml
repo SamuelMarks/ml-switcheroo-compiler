@@ -1,0 +1,3 @@
+TruncateDiv:
+  ast_template: np.trunc(np.divide({0}, {1}))
+  target_api: ''

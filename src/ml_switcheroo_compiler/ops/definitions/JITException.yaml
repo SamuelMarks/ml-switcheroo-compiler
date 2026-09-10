@@ -1,7 +1,0 @@
-operation: JITException
-description: Common base class for all non-exit exceptions in JIT.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

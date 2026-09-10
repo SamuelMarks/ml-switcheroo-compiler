@@ -1,2 +1,2 @@
 RandomNormal:
-  target_api: np.randomnormal
+  target_api: custom_op

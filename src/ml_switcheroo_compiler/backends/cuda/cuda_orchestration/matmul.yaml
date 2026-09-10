@@ -9,3 +9,14 @@ matmul:
   - 16
   - 16
   - 1
+  grid_calc:
+    x: ({N_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: ({M} + block_{node_idx}.y - 1) / block_{node_idx}.y
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

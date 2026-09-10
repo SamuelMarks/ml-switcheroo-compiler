@@ -1,4 +1,0 @@
-QInt32Storage:
-  jvp: ZerosLike($tangent[0])
-  vjp:
-  - ZerosLike($cotangent)

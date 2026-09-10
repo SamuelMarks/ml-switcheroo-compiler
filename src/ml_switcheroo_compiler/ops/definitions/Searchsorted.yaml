@@ -1,22 +1,22 @@
 operation: searchsorted
 description: The Searchsorted operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x1
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x2
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: side
-    type: Literal[left, right]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: sorter
-    type: Optional[array]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: side
+  type: Literal[left, right]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: sorter
+  type: Optional[array]
 variants:
   cupy:
     eager: cp.searchsorted
@@ -30,11 +30,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: searchsorted
-  edge_stablehlo:
-
-    opcode: stablehlo.searchsorted
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;

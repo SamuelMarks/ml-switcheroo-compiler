@@ -6,8 +6,6 @@ variants:
     eager: keras_ops.scan
   tensorflow:
     eager: tf.scan
-  edge_onnx:
-    generator: Scan
   edge_stablehlo:
     generator: stablehlo.reduce_window
   numpy: {}
@@ -21,5 +19,5 @@ variants:
     scalar_expr: in0_val
 autodiff:
   vjp:
-    - $cotangent
+  - $cotangent
   jvp: $tangent[0]

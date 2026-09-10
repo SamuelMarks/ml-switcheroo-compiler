@@ -80,6 +80,16 @@ def _load_edge_wasm_simd() -> None:
     import ml_switcheroo_compiler.backends.edge.wasm  # noqa: F401
 
 
+def _load_numba() -> None:
+    """Load the Numba backend."""
+    import ml_switcheroo_compiler.backends.numba  # noqa: F401
+
+
+def _load_sparse() -> None:
+    """Load the Sparse backend."""
+    import ml_switcheroo_compiler.backends.sparse  # noqa: F401
+
+
 _LOADERS = {
     "numpy": _load_numpy,
     "pytorch": _load_pytorch,
@@ -96,9 +106,35 @@ _LOADERS = {
     "edge_stablehlo": _load_edge_stablehlo,
     "edge_wgsl": _load_edge_wgsl,
     "edge_wasm_simd": _load_edge_wasm_simd,
+    "numba": _load_numba,
+    "sparse": _load_sparse,
+    "sparse_coo": _load_sparse,
 }
 
-BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
+BackendName = Literal[
+    "jax",
+    "torch",
+    "pytorch",
+    "mlx",
+    "keras",
+    "tensorflow",
+    "numpy",
+    "cupy",
+    "dask",
+    "pure_python",
+    "llvm_cpp",
+    "edge_onnx",
+    "edge_stablehlo",
+    "edge_wgsl",
+    "edge_wasm_simd",
+    "edge_webgl",
+    "metal",
+    "cuda",
+    "rocm",
+    "numba",
+    "sparse",
+    "sparse_coo",
+]
 
 
 class BackendRegistry:
@@ -122,6 +158,9 @@ class BackendRegistry:
         "edge_stablehlo": "ml_switcheroo_compiler.backends.edge.stablehlo",
         "edge_wgsl": "ml_switcheroo_compiler.backends.edge.webgpu",
         "edge_wasm_simd": "ml_switcheroo_compiler.backends.edge.wasm",
+        "numba": "ml_switcheroo_compiler.backends.numba",
+        "sparse": "ml_switcheroo_compiler.backends.sparse",
+        "sparse_coo": "ml_switcheroo_compiler.backends.sparse",
     }
 
     @classmethod

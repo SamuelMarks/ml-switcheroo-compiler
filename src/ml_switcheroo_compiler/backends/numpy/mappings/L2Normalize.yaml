@@ -1,2 +1,2 @@
 L2Normalize:
-  target_api: np.l2normalize
+  target_api: custom_op

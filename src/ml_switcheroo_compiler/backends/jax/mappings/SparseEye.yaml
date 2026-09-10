@@ -1,2 +1,2 @@
 SparseEye:
-  target_api: jax.numpy.sparseeye
+  target_api: custom_op

@@ -1,2 +1,2 @@
 Ogrid:
-  target_api: '''mx.ogrid({0})'''
+  target_api: custom_op

@@ -15,6 +15,7 @@ class TracingState:
         """Initialize."""
         self.is_tracing: bool = False
         self.active_graph = None
+        self.graph_stack: list[LogicalGraph] = []
         self.constant_cache = {}
 
     def _enrich_ast_and_domain(self, node) -> None:
@@ -73,6 +74,8 @@ class TracingState:
 
         Returns: Tensor: The newly initialized LogicalGraph instance.
         """
+        if self.active_graph is not None:
+            self.graph_stack.append(self.active_graph)
         self.active_graph = LogicalGraph(name=name)
         self.constant_cache = {}
         self.is_tracing = True
@@ -84,8 +87,12 @@ class TracingState:
         Returns: Tensor: The populated LogicalGraph containing all operations captured during tracing.
         """
         graph = self.active_graph
-        self.active_graph = None
-        self.is_tracing = False
+        if self.graph_stack:
+            self.active_graph = self.graph_stack.pop()
+            self.is_tracing = True
+        else:
+            self.active_graph = None
+            self.is_tracing = False
         return graph
 
 

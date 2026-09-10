@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define base generator for emitting backend code from IR."""
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from typing import Union
@@ -16,7 +18,7 @@ from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
 class IRGraphWalker:
     """Help class to encapsulate IR graph traversal logic."""
 
-    def __init__(self, generator: "BaseGenerator") -> None:
+    def __init__(self, generator: BaseGenerator) -> None:
         """Initialize the walker.
 
         Args:
@@ -166,6 +168,12 @@ class EmitUtilsMixin:
                 self.add_line(f"return {returns[0]}")
             else:
                 self.add_line(f"return ({', '.join(returns)})")
+        elif hasattr(self, "graph") and getattr(self.graph, "outputs", None):
+            out_vars: list[str] = [self.formatter.var_names.get(out_id, out_id) for out_id in self.graph.outputs]
+            if len(out_vars) == 1:
+                self.add_line(f"return {out_vars[0]}")
+            else:
+                self.add_line(f"return ({', '.join(out_vars)})")
         else:
             self.add_line("return None")
 
@@ -177,6 +185,31 @@ class EmitUtilsMixin:
             val_repr (str): The val_repr parameter for the operation.
         """
         self.add_line(f"{var_name} = {val_repr}")
+
+
+class class_or_instance_method:
+    """Descriptor supporting invocation on either a class or an instance."""
+
+    def __init__(self, fn: object) -> None:
+        """Initialize descriptor with wrapped function.
+
+        Args:
+            fn (object): The callable method to wrap.
+        """
+        self.fn = fn
+
+    def __get__(self, obj: object, cls: type | None = None) -> object:
+        """Bind method to instance if present, else to class.
+
+        Args:
+            obj (object): Target instance or None.
+            cls (type | None): Owning class.
+
+        Returns:
+            object: Bound callable.
+        """
+        target = obj if obj is not None else cls
+        return lambda *args, **kwargs: self.fn(target, *args, **kwargs)
 
 
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
@@ -193,6 +226,14 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
         self.visitors = [self] + (delegates or [])
+
+    def get_language(self) -> str:
+        """Get the target programming language for code emission.
+
+        Returns:
+            str: Target language string ('python').
+        """
+        return "python"
 
     def emit_constant(self, node: IRNode) -> str:
         """Emit code for the constant backend.
@@ -264,6 +305,44 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         return "axis"
 
+    @class_or_instance_method
+    def compile_aot(self, graph: IRGraph | None = None, **kwargs: object) -> object:
+        """Compile an IRGraph into an ahead-of-time binary artifact or callable executable.
+
+        Can be invoked either as an instance method (e.g. generator.compile_aot())
+        or as a class method (e.g. GeneratorClass.compile_aot(graph)).
+
+        Args:
+            graph (IRGraph | None): Target computation graph to compile.
+            **kwargs (object): Compiler options, optimization levels, or destination paths.
+
+        Returns:
+            object: Compiled binary artifact, path, or callable execution wrapper.
+
+        Raises:
+            NotImplementedError: If AOT compilation is not implemented for this backend.
+        """
+        if isinstance(self, type):
+            target_graph = graph
+            instance = self(target_graph)
+            return instance._compile_aot_impl(target_graph, **kwargs)
+
+        target_graph = graph if graph is not None else getattr(self, "graph", None)
+        return self._compile_aot_impl(target_graph, **kwargs)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Internal backend-specific AOT compilation hook.
+
+        Args:
+            graph (IRGraph): The computation graph to compile.
+            **kwargs (object): Backend-specific compiler arguments.
+
+        Returns:
+            object: Resulting compiled artifact or callable.
+        """
+        msg = f"AOT compilation is not implemented for {self.__class__.__name__}"
+        raise NotImplementedError(msg)
+
     def get_fallback_keepdims_kwarg(self) -> str:
         """Get the fallback keepdims keyword argument name.
 
@@ -328,7 +407,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 class PythonStringGenerator(BaseGenerator):
     """Provide mixin for python string generators to avoid DRY issues in generate()."""
 
-    _import_header: Union[str, tuple[str, ...]] = ""
+    _import_header: str | tuple[str, ...] = ""
     _func_name: str = "evaluate"
 
     def generate(self) -> str:

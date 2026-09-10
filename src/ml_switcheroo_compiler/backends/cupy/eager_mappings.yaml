@@ -1,0 +1,352 @@
+backend_name: cupy
+operations:
+  Abs:
+    target_api: cupy.abs
+  Neg:
+    target_api: cupy.negative
+  Sin:
+    target_api: cupy.sin
+  Cos:
+    target_api: cupy.cos
+  Tan:
+    target_api: cupy.tan
+  Sinh:
+    target_api: cupy.sinh
+  Cosh:
+    target_api: cupy.cosh
+  Tanh:
+    target_api: cupy.tanh
+  Exp:
+    target_api: cupy.exp
+  Exp2:
+    target_api: cupy.exp2
+  Expm1:
+    target_api: cupy.expm1
+  Log:
+    target_api: cupy.log
+  Log2:
+    target_api: cupy.log2
+  Log10:
+    target_api: cupy.log10
+  Log1p:
+    target_api: cupy.log1p
+  Sqrt:
+    target_api: cupy.sqrt
+  Square:
+    target_api: cupy.square
+  Floor:
+    target_api: cupy.floor
+  Ceil:
+    target_api: cupy.ceil
+  Round:
+    target_api: cupy.round
+  Trunc:
+    target_api: cupy.trunc
+  Sign:
+    target_api: cupy.sign
+  Reciprocal:
+    target_api: cupy.reciprocal
+  Add:
+    target_api: cupy.add
+  Subtract:
+    target_api: cupy.subtract
+  Multiply:
+    target_api: cupy.multiply
+  Divide:
+    target_api: cupy.divide
+  TrueDivide:
+    target_api: cupy.true_divide
+  FloorDivide:
+    target_api: cupy.floor_divide
+  Power:
+    target_api: cupy.power
+  Maximum:
+    target_api: cupy.maximum
+  Minimum:
+    target_api: cupy.minimum
+  Equal:
+    target_api: cupy.equal
+  NotEqual:
+    target_api: cupy.not_equal
+  Greater:
+    target_api: cupy.greater
+  GreaterEqual:
+    target_api: cupy.greater_equal
+  Less:
+    target_api: cupy.less
+  LessEqual:
+    target_api: cupy.less_equal
+  LogicalAnd:
+    target_api: cupy.logical_and
+  LogicalOr:
+    target_api: cupy.logical_or
+  LogicalNot:
+    target_api: cupy.logical_not
+  BitwiseAnd:
+    target_api: cupy.bitwise_and
+  BitwiseOr:
+    target_api: cupy.bitwise_or
+  BitwiseXor:
+    target_api: cupy.bitwise_xor
+  Sum:
+    target_api: cupy.sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Prod:
+    target_api: cupy.prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Mean:
+    target_api: cupy.mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Max:
+    target_api: cupy.amax
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Min:
+    target_api: cupy.amin
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Argmax:
+    target_api: cupy.argmax
+    kwarg_translations:
+      dim: axis
+  Argmin:
+    target_api: cupy.argmin
+    kwarg_translations:
+      dim: axis
+  Any:
+    target_api: cupy.any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  All:
+    target_api: cupy.all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Var:
+    target_api: cupy.var
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Std:
+    target_api: cupy.std
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Matmul:
+    target_api: cupy.matmul
+  Dot:
+    target_api: cupy.dot
+  Transpose:
+    target_api: cupy.transpose
+  Reshape:
+    target_api: cupy.reshape
+  Squeeze:
+    target_api: cupy.squeeze
+  ExpandDims:
+    target_api: cupy.expand_dims
+    kwarg_translations:
+      dim: axis
+  Concat:
+    target_api: cupy.concatenate
+    kwarg_translations:
+      dim: axis
+  Concatenate:
+    target_api: cupy.concatenate
+    kwarg_translations:
+      dim: axis
+  Stack:
+    target_api: cupy.stack
+    kwarg_translations:
+      dim: axis
+  Split:
+    target_api: cupy.split
+    kwarg_translations:
+      dim: axis
+  Tile:
+    target_api: cupy.tile
+  Pad:
+    target_api: cupy.pad
+  Where:
+    target_api: cupy.where
+  Zeros:
+    target_api: cupy.zeros
+  Ones:
+    target_api: cupy.ones
+  Eye:
+    target_api: cupy.eye
+  Arange:
+    target_api: cupy.arange
+  Relu:
+    target_api: custom_op
+    custom_code: "lambda x: backend_module.maximum(x, 0)"
+  Sigmoid:
+    target_api: custom_op
+    custom_code: "lambda x: 1 / (1 + backend_module.exp(-x))"
+  Silu:
+    target_api: custom_op
+    custom_code: "lambda x: x / (1 + backend_module.exp(-x))"
+  SiLU:
+    target_api: custom_op
+    custom_code: "lambda x: x / (1 + backend_module.exp(-x))"
+  GELU:
+    target_api: custom_op
+    custom_code: "lambda x: 0.5 * x * (1.0 + backend_module.tanh(0.7978845608 * (x + 0.044715 * (x**3))))"
+  Gelu:
+    target_api: custom_op
+    custom_code: "lambda x: 0.5 * x * (1.0 + backend_module.tanh(0.7978845608 * (x + 0.044715 * (x**3))))"
+  ELU:
+    target_api: custom_op
+    custom_code: "lambda x, alpha=1.0, **kw: backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0))"
+  Elu:
+    target_api: custom_op
+    custom_code: "lambda x, alpha=1.0, **kw: backend_module.where(x > 0, x, alpha * (backend_module.exp(x) - 1.0))"
+  LeakyReLU:
+    target_api: custom_op
+    custom_code: "lambda x, negative_slope=0.01, **kw: backend_module.where(x > 0, x, negative_slope * x)"
+  LeakyRelu:
+    target_api: custom_op
+    custom_code: "lambda x, negative_slope=0.01, **kw: backend_module.where(x > 0, x, negative_slope * x)"
+  Softplus:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.log(1.0 + backend_module.exp(x))"
+  Softmax:
+    target_api: custom_op
+    custom_code: "lambda x, axis=-1, **kw: backend_module.exp(x - backend_module.max(x, axis=axis, keepdims=True)) / backend_module.sum(backend_module.exp(x - backend_module.max(x, axis=axis, keepdims=True)), axis=axis, keepdims=True)"
+  LogSoftmax:
+    target_api: custom_op
+    custom_code: "lambda x, axis=-1, **kw: (x - backend_module.max(x, axis=axis, keepdims=True)) - backend_module.log(backend_module.sum(backend_module.exp(x - backend_module.max(x, axis=axis, keepdims=True)), axis=axis, keepdims=True))"
+  MatMul:
+    target_api: cupy.matmul
+  BatchMatMul:
+    target_api: cupy.matmul
+  BatchMatmul:
+    target_api: cupy.matmul
+  Einsum:
+    target_api: cupy.einsum
+  SVD:
+    target_api: cupy.linalg.svd
+  QR:
+    target_api: cupy.linalg.qr
+  Cholesky:
+    target_api: cupy.linalg.cholesky
+  Solve:
+    target_api: cupy.linalg.solve
+  Det:
+    target_api: cupy.linalg.det
+  Norm:
+    target_api: cupy.linalg.norm
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  L2Normalize:
+    target_api: custom_op
+    custom_code: "lambda x, axis=-1, **kw: x / backend_module.linalg.norm(x, axis=axis, keepdims=True)"
+  ReduceSum:
+    target_api: cupy.sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMean:
+    target_api: cupy.mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceProd:
+    target_api: cupy.prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMax:
+    target_api: cupy.amax
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMin:
+    target_api: cupy.amin
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAll:
+    target_api: cupy.all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAny:
+    target_api: cupy.any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceL2:
+    target_api: custom_op
+    custom_code: "lambda x, axis=None, keepdims=False, **kw: backend_module.linalg.norm(x, ord=2, axis=axis, keepdims=keepdims)"
+  CumSum:
+    target_api: cupy.cumsum
+    kwarg_translations:
+      dim: axis
+  CumProd:
+    target_api: cupy.cumprod
+    kwarg_translations:
+      dim: axis
+  ArgMax:
+    target_api: cupy.argmax
+    kwarg_translations:
+      dim: axis
+  ArgMin:
+    target_api: cupy.argmin
+    kwarg_translations:
+      dim: axis
+  LayerNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, b=0.0, **kw: ((x - backend_module.mean(x, axis=-1, keepdims=True)) / backend_module.sqrt(backend_module.var(x, axis=-1, keepdims=True) + 1e-5)) * g + b"
+  BatchNorm:
+    target_api: custom_op
+    custom_code: "lambda x, m=0.0, v=1.0, g=1.0, b=0.0, **kw: ((x - m) / backend_module.sqrt(v + 1e-5)) * g + b"
+  RMSNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, **kw: (x / backend_module.sqrt(backend_module.mean(x**2, axis=-1, keepdims=True) + 1e-5)) * g"
+  MultiheadAttention:
+    target_api: custom_op
+    custom_code: "lambda q, k, v, **kw: backend_module.matmul(backend_module.softmax(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if k.ndim == 4 else (0, 2, 1))) / backend_module.sqrt(float(q.shape[-1]))), v)"
+  Conv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: backend_module.conv2d(x, w, **kw)"
+  DepthwiseConv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: x"
+  MaxPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.maxpool2d(x, **kw)"
+  AvgPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.avgpool2d(x, **kw)"
+  ResizeBilinear:
+    target_api: custom_op
+    custom_code: "lambda x, size=None, **kw: backend_module.resize_bilinear(x, size=size, **kw)"
+  Eig:
+    target_api: cupy.linalg.eig
+  Eigh:
+    target_api: cupy.linalg.eigh
+  MSELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.mean((p - t)**2)"
+  CrossEntropyLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.mean(backend_module.sum(t * backend_module.log(p + 1e-12), axis=-1))"
+  BCELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.mean(t * backend_module.log(p + 1e-12) + (1.0 - t) * backend_module.log(1.0 - p + 1e-12))"
+  HuberLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, delta=1.0, **kw: backend_module.mean(backend_module.where(backend_module.abs(p - t) < delta, 0.5 * ((p - t)**2), delta * (backend_module.abs(p - t) - 0.5 * delta)))"
+  KLDivergenceLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.mean(backend_module.sum(t * (backend_module.log(t + 1e-12) - backend_module.log(p + 1e-12)), axis=-1))"

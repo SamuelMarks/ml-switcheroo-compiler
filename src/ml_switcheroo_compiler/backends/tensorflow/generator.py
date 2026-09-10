@@ -157,13 +157,16 @@ class TensorFlowCodeGenerator(BaseGenerator):
         return f"tf.einsum('{eq}', {args_str})"
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string."""
-        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
-        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+        """Generate TensorFlow code directly from the IR graph without NumPy bypass.
 
-        gen = NumpyGenerator(self.graph)
-        base_code = gen.generate()
-        return transpile_source(base_code, target_framework="tensorflow")
+        Returns:
+            str: Generated TensorFlow source code.
+        """
+        self.code = [self.header]
+        self.code.extend(self._resolve_imports())
+        self._generate_function_signature()
+        self._generate_body("args")
+        return "\n".join(self.code)
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.

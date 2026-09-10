@@ -1,0 +1,3 @@
+NonMaxSuppression:
+  ast_template: np_nms({0}, {1}, {max_output_size}, {iou_threshold}, {score_threshold})
+  target_api: ''

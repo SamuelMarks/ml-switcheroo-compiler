@@ -1,14 +1,14 @@
 operation: unstack
 description: The Unstack operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
 variants:
   keras:
     eager: keras_ops.unstack
@@ -24,11 +24,6 @@ variants:
     eager: jax.numpy.unstack
   mlx:
     eager: mlx.core.unstack
-  edge_onnx:
-    generator: unstack
-  edge_stablehlo:
-
-    opcode: stablehlo.unstack
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

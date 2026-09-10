@@ -1,7 +1,0 @@
-operation: GraphState
-description: Graph State container.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

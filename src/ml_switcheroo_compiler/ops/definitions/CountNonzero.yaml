@@ -1,14 +1,14 @@
 operation: CountNonzero
 description: The CountNonzero operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Union[int, Tuple[int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Union[int, Tuple[int]]
 variants:
   cupy:
     eager: cp.count_nonzero
@@ -22,11 +22,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: CountNonzero
-  edge_stablehlo:
-
-    opcode: stablehlo.count_nonzero
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

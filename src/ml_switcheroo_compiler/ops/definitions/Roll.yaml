@@ -1,18 +1,18 @@
 operation: roll
 description: The Roll operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: shift
-    type: Union[int, Tuple[int, Ellipsis]]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Optional[Union[int, Tuple[int, Ellipsis]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: shift
+  type: Union[int, Tuple[int, Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[Union[int, Tuple[int, Ellipsis]]]
 variants:
   cupy:
     eager: cp.roll
@@ -26,11 +26,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: roll
-  edge_stablehlo:
-
-    opcode: stablehlo.roll
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

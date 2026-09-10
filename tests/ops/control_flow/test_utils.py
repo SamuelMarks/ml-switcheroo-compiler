@@ -24,6 +24,28 @@ def test_control_flow_utils():
     # get tensor ids
     assert _get_tensor_ids(t) == ["id"]
     assert _get_tensor_ids([t]) == ["id"]
+
+    # Nested Tensor unwrap (line 78)
+    t_inner = Tensor(data=DummyData(), config=t_cfg)
+    t_outer = Tensor(data=t_inner, config=t_cfg)
+    assert _get_tensor_ids(t_outer) == ["id"]
+
+    # Direct id on Tensor (lines 81-82)
+    class DirectIdTensor(Tensor):
+        pass
+
+    t_direct = DirectIdTensor(data="no_id", config=t_cfg)
+    t_direct.id = "direct_123"
+    assert _get_tensor_ids(t_direct) == ["direct_123"]
+
+    # No id anywhere (line 83)
+    t_no_id = Tensor(data="no_id", config=t_cfg)
+    if hasattr(t_no_id, "id"):
+        delattr(t_no_id, "id")
+    generated_ids = _get_tensor_ids(t_no_id)
+    assert len(generated_ids) == 1
+    assert len(generated_ids[0]) > 0
+
     with pytest.raises(TypeError):
         _get_tensor_ids(42)
 

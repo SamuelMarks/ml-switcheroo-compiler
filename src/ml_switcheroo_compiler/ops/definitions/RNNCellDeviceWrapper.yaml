@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.rnncelldevicewrapper
   mlx:
     eager: mlx.core.rnncelldevicewrapper
-  edge_onnx:
-    generator: RNNCellDeviceWrapper
-  edge_stablehlo:
-
-    opcode: stablehlo.r_n_n_cell_device_wrapper
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

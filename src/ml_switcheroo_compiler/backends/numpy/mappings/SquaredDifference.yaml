@@ -1,2 +1,2 @@
 SquaredDifference:
-  target_api: np.squareddifference
+  target_api: custom_op

@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.lookup
   mlx:
     eager: mlx.core.lookup
-  edge_onnx:
-    generator: Lookup
-  edge_stablehlo:
-
-    opcode: stablehlo.lookup
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

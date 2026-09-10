@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ExtractVolumePatches
-  edge_stablehlo:
-
-    opcode: stablehlo.extract_volume_patches
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

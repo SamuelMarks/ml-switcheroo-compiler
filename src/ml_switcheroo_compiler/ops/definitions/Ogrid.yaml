@@ -11,11 +11,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: OGrid
-  edge_stablehlo:
-
-    opcode: stablehlo.o_grid
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

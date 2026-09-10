@@ -8,3 +8,14 @@ div:
   - 256
   - 1
   - 1
+  grid_calc:
+    x: '{num_elements}'
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: half
+    bfloat16: bfloat
+    int32: int
+    int64: long
+    bool: bool

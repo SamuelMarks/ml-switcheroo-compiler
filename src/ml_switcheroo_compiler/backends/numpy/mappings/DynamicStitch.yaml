@@ -1,2 +1,2 @@
 DynamicStitch:
-  target_api: np.dynamicstitch
+  target_api: custom_op

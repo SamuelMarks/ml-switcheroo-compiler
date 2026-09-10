@@ -1,0 +1,3 @@
+NonMaxSuppression:
+  ast_template: torchvision.ops.nms({0}, {1}, 0.5)
+  target_api: ''

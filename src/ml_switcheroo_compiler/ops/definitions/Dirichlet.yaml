@@ -11,11 +11,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: dirichlet
-  edge_stablehlo:
-
-    opcode: stablehlo.dirichlet
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

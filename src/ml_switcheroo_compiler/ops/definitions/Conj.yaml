@@ -1,10 +1,10 @@
 operation: conj
 description: The Conj operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.conj
@@ -18,11 +18,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: conj
-  edge_stablehlo:
-
-    opcode: stablehlo.conj
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

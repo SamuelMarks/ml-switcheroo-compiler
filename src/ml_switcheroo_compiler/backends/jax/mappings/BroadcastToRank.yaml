@@ -1,2 +1,2 @@
 BroadcastToRank:
-  target_api: jax.numpy.broadcasttorank
+  target_api: custom_op

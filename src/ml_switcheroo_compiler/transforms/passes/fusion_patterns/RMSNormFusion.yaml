@@ -1,0 +1,26 @@
+RMSNormFusion:
+  pattern:
+    capture: mul
+    inputs:
+    - capture: in
+    - capture: rsqrt
+      inputs:
+      - capture: add
+        inputs:
+        - capture: mean
+          inputs:
+          - capture: square
+            inputs:
+            - capture: in
+            op_type: Square
+          op_type: ReduceMean
+        - capture: eps
+        op_type: Add
+      op_type: Rsqrt
+    op_type: Multiply
+  replacement:
+    capture_to_replace: mul
+    inputs:
+    - in
+    - eps
+    op_type: RMSNorm

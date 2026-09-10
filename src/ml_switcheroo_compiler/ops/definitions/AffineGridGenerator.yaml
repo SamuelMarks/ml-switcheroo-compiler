@@ -2,19 +2,19 @@ operation: AffineGridGenerator
 description: Generates a 2D or 3D flow field (sampling grid), given a batch of affine
   matrices.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: theta
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: size
-    type: List[int]
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: align_corners
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: theta
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: size
+  type: List[int]
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: align_corners
+  type: bool
 variants:
   numpy: {}
   cupy: {}
@@ -24,11 +24,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AffineGridGenerator
-  edge_stablehlo:
-
-    opcode: stablehlo.affine_grid_generator
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

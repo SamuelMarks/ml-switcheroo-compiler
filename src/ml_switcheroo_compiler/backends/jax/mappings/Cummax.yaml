@@ -1,2 +1,2 @@
 Cummax:
-  target_api: jax.numpy.cummax
+  target_api: custom_op

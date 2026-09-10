@@ -1,0 +1,3 @@
+ResizeBicubic:
+  ast_template: np_resize({0}, {size}, 'bicubic', {align_corners})
+  target_api: ''

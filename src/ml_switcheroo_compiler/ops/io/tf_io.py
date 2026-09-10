@@ -6,6 +6,7 @@ from __future__ import annotations
 import glob
 import os
 import shutil
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_delim=True, na_value="", select_cols=None, name=None) -> list[Tensor]:
+def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_delim=True, na_value="", select_cols=None, name=None) -> Any:
     """Decode csv.
 
     Args:
@@ -29,7 +30,7 @@ def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_deli
         name (str): The name parameter.
 
     Returns:
-        list: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -42,7 +43,7 @@ def decode_csv(records: Tensor, record_defaults, field_delim=",", use_quote_deli
     return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))
 
 
-def parse_example(serialized: Tensor, features, example_names=None, name=None) -> dict[str, Tensor]:
+def parse_example(serialized: Tensor, features, example_names=None, name=None) -> Any:
     """Parse example.
 
     Args:
@@ -52,7 +53,7 @@ def parse_example(serialized: Tensor, features, example_names=None, name=None) -
         name (str): The name parameter.
 
     Returns:
-        dict: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -108,8 +109,8 @@ def parse_tensor(serialized: Tensor, out_type: DType, name=None):
     return _emit_shape_node("ParseTensor", [serialized], {"out_type": out_type, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def parse_sequence_example(serialized: Tensor, context_features=None, sequence_features=None, example_names=None, name=None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
-    """Parse sequence example.
+def parse_single_sequence_example(serialized: Tensor, context_features=None, sequence_features=None, example_names=None, name=None) -> Any:
+    """Parse single sequence example.
 
     Args:
         serialized (Tensor): The serialized parameter.
@@ -119,7 +120,7 @@ def parse_sequence_example(serialized: Tensor, context_features=None, sequence_f
         name (str): The name parameter.
 
     Returns:
-        tuple: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -130,6 +131,9 @@ def parse_sequence_example(serialized: Tensor, context_features=None, sequence_f
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
+
+
+parse_sequence_example = parse_single_sequence_example
 
 
 class TFRecordOptions:

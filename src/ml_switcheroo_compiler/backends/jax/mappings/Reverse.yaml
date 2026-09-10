@@ -1,2 +1,2 @@
 Reverse:
-  target_api: jax.numpy.reverse
+  target_api: custom_op

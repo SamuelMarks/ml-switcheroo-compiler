@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: RngUniform
-  edge_stablehlo:
-
-    opcode: stablehlo.rng_uniform
   edge_wgsl:
     template: unary
     expr: '0.5'

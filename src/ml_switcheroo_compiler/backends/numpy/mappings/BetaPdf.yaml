@@ -1,2 +1,2 @@
 BetaPdf:
-  target_api: np.betapdf
+  target_api: custom_op

@@ -1,0 +1,84 @@
+hardware_execution_schemas:
+  cuda:
+    backend_name: "cuda"
+    sync_barrier: "cuStreamSynchronize"
+    device_sync: "cudaDeviceSynchronize"
+    dispatch_protocol: "cuLaunchKernel"
+    buffer_binding_order: ["inputs", "outputs", "dimensions"]
+    grid_strategies:
+      elementwise:
+        block_dims: [256, 1, 1]
+        grid_formula_x: "(num_elements + block_x - 1) / block_x"
+        grid_formula_y: "1"
+        grid_formula_z: "1"
+      matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "1"
+      batch_matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "batch_size"
+      conv2d:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(h_out * w_out + block_x - 1) / block_x"
+        grid_formula_y: "c_out"
+        grid_formula_z: "batch_size"
+
+  rocm:
+    backend_name: "rocm"
+    sync_barrier: "hipStreamSynchronize"
+    device_sync: "hipDeviceSynchronize"
+    dispatch_protocol: "hipModuleLaunchKernel"
+    buffer_binding_order: ["inputs", "outputs", "dimensions"]
+    grid_strategies:
+      elementwise:
+        block_dims: [256, 1, 1]
+        grid_formula_x: "(num_elements + block_x - 1) / block_x"
+        grid_formula_y: "1"
+        grid_formula_z: "1"
+      matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "1"
+      batch_matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "batch_size"
+      conv2d:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(h_out * w_out + block_x - 1) / block_x"
+        grid_formula_y: "c_out"
+        grid_formula_z: "batch_size"
+
+  metal:
+    backend_name: "metal"
+    sync_barrier: "waitUntilCompleted"
+    device_sync: "waitUntilCompleted"
+    dispatch_protocol: "dispatchThreadgroups"
+    buffer_binding_order: ["inputs", "outputs", "dimensions"]
+    grid_strategies:
+      elementwise:
+        block_dims: [256, 1, 1]
+        grid_formula_x: "(num_elements + block_x - 1) / block_x"
+        grid_formula_y: "1"
+        grid_formula_z: "1"
+      matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "1"
+      batch_matmul:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(n_dim + block_x - 1) / block_x"
+        grid_formula_y: "(m_dim + block_y - 1) / block_y"
+        grid_formula_z: "batch_size"
+      conv2d:
+        block_dims: [16, 16, 1]
+        grid_formula_x: "(h_out * w_out + block_x - 1) / block_x"
+        grid_formula_y: "c_out"
+        grid_formula_z: "batch_size"

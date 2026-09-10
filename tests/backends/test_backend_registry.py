@@ -43,10 +43,12 @@ def test_loaders_and_lazy_loading():
             pass
 
     # Test _try_load_lazy for an error condition
-    with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module"}):
+    with patch.dict(BackendRegistry._LAZY_MODULES, {"test_lazy_fail": "some.module", "test_lazy_no_loader": "some.other"}):
         with patch.dict(_LOADERS, {"test_lazy_fail": MagicMock(side_effect=ImportError("mock error"))}):
             # Should not raise, just logs error
             BackendRegistry._try_load_lazy("test_lazy_fail")
+            # Should not raise when name not in _LOADERS
+            BackendRegistry._try_load_lazy("test_lazy_no_loader")
 
 
 def test_resolve_alias():
@@ -60,7 +62,8 @@ def test_get_all_loaders():
 
     with patch.dict(BackendRegistry._registry, {}):
         with patch.dict(_LOADERS, {"fake_backend": MagicMock(side_effect=ImportError)}):
-            with patch.dict(BackendRegistry._LAZY_MODULES, {"fake_backend": "fake"}):
+            with patch.dict(BackendRegistry._LAZY_MODULES, {"fake_backend": "fake", "fake_no_loader": "fake2"}):
                 # get_all should suppress ImportError
                 all_backends = BackendRegistry.get_all()
                 assert "fake_backend" not in all_backends
+                assert "fake_no_loader" not in all_backends

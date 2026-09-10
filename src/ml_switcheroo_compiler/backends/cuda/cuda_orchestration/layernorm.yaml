@@ -1,0 +1,20 @@
+layernorm:
+  body: "__global__ void layernorm(const float* __restrict__ input, const float* __restrict__\
+    \ gamma, const float* __restrict__ beta, float* __restrict__ output, int total)\
+    \ {\n    int idx = blockDim.x * blockIdx.x + threadIdx.x;\n    if (idx < total)\
+    \ {\n        output[idx] = input[idx];\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: '1'
+    y: '{N}'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

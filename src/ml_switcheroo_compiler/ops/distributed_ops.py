@@ -191,7 +191,12 @@ class AllGather(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(tensor, "shape", ())
+        shape = list(getattr(tensor, "shape", ()))
+        world_size = int(kwargs.get("world_size", kwargs.get("num_shards", 1)))
+        axis = int(kwargs.get("axis", 0))
+        if shape and world_size > 1 and 0 <= axis < len(shape):
+            shape[axis] = shape[axis] * world_size
+        return tuple(shape)
 
 
 def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum"):
@@ -306,7 +311,12 @@ class ReduceScatter(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(tensor, "shape", ())
+        shape = list(getattr(tensor, "shape", ()))
+        world_size = int(kwargs.get("world_size", kwargs.get("num_shards", 1)))
+        axis = int(kwargs.get("axis", kwargs.get("scatter_dim", 0)))
+        if shape and world_size > 1 and 0 <= axis < len(shape):
+            shape[axis] = shape[axis] // world_size
+        return tuple(shape)
 
 
 @register_op("AllToAll")

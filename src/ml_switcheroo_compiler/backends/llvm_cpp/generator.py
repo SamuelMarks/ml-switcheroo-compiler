@@ -1,5 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""LLVM / C++ code generator for CPU fallback."""
+"""ISO C++17 code generator and native compilation runner for CPU fallback.
+
+This backend compiles computational graphs into ISO C++17 compute kernels using
+system C++ compilers (clang++ or g++) with OpenMP SIMD vectorization and aligned
+memory allocations into dynamically loaded shared libraries via ctypes.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +12,7 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 AttrType = Union[int, float, str, bool, list, tuple, dict, None]
 
@@ -20,19 +25,21 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 @register_backend("llvm_cpp")
 class CppGenerator(BaseGenerator):
-    """C++ backend generator."""
+    """High-performance C++17 backend generator compiling kernels via system compilers (clang++/g++)."""
 
-    def __init__(self, graph: IRGraph | None = None, use_simd: bool = True, use_openmp: bool = True) -> None:
+    def __init__(self, graph: IRGraph | None = None, use_simd: bool = True, use_openmp: bool = True, strict: bool = False) -> None:
         """Initialize the C++ generator.
 
         Args:
             graph (IRGraph | None): The graph parameter.
             use_simd (bool): The use_simd parameter.
             use_openmp (bool): The use_openmp parameter.
+            strict (bool): Whether to raise UnimplementedMathError on unsupported operations.
         """
         super().__init__(graph=graph)
         self.use_simd = use_simd
         self.use_openmp = use_openmp
+        self.strict = strict
         self.lines: list[str] = []
 
     def _get_shape(self, node: IRNode) -> list[int]:
@@ -113,7 +120,7 @@ class CppGenerator(BaseGenerator):
 
         if max_offset > 0:
             self.lines.append(f"    // Allocate global arena buffer of size {max_offset} bytes")
-            self.lines.append(f"    std::vector<uint8_t> global_arena({max_offset}, 0);")
+            self.lines.append(f"    AlignedBuffer<uint8_t> global_arena({max_offset});")
 
         for _, node in graph_to_use.nodes.items():
             self._visit_node(node, graph_to_use)
@@ -305,13 +312,25 @@ class CppGenerator(BaseGenerator):
         elif op == "Output":
             self.lines.append(f"    // Output {node.inputs[0]}")
         else:
-            from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+            from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_operation, get_cpp_template
             from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
             op_def: dict[str, AttrType] = OPS_REGISTRY.get(op, {})
             mapping: dict[str, AttrType] = op_def.get("variants", {}).get("llvm_cpp", {})
 
+            op_key = op.lower()
+            decl_op = get_cpp_operation(op_key)
+            if not mapping and decl_op is not None:
+                mapping = {"template": decl_op.template, "scalar_expr": decl_op.scalar_expr}
+            elif mapping and mapping.get("scalar_expr") == "in0_val" and decl_op is not None:
+                mapping = dict(mapping)
+                mapping["scalar_expr"] = decl_op.scalar_expr
+
             if not mapping:
+                if self.strict:
+                    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
+                    raise UnimplementedMathError(f"C++ code generator does not support operation: {op}")
                 out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
                 self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}); // Fallback Unimplemented {op}")
             else:
@@ -354,44 +373,8 @@ class CppGenerator(BaseGenerator):
         Returns:
             Callable[[], str]: An executable function that wraps the compiled library.
         """
-        # Create a temporary directory for compilation
-        temp_dir: str = tempfile.mkdtemp()
-        src_file: str = os.path.join(temp_dir, "graph.cpp")
-        lib_ext: str = ".dylib" if os.name == "posix" and "darwin" in os.uname().sysname.lower() else ".so"
-        lib_file: str = os.path.join(temp_dir, f"graph{lib_ext}")
-
-        with open(src_file, "w") as f:
-            f.write(code)
-
-        # Compile using clang++ (or g++)
-        compile_cmd: list[str] = ["clang++", "-O3", "-shared", "-fPIC", src_file, "-o", lib_file]
-
-        try:
-            subprocess.run(compile_cmd, check=True, capture_output=True)
-        except subprocess.CalledProcessError as e:
-            err_out = e.stderr.decode() if e.stderr else ""
-            raise RuntimeError(f"Compilation failed: {err_out}") from e
-        try:
-            lib: ctypes.CDLL = ctypes.CDLL(lib_file)
-            # Find the compute_graph function
-            if hasattr(lib, "compute_graph"):
-                compute_func = lib.compute_graph
-            else:
-                raise RuntimeError("Function 'compute_graph' not found in compiled library. Ensure it is exported with extern \"C\".")
-
-        except Exception as e:
-            raise RuntimeError(f"Compilation or load failed: {e}") from e
-
-        def executable() -> str:
-            """Executable function.
-
-            Returns:
-                str: Result.
-            """
-            compute_func()
-            return "Execution successful"
-
-        return executable
+        runner = LLVMCPPRunner()
+        return runner.compile_and_load(code, entry_point="compute_graph")
 
     def execute(self, graph: IRGraph, *args: AttrType, **kwargs: AttrType) -> str:
         """Execute the graph using the C++ generator.
@@ -407,3 +390,92 @@ class CppGenerator(BaseGenerator):
         code: str = self.generate(graph)
         executable = self.compile(code)
         return executable()
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> Callable[[], str]:
+        """Compile IRGraph into a native shared library and return callable C++ execution wrapper.
+
+        Args:
+            graph (IRGraph): Target computational graph.
+            **kwargs (object): Compiler options.
+
+        Returns:
+            Callable[[], str]: Executable wrapper.
+        """
+        code = self.generate(graph)
+        comp = str(kwargs["compiler"]) if "compiler" in kwargs and kwargs["compiler"] else None
+        runner = LLVMCPPRunner(compiler=comp)
+        return runner.compile_and_load(code, entry_point="compute_graph")
+
+
+class LLVMCPPRunner:
+    """Standalone execution runner compiling C++17 code via clang++/g++ and loading via ctypes."""
+
+    def __init__(self, compiler: str | None = None) -> None:
+        """Initialize LLVMCPPRunner with preferred compiler.
+
+        Args:
+            compiler (Optional[str]): Path or executable name for C++ compiler.
+        """
+        import shutil
+
+        if compiler:
+            self.compiler: str = compiler
+        elif shutil.which("clang++"):
+            self.compiler = "clang++"
+        elif shutil.which("g++"):
+            self.compiler = "g++"
+        else:
+            self.compiler = "clang++"
+
+    def compile_and_load(self, code: str, entry_point: str = "compute_graph") -> Callable[[], str]:
+        """Compile C++17 source code into a shared library and load via ctypes.
+
+        Args:
+            code (str): The C++ source code.
+            entry_point (str): The exported C symbol name.
+
+        Returns:
+            Callable[[], str]: Executable callable wrapper.
+
+        Raises:
+            RuntimeError: If compilation or library loading fails.
+        """
+        import shutil
+
+        temp_dir: str = tempfile.mkdtemp()
+        src_file: str = os.path.join(temp_dir, "graph.cpp")
+        lib_ext: str = ".dylib" if os.name == "posix" and "darwin" in os.uname().sysname.lower() else ".so"
+        lib_file: str = os.path.join(temp_dir, f"graph{lib_ext}")
+
+        with open(src_file, "w") as f:
+            f.write(code)
+
+        compile_cmd: list[str] = [self.compiler, "-std=c++17", "-O3", "-shared", "-fPIC", src_file, "-o", lib_file]
+        try:
+            subprocess.run(compile_cmd, check=True, capture_output=True)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            err_out = getattr(e, "stderr", b"").decode() if getattr(e, "stderr", None) else str(e)
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise RuntimeError(f"Compilation failed: {err_out}") from e
+
+        try:
+            lib: ctypes.CDLL = ctypes.CDLL(lib_file)
+            if hasattr(lib, entry_point):
+                compute_func = getattr(lib, entry_point)
+            else:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                raise RuntimeError(f"Function '{entry_point}' not found in compiled library. Ensure it is exported with extern \"C\".")
+        except Exception as e:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise RuntimeError(f"Compilation or load failed: {e}") from e
+
+        def executable() -> str:
+            """Execute the compiled C++ graph.
+
+            Returns:
+                str: Status message.
+            """
+            compute_func()
+            return "Execution successful"
+
+        return executable

@@ -1,14 +1,14 @@
 operation: Adafactor
 description: 'Auto-discovered via Consensus (Score: 2.0)'
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: lr
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: weight_decay
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: lr
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight_decay
+  type: Any
 variants:
   numpy: {}
   cupy: {}
@@ -18,11 +18,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Adafactor
-  edge_stablehlo:
-
-    opcode: stablehlo.adafactor
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

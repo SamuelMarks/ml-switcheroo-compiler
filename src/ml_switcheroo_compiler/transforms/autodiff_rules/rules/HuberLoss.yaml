@@ -1,4 +1,8 @@
 HuberLoss:
-  jvp: ZerosLike($tangent[0])
+  jvp: ReduceMean(Mul(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0],
+    $input[1]), Sign(Sub($input[0], $input[1]))), $tangent[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0],
+    $input[1]), Sign(Sub($input[0], $input[1]))))
+  - Mul($cotangent, Neg(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)),
+    Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1])))))

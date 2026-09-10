@@ -27,6 +27,7 @@ from .jit import (
     jit,
 )
 from .jvp_vjp import (
+    CustomJVPFunction,
     custom_jvp,
     hessian,
     hvp,

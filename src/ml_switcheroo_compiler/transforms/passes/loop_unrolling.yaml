@@ -1,5 +1,14 @@
-default_unroll_limit: 10
-max_unroll_nodes: 100
-heuristics:
-  - op_type: "WhileLoop"
-    max_iterations: 10
+# Loop tiling, unrolling bounds and heuristics
+loop_unrolling_policy:
+  max_unroll_factor: 8
+  small_loop_threshold: 16
+  unroll_dynamic_loops: false
+  tile_sizes:
+    cuda:
+      - 32
+      - 32
+    metal:
+      - 16
+      - 16
+    wasm_simd:
+      - 4

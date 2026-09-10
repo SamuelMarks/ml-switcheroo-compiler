@@ -15,7 +15,7 @@ def _load_heuristics() -> dict[str, object]:
     Returns:
         dict[str, object]: The loaded heuristics.
     """
-    yaml_path = os.path.join(os.path.dirname(__file__), "loop_tiling_heuristics.yaml")
+    yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
@@ -37,7 +37,7 @@ def _get_tiling_config() -> dict[str, object]:
     backend_name = getattr(backend, "__name__", type(backend).__name__).lower() if backend else ""
 
     profile_name = "default_wgsl" if ("wgsl" in backend_name or "webgpu" in backend_name) else "default_wasm"
-    profiles = cast(dict[str, object], heuristics.get("profiles", {}))
+    profiles = cast(dict[str, object], heuristics.get("tiling_profiles", {}))
 
     prof = cast(dict[str, object], profiles.get(profile_name, profiles.get("default_wasm", {})))
     return cast(dict[str, object], prof.get("tiling", {}))
@@ -57,15 +57,18 @@ def _should_tile(op_type: str, shape: object, op_config: dict[str, object]) -> b
     if not isinstance(shape, (tuple, list)):
         return False
 
-    if op_type == "matmul" and len(shape) >= 2:
-        m = shape[-2] if isinstance(shape[-2], int) else 0
-        n = shape[-1] if isinstance(shape[-1], int) else 0
-        return bool(m >= cast(int, op_config.get("threshold_M", 0)) or n >= cast(int, op_config.get("threshold_N", 0)))
+    # Data-driven checks based on config
+    if "threshold_M" in op_config and "threshold_N" in op_config:
+        m = shape[-2] if len(shape) >= 2 and isinstance(shape[-2], int) else 0
+        n = shape[-1] if len(shape) >= 2 and isinstance(shape[-1], int) else 0
+        if m >= cast(int, op_config["threshold_M"]) or n >= cast(int, op_config["threshold_N"]):
+            return True
 
-    if op_type == "conv2d" and len(shape) >= 4:
-        h = shape[1] if isinstance(shape[1], int) else 0
-        w = shape[2] if isinstance(shape[2], int) else 0
-        return bool((h * w) >= cast(int, op_config.get("threshold_HW", 0)))
+    if "threshold_HW" in op_config:
+        h = shape[1] if len(shape) >= 4 and isinstance(shape[1], int) else 0
+        w = shape[2] if len(shape) >= 4 and isinstance(shape[2], int) else 0
+        if (h * w) >= cast(int, op_config["threshold_HW"]):
+            return True
 
     return False
 
@@ -81,11 +84,9 @@ def _split_shape(op_type: str, shape: tuple, op_config: dict[str, object]) -> tu
     Returns:
         tuple: The tiled shape.
     """
-    if op_type == "matmul":
-        # matmul is typically (..., M, N)
-        # We split M into (M // TILE_M, TILE_M) and N into (N // TILE_N, TILE_N)
-        tile_m = cast(int, op_config.get("TILE_M", 1))
-        tile_n = cast(int, op_config.get("TILE_N", 1))
+    if "TILE_M" in op_config and "TILE_N" in op_config and len(shape) >= 2:
+        tile_m = cast(int, op_config["TILE_M"])
+        tile_n = cast(int, op_config["TILE_N"])
         m = shape[-2]
         n = shape[-1]
         prefix = shape[:-2]
@@ -93,12 +94,10 @@ def _split_shape(op_type: str, shape: tuple, op_config: dict[str, object]) -> tu
             m_outer = (m + tile_m - 1) // tile_m
             n_outer = (n + tile_n - 1) // tile_n
             return (*prefix, m_outer, tile_m, n_outer, tile_n)
-        return shape
 
-    if op_type == "conv2d":
-        # conv2d is (N, H, W, C)
-        tile_h = cast(int, op_config.get("TILE_H", 1))
-        tile_w = cast(int, op_config.get("TILE_W", 1))
+    if "TILE_H" in op_config and "TILE_W" in op_config and len(shape) >= 4:
+        tile_h = cast(int, op_config["TILE_H"])
+        tile_w = cast(int, op_config["TILE_W"])
         n = shape[0]
         h = shape[1]
         w = shape[2]
@@ -107,7 +106,6 @@ def _split_shape(op_type: str, shape: tuple, op_config: dict[str, object]) -> tu
             h_outer = (h + tile_h - 1) // tile_h
             w_outer = (w + tile_w - 1) // tile_w
             return (n, h_outer, tile_h, w_outer, tile_w, c)
-        return shape
 
     return shape
 
@@ -128,10 +126,10 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
     modified = False
     for node in list(graph.nodes.values()):
         op_type = getattr(node, "op_type", "").lower()
-        if op_type not in ("matmul", "conv2d"):
+        if op_type not in tiling_config:
             continue
 
-        op_config = cast(dict[str, object], tiling_config.get(op_type, {}))
+        op_config = cast(dict[str, object], tiling_config[op_type])
         shape = getattr(node, "shape_metadata", None)
 
         if not op_config or not shape:
@@ -146,13 +144,11 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
             if new_shape != shape:
                 node.shape_metadata = new_shape
                 node.attributes["tiling"] = True
-                if op_type == "matmul":
-                    node.attributes["tile_m"] = op_config.get("TILE_M", 1)
-                    node.attributes["tile_n"] = op_config.get("TILE_N", 1)
-                    node.attributes["tile_k"] = op_config.get("TILE_K", 1)
-                elif op_type == "conv2d":
-                    node.attributes["tile_h"] = op_config.get("TILE_H", 1)
-                    node.attributes["tile_w"] = op_config.get("TILE_W", 1)
+
+                # Copy all TILE_* attributes dynamically
+                for k, v in op_config.items():
+                    if k.startswith("TILE_"):
+                        node.attributes[k.lower()] = v
                 modified = True
 
     return modified

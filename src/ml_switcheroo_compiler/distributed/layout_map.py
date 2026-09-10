@@ -104,3 +104,61 @@ class LayoutMap:
             The ShardingSpec or None.
         """
         return self._map.get(key)
+
+    def to_dict(self) -> dict[str, object]:
+        """Convert LayoutMap to a serializable dictionary.
+
+        Returns:
+            dict[str, object]: Serialized layout map representation.
+        """
+        specs_dict: dict[str, object] = {}
+        for path, spec in self._map.items():
+            specs_dict[path] = {
+                "mesh_name": getattr(spec.mesh, "name", "default") if spec.mesh else None,
+                "mesh_mapping": list(spec.mesh_mapping),
+            }
+        return {
+            "version": "1.0",
+            "device_mesh": getattr(self.device_mesh, "name", None) if self.device_mesh else None,
+            "specs": specs_dict,
+        }
+
+    def to_yaml(self) -> str:
+        """Serialize LayoutMap to declarative YAML text.
+
+        Returns:
+            str: Valid YAML formatted string.
+        """
+        import yaml
+
+        return yaml.safe_dump(self.to_dict(), sort_keys=False)
+
+    @classmethod
+    def from_yaml(cls, yaml_content: str, device_mesh: Optional[object] = None) -> "LayoutMap":
+        """Construct a LayoutMap from declarative YAML content.
+
+        Args:
+            yaml_content (str): YAML string or filesystem path.
+            device_mesh (Optional[object]): Associated DeviceMesh instance.
+
+        Returns:
+            LayoutMap: Initialized and populated LayoutMap.
+        """
+        import os
+
+        import yaml
+
+        from ml_switcheroo_compiler.distributed.config_models import LayoutMapYamlConfig
+
+        raw_text: str = yaml_content
+        if os.path.isfile(yaml_content):
+            with open(yaml_content, encoding="utf-8") as f:
+                raw_text = f.read()
+
+        parsed = yaml.safe_load(raw_text) or {}
+        validated = LayoutMapYamlConfig.model_validate(parsed)
+
+        layout = cls(device_mesh=device_mesh)
+        for path, spec_cfg in validated.specs.items():
+            layout.insert(path, ShardingSpec(mesh=device_mesh, mesh_mapping=spec_cfg.mesh_mapping))
+        return layout

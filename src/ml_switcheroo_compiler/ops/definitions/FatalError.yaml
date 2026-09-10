@@ -1,7 +1,0 @@
-operation: FatalError
-description: Exception class for fatal errors.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

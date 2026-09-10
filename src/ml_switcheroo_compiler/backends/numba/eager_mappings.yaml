@@ -1,0 +1,68 @@
+backend_name: numba
+operations:
+  Abs:
+    target_api: numpy.abs
+  Neg:
+    target_api: numpy.negative
+  Sin:
+    target_api: numpy.sin
+  Cos:
+    target_api: numpy.cos
+  Tan:
+    target_api: numpy.tan
+  Sinh:
+    target_api: numpy.sinh
+  Cosh:
+    target_api: numpy.cosh
+  Tanh:
+    target_api: numpy.tanh
+  Exp:
+    target_api: numpy.exp
+  Exp2:
+    target_api: numpy.exp2
+  Expm1:
+    target_api: numpy.expm1
+  Log:
+    target_api: numpy.log
+  Log2:
+    target_api: numpy.log2
+  Log10:
+    target_api: numpy.log10
+  Log1p:
+    target_api: numpy.log1p
+  Sqrt:
+    target_api: numpy.sqrt
+  Square:
+    target_api: numpy.square
+  Floor:
+    target_api: numpy.floor
+  Ceil:
+    target_api: numpy.ceil
+  Add:
+    target_api: numpy.add
+  Sub:
+    target_api: numpy.subtract
+  Mul:
+    target_api: numpy.multiply
+  Div:
+    target_api: numpy.divide
+  Power:
+    target_api: numpy.power
+  Maximum:
+    target_api: numpy.maximum
+  Minimum:
+    target_api: numpy.minimum
+  MatMul:
+    target_api: numpy.matmul
+  Dot:
+    target_api: numpy.dot
+  Sum:
+    target_api: numpy.sum
+  Prod:
+    target_api: numpy.prod
+  Mean:
+    target_api: numpy.mean
+  Max:
+    target_api: numpy.max
+  Min:
+    target_api: numpy.min

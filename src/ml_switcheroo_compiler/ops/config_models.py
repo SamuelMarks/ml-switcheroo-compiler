@@ -1,8 +1,9 @@
 """Pydantic models for ops registry configuration files."""
 
-from typing import Any, Optional
+from collections.abc import ItemsView
+from typing import Optional, Union
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class VariantConfig(BaseModel):
@@ -14,7 +15,7 @@ class VariantConfig(BaseModel):
     scalar_expr: Optional[str] = None
     simd_expr: Optional[str] = None
     template: Optional[str] = None
-    model_config = {"extra": "allow"}  # Allow other backend specific configurations
+    model_config = ConfigDict(extra="allow")
 
 
 class OpArgConfig(BaseModel):
@@ -37,10 +38,10 @@ class OpRegistryConfig(BaseModel):
 
     description: Optional[str] = None
     operation: Optional[str] = None
-    std_args: Optional[list[Any]] = None
+    std_args: Optional[list[Union[str, int, float, bool, OpArgConfig, dict[str, Union[str, int, float, bool]]]]] = None
     autodiff: Optional[AutodiffConfig] = None
     variants: dict[str, VariantConfig] = Field(default_factory=dict)
-    model_config: dict[str, str] = {"extra": "allow"}
+    model_config = ConfigDict(extra="allow")
 
 
 class OpsRegistry(RootModel[dict[str, OpRegistryConfig]]):
@@ -48,14 +49,22 @@ class OpsRegistry(RootModel[dict[str, OpRegistryConfig]]):
 
     root: dict[str, OpRegistryConfig]
 
-    def dict(self, *args, **kwargs):
-        """Return dict representation."""
-        return super().model_dump(*args, **kwargs)
+    def items(self) -> ItemsView[str, OpRegistryConfig]:
+        """Return items from the underlying dictionary.
 
-    def items(self):
-        """Return items from the underlying dictionary."""
+        Returns:
+            ItemsView[str, OpRegistryConfig]: Key-value pairs of the registry.
+        """
         return self.root.items()
 
-    def get(self, key: str, default=None):
-        """Get op config by key."""
+    def get(self, key: str, default: Optional[OpRegistryConfig] = None) -> Optional[OpRegistryConfig]:
+        """Get op config by key.
+
+        Args:
+            key (str): Operation identifier.
+            default (Optional[OpRegistryConfig]): Default fallback if not found.
+
+        Returns:
+            Optional[OpRegistryConfig]: Retrieved config or default.
+        """
         return self.root.get(key, default)

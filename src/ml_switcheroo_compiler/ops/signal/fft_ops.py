@@ -1,5 +1,7 @@
 """Module fft_ops.py."""
 
+from __future__ import annotations
+
 from .common_ops import _emit_signal_node
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
@@ -725,11 +727,11 @@ class Rfftfreq(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftfreq(input: int, *args, **kwargs):
+def rfftfreq(input: int | Tensor, *args, **kwargs):
     """Evaluate rfftfreq operation.
 
     Args:
-        input (int): The input parameter.
+        input (int | Tensor): The input parameter.
         *args (Any): Positional args.
         **kwargs (Any): Keyword args.
 
@@ -740,4 +742,5 @@ def rfftfreq(input: int, *args, **kwargs):
         backend = get_active_backend()
         data = backend.execute_op("Rfftfreq", getattr(input, "data", input), *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
-    return _emit_signal_node("Rfftfreq", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+    t_in = input if isinstance(input, Tensor) else Tensor(input, TensorConfig((), "int64", None))
+    return _emit_signal_node("Rfftfreq", [t_in], kwargs, getattr(t_in, "shape", ()), getattr(t_in, "dtype", "float32"))

@@ -156,8 +156,13 @@ def test_cum_ops():
     assert _execute_cumlogsumexp(t, dim=0).shape == (3,)
 
 
-def test_execute_op_fallback():
+def test_execute_op_various_branches():
     from ml_switcheroo_compiler.backends.pytorch.eager import execute_op
+
+    # Branch 474->476 where schema has op but resolve_target_api returns None
+    with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
+        res_atan = execute_op(None, "Atan2", torch.tensor(1.0), torch.tensor(1.0))
+        assert res_atan.item() == pytest.approx(0.785398)
 
     # Normal mapping fallback (if any) or standard pytorch op
     res = execute_op(None, "Add", torch.tensor(1), torch.tensor(2))

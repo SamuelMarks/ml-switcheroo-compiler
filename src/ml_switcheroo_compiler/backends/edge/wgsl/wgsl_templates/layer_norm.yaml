@@ -1,7 +1,15 @@
-layer_norm:
-  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
-    \ = {expr};\n"
-  workgroup_size:
-  - 64
-  - 1
-  - 1
+templates:
+  layer_norm:
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    body: "let row: u32 = global_id.x;\nif (row >= {M}u) {{\n    return;\n}}\nlet\
+      \ base: u32 = row * {N}u;\nvar mean: f32 = 0.0;\nfor (var j: u32 = 0u; j < {N}u;\
+      \ j = j + 1u) {{\n    mean = mean + buf_in0_f32[base + j];\n}}\nmean = mean\
+      \ / f32({N});\n\nvar variance: f32 = 0.0;\nfor (var j: u32 = 0u; j < {N}u; j\
+      \ = j + 1u) {{\n    let diff = buf_in0_f32[base + j] - mean;\n    variance =\
+      \ variance + diff * diff;\n}}\nvariance = variance / f32({N});\nlet inv_std\
+      \ = 1.0 / sqrt(variance + 1e-5);\n\nfor (var j: u32 = 0u; j < {N}u; j = j +\
+      \ 1u) {{\n    buf_out_f32[base + j] = (buf_in0_f32[base + j] - mean) * inv_std;\n\
+      }}\n"

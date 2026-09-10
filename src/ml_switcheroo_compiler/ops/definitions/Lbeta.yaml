@@ -1,10 +1,10 @@
 operation: LBeta
 description: The Lbeta operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.lbeta
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.lbeta
   mlx:
     eager: mlx.core.lbeta
-  edge_onnx:
-    generator: LBeta
-  edge_stablehlo:
-
-    opcode: stablehlo.l_beta
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

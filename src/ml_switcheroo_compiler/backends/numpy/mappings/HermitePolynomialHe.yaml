@@ -1,2 +1,2 @@
 HermitePolynomialHe:
-  target_api: np.hermitepolynomialhe
+  target_api: custom_op

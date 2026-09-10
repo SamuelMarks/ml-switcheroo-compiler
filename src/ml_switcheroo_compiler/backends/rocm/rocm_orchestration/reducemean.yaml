@@ -1,0 +1,22 @@
+reducemean:
+  body: "#include <hip/hip_runtime.h>\n__global__ void reducemean(const float* A,\
+    \ float* C, int outer_size, int reduce_size, int inner_size) {\n    int o = hipBlockIdx_z;\n\
+    \    int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (o < outer_size\
+    \ && i < inner_size) {\n        float s = 0.0f;\n        for (int r = 0; r < reduce_size;\
+    \ ++r) {\n            s += A[(o * reduce_size + r) * inner_size + i];\n      \
+    \  }\n        C[o * inner_size + i] = s / float(reduce_size);\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

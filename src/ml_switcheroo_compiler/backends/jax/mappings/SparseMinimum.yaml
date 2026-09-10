@@ -1,2 +1,2 @@
 SparseMinimum:
-  target_api: jax.numpy.sparseminimum
+  target_api: custom_op

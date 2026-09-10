@@ -1,2 +1,2 @@
 BinomCdf:
-  target_api: np.binomcdf
+  target_api: custom_op

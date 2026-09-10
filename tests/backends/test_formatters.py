@@ -65,3 +65,9 @@ def test_fallback_handler_missing_op_type():
 def test_op_formatter_edge_cases_continue():
     ctx = FormatterContext("np", "Cast", ["a"], {"node_id": "n1", "shape_metadata": ()})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a)"
+
+    ctx_shape = FormatterContext("np", "Add", ["a"], {"shape": [2, 2]})
+    assert OpFormatter.format_generic_fallback(ctx_shape) == "np.add(a)"
+
+    ctx_dtype = FormatterContext("np", "Add", ["a"], {"dtype": "float32", "device": "cpu", "is_weight": False})
+    assert OpFormatter.format_generic_fallback(ctx_dtype) == "np.add(a)"

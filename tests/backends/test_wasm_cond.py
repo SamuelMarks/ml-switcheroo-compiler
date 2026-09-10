@@ -38,3 +38,72 @@ def test_wasm_cond_generation():
     assert "wasm_f32x4_add" in code
     assert "buf_false_sub" in code
     assert "wasm_f32x4_sub" in code
+
+
+def test_wasm_generate_wat_and_control_flow():
+    """Verify WAT emission and parameterized control flow generation."""
+    import os
+
+    from ml_switcheroo_compiler.backends.edge.config_models import (
+        load_edge_control_flow_templates,
+    )
+
+    # 1. Test loading edge control flow templates YAML
+    yaml_path = os.path.join(
+        os.path.dirname(__file__),
+        "../../src/ml_switcheroo_compiler/backends/edge/wasm_simd/control_flow.yaml",
+    )
+    cf_config = load_edge_control_flow_templates(yaml_path)
+    assert "while_loop" in cf_config.control_flow_templates
+    assert "cond" in cf_config.control_flow_templates
+    assert "scan" in cf_config.control_flow_templates
+
+    # 2. Test generate_wat with unary (neg, sqrt) and binary (mul, add)
+    g = IRGraph()
+    x = IRNode(id="x", op_type="Input")
+    y = IRNode(id="y", op_type="Mul", inputs=["x", "x"])
+    z = IRNode(id="z", op_type="Neg", inputs=["y"])
+    g.nodes = {"x": x, "y": y, "z": z}
+    g.inputs = ["x"]
+    g.outputs = ["z"]
+
+    gen = WasmCodeGenerator(g)
+    wat = gen.generate_wat()
+    assert "(module" in wat
+    assert "f32x4.mul" in wat
+    assert "f32x4.neg" in wat
+    assert '(export "compute")' in wat
+
+    # 3. Test WhileLoop with custom comparator and threshold
+    g_loop = IRGraph()
+    in_loop = IRNode(id="in0", op_type="Input")
+    loop_node = IRNode(
+        id="loop",
+        op_type="WhileLoop",
+        inputs=["in0"],
+        attributes={"comparator": "<", "threshold": "50.0", "max_iters": 5},
+    )
+    g_loop.nodes = {"in0": in_loop, "loop": loop_node}
+    g_loop.inputs = ["in0"]
+    g_loop.outputs = ["loop"]
+
+    gen_loop = WasmCodeGenerator(g_loop)
+    loop_code = gen_loop.generate()
+    assert "buf_in0[0] < 50.0" in loop_code
+
+    # 4. Test Scan with custom init_val and scan_op_expr
+    g_scan = IRGraph()
+    in_scan = IRNode(id="s0", op_type="Input")
+    scan_node = IRNode(
+        id="scan",
+        op_type="Scan",
+        inputs=["s0"],
+        attributes={"init_val": "1.0", "scan_op_expr": "acc * 2.0f"},
+    )
+    g_scan.nodes = {"s0": in_scan, "scan": scan_node}
+    g_scan.inputs = ["s0"]
+    g_scan.outputs = ["scan"]
+
+    gen_scan = WasmCodeGenerator(g_scan)
+    scan_code = gen_scan.generate()
+    assert "acc * 2.0f" in scan_code

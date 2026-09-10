@@ -1,0 +1,104 @@
+Add:
+  jvp: Add($tangent[0], $tangent[1])
+Sub:
+  jvp: Sub($tangent[0], $tangent[1])
+Mul:
+  jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
+Div:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1], Constant(2.0)))
+Exp:
+  jvp: Mul($tangent[0], Exp($input[0]))
+Log:
+  jvp: Div($tangent[0], $input[0])
+Tanh:
+  jvp: Mul($tangent[0], Sub(Constant(1.0), Pow($output, Constant(2.0))))
+Relu:
+  jvp: Mul($tangent[0], Greater($input[0], Constant(0.0)))
+MatMul:
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+Matmul:
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+Dot:
+  jvp: Add(Dot($tangent[0], $input[1]), Dot($input[0], $tangent[1]))
+BatchMatMul:
+  jvp: Add(BatchMatMul($tangent[0], $input[1]), BatchMatMul($input[0], $tangent[1]))
+BatchMatmul:
+  jvp: Add(BatchMatMul($tangent[0], $input[1]), BatchMatMul($input[0], $tangent[1]))
+Transpose:
+  jvp: Transpose($tangent[0])
+Einsum:
+  jvp: Add(Einsum($tangent[0], $input[1]), Einsum($input[0], $tangent[1]))
+ReduceSum:
+  jvp: ReduceSum($tangent[0])
+ReduceMean:
+  jvp: ReduceMean($tangent[0])
+ReduceProd:
+  jvp: ReduceSum(Mul($tangent[0], Div(BroadcastLike($output, $input[0]), $input[0])))
+ReduceMax:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+ReduceMin:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+Norm:
+  jvp: Div(ReduceSum(Mul($input[0], $tangent[0])), BroadcastLike($output, $input[0]))
+L2Normalize:
+  jvp: Div(Sub($tangent[0], Mul($output, ReduceSum(Mul($output, $tangent[0])))), Norm($input[0]))
+GELU:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+Gelu:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+SiLU:
+  jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+Silu:
+  jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+Sigmoid:
+  jvp: Mul($tangent[0], Mul($output, Sub(Constant(1.0), $output)))
+ELU:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+Elu:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+LeakyReLU:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+LeakyRelu:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+Softplus:
+  jvp: Mul($tangent[0], Sigmoid($input[0]))
+Softmax:
+  jvp: Mul($output, Sub($tangent[0], ReduceSum(Mul($tangent[0], $output), axis=-1, keepdims=True)))
+LogSoftmax:
+  jvp: Sub($tangent[0], ReduceSum($tangent[0], axis=-1, keepdims=True))
+Conv1D:
+  jvp: Add(Conv1D($tangent[0], $input[1]), Conv1D($input[0], $tangent[1]))
+Conv2D:
+  jvp: Add(Conv2D($tangent[0], $input[1]), Conv2D($input[0], $tangent[1]))
+Conv3D:
+  jvp: Add(Conv3D($tangent[0], $input[1]), Conv3D($input[0], $tangent[1]))
+ConvTranspose2D:
+  jvp: Add(ConvTranspose2D($tangent[0], $input[1]), ConvTranspose2D($input[0], $tangent[1]))
+MaxPool2D:
+  jvp: Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0])))
+AvgPool2D:
+  jvp: AvgPool2D($tangent[0])
+BatchNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+LayerNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+RMSNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5)))))
+GroupNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+MSELoss:
+  jvp: Mul(Constant(2.0), Div(ReduceMean(Mul(Sub($input[0], $input[1]), $tangent[0])), Constant(1.0)))
+CrossEntropyLoss:
+  jvp: ReduceMean(Mul(Sub(Softmax($input[0]), $input[1]), $tangent[0]))
+BCELoss:
+  jvp: ReduceMean(Mul(Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0), $input[0]))), $tangent[0]))
+HuberLoss:
+  jvp: ReduceMean(Mul(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1]))), $tangent[0]))
+KLDivergenceLoss:
+  jvp: ReduceMean(Mul(Sub(Constant(1.0), Div($input[1], $input[0])), $tangent[0]))
+ExpandDims:
+  jvp: ExpandDims($tangent[0])
+Squeeze:
+  jvp: Squeeze($tangent[0])
+Reshape:
+  jvp: Reshape($tangent[0])

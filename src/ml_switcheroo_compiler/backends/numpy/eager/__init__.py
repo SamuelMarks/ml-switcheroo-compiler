@@ -52,10 +52,12 @@ import ml_switcheroo_compiler.backends.numpy.eager.vision_filters  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F401
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import BackendArray, global_eager_registry, numpy_eager_registry
 
 
-def execute_op(cls: type, op_type: str, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray]) -> typing.Union[tuple[int, ...], np.ndarray, list, tuple, int, float, str, bool, None]:
+def execute_op(
+    cls: type, op_type: str, *args: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray], **kwargs: typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray]
+) -> typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, BackendArray]:
     """Evaluate execute_op operation.
 
     Args:
@@ -140,7 +142,8 @@ def split(
     Returns:
         List of output arrays.
     """
-    return np_mod.split(x, num_or_size_splits, axis=axis)
+    split_fn = getattr(np_mod, "split", np.split)
+    return split_fn(x, num_or_size_splits, axis=axis)
 
 
 @numpy_eager_registry.register("Squeeze")
@@ -200,8 +203,10 @@ def unstack(
     # unstack is basically split into 1-sized chunks along axis and squeezed
     if hasattr(x, "shape"):
         num_splits = x.shape[axis]
-        splits = np_mod.split(x, num_splits, axis=axis)
-        return tuple(np_mod.squeeze(s, axis=axis) for s in splits)
+        split_fn = getattr(np_mod, "split", np.split)
+        splits = split_fn(x, num_splits, axis=axis)
+        squeeze_fn = getattr(np_mod, "squeeze", np.squeeze)
+        return tuple(squeeze_fn(s, axis=axis) for s in splits)
     return tuple(x)
 
 

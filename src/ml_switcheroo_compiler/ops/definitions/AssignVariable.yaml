@@ -10,11 +10,6 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AssignVariable
-  edge_stablehlo:
-
-    opcode: stablehlo.assign_variable
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

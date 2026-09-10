@@ -86,3 +86,39 @@ def test_has_vjp_data():
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=lambda x: x):
         assert has_vjp("AbsolutelyMissingOpTypeXYZ123_Data") is True
+
+
+def test_vjp_registry_full_branches():
+    """Test remaining branch coverage in vjp_registry.py."""
+    import tempfile
+    from unittest.mock import patch
+
+    import yaml
+
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
+        load_primitive_vjp_rules,
+    )
+
+    # Cache hit branch (line 43)
+    load_primitive_vjp_rules(path=None)
+    rules_cached = load_primitive_vjp_rules(path=None)
+    assert len(rules_cached) > 0
+
+    # 1. load_primitive_vjp_rules with nonexistent path (branches 47, 50->58)
+    with patch("os.path.exists", return_value=False):
+        rules_none = load_primitive_vjp_rules(path="/nonexistent/path/vjp.yaml")
+        assert rules_none == {}
+
+    # 2. load_primitive_vjp_rules with non-dict data (branch 53->58)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump(["item1", "item2"], f)
+        temp_list = f.name
+    rules_list = load_primitive_vjp_rules(path=temp_list)
+    assert rules_list == {}
+
+    # 3. load_primitive_vjp_rules with dict without "vjp" key (branch 55->54)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.dump({"op_no_vjp": {"other": 1}, "op_str": "val"}, f)
+        temp_no_vjp = f.name
+    rules_no_vjp = load_primitive_vjp_rules(path=temp_no_vjp)
+    assert rules_no_vjp == {}

@@ -24,6 +24,229 @@ def _activity_regularization(backend_module: Any, x: object, **kwargs: Any) -> A
     return x
 
 
+@global_eager_registry.register("LayerNorm")
+def _layer_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate LayerNorm.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input, gamma (optional), beta (optional).
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: Normalized output.
+    """
+    del kwargs
+    x = args[0]
+    gamma = args[1] if len(args) > 1 else 1.0
+    beta = args[2] if len(args) > 2 else 0.0
+    mean = backend_module.mean(x, axis=-1, keepdims=True)
+    var = backend_module.var(x, axis=-1, keepdims=True)
+    norm = (x - mean) / backend_module.sqrt(var + 1e-5)
+    return norm * gamma + beta
+
+
+@global_eager_registry.register("BatchNorm")
+def _batch_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate BatchNorm.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input, gamma (optional), beta (optional), mean (optional), var (optional).
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: Normalized output.
+    """
+    x = args[0]
+    gamma = args[1] if len(args) > 1 else kwargs.get("gamma", 1.0)
+    beta = args[2] if len(args) > 2 else kwargs.get("beta", 0.0)
+    eps = kwargs.get("eps", 1e-5)
+    if len(args) > 4:
+        mean = args[3]
+        var = args[4]
+    else:
+        axes = tuple(i for i in range(x.ndim) if i != 1) if getattr(x, "ndim", 0) > 1 else (0,)
+        mean = backend_module.mean(x, axis=axes, keepdims=True)
+        var = backend_module.var(x, axis=axes, keepdims=True)
+    norm = (x - mean) / backend_module.sqrt(var + eps)
+    return norm * gamma + beta
+
+
+@global_eager_registry.register("RMSNorm")
+def _rms_norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate RMSNorm.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input, gamma (optional).
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: Normalized output.
+    """
+    del kwargs
+    x = args[0]
+    gamma = args[1] if len(args) > 1 else 1.0
+    rms = backend_module.sqrt(backend_module.mean(x**2, axis=-1, keepdims=True) + 1e-5)
+    return (x / rms) * gamma
+
+
+@global_eager_registry.register("MSELoss")
+def _mse_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Mean Squared Error loss.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Predictions, Targets.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: MSE loss value.
+    """
+    del kwargs
+    pred = args[0]
+    tgt = args[1]
+    return backend_module.mean((pred - tgt) ** 2)
+
+
+@global_eager_registry.register("BCELoss")
+def _bce_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Binary Cross Entropy loss.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Predictions, Targets.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: BCE loss value.
+    """
+    del kwargs
+    pred = args[0]
+    tgt = args[1]
+    eps = 1e-7
+    pred_c = backend_module.clip(pred, eps, 1.0 - eps) if hasattr(backend_module, "clip") else pred
+    return -backend_module.mean(tgt * backend_module.log(pred_c) + (1.0 - tgt) * backend_module.log(1.0 - pred_c))
+
+
+@global_eager_registry.register("HuberLoss")
+def _huber_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Huber loss.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Predictions, Targets.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: Huber loss value.
+    """
+    del kwargs
+    pred = args[0]
+    tgt = args[1]
+    diff = backend_module.abs(pred - tgt)
+    cond = diff < 1.0
+    loss = backend_module.where(cond, 0.5 * (diff**2), diff - 0.5)
+    return backend_module.mean(loss)
+
+
+@global_eager_registry.register("KLDivergenceLoss")
+def _kl_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Kullback-Leibler divergence loss.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Predictions, Targets.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: KL divergence loss value.
+    """
+    del kwargs
+    pred = args[0]
+    tgt = args[1]
+    eps = 1e-7
+    return backend_module.mean(tgt * (backend_module.log(tgt + eps) - backend_module.log(pred + eps)))
+
+
+@global_eager_registry.register("GELU")
+@global_eager_registry.register("Gelu")
+def _gelu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate GELU activation.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input tensor.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: GELU activation output.
+    """
+    del kwargs
+    import math
+
+    x = args[0]
+    return 0.5 * x * (1.0 + backend_module.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x**3))))
+
+
+@global_eager_registry.register("SiLU")
+@global_eager_registry.register("Silu")
+def _silu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate SiLU activation.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input tensor.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: SiLU activation output.
+    """
+    del kwargs
+    x = args[0]
+    sig = 1.0 / (1.0 + backend_module.exp(-x))
+    return x * sig
+
+
+@global_eager_registry.register("ELU")
+@global_eager_registry.register("Elu")
+def _elu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate ELU activation.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input tensor.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: ELU activation output.
+    """
+    x = args[0]
+    alpha = kwargs.get("alpha", 1.0)
+    cond = x > 0
+    return backend_module.where(cond, x, alpha * (backend_module.exp(x) - 1.0))
+
+
+@global_eager_registry.register("LeakyReLU")
+@global_eager_registry.register("LeakyRelu")
+def _leaky_relu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate LeakyReLU activation.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Input tensor.
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: LeakyReLU activation output.
+    """
+    x = args[0]
+    alpha = kwargs.get("negative_slope", 0.01)
+    cond = x > 0
+    return backend_module.where(cond, x, alpha * x)
+
+
 def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 

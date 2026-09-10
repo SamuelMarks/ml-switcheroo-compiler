@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.lufactor
   mlx:
     eager: mlx.core.lufactor
-  edge_onnx:
-    generator: LuFactor
-  edge_stablehlo:
-
-    opcode: stablehlo.lu_factor
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

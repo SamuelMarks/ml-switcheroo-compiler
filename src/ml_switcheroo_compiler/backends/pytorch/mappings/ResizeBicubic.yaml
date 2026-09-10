@@ -1,0 +1,3 @@
+ResizeBicubic:
+  ast_template: torch.nn.functional.interpolate({0}, mode='bicubic')
+  target_api: ''

@@ -1,4 +1,7 @@
 BCELoss:
-  jvp: ZerosLike($tangent[0])
+  jvp: ReduceMean(Mul(Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0),
+    $input[0]))), $tangent[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0),
+    $input[0]))))
+  - Mul($cotangent, Sub(Log(Sub(Constant(1.0), $input[0])), Log($input[0])))

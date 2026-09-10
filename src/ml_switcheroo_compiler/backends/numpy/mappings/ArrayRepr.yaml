@@ -1,2 +1,2 @@
 ArrayRepr:
-  target_api: np.arrayrepr
+  target_api: custom_op

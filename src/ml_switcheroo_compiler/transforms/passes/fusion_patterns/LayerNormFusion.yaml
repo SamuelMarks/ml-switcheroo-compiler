@@ -1,0 +1,63 @@
+LayerNormAffineFusion:
+  pattern:
+    capture: add_shift
+    inputs:
+    - capture: mul_scale
+      inputs:
+      - capture: div
+        inputs:
+        - capture: sub
+          inputs:
+          - capture: x
+          - capture: mean
+            op_type: ReduceMean
+          op_type: Subtract
+        - capture: sqrt
+          inputs:
+          - capture: add_eps
+            inputs:
+            - capture: var
+              op_type: ReduceMean
+            - capture: eps
+            op_type: Add
+          op_type: Sqrt
+        op_type: Divide
+      - capture: scale
+      op_type: Multiply
+    - capture: shift
+    op_type: Add
+  replacement:
+    capture_to_replace: add_shift
+    inputs:
+    - x
+    - scale
+    - shift
+    - eps
+    op_type: FusedLayerNormAffine
+
+LayerNormBasicFusion:
+  pattern:
+    capture: div
+    inputs:
+    - capture: sub
+      inputs:
+      - capture: x
+      - capture: mean
+        op_type: ReduceMean
+      op_type: Subtract
+    - capture: sqrt
+      inputs:
+      - capture: add_eps
+        inputs:
+        - capture: var
+          op_type: ReduceMean
+        - capture: eps
+        op_type: Add
+      op_type: Sqrt
+    op_type: Divide
+  replacement:
+    capture_to_replace: div
+    inputs:
+    - x
+    - eps
+    op_type: FusedLayerNorm

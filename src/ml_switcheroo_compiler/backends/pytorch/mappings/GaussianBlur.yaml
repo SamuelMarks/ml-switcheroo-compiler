@@ -1,0 +1,3 @@
+GaussianBlur:
+  ast_template: torchvision.transforms.functional.gaussian_blur({0})
+  target_api: ''

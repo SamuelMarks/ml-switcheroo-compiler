@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.gridsample
   mlx:
     eager: mlx.core.gridsample
-  edge_onnx:
-    generator: GridSample
-  edge_stablehlo:
-
-    opcode: stablehlo.grid_sample
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,8 +1,0 @@
-operation: cls_to_become
-description: Auto-generated from torch_v2.10.0_map.json
-std_args: []
-type: attribute
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

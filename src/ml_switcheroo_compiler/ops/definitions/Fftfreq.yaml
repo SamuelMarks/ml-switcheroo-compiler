@@ -1,22 +1,22 @@
 operation: fftfreq
 description: The Fftfreq operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: n
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: d
-    type: float
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: Optional[dtype]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: device
-    type: Optional[device]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: d
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
 type: function
 variants:
   cupy:
@@ -29,11 +29,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: fftfreq
-  edge_stablehlo:
-
-    opcode: stablehlo.fftfreq
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

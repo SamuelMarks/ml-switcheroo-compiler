@@ -1,0 +1,15 @@
+target_module: jax
+module_path:
+  - jax
+  - numpy
+kwarg_map:
+  dim: axis
+  keepdim: keepdims
+class_bases:
+  nn.Module:
+    - flax
+    - linen
+    - Module
+method_map:
+  forward: __call__
+broadcast_method: broadcast_to

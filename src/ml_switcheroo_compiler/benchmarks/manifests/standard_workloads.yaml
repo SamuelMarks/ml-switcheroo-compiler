@@ -1,0 +1,318 @@
+models:
+  mlp:
+    description: "Two-layer Multi-Layer Perceptron forward pass with ReLU"
+    batch_sizes: [1, 8, 32, 64]
+    inputs:
+      in_0:
+        shape: [128]
+        dtype: "float32"
+    weights:
+      w_0:
+        shape: [128, 256]
+        dtype: "float32"
+      w_1:
+        shape: [256, 64]
+        dtype: "float32"
+    nodes:
+      - id: "dense_0"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_0"]
+        attributes: {}
+      - id: "act_0"
+        op_type: "Relu"
+        inputs: ["dense_0"]
+        attributes: {}
+      - id: "dense_1"
+        op_type: "MatMul"
+        inputs: ["act_0", "w_1"]
+        attributes: {}
+    outputs: ["dense_1"]
+
+  mlp_model:
+    description: "Two-layer Multi-Layer Perceptron forward pass with ReLU"
+    batch_sizes: [1, 8, 32]
+    inputs:
+      in_0:
+        shape: [128]
+        dtype: "float32"
+    weights:
+      w_0:
+        shape: [128, 256]
+        dtype: "float32"
+      w_1:
+        shape: [256, 64]
+        dtype: "float32"
+    nodes:
+      - id: "dense_0"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_0"]
+        attributes: {}
+      - id: "act_0"
+        op_type: "Relu"
+        inputs: ["dense_0"]
+        attributes: {}
+      - id: "dense_1"
+        op_type: "MatMul"
+        inputs: ["act_0", "w_1"]
+        attributes: {}
+    outputs: ["dense_1"]
+
+  cnn_resnet_block:
+    description: "Convolutional ResNet residual block with skip connection"
+    batch_sizes: [1, 4, 16]
+    inputs:
+      in_0:
+        shape: [3, 32, 32]
+        dtype: "float32"
+    weights:
+      w_conv1:
+        shape: [16, 3, 3, 3]
+        dtype: "float32"
+      w_conv2:
+        shape: [16, 16, 3, 3]
+        dtype: "float32"
+    nodes:
+      - id: "conv_1"
+        op_type: "Conv2D"
+        inputs: ["in_0", "w_conv1"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "act_1"
+        op_type: "Relu"
+        inputs: ["conv_1"]
+        attributes: {}
+      - id: "conv_2"
+        op_type: "Conv2D"
+        inputs: ["act_1", "w_conv2"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "res_add"
+        op_type: "Add"
+        inputs: ["conv_1", "conv_2"]
+        attributes: {}
+      - id: "act_2"
+        op_type: "Relu"
+        inputs: ["res_add"]
+        attributes: {}
+    outputs: ["act_2"]
+
+  conv_net:
+    description: "Simple Convolutional network forward step"
+    batch_sizes: [1, 4, 16]
+    inputs:
+      in_0:
+        shape: [3, 32, 32]
+        dtype: "float32"
+    weights:
+      w_conv:
+        shape: [16, 3, 3, 3]
+        dtype: "float32"
+    nodes:
+      - id: "conv_0"
+        op_type: "Conv2D"
+        inputs: ["in_0", "w_conv"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "act_0"
+        op_type: "Relu"
+        inputs: ["conv_0"]
+        attributes: {}
+      - id: "pool_0"
+        op_type: "MaxPool2D"
+        inputs: ["act_0"]
+        attributes:
+          kernel_size: [2, 2]
+          stride: [2, 2]
+    outputs: ["pool_0"]
+
+  nanogpt_transformer_block:
+    description: "NanoGPT Transformer block with self-attention and MLP feed-forward"
+    batch_sizes: [1, 2, 8]
+    inputs:
+      in_0:
+        shape: [64, 128]
+        dtype: "float32"
+    weights:
+      w_q:
+        shape: [128, 128]
+        dtype: "float32"
+      w_k:
+        shape: [128, 128]
+        dtype: "float32"
+      w_v:
+        shape: [128, 128]
+        dtype: "float32"
+      w_out:
+        shape: [128, 128]
+        dtype: "float32"
+      w_mlp1:
+        shape: [128, 512]
+        dtype: "float32"
+      w_mlp2:
+        shape: [512, 128]
+        dtype: "float32"
+    nodes:
+      - id: "ln_1"
+        op_type: "LayerNorm"
+        inputs: ["in_0"]
+        attributes: {}
+      - id: "proj_q"
+        op_type: "MatMul"
+        inputs: ["ln_1", "w_q"]
+        attributes: {}
+      - id: "proj_k"
+        op_type: "MatMul"
+        inputs: ["ln_1", "w_k"]
+        attributes: {}
+      - id: "proj_v"
+        op_type: "MatMul"
+        inputs: ["ln_1", "w_v"]
+        attributes: {}
+      - id: "scores"
+        op_type: "MatMul"
+        inputs: ["proj_q", "proj_k"]
+        attributes:
+          transpose_b: true
+      - id: "probs"
+        op_type: "Softmax"
+        inputs: ["scores"]
+        attributes:
+          axis: -1
+      - id: "attn_v"
+        op_type: "MatMul"
+        inputs: ["probs", "proj_v"]
+        attributes: {}
+      - id: "attn_proj"
+        op_type: "MatMul"
+        inputs: ["attn_v", "w_out"]
+        attributes: {}
+      - id: "res_1"
+        op_type: "Add"
+        inputs: ["in_0", "attn_proj"]
+        attributes: {}
+      - id: "ln_2"
+        op_type: "LayerNorm"
+        inputs: ["res_1"]
+        attributes: {}
+      - id: "mlp_fc"
+        op_type: "MatMul"
+        inputs: ["ln_2", "w_mlp1"]
+        attributes: {}
+      - id: "mlp_act"
+        op_type: "Relu"
+        inputs: ["mlp_fc"]
+        attributes: {}
+      - id: "mlp_proj"
+        op_type: "MatMul"
+        inputs: ["mlp_act", "w_mlp2"]
+        attributes: {}
+      - id: "out"
+        op_type: "Add"
+        inputs: ["res_1", "mlp_proj"]
+        attributes: {}
+    outputs: ["out"]
+
+  attention_block:
+    description: "Self-attention block forward computation"
+    batch_sizes: [1, 2, 8]
+    inputs:
+      in_0:
+        shape: [64, 128]
+        dtype: "float32"
+    weights:
+      w_q:
+        shape: [128, 128]
+        dtype: "float32"
+      w_k:
+        shape: [128, 128]
+        dtype: "float32"
+      w_v:
+        shape: [128, 128]
+        dtype: "float32"
+    nodes:
+      - id: "proj_q"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_q"]
+        attributes: {}
+      - id: "proj_k"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_k"]
+        attributes: {}
+      - id: "proj_v"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_v"]
+        attributes: {}
+      - id: "scores"
+        op_type: "MatMul"
+        inputs: ["proj_q", "proj_k"]
+        attributes:
+          transpose_b: true
+      - id: "probs"
+        op_type: "Softmax"
+        inputs: ["scores"]
+        attributes:
+          axis: -1
+      - id: "attn_out"
+        op_type: "MatMul"
+        inputs: ["probs", "proj_v"]
+        attributes: {}
+    outputs: ["attn_out"]
+
+  diffusion_resblock:
+    description: "Diffusion UNet ResBlock with timestep embedding projection"
+    batch_sizes: [1, 2, 8]
+    inputs:
+      in_0:
+        shape: [32, 16, 16]
+        dtype: "float32"
+      time_emb:
+        shape: [32, 1, 1]
+        dtype: "float32"
+    weights:
+      w_conv1:
+        shape: [32, 32, 3, 3]
+        dtype: "float32"
+      w_conv2:
+        shape: [32, 32, 3, 3]
+        dtype: "float32"
+    nodes:
+      - id: "norm_1"
+        op_type: "BatchNorm"
+        inputs: ["in_0"]
+        attributes: {}
+      - id: "act_1"
+        op_type: "Relu"
+        inputs: ["norm_1"]
+        attributes: {}
+      - id: "conv_1"
+        op_type: "Conv2D"
+        inputs: ["act_1", "w_conv1"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "emb_add"
+        op_type: "Add"
+        inputs: ["conv_1", "time_emb"]
+        attributes: {}
+      - id: "norm_2"
+        op_type: "BatchNorm"
+        inputs: ["emb_add"]
+        attributes: {}
+      - id: "act_2"
+        op_type: "Relu"
+        inputs: ["norm_2"]
+        attributes: {}
+      - id: "conv_2"
+        op_type: "Conv2D"
+        inputs: ["act_2", "w_conv2"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "res_out"
+        op_type: "Add"
+        inputs: ["in_0", "conv_2"]
+        attributes: {}
+    outputs: ["res_out"]

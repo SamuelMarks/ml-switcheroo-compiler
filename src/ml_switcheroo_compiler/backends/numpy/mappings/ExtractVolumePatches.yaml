@@ -1,2 +1,2 @@
 ExtractVolumePatches:
-  target_api: np.extractvolumepatches
+  target_api: custom_op

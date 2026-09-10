@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.ldexp
   mlx:
     eager: mlx.core.ldexp
-  edge_onnx:
-    generator: ldexp
-  edge_stablehlo:
-
-    opcode: stablehlo.ldexp
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

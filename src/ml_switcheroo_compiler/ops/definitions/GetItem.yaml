@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.getitem
   mlx:
     eager: mlx.core.getitem
-  edge_onnx:
-    generator: GetItem
-  edge_stablehlo:
-
-    opcode: stablehlo.get_item
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

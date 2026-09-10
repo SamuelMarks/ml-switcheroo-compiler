@@ -472,3 +472,85 @@ def test_cpp_compile_load_failure(mock_run):
     with patch("ctypes.CDLL", side_effect=Exception("mocked cdld error")):
         with pytest.raises(RuntimeError, match="Compilation or load failed: mocked cdld error"):
             gen.compile("some code")
+
+
+def test_llvm_cpp_runner_and_compile_aot():
+    """Test LLVMCPPRunner compiler selection and compile_aot method."""
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import LLVMCPPRunner
+
+    # Explicit compiler
+    runner_custom = LLVMCPPRunner(compiler="custom-clang++")
+    assert runner_custom.compiler == "custom-clang++"
+
+    # Fallback to g++ when clang++ not found
+    with patch("shutil.which", side_effect=lambda x: "/usr/bin/g++" if x == "g++" else None):
+        runner_gpp = LLVMCPPRunner()
+        assert runner_gpp.compiler == "g++"
+
+    # Fallback to default clang++ when neither found
+    with patch("shutil.which", return_value=None):
+        runner_default = LLVMCPPRunner()
+        assert runner_default.compiler == "clang++"
+
+    # compile_aot with and without compiler kwargs
+    gen = CppGenerator(IRGraph())
+    with patch.object(LLVMCPPRunner, "compile_and_load", return_value=lambda: "success"):
+        res_fn1 = gen.compile_aot(IRGraph(), compiler="g++")
+        assert res_fn1() == "success"
+
+        res_fn2 = gen.compile_aot(IRGraph())
+        assert res_fn2() == "success"
+
+
+def test_cpp_generator_strict_and_genuine_math():
+    """Verify strict mode raises UnimplementedMathError and genuine math expressions are generated."""
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
+    g = IRGraph()
+    n_sin = IRNode("Sin", "s_1", ["in1"])
+    n_sin.inputs = ["in1"]
+    n_sin.op_type = "Sin"
+    g.nodes = {"s_1": n_sin}
+    g.sorted_nodes = [n_sin]
+
+    gen = CppGenerator(g)
+    code = gen.generate()
+    assert "std::sin(in0_val)" in code
+
+    g_unk = IRGraph()
+    n_unk = IRNode("UnsupportedMathOp", "u_1", ["in1"])
+    n_unk.inputs = ["in1"]
+    n_unk.op_type = "UnsupportedMathOp"
+    g_unk.nodes = {"u_1": n_unk}
+    g_unk.sorted_nodes = [n_unk]
+
+    gen_strict = CppGenerator(g_unk, strict=True)
+    with pytest.raises(UnimplementedMathError, match="does not support operation: UnsupportedMathOp"):
+        gen_strict.generate()
+
+
+def test_cpp_generator_genuine_expr_override():
+    """Verify that genuine expressions override placeholder scalar_expr in C++ generator."""
+    g = IRGraph()
+    gen = CppGenerator(g)
+    node = IRNode("Relu", "relu_1", ["in_1"])
+    node.op_type = "Relu"
+    node.inputs = ["in_1"]
+    node.shape_metadata = [2, 2]
+    node.attributes = {"buffer_offset": 0, "buffer_size": 16}
+    g.nodes = {"relu_1": node}
+
+    mock_registry = {
+        "Relu": {
+            "variants": {
+                "llvm_cpp": {
+                    "template": "unary",
+                    "scalar_expr": "in0_val",
+                }
+            }
+        }
+    }
+    with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", mock_registry):
+        with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "{scalar_expr}"}):
+            gen._visit_node(node)
+            assert any("std::max(0.0f, in0_val)" in l for l in gen.lines)

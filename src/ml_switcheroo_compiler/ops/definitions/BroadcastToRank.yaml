@@ -11,11 +11,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: BroadcastToRank
-  edge_stablehlo:
-
-    opcode: stablehlo.broadcast_to_rank
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

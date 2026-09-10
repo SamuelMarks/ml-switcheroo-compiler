@@ -105,10 +105,27 @@ class CustomVJPFunction:
         """
         out_id = str(uuid.uuid4())
         meta = self._resolve_output_metadata(tensor_args)
+        in_ids: list[str] = []
+        for a in tensor_args:
+            if hasattr(a, "data") and hasattr(a.data, "id"):
+                in_ids.append(a.data.id)
+            else:
+                cid = str(uuid.uuid4())
+                arr = getattr(a, "data", a)
+                c_node = LogicalNode(
+                    id=cid,
+                    op_type="Constant",
+                    inputs=[],
+                    attributes={"value": arr},
+                    shape_metadata=getattr(arr, "shape", ()),
+                )
+                global_tracing_state.add_node(c_node)
+                in_ids.append(cid)
+
         node = LogicalNode(
             id=out_id,
             op_type="CustomVJP",
-            inputs=[a.data.id for a in tensor_args],
+            inputs=in_ids,
             attributes={"primal_graph": primal_graph, "fwd_graph": fwd_graph, "bwd_fn": self.bwd},
             shape_metadata=meta[0],
         )

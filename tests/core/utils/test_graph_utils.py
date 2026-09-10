@@ -66,3 +66,17 @@ def test_topological_sort_already_visited():
     graph = MockGraphDict({"n1": n1, "n2": n2, "n3": n3, "n4": n4})
     sorted_nodes = topological_sort(graph)
     assert len(sorted_nodes) == 4
+
+
+def test_topological_sort_missing_node_list():
+    n1 = MockNode("n1", ["n_missing"])
+    graph = MockGraphList([n1])
+    sorted_nodes = topological_sort(graph)
+    assert [n.id for n in sorted_nodes] == ["n1"]
+
+
+def test_topological_sort_nodes_neither_dict_nor_list():
+    n1 = MockNode("n1", [])
+    graph = MockGraphDict((n1,))
+    sorted_nodes = topological_sort(graph)
+    assert sorted_nodes == []

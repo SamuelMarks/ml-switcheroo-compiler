@@ -12,11 +12,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: nanargmax
-  edge_stablehlo:
-
-    opcode: stablehlo.nanargmax
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;

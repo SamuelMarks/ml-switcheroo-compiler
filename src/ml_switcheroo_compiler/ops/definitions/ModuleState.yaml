@@ -1,7 +1,0 @@
-operation: ModuleState
-description: Auto-generated mapping for ModuleState.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

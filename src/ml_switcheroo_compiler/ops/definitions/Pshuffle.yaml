@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.pshuffle
   mlx:
     eager: mlx.core.pshuffle
-  edge_onnx:
-    generator: pshuffle
-  edge_stablehlo:
-
-    opcode: stablehlo.pshuffle
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

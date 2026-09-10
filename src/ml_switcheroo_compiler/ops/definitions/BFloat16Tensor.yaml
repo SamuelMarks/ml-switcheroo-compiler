@@ -1,10 +1,10 @@
 operation: BFloat16Tensor
 description: Constructs a Tensor with bfloat16 data type.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: data
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data
+  type: Any
 variants:
   numpy:
     eager: numpy.bfloat16tensor
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.bfloat16tensor
   mlx:
     eager: mlx.core.bfloat16tensor
-  edge_onnx:
-    generator: BFloat16Tensor
-  edge_stablehlo:
-
-    opcode: stablehlo.b_float16_tensor
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,11 +1,11 @@
 operation: ActivationLayer
 description: Applies an activation function to an output.
 std_args:
-  - doc: Name of activation function or callable.
-    is_variadic: false
-    kind: positional_or_keyword
-    name: activation
-    type: str
+- doc: Name of activation function or callable.
+  is_variadic: false
+  kind: positional_or_keyword
+  name: activation
+  type: str
 variants:
   numpy: {}
   cupy: {}
@@ -15,11 +15,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ActivationLayer
-  edge_stablehlo:
-
-    opcode: stablehlo.activation_layer
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

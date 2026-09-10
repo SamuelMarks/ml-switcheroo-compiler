@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.fmin
   mlx:
     eager: mlx.core.fmin
-  edge_onnx:
-    generator: fmin
-  edge_stablehlo:
-
-    opcode: stablehlo.fmin
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

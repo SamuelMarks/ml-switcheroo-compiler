@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.atom
   mlx:
     eager: mlx.core.atom
-  edge_onnx:
-    generator: Atom
-  edge_stablehlo:
-
-    opcode: stablehlo.atom
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

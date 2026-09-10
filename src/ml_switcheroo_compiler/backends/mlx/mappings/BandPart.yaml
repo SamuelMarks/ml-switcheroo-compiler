@@ -1,2 +1,2 @@
 BandPart:
-  target_api: '''tf.linalg.band_part'''
+  target_api: custom_op

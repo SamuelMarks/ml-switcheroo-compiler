@@ -1,2 +1,2 @@
 SpecialGamma:
-  target_api: np.specialgamma
+  target_api: custom_op

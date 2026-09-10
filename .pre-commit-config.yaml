@@ -27,13 +27,12 @@ repos:
   - id: mypy
     args:
     - --ignore-missing-imports
-    - --follow-imports=skip
     additional_dependencies:
     - types-requests
     - types-PyYAML
     - pydantic
     - libcst
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
+    files: ^src/ml_switcheroo_compiler/.*\.py$
 - repo: local
   hooks:
   - id: pytest-coverage
@@ -62,6 +61,12 @@ repos:
     language: system
     files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
+  - id: dependency-isolation-check
+    name: Check Dependency Isolation
+    entry: python3 scripts/lint_dependencies.py
+    language: system
+    files: ^src/ml_switcheroo_compiler/.*\.py$
+    pass_filenames: false
 - repo: local
   hooks:
   - id: check-any
@@ -77,5 +82,11 @@ repos:
     entry: python scripts/validate_backend_mappings.py
     language: python
     additional_dependencies: [pyyaml]
+    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
+    pass_filenames: false
+  - id: validate-rules
+    name: Validate Rule 4 (N-to-M utility)
+    entry: python3 scripts/validate_rules.py
+    language: system
     files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     pass_filenames: false

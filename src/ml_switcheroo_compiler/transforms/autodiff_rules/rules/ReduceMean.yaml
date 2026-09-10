@@ -1,5 +1,4 @@
 ReduceMean:
-  jvp: ReduceMean($tangent[0], axes=$axes, keepdims=$keepdims)
+  jvp: ReduceMean($tangent[0])
   vjp:
-  - '- Div(BroadcastTo($cotangent, ShapeOf($input[0])), Cast(SizeOf($input[0], axes=$axes),
-    DtypeOf($input[0])))'
+  - Div(BroadcastLike($cotangent, $input[0]), Cast(Numel($input[0]), Constant(1.0)))

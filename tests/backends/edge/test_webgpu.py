@@ -1,6 +1,9 @@
 from unittest.mock import patch
 
+import pytest
+
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -88,10 +91,14 @@ def test_webgpu_generate():
     in2.shape_metadata = [2, 2]
     in2.id = "in_2"
 
-    graph.nodes = {"in_1": in1, "in_2": in2, "add_1": node}
-    graph.sorted_nodes = [in1, in2, node]
+    out_node = IRNode("Output", "out_1", ["add_1"])
+    out_node.shape_metadata = [2, 2]
+    out_node.id = "out_1"
+
+    graph.nodes = {"in_1": in1, "in_2": in2, "add_1": node, "out_1": out_node}
+    graph.sorted_nodes = [in1, in2, node, out_node]
     graph.inputs = ["in_1", "in_2"]
-    graph.outputs = ["add_1"]
+    graph.outputs = ["out_1"]
 
     generator = WebGPUCodeGenerator(graph, [])
 
@@ -147,8 +154,8 @@ def test_webgpu_wgsl_for_op_branches():
     generator.sorted_nodes = [in1, node]
 
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-        wgsl, x, y, z = generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "u_1")
-        assert len(wgsl) > 0
+        with pytest.raises(CompilationError, match="cannot be mapped to a valid WGSL compute kernel"):
+            generator._get_wgsl_for_op(node, [2, 2, 2, 2], 16, "u_1")
 
     # Test matmul
     node2 = IRNode("MatMul", "m_1", ["in_1", "in_2"])
@@ -584,3 +591,252 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal():
     gen = WebGPUCodeGenerator(g)
     gen.sorted_nodes = [in1, cond_in, in2, in3, n_while, n_cond, n_reducescatter]
     gen.generate()
+
+
+def test_webgpu_softmax_and_layernorm():
+    """Test generating WebGPU WGSL compute shaders for Softmax and LayerNorm."""
+    in_node = IRNode("in_0", "Input", inputs=[])
+    in_node.shape_metadata = (4, 16)
+
+    sm_node = IRNode("sm_0", "Softmax", inputs=["in_0"])
+    sm_node.shape_metadata = (4, 16)
+
+    ln_node = IRNode("ln_0", "LayerNorm", inputs=["in_0"])
+    ln_node.shape_metadata = (4, 16)
+
+    out_sm = IRNode("out_sm", "Output", inputs=["sm_0"])
+    out_ln = IRNode("out_ln", "Output", inputs=["ln_0"])
+
+    graph = IRGraph()
+    graph.nodes = {"in_0": in_node, "sm_0": sm_node, "ln_0": ln_node, "out_sm": out_sm, "out_ln": out_ln}
+    graph.inputs = ["in_0"]
+    graph.outputs = ["out_sm", "out_ln"]
+
+    gen = WebGPUCodeGenerator(graph)
+    gen.sorted_nodes = [in_node, sm_node, ln_node, out_sm, out_ln]
+    code = gen.generate()
+
+    assert "compute_sm_0" in code
+    assert "compute_ln_0" in code
+    assert "sum_exp" in code
+    assert "variance" in code
+
+
+def test_webgpu_additional_coverage():
+    """Verify missing branches in WebGPU code generator."""
+    # 1. generate_js_runner with Input and Output nodes in sorted_nodes
+    g = IRGraph()
+    g.inputs = ["in_0"]
+    in_n = IRNode("in_0", "Input")
+    add_n = IRNode("add_0", "Add", inputs=["in_0", "in_0"])
+    add_n.shape_metadata = (4,)
+    out_n = IRNode("out_0", "Output", inputs=["add_0"])
+    g.nodes = {"in_0": in_n, "add_0": add_n, "out_0": out_n}
+    g.outputs = ["out_0"]
+    gen = WebGPUCodeGenerator(g)
+    gen.sorted_nodes = [in_n, add_n, out_n]
+    js = gen.generate()
+    assert "commandEncoder" in js
+
+    # 2. visit_Attention with [0, 0] shape
+    attn_node = IRNode("attn_0", "Attention", inputs=["in_0"])
+    attn_node.shape_metadata = (0, 0)
+    attn_wgsl, x, y, z = gen.visit_Attention(attn_node, ["in_0"], shape=[0, 0], nelem=0, clean_id="attn_0")
+    assert any("attention" in line or "scale" in line for line in attn_wgsl)
+
+    # 3. apply_shape_telemetry with invalid telemetry
+    gen.apply_shape_telemetry({"shapes": "not_a_dict"})
+
+    # 4. apply_shape_telemetry with string dimension and dim.node.eval
+    class MockDimNode:
+        def __init__(self, should_fail=False):
+            self.node = self
+            self.should_fail = should_fail
+
+        def eval(self, env):
+            if self.should_fail:
+                raise ValueError("eval failure")
+            return 8
+
+    node_eval_ok = IRNode("eval_ok", "Relu")
+    node_eval_ok.shape_metadata = (MockDimNode(False),)
+    node_eval_fail = IRNode("eval_fail", "Relu")
+    node_eval_fail.shape_metadata = (MockDimNode(True),)
+    node_str = IRNode("str_node", "Relu")
+    node_str.shape_metadata = ("B", 16)
+    node_source = IRNode("src_node", "Relu")
+    node_source.shape_metadata = ("B", 16)
+
+    gen.sorted_nodes = [node_source, node_str, node_eval_ok, node_eval_fail]
+    gen.apply_shape_telemetry({"src_node": [4, 16]})
+    assert node_str.shape_metadata == (4, 16)
+    assert node_eval_ok.shape_metadata == (8,)
+    assert node_eval_fail.shape_metadata == (1,)
+
+
+def test_webgpu_shape_telemetry_additional_branches():
+    """Verify missing telemetry branches in WebGPUCodeGenerator.apply_shape_telemetry."""
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
+
+    node_not_seq = IRNode("not_seq", "Relu")
+    node_not_seq.shape_metadata = (4, 4)
+    node_mismatch = IRNode("mismatch", "Relu")
+    node_mismatch.shape_metadata = (4, 4, 4)
+    node_no_meta = IRNode("no_meta", "Relu")
+    node_no_meta.shape_metadata = None
+    node_empty_meta = IRNode("empty_meta", "Relu")
+    node_empty_meta.shape_metadata = ()
+    node_unsolved = IRNode("unsolved", "Relu")
+    node_unsolved.shape_metadata = ("unsolved_dim",)
+
+    gen.sorted_nodes = [node_not_seq, node_mismatch, node_no_meta, node_empty_meta, node_unsolved]
+    gen.apply_shape_telemetry({"not_seq": 123, "mismatch": [4, 4]})
+    assert node_not_seq.shape_metadata == (4, 4)
+    assert node_mismatch.shape_metadata == (4, 4)
+
+
+def test_webgpu_parameterized_control_flow():
+    """Verify parameterized WhileLoop, Cond, and Scan emission in WebGPUCodeGenerator."""
+    g = IRGraph()
+    x = IRNode(id="x", op_type="Input")
+
+    # WhileLoop with custom comparator and threshold
+    while_node = IRNode(
+        id="while_1",
+        op_type="WhileLoop",
+        inputs=["x"],
+        attributes={"comparator": ">", "threshold": "25.0", "max_iters": 8},
+    )
+
+    # Cond with custom comparator and threshold
+    cond_node = IRNode(
+        id="cond_1",
+        op_type="Cond",
+        inputs=["x"],
+        attributes={"comparator": "<", "threshold": "1.0"},
+    )
+
+    # Scan with custom init_val and scan_op_expr
+    scan_node = IRNode(
+        id="scan_1",
+        op_type="Scan",
+        inputs=["x"],
+        attributes={"init_val": "2.0", "scan_op_expr": "acc * buf_in0_f32[i]"},
+    )
+
+    g.nodes = {"x": x, "while_1": while_node, "cond_1": cond_node, "scan_1": scan_node}
+    g.inputs = ["x"]
+    g.outputs = ["while_1", "cond_1", "scan_1"]
+
+    gen = WebGPUCodeGenerator(g)
+    wgsl_while, _, _, _ = gen.visit_WhileLoop(while_node, ["x"], nelem=16, clean_id="while_1")
+    assert any("current_state > 25.0" in line for line in wgsl_while)
+
+    wgsl_cond, _, _, _ = gen.visit_Cond(cond_node, ["x"], nelem=16, clean_id="cond_1")
+    assert any("buf_in0_f32[idx] < 1.0" in line for line in wgsl_cond)
+
+    wgsl_scan, _, _, _ = gen.visit_Scan(scan_node, ["x"], nelem=16, clean_id="scan_1")
+    assert any("var acc: f32 = 2.0;" in line for line in wgsl_scan)
+    assert any("acc * buf_in0_f32[i]" in line for line in wgsl_scan)
+
+    # 4. WhileLoop with cond_graph containing Greater and threshold
+    cond_sub = IRGraph()
+    cond_sub_node = IRNode(id="cmp", op_type="Greater", attributes={"threshold": "100.0"})
+    cond_sub.nodes = {"cmp": cond_sub_node}
+    while_cond_graph_node = IRNode(
+        id="while_2",
+        op_type="WhileLoop",
+        inputs=["x"],
+        attributes={"cond": cond_sub},
+    )
+    wgsl_while_sub, _, _, _ = gen.visit_WhileLoop(while_cond_graph_node, ["x"], nelem=16, clean_id="while_2")
+    assert any("current_state > 100.0" in line for line in wgsl_while_sub)
+
+    # 5. Softmax, AvgPool2D, LayerNorm, and Trig op resolution
+    node_softmax = IRNode(id="sm", op_type="Softmax", inputs=["x"], shape_metadata=[4, 4])
+    gen.sorted_nodes = [x, node_softmax]
+    wgsl_sm, _, _, _ = gen._get_wgsl_for_op(node_softmax, [4, 4], 16, "sm")
+    assert len(wgsl_sm) > 0
+
+    node_avgpool = IRNode(id="ap", op_type="AvgPool2D", inputs=["x"], shape_metadata=[1, 1, 4, 4])
+    gen.sorted_nodes = [x, node_avgpool]
+    wgsl_ap, _, _, _ = gen._get_wgsl_for_op(node_avgpool, [1, 1, 4, 4], 16, "ap")
+    assert len(wgsl_ap) > 0
+
+    node_const = IRNode(id="const_1", op_type="Constant", inputs=[], shape_metadata=[1], attributes={"value": 3.14})
+    gen.sorted_nodes = [x, node_const]
+    wgsl_const, _, _, _ = gen._get_wgsl_for_op(node_const, [1], 1, "const_1")
+    assert len(wgsl_const) > 0
+
+    node_conv = IRNode(id="c2d", op_type="Conv2D", inputs=["x"], shape_metadata=[1, 1, 4, 4])
+    gen.sorted_nodes = [x, node_conv]
+    wgsl_conv, _, _, _ = gen._get_wgsl_for_op(node_conv, [1, 1, 4, 4], 16, "c2d")
+    assert len(wgsl_conv) > 0
+
+    node_ln = IRNode(id="ln", op_type="LayerNorm", inputs=["x"], shape_metadata=[4, 4])
+    gen.sorted_nodes = [x, node_ln]
+    wgsl_ln, _, _, _ = gen._get_wgsl_for_op(node_ln, [4, 4], 16, "ln")
+    assert len(wgsl_ln) > 0
+
+    node_trig = IRNode(id="trig", op_type="Trig", inputs=["x"], shape_metadata=[4, 4])
+    gen.sorted_nodes = [x, node_trig]
+    wgsl_trig, _, _, _ = gen._get_wgsl_for_op(node_trig, [4, 4], 16, "trig")
+    assert len(wgsl_trig) > 0
+
+    # 6. _compile_aot_impl with new graph and repeat with same graph
+    new_g = IRGraph()
+    new_x = IRNode(id="nx", op_type="Input")
+    new_g.nodes = {"nx": new_x}
+    new_g.inputs = ["nx"]
+    aot_bundle = gen._compile_aot_impl(new_g)
+    assert aot_bundle["format"] == "webgpu_wgsl_bundle"
+    assert aot_bundle["status"] == "ready_to_dispatch"
+
+    aot_bundle_repeat = gen._compile_aot_impl(new_g)
+    assert aot_bundle_repeat["format"] == "webgpu_wgsl_bundle"
+
+    # 7. Node with more than 3 inputs to exercise j >= 3 branch
+    four_in_g = IRGraph()
+    i1 = IRNode(id="i1", op_type="Input")
+    i2 = IRNode(id="i2", op_type="Input")
+    i3 = IRNode(id="i3", op_type="Input")
+    i4 = IRNode(id="i4", op_type="Input")
+    four_op = IRNode(id="four_op", op_type="Add", inputs=["i1", "i2", "i3", "i4"])
+    four_in_g.nodes = {"i1": i1, "i2": i2, "i3": i3, "i4": i4, "four_op": four_op}
+    four_in_g.inputs = ["i1", "i2", "i3", "i4"]
+    four_in_g.outputs = ["four_op"]
+    gen_four = WebGPUCodeGenerator(four_in_g)
+    gen_four.generate()
+
+
+def test_webgpu_generate_training_step():
+    """Verify coupled forward-backward WGSL generation for in-browser training."""
+    g = IRGraph()
+    x = IRNode(id="x", op_type="Input")
+    x.shape_metadata = [2, 2]
+    w = IRNode(id="w", op_type="Input")
+    w.shape_metadata = [2, 2]
+    mul_node = IRNode(id="mul_1", op_type="Mul", inputs=["x", "w"])
+    mul_node.shape_metadata = [2, 2]
+    out_node = IRNode(id="out_1", op_type="Output", inputs=["mul_1"])
+    out_node.shape_metadata = [2, 2]
+
+    g.nodes = {"x": x, "w": w, "mul_1": mul_node, "out_1": out_node}
+    g.inputs = ["x", "w"]
+    g.outputs = ["out_1"]
+
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate_training_step(wrt_inputs=["x", "w"], target_output="out_1")
+    assert "execute_train_step" in code
+    assert "bwd_execute" in code
+    assert "pBuf[i] -= learning_rate" in code
+
+    # Test error when outputs are empty
+    empty_out_g = IRGraph()
+    empty_out_g.nodes = {"x": x}
+    empty_out_g.inputs = ["x"]
+    empty_out_g.outputs = []
+    empty_gen = WebGPUCodeGenerator(empty_out_g)
+    with pytest.raises(ValueError, match="Target output cannot be identified"):
+        empty_gen.generate_training_step()

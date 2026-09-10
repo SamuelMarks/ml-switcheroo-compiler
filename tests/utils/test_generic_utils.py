@@ -93,10 +93,19 @@ def test_get_file():
         res = get_file("test", "http://test")
         assert res.endswith("test")
 
-    with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False), mock.patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file"), mock.patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive"):
+    with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=False), mock.patch("ml_switcheroo_compiler.utils.generic_utils._download_remote_file"), mock.patch("ml_switcheroo_compiler.utils.generic_utils._extract_archive") as mock_extract:
         # Extract True
         cfg = GetFileConfig(archive_config=ArchiveConfig(extract=True))
         get_file("test", "http://test", cfg)
+        mock_extract.assert_called_once()
+
+        # Extract False and untar False with custom cache_dir
+        cfg_no_extract = GetFileConfig(
+            cache_config=CacheConfig(cache_dir="/tmp/custom_cache"),
+            archive_config=ArchiveConfig(extract=False, untar=False),
+        )
+        res_no_extract = get_file("test2", "http://test", cfg_no_extract)
+        assert res_no_extract.endswith("test2")
 
 
 def test_progbar():
@@ -111,6 +120,9 @@ def test_progbar():
     pb = Progbar(10, ProgbarConfig(stateful_metrics=["acc"]))
     pb.update(1, [("acc", 0.9)])
     assert pb._values["acc"] == [0.9, 1]
+
+    pb_quiet = Progbar(10, ProgbarConfig(verbose=0))
+    pb_quiet.update(1, [("loss", 0.5)])
 
     # Test finalizing
     assert pb._should_finalize(10, None)

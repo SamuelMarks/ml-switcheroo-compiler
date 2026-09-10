@@ -1,2 +1,2 @@
 KaiserWindow:
-  target_api: np.kaiserwindow
+  target_api: custom_op

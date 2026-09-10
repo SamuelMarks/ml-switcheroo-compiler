@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: WithShardingConstraint
-  edge_stablehlo:
-
-    opcode: stablehlo.with_sharding_constraint
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

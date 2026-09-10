@@ -1,2 +1,2 @@
 Erfcinv:
-  target_api: np.erfcinv
+  target_api: custom_op

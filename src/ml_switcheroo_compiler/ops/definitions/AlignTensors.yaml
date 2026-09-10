@@ -1,10 +1,10 @@
 operation: AlignTensors
 description: Reshapes tensors to match the broadcast shape of the inputs.
 std_args:
-  - is_variadic: true
-    kind: positional_or_keyword
-    name: tensors
-    type: List[Tensor]
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: List[Tensor]
 variants:
   numpy: {}
   cupy: {}
@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AlignTensors
-  edge_stablehlo:
-
-    opcode: stablehlo.align_tensors
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

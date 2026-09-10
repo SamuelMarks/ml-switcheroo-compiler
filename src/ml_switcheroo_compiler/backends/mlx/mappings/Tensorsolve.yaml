@@ -1,2 +1,2 @@
 Tensorsolve:
-  target_api: '''mx.linalg.tensorsolve({0}, {1}, axes={axes})'''
+  target_api: custom_op

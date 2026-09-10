@@ -1,4 +1,5 @@
 KLDivergenceLoss:
-  jvp: ZerosLike($tangent[0])
+  jvp: ReduceMean(Mul(Sub(Constant(1.0), Div($input[1], $input[0])), $tangent[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Sub(Constant(1.0), Div($input[1], $input[0])))
+  - Mul($cotangent, Sub(Log($input[1]), Log($input[0])))

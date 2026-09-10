@@ -1,8 +1,0 @@
-operation: GRID_SAMPLE_INTERPOLATION_MODES
-description: The class representing a Python module/class/instance attribute.
-std_args: []
-type: attribute
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

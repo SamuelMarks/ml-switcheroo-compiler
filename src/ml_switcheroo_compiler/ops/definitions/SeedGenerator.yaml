@@ -12,11 +12,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: SeedGenerator
-  edge_stablehlo:
-
-    opcode: stablehlo.seed_generator
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

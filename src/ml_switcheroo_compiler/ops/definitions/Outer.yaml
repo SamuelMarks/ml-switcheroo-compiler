@@ -1,14 +1,14 @@
 operation: outer
 description: The Outer operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x1
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x2
-    type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
 variants:
   cupy:
     eager: cp.outer
@@ -22,11 +22,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: outer
-  edge_stablehlo:
-
-    opcode: stablehlo.outer
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

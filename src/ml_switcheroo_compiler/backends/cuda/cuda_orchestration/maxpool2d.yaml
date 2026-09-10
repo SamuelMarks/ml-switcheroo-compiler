@@ -1,0 +1,25 @@
+maxpool2d:
+  body: "__global__ void maxpool2d(const float* X, float* Y, int N, int C, int H,\
+    \ int W, int KH, int KW, int H_out, int W_out) {\n    int n = blockIdx.z;\n  \
+    \  int c = blockIdx.y;\n    int idx_x = blockIdx.x * blockDim.x + threadIdx.x;\n\
+    \    int oh = idx_x / W_out;\n    int ow = idx_x % W_out;\n    if (n < N && c\
+    \ < C && oh < H_out && ow < W_out) {\n        float m = -1e30f;\n        for (int\
+    \ kh = 0; kh < KH; ++kh) {\n            for (int kw = 0; kw < KW; ++kw) {\n  \
+    \              float val = X[((n * C + c) * H + (oh * 2 + kh)) * W + (ow * 2 +\
+    \ kw)];\n                if (val > m) m = val;\n            }\n        }\n   \
+    \     Y[((n * C + c) * H_out + oh) * W_out + ow] = m;\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({H_out} * {W_out} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '{C_out}'
+    z: '{N}'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

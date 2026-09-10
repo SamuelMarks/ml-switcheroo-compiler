@@ -92,3 +92,82 @@ def test_lift_state_pass() -> None:
     graph = IRGraph(name="test", nodes={"n1": IRNode(id="n1", op_type="ReadVariable", inputs=[])}, outputs=[])
     assert lift_state_pass(graph) is True
     assert graph.nodes["n1"].op_type == "Input"
+
+
+def test_lift_module_state_and_functionalize() -> None:
+    """Test lift_module_state and lift_state on stateful modules."""
+    import numpy as np
+
+    from ml_switcheroo_compiler.transforms.passes.lift_state import lift_module_state, lift_state
+
+    # 1. Custom module with named_parameters
+    class MockNamedParamModule:
+        def __init__(self) -> None:
+            self.w = np.array([[1.0, 2.0]], dtype=np.float32)
+            self.b = np.array([0.5], dtype=np.float32)
+
+        def named_parameters(self):
+            return [("w", self.w), ("b", self.b)]
+
+        def __call__(self, x: np.ndarray) -> np.ndarray:
+            return x @ self.w.T + self.b
+
+    mod = MockNamedParamModule()
+    params, g = lift_module_state(mod)
+    assert "w" in params
+    assert "b" in params
+    assert "param_w" in g.nodes
+    assert g.nodes["param_w"].attributes["is_state"] is True
+
+    # Test functional execution via lift_state
+    params_lifted, pure_fn = lift_state(mod)
+    x = np.array([[2.0, 3.0]], dtype=np.float32)
+    out, updated_params = pure_fn(params_lifted, x)
+    expected = x @ mod.w.T + mod.b
+    assert np.allclose(out, expected)
+
+    # 2. Module with state_dict
+    class MockStateDictModule:
+        def __init__(self) -> None:
+            self.weight = np.ones((2, 2), dtype=np.float32)
+
+        def state_dict(self):
+            return {"weight": self.weight}
+
+        def forward(self, x: np.ndarray) -> np.ndarray:
+            return x @ self.weight
+
+    mod2 = MockStateDictModule()
+    params2, g2 = lift_module_state(mod2)
+    assert "weight" in params2
+    _, pure_fn2 = lift_state(mod2)
+    out2, _ = pure_fn2(params2, x)
+    assert out2 is not None
+
+    # 3. Simple module relying on __dict__ with private and callable members
+    class SimpleStateful:
+        def __init__(self) -> None:
+            self.param = 42
+            self._private = 100
+
+        def helper(self) -> None:
+            pass
+
+    mod3 = SimpleStateful()
+    params3, g3 = lift_module_state(mod3)
+    assert "param" in params3
+    assert "_private" not in params3
+    assert "helper" not in params3
+
+    # Pass an extra param that module does not have yet to exercise line 197->199
+    _, pure_fn3 = lift_state(mod3)
+    out3, updated3 = pure_fn3({"param": 99, "new_param": 123})
+    assert out3 is None
+    assert updated3["param"] == 99
+
+    # 4. Object without __dict__, named_parameters, or state_dict (e.g. using __slots__)
+    class SlotsModule:
+        __slots__ = ()
+
+    params4, g4 = lift_module_state(SlotsModule())
+    assert params4 == {}

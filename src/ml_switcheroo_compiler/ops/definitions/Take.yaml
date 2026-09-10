@@ -1,18 +1,18 @@
 operation: take
 description: The Take operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: indices
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: indices
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[int]
 variants:
   cupy:
     eager: cp.take
@@ -30,11 +30,6 @@ variants:
     eager: jax.numpy.take
   mlx:
     eager: mlx.core.take
-  edge_onnx:
-    generator: take
-  edge_stablehlo:
-
-    opcode: stablehlo.take
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

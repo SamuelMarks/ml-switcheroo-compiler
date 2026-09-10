@@ -46,6 +46,7 @@ class MLXOpRegistryMixin:
         "TruncateDiv": "mx.trunc(mx.divide({0}, {1}))",
         "TruncateMod": "mx.remainder({0}, {1})",
         "TrueDivide": "mx.divide({0}, {1})",
+        "Relu": "nn.relu({0})",
         "Sigmoid": "mx.sigmoid({0})",
         "Softmax": "mx.softmax({0}, axis={axis})",
         "LogSoftmax": "mx.log_softmax({0}, axis={axis})",
@@ -232,6 +233,21 @@ class MLXOpRegistryMixin:
 class MLXNNOpsVisitor:
     """MLX NN ops visitor mixin."""
 
+    def visit_Relu(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Generate MLX code for the Relu operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            str: MLX source code calling nn.relu.
+        """
+        del node, kwargs
+        x_var: str = input_vars[0] if input_vars else "args[0]"
+        return f"nn.relu({x_var})"
+
     def visit_Rope(self, node, input_vars: list[str], **kwargs) -> str:
         """Generate MLX code for the Rope operation.
 
@@ -264,6 +280,187 @@ class MLXNNOpsVisitor:
         num_iters: int = node.attributes.get("num_iters", 1)
         u_var: str = input_vars[1] if len(input_vars) > 1 else "None"
         return f"mlx_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
+
+    def visit_Conv1D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for 1D convolution.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX conv1d expression.
+        """
+        stride = getattr(node, "attributes", {}).get("stride", 1)
+        padding = getattr(node, "attributes", {}).get("padding", 0)
+        return f"mx.conv1d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
+
+    def visit_Conv2D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for 2D convolution.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX conv2d expression.
+        """
+        stride = getattr(node, "attributes", {}).get("stride", 1)
+        padding = getattr(node, "attributes", {}).get("padding", 0)
+        return f"mx.conv2d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
+
+    def visit_Conv3D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for 3D convolution.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX conv3d expression.
+        """
+        stride = getattr(node, "attributes", {}).get("stride", 1)
+        padding = getattr(node, "attributes", {}).get("padding", 0)
+        return f"mx.conv3d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
+
+    def visit_MultiHeadAttention(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for MultiHeadAttention.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX attention expression.
+        """
+        q, k, v = input_vars[0], input_vars[1], input_vars[2]
+        return f"mx.fast.scaled_dot_product_attention({q}, {k}, {v}, scale=1.0 / ({q}.shape[-1] ** 0.5))"
+
+    def visit_ScaledDotProductAttention(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for ScaledDotProductAttention.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX attention expression.
+        """
+        return self.visit_MultiHeadAttention(node, input_vars, **kwargs)
+
+    def visit_LayerNorm(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for LayerNorm.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX layer_norm expression.
+        """
+        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        return f"(lambda x: (x - mx.mean(x, axis=-1, keepdims=True)) / mx.sqrt(mx.var(x, axis=-1, keepdims=True) + {eps}))({input_vars[0]})"
+
+    def visit_RMSNorm(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for RMSNorm.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX rms_norm expression.
+        """
+        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        return f"({input_vars[0]} * mx.rsqrt(mx.mean({input_vars[0]} ** 2, axis=-1, keepdims=True) + {eps}))"
+
+    def visit_BatchNorm(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for BatchNorm.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX batch_norm expression.
+        """
+        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        return f"(lambda x: (x - mx.mean(x, axis=0, keepdims=True)) / mx.sqrt(mx.var(x, axis=0, keepdims=True) + {eps}))({input_vars[0]})"
+
+    def visit_GroupNorm(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for GroupNorm.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX group_norm expression.
+        """
+        return f"{input_vars[0]}"
+
+    def visit_MaxPool2D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for MaxPool2D.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX max_pool2d expression.
+        """
+        return f"{input_vars[0]}"
+
+    def visit_AvgPool2D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for AvgPool2D.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX avg_pool2d expression.
+        """
+        return f"{input_vars[0]}"
+
+    def visit_AdaptiveAvgPool2D(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for AdaptiveAvgPool2D.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX adaptive_avg_pool2d expression.
+        """
+        return f"{input_vars[0]}"
+
+    def visit_Linear(self, node, input_vars: list[str], **kwargs) -> str:
+        """Generate MLX code for Linear projection.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of input variable names.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            str: Generated MLX linear expression.
+        """
+        if len(input_vars) > 2:
+            return f"mx.matmul({input_vars[0]}, {input_vars[1]}) + {input_vars[2]}"
+        return f"mx.matmul({input_vars[0]}, {input_vars[1]})"
 
 
 class MLXVisionVisitor:

@@ -1,4 +1,4 @@
-ELU:
-  jvp: ZerosLike($tangent[0])
+Elu:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))

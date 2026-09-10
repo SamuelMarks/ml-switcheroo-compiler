@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: SparseResetShape
-  edge_stablehlo:
-
-    opcode: stablehlo.sparse_reset_shape
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

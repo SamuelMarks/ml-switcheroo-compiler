@@ -1,0 +1,3 @@
+ResizeBicubic:
+  ast_template: jax.image.resize({0}, shape=({new_height}, {new_width}), method='bicubic')
+  target_api: ''

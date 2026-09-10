@@ -1,0 +1,133 @@
+# Declarative WGSL Shader Templates for WebGPU Compute Pipeline
+
+global_bindings: |
+  @group(0) @binding(0) var<storage, read> buf_in0_f32: array<f32>;
+  @group(0) @binding(1) var<storage, read> buf_in1_f32: array<f32>;
+  @group(0) @binding(2) var<storage, read> buf_in2_f32: array<f32>;
+  @group(0) @binding(3) var<storage, read_write> buf_out_f32: array<f32>;
+
+templates:
+  unary:
+    workgroup_size: [64, 1, 1]
+    workgroup_layout:
+      workgroup_size: [64, 1, 1]
+      max_workgroup_invocations: 256
+    buffer_bindings:
+      - group: 0
+        binding: 0
+        access: "read"
+        dtype: "f32"
+      - group: 0
+        binding: 3
+        access: "read_write"
+        dtype: "f32"
+    memory_alignment:
+      struct_alignment_bytes: 16
+      buffer_binding_alignment_bytes: 256
+      storage_buffer_offset_alignment: 256
+    body: |
+      let idx: u32 = global_id.x;
+      if (idx >= {nelem}u) {{
+          return;
+      }}
+      {out_offset_code}
+      {in0_offset_code}
+      buf_out_f32[out_offset] = {expr};
+
+  binary:
+    workgroup_size: [64, 1, 1]
+    workgroup_layout:
+      workgroup_size: [64, 1, 1]
+      max_workgroup_invocations: 256
+    buffer_bindings:
+      - group: 0
+        binding: 0
+        access: "read"
+        dtype: "f32"
+      - group: 0
+        binding: 1
+        access: "read"
+        dtype: "f32"
+      - group: 0
+        binding: 3
+        access: "read_write"
+        dtype: "f32"
+    memory_alignment:
+      struct_alignment_bytes: 16
+      buffer_binding_alignment_bytes: 256
+      storage_buffer_offset_alignment: 256
+    body: |
+      let idx: u32 = global_id.x;
+      if (idx >= {nelem}u) {{
+          return;
+      }}
+      {out_offset_code}
+      {in0_offset_code}
+      {in1_offset_code}
+      buf_out_f32[out_offset] = {expr};
+
+  reduction:
+    workgroup_size: [64, 1, 1]
+    workgroup_layout:
+      workgroup_size: [64, 1, 1]
+      max_workgroup_invocations: 256
+    body: |
+      if (global_id.x > 0u) {{
+          return;
+      }}
+      {init_code}
+      for (var i: u32 = {start_idx}u; i < {nelem_in}u; i = i + 1u) {{
+          {loop_code}
+      }}
+      {post_loop_code}
+      buf_out_f32[0] = {result_var};
+
+  softmax:
+    workgroup_size: [64, 1, 1]
+    workgroup_layout:
+      workgroup_size: [64, 1, 1]
+      max_workgroup_invocations: 256
+    body: |
+      let row: u32 = global_id.x;
+      if (row >= {M}u) {{
+          return;
+      }}
+      let base: u32 = row * {N}u;
+      var max_val: f32 = -3.402823e+38;
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          max_val = max(max_val, buf_in0_f32[base + j]);
+      }}
+      var sum_exp: f32 = 0.0;
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          sum_exp = sum_exp + exp(buf_in0_f32[base + j] - max_val);
+      }}
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          buf_out_f32[base + j] = exp(buf_in0_f32[base + j] - max_val) / sum_exp;
+      }}
+
+  layer_norm:
+    workgroup_size: [64, 1, 1]
+    workgroup_layout:
+      workgroup_size: [64, 1, 1]
+      max_workgroup_invocations: 256
+    body: |
+      let row: u32 = global_id.x;
+      if (row >= {M}u) {{
+          return;
+      }}
+      let base: u32 = row * {N}u;
+      var mean: f32 = 0.0;
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          mean = mean + buf_in0_f32[base + j];
+      }}
+      mean = mean / f32({N});
+      var variance: f32 = 0.0;
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          let diff = buf_in0_f32[base + j] - mean;
+          variance = variance + diff * diff;
+      }}
+      variance = variance / f32({N});
+      let inv_std: f32 = 1.0 / sqrt(variance + 1e-5);
+      for (var j: u32 = 0u; j < {N}u; j = j + 1u) {{
+          buf_out_f32[base + j] = (buf_in0_f32[base + j] - mean) * inv_std;
+      }}

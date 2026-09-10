@@ -1,2 +1,2 @@
 Xlog1py:
-  target_api: np.xlog1py
+  target_api: custom_op

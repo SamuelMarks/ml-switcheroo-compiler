@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.autocastincrementnesting
   mlx:
     eager: mlx.core.autocastincrementnesting
-  edge_onnx:
-    generator: AutocastIncrementNesting
-  edge_stablehlo:
-
-    opcode: stablehlo.autocast_increment_nesting
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

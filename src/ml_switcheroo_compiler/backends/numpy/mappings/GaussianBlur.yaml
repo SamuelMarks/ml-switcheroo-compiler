@@ -1,0 +1,3 @@
+GaussianBlur:
+  ast_template: np_gaussian_blur({0}, {kernel_size}, {sigma}, '{padding}', '{data_format}')
+  target_api: ''

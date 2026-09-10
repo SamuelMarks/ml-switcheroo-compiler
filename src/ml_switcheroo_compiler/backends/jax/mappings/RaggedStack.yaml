@@ -1,2 +1,2 @@
 RaggedStack:
-  target_api: jax.numpy.raggedstack
+  target_api: custom_op

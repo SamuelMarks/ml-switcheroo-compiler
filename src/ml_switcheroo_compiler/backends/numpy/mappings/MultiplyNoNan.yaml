@@ -1,2 +1,2 @@
 MultiplyNoNan:
-  target_api: np.multiplynonan
+  target_api: custom_op

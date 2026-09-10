@@ -345,19 +345,18 @@ def dsplit(ary, indices_or_sections: int | Sequence[int]):
 class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
-    def infer_shape(self, x, output_index: int = 0, **kwargs) -> Sequence[int]:
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape for Unstack.
 
         Args:
-            x (Any): The x parameter.
-            output_index (int): The output_index parameter.
-            **kwargs (Any): Keyword args.
+            *args (Any): Positional arguments (e.g. input tensor).
+            **kwargs (Any): Keyword arguments.
 
         Returns:
-            tuple: Result.
+            tuple[int, ...]: Inferred shape.
         """
-        # We don't have enough info here if x is a node, but we can just return None
-        return getattr(x, "shape", ())
+        x = args[0] if args else None
+        return tuple(getattr(x, "shape", ()))
 
 
 old_split = split

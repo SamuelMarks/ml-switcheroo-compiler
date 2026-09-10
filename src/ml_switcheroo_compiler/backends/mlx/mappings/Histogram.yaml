@@ -1,2 +1,2 @@
 Histogram:
-  target_api: '''mx.histogram({0})'''
+  target_api: custom_op

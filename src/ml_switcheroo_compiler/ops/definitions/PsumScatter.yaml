@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.psumscatter
   mlx:
     eager: mlx.core.psumscatter
-  edge_onnx:
-    generator: PsumScatter
-  edge_stablehlo:
-
-    opcode: stablehlo.psum_scatter
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

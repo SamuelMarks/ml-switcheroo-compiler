@@ -1,22 +1,22 @@
 operation: AsStrided
 description: Create a view of an existing tensor with specified size, stride and storage_offset.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: size
-    type: Sequence[int]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: stride
-    type: Sequence[int]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: storage_offset
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: size
+  type: Sequence[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stride
+  type: Sequence[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: storage_offset
+  type: int
 variants:
   numpy:
     eager: numpy.asstrided
@@ -32,11 +32,6 @@ variants:
     eager: jax.numpy.asstrided
   mlx:
     eager: mlx.core.asstrided
-  edge_onnx:
-    generator: AsStrided
-  edge_stablehlo:
-
-    opcode: stablehlo.as_strided
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

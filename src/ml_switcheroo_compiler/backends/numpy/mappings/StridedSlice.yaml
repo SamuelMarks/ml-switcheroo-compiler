@@ -1,2 +1,2 @@
 StridedSlice:
-  target_api: np.stridedslice
+  target_api: custom_op

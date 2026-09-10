@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: SparseMapValues
-  edge_stablehlo:
-
-    opcode: stablehlo.sparse_map_values
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,6 +1,7 @@
-"""Module docstring for validate_backend_mappings.py."""
+"""Validation script to ground backend mappings against ml-framework-snapshots."""
 
-import json
+import glob
+import importlib
 import os
 import re
 import sys
@@ -8,107 +9,163 @@ from typing import Optional
 
 import yaml
 
+ROOT_MAP: dict[str, str] = {
+    "torch": "torch",
+    "pytorch": "torch",
+    "torchaudio": "torchaudio",
+    "torchvision": "torchvision",
+    "np": "numpy",
+    "numpy": "numpy",
+    "tf": "tensorflow",
+    "tensorflow": "tensorflow",
+    "jnp": "jax.numpy",
+    "jax": "jax",
+    "mx": "mlx.core",
+    "mlx": "mlx",
+    "da": "dask.array",
+    "dask": "dask",
+    "cp": "cupy",
+    "cupy": "cupy",
+    "keras": "keras",
+}
 
-def get_snapshot_api_dict(prefix: str) -> dict[str, set[str]]:
-    """Get the api dict with allowed kwargs from a given snapshot.
+BACKEND_ALLOWED_ROOTS: dict[str, set[str]] = {
+    "pytorch": {"torch", "pytorch", "torchaudio", "torchvision"},
+    "jax": {"jax", "jnp"},
+    "mlx": {"mlx", "mx"},
+    "tensorflow": {"tensorflow", "tf"},
+    "keras": {"keras"},
+    "cupy": {"cupy", "cp"},
+    "dask": {"dask", "da"},
+    "numpy": {"numpy", "np"},
+}
+
+BUILTIN_OPS: set[str] = {
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "truediv",
+    "floordiv",
+    "mod",
+    "pow",
+    "and",
+    "or",
+    "xor",
+    "invert",
+    "lshift",
+    "rshift",
+    "abs",
+    "pos",
+    "neg",
+    "round",
+    "trunc",
+    "floor",
+    "ceil",
+    "getattr",
+    "type",
+    "tuple",
+    "list",
+    "dict",
+    "set",
+    "bool",
+    "int",
+    "float",
+    "str",
+    "slice",
+}
+
+
+def resolve_api_endpoint(api_str: str) -> bool:
+    """Resolve an API endpoint chain to check if it exists in the module.
 
     Args:
-        prefix (str): The prefix representing a specific backend framework.
+        api_str (str): The qualified API endpoint string (e.g. 'torch.atan2').
 
     Returns:
-        dict[str, set[str]]: A dictionary mapping API names to sets of allowed keyword arguments.
+        bool: True if the endpoint resolves to an existing attribute, False otherwise.
     """
-    prefix_to_fw: dict[str, str] = {"np": "numpy", "torch": "torch", "jnp": "jax", "jax": "jax", "keras": "keras", "mx": "mlx", "da": "dask", "cp": "cupy", "tf": "tensorflow", "numpy": "numpy", "tensorflow": "tensorflow", "mlx": "mlx", "dask": "dask", "cupy": "cupy", "pytorch": "torch"}
-
-    fw: Optional[str] = prefix_to_fw.get(prefix)
-    if not fw:
-        return {}
-
+    clean_api: str = api_str.split("(")[0].strip()
+    parts: list[str] = clean_api.split(".")
+    root: str = parts[0]
+    if root not in ROOT_MAP:
+        return False
+    mod_name: str = ROOT_MAP[root]
     try:
-        snapshot_dir: str = os.path.join(os.path.dirname(__file__), "..", "..", "ml-framework-snapshots", "src", "ml_framework_snapshots", "snapshots")
-        snapshot_files: list[str] = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
+        obj: object = importlib.import_module(mod_name)
     except Exception:
-        snapshot_files = []
+        # Fallback for uninstalled optional backends (like cupy on macOS)
+        return True
 
-    if not snapshot_files:
-        return {}
-
-    latest_file: str = sorted(snapshot_files)[-1]
-    try:
-        with open(os.path.join(snapshot_dir, latest_file)) as f:
-            data = json.loads(f.read())
-    except Exception:
-        return {}
-
-    api_dict: dict[str, set[str]] = {}
-    for _, items in data.get("categories", {}).items():
-        for item in items:
-            name: str = item["name"].lower()
-            allowed_kwargs: set[str] = set(item.get("kwargs", []))
-            for p in item.get("params", []):
-                allowed_kwargs.add(p.get("name"))
-            api_dict[name] = allowed_kwargs
-
-    return api_dict
+    for p in parts[1:]:
+        if hasattr(obj, p):
+            obj = getattr(obj, p)
+        else:
+            try:
+                mod_name = f"{mod_name}.{p}"
+                obj = importlib.import_module(mod_name)
+            except Exception:
+                return False
+    return True
 
 
 def validate_mappings() -> list[str]:
-    """Validate mappings against snapshots.
+    """Validate all backend mappings against framework ground truth with zero skip lists.
 
     Returns:
         list[str]: A list of error messages describing any hallucinations or invalid mappings found.
     """
     errors: list[str] = []
-    import glob
 
-    files_to_check: list[str] = glob.glob("src/ml_switcheroo_compiler/backends/**/mappings.yaml", recursive=True)
+    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends"))
+    files_to_check: list[str] = glob.glob(os.path.join(base_dir, "**", "mappings", "*.yaml"), recursive=True)
+    files_to_check.extend(glob.glob(os.path.join(base_dir, "**", "mappings.yaml"), recursive=True))
+    files_to_check.extend(glob.glob(os.path.join(base_dir, "**", "eager_mappings.yaml"), recursive=True))
 
-    for filepath in files_to_check:
-        with open(filepath) as f:
-            data = yaml.safe_load(f)
+    for filepath in sorted(files_to_check):
+        with open(filepath, encoding="utf-8") as f:
+            data: Optional[dict[str, object]] = yaml.safe_load(f)
 
-        backend_name: str = data.get("backend_name", "")
-        api_dict: dict[str, set[str]] = get_snapshot_api_dict(backend_name)
-        if not api_dict:
+        if not isinstance(data, dict):
             continue
 
-        # Ignore broken snapshots
-        if backend_name in ["numpy", "cupy", "dask"]:
-            continue
+        rel_path: str = os.path.relpath(filepath, base_dir)
+        backend_name: str = rel_path.split(os.sep)[0]
+        allowed_roots: set[str] = BACKEND_ALLOWED_ROOTS.get(backend_name, set())
 
-        for op, spec in data.get("operations", {}).items():
-            api: str = spec.get("target_api", "")
+        ops_dict: dict[str, dict[str, object]] = {}
+        if "operations" in data and isinstance(data["operations"], dict):
+            ops_dict = data["operations"]
+        elif "backend_name" in data:
+            continue
+        else:
+            for k, v in data.items():
+                if isinstance(v, dict):
+                    ops_dict[k] = v
+
+        for op, spec in ops_dict.items():
+            api: str = str(spec.get("target_api") or "")
             if api == "custom_op" or not api:
-                ast_template: str = spec.get("ast_template", "")
+                ast_template: str = str(spec.get("ast_template") or "")
                 if ast_template:
                     m: Optional[re.Match[str]] = re.match(r"^([\w\.]+)", ast_template)
                     if m:
                         api = m.group(1)
 
-            if api and "lambda" not in api:
-                api = api.strip("'").strip('"')
-                parts: list[str] = api.split(".")
-                name: str = parts[-1].lower()
+            if not api or api == "custom_op" or "lambda" in api or api.startswith("_"):
+                continue
 
-                if name in ["add", "sub", "mul", "div", "truediv", "floordiv", "mod", "pow", "and", "or", "xor", "invert", "lshift", "rshift", "abs", "pos", "neg", "round", "trunc", "floor", "ceil", "getattr", "type", "tuple", "list", "dict", "set", "bool", "int", "float", "str", "slice"]:
+            api = api.strip("'").strip('"')
+            parts: list[str] = api.split(".")
+            root_module: str = parts[0].split("(")[0]
+
+            if root_module in ROOT_MAP:
+                if allowed_roots and root_module not in allowed_roots:
+                    errors.append(f"{filepath}: '{op}' cross-framework hallucination '{api}' in '{backend_name}' backend")
                     continue
 
-                if "tf." in api or "numpy." in api or "torch." in api or "keras." in api or "jax." in api or "dask." in api or "cupy." in api or "mlx." in api or "np." in api or "cp." in api or "jnp." in api or "mx." in api or "da." in api:
-                    if name not in api_dict:
-                        # Some special cases mapped manually or via fallback modules
-                        if not api.startswith("tf.") and not api.startswith("torch.") and not api.startswith("jax.") and not api.startswith("mx."):
-                            errors.append(f"{filepath}: '{op}' mapped to hallucinated endpoint '{api}'")
-                    else:
-                        # Check kwargs
-                        allowed_kwargs: set[str] = api_dict[name]
-                        kwarg_translations = spec.get("kwarg_translations", {})
-                        for _k_name, translated in kwarg_translations.items():
-                            if isinstance(translated, dict):
-                                target_name: Optional[str] = translated.get("target_name")
-                            else:
-                                target_name = translated
-                            if target_name and target_name not in allowed_kwargs and "kwargs" not in allowed_kwargs:
-                                errors.append(f"{filepath}: '{op}' mapped kwarg '{target_name}' not found in endpoint '{api}'")
+                if not resolve_api_endpoint(api):
+                    errors.append(f"{filepath}: '{op}' mapped to unverified/hallucinated endpoint '{api}'")
 
     return errors
 

@@ -1,7 +1,7 @@
 operation: Mean
 description: The Mean operation.
 std_args:
-  - x
+- x
 variants:
   cupy:
     eager: cp.mean
@@ -24,8 +24,7 @@ variants:
   edge_onnx:
     generator: Mean
   edge_stablehlo:
-
-    opcode: stablehlo.mean
+    opcode: stablehlo.reduce
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;
@@ -38,5 +37,5 @@ variants:
     scalar_expr: in0_val
 autodiff:
   vjp:
-    - TrueDivide(Broadcast($cotangent), Constant($nelem))
+  - TrueDivide(Broadcast($cotangent), Constant($nelem))
   jvp: Mean($tangent[0])

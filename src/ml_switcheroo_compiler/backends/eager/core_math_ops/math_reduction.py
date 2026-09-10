@@ -27,6 +27,141 @@ def _psum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return backend_module.array(args[0])
 
 
+@global_eager_registry.register("ReduceSum")
+def _reduce_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate reduce sum.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (axis, keepdims).
+
+    Returns:
+        Any: Reduced tensor.
+    """
+    axis = kwargs.get("axis", None)
+    keepdims = kwargs.get("keepdims", False)
+    if hasattr(backend_module, "sum"):
+        return backend_module.sum(args[0], axis=axis, keepdims=keepdims)
+    return args[0]
+
+
+@global_eager_registry.register("ReduceMean")
+def _reduce_mean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate reduce mean.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (axis, keepdims).
+
+    Returns:
+        Any: Reduced tensor.
+    """
+    axis = kwargs.get("axis", None)
+    keepdims = kwargs.get("keepdims", False)
+    if hasattr(backend_module, "mean"):
+        return backend_module.mean(args[0], axis=axis, keepdims=keepdims)
+    return args[0]
+
+
+@global_eager_registry.register("ReduceProd")
+def _reduce_prod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate reduce product.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (axis, keepdims).
+
+    Returns:
+        Any: Reduced tensor.
+    """
+    axis = kwargs.get("axis", None)
+    keepdims = kwargs.get("keepdims", False)
+    if hasattr(backend_module, "prod"):
+        return backend_module.prod(args[0], axis=axis, keepdims=keepdims)
+    return args[0]
+
+
+@global_eager_registry.register("ReduceMax")
+def _reduce_max(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate reduce max.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (axis, keepdims).
+
+    Returns:
+        Any: Reduced tensor.
+    """
+    axis = kwargs.get("axis", None)
+    keepdims = kwargs.get("keepdims", False)
+    if hasattr(backend_module, "max"):
+        return backend_module.max(args[0], axis=axis, keepdims=keepdims)
+    return args[0]
+
+
+@global_eager_registry.register("ReduceMin")
+def _reduce_min(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate reduce min.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (axis, keepdims).
+
+    Returns:
+        Any: Reduced tensor.
+    """
+    axis = kwargs.get("axis", None)
+    keepdims = kwargs.get("keepdims", False)
+    if hasattr(backend_module, "min"):
+        return backend_module.min(args[0], axis=axis, keepdims=keepdims)
+    return args[0]
+
+
+@global_eager_registry.register("Norm")
+def _norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Frobenius or Euclidean norm.
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Keyword arguments (ord, axis, keepdims).
+
+    Returns:
+        Any: Norm result.
+    """
+    if hasattr(backend_module, "linalg") and hasattr(backend_module.linalg, "norm"):
+        return backend_module.linalg.norm(*args, **kwargs)
+    return backend_module.sqrt(backend_module.sum(args[0] ** 2))
+
+
+@global_eager_registry.register("Numel")
+def _numel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate numel (total number of elements).
+
+    Args:
+        backend_module: Backend execution module.
+        *args: Positional arguments (input tensor).
+        **kwargs: Optional keyword arguments.
+
+    Returns:
+        Any: Total count of elements.
+    """
+    del kwargs
+    x = args[0]
+    if hasattr(x, "size"):
+        return float(x.size)
+    if hasattr(x, "numel"):
+        return float(x.numel())
+    import numpy as np
+
+    return float(np.asarray(x).size)
+
+
 @global_eager_registry.register("Pmean")
 def _pmean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pmean operation.
@@ -40,6 +175,65 @@ def _pmean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             object: Result.
     """
     return backend_module.array(args[0])
+
+
+@global_eager_registry.register("BroadcastReduce")
+def _broadcast_reduce(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Reduce cotangent tensor along dimensions that were broadcast relative to target.
+
+    Args:
+        backend_module: The backend module.
+        *args: Positional args (cotangent, target).
+        **kwargs: Keyword args.
+
+    Returns:
+        Any: Resulting reduced tensor.
+    """
+    del kwargs
+    if len(args) < 2:
+        return args[0] if args else None
+    cot = args[0]
+    tgt = args[1]
+    cot_shape = getattr(cot, "shape", ())
+    tgt_shape = getattr(tgt, "shape", ())
+    if cot_shape == tgt_shape:
+        return cot
+    cot_ndim = len(cot_shape)
+    tgt_ndim = len(tgt_shape)
+    res = cot
+    if cot_ndim > tgt_ndim:
+        axes_to_sum = tuple(range(cot_ndim - tgt_ndim))
+        res = backend_module.sum(res, axis=axes_to_sum)
+    cot_shape_now = getattr(res, "shape", ())
+    for i, (cd, td) in enumerate(zip(cot_shape_now, tgt_shape)):
+        if td == 1 and cd > 1:
+            res = backend_module.sum(res, axis=i, keepdims=True)
+    return res
+
+
+@global_eager_registry.register("BroadcastLike")
+def _broadcast_like(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Broadcast source tensor to match the shape of target tensor.
+
+    Args:
+        backend_module: The backend module.
+        *args: Positional args (source, target).
+        **kwargs: Keyword args.
+
+    Returns:
+        Any: Resulting broadcasted tensor.
+    """
+    del kwargs
+    if len(args) < 2:
+        return args[0] if args else None
+    src = args[0]
+    tgt = args[1]
+    tgt_shape = getattr(tgt, "shape", ())
+    if getattr(src, "shape", ()) == tgt_shape:
+        return src
+    if hasattr(backend_module, "broadcast_to"):
+        return backend_module.broadcast_to(src, tgt_shape)
+    return src
 
 
 @global_eager_registry.register("SegmentSum")

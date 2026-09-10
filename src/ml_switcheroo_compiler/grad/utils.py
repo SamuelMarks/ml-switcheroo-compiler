@@ -167,8 +167,8 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
     all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
-        if hasattr(t, "data") and hasattr(cast(BackendArray, t).data, "id"):
-            node_id = cast(BackendArray, cast(BackendArray, t).data).id
+        if hasattr(t, "data") and hasattr(t.data, "id"):
+            node_id = getattr(t.data, "id", "")
             if node_id in getattr(graph, "nodes", {}):
                 val = _get_concrete_val(t)
                 if val is not None:
@@ -253,8 +253,17 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
     """
     from ml_switcheroo_compiler.core.tensor import Tensor
 
+    if isinstance(val, Tensor):
+        return val
+
     if isinstance(orig, Tensor):
+        import uuid
+
+        from ml_switcheroo_ir import LogicalNode
+
         from ml_switcheroo_compiler.core.device import Device
+        from ml_switcheroo_compiler.tracing.state import global_tracing_state
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
         arr = cast(BackendArray, get_active_backend().asarray(val))
         dt = DType.Float32
@@ -264,6 +273,7 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
             dt = DType.Int32
         elif str(arr.dtype) == "bool":
             dt = DType.Bool
+
         return Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu")))
     return val
 
@@ -283,6 +293,14 @@ def _compute_grad_and_value(
     Returns:
         tuple: Result.
     """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
     from .jvp_vjp import vjp
 
     val, vjp_fn = vjp(fun, *args, has_aux=getattr(options, "has_aux", False))
@@ -292,8 +310,16 @@ def _compute_grad_and_value(
     else:
         primal_val = val
 
-    primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
-    cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
+    if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
+        c_id = f"cot_{uuid.uuid4().hex[:6]}"
+        p_shape = getattr(primal_val, "shape", ())
+        c_node = LogicalNode(id=c_id, op_type="Constant", inputs=[], attributes={"value": 1.0}, shape_metadata=p_shape)
+        global_tracing_state.add_node(c_node)
+        proxy = ProxyTensor(id=c_id, shape=p_shape, dtype="float32")
+        cotangent = Tensor(proxy, TensorConfig(p_shape, DType.Float32, Device("cpu")))
+    else:
+        primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
+        cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
     grads = vjp_fn(cotangent)
 

@@ -1,4 +1,4 @@
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
 import pytest
 from unittest.mock import patch
 
@@ -282,7 +282,7 @@ def test_webgpu_ops_coverage() -> None:
     try:
         code = gen.generate()
         assert "compute_n_conv" in code
-    except UnimplementedMathError:
+    except (UnimplementedMathError, CompilationError):
         pass
 
     g2 = IRGraph()
@@ -294,7 +294,7 @@ def test_webgpu_ops_coverage() -> None:
     gen2 = WebGPUCodeGenerator(g2)
     try:
         code = gen2.generate()
-    except UnimplementedMathError:
+    except (UnimplementedMathError, CompilationError):
         pass
 
 

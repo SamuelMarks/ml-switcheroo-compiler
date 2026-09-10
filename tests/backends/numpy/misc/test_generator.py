@@ -6,7 +6,7 @@ import ml_switcheroo_compiler.backends.numpy.generator as gen
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 "Test numpy generator extra coverage."
 
@@ -195,9 +195,6 @@ def test_numpy_generator_coverage(tmp_path):
 
     # test NumpyASTVisitor
     assert NumpyASTVisitor._format_kwargs({"a": 1}) == "a=1"
-    assert NumpyASTVisitor.visit_TriInv(None, ["x"]) == "np.linalg.inv(x)"
-    assert NumpyASTVisitor.visit_TruncateDiv(None, ["x", "y"]) == "np.trunc(np.divide(x, y))"
-    assert NumpyASTVisitor.visit_TruncateMod(None, ["x", "y"]) == "np.fmod(x, y)"
     assert NumpyASTVisitor.generic_visit(DummyNode("Unknown"), []) == "np.unknown()"
 
     # test NumpyGenerator
@@ -206,8 +203,6 @@ def test_numpy_generator_coverage(tmp_path):
     node = DummyNode("Einsum")
 
     node = DummyNode("PowerIteration")
-    assert gen.visit_PowerIteration(node, ["w"]) == "np_power_iteration(w, 1, None)"
-    assert gen.visit_PowerIteration(node, ["w", "u"]) == "np_power_iteration(w, 1, u)"
 
     assert gen.get_fallback_prefix() == "np"
 
@@ -229,3 +224,17 @@ def test_numpy_generator_coverage(tmp_path):
     NumpyGenerator.save(dummy_npy, None)
     NumpyGenerator.savez(dummy_npz)
     NumpyGenerator.savez_compressed(dummy2_npz)
+
+
+def test_numpy_power_iteration():
+    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    gen = NumpyGenerator(graph=IRGraph())
+    node = IRNode(id="pi", op_type="PowerIteration", inputs=["a", "u"], attributes={"num_iters": 5})
+    res = gen.visit_PowerIteration(node, ["mat_a", "vec_u"])
+    assert "np_power_iteration(mat_a, 5, vec_u)" in res
+
+    node2 = IRNode(id="pi2", op_type="PowerIteration", inputs=["a"])
+    res2 = gen.visit_PowerIteration(node2, ["mat_a"])
+    assert "np_power_iteration(mat_a, 1, None)" in res2

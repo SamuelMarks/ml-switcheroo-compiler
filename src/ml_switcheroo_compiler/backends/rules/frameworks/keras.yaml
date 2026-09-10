@@ -1,0 +1,16 @@
+target_module: keras
+module_path:
+  - keras
+  - ops
+kwarg_map:
+  dim: axis
+  keepdim: keepdims
+class_bases:
+  Model:
+    - keras
+    - Model
+method_map:
+  compute: call
+  forward: call
+  call: call
+broadcast_method: broadcast_to

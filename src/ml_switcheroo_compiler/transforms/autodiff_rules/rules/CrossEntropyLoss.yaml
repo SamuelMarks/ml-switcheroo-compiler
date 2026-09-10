@@ -1,4 +1,6 @@
 CrossEntropyLoss:
-  jvp: ZerosLike($tangent[0])
+  jvp: ReduceMean(Mul(Sub(Softmax($input[0]), $input[1]), $tangent[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Div(Sub(Softmax($input[0]), $input[1]), Cast(Numel($input[0]),
+    Constant(1.0))))
+  - Mul($cotangent, Neg(LogSoftmax($input[0])))

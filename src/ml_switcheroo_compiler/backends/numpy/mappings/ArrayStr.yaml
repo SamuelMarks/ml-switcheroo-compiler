@@ -1,2 +1,2 @@
 ArrayStr:
-  target_api: np.arraystr
+  target_api: custom_op

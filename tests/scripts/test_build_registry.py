@@ -25,10 +25,15 @@ def test_build_registry_multi_op(tmp_path: Path) -> None:
     with open(def_dir / "a_multi.yaml", "w") as f:
         yaml.dump(data_multi, f)
 
-    # 2. Single-op file with "operation" key
-    data_single = {"operation": "DummyOp3", "signature": "(z) -> z"}
+    # 2. Single-op file with "operation" key and aliases
+    data_single = {"operation": "DummyOp3", "signature": "(z) -> z", "aliases": ["DummyAlias1"]}
     with open(def_dir / "b_single.yaml", "w") as f:
         yaml.dump(data_single, f)
+
+    # 2b. Single-op file without aliases key
+    data_no_aliases = {"operation": "DummyOpNoAliases", "signature": "(n) -> n"}
+    with open(def_dir / "b_no_aliases.yaml", "w") as f:
+        yaml.dump(data_no_aliases, f)
 
     # 3. File with non-dict inner data to test branch `if isinstance(op_info, dict):`
     data_invalid = {"DummyOp4": "not a dict"}
@@ -68,4 +73,4 @@ def test_build_registry_main(tmp_path: Path) -> None:
         # We patch os.listdir to return empty, so it does no work.
         with patch("os.listdir", return_value=[]):
             with patch("builtins.open", mock_open()):
-                runpy.run_path("scripts/build_registry.py", run_name="__main__")
+                runpy.run_module("scripts.build_registry", run_name="__main__")

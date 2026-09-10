@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.isin
   mlx:
     eager: mlx.core.isin
-  edge_onnx:
-    generator: isin
-  edge_stablehlo:
-
-    opcode: stablehlo.isin
   edge_wgsl:
     template: binary
     expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)

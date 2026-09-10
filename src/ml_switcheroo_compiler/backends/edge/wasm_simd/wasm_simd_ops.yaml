@@ -1,0 +1,198 @@
+# WASM SIMD Operation Mappings and Vector Intrinsics Specification
+# Maps IR operations to WebAssembly v128 vector intrinsics (wasm_simd128.h) and WASM binary opcodes.
+
+version: "1.0"
+simd_lane_width_bytes: 16
+
+types:
+  f32:
+    lanes: 4
+    vector_type: "v128_t"
+    vector_name: "f32x4"
+    valtype_byte: 0x7b # v128 valtype
+  i32:
+    lanes: 4
+    vector_type: "v128_t"
+    vector_name: "i32x4"
+    valtype_byte: 0x7b
+  f64:
+    lanes: 2
+    vector_type: "v128_t"
+    vector_name: "f64x2"
+    valtype_byte: 0x7b
+
+operations:
+  Add:
+    intrinsic: "wasm_f32x4_add"
+    opcode_prefix: 0xfd
+    opcode: 0x4a
+    instruction: "f32x4.add"
+    scalar_fallback: "a + b"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Sub:
+    intrinsic: "wasm_f32x4_sub"
+    opcode_prefix: 0xfd
+    opcode: 0x4b
+    instruction: "f32x4.sub"
+    scalar_fallback: "a - b"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Mul:
+    intrinsic: "wasm_f32x4_mul"
+    opcode_prefix: 0xfd
+    opcode: 0x4c
+    instruction: "f32x4.mul"
+    scalar_fallback: "a * b"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Div:
+    intrinsic: "wasm_f32x4_div"
+    opcode_prefix: 0xfd
+    opcode: 0x4d
+    instruction: "f32x4.div"
+    scalar_fallback: "a / b"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Max:
+    intrinsic: "wasm_f32x4_max"
+    opcode_prefix: 0xfd
+    opcode: 0x4f
+    instruction: "f32x4.max"
+    scalar_fallback: "std::max(a, b)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Min:
+    intrinsic: "wasm_f32x4_min"
+    opcode_prefix: 0xfd
+    opcode: 0x4e
+    instruction: "f32x4.min"
+    scalar_fallback: "std::min(a, b)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  Abs:
+    intrinsic: "wasm_f32x4_abs"
+    opcode_prefix: 0xfd
+    opcode: 0x47
+    instruction: "f32x4.abs"
+    scalar_fallback: "std::abs(a)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+  Neg:
+    intrinsic: "wasm_f32x4_neg"
+    opcode_prefix: 0xfd
+    opcode: 0x48
+    instruction: "f32x4.neg"
+    scalar_fallback: "-a"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+  Sqrt:
+    intrinsic: "wasm_f32x4_sqrt"
+    opcode_prefix: 0xfd
+    opcode: 0x49
+    instruction: "f32x4.sqrt"
+    scalar_fallback: "std::sqrt(a)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+  Ceil:
+    intrinsic: "wasm_f32x4_ceil"
+    opcode_prefix: 0xfd
+    opcode: 0x67
+    instruction: "f32x4.ceil"
+    scalar_fallback: "std::ceil(a)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+  Floor:
+    intrinsic: "wasm_f32x4_floor"
+    opcode_prefix: 0xfd
+    opcode: 0x68
+    instruction: "f32x4.floor"
+    scalar_fallback: "std::floor(a)"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+  MatMul:
+    intrinsic: "wasm_f32x4_fma"
+    opcode_prefix: 0xfd
+    instruction: "f32x4.fma"
+    template: "matmul_2d_f32x4"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 2
+
+  ReduceSum:
+    intrinsic: "wasm_f32x4_add"
+    template: "reducesum_f32x4"
+    unroll_factor: 4
+    element_type: "f32"
+    arity: 1
+
+templates:
+  elementwise_binary:
+    simd_loop: |
+      for (size_t i = 0; i < vec_limit; i += 4) {
+          v128_t va = wasm_v128_load(&buf_{in0}[i]);
+          v128_t vb = wasm_v128_load(&buf_{in1}[i]);
+          v128_t vres = {intrinsic}(va, vb);
+          wasm_v128_store(&buf_{clean_id}[i], vres);
+      }
+    peel_loop: |
+      for (size_t i = vec_limit; i < {nelem}; ++i) {
+          buf_{clean_id}[i] = buf_{in0}[i] {op_symbol} buf_{in1}[i];
+      }
+
+  matmul_2d_f32x4:
+    body: |
+      // 2D Matrix Multiplication with 128-bit vector instructions (f32x4)
+      for (size_t r = 0; r < {M}; ++r) {
+          for (size_t c = 0; c < {N_vec_limit}; c += 4) {
+              v128_t acc = wasm_f32x4_splat(0.0f);
+              for (size_t k = 0; k < {K}; ++k) {
+                  v128_t a_val = wasm_f32x4_splat(buf_{in0}[r * {K} + k]);
+                  v128_t b_val = wasm_v128_load(&buf_{in1}[k * {N} + c]);
+                  acc = wasm_f32x4_add(acc, wasm_f32x4_mul(a_val, b_val));
+              }
+              wasm_v128_store(&buf_{clean_id}[r * {N} + c], acc);
+          }
+          for (size_t c = {N_vec_limit}; c < {N}; ++c) {
+              float acc = 0.0f;
+              for (size_t k = 0; k < {K}; ++k) {
+                  acc += buf_{in0}[r * {K} + k] * buf_{in1}[k * {N} + c];
+              }
+              buf_{clean_id}[r * {N} + c] = acc;
+          }
+      }
+
+  reducesum_f32x4:
+    body: |
+      v128_t acc = wasm_f32x4_splat(0.0f);
+      for (size_t i = 0; i < vec_limit; i += 4) {
+          v128_t v = wasm_v128_load(&buf_{in0}[i]);
+          acc = wasm_f32x4_add(acc, v);
+      }
+      float sum = wasm_f32x4_extract_lane(acc, 0) + wasm_f32x4_extract_lane(acc, 1) + wasm_f32x4_extract_lane(acc, 2) + wasm_f32x4_extract_lane(acc, 3);
+      for (size_t i = vec_limit; i < {nelem}; ++i) {
+          sum += buf_{in0}[i];
+      }
+      buf_{clean_id}[0] = sum;

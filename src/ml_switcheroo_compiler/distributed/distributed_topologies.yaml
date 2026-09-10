@@ -1,0 +1,24 @@
+distributed_topologies:
+  cluster_meshes:
+    mesh_dp_tp:
+      mesh_name: "mesh_dp_tp"
+      shape: [2, 4]
+      axis_names: ["data", "model"]
+      devices: [0, 1, 2, 3, 4, 5, 6, 7]
+      topology: "ring"
+
+  device_topologies:
+    host_0:
+      host_id: "host_0"
+      device_count: 8
+      accelerator_type: "cuda"
+      interconnect_bandwidth_gbps: 900.0
+
+  signaling_topologies:
+    default_webrtc:
+      signaling_url: "ws://localhost:8080"
+      ice_servers:
+        - "stun:stun.l.google.com:19302"
+      high_watermark_bytes: 1048576
+      low_watermark_bytes: 262144
+      chunk_size_bytes: 65536

@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.rnncellresidualwrapper
   mlx:
     eager: mlx.core.rnncellresidualwrapper
-  edge_onnx:
-    generator: RNNCellResidualWrapper
-  edge_stablehlo:
-
-    opcode: stablehlo.r_n_n_cell_residual_wrapper
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -19,11 +19,6 @@ variants:
     eager: jax.numpy.insert
   mlx:
     eager: mlx.core.insert
-  edge_onnx:
-    generator: insert
-  edge_stablehlo:
-
-    opcode: stablehlo.insert
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

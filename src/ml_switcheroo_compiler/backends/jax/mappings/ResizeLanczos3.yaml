@@ -1,0 +1,3 @@
+ResizeLanczos3:
+  ast_template: jax.image.resize({0}, shape=({new_height}, {new_width}), method='lanczos3')
+  target_api: ''

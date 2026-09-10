@@ -1,14 +1,14 @@
 operation: tile
 description: The Tile operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: repetitions
-    type: Tuple[int, Ellipsis]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: repetitions
+  type: Tuple[int, Ellipsis]
 variants:
   cupy:
     eager: cp.tile
@@ -26,11 +26,6 @@ variants:
     eager: jax.numpy.tile
   mlx:
     eager: mlx.core.tile
-  edge_onnx:
-    generator: tile
-  edge_stablehlo:
-
-    opcode: stablehlo.tile
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

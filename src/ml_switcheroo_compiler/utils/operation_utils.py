@@ -29,16 +29,19 @@ class ShapeInferenceStrategy(abc.ABC):
     """Define base class for shape inference strategies."""
 
     @abc.abstractmethod
-    def __call__(self, shape: tuple[int, ...], args, kwargs) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
+    def __call__(self, shape: tuple[int, ...], args, kwargs) -> Optional[Union[tuple[int, ...], list[tuple[int, ...]]]]:
         """Evaluate __call__ operation.
 
         Args:
             shape (tuple): The shape parameter.
             args (tuple): The args parameter.
             kwargs (dict): The kwargs parameter.
-            Union: Result.
+
+        Returns:
+            Optional[Union[tuple[int, ...], list[tuple[int, ...]]]]: Inferred shape or list of shapes.
         """
-        _ = None
+        _ = (shape, args, kwargs)
+        return None
 
 
 class ReshapeInference(ShapeInferenceStrategy):
@@ -283,7 +286,7 @@ SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferenceStrategy] = {
 }
 
 
-def compute_shape_propagation(name: str, shape: tuple[int, ...], args, kwargs) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
+def compute_shape_propagation(name: str, shape: tuple[int, ...], args, kwargs) -> Optional[Union[tuple[int, ...], list[tuple[int, ...]]]]:
     """Evaluate compute_shape_propagation operation.
 
     Args:
@@ -291,6 +294,9 @@ def compute_shape_propagation(name: str, shape: tuple[int, ...], args, kwargs) -
         shape (object): The shape parameter.
         args (object): The args parameter.
         kwargs (object): The kwargs parameter.
+
+    Returns:
+        Optional[Union[tuple[int, ...], list[tuple[int, ...]]]]: Propagated shape.
     """
     strategy = SHAPE_INFERENCE_REGISTRY.get(name)
     if strategy:

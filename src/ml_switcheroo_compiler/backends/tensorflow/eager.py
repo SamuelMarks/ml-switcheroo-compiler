@@ -1,36 +1,60 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Backend utilities."""
+"""Dedicated eager execution handlers and dispatch for the TensorFlow backend."""
+
+import sys
+
+from ml_switcheroo_compiler.backends.mapping_loader import dispatch_eager_op, load_backend_mappings
+from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
-def execute_op(cls: type, op_type: str, *args, **kwargs):
-    """Execute an eager operation using the TensorFlow backend.
+def execute_op(
+    cls: type,
+    op_type: str,
+    *args: object,
+    **kwargs: object,
+) -> object:
+    """Execute operation eagerly on TensorFlow backend with native argument validation.
 
     Args:
-        cls (type): The tensor class.
-        op_type (str): The name of the operation to execute.
-        *args (object): Positional arguments for the operation.
-        **kwargs (object): Keyword arguments for the operation.
+        cls (type): The caller class or context.
+        op_type (str): The name of the operation.
+        *args (object): Positional arguments for the op.
+        **kwargs (object): Keyword arguments for the op.
 
-    Returns: Tensor: The result of the operation execution.
+    Returns:
+        object: Result of native TensorFlow evaluation.
 
     Raises:
-        BackendNotSupportedError: If the operation is not supported by the TensorFlow backend.
+        BackendNotSupportedError: If TensorFlow is unavailable or op is unmapped.
     """
-    import ml_switcheroo_compiler.backends.eager  # noqa: F401
+    tf = sys.modules.get("tensorflow")
+    if tf is None:
+        try:
+            import tensorflow as tf  # noqa: F401
+        except ImportError:
+            tf = None
+
+    if tf is None:
+        raise BackendNotSupportedError("TensorFlow is not installed or available in this environment.")
+
+    # Convert Python sequences to native TensorFlow tensor primitives where possible
+    processed_args: list[object] = []
+    for arg in args:
+        if isinstance(arg, (list, tuple)) and hasattr(tf, "convert_to_tensor"):
+            try:
+                processed_args.append(tf.convert_to_tensor(arg))
+            except Exception:
+                processed_args.append(arg)
+        else:
+            processed_args.append(arg)
+
+    schema = load_backend_mappings("tensorflow")
+    if op_type in schema.operations:
+        return dispatch_eager_op("tensorflow", op_type, processed_args, dict(kwargs), backend_module=tf)
+
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     func = global_eager_registry.get(op_type)
     if func is not None:
-        return func(cls, *args, **kwargs)
-    from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings, resolve_target_api
+        return func(tf, *args, **kwargs)
 
-    schema = load_backend_mappings("tensorflow")
-    if op_type in schema.operations and (schema.operations[op_type].target_api or schema.operations[op_type].custom_code):
-        import sys
-
-        func = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
-        if func is not None:
-            return func(*args, **kwargs)
-
-    raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None
+    raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by tensorflow eager backend.")

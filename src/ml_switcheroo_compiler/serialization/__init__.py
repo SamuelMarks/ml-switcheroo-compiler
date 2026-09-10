@@ -344,10 +344,10 @@ class KerasSerializationContext:
     """
 
     filepath: str
-    config_dict: typing.Optional[typing.Any] = None
-    metadata: typing.Optional[typing.Any] = None
-    weights_store: typing.Optional[typing.Any] = None
-    state_store: typing.Optional[typing.Any] = None
+    config_dict: typing.Optional[dict[str, object]] = None
+    metadata: typing.Optional[dict[str, object]] = None
+    weights_store: typing.Optional[dict[str, object]] = None
+    state_store: typing.Optional[dict[str, object]] = None
 
 
 def _write_keras_zip(ctx: KerasSerializationContext) -> None:

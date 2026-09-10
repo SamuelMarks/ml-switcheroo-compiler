@@ -101,6 +101,7 @@ def test_config_methods_extra():
 
     config.jax_enable_x64 = True
     assert config.jax_enable_x64
+    config.jax_enable_x64 = False
 
     config.op_determinism = True
     assert config.op_determinism

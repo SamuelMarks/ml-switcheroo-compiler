@@ -1,2 +1,2 @@
 Xdivy:
-  target_api: np.xdivy
+  target_api: custom_op

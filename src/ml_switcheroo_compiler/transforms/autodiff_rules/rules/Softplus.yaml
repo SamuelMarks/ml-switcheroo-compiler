@@ -1,4 +1,4 @@
 Softplus:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul($tangent[0], Sigmoid($input[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Sigmoid($input[0]))

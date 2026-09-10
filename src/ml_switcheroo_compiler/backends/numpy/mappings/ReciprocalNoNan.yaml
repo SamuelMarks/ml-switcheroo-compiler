@@ -1,2 +1,2 @@
 ReciprocalNoNan:
-  target_api: np.reciprocalnonan
+  target_api: custom_op

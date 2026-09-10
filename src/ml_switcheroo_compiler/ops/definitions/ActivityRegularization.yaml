@@ -1,16 +1,16 @@
 operation: ActivityRegularization
 description: Layer that applies an update to the cost function based input activity.
 std_args:
-  - default: 0.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: l1
-    type: float
-  - default: 0.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: l2
-    type: float
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: l1
+  type: float
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: l2
+  type: float
 variants:
   numpy: {}
   cupy: {}
@@ -20,11 +20,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ActivityRegularization
-  edge_stablehlo:
-
-    opcode: stablehlo.activity_regularization
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

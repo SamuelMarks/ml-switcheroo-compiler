@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.gradient
   mlx:
     eager: mlx.core.gradient
-  edge_onnx:
-    generator: gradient
-  edge_stablehlo:
-
-    opcode: stablehlo.gradient
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

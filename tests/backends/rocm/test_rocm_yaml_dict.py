@@ -315,10 +315,12 @@ def test_rocm_runner_compile_cupy():
         with patch("builtins.open", mock_open(read_data=b"code")):
             runner = ROCmRunner()
             runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
+            runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1], args=[1, 2])
             assert mock_cupy.RawModule.called
 
 
 def test_rocm_runner_compile_ctypes():
+    import ctypes
     from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
@@ -331,7 +333,7 @@ def test_rocm_runner_compile_ctypes():
             mock_cdll.hipModuleLaunchKernel.return_value = 0
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_cdll):
                 runner = ROCmRunner()
-                runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1])
+                runner.load_and_dispatch("ptx", "main", [1, 1, 1], [1, 1, 1], args=[ctypes.c_void_p(1), 2, 3.0])
                 assert mock_cdll.hipModuleLaunchKernel.called
 
 

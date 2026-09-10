@@ -1,18 +1,18 @@
 operation: ApplyOverAxes
 description: The ApplyOverAxes operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: func
-    type: Callable
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: a
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axes
-    type: List[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: func
+  type: Callable
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: List[int]
 variants:
   cupy:
     eager: cp.apply_over_axes
@@ -24,11 +24,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ApplyOverAxes
-  edge_stablehlo:
-
-    opcode: stablehlo.apply_over_axes
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

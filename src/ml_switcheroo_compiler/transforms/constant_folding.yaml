@@ -1,0 +1,20 @@
+enabled_ops:
+  - Add
+  - Sub
+  - Mul
+  - Div
+  - Pow
+  - Neg
+  - Exp
+  - Log
+  - Sin
+  - Cos
+  - Tanh
+  - Relu
+  - Reshape
+  - Transpose
+  - Squeeze
+  - Unsqueeze
+  - Cast
+max_fold_elements: 65536
+fold_scalars_only: false

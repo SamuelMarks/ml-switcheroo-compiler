@@ -56,15 +56,18 @@ def test_load_yaml():
 def test_load_yaml_dir(monkeypatch):
     mock_data1 = {"templates": {"t1": "string body", "t2": {"body": "dict body"}}}
     mock_data2 = {"templates": {"t3": ["list", "body"]}}
+    mock_data3 = ["not", "a", "dict"]
 
     def mock_glob(path):
-        return ["file1.yaml", "file2.yaml"]
+        return ["file1.yaml", "file2.yaml", "file3.yaml"]
 
     def mock_open_impl(file, *args, **kwargs):
         if file == "file1.yaml":
             return mock_open(read_data=yaml.dump(mock_data1))()
-        else:
+        elif file == "file2.yaml":
             return mock_open(read_data=yaml.dump(mock_data2))()
+        else:
+            return mock_open(read_data=yaml.dump(mock_data3))()
 
     with patch("glob.glob", side_effect=mock_glob):
         with patch("pathlib.Path.is_dir", return_value=True):

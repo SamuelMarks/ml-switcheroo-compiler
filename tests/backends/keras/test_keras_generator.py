@@ -181,4 +181,20 @@ def test_keras_generator_generate_cst():
     gen = KerasCodeGenerator(graph)
     code = gen.generate()
     assert isinstance(code, str)
-    assert "evaluate(" in code
+    assert "get_model(" in code
+
+
+def test_keras_generator_return_only_outputs():
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    graph = IRGraph()
+    graph.nodes["const_0"] = IRNode(id="const_0", op_type="Constant", inputs=[])
+    gen = KerasCodeGenerator(graph)
+
+    def mock_generate_body(prefix):
+        gen.keras_input_vars = []
+        gen.keras_output_vars = ["out_var"]
+
+    gen._generate_body = mock_generate_body
+    code = gen.generate()
+    assert "return out_var" in code

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.arrayrefdef
   mlx:
     eager: mlx.core.arrayrefdef
-  edge_onnx:
-    generator: ArrayRefDef
-  edge_stablehlo:
-
-    opcode: stablehlo.array_ref_def
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

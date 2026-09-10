@@ -1,4 +1,5 @@
 Norm:
-  jvp: ZerosLike($tangent[0])
+  jvp: Div(ReduceSum(Mul($input[0], $tangent[0])), BroadcastLike($output, $input[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul(BroadcastLike($cotangent, $input[0]), Div($input[0], BroadcastLike($output,
+    $input[0])))

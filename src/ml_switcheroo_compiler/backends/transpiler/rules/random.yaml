@@ -1,0 +1,35 @@
+# Declarative Random Operations Transpilation Rules
+ast_to_ir_ops:
+  torch.rand: Uniform
+  torch.randn: Normal
+  torch.randint: RandInt
+  jax.random.uniform: Uniform
+  jax.random.normal: Normal
+  jax.random.randint: RandInt
+  mlx.core.random.uniform: Uniform
+  mlx.core.random.normal: Normal
+  numpy.random.uniform: Uniform
+  numpy.random.randn: Normal
+  numpy.random.randint: RandInt
+
+ir_to_ast_ops:
+  Uniform:
+    pytorch: [torch, rand]
+    jax: [jax, random, uniform]
+    mlx: [mlx, core, random, uniform]
+    numpy: [numpy, random, uniform]
+  Normal:
+    pytorch: [torch, randn]
+    jax: [jax, random, normal]
+    mlx: [mlx, core, random, normal]
+    numpy: [numpy, random, normal]
+  RandInt:
+    pytorch: [torch, randint]
+    jax: [jax, random, randint]
+    mlx: [mlx, core, random, randint]
+    numpy: [numpy, random, randint]
+
+kwarg_translations:
+  size: shape
+  low: minval
+  high: maxval

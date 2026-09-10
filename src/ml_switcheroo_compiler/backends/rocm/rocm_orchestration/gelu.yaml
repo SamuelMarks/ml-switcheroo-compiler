@@ -1,0 +1,20 @@
+gelu:
+  body: "#include <hip/hip_runtime.h>\n__global__ void gelu_kernel(const float* A,\
+    \ float* C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+    \    if (id < N) {\n        C[id] = 0.5f * A[id] * (1.0f + tanhf(0.79788456f *\
+    \ (A[id] + 0.044715f * A[id] * A[id] * A[id])));\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

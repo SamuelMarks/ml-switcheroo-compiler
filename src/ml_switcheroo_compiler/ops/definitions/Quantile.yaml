@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.quantile
   mlx:
     eager: mlx.core.quantile
-  edge_onnx:
-    generator: quantile
-  edge_stablehlo:
-
-    opcode: stablehlo.quantile
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

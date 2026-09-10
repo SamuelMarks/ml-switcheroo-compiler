@@ -1,2 +1,2 @@
 Lbeta:
-  target_api: np.lbeta
+  target_api: custom_op

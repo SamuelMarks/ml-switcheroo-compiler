@@ -1,18 +1,18 @@
 operation: reverse
 description: The Reverse operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: self
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: args
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: kwargs
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: self
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: args
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kwargs
+  type: Any
 variants:
   numpy:
     generator: np.flip
@@ -28,10 +28,7 @@ variants:
     eager: jax.numpy.reverse
   mlx:
     eager: mlx.core.reverse
-  edge_onnx:
-    generator: reverse
   edge_stablehlo:
-
     opcode: stablehlo.reverse
   llvm_cpp:
     template: unary

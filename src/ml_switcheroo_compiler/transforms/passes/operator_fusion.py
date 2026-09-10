@@ -1,13 +1,21 @@
-"""Operator fusion pass."""
+"""Operator fusion pass for graph optimization."""
 
 from __future__ import annotations
 
-"""Operator fusion pass."""
 # ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+import glob
+import os
 
-import typing
+import yaml
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.transforms.passes.config_models import (
+    ComputeCosts,
+    CostModelConfig,
+    FusionPatternConfig,
+    NodePatternConfig,
+    PassConfig,
+)
 
 
 class NodePattern:
@@ -46,7 +54,7 @@ def _match_node_inputs(
         capture_map (dict): The capture_map parameter.
 
     Returns:
-        bool: Result.
+        bool: True if inputs match, False otherwise.
     """
     p_inputs: list[NodePattern] = pattern.inputs or []
     if len(node.inputs) != len(p_inputs):
@@ -68,7 +76,7 @@ def match_pattern(
 
     Args:
         graph (IRGraph): The IRGraph.
-        node_id (typing.Union[str, IRNode, None]): The ID of the node to match, or a raw value.
+        node_id (str | IRNode | None): The ID of the node to match, or a raw value.
         pattern (NodePattern): The pattern to match against.
         capture_map (dict): A dictionary to store captured nodes or values.
 
@@ -112,7 +120,7 @@ class FusionRule:
             match (dict): The match parameter.
 
         Returns:
-            dict[str, IRNode] | None: Result.
+            dict[str, IRNode] | None: Result mapping or None.
         """
         return None
 
@@ -120,17 +128,27 @@ class FusionRule:
 class PatternMatchingEngine:
     """Engine that applies fusion rules over a graph."""
 
-    def __init__(self, rules: list[FusionRule], cost_model: typing.Any = None) -> None:
+    def __init__(
+        self,
+        rules: list[FusionRule],
+        cost_model: MemoryAwareCostModel | None = None,
+    ) -> None:
         """Initialize PatternMatchingEngine.
 
         Args:
             rules (list[FusionRule]): List of fusion rules to apply.
-            cost_model (CostModel, optional): The cost model to validate fusions.
+            cost_model (MemoryAwareCostModel, optional): The cost model to validate fusions.
         """
         self.rules: list[FusionRule] = rules
-        self.cost_model: typing.Any = cost_model
+        self.cost_model: MemoryAwareCostModel | None = cost_model
 
-    def _try_match_rules(self, graph: IRGraph, node_id: str, new_nodes: dict[str, IRNode], id_map: dict[str, str]) -> bool:
+    def _try_match_rules(
+        self,
+        graph: IRGraph,
+        node_id: str,
+        new_nodes: dict[str, IRNode],
+        id_map: dict[str, str],
+    ) -> bool:
         """Try applying matching rules to a single node.
 
         Args:
@@ -140,7 +158,7 @@ class PatternMatchingEngine:
             id_map (dict): The id_map parameter.
 
         Returns:
-            bool: Result.
+            bool: True if a rule matched and was applied, False otherwise.
         """
         for rule in self.rules:
             capture_map: dict[str, str | IRNode] = {}
@@ -163,7 +181,7 @@ class PatternMatchingEngine:
             graph (IRGraph): The IRGraph to optimize.
 
         Returns:
-            bool: True if the graph was modified.
+            bool: True if the graph was modified, False otherwise.
         """
         optimized: bool = False
         new_nodes: dict[str, IRNode] = {}
@@ -178,7 +196,6 @@ class PatternMatchingEngine:
                     new_nodes[node_id] = node
 
         if optimized:
-            # Explicit Edge Rewiring
             for n in new_nodes.values():
                 for i, in_id in enumerate(n.inputs):
                     if in_id in id_map:
@@ -188,7 +205,6 @@ class PatternMatchingEngine:
                 for i, in_id in enumerate(graph.inputs):
                     if in_id in id_map:
                         graph.inputs[i] = id_map[in_id]
-            # Also update graph outputs
             for i, out_id in enumerate(graph.outputs):
                 if out_id in id_map:
                     graph.outputs[i] = id_map[out_id]
@@ -198,30 +214,63 @@ class PatternMatchingEngine:
         return optimized
 
 
-def _load_pass_config() -> typing.Any:
+def _load_pass_config() -> PassConfig:
     """Load pass configuration from YAML file.
 
     Returns:
-        The loaded pass config dictionary.
+        PassConfig: The loaded pass config object.
     """
-    import os
-
-    import yaml
-
-    from ml_switcheroo_compiler.transforms.passes.config_models import PassConfig
-
     yaml_path: str = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            res: dict = yaml.safe_load(f)
-            return PassConfig(**res)
-    # Return a default empty config or fail.
-    from ml_switcheroo_compiler.transforms.passes.config_models import ComputeCosts, CostModelConfig
+            res = yaml.safe_load(f)
+            if isinstance(res, dict):
+                return PassConfig(**res)
+    return PassConfig(
+        execution_order=[],
+        cost_model=CostModelConfig(
+            memory_sizes={},
+            compute_costs=ComputeCosts(
+                heavy_ops=[],
+                light_ops=[],
+                heavy_cost=1000,
+                light_cost=10,
+                default_cost=50,
+            ),
+            compute_heavy_threshold=100,
+            heavy_interleave_penalty=500,
+            light_interleave_penalty=100,
+        ),
+        fusion_patterns={},
+    )
 
-    return PassConfig(execution_order=[], cost_model=CostModelConfig(memory_sizes={}, compute_costs=ComputeCosts(heavy_ops=[], light_ops=[], heavy_cost=1000, light_cost=10, default_cost=50), compute_heavy_threshold=100, heavy_interleave_penalty=500, light_interleave_penalty=100), fusion_patterns={})
 
+def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:
+    """Automatically discover and load all fusion pattern YAMLs from fusion_patterns directory.
 
-from ml_switcheroo_compiler.transforms.passes.config_models import FusionPatternConfig, NodePatternConfig
+    Args:
+        patterns_dir (str, optional): Directory containing fusion pattern YAML files.
+
+    Returns:
+        list[FusionRule]: Loaded fusion rules from declarative pattern files.
+    """
+    rules: list[FusionRule] = []
+    if patterns_dir is None:
+        patterns_dir = os.path.join(os.path.dirname(__file__), "fusion_patterns")
+    if os.path.isdir(patterns_dir):
+        yaml_files = sorted(glob.glob(os.path.join(patterns_dir, "*.yaml")))
+        for yf in yaml_files:
+            try:
+                with open(yf) as f:
+                    data = yaml.safe_load(f)
+                    if isinstance(data, dict):
+                        for rule_name, rule_data in data.items():
+                            if isinstance(rule_data, dict) and "pattern" in rule_data and "replacement" in rule_data:
+                                p_config = FusionPatternConfig(**rule_data)
+                                rules.append(YamlFusionRule(rule_name, p_config))
+            except Exception:
+                continue
+    return rules
 
 
 class YamlFusionRule(FusionRule):
@@ -257,13 +306,11 @@ class YamlFusionRule(FusionRule):
 
         Args:
             graph (IRGraph): The IR graph.
-            match (dict[str, typing.Union[str, IRNode]]): Matched dictionary.
+            match (dict[str, str | IRNode]): Matched dictionary.
 
         Returns:
             dict[str, IRNode] | None: Replaced nodes or None.
         """
-        from ml_switcheroo_compiler.ir.core import clone_logical_node
-
         replacement = self.config.replacement
         target: str | IRNode | None = match.get(replacement.capture_to_replace)
         if not isinstance(target, IRNode):
@@ -285,34 +332,284 @@ class YamlFusionRule(FusionRule):
 class MemoryAwareCostModel:
     """A memory-aware cost model for validating operator fusion."""
 
-    def __init__(self, config: dict[str, typing.Any] | None) -> None:
-        """Initialize the memory-aware cost model."""
-        self.config: dict[str, typing.Any] | None = config
+    def __init__(
+        self,
+        config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int] | None,
+    ) -> None:
+        """Initialize the memory-aware cost model.
+
+        Args:
+            config (dict, optional): Cost model configuration mapping.
+        """
+        self.config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int] | None = config
 
     def is_fusion_valid(self, replacements: dict[str, IRNode]) -> bool:
-        """Check if fusion is valid by checking max memory thresholds."""
+        """Check if fusion is valid by checking max memory thresholds.
+
+        Args:
+            replacements (dict[str, IRNode]): Mapping of candidate replacement nodes.
+
+        Returns:
+            bool: True if fusion is permitted by memory budget, False otherwise.
+        """
         if not self.config:
             return True
 
-        max_memory: int = self.config.get("max_fusion_memory_bytes", 1024 * 1024 * 512)  # 512MB default
+        if "max_fusion_memory_bytes" in self.config:
+            max_memory: int = int(self.config["max_fusion_memory_bytes"])
+        elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
+            max_memory = int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512))
+        else:
+            max_memory = 1024 * 1024 * 512
+
         total_mem: int = 0
+        memory_sizes = self.config.get("memory_sizes", {})
 
         for node in replacements.values():
             shape: tuple[int | str, ...] | None = getattr(node, "shape_metadata", None)
             if shape and not getattr(node, "is_dynamic_shape", False):
-                # Check for symbolic dimensions
                 if any(isinstance(d, str) for d in shape):
-                    continue  # Skip memory check for symbolic shapes
+                    continue
 
                 elements: int = 1
                 for dim in shape:
                     elements *= max(1, int(dim))
 
                 dtype: str = str(node.attributes.get("dtype", "float32"))
-                dtype_size: int = int(self.config.get("memory_sizes", {}).get(dtype, 4))
+                dtype_size: int = 4
+                if isinstance(memory_sizes, dict):
+                    dtype_size = int(memory_sizes.get(dtype, 4))
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)
+
+
+ELEMENTWISE_OPS: set[str] = {
+    "Add",
+    "Sub",
+    "Mul",
+    "Div",
+    "TrueDivide",
+    "Relu",
+    "Sigmoid",
+    "Neg",
+    "Abs",
+    "Exp",
+    "Log",
+    "Sqrt",
+    "Gelu",
+    "Silu",
+    "Tanh",
+    "Pow",
+    "Maximum",
+    "Minimum",
+}
+
+
+def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:
+    """Generate scalar expression snippet for an elementwise op.
+
+    Args:
+        op_type (str): Operation name.
+        args (list[str]): Input argument identifiers.
+
+    Returns:
+        str: C/C++ style scalar expression.
+    """
+    op = op_type.lower()
+    a = args[0] if args else "0.0f"
+    b = args[1] if len(args) > 1 else "0.0f"
+
+    if op == "add":
+        return f"({a} + {b})"
+    if op == "sub":
+        return f"({a} - {b})"
+    if op == "mul":
+        return f"({a} * {b})"
+    if op in ("div", "truedivide"):
+        return f"({a} / {b})"
+    if op == "relu":
+        return f"fmaxf(0.0f, {a})"
+    if op == "sigmoid":
+        return f"(1.0f / (1.0f + expf(-{a})))"
+    if op == "neg":
+        return f"(-{a})"
+    if op == "abs":
+        return f"fabsf({a})"
+    if op == "exp":
+        return f"expf({a})"
+    if op == "log":
+        return f"logf({a})"
+    if op == "sqrt":
+        return f"sqrtf({a})"
+    if op == "tanh":
+        return f"tanhf({a})"
+    if op == "gelu":
+        return f"(0.5f * {a} * (1.0f + tanhf(0.79788456f * ({a} + 0.044715f * {a} * {a} * {a}))))"
+    if op == "silu":
+        return f"({a} / (1.0f + expf(-{a})))"
+    if op == "maximum":
+        return f"fmaxf({a}, {b})"
+    if op == "minimum":
+        return f"fminf({a}, {b})"
+    return a
+
+
+def _fuse_single_edge(
+    graph: IRGraph,
+    node: IRNode,
+    inp_id: str,
+    inp_index: int,
+    producer: IRNode,
+) -> None:
+    """Fuse a single producer node into a consumer node.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (IRNode): Consumer node to fuse into.
+        inp_id (str): Producer node id to remove.
+        inp_index (int): Input slot index being replaced.
+        producer (IRNode): Producer node being inlined.
+    """
+    fused_ops: list[str] = []
+    if producer.op_type == "FusedElementwise":
+        fused_ops.extend(producer.attributes.get("fused_ops", []))
+        p_expr: str = str(producer.attributes.get("scalar_expr", "0.0f"))
+    else:
+        fused_ops.append(producer.op_type)
+        p_args = [f"in_{k}" for k in range(len(producer.inputs))]
+        p_expr = _get_scalar_expression_snippet(producer.op_type, p_args)
+
+    if node.op_type == "FusedElementwise":
+        fused_ops.extend(node.attributes.get("fused_ops", []))
+        n_expr: str = str(node.attributes.get("scalar_expr", "0.0f"))
+    else:
+        fused_ops.append(node.op_type)
+        n_args = [f"in_{k}" for k in range(len(node.inputs))]
+        n_expr = _get_scalar_expression_snippet(node.op_type, n_args)
+
+    new_inputs: list[str] = []
+    for idx_in, inp in enumerate(node.inputs):
+        if idx_in == inp_index:
+            new_inputs.extend(producer.inputs)
+        else:
+            new_inputs.append(inp)
+
+    unique_inputs: list[str] = []
+    for inp in new_inputs:
+        if inp not in unique_inputs:
+            unique_inputs.append(inp)
+
+    for k, p_in in enumerate(producer.inputs):
+        p_expr = p_expr.replace(f"in_{k}", f"in{unique_inputs.index(p_in)}")
+
+    for idx_in, inp in enumerate(node.inputs):
+        if idx_in == inp_index:
+            n_expr = n_expr.replace(f"in_{idx_in}", p_expr)
+        else:
+            n_expr = n_expr.replace(f"in_{idx_in}", f"in{unique_inputs.index(inp)}")
+
+    fused_node = IRNode(
+        id=node.id,
+        op_type="FusedElementwise",
+        inputs=unique_inputs,
+        shape_metadata=node.shape_metadata,
+    )
+    fused_node.attributes = {
+        "fused_ops": fused_ops,
+        "scalar_expr": n_expr,
+    }
+
+    del graph.nodes[inp_id]
+    graph.nodes[node.id] = fused_node
+
+
+def fuse_elementwise_clusters(graph: IRGraph) -> bool:
+    """Fuse elementwise DAG clusters into composite FusedElementwise IR nodes.
+
+    Args:
+        graph (IRGraph): The IR computation graph to optimize.
+
+    Returns:
+        bool: True if any elementwise DAG clusters were fused, False otherwise.
+    """
+    if not getattr(graph, "nodes", None):
+        return False
+
+    modified: bool = False
+    changed: bool = True
+
+    while changed:
+        changed = False
+        consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
+        for node in graph.nodes.values():
+            for inp in getattr(node, "inputs", []):
+                if inp in consumer_counts:
+                    consumer_counts[inp] += 1
+        for out_id in getattr(graph, "outputs", []):
+            if out_id in consumer_counts:
+                consumer_counts[out_id] += 1
+
+        for node in list(graph.nodes.values()):
+            if node.op_type not in ELEMENTWISE_OPS and node.op_type != "FusedElementwise":
+                continue
+
+            for i, inp_id in enumerate(list(node.inputs)):
+                producer = graph.nodes.get(inp_id)
+                if producer is None:
+                    continue
+                if producer.op_type not in ELEMENTWISE_OPS and producer.op_type != "FusedElementwise":
+                    continue
+                if consumer_counts.get(inp_id, 0) != 1:
+                    continue
+                p_shape = getattr(producer, "shape_metadata", None)
+                n_shape = getattr(node, "shape_metadata", None)
+                if p_shape and n_shape and p_shape != n_shape:
+                    continue
+
+                _fuse_single_edge(graph, node, inp_id, i, producer)
+                changed = True
+                modified = True
+                break
+            if changed:
+                break
+
+    return modified
+
+
+def operator_fusion_pass(graph: IRGraph) -> bool:
+    """In-place operator fusion pass returning True if graph was modified.
+
+    Args:
+        graph (IRGraph): The IR graph to optimize.
+
+    Returns:
+        bool: True if fusions occurred and graph was modified, False otherwise.
+    """
+    from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
+
+    rules: list[FusionRule] = _discover_fusion_patterns()
+    config: PassConfig = _load_pass_config()
+    if config.fusion_patterns:
+        for name, rule_config in config.fusion_patterns.items():
+            rules.append(YamlFusionRule(name, rule_config))
+
+    cost_model_config: dict[str, dict[str, float | int | dict[str, float | int]] | float | int] | None = None
+    cost_yaml_path: str = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+    if os.path.exists(cost_yaml_path):
+        with open(cost_yaml_path) as f:
+            cost_model_config = yaml.safe_load(f)
+
+    engine: PatternMatchingEngine = PatternMatchingEngine(
+        rules,
+        MemoryAwareCostModel(cost_model_config) if cost_model_config else None,
+    )
+    pattern_modified: bool = engine.apply_passes(graph)
+    cluster_modified: bool = fuse_elementwise_clusters(graph)
+    if pattern_modified or cluster_modified:
+        dce_pass(graph)
+        return True
+    return False
 
 
 def apply_operator_fusion(graph: IRGraph) -> IRGraph:
@@ -326,27 +623,28 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
     Returns:
         IRGraph: The optimized graph.
     """
-    from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
-
-    rules: list[FusionRule] = []
-    # Load YAML rules
-    config: typing.Any = _load_pass_config()
-    if config.fusion_patterns:
-        for name, rule_config in config.fusion_patterns.items():
-            rules.append(YamlFusionRule(name, rule_config))
-
-    # Load cost models
-    import os
-
-    import yaml
-
-    cost_model_config: dict[str, typing.Any] | None = None
-    cost_yaml_path: str = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
-    if os.path.exists(cost_yaml_path):
-        with open(cost_yaml_path) as f:
-            cost_model_config = yaml.safe_load(f)
-
-    engine: PatternMatchingEngine = PatternMatchingEngine(rules, MemoryAwareCostModel(cost_model_config) if cost_model_config else None)
-    if engine.apply_passes(graph):
-        dce_pass(graph)
+    operator_fusion_pass(graph)
     return graph
+
+
+class OperatorFusionPass:
+    """Operator fusion pass executing pattern-based graph transformations."""
+
+    def __init__(self, patterns_dir: str | None = None) -> None:
+        """Initialize OperatorFusionPass.
+
+        Args:
+            patterns_dir (str | None): Optional directory with YAML fusion patterns.
+        """
+        self.rules: list[FusionRule] = _discover_fusion_patterns(patterns_dir)
+
+    def run(self, graph: IRGraph) -> bool:
+        """Execute operator fusion transformations on graph.
+
+        Args:
+            graph (IRGraph): Target computation graph.
+
+        Returns:
+            bool: True if graph was modified, False otherwise.
+        """
+        return operator_fusion_pass(graph)

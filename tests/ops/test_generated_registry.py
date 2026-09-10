@@ -47,13 +47,13 @@ def test_dynamic_infer_shape():
         # 4. no shapes
         assert op.infer_shape(Dummy()) == ()
 
-        # 5. Broadcast fallback
+        # 5. Broadcast mismatch raises ValueError
         d3 = Dummy()
         d3.shape = (3, 3)
         d4 = Dummy()
         d4.shape = (2, 2)
-        with patch("numpy.broadcast_shapes", side_effect=Exception):
-            assert op.infer_shape(d3, d4) == (3, 3)  # max by len, equal len means first
+        with pytest.raises(ValueError):
+            op.infer_shape(d3, d4)
 
     finally:
         if original is None:

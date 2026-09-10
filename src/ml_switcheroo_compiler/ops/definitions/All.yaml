@@ -1,18 +1,18 @@
 operation: all
 description: The All operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Optional[Union[int, Tuple[int, Ellipsis]]]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: keepdims
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[Union[int, Tuple[int, Ellipsis]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.all
@@ -30,11 +30,6 @@ variants:
     eager: jax.numpy.all
   mlx:
     eager: mlx.core.all
-  edge_onnx:
-    generator: ReduceAll
-  edge_stablehlo:
-
-    opcode: stablehlo.all
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

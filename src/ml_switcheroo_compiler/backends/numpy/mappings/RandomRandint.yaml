@@ -1,2 +1,2 @@
 RandomRandint:
-  target_api: np.randomrandint
+  target_api: custom_op

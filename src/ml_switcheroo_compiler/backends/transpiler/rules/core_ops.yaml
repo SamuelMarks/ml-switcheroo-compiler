@@ -1,0 +1,187 @@
+# Declarative Core Operations Transpilation Rules
+ast_to_ir_ops:
+  torch.add: Add
+  jax.numpy.add: Add
+  mlx.core.add: Add
+  numpy.add: Add
+  torch.sub: Sub
+  torch.subtract: Sub
+  jax.numpy.subtract: Sub
+  mlx.core.subtract: Sub
+  numpy.subtract: Sub
+  torch.mul: Mul
+  torch.multiply: Mul
+  jax.numpy.multiply: Mul
+  mlx.core.multiply: Mul
+  numpy.multiply: Mul
+  torch.div: Div
+  torch.divide: Div
+  torch.true_divide: Div
+  jax.numpy.divide: Div
+  mlx.core.divide: Div
+  numpy.divide: Div
+  torch.pow: Pow
+  torch.power: Pow
+  jax.numpy.power: Pow
+  mlx.core.power: Pow
+  numpy.power: Pow
+  torch.exp: Exp
+  jax.numpy.exp: Exp
+  mlx.core.exp: Exp
+  numpy.exp: Exp
+  torch.log: Log
+  jax.numpy.log: Log
+  mlx.core.log: Log
+  numpy.log: Log
+  torch.neg: Neg
+  torch.negative: Neg
+  jax.numpy.negative: Neg
+  mlx.core.negative: Neg
+  numpy.negative: Neg
+  torch.abs: Abs
+  jax.numpy.abs: Abs
+  mlx.core.abs: Abs
+  numpy.abs: Abs
+  torch.sqrt: Sqrt
+  jax.numpy.sqrt: Sqrt
+  mlx.core.sqrt: Sqrt
+  numpy.sqrt: Sqrt
+  torch.sin: Sin
+  jax.numpy.sin: Sin
+  mlx.core.sin: Sin
+  numpy.sin: Sin
+  torch.cos: Cos
+  jax.numpy.cos: Cos
+  mlx.core.cos: Cos
+  numpy.cos: Cos
+  torch.maximum: Maximum
+  jax.numpy.maximum: Maximum
+  mlx.core.maximum: Maximum
+  numpy.maximum: Maximum
+  torch.minimum: Minimum
+  jax.numpy.minimum: Minimum
+  mlx.core.minimum: Minimum
+  numpy.minimum: Minimum
+  torch.sum: ReduceSum
+  jax.numpy.sum: ReduceSum
+  mlx.core.sum: ReduceSum
+  numpy.sum: ReduceSum
+  torch.mean: ReduceMean
+  jax.numpy.mean: ReduceMean
+  mlx.core.mean: ReduceMean
+  numpy.mean: ReduceMean
+  torch.prod: ReduceProd
+  jax.numpy.prod: ReduceProd
+  mlx.core.prod: ReduceProd
+  numpy.prod: ReduceProd
+  torch.reshape: Reshape
+  jax.numpy.reshape: Reshape
+  mlx.core.reshape: Reshape
+  numpy.reshape: Reshape
+  torch.transpose: Transpose
+  jax.numpy.transpose: Transpose
+  mlx.core.transpose: Transpose
+  numpy.transpose: Transpose
+
+ir_to_ast_ops:
+  Add:
+    pytorch: [torch, add]
+    jax: [jax, numpy, add]
+    mlx: [mlx, core, add]
+    numpy: [numpy, add]
+  Sub:
+    pytorch: [torch, sub]
+    jax: [jax, numpy, subtract]
+    mlx: [mlx, core, subtract]
+    numpy: [numpy, subtract]
+  Mul:
+    pytorch: [torch, mul]
+    jax: [jax, numpy, multiply]
+    mlx: [mlx, core, multiply]
+    numpy: [numpy, multiply]
+  Div:
+    pytorch: [torch, div]
+    jax: [jax, numpy, divide]
+    mlx: [mlx, core, divide]
+    numpy: [numpy, divide]
+  Pow:
+    pytorch: [torch, pow]
+    jax: [jax, numpy, power]
+    mlx: [mlx, core, power]
+    numpy: [numpy, power]
+  Exp:
+    pytorch: [torch, exp]
+    jax: [jax, numpy, exp]
+    mlx: [mlx, core, exp]
+    numpy: [numpy, exp]
+  Log:
+    pytorch: [torch, log]
+    jax: [jax, numpy, log]
+    mlx: [mlx, core, log]
+    numpy: [numpy, log]
+  Neg:
+    pytorch: [torch, neg]
+    jax: [jax, numpy, negative]
+    mlx: [mlx, core, negative]
+    numpy: [numpy, negative]
+  Abs:
+    pytorch: [torch, abs]
+    jax: [jax, numpy, abs]
+    mlx: [mlx, core, abs]
+    numpy: [numpy, abs]
+  Sqrt:
+    pytorch: [torch, sqrt]
+    jax: [jax, numpy, sqrt]
+    mlx: [mlx, core, sqrt]
+    numpy: [numpy, sqrt]
+  Sin:
+    pytorch: [torch, sin]
+    jax: [jax, numpy, sin]
+    mlx: [mlx, core, sin]
+    numpy: [numpy, sin]
+  Cos:
+    pytorch: [torch, cos]
+    jax: [jax, numpy, cos]
+    mlx: [mlx, core, cos]
+    numpy: [numpy, cos]
+  Maximum:
+    pytorch: [torch, maximum]
+    jax: [jax, numpy, maximum]
+    mlx: [mlx, core, maximum]
+    numpy: [numpy, maximum]
+  Minimum:
+    pytorch: [torch, minimum]
+    jax: [jax, numpy, minimum]
+    mlx: [mlx, core, minimum]
+    numpy: [numpy, minimum]
+  ReduceSum:
+    pytorch: [torch, sum]
+    jax: [jax, numpy, sum]
+    mlx: [mlx, core, sum]
+    numpy: [numpy, sum]
+  ReduceMean:
+    pytorch: [torch, mean]
+    jax: [jax, numpy, mean]
+    mlx: [mlx, core, mean]
+    numpy: [numpy, mean]
+  ReduceProd:
+    pytorch: [torch, prod]
+    jax: [jax, numpy, prod]
+    mlx: [mlx, core, prod]
+    numpy: [numpy, prod]
+  Reshape:
+    pytorch: [torch, reshape]
+    jax: [jax, numpy, reshape]
+    mlx: [mlx, core, reshape]
+    numpy: [numpy, reshape]
+  Transpose:
+    pytorch: [torch, transpose]
+    jax: [jax, numpy, transpose]
+    mlx: [mlx, core, transpose]
+    numpy: [numpy, transpose]
+
+kwarg_translations:
+  dim: axis
+  axis: dim
+  keepdim: keepdims
+  keepdims: keepdim

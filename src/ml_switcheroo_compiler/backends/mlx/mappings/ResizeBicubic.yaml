@@ -1,0 +1,3 @@
+ResizeBicubic:
+  ast_template: mlx_resize_bicubic({0})
+  target_api: ''

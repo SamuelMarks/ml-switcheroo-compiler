@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.gathernd
   mlx:
     eager: mlx.core.gathernd
-  edge_onnx:
-    generator: GatherNd
-  edge_stablehlo:
-
-    opcode: stablehlo.gather_nd
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

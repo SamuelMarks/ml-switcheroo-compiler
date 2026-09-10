@@ -1,23 +1,30 @@
-tiled_matmul:
-  body: "let row = global_id.y;\nlet col = global_id.x;\nlet local_x = local_id.x;\n\
-    let local_y = local_id.y;\nvar sum = 0.0;\nlet K = {K}u;\nlet N = {N}u;\nlet M\
-    \ = {M}u;\nlet num_tiles = (K + {TILE_K}u - 1u) / {TILE_K}u;\nfor (var t = 0u;\
-    \ t < num_tiles; t++) {{\n    let tiled_k_a = t * {TILE_K}u + local_x;\n    if\
-    \ (row < M && tiled_k_a < K) {{\n        tileA_{clean_id}[local_y][local_x] =\
-    \ buf_in0_f32[row * K + tiled_k_a];\n    }} else {{\n        tileA_{clean_id}[local_y][local_x]\
-    \ = 0.0;\n    }}\n    let tiled_k_b = t * {TILE_K}u + local_y;\n    if (tiled_k_b\
-    \ < K && col < N) {{\n        tileB_{clean_id}[local_y][local_x] = buf_in1_f32[tiled_k_b\
-    \ * N + col];\n    }} else {{\n        tileB_{clean_id}[local_y][local_x] = 0.0;\n\
-    \    }}\n    workgroupBarrier();\n    for (var k = 0u; k < {TILE_K}u; k++) {{\n\
-    \        sum = sum + tileA_{clean_id}[local_y][k] * tileB_{clean_id}[k][local_x];\n\
-    \    }}\n    workgroupBarrier();\n}}\nif (row < M && col < N) {{\n    buf_out_f32[row\
-    \ * N + col] = sum;\n}}\n"
-  global_code: 'var<workgroup> tileA_{clean_id} : array<array<f32, {TILE_K}>, {TILE_M}>;
-
-    var<workgroup> tileB_{clean_id} : array<array<f32, {TILE_N}>, {TILE_K}>;
-
-    '
-  workgroup_size:
-  - 16
-  - 16
-  - 1
+templates:
+  matmul:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "let col = global_id.x;\nlet row = global_id.y;\nlet N = {N}u;\nlet M =\
+      \ {M}u;\nlet K = {K}u;\nif (row >= M || col >= N) {{\n    return;\n}}\nvar acc:\
+      \ f32 = 0.0;\nfor (var k: u32 = 0u; k < K; k = k + 1u) {{\n    acc = acc + buf_in0_f32[row\
+      \ * K + k] * buf_in1_f32[k * N + col];\n}}\nbuf_out_f32[row * N + col] = acc;\n"
+  tiled_matmul:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "const TILE_SIZE: u32 = 16u;\nvar<workgroup> tile_a: array<array<f32, 16>,\
+      \ 16>;\nvar<workgroup> tile_b: array<array<f32, 16>, 16>;\n\nlet col = global_id.x;\n\
+      let row = global_id.y;\nlet local_col = local_id.x;\nlet local_row = local_id.y;\n\
+      let N = {N}u;\nlet M = {M}u;\nlet K = {K}u;\n\nvar acc: f32 = 0.0;\nlet num_tiles\
+      \ = (K + TILE_SIZE - 1u) / TILE_SIZE;\n\nfor (var t: u32 = 0u; t < num_tiles;\
+      \ t = t + 1u) {{\n    let a_col = t * TILE_SIZE + local_col;\n    let b_row\
+      \ = t * TILE_SIZE + local_row;\n\n    if (row < M && a_col < K) {{\n       \
+      \ tile_a[local_row][local_col] = buf_in0_f32[row * K + a_col];\n    }} else\
+      \ {{\n        tile_a[local_row][local_col] = 0.0;\n    }}\n\n    if (b_row <\
+      \ K && col < N) {{\n        tile_b[local_row][local_col] = buf_in1_f32[b_row\
+      \ * N + col];\n    }} else {{\n        tile_b[local_row][local_col] = 0.0;\n\
+      \    }}\n\n    workgroupBarrier();\n\n    for (var k: u32 = 0u; k < TILE_SIZE;\
+      \ k = k + 1u) {{\n        acc = acc + tile_a[local_row][k] * tile_b[k][local_col];\n\
+      \    }}\n\n    workgroupBarrier();\n}}\n\nif (row < M && col < N) {{\n    buf_out_f32[row\
+      \ * N + col] = acc;\n}}\n"

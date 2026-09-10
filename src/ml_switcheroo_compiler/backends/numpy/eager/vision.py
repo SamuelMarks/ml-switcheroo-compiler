@@ -1,9 +1,13 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision operations for the numpy backend."""
 
+from __future__ import annotations
+
 import typing
 from dataclasses import dataclass
 from typing import Optional
+
+import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
@@ -39,9 +43,9 @@ class InterpolationConfig:
         W: Original width.
     """
 
-    images: typing.Optional[typing.Any] = None
-    src_y: typing.Optional[typing.Any] = None
-    src_x: typing.Optional[typing.Any] = None
+    images: np.ndarray | None = None
+    src_y: np.ndarray | None = None
+    src_x: np.ndarray | None = None
     H: int = 0
     W: int = 0
 
@@ -77,10 +81,10 @@ def _calculate_bilinear_coords(np, cfg: ResizeConfig):
 class BilinearCoords:
     """Coordinates for bilinear interpolation."""
 
-    y0: typing.Any = None
-    y1: typing.Any = None
-    x0: typing.Any = None
-    x1: typing.Any = None
+    y0: np.ndarray | None = None
+    y1: np.ndarray | None = None
+    x0: np.ndarray | None = None
+    x1: np.ndarray | None = None
 
 
 def _compute_bilinear_pixels(np, images, coords: BilinearCoords):
@@ -334,9 +338,9 @@ class RotationInterpolationConfig:
         fill_value: Fill value.
     """
 
-    img: typing.Optional[typing.Any] = None
-    src_x: typing.Optional[typing.Any] = None
-    src_y: typing.Optional[typing.Any] = None
+    img: np.ndarray | None = None
+    src_x: np.ndarray | None = None
+    src_y: np.ndarray | None = None
     fill_mode: str = "nearest"
     fill_value: float = 0.0
 
@@ -447,7 +451,7 @@ class TransformOptions:
 
     fill_mode: str = "reflect"
     interpolation: str = "bilinear"
-    seed: Optional[int] = None
+    seed: int | None = None
     fill_value: float = 0.0
 
 
@@ -473,7 +477,7 @@ def _apply_rotation_to_batch(np, x, rng, angles: tuple[float, float], options: T
 
 
 @numpy_eager_registry.register("RandomRotation")
-def random_rotation_numpy(np_mod, images, factor: float, options: Optional[TransformOptions] = None, **kwargs):
+def random_rotation_numpy(np_mod, images, factor: float, options: TransformOptions | None = None, **kwargs):
     """Generate random rotation.
 
     Args:

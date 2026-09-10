@@ -1,4 +1,5 @@
 Einsum:
-  jvp: ZerosLike($tangent[0])
+  jvp: Add(Einsum($tangent[0], $input[1]), Einsum($input[0], $tangent[1]))
   vjp:
-  - ZerosLike($cotangent)
+  - Einsum($cotangent, $input[1])
+  - Einsum($input[0], $cotangent)

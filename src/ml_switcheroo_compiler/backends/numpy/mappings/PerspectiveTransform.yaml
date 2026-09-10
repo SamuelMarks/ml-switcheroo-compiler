@@ -1,0 +1,4 @@
+PerspectiveTransform:
+  ast_template: np_perspective_transform({0}, {1}, {2}, PerspectiveConfig(interpolation='{interpolation}',
+    fill_value={fill_value}, data_format='{data_format}'))
+  target_api: ''

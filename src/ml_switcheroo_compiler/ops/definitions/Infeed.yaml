@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.infeed
   mlx:
     eager: mlx.core.infeed
-  edge_onnx:
-    generator: Infeed
-  edge_stablehlo:
-
-    opcode: stablehlo.infeed
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

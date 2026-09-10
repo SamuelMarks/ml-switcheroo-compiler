@@ -1,0 +1,71 @@
+# Declarative SPMD Sharding Propagation Rules
+propagation_rules:
+  elementwise:
+    ops:
+      - Add
+      - Sub
+      - Mul
+      - Div
+      - Neg
+      - Relu
+      - GELU
+      - Sigmoid
+      - Tanh
+      - Exp
+      - Log
+      - Abs
+      - Sqrt
+    strategy: "propagate_aligned"
+
+  matmul:
+    ops:
+      - MatMul
+      - BatchMatMul
+    modes:
+      row_parallel:
+        lhs_sharding: ["mesh_axis_0", null]
+        rhs_sharding: [null, null]
+        out_sharding: ["mesh_axis_0", null]
+        collective: null
+      col_parallel:
+        lhs_sharding: [null, null]
+        rhs_sharding: [null, "mesh_axis_0"]
+        out_sharding: [null, "mesh_axis_0"]
+        collective: null
+      contracting_parallel:
+        lhs_sharding: [null, "mesh_axis_0"]
+        rhs_sharding: ["mesh_axis_0", null]
+        out_sharding: [null, null]
+        collective: "AllReduce"
+        reduction_op: "SUM"
+
+  reductions:
+    ops:
+      - ReduceSum
+      - ReduceMean
+      - ReduceProd
+      - ReduceMax
+      - ReduceMin
+    rules:
+      reduced_axis_sharded:
+        collective: "AllReduce"
+      replicated:
+        collective: null
+
+  spatial_conv:
+    ops:
+      - Conv1D
+      - Conv2D
+      - Conv3D
+    modes:
+      batch_parallel:
+        in_sharding: ["mesh_axis_0", null, null, null]
+        weight_sharding: [null, null, null, null]
+        out_sharding: ["mesh_axis_0", null, null, null]
+        collective: null
+      channel_parallel:
+        in_sharding: [null, "mesh_axis_0", null, null]
+        weight_sharding: ["mesh_axis_0", null, null, null]
+        out_sharding: [null, null, null, null]
+        collective: "AllReduce"
+        reduction_op: "SUM"

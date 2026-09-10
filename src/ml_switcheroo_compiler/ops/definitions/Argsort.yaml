@@ -1,22 +1,22 @@
 operation: argsort
 description: The ArgSort operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: descending
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: stable
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: descending
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stable
+  type: bool
 variants:
   numpy:
     generator: np.argsort
@@ -28,11 +28,6 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: argsort
-  edge_stablehlo:
-
-    opcode: stablehlo.argsort
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;

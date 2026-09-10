@@ -1,2 +1,2 @@
 BandedTriangularSolve:
-  target_api: np.bandedtriangularsolve
+  target_api: custom_op

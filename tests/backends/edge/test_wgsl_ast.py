@@ -1,4 +1,22 @@
-from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLAssign, WGSLBinaryOp, WGSLDecl, WGSLEmitter, WGSLFor, WGSLFunction, WGSLIf, WGSLIndex, WGSLNode, WGSLRaw, WGSLUnaryOp, WGSLVar
+import pytest
+
+from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
+    WGSLAssign,
+    WGSLBinaryOp,
+    WGSLDecl,
+    WGSLEmitter,
+    WGSLFor,
+    WGSLFunction,
+    WGSLIf,
+    WGSLIndex,
+    WGSLNode,
+    WGSLRaw,
+    WGSLUnaryOp,
+    WGSLValidationError,
+    WGSLVar,
+    validate_identifier,
+    validate_workgroup_size,
+)
 
 
 def test_wgsl_emitter_raw_and_var():
@@ -67,3 +85,89 @@ def test_wgsl_emitter_function():
     func = WGSLFunction(name="my_func", params=["a: u32"], body=[WGSLRaw("return;")], attrs=["@compute"])
     expected = "@compute\nfn my_func(a: u32) {\n  return;\n}"
     assert emitter.emit(func) == expected
+
+
+def test_validate_identifier_specifications():
+    validate_identifier("valid_name_1")
+    validate_identifier("_private_var")
+
+    with pytest.raises(WGSLValidationError, match="Invalid WGSL identifier"):
+        validate_identifier("")
+    with pytest.raises(WGSLValidationError, match="does not match WGSL identifier syntax"):
+        validate_identifier("123invalid")
+    with pytest.raises(WGSLValidationError, match="reserved WGSL keyword"):
+        validate_identifier("var")
+
+
+def test_validate_workgroup_size_limits():
+    validate_workgroup_size(64, 1, 1)
+    validate_workgroup_size(16, 16, 1)
+
+    with pytest.raises(WGSLValidationError, match="dimensions must be >= 1"):
+        validate_workgroup_size(0, 1, 1)
+    with pytest.raises(WGSLValidationError, match="dimension exceeds WebGPU limits"):
+        validate_workgroup_size(512, 1, 1)
+    with pytest.raises(WGSLValidationError, match="dimension exceeds WebGPU limits"):
+        validate_workgroup_size(1, 1, 128)
+    with pytest.raises(WGSLValidationError, match="Total workgroup invocations"):
+        validate_workgroup_size(16, 17, 1)
+
+
+def test_wgsl_ast_node_validation():
+    emitter = WGSLEmitter()
+
+    # Valid nodes
+    var = WGSLVar("tensor_x")
+    emitter.validate(var)
+
+    idx = WGSLIndex("tensor_x", WGSLVar("idx"))
+    idx.validate()
+
+    binop = WGSLBinaryOp("+", WGSLVar("a"), WGSLVar("b"))
+    binop.validate()
+
+    unop = WGSLUnaryOp("-", WGSLVar("a"))
+    unop.validate()
+
+    assign = WGSLAssign(WGSLVar("a"), WGSLVar("b"))
+    assign.validate()
+
+    decl = WGSLDecl("let", "out_val", WGSLVar("a"))
+    decl.validate()
+
+    if_stmt = WGSLIf(WGSLVar("cond"), [assign])
+    if_stmt.validate()
+
+    for_stmt = WGSLFor(WGSLDecl("var", "i", "0"), WGSLVar("cond"), WGSLVar("step"), [assign])
+    for_stmt.validate()
+
+    fn_stmt = WGSLFunction("kernel_main", ["in0: f32"], [assign], ["@compute @workgroup_size(64, 1, 1)"])
+    fn_stmt.validate()
+
+    # Invalid cases
+    with pytest.raises(WGSLValidationError):
+        WGSLBinaryOp("invalid_op", "a", "b").validate()
+
+    with pytest.raises(WGSLValidationError):
+        WGSLUnaryOp("invalid_op", "a").validate()
+
+    with pytest.raises(WGSLValidationError, match="Invalid declaration kind"):
+        WGSLDecl("invalid_kind", "x").validate()
+
+    with pytest.raises(WGSLValidationError):
+        WGSLFunction("kernel_main", [], [], ["@compute @workgroup_size(512, 1, 1)"]).validate()
+
+
+def test_wgsl_ast_string_statements_validation():
+    """Verify validation when AST nodes contain plain string statements."""
+    emitter = WGSLEmitter()
+    emitter.validate("plain_string_node")
+
+    if_node = WGSLIf("cond", ["return;"])
+    if_node.validate()
+
+    for_node = WGSLFor("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node.validate()
+
+    func = WGSLFunction("my_func", [], ["return;"])
+    func.validate()

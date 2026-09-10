@@ -1,37 +1,118 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Common Subexpression Elimination pass."""
+"""Common Subexpression Elimination pass using structural hashing."""
 
-from ml_switcheroo_compiler.ir.core import IRGraph
+from __future__ import annotations
+
+import hashlib
+from typing import Any
+
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
+COMMUTATIVE_OPS: frozenset[str] = frozenset(
+    {
+        "Add",
+        "Mul",
+        "Multiply",
+        "Maximum",
+        "Minimum",
+        "Equal",
+        "NotEqual",
+        "BitwiseAnd",
+        "BitwiseOr",
+        "BitwiseXor",
+        "LogicalAnd",
+        "LogicalOr",
+    }
+)
 
-def _compute_node_signature(node, canonical_inputs: list[str]) -> str:
-    """Evaluate _compute_node_signature operation.
+
+def _hash_attribute_value(val: Any) -> str:
+    """Recursively compute a canonical structural representation of attribute values.
 
     Args:
-        node (object): The node parameter.
-        canonical_inputs (object): The canonical_inputs parameter.
+        val (Any): Attribute value (scalar, list, dict, IRGraph).
 
     Returns:
-        str: Result.
+        str: Canonical structural representation.
+    """
+    if isinstance(val, IRGraph):
+        sub_sigs: list[str] = []
+        sub_id_map: dict[str, str] = {}
+        input_counter = 0
+        sub_sorted = DAGTopologicalSorter.sort(val)
+        for sn in sub_sorted:
+            if sn.op_type == "Input":
+                sub_id_map[sn.id] = f"Input_{input_counter}"
+                input_counter += 1
+                continue
+            c_in = [sub_id_map.get(inp, inp) for inp in sn.inputs]
+            h = compute_node_structural_hash(sn, c_in)
+            sub_id_map[sn.id] = h
+            sub_sigs.append(f"{sn.op_type}:{h}")
+        sub_out = [sub_id_map.get(o, o) for o in getattr(val, "outputs", [])]
+        return f"IRGraph({';'.join(sub_sigs)}->{sub_out})"
+    if isinstance(val, dict):
+        items = sorted((str(k), _hash_attribute_value(v)) for k, v in val.items())
+        return f"dict({items})"
+    if isinstance(val, (list, tuple)):
+        items_seq = [_hash_attribute_value(v) for v in val]
+        return f"list({items_seq})"
+    return str(val)
+
+
+def compute_node_structural_hash(node: IRNode, canonical_inputs: list[str]) -> str:
+    """Compute structural hash of an IR node using operator commutativity and nested subgraph canonicalization.
+
+    Args:
+        node (IRNode): The IR node to evaluate.
+        canonical_inputs (list[str]): Canonical input node identifiers.
+
+    Returns:
+        str: Structural hash string.
     """
     if node.op_type == "Input":
         return f"Input_{node.id}"
-    attr_list = []
+
+    # For commutative operations, order of inputs does not affect computed value
+    ordered_inputs = list(canonical_inputs)
+    if node.op_type in COMMUTATIVE_OPS:
+        ordered_inputs.sort()
+
+    attr_list: list[tuple[str, str]] = []
     for k, v in node.attributes.items():
-        attr_list.append((k, str(v)))
-    attr_str = str(sorted(attr_list))
-    return f"{node.op_type}|{canonical_inputs}|{attr_str}"
+        attr_list.append((k, _hash_attribute_value(v)))
+    attr_list.sort(key=lambda x: x[0])
+
+    shape_str = str(getattr(node, "shape_metadata", None))
+    dtype_str = str(node.attributes.get("dtype", ""))
+
+    payload = f"{node.op_type}|{ordered_inputs}|{attr_list}|{shape_str}|{dtype_str}"
+    # Use deterministic SHA-256 digest for structural fingerprinting
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _compute_node_signature(node: IRNode, canonical_inputs: list[str]) -> str:
+    """Legacy signature interface delegating to structural hashing.
+
+    Args:
+        node (IRNode): The node parameter.
+        canonical_inputs (list[str]): The canonical_inputs parameter.
+
+    Returns:
+        str: Result signature.
+    """
+    return compute_node_structural_hash(node, canonical_inputs)
 
 
 def cse_pass(graph: IRGraph) -> bool:
-    """In-place Common Subexpression Elimination (CSE).
+    """In-place Common Subexpression Elimination (CSE) via structural hashing.
 
     Args:
         graph (IRGraph): The graph parameter.
 
     Returns:
-        bool: Result.
+        bool: True if any common subexpressions were eliminated.
     """
     modified = False
     seen_expressions: dict[str, str] = {}
@@ -40,9 +121,8 @@ def cse_pass(graph: IRGraph) -> bool:
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     for node in sorted_nodes:
-        # Map inputs to canonical inputs
         canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
-        signature = _compute_node_signature(node, canonical_inputs)
+        signature = compute_node_structural_hash(node, canonical_inputs)
 
         if signature in seen_expressions:
             canonical_id = seen_expressions[signature]
@@ -56,8 +136,7 @@ def cse_pass(graph: IRGraph) -> bool:
                 node.inputs = canonical_inputs
                 modified = True
 
-    # Update outputs to point to canonical nodes
-    new_outputs = []
+    new_outputs: list[str] = []
     for o in graph.outputs:
         new_outputs.append(id_map.get(o, o))
 

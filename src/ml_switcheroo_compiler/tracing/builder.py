@@ -154,6 +154,8 @@ class TracingNodeBuilder:
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
         out_shape = infer_shape(op_type, *shapes, **kwargs)
+        if out_shape is None:
+            out_shape = ()
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
         out_id = TracingNodeBuilder.create_tracing_logical_node(op_type, input_ids, kwargs, out_shape)

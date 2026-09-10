@@ -1,10 +1,10 @@
 operation: BesselI0
 description: The BesselI0 operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.bessel_i0
@@ -15,11 +15,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: BesselI0
-  edge_stablehlo:
-
-    opcode: stablehlo.bessel_i0
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

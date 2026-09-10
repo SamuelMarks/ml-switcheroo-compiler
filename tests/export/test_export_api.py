@@ -79,6 +79,18 @@ def test_build_signature_def_with_graph():
     assert sig is not None
 
 
+def test_build_signature_def_with_graph_no_outputs():
+    archive = ExportArchive()
+    graph = LogicalGraph()
+    input_node = LogicalNode(id="n1", op_type="Input")
+    input_node.dtype = "float32"
+    graph.nodes = {"n1": input_node}
+    graph.outputs = []
+
+    sig = archive._build_signature_def("test_sig", graph)
+    assert sig is not None
+
+
 def test_build_graph_def_no_graph():
     archive = ExportArchive()
     graph_def = archive._build_graph_def()

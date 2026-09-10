@@ -1,4 +1,8 @@
-identity:
-  jvp: ZerosLike($tangent[0])
+Identity:
+  jvp: $tangent[0]
   vjp:
-  - ZerosLike($cotangent)
+  - $cotangent
+identity:
+  jvp: $tangent[0]
+  vjp:
+  - $cotangent

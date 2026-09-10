@@ -347,3 +347,167 @@ def test_cst_transpiler_missing_branches():
     # To match we need final_node.func.attr.value to be the broadcast_method of some config.
     # We can just visit it directly
     tree = tree.visit(visitor)
+
+    # Test import matching target module directly
+    assert transpile_source("import mlx.core\n", target_framework="mlx") == "import mlx.core\n"
+
+
+def test_transpile_source_method_and_tensor_creation_rewrites() -> None:
+    """Test transpilation of method rewrites (view, permute, contiguous) and tensor creation."""
+    # 1. tensor.contiguous() -> identity
+    source_contig = "y = x.contiguous()\n"
+    assert transpile_source(source_contig, target_framework="jax") == "y = x\n"
+
+    # 2. tensor.view(...) -> tensor.reshape(...)
+    source_view = "y = x.view(2, 3)\n"
+    assert transpile_source(source_view, target_framework="jax") == "y = x.reshape(2, 3)\n"
+
+    # 3. tensor.permute(...) -> tensor.transpose(...)
+    source_perm = "y = x.permute(1, 0)\n"
+    assert transpile_source(source_perm, target_framework="jax") == "y = x.transpose(1, 0)\n"
+
+    # 4. torch.tensor(...) -> jax.numpy.array(...)
+    source_tensor = "t = torch.tensor([1, 2, 3])\n"
+    assert transpile_source(source_tensor, target_framework="jax") == "t = jax.numpy.array([1, 2, 3])\n"
+
+
+def test_cst_transpiler_advanced_transforms() -> None:
+    """Test listcomp, genexp, ifexp, early return lowering, and config fallbacks."""
+    from unittest.mock import patch
+
+    import libcst as cst
+
+    # 1. Lower early returns: if cond: return a; return b
+    src_early_ret = "def f(cond, a, b):\n    if cond:\n        return a\n    return b\n"
+    res_ret = transpile_source(src_early_ret, target_framework="jax")
+    assert "jax.numpy.where(cond, a, b)" in res_ret
+
+    # Function with 1 statement (len(body_stmts) != 2 branch 328->352)
+    src_single_stmt = "def single_stmt(x):\n    return x\n"
+    res_single = transpile_source(src_single_stmt, target_framework="jax")
+    assert "return x" in res_single
+
+    # Function with 2 statements where first is not an If (covers 328->352)
+    src_two_stmts_no_if = "def two_stmts(x):\n    y = x + 1\n    return y\n"
+    res_two = transpile_source(src_two_stmts_no_if, target_framework="jax")
+    assert "return y" in res_two
+
+    # Early returns with target_config fallback to jnp (line 338 fallback)
+    class FalsyAfterFirstCheck:
+        def __init__(self) -> None:
+            self.checked = False
+            self.method_map: dict[str, str] = {}
+
+        def __bool__(self) -> bool:
+            if not self.checked:
+                self.checked = True
+                return True
+            return False
+
+    t_dynamic = CSTTransformer("jax")
+    t_dynamic.target_config = FalsyAfterFirstCheck()  # type: ignore[assignment]
+    tree_dynamic = cst.parse_module(src_early_ret)
+    res_dynamic = tree_dynamic.visit(t_dynamic)
+    assert "jnp.where(cond, a, b)" in res_dynamic.code
+
+    # Early return with empty return (ret1 is None or ret2 is None, line 342->352)
+    src_none_ret = "def g(cond):\n    if cond:\n        return\n    return\n"
+    res_none_ret = transpile_source(src_none_ret, target_framework="jax")
+    assert "return\n" in res_none_ret
+
+    # 2. ListComp functionalization
+    src_listcomp = "[x + 1 for x in xs]\n"
+    res_listcomp = transpile_source(src_listcomp, target_framework="jax")
+    assert "list(map(lambda x: x + 1, xs))" in res_listcomp
+
+    # ListComp with non-Name target (e.g. tuple unpack)
+    src_listcomp_tuple = "[a + b for a, b in pairs]\n"
+    res_listcomp_tuple = transpile_source(src_listcomp_tuple, target_framework="jax")
+    assert "[a + b for a, b in pairs]" in res_listcomp_tuple
+
+    # 3. GeneratorExp functionalization
+    src_genexp = "(x * 2 for x in xs)\n"
+    res_genexp = transpile_source(src_genexp, target_framework="jax")
+    assert "map(lambda x: x * 2, xs)" in res_genexp
+
+    # GeneratorExp with non-Name target
+    src_genexp_tuple = "(a + b for a, b in pairs)\n"
+    res_genexp_tuple = transpile_source(src_genexp_tuple, target_framework="jax")
+    assert "(a + b for a, b in pairs)" in res_genexp_tuple
+
+    # 4. IfExp lowering
+    src_ifexp = "res = a if cond else b\n"
+    res_ifexp = transpile_source(src_ifexp, target_framework="jax")
+    assert "jax.numpy.where(cond, a, b)" in res_ifexp
+
+    # IfExp lowering with target_config None
+    transformer_no_cfg = CSTTransformer("unknown_framework")
+    tree_ifexp = cst.parse_module(src_ifexp)
+    res_tree_ifexp = tree_ifexp.visit(transformer_no_cfg)
+    assert "jnp.where(cond, a, b)" in res_tree_ifexp.code
+
+    # 5. Method rewrite targeting PyTorch (leaves view unchanged to exercise 192->188)
+    src_view_pt = "y = x.view(2, 3)\n"
+    assert transpile_source(src_view_pt, target_framework="pytorch") == "y = x.view(2, 3)\n"
+
+    # 6. Fallback hardcoded defaults if config missing (lines 197, 199, 201)
+    from ml_switcheroo_compiler.backends import cst_transpiler
+
+    with patch.object(cst_transpiler._CONFIG.syntactic_patterns, "method_to_function_rewrites", []):
+        assert transpile_source("y = x.contiguous()\n", target_framework="jax") == "y = x\n"
+        assert transpile_source("y = x.view(2, 3)\n", target_framework="jax") == "y = x.reshape(2, 3)\n"
+        assert transpile_source("y = x.permute(1, 0)\n", target_framework="jax") == "y = x.transpose(1, 0)\n"
+        # Also test view and permute targeting pytorch to cover the False branch of 199 and 201
+        assert transpile_source("y = x.view(2, 3)\n", target_framework="pytorch") == "y = x.view(2, 3)\n"
+        assert transpile_source("y = x.permute(1, 0)\n", target_framework="pytorch") == "y = x.permute(1, 0)\n"
+
+
+def test_transpile_inplace_and_augassign() -> None:
+    """Test in-place mutation and augmented assignment functionalization."""
+    # 1. In-place method mutation x.add_(y) -> x.add(y)
+    src_add_ = "x.add_(y)\n"
+    res_add_ = transpile_source(src_add_, target_framework="jax")
+    assert "x.add(y)" in res_add_
+
+    # 2. In-place sub_ -> subtract
+    src_sub_ = "x.sub_(y)\n"
+    res_sub_ = transpile_source(src_sub_, target_framework="jax")
+    assert "x.subtract(y)" in res_sub_
+
+    # 3. Augmented assignment functionalization for JAX
+    src_aug = "x += y\n"
+    res_aug = transpile_source(src_aug, target_framework="jax")
+    assert "x = x + y" in res_aug
+
+    src_sub_aug = "z -= 1\n"
+    res_sub_aug = transpile_source(src_sub_aug, target_framework="jax")
+    assert "z = z - 1" in res_sub_aug
+
+    src_mul_aug = "a *= 2\n"
+    res_mul_aug = transpile_source(src_mul_aug, target_framework="jax")
+    assert "a = a * 2" in res_mul_aug
+
+    src_div_aug = "b /= 2\n"
+    res_div_aug = transpile_source(src_div_aug, target_framework="jax")
+    assert "b = b / 2" in res_div_aug
+
+    # Unsupported aug assign op (e.g. <<=) stays unchanged
+    src_lshift_aug = "c <<= 1\n"
+    res_lshift_aug = transpile_source(src_lshift_aug, target_framework="jax")
+    assert "c <<= 1" in res_lshift_aug
+
+    # Targeting non-functional framework (e.g. pytorch) leaves augassign unchanged
+    res_pt_aug = transpile_source(src_aug, target_framework="pytorch")
+    assert "x += y" in res_pt_aug
+
+
+def test_declarative_cst_rewrite_rules_loading() -> None:
+    """Test loading and validation of declarative CST rewrite rules from YAML."""
+    from ml_switcheroo_compiler.backends.transpiler_config_models import load_cst_rewrite_rules
+
+    rules = load_cst_rewrite_rules()
+    assert len(rules.method_substitutions) > 0
+    assert len(rules.chain_removals) > 0
+    assert len(rules.in_place_mutations) > 0
+    assert len(rules.tensor_creation_rewrites) > 0
+    assert len(rules.broadcasting_rules) > 0

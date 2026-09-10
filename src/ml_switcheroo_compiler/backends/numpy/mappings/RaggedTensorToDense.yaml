@@ -1,2 +1,2 @@
 RaggedTensorToDense:
-  target_api: np.raggedtensortodense
+  target_api: custom_op

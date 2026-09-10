@@ -6,6 +6,7 @@ from __future__ import annotations
 import glob
 import os
 import shutil
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -37,7 +38,7 @@ def read_file(filename: str | Tensor, name=None):
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name=None) -> None:
+def write_file(filename: str | Tensor, contents: Tensor, name=None) -> Any:
     """Write file.
 
     Args:
@@ -46,7 +47,7 @@ def write_file(filename: str | Tensor, contents: Tensor, name=None) -> None:
         name (str): The name parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 

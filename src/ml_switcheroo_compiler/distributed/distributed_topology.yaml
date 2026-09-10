@@ -1,0 +1,197 @@
+version: "1.0"
+
+cluster_topologies:
+  h100_nvlink_8gpu:
+    num_nodes: 1
+    devices_per_node: 8
+    interconnect:
+      bus_type: "nvlink"
+      bandwidth_gbps: 900.0
+      latency_us: 0.5
+      bidirectional: true
+    network_type: "nvlink_mesh"
+    description: "Single-node 8x NVIDIA H100 SXM5 NVLink interconnect cluster"
+
+  a100_cluster_32gpu:
+    num_nodes: 4
+    devices_per_node: 8
+    interconnect:
+      bus_type: "infiniband"
+      bandwidth_gbps: 400.0
+      latency_us: 1.2
+      bidirectional: true
+    network_type: "infiniband_fat_tree"
+    description: "Multi-node 4x8 NVIDIA A100 cluster with 400Gb/s InfiniBand HDR fabric"
+
+  edge_webrtc_mesh:
+    num_nodes: 4
+    devices_per_node: 1
+    interconnect:
+      bus_type: "webrtc"
+      bandwidth_gbps: 0.1
+      latency_us: 25000.0
+      bidirectional: true
+    network_type: "webrtc_p2p"
+    description: "In-browser peer-to-peer data mesh over WebRTC RTCDataChannels"
+
+device_mesh_grids:
+  ring_1d_4:
+    shape: [4]
+    axis_names: ["data"]
+    devices: [0, 1, 2, 3]
+    topology: "ring"
+    interconnect_bandwidth_gbps: 100.0
+    collective_algorithms:
+      AllReduce: "ring"
+      AllGather: "ring"
+
+  mesh_2d_2x2:
+    shape: [2, 2]
+    axis_names: ["data", "model"]
+    devices: [0, 1, 2, 3]
+    topology: "grid"
+    interconnect_bandwidth_gbps: 300.0
+    collective_algorithms:
+      AllReduce: "ring"
+      AllGather: "recursive_doubling"
+
+  mesh_2d_4x2:
+    shape: [4, 2]
+    axis_names: ["dp", "tp"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    topology: "grid"
+    interconnect_bandwidth_gbps: 450.0
+    collective_algorithms:
+      AllReduce: "ring"
+      AllGather: "recursive_doubling"
+
+  torus_2d_4x4:
+    shape: [4, 4]
+    axis_names: ["dp", "tp"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    topology: "torus"
+    interconnect_bandwidth_gbps: 600.0
+    collective_algorithms:
+      AllReduce: "ring"
+      AllGather: "recursive_doubling"
+
+  cube_3d_2x2x2:
+    shape: [2, 2, 2]
+    axis_names: ["pipeline", "data", "model"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    topology: "hypercube"
+    interconnect_bandwidth_gbps: 900.0
+    collective_algorithms:
+      AllReduce: "ring"
+      AllGather: "recursive_doubling"
+
+collective_algorithms:
+  - collective_op: "AllReduce"
+    algorithm: "ring"
+    min_bytes: 0
+    max_bytes: null
+    topology_type: "ring"
+
+  - collective_op: "AllGather"
+    algorithm: "recursive_doubling"
+    min_bytes: 0
+    max_bytes: null
+    topology_type: "grid"
+
+  - collective_op: "ReduceScatter"
+    algorithm: "ring"
+    min_bytes: 0
+    max_bytes: null
+    topology_type: "ring"
+
+  - collective_op: "AllToAll"
+    algorithm: "direct"
+    min_bytes: 0
+    max_bytes: null
+    topology_type: "full_mesh"
+
+pipeline_topologies:
+  default:
+    microbatch_splitting:
+      num_microbatches: 4
+      strategy: "1f1b"
+    mesh_mapping:
+      devices_per_stage: 1
+    stage_communication:
+      protocol: "tcp"
+    dependencies: []
+    schedule:
+      phases:
+        - type: "warmup"
+          operations: ["forward"]
+          count_expression: "num_stages - 1"
+        - type: "steady"
+          operations: ["forward", "backward"]
+          count_expression: "num_microbatches - num_stages + 1"
+        - type: "cooldown"
+          operations: ["backward"]
+          count_expression: "num_stages - 1"
+
+  1f1b:
+    microbatch_splitting:
+      num_microbatches: 4
+      strategy: "1f1b"
+    mesh_mapping:
+      devices_per_stage: 1
+    stage_communication:
+      protocol: "sync"
+    dependencies:
+      - offset_mb: 0
+        source_stage: "forward"
+        target_stage: "backward"
+    schedule:
+      phases:
+        - type: "warmup"
+          operations: ["forward"]
+          count_expression: "num_stages - 1"
+        - type: "steady"
+          operations: ["forward", "backward"]
+          count_expression: "num_microbatches - num_stages + 1"
+        - type: "cooldown"
+          operations: ["backward"]
+          count_expression: "num_stages - 1"
+
+  gpipe:
+    microbatch_splitting:
+      num_microbatches: 8
+      strategy: "sequential"
+    mesh_mapping:
+      devices_per_stage: 1
+    stage_communication:
+      protocol: "rpc"
+    dependencies: []
+    schedule:
+      phases:
+        - type: "forward_flush"
+          operations: ["forward"]
+          count_expression: "num_microbatches"
+        - type: "backward_flush"
+          operations: ["backward"]
+          count_expression: "num_microbatches"
+
+  webrtc_pipeline:
+    microbatch_splitting:
+      num_microbatches: 4
+      strategy: "1f1b"
+    mesh_mapping:
+      devices_per_stage: 1
+    stage_communication:
+      protocol: "webrtc"
+    dependencies: []
+    schedule:
+      phases:
+        - type: "warmup"
+          operations: ["forward"]
+          count_expression: "num_stages - 1"
+
+webrtc_topology:
+  ice_servers:
+    - urls: stun:stun.l.google.com:19302
+    - urls: stun:stun1.l.google.com:19302
+  signaling:
+    timeout_ms: 5000

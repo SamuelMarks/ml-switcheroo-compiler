@@ -1,4 +1,4 @@
 Exp:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul($tangent[0], Exp($input[0]))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Exp($input[0]))

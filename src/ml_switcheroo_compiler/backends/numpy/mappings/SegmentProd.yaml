@@ -1,2 +1,2 @@
 SegmentProd:
-  target_api: np.segmentprod
+  target_api: custom_op

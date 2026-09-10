@@ -1,2 +1,2 @@
 Fromiter:
-  target_api: '''mx.fromiter({0})'''
+  target_api: custom_op

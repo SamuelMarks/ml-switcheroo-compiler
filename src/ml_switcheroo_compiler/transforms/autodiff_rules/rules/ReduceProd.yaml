@@ -1,4 +1,5 @@
 ReduceProd:
-  jvp: ZerosLike($tangent[0])
+  jvp: ReduceSum(Mul($tangent[0], Div(BroadcastLike($output, $input[0]), $input[0])))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul(BroadcastLike($cotangent, $input[0]), Div(BroadcastLike($output, $input[0]),
+    $input[0]))

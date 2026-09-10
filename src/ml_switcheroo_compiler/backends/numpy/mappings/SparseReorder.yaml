@@ -1,3 +1,2 @@
 SparseReorder:
-  ast_template: tf.sparse.reorder
-  target_api: ''
+  target_api: custom_op

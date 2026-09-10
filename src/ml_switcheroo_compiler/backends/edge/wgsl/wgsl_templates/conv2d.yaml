@@ -1,12 +1,41 @@
-Conv2D:
-  body: "\nlet x = global_id.x;\nlet y = global_id.y;\nif (x >= {out_w}u || y >= {out_h}u)\
-    \ { return; }\nvar acc: f32 = 0.0;\nfor (var ky = 0u; ky < {kernel_h}u; ky = ky\
-    \ + 1u) {\n    for (var kx = 0u; kx < {kernel_w}u; kx = kx + 1u) {\n        let\
-    \ in_x = x * {stride_w}u + kx;\n        let in_y = y * {stride_h}u + ky;\n   \
-    \     let in_idx = in_y * {in_w}u + in_x;\n        let w_idx = ky * {kernel_w}u\
-    \ + kx;\n        acc = acc + buf_in_f32[in_idx] * buf_weight_f32[w_idx];\n   \
-    \ }\n}\nlet out_idx = y * {out_w}u + x;\nbuf_out_f32[out_idx] = acc;\n"
-  workgroup_size:
-  - 8
-  - 8
-  - 1
+templates:
+  conv2d:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "let out_x = global_id.x;\nlet out_y = global_id.y;\n\nlet out_width = {out_width}u;\n\
+      let out_height = {out_height}u;\nlet in_channels = {in_channels}u;\nlet out_channels\
+      \ = {out_channels}u;\nlet stride_h = {stride_h}u;\nlet stride_w = {stride_w}u;\n\
+      let filter_h = {filter_h}u;\nlet filter_w = {filter_w}u;\nlet in_width = {in_width}u;\n\
+      \nif (out_x >= out_width || out_y >= out_height) {{\n    return;\n}}\n\nfor\
+      \ (var oc: u32 = 0u; oc < out_channels; oc = oc + 1u) {{\n    var sum: f32 =\
+      \ 0.0;\n    for (var ic: u32 = 0u; ic < in_channels; ic = ic + 1u) {{\n    \
+      \    for (var fy: u32 = 0u; fy < filter_h; fy = fy + 1u) {{\n            for\
+      \ (var fx: u32 = 0u; fx < filter_w; fx = fx + 1u) {{\n                let in_y\
+      \ = out_y * stride_h + fy;\n                let in_x = out_x * stride_w + fx;\n\
+      \                let in_idx = (in_y * in_width + in_x) * in_channels + ic;\n\
+      \                let w_idx = ((oc * in_channels + ic) * filter_h + fy) * filter_w\
+      \ + fx;\n                sum = sum + buf_in0_f32[in_idx] * buf_in1_f32[w_idx];\n\
+      \            }}\n        }}\n    }}\n    let out_idx = (out_y * out_width +\
+      \ out_x) * out_channels + oc;\n    buf_out_f32[out_idx] = sum;\n}}\n"
+  im2col_conv2d:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "let out_x = global_id.x;\nlet out_y = global_id.y;\n\nlet out_width = {out_width}u;\n\
+      let out_height = {out_height}u;\nlet in_channels = {in_channels}u;\nlet out_channels\
+      \ = {out_channels}u;\nlet stride_h = {stride_h}u;\nlet stride_w = {stride_w}u;\n\
+      let filter_h = {filter_h}u;\nlet filter_w = {filter_w}u;\nlet in_width = {in_width}u;\n\
+      \nif (out_x >= out_width || out_y >= out_height) {{\n    return;\n}}\n\nfor\
+      \ (var oc: u32 = 0u; oc < out_channels; oc = oc + 1u) {{\n    var sum: f32 =\
+      \ 0.0;\n    for (var ic: u32 = 0u; ic < in_channels; ic = ic + 1u) {{\n    \
+      \    for (var fy: u32 = 0u; fy < filter_h; fy = fy + 1u) {{\n            for\
+      \ (var fx: u32 = 0u; fx < filter_w; fx = fx + 1u) {{\n                let in_y\
+      \ = out_y * stride_h + fy;\n                let in_x = out_x * stride_w + fx;\n\
+      \                let in_idx = (in_y * in_width + in_x) * in_channels + ic;\n\
+      \                let w_idx = ((oc * in_channels + ic) * filter_h + fy) * filter_w\
+      \ + fx;\n                sum = sum + buf_in0_f32[in_idx] * buf_in1_f32[w_idx];\n\
+      \            }}\n        }}\n    }}\n    let out_idx = (out_y * out_width +\
+      \ out_x) * out_channels + oc;\n    buf_out_f32[out_idx] = sum;\n}}\n"

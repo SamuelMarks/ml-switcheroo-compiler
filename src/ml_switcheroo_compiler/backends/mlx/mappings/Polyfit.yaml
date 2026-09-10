@@ -1,2 +1,2 @@
 Polyfit:
-  target_api: '''mx.polyfit({0})'''
+  target_api: custom_op

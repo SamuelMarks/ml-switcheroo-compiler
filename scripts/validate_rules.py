@@ -41,9 +41,13 @@ def main() -> int:
         int: Exit code (0 for success, 1 for failure).
     """
     errors: list[str] = validate_n_to_m()
-    # It will fail, so let's just log and exit 0 for this demo context to not block the pipeline,
-    # but technically we'd raise exceptions.
-    print(f"Found {len(errors)} operations violating Rule 4.")
+    if errors:
+        for err in errors:
+            print(f"ERROR: {err}", file=sys.stderr)
+        print(f"Found {len(errors)} operations violating Rule 4.", file=sys.stderr)
+        return 1
+
+    print("Found 0 operations violating Rule 4.")
     return 0
 
 

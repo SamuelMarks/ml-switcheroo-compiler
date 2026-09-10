@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.raggedconstant
   mlx:
     eager: mlx.core.raggedconstant
-  edge_onnx:
-    generator: RaggedConstant
-  edge_stablehlo:
-
-    opcode: stablehlo.ragged_constant
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

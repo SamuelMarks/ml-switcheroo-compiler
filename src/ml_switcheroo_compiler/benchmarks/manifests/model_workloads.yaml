@@ -1,0 +1,102 @@
+models:
+  mlp_model:
+    description: "Two-layer Multi-Layer Perceptron forward pass with ReLU"
+    inputs:
+      in_0:
+        shape: [128]
+        dtype: "float32"
+    weights:
+      w_0:
+        shape: [128, 256]
+        dtype: "float32"
+      w_1:
+        shape: [256, 64]
+        dtype: "float32"
+    nodes:
+      - id: "dense_0"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_0"]
+        attributes: {}
+      - id: "act_0"
+        op_type: "Relu"
+        inputs: ["dense_0"]
+        attributes: {}
+      - id: "dense_1"
+        op_type: "MatMul"
+        inputs: ["act_0", "w_1"]
+        attributes: {}
+    outputs: ["dense_1"]
+
+  conv_net:
+    description: "Simple Convolutional network forward step"
+    inputs:
+      in_0:
+        shape: [3, 32, 32]
+        dtype: "float32"
+    weights:
+      w_conv:
+        shape: [16, 3, 3, 3]
+        dtype: "float32"
+    nodes:
+      - id: "conv_0"
+        op_type: "Conv2D"
+        inputs: ["in_0", "w_conv"]
+        attributes:
+          stride: [1, 1]
+          padding: "SAME"
+      - id: "act_0"
+        op_type: "Relu"
+        inputs: ["conv_0"]
+        attributes: {}
+      - id: "pool_0"
+        op_type: "MaxPool2D"
+        inputs: ["act_0"]
+        attributes:
+          kernel_size: [2, 2]
+          stride: [2, 2]
+    outputs: ["pool_0"]
+
+  attention_block:
+    description: "Self-attention block forward computation"
+    inputs:
+      in_0:
+        shape: [64, 128]
+        dtype: "float32"
+    weights:
+      w_q:
+        shape: [128, 128]
+        dtype: "float32"
+      w_k:
+        shape: [128, 128]
+        dtype: "float32"
+      w_v:
+        shape: [128, 128]
+        dtype: "float32"
+    nodes:
+      - id: "proj_q"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_q"]
+        attributes: {}
+      - id: "proj_k"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_k"]
+        attributes: {}
+      - id: "proj_v"
+        op_type: "MatMul"
+        inputs: ["in_0", "w_v"]
+        attributes: {}
+      - id: "scores"
+        op_type: "MatMul"
+        inputs: ["proj_q", "proj_k"]
+        attributes:
+          transpose_b: true
+      - id: "probs"
+        op_type: "Softmax"
+        inputs: ["scores"]
+        attributes:
+          axis: -1
+      - id: "attn_out"
+        op_type: "MatMul"
+        inputs: ["probs", "proj_v"]
+        attributes: {}
+    outputs: ["attn_out"]

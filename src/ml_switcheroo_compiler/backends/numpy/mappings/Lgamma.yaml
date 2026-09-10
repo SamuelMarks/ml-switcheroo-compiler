@@ -1,2 +1,2 @@
 Lgamma:
-  target_api: np.lgamma
+  target_api: custom_op

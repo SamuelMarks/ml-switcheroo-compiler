@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.tensorscatteradd
   mlx:
     eager: mlx.core.tensorscatteradd
-  edge_onnx:
-    generator: TensorScatterAdd
-  edge_stablehlo:
-
-    opcode: stablehlo.tensor_scatter_add
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.bfloat16storage
   mlx:
     eager: mlx.core.bfloat16storage
-  edge_onnx:
-    generator: BFloat16Storage
-  edge_stablehlo:
-
-    opcode: stablehlo.b_float16_storage
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,2 +1,2 @@
 UnsortedSegmentMin:
-  target_api: np.unsortedsegmentmin
+  target_api: custom_op

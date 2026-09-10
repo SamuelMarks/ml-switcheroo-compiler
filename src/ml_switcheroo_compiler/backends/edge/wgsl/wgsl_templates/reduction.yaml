@@ -1,8 +1,21 @@
-reduction:
-  body: "let idx = global_id.x;\nif (idx == 0u) {{{{\n    {init_code}\n    for (var\
-    \ i = {start_idx}u; i < {nelem_in}u; i++) {{{{\n        {loop_code}\n    }}}}\n\
-    \    {post_loop_code}\n    buf_out_f32[0] = {result_var};\n}}}}\n"
-  workgroup_size:
-  - 256
-  - 1
-  - 1
+templates:
+  reduction:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let row: u32 = global_id.y;\nlet col: u32 = global_id.x;\nlet M: u32 =\
+      \ {M}u;\nlet N: u32 = {N}u;\nif (row >= M) {{\n    return;\n}}\nlet base: u32\
+      \ = row * N;\n{init_code}\nfor (var i: u32 = 0u; i < N; i = i + 1u) {{\n   \
+      \ {loop_code}\n}}\n{post_loop_code}\nbuf_out_f32[row] = {result_var};\n"
+  reduction_barrier:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "var<workgroup> sdata: array<f32, 64>;\nlet tid: u32 = local_id.x;\nlet\
+      \ gid: u32 = global_id.x;\n\nvar my_val: f32 = 0.0;\nif (gid < {nelem}u) {{\n\
+      \    my_val = buf_in0_f32[gid];\n}}\nsdata[tid] = my_val;\nworkgroupBarrier();\n\
+      \nfor (var s: u32 = 32u; s > 0u; s = s / 2u) {{\n    if (tid < s) {{\n     \
+      \   sdata[tid] = sdata[tid] + sdata[tid + s];\n    }}\n    workgroupBarrier();\n\
+      }}\n\nif (tid == 0u) {{\n    buf_out_f32[workgroup_id.x] = sdata[0];\n}}\n"

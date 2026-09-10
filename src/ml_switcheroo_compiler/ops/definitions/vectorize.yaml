@@ -1,7 +1,0 @@
-operation: vectorize
-description: Auto-generated from jax_code_defs
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

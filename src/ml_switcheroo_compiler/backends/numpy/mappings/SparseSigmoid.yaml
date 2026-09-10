@@ -1,2 +1,2 @@
 SparseSigmoid:
-  target_api: np.sparsesigmoid
+  target_api: custom_op

@@ -1,7 +1,0 @@
-operation: TrainState
-description: Auto-generated mapping for TrainState.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

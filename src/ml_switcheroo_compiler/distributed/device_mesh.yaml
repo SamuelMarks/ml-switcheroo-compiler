@@ -1,0 +1,51 @@
+version: "1.0"
+cluster_meshes:
+  default:
+    shape: [4]
+    axis_names: ["data"]
+    devices: [0, 1, 2, 3]
+    topology: "ring"
+  ring_1d_4:
+    shape: [4]
+    axis_names: ["data"]
+    devices: [0, 1, 2, 3]
+    topology: "ring"
+  mesh_2d_2x2:
+    shape: [2, 2]
+    axis_names: ["data", "model"]
+    devices: [0, 1, 2, 3]
+    topology: "grid"
+  mesh_2d_4x2:
+    shape: [4, 2]
+    axis_names: ["dp", "tp"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    topology: "grid"
+  torus_2d_4x4:
+    shape: [4, 4]
+    axis_names: ["dp", "tp"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    topology: "torus"
+  pipeline_mesh_4:
+    shape: [4, 1]
+    axis_names: ["stage", "replica"]
+    devices: [0, 1, 2, 3]
+    topology: "pipeline"
+  cube_3d_2x2x2:
+    shape: [2, 2, 2]
+    axis_names: ["pipeline", "data", "model"]
+    devices: [0, 1, 2, 3, 4, 5, 6, 7]
+    topology: "hypercube"
+
+communication_topologies:
+  ring:
+    type: "ring"
+    description: "1D cyclic ring where each rank connects to (rank-1)%N and (rank+1)%N"
+  tree:
+    type: "binary_tree"
+    description: "Hierarchical binary reduction tree with parent and child node pairs"
+  full_mesh:
+    type: "all_to_all"
+    description: "Direct all-to-all peer connections between all participating ranks"
+  pipeline:
+    type: "linear_pipeline"
+    description: "Unidirectional linear stage pipeline between adjacent stages"

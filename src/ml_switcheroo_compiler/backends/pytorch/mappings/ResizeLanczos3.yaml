@@ -1,0 +1,3 @@
+ResizeLanczos3:
+  ast_template: torch.nn.functional.interpolate({0}, mode='linear')
+  target_api: ''

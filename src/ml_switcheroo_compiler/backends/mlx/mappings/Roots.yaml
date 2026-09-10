@@ -1,2 +1,2 @@
 Roots:
-  target_api: '''mx.roots({0})'''
+  target_api: custom_op

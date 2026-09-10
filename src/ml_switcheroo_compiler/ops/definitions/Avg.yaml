@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.avg
   mlx:
     eager: mlx.core.avg
-  edge_onnx:
-    generator: Avg
-  edge_stablehlo:
-
-    opcode: stablehlo.avg
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

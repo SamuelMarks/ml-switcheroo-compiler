@@ -39,9 +39,9 @@ def test_validate_n_to_m():
 
 def test_main(capsys):
     with patch("scripts.validate_rules.validate_n_to_m", return_value=["err1", "err2"]):
-        assert main() == 0
+        assert main() == 1
         captured = capsys.readouterr()
-        assert "Found 2 operations violating" in captured.out
+        assert "Found 2 operations violating" in captured.err
 
 
 def test_main_block(capsys):

@@ -1,14 +1,14 @@
 operation: BitwiseAnd
 description: The BitwiseAnd operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: other
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Any
 variants:
   cupy:
     eager: cp.bitwise_and
@@ -24,8 +24,7 @@ variants:
   edge_onnx:
     generator: BitwiseAnd
   edge_stablehlo:
-
-    opcode: stablehlo.bitwise_and
+    opcode: stablehlo.and
   edge_wgsl:
     template: binary
     expr: f32(u32(buf_in0_f32[in0_offset]) & u32(buf_in1_f32[in1_offset]))

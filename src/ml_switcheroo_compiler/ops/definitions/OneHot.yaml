@@ -1,14 +1,14 @@
 operation: OneHot
 description: The OneHot operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: num_classes
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: num_classes
+  type: int
 variants:
   keras:
     eager: keras_ops.one_hot
@@ -23,9 +23,6 @@ variants:
   mlx: {}
   edge_onnx:
     generator: OneHot
-  edge_stablehlo:
-
-    opcode: stablehlo.one_hot
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

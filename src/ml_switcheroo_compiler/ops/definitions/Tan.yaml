@@ -1,10 +1,10 @@
 operation: tan
 description: The Tan operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.tan
@@ -24,9 +24,6 @@ variants:
     eager: jax.numpy.tan
   mlx:
     eager: mlx.core.tan
-  edge_stablehlo:
-
-    opcode: stablehlo.tan
   edge_wgsl:
     template: unary
     expr: tan(buf_in0_f32[in0_offset])
@@ -35,5 +32,5 @@ variants:
     scalar_expr: in0_val
 autodiff:
   vjp:
-    - Multiply($cotangent, TrueDivide(Constant(1.0), Multiply(Cos($input[0]), Cos($input[0]))))
+  - Multiply($cotangent, TrueDivide(Constant(1.0), Multiply(Cos($input[0]), Cos($input[0]))))
   jvp: Multiply($tangent[0], TrueDivide(Constant(1.0), Multiply(Cos($input[0]), Cos($input[0]))))

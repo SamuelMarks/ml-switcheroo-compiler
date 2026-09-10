@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.flipud
   mlx:
     eager: mlx.core.flipud
-  edge_onnx:
-    generator: flipud
-  edge_stablehlo:
-
-    opcode: stablehlo.flipud
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

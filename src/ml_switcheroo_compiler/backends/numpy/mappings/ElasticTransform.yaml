@@ -1,0 +1,3 @@
+ElasticTransform:
+  ast_template: np_elastic_transform({0}, {1}, '{interpolation}', {fill_value}, '{data_format}')
+  target_api: ''

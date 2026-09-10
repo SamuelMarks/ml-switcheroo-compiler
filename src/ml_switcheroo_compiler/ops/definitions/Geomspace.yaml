@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.geomspace
   mlx:
     eager: mlx.core.geomspace
-  edge_onnx:
-    generator: geomspace
-  edge_stablehlo:
-
-    opcode: stablehlo.geomspace
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

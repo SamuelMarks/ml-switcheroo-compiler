@@ -1,2 +1,2 @@
 Slogdet:
-  target_api: '''mx.linalg.slogdet({0})'''
+  target_api: custom_op

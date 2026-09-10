@@ -1,2 +1,2 @@
 Collapse:
-  target_api: jax.numpy.collapse
+  target_api: custom_op

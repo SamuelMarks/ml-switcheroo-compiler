@@ -22,11 +22,7 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-
-    generator: Minimum
   edge_stablehlo:
-
     opcode: stablehlo.minimum
   edge_wgsl:
     template: binary

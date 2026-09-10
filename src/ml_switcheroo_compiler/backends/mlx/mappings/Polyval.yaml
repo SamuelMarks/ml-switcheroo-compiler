@@ -1,2 +1,2 @@
 Polyval:
-  target_api: '''mx.polyval({0})'''
+  target_api: custom_op

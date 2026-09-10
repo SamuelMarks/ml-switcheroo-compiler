@@ -1,0 +1,3 @@
+MedianFilter:
+  ast_template: jax_median_filter({0})
+  target_api: ''

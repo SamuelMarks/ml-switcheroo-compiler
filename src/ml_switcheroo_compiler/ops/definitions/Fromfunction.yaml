@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.fromfunction
   mlx:
     eager: mlx.core.fromfunction
-  edge_onnx:
-    generator: fromfunction
-  edge_stablehlo:
-
-    opcode: stablehlo.fromfunction
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

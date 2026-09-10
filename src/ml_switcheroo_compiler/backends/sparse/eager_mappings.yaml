@@ -1,0 +1,34 @@
+backend_name: sparse
+operations:
+  coo_fromdense:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_fromdense
+  coo_todense:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_todense
+  coo_matmat:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_matmat
+  coo_matvec:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_matvec
+  Add:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_add
+  Sub:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_sub
+  Mul:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_mul
+  Neg:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_neg
+  Abs:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_abs
+  Transpose:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_transpose
+  Sum:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_sum
+  Mean:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_mean
+  Relu:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_relu
+  Reshape:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_reshape
+  Dot:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_dot
+  MatMul:
+    target_api: ml_switcheroo_compiler.backends.sparse.kernels.coo_matmat

@@ -1,5 +1,15 @@
 import pytest
 
+try:
+    import torch  # noqa: F401
+except Exception:
+    pass
+
+try:
+    import jax  # noqa: F401
+except Exception:
+    pass
+
 
 @pytest.fixture(autouse=True)
 def reset_global_tracing_state():

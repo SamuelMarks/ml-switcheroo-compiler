@@ -1,0 +1,34 @@
+execution_order:
+  - polyfill_lowering
+  - type_promotion_explicitizer
+  - broadcast_explicitizer
+  - constant_folding
+  - dead_code_elimination
+  - common_subexpression_elimination
+  - operator_fusion
+  - graph_scheduling
+  - buffer_allocation
+  - spmd
+convergence_criteria:
+  max_iterations: 10
+  detect_cyclic_oscillation: true
+  require_fixpoint: true
+prerequisites:
+  type_promotion_explicitizer:
+    - polyfill_lowering
+  broadcast_explicitizer:
+    - type_promotion_explicitizer
+  constant_folding:
+    - broadcast_explicitizer
+  dead_code_elimination:
+    - constant_folding
+  common_subexpression_elimination:
+    - dead_code_elimination
+  operator_fusion:
+    - common_subexpression_elimination
+  graph_scheduling:
+    - operator_fusion
+  buffer_allocation:
+    - graph_scheduling
+  spmd:
+    - buffer_allocation

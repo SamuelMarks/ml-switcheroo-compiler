@@ -7,6 +7,7 @@ from __future__ import annotations
 """Core abstractions and logic definitions for utils.py."""
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -18,8 +19,8 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 def _build_linalg_output_tensors(
     out_ids: list[str],
-    out_shapes: Sequence[Sequence[int]],
-    out_dtypes: Sequence[DType],
+    out_shapes: Sequence[Sequence[Any]],
+    out_dtypes: Sequence[DType | str | Any],
     device,
 ) -> list[Tensor]:
     """Evaluate _build_linalg_output_tensors operation.
@@ -44,8 +45,8 @@ def _emit_linalg_node(
     op_type: str,
     inputs: Sequence[Tensor],
     attrs,
-    out_shapes: Sequence[Sequence[int]],
-    out_dtypes: Sequence[DType],
+    out_shapes: Sequence[Sequence[Any]],
+    out_dtypes: Sequence[DType | str | Any],
 ) -> Tensor | tuple[Tensor, ...]:
     """Emit a linear algebra operation node to the tracing IR graph.
 

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.squareplus
   mlx:
     eager: mlx.core.squareplus
-  edge_onnx:
-    generator: squareplus
-  edge_stablehlo:
-
-    opcode: stablehlo.squareplus
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

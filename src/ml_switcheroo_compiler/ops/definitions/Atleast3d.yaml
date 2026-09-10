@@ -1,10 +1,10 @@
 operation: Atleast3d
 description: Returns a 3-dimensional view.
 std_args:
-  - is_variadic: true
-    kind: positional_or_keyword
-    name: tensors
-    type: Tensor
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: Tensor
 variants:
   numpy:
     eager: numpy.atleast3d
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.atleast3d
   mlx:
     eager: mlx.core.atleast3d
-  edge_onnx:
-    generator: Atleast3d
-  edge_stablehlo:
-
-    opcode: stablehlo.atleast3d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

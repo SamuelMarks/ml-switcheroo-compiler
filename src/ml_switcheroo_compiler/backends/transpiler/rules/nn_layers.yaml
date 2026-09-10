@@ -1,0 +1,61 @@
+# Declarative Neural Network Layers Transpilation Rules
+ast_to_ir_ops:
+  torch.nn.functional.conv1d: Conv1D
+  torch.nn.functional.conv2d: Conv2D
+  torch.nn.functional.conv3d: Conv3D
+  jax.lax.conv_general_dilated: Conv2D
+  mlx.core.conv2d: Conv2D
+  torch.nn.functional.max_pool2d: MaxPool2D
+  torch.nn.functional.avg_pool2d: AvgPool2D
+  torch.nn.functional.batch_norm: BatchNorm
+  torch.nn.functional.layer_norm: LayerNorm
+  torch.nn.functional.linear: Linear
+  torch.nn.functional.dropout: Dropout
+  torch.nn.functional.embedding: Embedding
+
+ir_to_ast_ops:
+  Conv1D:
+    pytorch: [torch, nn, functional, conv1d]
+    jax: [jax, lax, conv_general_dilated]
+    mlx: [mlx, core, conv1d]
+  Conv2D:
+    pytorch: [torch, nn, functional, conv2d]
+    jax: [jax, lax, conv_general_dilated]
+    mlx: [mlx, core, conv2d]
+  Conv3D:
+    pytorch: [torch, nn, functional, conv3d]
+    jax: [jax, lax, conv_general_dilated]
+    mlx: [mlx, core, conv3d]
+  MaxPool2D:
+    pytorch: [torch, nn, functional, max_pool2d]
+    jax: [jax, lax, reduce_window]
+    mlx: [mlx, core, max_pool2d]
+  AvgPool2D:
+    pytorch: [torch, nn, functional, avg_pool2d]
+    jax: [jax, lax, reduce_window]
+    mlx: [mlx, core, avg_pool2d]
+  BatchNorm:
+    pytorch: [torch, nn, functional, batch_norm]
+    jax: [jax, numpy, batch_norm]
+    mlx: [mlx, core, batch_norm]
+  LayerNorm:
+    pytorch: [torch, nn, functional, layer_norm]
+    jax: [jax, numpy, layer_norm]
+    mlx: [mlx, core, layer_norm]
+  Linear:
+    pytorch: [torch, nn, functional, linear]
+    jax: [jax, numpy, matmul]
+    mlx: [mlx, core, matmul]
+  Dropout:
+    pytorch: [torch, nn, functional, dropout]
+    jax: [jax, random, bernoulli]
+    mlx: [mlx, core, dropout]
+  Embedding:
+    pytorch: [torch, nn, functional, embedding]
+    jax: [jax, numpy, take]
+    mlx: [mlx, core, take]
+
+kwarg_translations:
+  kernel_size: window_shape
+  stride: strides
+  padding: padding

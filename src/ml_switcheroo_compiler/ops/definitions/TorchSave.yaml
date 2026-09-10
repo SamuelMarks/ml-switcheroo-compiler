@@ -1,8 +1,8 @@
 operation: TorchSave
 description: Definition for TorchSave
 std_args:
-  - obj
-  - f
+- obj
+- f
 variants:
   pytorch:
     eager: torch.save
@@ -20,11 +20,6 @@ variants:
     eager: keras_ops.torchsave
   mlx:
     eager: mlx.core.torchsave
-  edge_onnx:
-    generator: TorchSave
-  edge_stablehlo:
-
-    opcode: stablehlo.torch_save
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

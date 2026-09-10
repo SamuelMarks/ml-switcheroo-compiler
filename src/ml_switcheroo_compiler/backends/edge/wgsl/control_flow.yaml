@@ -1,0 +1,42 @@
+control_flow_templates:
+  while_loop:
+    body: |
+      let idx = global_id.x;
+      if (idx < {nelem}u) {{
+          var current_state: f32 = {init_state};
+          var iter: i32 = 0;
+          let max_iters: i32 = {max_iters};
+          while ({condition_expr} && iter < max_iters) {{
+              {loop_body}
+              iter = iter + 1;
+          }}
+          buf_out_f32[idx] = current_state;
+      }}
+    predicate_formula: "{predicate_var} {comparator} {threshold}"
+    default_predicate: "current_state > 0.0"
+
+  cond:
+    body: |
+      let idx = global_id.x;
+      if (idx < {nelem}u) {{
+          if ({condition_expr}) {{
+              {true_body}
+          }} else {{
+              {false_body}
+          }}
+      }}
+    predicate_formula: "{predicate_buffer}[idx] {comparator} {threshold}"
+    default_predicate: "{condition_buffer}[idx] > 0.0"
+
+  scan:
+    body: |
+      let idx = global_id.x;
+      if (idx == 0u) {{
+          var acc: f32 = {init_val};
+          for (var i: u32 = 0u; i < {nelem}u; i = i + 1u) {{
+              acc = {scan_op_expr};
+              buf_out_f32[i] = acc;
+          }}
+      }}
+    default_init: "0.0"
+    accumulation_formula: "{acc_var} + {elem_buffer}[i]"

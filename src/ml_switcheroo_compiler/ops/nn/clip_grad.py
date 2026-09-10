@@ -6,7 +6,7 @@
 from collections.abc import Iterable
 from typing import Any, Union
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power
 from ml_switcheroo_compiler.ops.reductions import max as reduce_max
 from ml_switcheroo_compiler.ops.reductions import sum as reduce_sum
@@ -88,19 +88,19 @@ def clip_grad_norm(
     Returns:
         A tuple of (clipped_parameters, total_norm).
     """
-    is_single_tensor = isinstance(parameters, Tensor)
-    if is_single_tensor:
-        parameters = [parameters]
+    if isinstance(parameters, Tensor):
+        param_list: list[Tensor] = [parameters]
+        is_single_tensor = True
     else:
-        parameters = list(parameters)
+        param_list = list(parameters)
+        is_single_tensor = False
 
-    if len(parameters) == 0:
-        return [], 0.0
+    if len(param_list) == 0:
+        return [], Tensor(0.0, TensorConfig((), "float32", "cpu"))
 
-    total_norm = _compute_global_norm(parameters, norm_type)
-    clipped_params = _scale_gradients(parameters, max_norm, total_norm)
+    total_norm = _compute_global_norm(param_list, norm_type)
+    clipped_params = _scale_gradients(param_list, max_norm, total_norm)
 
     if is_single_tensor:
         return clipped_params[0], total_norm
-
     return clipped_params, total_norm

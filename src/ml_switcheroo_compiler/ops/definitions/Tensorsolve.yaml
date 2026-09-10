@@ -17,11 +17,6 @@ variants:
     eager: jax.numpy.tensorsolve
   mlx:
     eager: mlx.core.tensorsolve
-  edge_onnx:
-    generator: tensorsolve
-  edge_stablehlo:
-
-    opcode: stablehlo.tensorsolve
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

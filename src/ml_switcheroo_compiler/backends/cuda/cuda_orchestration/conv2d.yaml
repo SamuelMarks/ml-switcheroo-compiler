@@ -1,0 +1,28 @@
+conv2d:
+  body: "__global__ void conv2d(const float* X, const float* W, float* Y, int N, int\
+    \ C_in, int H, int W_in, int C_out, int K_h, int K_w, int H_out, int W_out) {\n\
+    \    int n = blockIdx.z;\n    int co = blockIdx.y;\n    int idx_x = blockIdx.x\
+    \ * blockDim.x + threadIdx.x;\n    int oh = idx_x / W_out;\n    int ow = idx_x\
+    \ % W_out;\n    if (n < N && co < C_out && oh < H_out && ow < W_out) {\n     \
+    \   float val = 0.0f;\n        for (int ci = 0; ci < C_in; ++ci) {\n         \
+    \   for (int kh = 0; kh < K_h; ++kh) {\n                for (int kw = 0; kw <\
+    \ K_w; ++kw) {\n                    int ih = oh + kh;\n                    int\
+    \ iw = ow + kw;\n                    val += X[((n * C_in + ci) * H + ih) * W_in\
+    \ + iw] * W[((co * C_in + ci) * K_h + kh) * K_w + kw];\n                }\n  \
+    \          }\n        }\n        Y[((n * C_out + co) * H_out + oh) * W_out + ow]\
+    \ = val;\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({H_out} * {W_out} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '{C_out}'
+    z: '{N}'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

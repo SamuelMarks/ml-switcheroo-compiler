@@ -1,0 +1,8 @@
+target_module: dask.array
+module_path:
+  - dask
+  - array
+kwarg_map: {}
+class_bases: {}
+method_map: {}
+broadcast_method: broadcast_to

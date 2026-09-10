@@ -1,0 +1,23 @@
+reducemax:
+  body: "#include <hip/hip_runtime.h>\n__global__ void reducemax(const float* A, float*\
+    \ C, int outer_size, int reduce_size, int inner_size) {\n    int o = hipBlockIdx_z;\n\
+    \    int i = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (o < outer_size\
+    \ && i < inner_size) {\n        float m = -1e30f;\n        for (int r = 0; r <\
+    \ reduce_size; ++r) {\n            float val = A[(o * reduce_size + r) * inner_size\
+    \ + i];\n            if (val > m) m = val;\n        }\n        C[o * inner_size\
+    \ + i] = m;\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

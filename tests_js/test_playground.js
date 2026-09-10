@@ -1,9 +1,19 @@
-const test = require('node:test');
+let test = require('node:test');
 const assert = require('node:assert');
-const { JSDOM } = require('jsdom');
+let JSDOM;
+try {
+    JSDOM = require('jsdom').JSDOM;
+} catch {
+    JSDOM = null;
+}
 const fs = require('fs');
 const path = require('path');
-const axe = require('axe-core');
+let axe;
+try {
+    axe = require('axe-core');
+} catch {
+    axe = null;
+}
 
 const playgroundModule = require('../docs/_static/playground.js');
 
@@ -34,6 +44,17 @@ test('getExampleCode fallback for missing', () => {
     const code = playgroundModule.getExampleCode('unknown', 'unknown');
     assert.match(code, /# Example code not found for/);
 });
+
+const baseTest = test;
+test = function (name, fn) {
+    return baseTest(name, async (t) => {
+        if (!JSDOM) {
+            t.skip('jsdom not installed');
+            return;
+        }
+        return fn(t);
+    });
+};
 
 test('initTheme uses localStorage', () => {
     const dom = new JSDOM(`
@@ -184,6 +205,78 @@ test('compileCode runs successfully', () => {
 
     const res = playgroundModule.compileCode(pyodide, 'def f(): pass', 'jax', 'webgpu');
     assert.strictEqual(res, 'Compiled success');
+});
+
+test('compileCode handles JSON payload with shape learning and errors', () => {
+    const doc = new JSDOM('<div id="pg-console"></div>').window.document;
+    const pyodideSuccess = {
+        runPython: () => JSON.stringify({
+            code: "wgsl_test_code",
+            shapes: {
+                "node_0": { op: "Input", shape: [4] },
+                "node_1": { op: "MatMul", shape: 4 }
+            }
+        })
+    };
+    const res = playgroundModule.compileCode(pyodideSuccess, 'code', 'jax', 'webgpu', doc);
+    assert.strictEqual(res, "wgsl_test_code");
+    const consoleText = doc.getElementById('pg-console').textContent;
+    assert.match(consoleText, /Shape Learning/);
+    assert.match(consoleText, /node_0/);
+
+    const pyodideError = {
+        runPython: () => JSON.stringify({ error: "custom syntax error" })
+    };
+    const errRes = playgroundModule.compileCode(pyodideError, 'code', 'jax', 'webgpu');
+    assert.match(errRes, /custom syntax error/);
+
+    const pyodideNonCode = {
+        runPython: () => JSON.stringify({ other: 123 })
+    };
+    const rawRes = playgroundModule.compileCode(pyodideNonCode, 'code', 'jax', 'webgpu');
+    assert.strictEqual(rawRes, JSON.stringify({ other: 123 }));
+});
+
+test('loadPyodideEnvironment handles callKwargs and runPythonAsync fallback', async () => {
+    delete require.cache[require.resolve('../docs/_static/playground.js')];
+    const fresh = require('../docs/_static/playground.js');
+    const doc = new JSDOM('<div id="pg-console"></div>').window.document;
+    let callKwargsCalled = false;
+    let fallbackCalled = false;
+
+    // Test callKwargs branch
+    const installWithKwargs = async () => {};
+    installWithKwargs.callKwargs = async () => { callKwargsCalled = true; };
+
+    const win1 = {
+        loadPyodide: async () => ({
+            loadPackage: async () => {},
+            pyimport: () => ({
+                install: installWithKwargs
+            })
+        })
+    };
+    await fresh.loadPyodideEnvironment(doc, win1);
+    assert.strictEqual(callKwargsCalled, true);
+
+    // Test fallback to runPythonAsync
+    delete require.cache[require.resolve('../docs/_static/playground.js')];
+    const fresh2 = require('../docs/_static/playground.js');
+    let installCount = 0;
+    const win2 = {
+        loadPyodide: async () => ({
+            loadPackage: async () => {},
+            pyimport: () => ({
+                install: async () => {
+                    installCount++;
+                    if (installCount > 1) throw new Error('dependency conflict');
+                }
+            }),
+            runPythonAsync: async () => { fallbackCalled = true; }
+        })
+    };
+    await fresh2.loadPyodideEnvironment(doc, win2);
+    assert.strictEqual(fallbackCalled, true);
 });
 
 test('compileCode handles error', () => {
@@ -348,11 +441,13 @@ test('initPlayground initializes editors and handlers', async () => {
     await new Promise(r => setTimeout(r, 100));
 
     // WASM success
+    win.compileWasmFromCode = (c) => playgroundModule.compileWasmKernel('mul');
     dom.window.document.getElementById('target-framework').value = 'wasm_simd';
     dom.window.document.getElementById('btn-compile').click();
     await new Promise(r => setTimeout(r, 100));
     dom.window.document.getElementById('btn-execute').click();
     await new Promise(r => setTimeout(r, 100));
+    delete win.compileWasmFromCode;
 
     // WASM error
     global.runWasmCompute = async () => { throw new Error('mock wasm err'); };

@@ -1090,3 +1090,69 @@ def test_evaluator_if_no_branch():
 
     n_if = LogicalNode(id="if_1", op_type="If", inputs=["cond"], attributes={})
     _evaluate_if_node(n_if, env, FakeBackend())
+
+
+def test_evaluator_vmap_and_identity_exception():
+    """Test lines 399->404, 402-403, and 406-434 in evaluator.py."""
+    import numpy as np
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.interpreter.environment import Environment
+    from ml_switcheroo_compiler.interpreter.evaluator import _evaluate_node, evaluate_graph
+
+    # 1. Identity with failing backend.execute_op and backend lacking execute_op
+    class FailingIdentityBackend:
+        def execute_op(self, op_type, *args):
+            raise RuntimeError("execute_op failed")
+
+    class NoExecuteOpBackend:
+        pass
+
+    env = Environment({"in_val": 42})
+    n_id = LogicalNode(id="id_out", op_type="Identity", inputs=["in_val"])
+    _evaluate_node(n_id, env, FailingIdentityBackend())
+    assert env.get("id_out") == 42
+    _evaluate_node(n_id, env, NoExecuteOpBackend())
+    assert env.get("id_out") == 42
+
+    # 2. Vmap evaluation with custom non-IRGraph body_graph (lines 418-424)
+    class CustomGraphLike:
+        id = "custom_body"
+        inputs = ["x"]
+        outputs = ["y"]
+        nodes = [
+            LogicalNode(id="x", op_type="Input", shape_metadata=()),
+            LogicalNode(id="y", op_type="Identity", inputs=["x"], shape_metadata=()),
+        ]
+
+    g_vmap = LogicalGraph("g_vmap")
+    g_vmap.inputs = ["arr"]
+    g_vmap.outputs = ["v_out"]
+    g_vmap.nodes = {
+        "arr": LogicalNode(id="arr", op_type="Input", shape_metadata=(2,)),
+        "v_out": LogicalNode(id="v_out", op_type="Vmap", inputs=["arr"], attributes={"body": CustomGraphLike(), "in_axes": 0, "out_axes": 0}),
+    }
+
+    res = evaluate_graph(g_vmap, {"arr": np.array([10.0, 20.0])})
+    assert "v_out" in res
+    np.testing.assert_array_equal(res["v_out"], np.array([10.0, 20.0]))
+
+    # Vmap with native IRGraph body (branch 417->426)
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    body_ir = IRGraph(name="body_ir")
+    body_ir.inputs = ["x"]
+    body_ir.outputs = ["y"]
+    body_ir.nodes = {
+        "x": IRNode(id="x", op_type="Input", shape_metadata=()),
+        "y": IRNode(id="y", op_type="Identity", inputs=["x"], shape_metadata=()),
+    }
+    g_vmap_ir = LogicalGraph("g_vmap_ir")
+    g_vmap_ir.inputs = ["arr"]
+    g_vmap_ir.outputs = ["v_out"]
+    g_vmap_ir.nodes = {
+        "arr": LogicalNode(id="arr", op_type="Input", shape_metadata=(2,)),
+        "v_out": LogicalNode(id="v_out", op_type="Vmap", inputs=["arr"], attributes={"body": body_ir, "in_axes": 0, "out_axes": 0}),
+    }
+    res_ir = evaluate_graph(g_vmap_ir, {"arr": np.array([10.0, 20.0])})
+    assert "v_out" in res_ir

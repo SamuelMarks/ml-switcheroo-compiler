@@ -14,8 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: scatter
   edge_wasm_simd:
     template: fallback_copy
   llvm_cpp:

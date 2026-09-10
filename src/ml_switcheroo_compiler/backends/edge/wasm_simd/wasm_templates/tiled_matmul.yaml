@@ -1,9 +1,56 @@
 tiled_matmul:
-  body: "// SIMD Tiled MatMul\nfor (int i = 0; i < {M}; i += {TILE_M}) {{\n    for\
-    \ (int j = 0; j < {N}; j += {TILE_N}) {{\n        for (int k = 0; k < {K}; k +=\
-    \ {TILE_K}) {{\n            // unrolled block\n            for (int ti = 0; ti\
-    \ < {TILE_M}; ++ti) {{\n                // we load vectors\n                v128_t\
-    \ a_val = wasm_v128_load(&buf_{in0}[(i+ti) * {K} + k]);\n                v128_t\
-    \ b_val = wasm_v128_load(&buf_{in1}[k * {N} + j]);\n                v128_t res\
-    \ = wasm_f32x4_mul(a_val, b_val);\n                res = wasm_f32x4_add(res, wasm_f32x4_splat(0.0f));\n\
-    \            }}\n        }}\n    }}\n}}\n"
+  body: "// SIMD Tiled MatMul with dynamic boundary peeling
+int M = {M};
+int N = {N};
+
+    int K = {K};
+int TILE_M = {TILE_M};
+int TILE_N = {TILE_N};
+int TILE_K = {TILE_K};
+
+    for (int i = 0; i < M; i += TILE_M) {{
+    int i_max = (i + TILE_M < M) ? (i
+    \ + TILE_M) : M;
+    for (int j = 0; j < N; j += TILE_N) {{
+        int j_max
+    \ = (j + TILE_N < N) ? (j + TILE_N) : N;
+        for (int k = 0; k < K; k +=
+    \ TILE_K) {{
+            int k_max = (k + TILE_K < K) ? (k + TILE_K) : K;
+
+    \            for (int ii = i; ii < i_max; ++ii) {{
+                int jj = j;
+
+    \                for (; jj + 3 < j_max; jj += 4) {{
+                    v128_t
+    \ c_vec = (k == 0) ? wasm_f32x4_splat(0.0f) : wasm_v128_load(&buf_{clean_id}[ii
+    \ * N + jj]);
+                    for (int kk = k; kk < k_max; ++kk) {{
+
+    \                      v128_t a_val = wasm_f32x4_splat(buf_{in0}[ii * K + kk]);
+
+    \                        v128_t b_val = wasm_v128_load(&buf_{in1}[kk * N + jj]);
+
+    \                        c_vec = wasm_f32x4_add(c_vec, wasm_f32x4_mul(a_val,
+    \ b_val));
+                    }}
+                    wasm_v128_store(&buf_{clean_id}[ii
+    \ * N + jj], c_vec);
+                }}
+                for (; jj < j_max;
+    \ ++jj) {{
+                    float sum = (k == 0) ? 0.0f : buf_{clean_id}[ii
+    \ * N + jj];
+                    for (int kk = k; kk < k_max; ++kk) {{
+
+    \                    sum += buf_{in0}[ii * K + kk] * buf_{in1}[kk * N + jj];
+
+    \                    }}
+                    buf_{clean_id}[ii * N + jj] = sum;
+
+    \                }}
+            }}
+        }}
+    }}
+}}
+"

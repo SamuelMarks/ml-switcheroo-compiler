@@ -1,2 +1,2 @@
 BesselY0:
-  target_api: np.bessely0
+  target_api: custom_op

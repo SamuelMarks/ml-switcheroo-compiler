@@ -1,0 +1,3 @@
+Istft:
+  ast_template: jax_istft({0})
+  target_api: ''

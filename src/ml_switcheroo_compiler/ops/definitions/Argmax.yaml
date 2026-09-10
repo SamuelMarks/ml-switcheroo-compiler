@@ -1,18 +1,18 @@
 operation: argmax
 description: The Argmax operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: Optional[int]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: keepdims
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.argmax
@@ -27,11 +27,6 @@ variants:
   numpy: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: argmax
-  edge_stablehlo:
-
-    opcode: stablehlo.argmax
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;

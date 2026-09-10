@@ -1,2 +1,2 @@
 Pmean:
-  target_api: np.pmean
+  target_api: custom_op

@@ -1,0 +1,20 @@
+neg:
+  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void neg_kernel(\n\
+    \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+    \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+    {\n    if (id < N) {\n        C[id] = -A[id];\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: '{num_elements}'
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: half
+    bfloat16: bfloat
+    int32: int
+    int64: long
+    bool: bool

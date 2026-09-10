@@ -1,2 +1,2 @@
 SparseRetain:
-  target_api: jax.numpy.sparseretain
+  target_api: custom_op

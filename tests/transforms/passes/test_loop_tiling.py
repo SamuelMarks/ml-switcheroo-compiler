@@ -105,7 +105,9 @@ def test_loop_tiling_missing_coverage_extra():
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import _should_tile, _split_shape
 
     assert _split_shape("matmul", ("sym", "sym"), {}) == ("sym", "sym")
+    assert _split_shape("matmul", ("sym", "sym"), {"TILE_M": 8, "TILE_N": 8}) == ("sym", "sym")
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {}) == (1, "sym", "sym", 3)
+    assert _split_shape("conv2d", (1, "sym", "sym", 3), {"TILE_H": 8, "TILE_W": 8}) == (1, "sym", "sym", 3)
     assert _split_shape("other_op", (1, 2), {}) == (1, 2)
     assert _should_tile("matmul", "not_tuple", {}) is False
     from unittest.mock import patch
@@ -135,6 +137,23 @@ def test_loop_tiling_missing_coverage_extra():
 
     with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {}}):
         loop_tiling_pass(graph)
+
+
+def test_loop_tiling_should_tile_but_shape_unchanged():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
+
+    graph = IRGraph()
+    n = IRNode(id="n1", op_type="MatMul", inputs=[])
+    n.shape_metadata = (100, 100)
+    graph.nodes["n1"] = n
+
+    with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {"threshold_M": 10, "threshold_N": 10}}):
+        modified = loop_tiling_pass(graph)
+        assert not modified
+        assert getattr(n, "attributes", {}).get("tiling") is None
 
 
 def test_loop_tiling_should_not_tile():

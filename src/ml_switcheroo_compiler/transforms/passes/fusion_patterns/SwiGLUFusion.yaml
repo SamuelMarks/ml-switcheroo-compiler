@@ -1,0 +1,16 @@
+SwiGLUFusion:
+  pattern:
+    capture: mul
+    inputs:
+    - capture: silu
+      inputs:
+      - capture: x
+      op_type: SiLU
+    - capture: y
+    op_type: Multiply
+  replacement:
+    capture_to_replace: mul
+    inputs:
+    - x
+    - y
+    op_type: SwiGLU

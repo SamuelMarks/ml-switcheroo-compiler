@@ -70,7 +70,8 @@ def detect_static_bound(node: IRNode, heuristics: list[dict[str, object]]) -> Op
     Returns:
         Optional[int]: The static bound if found, otherwise None.
     """
-    if getattr(node, "op_type", "") != "WhileLoop":
+    op_type = getattr(node, "op_type", "")
+    if op_type not in ("WhileLoop", "ForiLoop", "Loop"):
         return None
 
     attrs = getattr(node, "attributes", {})
@@ -78,8 +79,18 @@ def detect_static_bound(node: IRNode, heuristics: list[dict[str, object]]) -> Op
     if isinstance(max_iter, int):
         return max_iter
 
+    # Check fori_loop bounds (upper - lower)
+    lower = attrs.get("lower")
+    upper = attrs.get("upper")
+    if isinstance(lower, int) and isinstance(upper, int):
+        return max(0, upper - lower)
+
+    steps = attrs.get("steps", attrs.get("bound", attrs.get("count")))
+    if isinstance(steps, int):
+        return steps
+
     for h in heuristics:
-        if h.get("op_type") == "WhileLoop" and "max_iterations" in h:
+        if h.get("op_type") == op_type and "max_iterations" in h:
             val = h["max_iterations"]
             if isinstance(val, int):
                 return val
@@ -87,8 +98,64 @@ def detect_static_bound(node: IRNode, heuristics: list[dict[str, object]]) -> Op
     return None
 
 
+def _unroll_single_node(
+    node_id: str,
+    node: IRNode,
+    bound: int,
+    body_graph: object,
+    new_nodes: dict[str, LogicalNode],
+) -> None:
+    """Unroll iterations of a single bounded loop node into new_nodes.
+
+    Args:
+        node_id (str): The node ID.
+        node (IRNode): The loop IR node.
+        bound (int): The number of unrolled iterations.
+        body_graph (object): The loop body graph or block.
+        new_nodes (dict[str, LogicalNode]): Target node map.
+    """
+    current_state_ids = list(node.inputs)
+    lower_val = cast(int, node.attributes.get("lower", 0)) if isinstance(node.attributes.get("lower"), int) else 0
+
+    for i in range(bound):
+        id_map: dict[str, str] = {}
+        body_inputs = getattr(body_graph, "inputs", [])
+
+        if getattr(node, "op_type", "") == "ForiLoop" and len(body_inputs) >= 2:
+            idx_const_id = f"{node_id}_iter{i}_const_idx"
+            idx_const_node = IRNode(
+                id=idx_const_id,
+                op_type="Constant",
+                inputs=[],
+                attributes={"value": lower_val + i},
+                shape_metadata=(),
+            )
+            new_nodes[idx_const_id] = idx_const_node
+            id_map[body_inputs[0]] = idx_const_id
+            for b_in, c_in in zip(body_inputs[1:], current_state_ids):
+                id_map[b_in] = c_in
+        else:
+            for b_in, c_in in zip(body_inputs, current_state_ids):
+                id_map[b_in] = c_in
+
+        cloned = clone_subgraph(body_graph, prefix=f"{node_id}_iter{i}", id_map=id_map)
+        for cn in cloned:
+            new_nodes[cn.id] = cn
+
+        body_outputs = getattr(body_graph, "outputs", [])
+        current_state_ids = [id_map.get(out, out) for out in body_outputs]
+
+    cloned_identity = clone_logical_node(
+        node,
+        id=node_id,
+        op_type="Identity",
+        inputs=current_state_ids[:1] if current_state_ids else [],
+    )
+    new_nodes[node_id] = IRNode(**cloned_identity.__dict__)
+
+
 def unroll_loops(graph: IRGraph) -> IRGraph:
-    """Unroll WhileLoop IR nodes bounded by statically analyzable iteration counts.
+    """Unroll WhileLoop, ForiLoop, and Loop IR nodes bounded by statically analyzable iteration counts.
 
     Args:
         graph (IRGraph): The input graph.
@@ -109,33 +176,11 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
             continue
 
         bound = detect_static_bound(node, heuristics)
-        if bound is not None and bound <= default_limit:
+        body_graph = node.attributes.get("body")
+        if bound is not None and bound <= default_limit and body_graph and hasattr(body_graph, "nodes"):
             unrolled = True
-
-            body_graph = node.attributes.get("body")
-
-            if body_graph and isinstance(body_graph, IRGraph):
-                current_state_ids = list(node.inputs)
-
-                for i in range(bound):
-                    id_map: dict[str, str] = {}
-                    body_inputs = getattr(body_graph, "inputs", [])
-                    for b_in, c_in in zip(body_inputs, current_state_ids):
-                        id_map[b_in] = c_in
-
-                    cloned = clone_subgraph(body_graph, prefix=f"{node_id}_iter{i}", id_map=id_map)
-
-                    for cn in cloned:
-                        new_nodes[cn.id] = cn
-
-                    body_outputs = getattr(body_graph, "outputs", [])
-                    current_state_ids = [id_map.get(out, out) for out in body_outputs]
-
-                # Replace loop node with identity pointing to last state
-                new_nodes[node_id] = clone_logical_node(node, id=node_id, op_type="Identity", inputs=current_state_ids[:1] if current_state_ids else [])
-                new_nodes[node_id] = IRNode(**new_nodes[node_id].__dict__)
-
-                continue
+            _unroll_single_node(node_id, node, bound, body_graph, new_nodes)
+            continue
 
         new_nodes[node_id] = node
 

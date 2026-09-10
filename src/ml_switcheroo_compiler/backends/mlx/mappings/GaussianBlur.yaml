@@ -1,0 +1,3 @@
+GaussianBlur:
+  ast_template: mlx_gaussian_blur({0})
+  target_api: ''

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.argumentspec
   mlx:
     eager: mlx.core.argumentspec
-  edge_onnx:
-    generator: ArgumentSpec
-  edge_stablehlo:
-
-    opcode: stablehlo.argument_spec
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

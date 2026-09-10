@@ -1,4 +1,4 @@
-from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchAudioVisitor, PyTorchCodeGenerator, PyTorchVisionVisitor
+from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchScatterVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -51,15 +51,6 @@ def test_generator_basics(monkeypatch):
     gen.sorted_nodes = [DummyNode({}, "Unknown")]
     assert gen._emit_init_body() is False
 
-    # Audio & Vision delegates
-    # Add dummy handled ops
-    assert gen.visit(DummyNode({}, "Istft"), ["x"]) == "torch.istft(x)"
-    assert gen.visit(DummyNode({}, "ElasticTransform"), ["x", "y"]) == "torchvision.transforms.functional.elastic_transform(x, y)"
-
-    # Empty handlers
-    assert PyTorchAudioVisitor().visit(DummyNode({}, "Unknown"), []) == ""
-    assert PyTorchVisionVisitor().visit(DummyNode({}, "Unknown"), []) == ""
-
     # Mock torch load and save
     monkeypatch.setattr(torch, "save", lambda *args, **kwargs: "mock_save")
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: "mock_load")
@@ -87,6 +78,12 @@ def test_pytorch_generator_distributed_visitor():
     assert vis.visit_AllGather(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
     assert vis.visit_ReduceScatter(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
     assert vis.visit_AllReduce(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
+    assert vis.visit_AllToAll(None, ["tensor"]) == "torch.distributed.all_to_all_single(torch.empty_like(tensor), tensor)"
+
+    class DummyBcNode:
+        attributes = {"root": 2}
+
+    assert vis.visit_Broadcast(DummyBcNode(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
 
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchNNMixin
 
@@ -108,6 +105,18 @@ def test_pytorch_generator_distributed_visitor():
     assert res_recv == "v_n1"
     assert "v_n1 = torch.empty([2, 2], dtype=torch.float32, device=self.device)" in lines[1]
     assert "torch.distributed.irecv(v_n1, src=1, tag=2)" in lines[2]
+
+    # Test _add_line delegation to self.generator
+    from unittest.mock import MagicMock
+
+    mock_gen = MagicMock()
+    nn_with_gen = PyTorchNNMixin(generator=mock_gen)
+    nn_with_gen._add_line("code_line")
+    mock_gen.add_line.assert_called_with("code_line")
+
+    # Test _add_line when generator is None and self has no add_line
+    nn_no_gen = PyTorchNNMixin(generator=None)
+    nn_no_gen._add_line("noop_line")
 
 
 def test_missing_methods():

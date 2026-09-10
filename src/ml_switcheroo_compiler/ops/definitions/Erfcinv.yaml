@@ -1,10 +1,10 @@
 operation: ErfcInv
 description: The Erfcinv operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.erfcinv
@@ -15,11 +15,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ErfcInv
-  edge_stablehlo:
-
-    opcode: stablehlo.erfc_inv
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

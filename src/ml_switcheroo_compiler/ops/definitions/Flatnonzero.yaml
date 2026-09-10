@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.flatnonzero
   mlx:
     eager: mlx.core.flatnonzero
-  edge_onnx:
-    generator: flatnonzero
-  edge_stablehlo:
-
-    opcode: stablehlo.flatnonzero
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

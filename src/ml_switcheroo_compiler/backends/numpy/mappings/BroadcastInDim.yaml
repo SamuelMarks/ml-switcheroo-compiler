@@ -1,2 +1,2 @@
 BroadcastInDim:
-  target_api: np.broadcastindim
+  target_api: custom_op

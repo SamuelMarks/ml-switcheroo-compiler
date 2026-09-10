@@ -1,5 +1,20 @@
-# Quantization definitions and lowering rules
+# Mixed-Precision and Quantization Policies
+quantization_rules:
+  default_dtype: float32
+  supported_low_precisions:
+    - float16
+    - bfloat16
+    - int8
+    - int4
+  allow_tf32_on_ampere: true
+  cast_policies:
+    Matmul: float16
+    Conv2D: float16
+    Softmax: float32
+    LayerNorm: float32
+    Loss: float32
 
+# Quantization definitions and lowering rules
 PTQ:
   default_q_scale: 0.1
   symmetric:

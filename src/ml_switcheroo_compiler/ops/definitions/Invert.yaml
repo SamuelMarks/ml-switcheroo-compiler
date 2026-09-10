@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.invert
   mlx:
     eager: mlx.core.invert
-  edge_onnx:
-    generator: invert
-  edge_stablehlo:
-
-    opcode: stablehlo.invert
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

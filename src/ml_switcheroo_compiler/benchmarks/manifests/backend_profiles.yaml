@@ -1,0 +1,189 @@
+profiles:
+  numpy:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.numpy.profiler"
+    profiler_class: "NumpyProfiler"
+
+  pytorch:
+    timer: "cuda_event"
+    sync_method: "torch_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "cuda_allocated"
+    profiler_module: "ml_switcheroo_compiler.backends.pytorch.profiler"
+    profiler_class: "PyTorchProfiler"
+
+  torch:
+    timer: "cuda_event"
+    sync_method: "torch_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "cuda_allocated"
+    profiler_module: "ml_switcheroo_compiler.backends.pytorch.profiler"
+    profiler_class: "PyTorchProfiler"
+
+  jax:
+    timer: "perf_counter"
+    sync_method: "block_until_ready"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "device_memory_stats"
+    profiler_module: "ml_switcheroo_compiler.backends.jax.profiler"
+    profiler_class: "JAXProfiler"
+
+  mlx:
+    timer: "perf_counter"
+    sync_method: "metal_eval"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "metal_peak"
+    profiler_module: "ml_switcheroo_compiler.backends.mlx.profiler"
+    profiler_class: "MLXProfiler"
+
+  cupy:
+    timer: "cupy_event"
+    sync_method: "stream_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "cupy_pool"
+    profiler_module: "ml_switcheroo_compiler.backends.cupy.profiler"
+    profiler_class: "CupyProfiler"
+
+  tensorflow:
+    timer: "perf_counter"
+    sync_method: "tf_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "tf_gpu_peak"
+    profiler_module: "ml_switcheroo_compiler.backends.tensorflow.profiler"
+    profiler_class: "TensorFlowProfiler"
+
+  tf:
+    timer: "perf_counter"
+    sync_method: "tf_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "tf_gpu_peak"
+    profiler_module: "ml_switcheroo_compiler.backends.tensorflow.profiler"
+    profiler_class: "TensorFlowProfiler"
+
+  keras:
+    timer: "perf_counter"
+    sync_method: "keras_sync"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "backend_peak"
+    profiler_module: "ml_switcheroo_compiler.backends.keras.profiler"
+    profiler_class: "KerasProfiler"
+
+  dask:
+    timer: "perf_counter"
+    sync_method: "compute"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.dask.profiler"
+    profiler_class: "DaskProfiler"
+
+  llvm_cpp:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.llvm_cpp.profiler"
+    profiler_class: "CppProfiler"
+
+  numba:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.numba.profiler"
+    profiler_class: "NumbaProfiler"
+
+  sparse:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.sparse.profiler"
+    profiler_class: "SparseProfiler"
+
+  sparse_coo:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.sparse.profiler"
+    profiler_class: "SparseProfiler"
+
+  pure_python:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.numpy.profiler"
+    profiler_class: "NumpyProfiler"
+
+  edge_wgsl:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"
+
+  edge_wasm_simd:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"
+
+  edge_onnx:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"
+
+  edge_stablehlo:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"
+
+  edge_webgl:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"
+
+  edge:
+    timer: "perf_counter"
+    sync_method: "none"
+    default_warmup_iterations: 5
+    default_measured_iterations: 20
+    memory_tracking: "rss"
+    profiler_module: "ml_switcheroo_compiler.backends.edge.profiler"
+    profiler_class: "EdgeProfiler"

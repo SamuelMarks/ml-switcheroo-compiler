@@ -409,3 +409,46 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     import numpy as np
 
     return np.vsplit(args[0], args[1])
+
+
+@global_eager_registry.register("Transpose")
+def _np_transpose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate Transpose operation.
+
+    Args:
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
+
+    Returns:
+        Any: Transposed array result.
+    """
+    perm = kwargs.get("permutation", kwargs.get("axes", None))
+    if hasattr(backend_module, "transpose"):
+        if perm is not None:
+            return backend_module.transpose(args[0], axes=perm)
+        return backend_module.transpose(args[0])
+    import numpy as np
+
+    return np.transpose(args[0], axes=perm)
+
+
+@global_eager_registry.register("BroadcastTo")
+@global_eager_registry.register("Expand")
+def _np_broadcast_to(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate BroadcastTo / Expand operation.
+
+    Args:
+        backend_module: The backend_module parameter.
+        *args: Positional args.
+        **kwargs: Keyword args.
+
+    Returns:
+        Any: Broadcasted array result.
+    """
+    target_shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
+    if hasattr(backend_module, "broadcast_to"):
+        return backend_module.broadcast_to(args[0], target_shape)
+    import numpy as np
+
+    return np.broadcast_to(args[0], target_shape)

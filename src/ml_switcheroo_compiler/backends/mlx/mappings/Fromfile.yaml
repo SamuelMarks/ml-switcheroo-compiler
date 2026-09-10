@@ -1,2 +1,2 @@
 Fromfile:
-  target_api: '''mx.fromfile({0})'''
+  target_api: custom_op

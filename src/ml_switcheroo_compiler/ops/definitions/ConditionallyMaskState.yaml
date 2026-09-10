@@ -1,8 +1,0 @@
-operation: ConditionallyMaskState
-description: Auto-generated from jax_code_defs
-std_args: []
-type: attribute
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

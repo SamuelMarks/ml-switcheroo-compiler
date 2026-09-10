@@ -1,18 +1,18 @@
 operation: Trace
 description: The Trace operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: offset
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: offset
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
 variants:
   cupy:
     eager: cp.trace
@@ -30,11 +30,6 @@ variants:
     eager: jax.numpy.trace
   mlx:
     eager: mlx.core.trace
-  edge_onnx:
-    generator: Trace
-  edge_stablehlo:
-
-    opcode: stablehlo.trace
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

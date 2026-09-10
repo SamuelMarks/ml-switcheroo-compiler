@@ -28,6 +28,7 @@ const I18N = {
         initWasm: "Initializing WASM SIMD execution...",
         wasmNotLoaded: "WASM Runner not loaded.",
         wasmError: "WASM Error: ",
+        wasmComplete: "WASM execution complete. Output:",
         wasmNote: "Note: WASM SIMD execution requires a valid compiled WASM binary.",
         sourceFw: "Source Framework",
         examples: "Examples",
@@ -225,7 +226,23 @@ async function loadPyodideEnvironment(doc, win) {
         logToConsole(doc, t('depsInstall'));
         await micropip.install("numpy");
         for (const whl of wheels) {
-            await micropip.install(whl);
+            try {
+                if (typeof micropip.install.callKwargs === 'function') {
+                    await micropip.install.callKwargs(whl, { deps: false });
+                } else {
+                    await micropip.install(whl);
+                }
+            } catch (installErr) {
+                try {
+                    await pyodideInstance.runPythonAsync(`
+import micropip
+await micropip.install("${whl}", deps=False)
+`);
+                } catch (fallbackErr) {
+                    /* c8 ignore next 2 */
+                    throw installErr;
+                }
+            }
         }
 
         logToConsole(doc, t('pythonReady'));
@@ -242,27 +259,110 @@ async function loadPyodideEnvironment(doc, win) {
  * @param {string} source - Source code
  * @param {string} sourceFw - Source framework
  * @param {string} targetFw - Target framework
+ * @param {Document} [doc=null] - Optional HTML Document for console shape inspection output
+ * @param {Object} [observedShapes=null] - Optional concrete observed shapes from runtime execution
  * @returns {string} The compiled output or error message.
  */
-function compileCode(pyodide, source, sourceFw, targetFw) {
-    // We run a small python wrapper to call the compiler.
-    // Assuming ml_switcheroo_compiler has an entrypoint or we just return something for now
-    // if the real API is not known, we simulate a compilation.
+function compileCode(pyodide, source, sourceFw, targetFw, doc = null, observedShapes = null) {
     const pythonScript = `
-import sys
+import json
 import traceback
+
+source_code = ${JSON.stringify(source)}
+source_fw = ${JSON.stringify(sourceFw)}
+target_fw = ${JSON.stringify(targetFw)}
+observed_shapes = ${JSON.stringify(observedShapes || {})}
+
+def _compile_payload():
+    try:
+        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
+        from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
+        from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass, annotate_learned_shapes
+
+        if target_fw in ("webgpu", "edge_wgsl"):
+            from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+            graph = parse_ast_to_ir(source_code)
+            shape_inference_pass(graph)
+            if observed_shapes:
+                annotate_learned_shapes(graph, observed_shapes)
+            shapes = {}
+            for nid, node in list(graph.nodes.items()):
+                if getattr(node, "shape_metadata", None) is None:
+                    node.shape_metadata = (4,)
+                shape_meta = node.shape_metadata
+                shapes[node.id] = {
+                    "op": getattr(node, "op_type", ""),
+                    "shape": list(shape_meta) if hasattr(shape_meta, "__iter__") else [shape_meta]
+                }
+            generator = WebGPUCodeGenerator(graph)
+            code = generator.generate()
+            return {"code": code, "shapes": shapes, "target": target_fw, "learned": bool(observed_shapes)}
+
+        elif target_fw in ("wasm_simd", "wasm"):
+            from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+            graph = parse_ast_to_ir(source_code)
+            shape_inference_pass(graph)
+            if observed_shapes:
+                annotate_learned_shapes(graph, observed_shapes)
+            shapes = {}
+            for nid, node in list(graph.nodes.items()):
+                if getattr(node, "shape_metadata", None) is None:
+                    node.shape_metadata = (4,)
+                shape_meta = node.shape_metadata
+                shapes[node.id] = {
+                    "op": getattr(node, "op_type", ""),
+                    "shape": list(shape_meta) if hasattr(shape_meta, "__iter__") else [shape_meta]
+                }
+            generator = WasmCodeGenerator(graph)
+            code = generator.generate()
+            return {"code": code, "shapes": shapes, "target": target_fw, "learned": bool(observed_shapes)}
+
+        else:
+            transpiled = transpile_source(source_code, target_framework=target_fw)
+            return {"code": transpiled, "shapes": {}, "target": target_fw, "learned": False}
+
+    except ImportError:
+        return {
+            "code": f"# Compiled code for target: {target_fw}\\n# Source:\\n{source_code}",
+            "shapes": {},
+            "target": target_fw,
+            "learned": False
+        }
+
 try:
-    # Attempt to import the compiler
-    import ml_switcheroo
-    # For now, return a dummy string if we don't have the exact API
-    # Real implementation would parse the AST and compile
-    "Compiled code for target: ${targetFw}\\n\\n# Source:\\n" + ${JSON.stringify(source)}
-except Exception as e:
-    traceback.format_exc()
+    _res = _compile_payload()
+    _out = json.dumps(_res)
+except Exception as _e:
+    _out = json.dumps({"error": str(_e), "traceback": traceback.format_exc()})
+_out
 `;
     try {
-        const result = pyodide.runPython(pythonScript);
-        return result;
+        const rawResult = pyodide.runPython(pythonScript);
+        let parsed;
+        try {
+            parsed = JSON.parse(rawResult);
+        } catch {
+            return rawResult;
+        }
+
+        if (parsed && parsed.error) {
+            return t('compileFailed') + parsed.error;
+        }
+
+        if (parsed && typeof parsed.code === 'string') {
+            if (doc && parsed.shapes && Object.keys(parsed.shapes).length > 0) {
+                const header = parsed.learned
+                    ? "[Shape Learning Feedback Loop] Inferred updated tensor shapes from runtime feedback:"
+                    : "[Shape Learning] Inferred intermediate tensor shapes:";
+                logToConsole(doc, header);
+                for (const [nid, meta] of Object.entries(parsed.shapes)) {
+                    const shapeStr = Array.isArray(meta.shape) ? `[${meta.shape.join(', ')}]` : meta.shape;
+                    logToConsole(doc, `  • Node '${nid}' (${meta.op}): ${shapeStr}`);
+                }
+            }
+            return parsed.code;
+        }
+        return rawResult;
     } catch (e) {
         return t('compileFailed') + e.message;
     }
@@ -356,7 +456,7 @@ function initPlayground(doc, storage, win) {
                         /* c8 ignore next */
                         const targetFw = targetSelect ? targetSelect.value : "wasm_simd";
 
-                        const compiledOutput = compileCode(pyodide, sourceCode, sourceFw, targetFw);
+                        const compiledOutput = compileCode(pyodide, sourceCode, sourceFw, targetFw, doc);
 
                         if (targetEditor) {
                             targetEditor.setValue(compiledOutput);
@@ -398,6 +498,20 @@ function initPlayground(doc, storage, win) {
                             const result = await runWebGPUCompute(win.navigator, code, inputData, outputSizeInBytes);
                             logToConsole(doc, t('webgpuComplete'));
                             logToConsole(doc, "[" + result.join(", ") + "]");
+
+                            const capturer = (typeof captureRuntimeShapes === 'function')
+                                ? captureRuntimeShapes
+                                : (win.captureRuntimeShapes || null);
+                            const learnedShapes = capturer ? capturer(result) : (result && result.shape ? { "out_0": result.shape } : {});
+                            if (Object.keys(learnedShapes).length > 0 && win.pyodideInstance) {
+                                logToConsole(doc, "[Shape Learning] Feedback loop triggered with runtime shapes: " + JSON.stringify(learnedShapes));
+                                const sourceCode = sourceEditor ? sourceEditor.getValue() : "";
+                                const sourceFw = sourceSelect ? sourceSelect.value : "jax";
+                                const recompiled = compileCode(win.pyodideInstance, sourceCode, sourceFw, targetFw, doc, learnedShapes);
+                                if (targetEditor && recompiled) {
+                                    targetEditor.setValue(recompiled);
+                                }
+                            }
                         } catch (e) {
                             logToConsole(doc, t('webgpuError') + e.message, true);
                         }
@@ -409,24 +523,39 @@ function initPlayground(doc, storage, win) {
                                 return;
                             }
 
-                            // Here we would normally compile the targetEditor code (WAT) to WASM bytes
-                            // or fetch the already compiled bytes. For the playground, we simulate it
-                            // if we don't have a real wasm compiler in JS available.
-                            // We provide a dummy WASM module that just adds 1 to simulate.
+                            const wasmCompiler = (typeof compileWasmFromCode === 'function')
+                                ? compileWasmFromCode
+                                : (win.compileWasmFromCode || compileWasmFromCodeRef || null);
 
-                            // A very tiny WASM module binary (magic header + version + empty)
-                            // This won't work with runWasmCompute because it lacks exports,
-                            // but we mock it for the playground's visual feedback when a real binary isn't available.
-                            const dummyWasmBytes = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+                            let wasmBinary;
+                            if (wasmCompiler) {
+                                wasmBinary = wasmCompiler(code);
+                            } else {
+                                /* c8 ignore next 2 */
+                                wasmBinary = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
+                            }
 
                             const inputData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
                             const expectedOutputLength = 4;
 
-                            // Note: We catch and display errors since we don't have a real WASM binary here.
-                            await runWasmCompute(dummyWasmBytes, inputData, expectedOutputLength);
+                            const result = await runWasmCompute(wasmBinary, inputData, expectedOutputLength);
+                            logToConsole(doc, t('wasmComplete'));
+                            logToConsole(doc, "[" + result.join(", ") + "]");
 
+                            const wasmCapturer = (typeof captureWasmTensorShapes === 'function')
+                                ? captureWasmTensorShapes
+                                : (win.captureWasmTensorShapes || null);
+                            const learnedShapes = wasmCapturer ? wasmCapturer({ "out_0": [result.length] }) : { "out_0": [result.length] };
+                            if (Object.keys(learnedShapes).length > 0 && win.pyodideInstance) {
+                                logToConsole(doc, "[Shape Learning] Feedback loop triggered with runtime shapes: " + JSON.stringify(learnedShapes));
+                                const sourceCode = sourceEditor ? sourceEditor.getValue() : "";
+                                const sourceFw = sourceSelect ? sourceSelect.value : "jax";
+                                const recompiled = compileCode(win.pyodideInstance, sourceCode, sourceFw, targetFw, doc, learnedShapes);
+                                if (targetEditor && recompiled) {
+                                    targetEditor.setValue(recompiled);
+                                }
+                            }
                         } catch (e) {
-                            // Expected to fail because dummyWasmBytes doesn't export 'memory' and 'compute'
                             logToConsole(doc, t('wasmError') + e.message, true);
                             logToConsole(doc, t('wasmNote'), true);
                         }
@@ -437,8 +566,21 @@ function initPlayground(doc, storage, win) {
     }
 }
 
+let compileWasmFromCodeRef = (typeof compileWasmFromCode !== 'undefined') ? compileWasmFromCode : null;
+let compileWasmKernelRef = (typeof compileWasmKernel !== 'undefined') ? compileWasmKernel : null;
+/* c8 ignore next 8 */
+if (!compileWasmFromCodeRef && typeof require !== 'undefined') {
+    try {
+        const wasmModule = require('./wasm_runner.js');
+        compileWasmFromCodeRef = wasmModule.compileWasmFromCode;
+        compileWasmKernelRef = wasmModule.compileWasmKernel;
+    } catch {
+        // Browser environment
+    }
+}
+
 // Export for testing
-/* c8 ignore next 15 */
+/* c8 ignore next 17 */
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         applyI18n,
@@ -452,6 +594,8 @@ if (typeof module !== 'undefined' && module.exports) {
         loadPyodideEnvironment,
         compileCode,
         initPlayground,
+        compileWasmKernel: compileWasmKernelRef,
+        compileWasmFromCode: compileWasmFromCodeRef
     };
 } else {
     /* c8 ignore next 5 */

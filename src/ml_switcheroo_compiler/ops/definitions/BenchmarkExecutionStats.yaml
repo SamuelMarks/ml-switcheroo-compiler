@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.benchmarkexecutionstats
   mlx:
     eager: mlx.core.benchmarkexecutionstats
-  edge_onnx:
-    generator: BenchmarkExecutionStats
-  edge_stablehlo:
-
-    opcode: stablehlo.benchmark_execution_stats
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

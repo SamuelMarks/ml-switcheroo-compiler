@@ -54,17 +54,27 @@ def register_op(name: str):
     return decorator
 
 
-def register_util(name: str):
-    """Decorator to register a util."""
+F = typing.TypeVar("F", bound=Callable[..., Any])
 
-    def decorator(func):
-        """Decorator function.
+
+def register_util(name: str) -> Callable[[F], F]:
+    """Decorator to register a util.
+
+    Args:
+        name (str): Identifier name for the utility function.
+
+    Returns:
+        Callable[[F], F]: Decorator wrapping the target function.
+    """
+
+    def decorator(func: F) -> F:
+        """Register the function in the utility registry.
 
         Args:
-        func (Any): The func parameter.
+            func (F): The function to register.
 
         Returns:
-        Any: Result.
+            F: The registered function.
         """
         _UTIL_REGISTRY[name] = func
         return func
@@ -81,6 +91,11 @@ def get_util(name: str):
 
 def get_op(op_name: str) -> type:
     """Retrieve an operation class by name."""
+    from ml_switcheroo_compiler.diagnostics.types_registry import is_non_math_type
+
+    if is_non_math_type(op_name):
+        raise KeyError(f"'{op_name}' is a non-math metadata type/exception and not an executable operation.")
+
     if op_name in _REGISTRY:
         return _REGISTRY[op_name]
 
@@ -114,7 +129,7 @@ def get_op(op_name: str) -> type:
                 return cls._yaml_data
 
             def infer_shape(self, *args, **kwargs):
-                """Infer shape precisely using heuristics.
+                """Infer shape declaratively using declarative shape signatures.
 
                 Args:
                     self (Any): The self parameter.
@@ -122,37 +137,14 @@ def get_op(op_name: str) -> type:
                     **kwargs (Any): Keyword args.
 
                 Returns:
-                    Any: Result shape tuple.
+                    tuple: Result shape tuple.
+
+                Raises:
+                    ValueError: If input shapes violate the operation's declarative shape signature.
                 """
-                inputs = kwargs.get("inputs", [])
+                from ml_switcheroo_compiler.ops.shape_inference import infer_shape as _infer_shape
 
-                if not inputs:
-                    if len(args) > 0 and isinstance(args[0], (list, tuple)):
-                        inputs = args[0]
-                    else:
-                        inputs = list(args)
-
-                shapes = []
-                for inp in inputs:
-                    if hasattr(inp, "shape_metadata") and inp.shape_metadata is not None:
-                        shapes.append(tuple(inp.shape_metadata))
-                    elif hasattr(inp, "shape") and inp.shape is not None:
-                        shapes.append(tuple(inp.shape))
-                    elif isinstance(inp, (list, tuple)) and all(isinstance(x, int) for x in inp):
-                        shapes.append(tuple(inp))
-
-                if not shapes:
-                    return ()
-
-                if len(shapes) == 1:
-                    return shapes[0]
-
-                try:
-                    import numpy as np
-
-                    return np.broadcast_shapes(*shapes)
-                except Exception:
-                    return max(shapes, key=len)
+                return _infer_shape(op_name, *args, **kwargs)
 
         # Give it a nice name
         DynamicOpDef.__name__ = op_name
@@ -170,7 +162,10 @@ def get_all_ops() -> dict[str, type]:
     _load_yaml_registry()
     for op_name in _YAML_REGISTRY:
         if op_name not in _REGISTRY:
-            get_op(op_name)
+            try:
+                get_op(op_name)
+            except KeyError:
+                continue
     return _REGISTRY
 
 

@@ -1,0 +1,3 @@
+Mfcc:
+  ast_template: torchaudio.transforms.MFCC()({0})
+  target_api: ''

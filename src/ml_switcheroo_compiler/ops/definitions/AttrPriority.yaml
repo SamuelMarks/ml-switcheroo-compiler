@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.attrpriority
   mlx:
     eager: mlx.core.attrpriority
-  edge_onnx:
-    generator: AttrPriority
-  edge_stablehlo:
-
-    opcode: stablehlo.attr_priority
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

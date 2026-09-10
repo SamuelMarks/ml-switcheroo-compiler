@@ -1,2 +1,2 @@
 IndexInDim:
-  target_api: jax.numpy.indexindim
+  target_api: custom_op

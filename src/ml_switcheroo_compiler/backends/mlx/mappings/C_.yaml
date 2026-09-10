@@ -1,2 +1,2 @@
 C_:
-  target_api: '''mx.c_({0})'''
+  target_api: custom_op

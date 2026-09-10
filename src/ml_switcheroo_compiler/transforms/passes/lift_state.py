@@ -41,11 +41,11 @@ def unflatten_state_dict(flat_state: dict[str, StateValue]) -> dict[str, typing.
     nested: dict[str, typing.Union[StateValue, dict[str, StateValue]]] = {}
     for k, v in flat_state.items():
         parts: list[str] = k.split(".")
-        d: dict[str, typing.Any] = nested  # using typing.Any locally for structural dict construction
+        d: dict[str, object] = nested
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
-            d = d[part]
+            d = typing.cast(dict[str, object], d[part])
         d[parts[-1]] = v
     return nested
 
@@ -124,3 +124,95 @@ def lift_state_pass(graph: IRGraph) -> bool:
         bool: Result.
     """
     return _lift_block_ir(graph)
+
+
+def lift_module_state(module: object) -> tuple[dict[str, object], IRGraph]:
+    """Functionalize a class-based stateful module (e.g. nn.Module) into pure function parameters and an IRGraph.
+
+    Args:
+        module (object): Stateful object or PyTorch nn.Module instance.
+
+    Returns:
+        tuple[dict[str, object], IRGraph]: Extracted parameters map and pure functional IRGraph.
+    """
+    params: dict[str, object] = {}
+
+    if hasattr(module, "named_parameters"):
+        named_params = module.named_parameters()
+        for k, v in named_params:
+            params[k] = v
+    elif hasattr(module, "state_dict"):
+        sd = module.state_dict()
+        for k, v in sd.items():
+            params[k] = v
+    elif hasattr(module, "__dict__"):
+        for k, v in module.__dict__.items():
+            if not k.startswith("_") and not callable(v):
+                params[k] = v
+
+    graph = IRGraph()
+    for param_name, param_val in params.items():
+        clean_id = f"param_{param_name.replace('.', '_')}"
+        shape = tuple(getattr(param_val, "shape", ())) if hasattr(param_val, "shape") else ()
+        graph.nodes[clean_id] = IRNode(
+            id=clean_id,
+            op_type="Input",
+            attributes={"is_state": True, "param_name": param_name},
+            shape_metadata={"shape": shape},
+        )
+
+    return params, graph
+
+
+def lift_state(
+    module: object,
+) -> tuple[dict[str, object], typing.Callable[..., tuple[object, dict[str, object]]]]:
+    """Functionalize a class-based stateful module into pure function signature: (params, inputs) -> (outputs, updated_params).
+
+    Args:
+        module (object): Class-based stateful module (e.g. PyTorch nn.Module).
+
+    Returns:
+        tuple[dict[str, object], typing.Callable[..., tuple[object, dict[str, object]]]]: Extracted parameter dict and pure functional callable.
+    """
+    params, _ = lift_module_state(module)
+
+    def pure_fn(
+        current_params: dict[str, object],
+        *args: object,
+        **kwargs: object,
+    ) -> tuple[object, dict[str, object]]:
+        """Pure functional execution of the lifted module.
+
+        Args:
+            current_params (dict[str, object]): Parameters passed functionally.
+            *args (object): Positional module arguments.
+            **kwargs (object): Keyword module arguments.
+
+        Returns:
+            tuple[object, dict[str, object]]: Module forward outputs and updated state dict.
+        """
+        backup: dict[str, object] = {}
+        for k, v in current_params.items():
+            if hasattr(module, k):
+                backup[k] = getattr(module, k)
+            setattr(module, k, v)
+
+        try:
+            if callable(module):
+                output = module(*args, **kwargs)
+            elif hasattr(module, "forward"):
+                output = module.forward(*args, **kwargs)
+            else:
+                output = None
+            updated_params: dict[str, object] = {k: getattr(module, k, v) for k, v in current_params.items()}
+        finally:
+            for k, v in backup.items():
+                setattr(module, k, v)
+
+        return output, updated_params
+
+    return params, pure_fn
+
+
+from ml_switcheroo_compiler.transforms.passes.state_lifting import StateLiftingPass

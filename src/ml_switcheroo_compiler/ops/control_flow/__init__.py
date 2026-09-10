@@ -22,6 +22,7 @@ from ml_switcheroo_compiler.ops.binary import (
 )
 from ml_switcheroo_compiler.ops.vmap import vmap as vmap
 
+from .cond import cond as cond
 from .eager import (
     assert_value_eager,
     cond_eager,
@@ -31,6 +32,7 @@ from .eager import (
     stop_gradient_eager,
     while_loop_eager,
 )
+from .scan import scan as scan
 from .tracing import (
     assert_value_tracing,
     cond_tracing,
@@ -40,55 +42,7 @@ from .tracing import (
     stop_gradient_tracing,
     while_loop_tracing,
 )
-
-
-def cond(pred: Tensor, true_fn, false_fn):
-    """Evaluate cond operation.
-
-    Args:
-        pred (Tensor): The pred parameter.
-        true_fn (Callable): The true_fn parameter.
-        false_fn (Callable): The false_fn parameter.
-
-    Returns:
-            tuple[int, ...]: Result.
-    """
-    if config.eager_mode:
-        return cond_eager(pred, true_fn, false_fn)
-    return cond_tracing(pred, true_fn, false_fn)
-
-
-def while_loop(cond_fn, body_fn, init_val):
-    """Evaluate while_loop operation.
-
-    Args:
-        cond_fn (Any): The cond_fn parameter.
-        body_fn (Any): The body_fn parameter.
-        init_val (Any): The init_val parameter.
-
-    Returns:
-            tuple[int, ...]: Result.
-    """
-    if config.eager_mode:
-        return while_loop_eager(cond_fn, body_fn, init_val)
-    return while_loop_tracing(cond_fn, body_fn, init_val)
-
-
-def scan(f, init, xs, length: int | None = None):
-    """Evaluate scan operation.
-
-    Args:
-        f (Any): The f parameter.
-        init (Any): The init parameter.
-        xs (Any): The xs parameter.
-        length (Any): The length parameter.
-
-    Returns:
-            tuple[int, ...]: Result.
-    """
-    if config.eager_mode:
-        return scan_eager(f, init, xs, length)
-    return scan_tracing(f, init, xs, length)
+from .while_loop import while_loop as while_loop
 
 
 def map_fn(fn, elems: Tensor, dtype: DType | None = None):

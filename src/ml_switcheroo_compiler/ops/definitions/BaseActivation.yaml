@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.baseactivation
   mlx:
     eager: mlx.core.baseactivation
-  edge_onnx:
-    generator: BaseActivation
-  edge_stablehlo:
-
-    opcode: stablehlo.base_activation
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

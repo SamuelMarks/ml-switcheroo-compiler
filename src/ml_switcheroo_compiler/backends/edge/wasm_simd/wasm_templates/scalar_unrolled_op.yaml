@@ -1,0 +1,9 @@
+templates:
+  scalar_unrolled_op:
+    body: |
+      // Bounds check
+      if ({nelem} > size) return; // Out of bounds
+      int i_{clean_id} = 0;
+      for(; i_{clean_id} < {nelem}; i_{clean_id}++) {{
+          buf_{clean_id}[i_{clean_id}] = {scalar_expr};
+      }}

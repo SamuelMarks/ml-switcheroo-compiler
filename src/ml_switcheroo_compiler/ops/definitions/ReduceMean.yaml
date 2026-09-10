@@ -39,5 +39,5 @@ variants:
     final_combine: res / in0.size()
 autodiff:
   vjp:
-  - TrueDivide(Broadcast($cotangent), Constant($nelem))
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
   jvp: ReduceMean($tangent[0])

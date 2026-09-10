@@ -1,3 +1,5 @@
+import pytest
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import (
     _create_all_gather_node,
@@ -13,6 +15,16 @@ from ml_switcheroo_compiler.transforms.passes.spmd import (
     _process_spmd_node,
     inject_spmd_communication_pass,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_spmd_rules_fixture():
+    """Ensure _SPMD_RULES is always cleared before and after each test."""
+    from ml_switcheroo_compiler.transforms.passes import spmd
+
+    spmd._SPMD_RULES = None
+    yield
+    spmd._SPMD_RULES = None
 
 
 class DummySharding:
@@ -255,3 +267,175 @@ def test_spmd_load_rules_branches():
     with patch("pathlib.Path.exists", side_effect=[False, False]):  # first for yaml_dir, second for yaml_path
         rules = spmd._get_spmd_rules()
         assert rules == {}
+
+    spmd._SPMD_RULES = None
+
+
+def test_propagate_sharding_matmul_row_and_col_parallel():
+    from ml_switcheroo_compiler.transforms.passes.spmd import (
+        propagate_sharding,
+    )
+
+    # Row parallel: LHS row-sharded, RHS replicated
+    g = IRGraph()
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding(["x", None]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding([None, None]))
+    mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
+    g.nodes = {"lhs": lhs, "rhs": rhs, "mm": mm}
+
+    modified = propagate_sharding(g)
+    assert modified is True
+    assert mm.sharding.mesh_mapping == ("x", None)
+
+    # Col parallel: LHS replicated, RHS col-sharded
+    g2 = IRGraph()
+    lhs2 = IRNode(id="lhs2", op_type="Input", sharding=DummySharding([None, None]))
+    rhs2 = IRNode(id="rhs2", op_type="Input", sharding=DummySharding([None, "y"]))
+    mm2 = IRNode(id="mm2", op_type="MatMul", inputs=["lhs2", "rhs2"])
+    g2.nodes = {"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2}
+
+    assert propagate_sharding(g2) is True
+    assert mm2.sharding.mesh_mapping == (None, "y")
+
+
+def test_propagate_sharding_matmul_contracting_parallel():
+    from ml_switcheroo_compiler.transforms.passes.spmd import (
+        spmd_partitioning_pass,
+    )
+
+    # Contracting parallel: LHS contracting dim sharded, RHS contracting dim sharded
+    g = IRGraph()
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding([None, "x"]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding(["x", None]))
+    mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
+    out = IRNode(id="out", op_type="Relu", inputs=["mm"])
+    g.nodes = {"lhs": lhs, "rhs": rhs, "mm": mm, "out": out}
+    g.outputs = ["out"]
+
+    assert spmd_partitioning_pass(g) is True
+    assert mm.sharding.mesh_mapping == (None, None)
+    assert "mm_all_reduce" in g.nodes
+    assert g.nodes["out"].inputs == ["mm_all_reduce"]
+
+
+def test_propagate_sharding_matmul_fallback():
+    from ml_switcheroo_compiler.transforms.passes.spmd import propagate_sharding
+
+    g = IRGraph()
+    lhs = IRNode(id="lhs", op_type="Input", sharding=DummySharding(["z"]))
+    rhs = IRNode(id="rhs", op_type="Input", sharding=DummySharding(["w"]))
+    mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
+    g.nodes = {"lhs": lhs, "rhs": rhs, "mm": mm}
+
+    assert propagate_sharding(g) is True
+    assert mm.sharding is not None
+
+
+def test_propagate_sharding_reductions():
+    from ml_switcheroo_compiler.transforms.passes.spmd import (
+        propagate_sharding,
+        spmd_partitioning_pass,
+    )
+
+    # Case 1: Reduced dimension is sharded -> inject AllReduce
+    g1 = IRGraph()
+    inp1 = IRNode(id="inp1", op_type="Input", sharding=DummySharding(["x", None]))
+    red1 = IRNode(id="red1", op_type="ReduceSum", inputs=["inp1"], attributes={"axis": 0})
+    g1.nodes = {"inp1": inp1, "red1": red1}
+    g1.outputs = ["red1"]
+
+    assert spmd_partitioning_pass(g1) is True
+    assert red1.sharding.mesh_mapping == (None,)
+    assert "red1_all_reduce" in g1.nodes
+    assert g1.outputs == ["red1_all_reduce"]
+
+    # Case 2: Reduced dimension is replicated -> keep other sharded dimensions
+    g2 = IRGraph()
+    inp2 = IRNode(id="inp2", op_type="Input", sharding=DummySharding(["x", None]))
+    red2 = IRNode(id="red2", op_type="ReduceSum", inputs=["inp2"], attributes={"axis": [1]})
+    g2.nodes = {"inp2": inp2, "red2": red2}
+
+    assert propagate_sharding(g2) is True
+    assert red2.sharding.mesh_mapping == ("x",)
+    assert red2.attributes.get("inject_collective") is None
+
+
+def test_propagate_sharding_convolutions_and_elementwise():
+    from ml_switcheroo_compiler.transforms.passes.spmd import (
+        SPMDShardingAnnotation,
+        propagate_sharding,
+        spmd_partitioning_pass,
+    )
+
+    # Conv2D
+    g = IRGraph()
+    inp = IRNode(id="inp", op_type="Input", sharding=DummySharding(["x", None, None, None]))
+    conv = IRNode(id="conv", op_type="Conv2D", inputs=["inp"])
+    # Elementwise Add
+    add = IRNode(id="add", op_type="Add", inputs=["conv"])
+    g.nodes = {"inp": inp, "conv": conv, "add": add}
+
+    assert propagate_sharding(g) is True
+    assert tuple(conv.sharding.mesh_mapping) == ("x", None, None, None)
+    assert tuple(add.sharding.mesh_mapping) == ("x", None, None, None)
+
+    # SPMDShardingAnnotation repr
+    annot = SPMDShardingAnnotation("mesh1", ["x", None])
+    assert "SPMDShardingAnnotation" in repr(annot)
+
+    # Branch coverage edge cases:
+    # 1. Elementwise with unsharded input
+    g_el = IRGraph()
+    in_un = IRNode(id="in_un", op_type="Input")
+    add_un = IRNode(id="add_un", op_type="Add", inputs=["in_un"])
+    g_el.nodes = {"in_un": in_un, "add_un": add_un}
+    assert propagate_sharding(g_el) is False
+
+    # 2. Matmul with < 2 inputs or unsharded inputs
+    g_mm_empty = IRGraph()
+    mm_empty = IRNode(id="mm", op_type="MatMul", inputs=["in1"])
+    g_mm_empty.nodes = {"in1": IRNode(id="in1", op_type="Input"), "mm": mm_empty}
+    assert propagate_sharding(g_mm_empty) is False
+
+    # Matmul where inputs have sharding with empty mesh_mapping
+    g_mm_no_map = IRGraph()
+    g_mm_no_map.nodes = {
+        "in1": IRNode(id="in1", op_type="Input", sharding=DummySharding([])),
+        "in2": IRNode(id="in2", op_type="Input", sharding=DummySharding([])),
+        "mm": IRNode(id="mm", op_type="MatMul", inputs=["in1", "in2"]),
+    }
+    assert propagate_sharding(g_mm_no_map) is False
+
+    # 3. Reduction with empty inputs or unsharded input
+    g_red_empty = IRGraph()
+    red_empty = IRNode(id="red", op_type="ReduceSum", inputs=[])
+    red_un = IRNode(id="red_un", op_type="ReduceSum", inputs=["in1"])
+    g_red_empty.nodes = {"in1": IRNode(id="in1", op_type="Input"), "red": red_empty, "red_un": red_un}
+    assert propagate_sharding(g_red_empty) is False
+
+    # 4. Reduction reducing all dims resulting in out_map empty fallback to [None]
+    g_red_all = IRGraph()
+    inp_all = IRNode(id="inp_all", op_type="Input", sharding=DummySharding([None]))
+    red_all = IRNode(id="red_all", op_type="ReduceSum", inputs=["inp_all"], attributes={"axis": 0})
+    g_red_all.nodes = {"inp_all": inp_all, "red_all": red_all}
+    assert propagate_sharding(g_red_all) is True
+    assert red_all.sharding.mesh_mapping == (None,)
+
+    # 5. Spatial conv with no inputs or unsharded input
+    g_cv_empty = IRGraph()
+    cv_empty = IRNode(id="cv", op_type="Conv2D", inputs=[])
+    cv_un = IRNode(id="cv_un", op_type="Conv2D", inputs=["in1"])
+    g_cv_empty.nodes = {"in1": IRNode(id="in1", op_type="Input"), "cv": cv_empty, "cv_un": cv_un}
+    assert propagate_sharding(g_cv_empty) is False
+
+    # 6. spmd_partitioning_pass without outputs attribute and with ar_id already existing
+    g_no_out = IRGraph()
+    g_no_out.nodes = {
+        "lhs": IRNode(id="lhs", op_type="Input", sharding=DummySharding([None, "x"])),
+        "rhs": IRNode(id="rhs", op_type="Input", sharding=DummySharding(["x", None])),
+        "mm": IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"]),
+        "mm_all_reduce": IRNode(id="mm_all_reduce", op_type="AllReduce", inputs=["mm"]),
+    }
+    if hasattr(g_no_out, "outputs"):
+        delattr(g_no_out, "outputs")
+    assert spmd_partitioning_pass(g_no_out) is True

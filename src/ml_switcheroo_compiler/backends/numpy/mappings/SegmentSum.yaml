@@ -1,2 +1,2 @@
 SegmentSum:
-  target_api: np.segmentsum
+  target_api: custom_op

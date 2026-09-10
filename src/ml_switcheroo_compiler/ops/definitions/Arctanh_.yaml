@@ -1,10 +1,10 @@
 operation: Arctanh_
 description: In-place version of Arctanh.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   numpy:
     eager: numpy.arctanh_
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.arctanh_
   mlx:
     eager: mlx.core.arctanh_
-  edge_onnx:
-    generator: Arctanh_
-  edge_stablehlo:
-
-    opcode: stablehlo.arctanh_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

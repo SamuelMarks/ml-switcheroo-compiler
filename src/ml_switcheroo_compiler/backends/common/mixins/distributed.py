@@ -1,10 +1,11 @@
 """Distributed AST Mixin."""
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-class DistributedASTVisitor:
+class DistributedASTVisitor(CommonASTVisitor):
     """Provide shared AST visitors for distributed pipeline primitives."""
 
     def __init__(self, generator: BaseGenerator) -> None:
@@ -13,7 +14,7 @@ class DistributedASTVisitor:
         Args:
             generator: The generator instance.
         """
-        self.generator = generator
+        super().__init__(generator=generator)
 
     def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate code for the Send operation.

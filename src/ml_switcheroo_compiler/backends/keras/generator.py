@@ -212,17 +212,25 @@ class KerasCodeGenerator(BaseGenerator):
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
     def generate(self) -> str:
-        """Generate code using strict AST construction (CST) from a base NumPy string.
+        """Generate functional Keras model code directly from IRGraph without NumPy bypass.
 
         Returns:
-            str: Transpiled code.
+            str: Generated Keras source code.
         """
-        from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
-        from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
-
-        gen: NumpyGenerator = NumpyGenerator(self.graph)
-        base_code: str = gen.generate()
-        return str(transpile_source(base_code, target_framework="keras"))
+        self.code = [self.header]
+        self.code.extend(self._resolve_imports())
+        self._generate_function_signature()
+        if not self.graph or not self.graph.nodes:
+            self.add_line("pass")
+            return "\n".join(self.code)
+        self._generate_body("input_")
+        if getattr(self, "keras_input_vars", None) and getattr(self, "keras_output_vars", None):
+            self.add_line(KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars))
+        elif getattr(self, "keras_output_vars", None):
+            self.add_line(f"return {', '.join(self.keras_output_vars)}")
+        else:
+            self.add_line("pass")
+        return "\n".join(self.code)
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.batchstat
   mlx:
     eager: mlx.core.batchstat
-  edge_onnx:
-    generator: BatchStat
-  edge_stablehlo:
-
-    opcode: stablehlo.batch_stat
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

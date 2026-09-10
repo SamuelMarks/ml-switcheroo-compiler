@@ -1,2 +1,2 @@
 Polydiv:
-  target_api: '''mx.polydiv({0})'''
+  target_api: custom_op

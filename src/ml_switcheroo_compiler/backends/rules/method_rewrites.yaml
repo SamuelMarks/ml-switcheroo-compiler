@@ -1,0 +1,25 @@
+# Declarative AST method-to-function transitions
+method_to_function_rewrites:
+  - pattern: "{obj}.view({shape})"
+    replacement: "torch.reshape({obj}, {shape})"
+    source_framework: pytorch
+    target_framework: pytorch
+    description: "Convert tensor.view to torch.reshape"
+
+  - pattern: "{obj}.contiguous()"
+    replacement: "{obj}"
+    source_framework: pytorch
+    target_framework: jax
+    description: "Remove contiguous in functional JAX"
+
+  - pattern: "{obj}.numpy()"
+    replacement: "np.array({obj})"
+    source_framework: pytorch
+    target_framework: numpy
+    description: "Convert tensor.numpy to np.array"
+
+  - pattern: "{obj}.cpu()"
+    replacement: "{obj}"
+    source_framework: pytorch
+    target_framework: mlx
+    description: "Device transfer no-op in unified MLX memory"

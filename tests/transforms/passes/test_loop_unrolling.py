@@ -59,9 +59,39 @@ def test_detect_static_bound():
     # Empty
     assert detect_static_bound(node, []) is None
 
+    # Steps attribute
+    node_steps = IRNode(id="n_steps", op_type="WhileLoop", attributes={"steps": 4})
+    assert detect_static_bound(node_steps, []) == 4
+
+    # ForiLoop bounds (line 86)
+    node_fori = IRNode(id="n_fori", op_type="ForiLoop", attributes={"lower": 2, "upper": 6})
+    assert detect_static_bound(node_fori, []) == 4
+    node_fori_neg = IRNode(id="n_fori_neg", op_type="ForiLoop", attributes={"lower": 10, "upper": 5})
+    assert detect_static_bound(node_fori_neg, []) == 0
+
     # Heuristics
     heuristics = [{"op_type": "WhileLoop", "max_iterations": 5}]
     assert detect_static_bound(node, heuristics) == 5
+
+
+def test_unroll_fori_loop_node():
+    """Test unrolling a ForiLoop with index and state inputs."""
+    body = IRGraph()
+    body.inputs = ["idx", "x"]
+    body.nodes = {"add": IRNode(id="add", op_type="Add", inputs=["idx", "x"])}
+    body.outputs = ["add"]
+
+    g = IRGraph()
+    fori_node = IRNode(
+        id="fori",
+        op_type="ForiLoop",
+        inputs=["init_x"],
+        attributes={"lower": 0, "upper": 3, "body": body},
+    )
+    g.nodes = {"init_x": IRNode(id="init_x", op_type="Input"), "fori": fori_node}
+    res = loop_unrolling_pass(g)
+    assert "fori" in res.nodes
+    assert res.nodes["fori"].op_type == "Identity"
 
 
 def test_get_initial_constants():

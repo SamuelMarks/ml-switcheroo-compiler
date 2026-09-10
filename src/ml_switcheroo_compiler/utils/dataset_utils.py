@@ -329,8 +329,11 @@ def _get_timeseries_indices(
     """
     start = 0 if config["start_index"] is None else config["start_index"]
     end = data_len if config["end_index"] is None else config["end_index"]
-    stop = end - config["sequence_length"] * config["sampling_rate"] + 1
-    return start, stop, config["sequence_stride"]
+    seq_len = 1 if config["sequence_length"] is None else config["sequence_length"]
+    sampling_rate = 1 if config["sampling_rate"] is None else config["sampling_rate"]
+    stride = 1 if config["sequence_stride"] is None else config["sequence_stride"]
+    stop = end - seq_len * sampling_rate + 1
+    return int(start), int(stop), int(stride)
 
 
 def _extract_timeseries_windows(

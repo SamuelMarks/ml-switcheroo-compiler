@@ -1,2 +1,2 @@
 Logcumsumexp:
-  target_api: jax.numpy.logcumsumexp
+  target_api: custom_op

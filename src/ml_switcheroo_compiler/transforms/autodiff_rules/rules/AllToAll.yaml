@@ -1,4 +1,4 @@
 AllToAll:
-  jvp: ZerosLike($tangent[0])
+  jvp: AllToAll($tangent[0])
   vjp:
-  - ZerosLike($cotangent)
+  - AllToAll($cotangent)

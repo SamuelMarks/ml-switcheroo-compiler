@@ -1,2 +1,2 @@
 LaguerrePolynomialL:
-  target_api: np.laguerrepolynomiall
+  target_api: custom_op

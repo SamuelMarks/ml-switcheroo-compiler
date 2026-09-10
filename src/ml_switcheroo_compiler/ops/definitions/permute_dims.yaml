@@ -1,9 +1,9 @@
 operation: permute_dims
 description: Definition for permute_dims
 std_args:
-  - x
-  - name: axes
-    is_variadic: true
+- x
+- name: axes
+  is_variadic: true
 variants:
   jax:
     eager: jnp.transpose
@@ -17,11 +17,6 @@ variants:
   keras: {}
   pytorch: {}
   mlx: {}
-  edge_onnx:
-    generator: permute_dims
-  edge_stablehlo:
-
-    opcode: stablehlo.permute_dims
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

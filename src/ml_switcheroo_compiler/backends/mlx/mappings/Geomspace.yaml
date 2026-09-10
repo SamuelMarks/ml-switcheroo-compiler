@@ -1,2 +1,2 @@
 Geomspace:
-  target_api: '''mx.geomspace({0})'''
+  target_api: custom_op

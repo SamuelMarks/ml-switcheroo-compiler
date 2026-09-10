@@ -1,23 +1,26 @@
 def test_backward_basic():
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import TracingError
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.grad.api import backward
 
-    # 1. Fallback (Not tracing / Not Tensor)
+    # 1. Non-tensor and inactive tracing raise TracingError
     class DummyTensor:
         pass
 
     dt = DummyTensor()
-    backward(dt)
-    assert getattr(dt, "grad", None) == 1.0
+    with pytest.raises(TracingError, match="tracing is not active"):
+        backward(dt)
 
-    t = Tensor(1.0, TensorConfig((1,), "float32", "cpu"))
-    backward(t)
-    assert t.grad == 1.0
+    t = Tensor(1.0, TensorConfig((), "float32", "cpu"))
+    with pytest.raises(TracingError, match="tracing is not active"):
+        backward(t)
 
-    t2 = Tensor(1.0, TensorConfig((1,), "float32", "cpu"))
+    t2 = Tensor(1.0, TensorConfig((), "float32", "cpu"))
     t2.grad = 0.0
-    backward(t2)
-    assert t2.grad == 1.0
+    with pytest.raises(TracingError, match="tracing is not active"):
+        backward(t2)
 
 
 def test_backward_tracing():
@@ -70,6 +73,30 @@ def test_backward_tracing():
                         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"grad_out": np.array([2.0])}):
                             backward(t_scalar)
                             assert np.array_equal(getattr(t_scalar, "grad", None), np.array([2.0]))
+                        with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={}):
+                            t_scalar.grad = None
+                            backward(t_scalar)
+                            assert t_scalar.grad is None
+
+            # Backend with execute_graph
+            backend_exec = MagicMock()
+            backend_exec.execute_graph.return_value = {"grad_out": np.array([3.0])}
+            with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=(wrt_tensors, ["in_node"])):
+                with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=grad_g):
+                    with patch("ml_switcheroo_compiler.grad.api._get_inputs_dict", return_value={"in_node": np.array([1.0])}):
+                        with patch("ml_switcheroo_compiler.grad.api.get_active_backend", return_value=backend_exec):
+                            backward(t_scalar)
+                            assert np.array_equal(getattr(t_scalar, "grad", None), np.array([3.0]))
+
+            # Backend with compile_graph
+            backend_compile = MagicMock(spec=["compile_graph"])
+            backend_compile.compile_graph.return_value = lambda inputs: {"grad_out": np.array([4.0])}
+            with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=(wrt_tensors, ["in_node"])):
+                with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=grad_g):
+                    with patch("ml_switcheroo_compiler.grad.api._get_inputs_dict", return_value={"in_node": np.array([1.0])}):
+                        with patch("ml_switcheroo_compiler.grad.api.get_active_backend", return_value=backend_compile):
+                            backward(t_scalar)
+                            assert np.array_equal(getattr(t_scalar, "grad", None), np.array([4.0]))
 
 
 def test_custom_jvp_vjp():

@@ -1,14 +1,14 @@
 operation: Bernoulli
 description: Draws binary random numbers (0 or 1) from a Bernoulli distribution.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: generator
-    type: Optional[Generator]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: generator
+  type: Optional[Generator]
 variants:
   numpy:
     eager: numpy.bernoulli
@@ -24,11 +24,6 @@ variants:
     eager: jax.numpy.bernoulli
   mlx:
     eager: mlx.core.bernoulli
-  edge_onnx:
-    generator: Bernoulli
-  edge_stablehlo:
-
-    opcode: stablehlo.bernoulli
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

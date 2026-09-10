@@ -1,22 +1,22 @@
 operation: rfftfreq
 description: The Rfftfreq operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: n
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: d
-    type: float
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: Optional[dtype]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: device
-    type: Optional[device]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: d
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
 type: function
 variants:
   cupy:
@@ -35,11 +35,6 @@ variants:
     eager: jax.numpy.rfftfreq
   mlx:
     eager: mlx.core.rfftfreq
-  edge_onnx:
-    generator: rfftfreq
-  edge_stablehlo:
-
-    opcode: stablehlo.rfftfreq
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

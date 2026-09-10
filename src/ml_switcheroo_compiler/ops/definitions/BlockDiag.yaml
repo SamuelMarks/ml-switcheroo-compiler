@@ -1,10 +1,10 @@
 operation: BlockDiag
 description: Create a block diagonal matrix from provided tensors.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: tensors
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: tensors
+  type: Any
 variants:
   numpy:
     eager: numpy.blockdiag
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.blockdiag
   mlx:
     eager: mlx.core.blockdiag
-  edge_onnx:
-    generator: BlockDiag
-  edge_stablehlo:
-
-    opcode: stablehlo.block_diag
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

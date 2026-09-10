@@ -57,7 +57,8 @@ def _build_signature_key(fn, backend: str, args) -> str:
             sig_parts.append(f"T({getattr(a, 'shape', ())},{getattr(a, 'dtype', '')})")
         else:
             sig_parts.append(f"S({type(a).__name__})")
-    return f"{id(fn)}_{backend}_" + "_".join(sig_parts)
+    code_sig = getattr(fn, "__code__", None)
+    return f"{getattr(fn, '__name__', '')}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
 
 
 def _prepare_proxy_args(args):
@@ -189,17 +190,57 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
 
         graph = pm.run(graph)
 
+        strict = kwargs.get("strict", False)
+
         try:
             generator_cls = BackendRegistry.get(backend)
-        except ValueError:
+        except ValueError as e:
+            if strict:
+                from ml_switcheroo_compiler.core.errors import CompilationError
+
+                raise CompilationError(f"Target backend '{backend}' not found: {e}") from e
             return _fallback_eager(fn, args, kw)
 
-        if hasattr(generator_cls, "compile_aot"):
-            compiled_fn = generator_cls.compile_aot(graph, **kwargs)
-            _COMPILATION_CACHE[key] = compiled_fn
-            return compiled_fn(*args, **kw)
+        import inspect
 
-        generator = generator_cls(graph)
+        from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+
+        if hasattr(generator_cls, "compile_aot"):
+            try:
+                static_compile = inspect.getattr_static(generator_cls, "compile_aot")
+                if isinstance(static_compile, (staticmethod, classmethod)) or not (isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)):
+                    compiled_fn = generator_cls.compile_aot(graph, **kwargs)
+                    if callable(compiled_fn):
+                        _COMPILATION_CACHE[key] = compiled_fn
+                        return compiled_fn(*args, **kw)
+            except Exception:
+                pass
+
+        try:
+            generator = generator_cls(graph)
+        except Exception as e:
+            if strict:
+                from ml_switcheroo_compiler.core.errors import CompilationError
+
+                raise CompilationError(f"Failed to instantiate generator '{backend}': {e}") from e
+            return _fallback_eager(fn, args, kw)
+
+        # Check instance-level compile_aot hook
+        if hasattr(generator, "compile_aot"):
+            try:
+                res_aot = generator.compile_aot(graph, **kwargs)
+                if callable(res_aot):
+                    _COMPILATION_CACHE[key] = res_aot
+                    return res_aot(*args, **kw)
+            except NotImplementedError:
+                pass
+            except Exception as e:
+                if strict:
+                    from ml_switcheroo_compiler.core.errors import CompilationError
+
+                    raise CompilationError(f"AOT compilation failed: {e}") from e
+                return _fallback_eager(fn, args, kw)
+
         code = generator.generate()
         namespace = _get_namespace(backend, generator_cls)
 
@@ -235,12 +276,20 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
 
                 compiled_fn = eval_wrapper
             else:
+                if strict:
+                    from ml_switcheroo_compiler.core.errors import CompilationError
+
+                    raise CompilationError(f"No executable entrypoint found in generated code for backend '{backend}'")
                 return _fallback_eager(fn, args, kw)
 
             res = compiled_fn(*args, **kw)
             _COMPILATION_CACHE[key] = compiled_fn
             return res
-        except Exception:
+        except Exception as e:
+            if strict:
+                from ml_switcheroo_compiler.core.errors import CompilationError
+
+                raise CompilationError(f"Execution of compiled code failed: {e}") from e
             return _fallback_eager(fn, args, kw)
 
     return compiled_wrapper

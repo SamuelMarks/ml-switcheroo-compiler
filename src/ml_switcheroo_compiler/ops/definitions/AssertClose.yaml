@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.assertclose
   mlx:
     eager: mlx.core.assertclose
-  edge_onnx:
-    generator: AssertClose
-  edge_stablehlo:
-
-    opcode: stablehlo.assert_close
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

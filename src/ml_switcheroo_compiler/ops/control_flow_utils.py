@@ -73,7 +73,14 @@ def _get_tensor_ids(obj) -> list[str]:
         TypeError: An exception.
     """
     if isinstance(obj, Tensor):
-        return [obj.data.id]
+        cur = obj
+        while isinstance(cur, Tensor) and isinstance(getattr(cur, "data", None), Tensor):
+            cur = cur.data
+        if hasattr(cur, "data") and hasattr(cur.data, "id"):
+            return [str(cur.data.id)]
+        if hasattr(cur, "id"):
+            return [str(cur.id)]
+        return [str(uuid.uuid4())]
     if isinstance(obj, (tuple, list)):
         ids = []
         for o in obj:

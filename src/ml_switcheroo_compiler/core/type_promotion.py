@@ -2,6 +2,10 @@
 
 """Type promotion rules for ml-switcheroo."""
 
+import os
+
+import yaml
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
@@ -165,6 +169,31 @@ _PROMOTION_TABLE = {
     (DType.Float8E5M2FNUZ, DType.Complex128): DType.Complex128,
     (DType.String, DType.String): DType.String,
 }
+
+
+def _load_declarative_promotion_lattice() -> None:
+    """Load declarative type promotion rules from YAML and update promotion table."""
+    yaml_path = os.path.join(os.path.dirname(__file__), "..", "ops", "type_promotion_rules.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        lattice = data.get("lattice", {})
+        for t1_str, targets in lattice.items():
+            try:
+                dt1 = DType(t1_str)
+            except ValueError:
+                continue
+            for t2_str, res_str in targets.items():
+                try:
+                    dt2 = DType(t2_str)
+                    dt_res = DType(res_str)
+                    _PROMOTION_TABLE[(dt1, dt2)] = dt_res
+                    _PROMOTION_TABLE[(dt2, dt1)] = dt_res
+                except ValueError:
+                    continue
+
+
+_load_declarative_promotion_lattice()
 
 
 def _clamp_x64(dtype: DType) -> DType:

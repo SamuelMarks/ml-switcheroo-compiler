@@ -677,3 +677,64 @@ def test_onnx_generator_edge_onnx_truthy():
     finally:
         OPS_REGISTRY.clear()
         OPS_REGISTRY.update(old_registry)
+
+
+def test_onnx_remaining_serialization_branches():
+    """Test lines 218, 578, 591, 637-640, 644, 649-651, and 686-688 in edge/onnx.py."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.backends.edge.onnx import (
+        ONNXCodeGenerator,
+        serialize_attribute,
+    )
+
+    # 1. Line 218: serialize_attribute with non-primitive object
+    class CustomNonPrimitive:
+        def __str__(self):
+            return "custom_val"
+
+    attr_custom = serialize_attribute("custom_attr", CustomNonPrimitive())
+    assert len(attr_custom) > 0
+
+    # 2. Dynamic axes out of range (lines 578->577 and 591->590) and attributes with skipped keys (lines 649-651)
+    g = LogicalGraph(name="test_dyn")
+    n_in = LogicalNode(id="in_1", op_type="Input", shape_metadata=(2,))
+    n_out = LogicalNode(id="out_1", op_type="Relu", inputs=["in_1"], attributes={"dtype": "float32", "custom_float": 1.5}, shape_metadata=(2,))
+    g.inputs = ["in_1"]
+    g.outputs = ["out_1"]
+    g.nodes = {"in_1": n_in, "out_1": n_out}
+
+    gen = ONNXCodeGenerator(g)
+    dyn_axes = {
+        "in_1": {99: "out_of_bounds_in"},
+        "out_1": {99: "out_of_bounds_out"},
+    }
+    model_bytes = gen.serialize_model_to_bytes(dynamic_axes=dyn_axes)
+    assert len(model_bytes) > 0
+
+    # 3. If with missing branches (lines 637->639, 639->641) and Loop with missing body (line 644->646)
+    g_ctrl = LogicalGraph(name="g_ctrl")
+    n_if = LogicalNode(id="if_1", op_type="If", inputs=["in_1"], attributes={})
+    n_loop = LogicalNode(id="loop_1", op_type="Loop", inputs=["in_1"], attributes={})
+    g_ctrl.inputs = ["in_1"]
+    g_ctrl.outputs = ["if_1", "loop_1"]
+    g_ctrl.nodes = {"in_1": n_in, "if_1": n_if, "loop_1": n_loop}
+    gen_ctrl = ONNXCodeGenerator(g_ctrl)
+    res_ctrl = gen_ctrl.serialize_model_to_bytes()
+    assert len(res_ctrl) > 0
+
+    # 4. Nested subgraph with skipped attributes (lines 686-688)
+    sub = LogicalGraph(name="sub")
+    sub_n = LogicalNode(id="sub_n", op_type="Relu", inputs=["in_1"], attributes={"dtype": "float32", "alpha": 0.5})
+    sub.inputs = ["in_1"]
+    sub.outputs = ["sub_n"]
+    sub.nodes = {"in_1": n_in, "sub_n": sub_n}
+
+    g_sub = LogicalGraph(name="g_sub")
+    n_if_sub = LogicalNode(id="if_sub", op_type="If", inputs=["in_1"], attributes={"then_branch": sub})
+    g_sub.inputs = ["in_1"]
+    g_sub.outputs = ["if_sub"]
+    g_sub.nodes = {"in_1": n_in, "if_sub": n_if_sub}
+    gen_sub = ONNXCodeGenerator(g_sub)
+    res_sub = gen_sub.serialize_model_to_bytes()
+    assert len(res_sub) > 0

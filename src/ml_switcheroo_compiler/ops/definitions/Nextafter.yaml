@@ -1,14 +1,14 @@
 operation: nextafter
 description: The Nextafter operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x1
-    type: Union[array, int, float]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x2
-    type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.nextafter
@@ -21,11 +21,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: nextafter
-  edge_stablehlo:
-
-    opcode: stablehlo.nextafter
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

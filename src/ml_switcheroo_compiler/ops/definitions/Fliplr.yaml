@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.fliplr
   mlx:
     eager: mlx.core.fliplr
-  edge_onnx:
-    generator: fliplr
-  edge_stablehlo:
-
-    opcode: stablehlo.fliplr
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

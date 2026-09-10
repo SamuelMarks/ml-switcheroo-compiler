@@ -1,0 +1,3 @@
+PowerIteration:
+  ast_template: np_power_iteration({0}, {num_iters}, {1})
+  target_api: ''

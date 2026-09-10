@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.averagelayer
   mlx:
     eager: mlx.core.averagelayer
-  edge_onnx:
-    generator: AverageLayer
-  edge_stablehlo:
-
-    opcode: stablehlo.average_layer
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,2 +1,2 @@
 SpaceToBatch:
-  target_api: np.spacetobatch
+  target_api: custom_op

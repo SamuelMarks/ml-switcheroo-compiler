@@ -1,2 +1,2 @@
 DynamicPartition:
-  target_api: np.dynamicpartition
+  target_api: custom_op

@@ -17,9 +17,6 @@ variants:
     eager: jax.numpy.loop
   mlx:
     eager: mlx.core.loop
-  edge_stablehlo:
-
-    opcode: stablehlo.loop
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

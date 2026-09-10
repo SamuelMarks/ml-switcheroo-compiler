@@ -17,11 +17,6 @@ variants:
     eager: jax.numpy.tensorinv
   mlx:
     eager: mlx.core.tensorinv
-  edge_onnx:
-    generator: tensorinv
-  edge_stablehlo:
-
-    opcode: stablehlo.tensorinv
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

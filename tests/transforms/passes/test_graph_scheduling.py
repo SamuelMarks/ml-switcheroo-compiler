@@ -136,3 +136,43 @@ def test_graph_scheduling_extra_coverage():
     cost = cm.get_memory_cost(node)
     # The get_memory_cost calls _get_symbolic_memory_size, which should return the string of dtype_size if shape is empty
     assert cost == 4 or cost == "4"
+
+
+def test_graph_scheduling_pass_class():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass
+
+    scheduler = GraphSchedulingPass()
+
+    graph = IRGraph()
+    # Construct a diamond graph with different branch sizes
+    # in -> branch_large (1000) -> join
+    #    -> branch_small (10)   -> join
+    graph.nodes["in"] = IRNode(id="in", op_type="Input", shape_metadata=(10,), attributes={"dtype": "float32"})
+    graph.nodes["b_large"] = IRNode(id="b_large", op_type="MatMul", inputs=["in"], shape_metadata=(100, 100), attributes={"dtype": "float32"})
+    graph.nodes["b_small"] = IRNode(id="b_small", op_type="Add", inputs=["in"], shape_metadata=(10,), attributes={"dtype": "float32"})
+    graph.nodes["join"] = IRNode(id="join", op_type="Add", inputs=["b_large", "b_small"], shape_metadata=(10,), attributes={"dtype": "float32"})
+
+    schedule = scheduler.schedule(graph)
+    assert len(schedule) == 4
+    assert schedule[0] == "in"
+    assert schedule[-1] == "join"
+
+    peak_mem = scheduler.calculate_peak_memory(graph, schedule)
+    assert peak_mem > 0
+
+    modified = scheduler.run(graph)
+    assert isinstance(modified, bool)
+
+
+def test_graph_scheduling_simulate_peak_memory_external_input():
+    """Test simulate_peak_memory with an input not in graph.nodes."""
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.graph_scheduling import GraphSchedulingPass
+
+    g = IRGraph()
+    n0 = IRNode(id="n0", op_type="Add", inputs=["external_input"], shape_metadata=(10, 10))
+    g.nodes = {"n0": n0}
+    pass_sched = GraphSchedulingPass()
+    mem = pass_sched.calculate_peak_memory(g, ["n0"])
+    assert mem > 0

@@ -1,2 +1,2 @@
 ConfusionMatrix:
-  target_api: np.confusionmatrix
+  target_api: custom_op

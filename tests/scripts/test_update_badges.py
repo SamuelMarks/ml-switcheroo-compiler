@@ -29,11 +29,20 @@ def test_get_test_coverage_success():
     mock_data = {"totals": {"percent_covered": 85.5}}
     m_open = mock_open(read_data=json.dumps(mock_data))
 
-    with patch("subprocess.run") as mock_run, patch("builtins.open", m_open):
+    with patch("subprocess.run") as mock_run, patch("builtins.open", m_open), patch("os.path.exists", return_value=True), patch("os.remove") as mock_remove:
         cov = get_test_coverage()
 
     mock_run.assert_called_once()
+    mock_remove.assert_called_once_with("coverage.json")
     assert cov == 85.5
+
+
+def test_get_test_coverage_file_does_not_exist():
+    mock_data = {"totals": {"percent_covered": 90.0}}
+    m_open = mock_open(read_data=json.dumps(mock_data))
+    with patch("subprocess.run"), patch("builtins.open", m_open), patch("os.path.exists", return_value=False):
+        cov = get_test_coverage()
+        assert cov == 90.0
 
 
 def test_get_test_coverage_failure():
@@ -156,4 +165,4 @@ def test_main_block():
 
     with patch.object(sys, "argv", ["update_badges.py"]):
         with patch("os.path.exists", return_value=False):
-            runpy.run_path("scripts/update_badges.py", run_name="__main__")
+            runpy.run_module("scripts.update_badges", run_name="__main__")

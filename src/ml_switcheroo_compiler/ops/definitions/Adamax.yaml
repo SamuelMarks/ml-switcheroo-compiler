@@ -1,9 +1,9 @@
 operation: Adamax
 description: 'Auto-discovered via Consensus (Score: 2.0)'
 std_args:
-  - eps
-  - lr
-  - weight_decay
+- eps
+- lr
+- weight_decay
 type: function
 variants:
   numpy: {}
@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Adamax
-  edge_stablehlo:
-
-    opcode: stablehlo.adamax
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

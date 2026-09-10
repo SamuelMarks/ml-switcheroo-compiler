@@ -1,2 +1,2 @@
 SparseFillEmptyRows:
-  target_api: jax.numpy.sparsefillemptyrows
+  target_api: custom_op

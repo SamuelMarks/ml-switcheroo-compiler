@@ -1,7 +1,7 @@
 """Tests for MLX distributed ops."""
 
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def test_mlx_eager_distributed_ops():
@@ -17,21 +17,16 @@ def test_mlx_eager_distributed_ops():
     mock_mx.distributed.all_to_all.return_value = mock_array
     mock_mx.distributed.recv.return_value = mock_array
 
-    sys.modules["mlx"] = MagicMock()
-    sys.modules["mlx.core"] = mock_mx
+    with patch.dict(sys.modules, {"mlx": MagicMock(), "mlx.core": mock_mx}):
+        from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_gather, _mlx_all_reduce, _mlx_all_to_all, _mlx_reduce_scatter
 
-    from ml_switcheroo_compiler.backends.mlx.eager import _mlx_all_gather, _mlx_all_reduce, _mlx_all_to_all, _mlx_reduce_scatter
+        t = mock_mx.array([1.0, 2.0, 3.0])
 
-    t = mock_mx.array([1.0, 2.0, 3.0])
-
-    # Should safely fallback or execute
-    _mlx_all_reduce(mock_mx, t)
-    _mlx_all_gather(mock_mx, t)
-    _mlx_all_to_all(mock_mx, t)
-    _mlx_reduce_scatter(mock_mx, t)
-
-    del sys.modules["mlx.core"]
-    del sys.modules["mlx"]
+        # Should safely fallback or execute
+        _mlx_all_reduce(mock_mx, t)
+        _mlx_all_gather(mock_mx, t)
+        _mlx_all_to_all(mock_mx, t)
+        _mlx_reduce_scatter(mock_mx, t)
 
 
 def test_mlx_generator_distributed_ops():

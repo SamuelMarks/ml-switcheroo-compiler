@@ -1,8 +1,0 @@
-operation: common_notes
-description: The class representing a Python module/class/instance attribute.
-std_args: []
-type: attribute
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

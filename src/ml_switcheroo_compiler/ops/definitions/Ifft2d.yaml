@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.ifft2d
   mlx:
     eager: mlx.core.ifft2d
-  edge_onnx:
-    generator: Ifft2d
-  edge_stablehlo:
-
-    opcode: stablehlo.ifft2d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

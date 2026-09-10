@@ -1,0 +1,39 @@
+protocol_version: "1.0.0"
+description: "Specification protocol for browser and hardware runtime shape learning and feedback loop."
+supported_runtimes:
+  - "webgpu"
+  - "wasm_simd"
+  - "webgl"
+  - "host_hardware"
+
+message_types:
+  shape_inspection_payload:
+    description: "Payload containing runtime tensor shapes observed during client execution."
+    required_fields:
+      - "runtime"
+      - "execution_id"
+      - "observed_shapes"
+    optional_fields:
+      - "execution_time_ms"
+      - "memory_usage_bytes"
+
+  observed_node_shape:
+    description: "Concrete shape and striding metadata captured for a single IRNode."
+    required_fields:
+      - "node_id"
+      - "shape"
+      - "dtype"
+    optional_fields:
+      - "strides"
+      - "offset"
+      - "byte_length"
+
+  runtime_tensor_metadata:
+    description: "Extended runtime characteristics reported by WebGPU/WASM buffers."
+    required_fields:
+      - "buffer_id"
+      - "element_count"
+      - "is_gradient"
+    optional_fields:
+      - "aliased_to"
+      - "is_contiguous"

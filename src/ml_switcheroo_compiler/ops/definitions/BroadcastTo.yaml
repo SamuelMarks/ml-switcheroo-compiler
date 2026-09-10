@@ -26,11 +26,7 @@ variants:
     eager: tf.broadcast_to
   jax: {}
   mlx: {}
-  edge_onnx:
-
-    generator: BroadcastTo
   edge_stablehlo:
-
     opcode: stablehlo.broadcast_in_dim
   edge_wgsl:
     template: unary

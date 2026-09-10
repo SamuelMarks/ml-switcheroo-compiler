@@ -1,0 +1,3 @@
+ExtractBoundingBoxes:
+  ast_template: torchvision.ops.roi_align({0}, {1}, 1.0)
+  target_api: ''

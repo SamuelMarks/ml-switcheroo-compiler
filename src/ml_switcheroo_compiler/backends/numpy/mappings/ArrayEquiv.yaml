@@ -1,2 +1,2 @@
 ArrayEquiv:
-  target_api: np.arrayequiv
+  target_api: custom_op

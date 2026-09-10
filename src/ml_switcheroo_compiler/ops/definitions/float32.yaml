@@ -15,8 +15,6 @@ variants:
   tensorflow: {}
   pytorch: {}
   mlx: {}
-  edge_onnx:
-    generator: Float32
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

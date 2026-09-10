@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: SparseSegmentSqrtN
-  edge_stablehlo:
-
-    opcode: stablehlo.sparse_segment_sqrt_n
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

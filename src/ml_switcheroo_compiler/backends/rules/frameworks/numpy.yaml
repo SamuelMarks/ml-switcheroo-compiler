@@ -1,0 +1,9 @@
+target_module: numpy
+module_path:
+  - numpy
+kwarg_map:
+  dim: axis
+  keepdim: keepdims
+class_bases: {}
+method_map: {}
+broadcast_method: broadcast_to

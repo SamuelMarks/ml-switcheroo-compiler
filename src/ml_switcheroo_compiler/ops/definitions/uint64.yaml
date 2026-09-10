@@ -12,8 +12,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: uint64
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

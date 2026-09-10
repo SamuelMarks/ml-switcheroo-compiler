@@ -1,0 +1,58 @@
+# Declarative operator fusion patterns for middle-end optimization passes
+patterns:
+  - name: Conv2DBatchNormFusion
+    target:
+      - Conv2D
+      - BatchNorm
+    fused_op: FusedConv2DBatchNorm
+    commutative: false
+
+  - name: Conv2DBiasActivationFusion
+    target:
+      - Conv2D
+      - Add
+      - Relu
+    fused_op: FusedConv2DBiasRelu
+    commutative: false
+
+  - name: DotGeluFusion
+    target:
+      - Matmul
+      - Gelu
+    fused_op: FusedLinearGelu
+    commutative: false
+
+  - name: DotReluFusion
+    target:
+      - Matmul
+      - Relu
+    fused_op: FusedLinearRelu
+    commutative: false
+
+  - name: FMAFusion
+    target:
+      - Mul
+      - Add
+    fused_op: FusedMultiplyAdd
+    commutative: true
+
+  - name: LayerNormFusion
+    target:
+      - Mean
+      - Sub
+      - Pow
+      - Mean
+      - Add
+      - Sqrt
+      - Div
+    fused_op: LayerNorm
+    commutative: false
+
+  - name: MultiHeadAttentionFusion
+    target:
+      - Matmul
+      - Div
+      - Softmax
+      - Matmul
+    fused_op: ScaledDotProductAttention
+    commutative: false

@@ -1,2 +1,2 @@
 Mish:
-  target_api: np.mish
+  target_api: custom_op

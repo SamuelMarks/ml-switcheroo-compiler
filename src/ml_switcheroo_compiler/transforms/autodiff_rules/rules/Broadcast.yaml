@@ -1,4 +1,4 @@
 Broadcast:
-  jvp: ZerosLike($tangent[0])
+  jvp: Broadcast($tangent[0])
   vjp:
-  - ZerosLike($cotangent)
+  - AllReduce($cotangent)

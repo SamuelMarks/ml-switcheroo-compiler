@@ -1,2 +1,2 @@
 LogSoftmax:
-  target_api: '''mx.log_softmax({0}, axis={axis})'''
+  target_api: custom_op

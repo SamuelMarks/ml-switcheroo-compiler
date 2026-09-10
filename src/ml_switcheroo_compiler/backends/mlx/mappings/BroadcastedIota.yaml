@@ -1,2 +1,2 @@
 BroadcastedIota:
-  target_api: '''mx.broadcasted_iota({0})'''
+  target_api: custom_op

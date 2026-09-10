@@ -24,9 +24,21 @@ mock_torch.float32 = "mock_float32"
 mock_torch.int32 = "mock_int32"
 mock_torch.unknown_dtype = None
 
+import pytest
+
 import ml_switcheroo_compiler.backends.pytorch.types as pytorch_types
 
-pytorch_types.torch = mock_torch
+
+@pytest.fixture(autouse=True)
+def _patch_pytorch_types():
+    """Temporarily patch pytorch_types.torch and restore afterwards."""
+    orig = pytorch_types.torch
+    pytorch_types.torch = mock_torch
+    try:
+        yield
+    finally:
+        pytorch_types.torch = orig
+
 
 from ml_switcheroo_compiler.backends.pytorch.types import (
     array,

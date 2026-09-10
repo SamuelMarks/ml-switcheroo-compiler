@@ -1,2 +1,2 @@
 SparseSegmentSqrtN:
-  target_api: jax.numpy.sparsesegmentsqrtn
+  target_api: custom_op

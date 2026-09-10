@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.indexindim
   mlx:
     eager: mlx.core.indexindim
-  edge_onnx:
-    generator: IndexInDim
-  edge_stablehlo:
-
-    opcode: stablehlo.index_in_dim
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

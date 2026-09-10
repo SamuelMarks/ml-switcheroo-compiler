@@ -1,0 +1,34 @@
+control_flow_templates:
+  while_loop:
+    body: |
+      for (int i = 0; i < {nelem}; ++i) {{
+          float current_state = {in0}[i];
+          int iter = 0;
+          while ({condition_expr} && iter < {max_iters}) {{
+              {loop_body}
+              iter++;
+          }}
+          buf_{clean_id}[i] = current_state;
+      }}
+    predicate_formula: "{predicate_var} {comparator} {threshold}"
+    default_predicate: "current_state > 0.0"
+
+  cond:
+    body: |
+      if ({condition_expr}) {{
+          {true_body}
+      }} else {{
+          {false_body}
+      }}
+    predicate_formula: "{predicate_buffer}[0] {comparator} {threshold}"
+    default_predicate: "{condition_buffer}[0] > 0.0"
+
+  scan:
+    body: |
+      float acc = {init_val};
+      for (int i = 0; i < {nelem}; ++i) {{
+          acc = {scan_op_expr};
+          buf_{clean_id}[i] = acc;
+      }}
+    default_init: "0.0"
+    accumulation_formula: "{acc_var} + {elem_buffer}[i]"

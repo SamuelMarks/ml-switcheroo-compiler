@@ -1,7 +1,0 @@
-operation: center
-description: The class representing a Python module/class/instance attribute.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

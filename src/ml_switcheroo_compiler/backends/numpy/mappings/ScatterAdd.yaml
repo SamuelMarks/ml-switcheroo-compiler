@@ -1,2 +1,2 @@
 ScatterAdd:
-  target_api: np.scatteradd
+  target_api: custom_op

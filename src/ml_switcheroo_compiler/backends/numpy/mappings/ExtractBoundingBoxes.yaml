@@ -1,0 +1,4 @@
+ExtractBoundingBoxes:
+  ast_template: np_extract_bounding_boxes({0}, {1}, {2}, {crop_size}, '{interpolation}',
+    {extrapolation_value}, '{data_format}')
+  target_api: ''

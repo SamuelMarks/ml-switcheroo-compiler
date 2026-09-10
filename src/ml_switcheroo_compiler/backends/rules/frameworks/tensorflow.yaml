@@ -1,0 +1,13 @@
+target_module: tensorflow
+module_path:
+  - tensorflow
+kwarg_map:
+  dim: axis
+  keepdim: keepdims
+class_bases:
+  Module:
+    - tf
+    - Module
+method_map:
+  __call__: __call__
+broadcast_method: broadcast_to

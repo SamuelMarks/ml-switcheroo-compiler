@@ -1,2 +1,2 @@
 Mgrid:
-  target_api: '''mx.mgrid({0})'''
+  target_api: custom_op

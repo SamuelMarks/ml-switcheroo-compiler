@@ -53,5 +53,5 @@ variants:
     final_combine: res
 autodiff:
   vjp:
-  - Broadcast($cotangent)
+  - BroadcastLike($cotangent, $input[0])
   jvp: ReduceSum($tangent[0])

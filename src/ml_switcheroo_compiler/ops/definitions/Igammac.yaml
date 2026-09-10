@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.igammac
   mlx:
     eager: mlx.core.igammac
-  edge_onnx:
-    generator: igammac
-  edge_stablehlo:
-
-    opcode: stablehlo.igammac
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

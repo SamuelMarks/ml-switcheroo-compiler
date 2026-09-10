@@ -34,17 +34,17 @@ def backward(tensor, *args, **kwargs) -> None:
         tensor (object): The tensor to compute gradients for.
         *args (object): Additional arguments.
         **kwargs (object): Additional keyword arguments.
+
+    Raises:
+        TracingError: When tracing is not active or target is not a traced Tensor.
     """
+    from ml_switcheroo_compiler.core.errors import TracingError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-    # 1. Fallback to dummy behavior if not a Tensor, or if tracing is not active
+    # 1. Disallow dummy fallback; raise explicit TracingError if tracing is inactive
     if not isinstance(tensor, Tensor) or not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:
-        if hasattr(tensor, "grad"):
-            tensor.grad = 1.0
-        else:
-            tensor.grad = 1.0
-        return
+        raise TracingError("Cannot execute backward(): tracing is not active or target is not a traced Tensor.")
 
     # 2. Validate that the target tensor is a scalar
     _check_scalar(tensor)
@@ -70,15 +70,22 @@ def backward(tensor, *args, **kwargs) -> None:
 
     grad_graph = graph_grad(graph, wrt_ids, loss_id)
 
-    # 7. Map input node IDs to their concrete values for evaluate_graph
+    # 7. Map input node IDs to their concrete values for evaluation
     inputs_dict = _get_inputs_dict(graph)
 
-    # 8. Evaluate the constructed gradient graph using evaluate_graph
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+    # 8. Lower gradient graph to native backend execution pipeline or fallback
+    backend = get_active_backend()
+    if backend is not None and hasattr(backend, "execute_graph"):
+        outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
+    elif backend is not None and hasattr(backend, "compile_graph"):
+        compiled_fn = backend.compile_graph(grad_graph)
+        outputs_dict = compiled_fn(inputs_dict)
+    else:
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    outputs_dict = evaluate_graph(grad_graph, inputs_dict)
+        outputs_dict = evaluate_graph(grad_graph, inputs_dict)
 
-    # 9. Traverse the wrt list and assign computed NumPy gradient arrays to .grad attributes
+    # 9. Traverse the wrt list and assign computed gradient arrays to .grad attributes
     for i in range(len(wrt_ids)):
         grad_node_id = grad_graph.outputs[i]
         if grad_node_id in outputs_dict:

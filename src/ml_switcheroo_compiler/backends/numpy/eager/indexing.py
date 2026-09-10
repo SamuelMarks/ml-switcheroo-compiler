@@ -1,5 +1,7 @@
 """Module indexing.py."""
 
+from __future__ import annotations
+
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for indexing.py."""
@@ -12,9 +14,9 @@ from dataclasses import dataclass
 class IndexTarget:
     """Index target container."""
 
-    operand: typing.Any = None
-    update: typing.Any = None
-    index: typing.Any = None
+    operand: np.ndarray | None = None
+    update: np.ndarray | None = None
+    index: tuple[int | slice | np.ndarray, ...] | np.ndarray | int | slice | None = None
 
 
 import threading

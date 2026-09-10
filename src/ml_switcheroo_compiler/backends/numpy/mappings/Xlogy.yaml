@@ -1,2 +1,2 @@
 Xlogy:
-  target_api: np.xlogy
+  target_api: custom_op

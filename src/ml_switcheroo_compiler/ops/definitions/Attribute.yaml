@@ -19,11 +19,6 @@ variants:
     eager: jax.numpy.attribute
   mlx:
     eager: mlx.core.attribute
-  edge_onnx:
-    generator: Attribute
-  edge_stablehlo:
-
-    opcode: stablehlo.attribute
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

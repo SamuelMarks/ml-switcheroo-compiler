@@ -44,11 +44,53 @@ def test_parameter_server_strategy():
     strategy = ParameterServerStrategy()
     graph = _make_graph()
     graph.nodes["const_node"] = IRNode(id="const_node", op_type="Constant", inputs=[], attributes={})
-    graph.nodes["node_1"].inputs.append("const_node")
+    graph.nodes["scalar_const"] = IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True})
+    graph.nodes["node_1"].inputs.extend(["const_node", "scalar_const"])
     graph.nodes["add_after"] = IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={})
     strategy.push_gradients(graph)
     strategy.pull_weights(graph)
+
+    # Verify scalar constant was NOT replaced by Recv
+    assert "scalar_const" in graph.nodes
+    assert "scalar_const_recv" not in graph.nodes
+    # Verify parameter constant was replaced by Recv with correct attributes
+    assert "const_node_recv" in graph.nodes
+    assert graph.nodes["const_node_recv"].attributes["src_rank"] == 0
+
     assert not strategy.push_gradients(IRGraph())
+    # Empty graph -> modified is False, covering branch 87->90
+    assert not strategy.pull_weights(IRGraph())
+
+
+def test_is_parameter_node_branches():
+    """Verify all conditional branches in ParameterServerStrategy._is_parameter_node."""
+    # is_parameter is False -> False
+    assert not ParameterServerStrategy._is_parameter_node(IRNode("n1", "Constant", attributes={"is_parameter": False}))
+    # is_scalar_constant is True -> False
+    assert not ParameterServerStrategy._is_parameter_node(IRNode("n2", "Constant", attributes={"is_scalar_constant": True}))
+    # op_type in ("Parameter", "Variable", "Weight") -> True
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n3", "Parameter"))
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n4", "Variable"))
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n5", "Weight"))
+    # is_parameter is True -> True
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n6", "CustomOp", attributes={"is_parameter": True}))
+    # trainable is True -> True
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n7", "CustomOp", attributes={"trainable": True}))
+    # role in ("parameter", "weight", "bias") -> True
+    assert ParameterServerStrategy._is_parameter_node(IRNode("n8", "CustomOp", attributes={"role": "bias"}))
+    # 0-d Constant without is_parameter -> False
+    node_0d = IRNode("n9", "Constant")
+    node_0d.shape_metadata = ()
+    assert not ParameterServerStrategy._is_parameter_node(node_0d)
+
+
+def test_load_webrtc_topology_missing():
+    """Verify _load_webrtc_topology and _load_device_mesh_config return empty dict when file does not exist."""
+    from ml_switcheroo_compiler.distributed.strategy import _load_device_mesh_config
+
+    with patch("os.path.exists", return_value=False):
+        assert _load_webrtc_topology() == {}
+        assert _load_device_mesh_config() == {}
 
 
 def test_central_storage_strategy():
@@ -339,3 +381,172 @@ def test_server_early_return():
 def test_slurm_empty_nodes():
     with patch.dict("os.environ", {"SLURM_JOB_NODELIST": "node1"}):
         pass
+
+
+def test_data_parallel_sync_gradients_with_consumer():
+    from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    strategy = MultiWorkerMirroredStrategy()
+    graph = IRGraph()
+    grad_node = IRNode(id="g1", op_type="Grad", inputs=["x"])
+    add_node = IRNode(id="a1", op_type="Add", inputs=["g1", "y"])
+    graph.nodes = {"g1": grad_node, "a1": add_node}
+
+    res = strategy.sync_gradients(graph)
+    assert res is True
+    assert "g1_all_reduce" in graph.nodes
+    assert graph.nodes["a1"].inputs == ["g1_all_reduce", "y"]
+
+
+def test_parameter_server_pull_weights_non_matching_consumer():
+    """Test pull_weights when graph has consumer node not consuming the weight."""
+    from ml_switcheroo_compiler.distributed.strategy import ParameterServerStrategy
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    strat = ParameterServerStrategy()
+    graph = IRGraph()
+    w = IRNode(id="w1", op_type="Constant", inputs=[])
+    c = IRNode(id="c1", op_type="Add", inputs=["other_input"])
+    graph.nodes = {"w1": w, "c1": c}
+    res = strat.pull_weights(graph)
+    assert res is True
+
+
+def test_server_run_unknown_action_and_send_action():
+    """Test server loop with unknown action and send action."""
+    import io
+    import json
+    from unittest.mock import MagicMock, patch
+
+    import numpy as np
+
+    from ml_switcheroo_compiler.distributed.strategy import Server
+
+    server = Server()
+
+    # 1. Unknown action e.g. "ping" (branch 335->305)
+    with patch("select.select") as mock_select:
+        mock_sock = MagicMock()
+        server._server = mock_sock
+        server._running = True
+
+        mock_conn = MagicMock()
+        header = json.dumps({"action": "ping", "tensor_id": "test"}).encode("utf-8")
+        header_len = len(header).to_bytes(4, "big")
+
+        def mock_recv_ping(size):
+            if size == 4:
+                server._running = False
+                return header_len
+            return header
+
+        mock_conn.recv.side_effect = mock_recv_ping
+        mock_sock.accept.return_value = (mock_conn, "addr")
+        mock_select.return_value = ([mock_sock], [], [])
+        server._run_server()
+
+    # 2. Action "send" (branch 349->305)
+    with patch("select.select") as mock_select:
+        mock_sock = MagicMock()
+        server._server = mock_sock
+        server._running = True
+
+        mock_conn = MagicMock()
+        header = json.dumps({"action": "send", "tensor_id": "test_send"}).encode("utf-8")
+        header_len = len(header).to_bytes(4, "big")
+
+        data_arr = np.array([1.0, 2.0])
+        bio = io.BytesIO()
+        np.save(bio, data_arr, allow_pickle=False)
+        data = bio.getvalue()
+        data_len = len(data).to_bytes(8, "big")
+
+        class RecvSeqSend:
+            def __init__(self):
+                self.calls = 0
+
+            def __call__(self, size):
+                self.calls += 1
+                if self.calls == 1:
+                    return header_len
+                elif self.calls == 2:
+                    return header
+                elif self.calls == 3:
+                    return data_len
+                elif self.calls == 4:
+                    server._running = False
+                    return data
+                return b""
+
+        mock_conn.recv.side_effect = RecvSeqSend()
+        mock_sock.accept.return_value = (mock_conn, "addr")
+        mock_select.return_value = ([mock_sock], [], [])
+        server._run_server()
+        assert not server.inbox.empty()
+
+    # 3. Not ready branch (branch 308->305)
+    server = Server()
+    mock_sock = MagicMock()
+    server._server = mock_sock
+    server._running = True
+
+    def toggle_not_ready(*args, **kwargs):
+        server._running = False
+        return ([], [], [])
+
+    with patch("select.select", side_effect=toggle_not_ready):
+        server._run_server()
+
+
+def test_pipeline_engine_missing_branches():
+    """Test missing branches in PipelineParallelismStrategy."""
+    from ml_switcheroo_compiler.distributed.config_models import SchedulePhaseConfig
+    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    engine = PipelineParallelismStrategy(num_microbatches=2)
+
+    # 560->563: barrier_id already in new_nodes
+    g1 = IRGraph()
+    n1 = IRNode(id="n1", op_type="Linear", inputs=[])
+    n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"])
+    g1.nodes = {"n1": n1, "n2": n2}
+    with patch.object(engine, "split_into_stages", return_value=[["n1", "n1"], ["n2"]]):
+        with patch.object(engine, "insert_send_recv"):
+            engine.unroll_pipeline(g1, num_stages=2)
+
+    # 617->616 and 622->629: insert_send_recv
+    # 617->616: inp_id not in node_to_stage ("external_inp")
+    # 622->629: multiple consumers in target stage for same inp_id
+    g2 = IRGraph()
+    s0_node = IRNode(id="s0_out", op_type="Linear", inputs=[])
+    s1_consumer_a = IRNode(id="s1_cA", op_type="Linear", inputs=["s0_out", "external_inp"])
+    s1_consumer_b = IRNode(id="s1_cB", op_type="Linear", inputs=["s0_out"])
+    g2.nodes = {"s0_out": s0_node, "s1_cA": s1_consumer_a, "s1_cB": s1_consumer_b}
+    engine.insert_send_recv(g2, [["s0_out"], ["s1_cA", "s1_cB"]])
+
+    # 669->668: in_id != inp.id in generate_microbatch_loop
+    # 688->exit: graph.outputs is empty
+    g3 = IRGraph()
+    inp1 = IRNode(id="inp1", op_type="Input", inputs=[])
+    inp2 = IRNode(id="inp2", op_type="Input", inputs=[])
+    comp = IRNode(id="comp", op_type="Add", inputs=["inp1", "inp2"])
+    g3.nodes = {"inp1": inp1, "inp2": inp2, "comp": comp}
+    g3.outputs = []
+    engine.generate_microbatch_loop(g3)
+
+    # 739->724: custom phase type in generate_schedule
+    engine.config.schedule.phases.append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
+    sched = engine.generate_schedule(IRGraph())
+    assert isinstance(sched, list)
+
+    # 773->775: lower with graph having hasattr(graph, 'attributes') == True
+    g4 = IRGraph()
+    g4.attributes = {"existing": 123}
+    for i in range(12):
+        g4.nodes[f"node_{i}"] = IRNode(id=f"node_{i}", op_type="Identity", inputs=[])
+    res = engine.lower(g4)
+    assert res is True
+    assert g4.attributes["existing"] == 123
+    assert "pipeline_schedule" in g4.attributes

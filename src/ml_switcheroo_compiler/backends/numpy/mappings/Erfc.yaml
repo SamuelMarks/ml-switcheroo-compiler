@@ -1,2 +1,2 @@
 Erfc:
-  target_api: np.erfc
+  target_api: custom_op

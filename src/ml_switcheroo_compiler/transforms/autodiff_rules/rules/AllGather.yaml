@@ -1,4 +1,4 @@
 AllGather:
-  jvp: ZerosLike($tangent[0])
+  jvp: AllGather($tangent[0])
   vjp:
-  - ZerosLike($cotangent)
+  - ReduceScatter($cotangent)

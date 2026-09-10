@@ -1,0 +1,20 @@
+broadcast_elementwise:
+  body: "__global__ void broadcast_elementwise(const float* __restrict__ a, const\
+    \ float* __restrict__ b, float* __restrict__ out, int total) {\n    int idx =\
+    \ blockDim.x * blockIdx.x + threadIdx.x;\n    if (idx < total) {\n        out[idx]\
+    \ = a[idx] + b[idx];\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

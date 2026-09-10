@@ -1,2 +1,2 @@
 SegmentMax:
-  target_api: np.segmentmax
+  target_api: custom_op

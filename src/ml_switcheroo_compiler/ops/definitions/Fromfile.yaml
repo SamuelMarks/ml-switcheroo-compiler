@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.fromfile
   mlx:
     eager: mlx.core.fromfile
-  edge_onnx:
-    generator: fromfile
-  edge_stablehlo:
-
-    opcode: stablehlo.fromfile
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

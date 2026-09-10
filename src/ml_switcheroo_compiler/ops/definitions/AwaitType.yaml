@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.awaittype
   mlx:
     eager: mlx.core.awaittype
-  edge_onnx:
-    generator: AwaitType
-  edge_stablehlo:
-
-    opcode: stablehlo.await_type
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

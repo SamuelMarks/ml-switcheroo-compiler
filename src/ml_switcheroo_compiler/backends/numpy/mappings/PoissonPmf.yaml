@@ -1,2 +1,2 @@
 PoissonPmf:
-  target_api: np.poissonpmf
+  target_api: custom_op

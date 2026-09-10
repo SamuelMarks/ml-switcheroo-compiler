@@ -1,0 +1,580 @@
+# Declarative Primitive JVP Rules for Unified IR Operators
+Add:
+  jvp: Add($tangent[0], $tangent[1])
+  description: Element-wise addition tangent propagation.
+
+add:
+  jvp: Add($tangent[0], $tangent[1])
+  description: Element-wise addition tangent propagation (lowercase alias).
+
+Subtract:
+  jvp: Sub($tangent[0], $tangent[1])
+  description: Element-wise subtraction tangent propagation.
+
+Sub:
+  jvp: Sub($tangent[0], $tangent[1])
+  description: Element-wise subtraction tangent propagation (alias).
+
+sub:
+  jvp: Sub($tangent[0], $tangent[1])
+  description: Element-wise subtraction tangent propagation (lowercase alias).
+
+Multiply:
+  jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
+  description: Element-wise multiplication tangent propagation.
+
+Mul:
+  jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
+  description: Element-wise multiplication tangent propagation (alias).
+
+mul:
+  jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
+  description: Element-wise multiplication tangent propagation (lowercase alias).
+
+Divide:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1], Constant(2.0)))
+  description: Element-wise division tangent propagation.
+
+Div:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1], Constant(2.0)))
+  description: Element-wise division tangent propagation (alias).
+
+TrueDivide:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1], Constant(2.0)))
+  description: Element-wise true division tangent propagation.
+
+div:
+  jvp: Div(Sub(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1])), Pow($input[1], Constant(2.0)))
+  description: Element-wise division tangent propagation (lowercase alias).
+
+Negative:
+  jvp: Neg($tangent[0])
+  description: Element-wise negation tangent propagation.
+
+Neg:
+  jvp: Neg($tangent[0])
+  description: Element-wise negation tangent propagation (alias).
+
+neg:
+  jvp: Neg($tangent[0])
+  description: Element-wise negation tangent propagation (lowercase alias).
+
+Positive:
+  jvp: $tangent[0]
+  description: Element-wise positive/identity tangent propagation.
+
+Abs:
+  jvp: Mul($tangent[0], Sign($input[0]))
+  description: Element-wise absolute value tangent propagation.
+
+abs:
+  jvp: Mul($tangent[0], Sign($input[0]))
+  description: Element-wise absolute value tangent propagation (lowercase alias).
+
+Sign:
+  jvp: ZerosLike($tangent[0])
+  description: Element-wise sign tangent propagation (almost everywhere zero).
+
+Pow:
+  jvp: Add(Mul($tangent[0], Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0))))), Mul($tangent[1], Mul(Pow($input[0], $input[1]), Log($input[0]))))
+  description: Element-wise power tangent propagation.
+
+pow:
+  jvp: Add(Mul($tangent[0], Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0))))), Mul($tangent[1], Mul(Pow($input[0], $input[1]), Log($input[0]))))
+  description: Element-wise power tangent propagation (lowercase alias).
+
+Square:
+  jvp: Mul($tangent[0], Mul(Constant(2.0), $input[0]))
+  description: Element-wise square tangent propagation.
+
+Sqrt:
+  jvp: Div($tangent[0], Mul(Constant(2.0), Sqrt($input[0])))
+  description: Element-wise square root tangent propagation.
+
+sqrt:
+  jvp: Div($tangent[0], Mul(Constant(2.0), Sqrt($input[0])))
+  description: Element-wise square root tangent propagation (lowercase alias).
+
+Rsqrt:
+  jvp: Mul($tangent[0], Mul(Constant(-0.5), Pow($input[0], Constant(-1.5))))
+  description: Element-wise reciprocal square root tangent propagation.
+
+Reciprocal:
+  jvp: Neg(Div($tangent[0], Pow($input[0], Constant(2.0))))
+  description: Element-wise reciprocal tangent propagation.
+
+Exp:
+  jvp: Mul($tangent[0], Exp($input[0]))
+  description: Element-wise exponential tangent propagation.
+
+exp:
+  jvp: Mul($tangent[0], Exp($input[0]))
+  description: Element-wise exponential tangent propagation (lowercase alias).
+
+Exp2:
+  jvp: Mul($tangent[0], Mul(Exp2($input[0]), Constant(0.6931471805599453)))
+  description: Element-wise base-2 exponential tangent propagation.
+
+Expm1:
+  jvp: Mul($tangent[0], Exp($input[0]))
+  description: Element-wise expm1 tangent propagation.
+
+Log:
+  jvp: Div($tangent[0], $input[0])
+  description: Element-wise natural logarithm tangent propagation.
+
+log:
+  jvp: Div($tangent[0], $input[0])
+  description: Element-wise natural logarithm tangent propagation (lowercase alias).
+
+Log2:
+  jvp: Div($tangent[0], Mul($input[0], Constant(0.6931471805599453)))
+  description: Element-wise base-2 logarithm tangent propagation.
+
+Log10:
+  jvp: Div($tangent[0], Mul($input[0], Constant(2.302585092994046)))
+  description: Element-wise base-10 logarithm tangent propagation.
+
+Log1p:
+  jvp: Div($tangent[0], Add($input[0], Constant(1.0)))
+  description: Element-wise log1p tangent propagation.
+
+Sin:
+  jvp: Mul($tangent[0], Cos($input[0]))
+  description: Element-wise sine tangent propagation.
+
+sin:
+  jvp: Mul($tangent[0], Cos($input[0]))
+  description: Element-wise sine tangent propagation (lowercase alias).
+
+Cos:
+  jvp: Neg(Mul($tangent[0], Sin($input[0])))
+  description: Element-wise cosine tangent propagation.
+
+cos:
+  jvp: Neg(Mul($tangent[0], Sin($input[0])))
+  description: Element-wise cosine tangent propagation (lowercase alias).
+
+Tan:
+  jvp: Div($tangent[0], Pow(Cos($input[0]), Constant(2.0)))
+  description: Element-wise tangent tangent propagation.
+
+tan:
+  jvp: Div($tangent[0], Pow(Cos($input[0]), Constant(2.0)))
+  description: Element-wise tangent tangent propagation (lowercase alias).
+
+Asin:
+  jvp: Div($tangent[0], Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0)))))
+  description: Element-wise arcsine tangent propagation.
+
+asin:
+  jvp: Div($tangent[0], Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0)))))
+  description: Element-wise arcsine tangent propagation (lowercase alias).
+
+Acos:
+  jvp: Neg(Div($tangent[0], Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0))))))
+  description: Element-wise arccosine tangent propagation.
+
+acos:
+  jvp: Neg(Div($tangent[0], Sqrt(Sub(Constant(1.0), Pow($input[0], Constant(2.0))))))
+  description: Element-wise arccosine tangent propagation (lowercase alias).
+
+Atan:
+  jvp: Div($tangent[0], Add(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise arctangent tangent propagation.
+
+atan:
+  jvp: Div($tangent[0], Add(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise arctangent tangent propagation (lowercase alias).
+
+Sinh:
+  jvp: Mul($tangent[0], Cosh($input[0]))
+  description: Element-wise hyperbolic sine tangent propagation.
+
+sinh:
+  jvp: Mul($tangent[0], Cosh($input[0]))
+  description: Element-wise hyperbolic sine tangent propagation (lowercase alias).
+
+Cosh:
+  jvp: Mul($tangent[0], Sinh($input[0]))
+  description: Element-wise hyperbolic cosine tangent propagation.
+
+cosh:
+  jvp: Mul($tangent[0], Sinh($input[0]))
+  description: Element-wise hyperbolic cosine tangent propagation (lowercase alias).
+
+Tanh:
+  jvp: Mul($tangent[0], Sub(Constant(1.0), Pow($output, Constant(2.0))))
+  description: Element-wise hyperbolic tangent tangent propagation.
+
+tanh:
+  jvp: Mul($tangent[0], Sub(Constant(1.0), Pow($output, Constant(2.0))))
+  description: Element-wise hyperbolic tangent tangent propagation (lowercase alias).
+
+Asinh:
+  jvp: Div($tangent[0], Sqrt(Add(Pow($input[0], Constant(2.0)), Constant(1.0))))
+  description: Element-wise inverse hyperbolic sine tangent propagation.
+
+Acosh:
+  jvp: Div($tangent[0], Sqrt(Sub(Pow($input[0], Constant(2.0)), Constant(1.0))))
+  description: Element-wise inverse hyperbolic cosine tangent propagation.
+
+Atanh:
+  jvp: Div($tangent[0], Sub(Constant(1.0), Pow($input[0], Constant(2.0))))
+  description: Element-wise inverse hyperbolic tangent tangent propagation.
+
+Relu:
+  jvp: Mul($tangent[0], Greater($input[0], Constant(0.0)))
+  description: Rectified Linear Unit tangent propagation.
+
+relu:
+  jvp: Mul($tangent[0], Greater($input[0], Constant(0.0)))
+  description: Rectified Linear Unit tangent propagation (lowercase alias).
+
+GELU:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit tangent propagation.
+
+Gelu:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit tangent propagation (alias).
+
+gelu:
+  jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+  description: Gaussian Error Linear Unit tangent propagation (lowercase alias).
+
+SiLU:
+  jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit tangent propagation.
+
+Silu:
+  jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit tangent propagation (alias).
+
+silu:
+  jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  description: Sigmoid Linear Unit tangent propagation (lowercase alias).
+
+Sigmoid:
+  jvp: Mul($tangent[0], Mul($output, Sub(Constant(1.0), $output)))
+  description: Logistic sigmoid tangent propagation.
+
+sigmoid:
+  jvp: Mul($tangent[0], Mul($output, Sub(Constant(1.0), $output)))
+  description: Logistic sigmoid tangent propagation (lowercase alias).
+
+ELU:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+  description: Exponential Linear Unit tangent propagation.
+
+Elu:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+  description: Exponential Linear Unit tangent propagation (alias).
+
+LeakyReLU:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+  description: Leaky Rectified Linear Unit tangent propagation.
+
+LeakyRelu:
+  jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+  description: Leaky Rectified Linear Unit tangent propagation (alias).
+
+Softplus:
+  jvp: Mul($tangent[0], Sigmoid($input[0]))
+  description: Softplus tangent propagation.
+
+Softmax:
+  jvp: Mul($output, Sub($tangent[0], ReduceSum(Mul($tangent[0], $output), axis=-1, keepdims=True)))
+  description: Softmax tangent propagation.
+
+softmax:
+  jvp: Mul($output, Sub($tangent[0], ReduceSum(Mul($tangent[0], $output), axis=-1, keepdims=True)))
+  description: Softmax tangent propagation (lowercase alias).
+
+LogSoftmax:
+  jvp: Sub($tangent[0], ReduceSum($tangent[0], axis=-1, keepdims=True))
+  description: LogSoftmax tangent propagation.
+
+MatMul:
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+  description: Matrix multiplication tangent propagation.
+
+Matmul:
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+  description: Matrix multiplication tangent propagation (alias).
+
+matmul:
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+  description: Matrix multiplication tangent propagation (lowercase alias).
+
+BatchMatMul:
+  jvp: Add(BatchMatMul($tangent[0], $input[1]), BatchMatMul($input[0], $tangent[1]))
+  description: Batched matrix multiplication tangent propagation.
+
+BatchMatmul:
+  jvp: Add(BatchMatMul($tangent[0], $input[1]), BatchMatMul($input[0], $tangent[1]))
+  description: Batched matrix multiplication tangent propagation (alias).
+
+Dot:
+  jvp: Add(Dot($tangent[0], $input[1]), Dot($input[0], $tangent[1]))
+  description: Vector dot product tangent propagation.
+
+dot:
+  jvp: Add(Dot($tangent[0], $input[1]), Dot($input[0], $tangent[1]))
+  description: Vector dot product tangent propagation (lowercase alias).
+
+Transpose:
+  jvp: Transpose($tangent[0])
+  description: Transposition tangent propagation.
+
+transpose:
+  jvp: Transpose($tangent[0])
+  description: Transposition tangent propagation (lowercase alias).
+
+Reshape:
+  jvp: Reshape($tangent[0])
+  description: Reshape tangent propagation.
+
+reshape:
+  jvp: Reshape($tangent[0])
+  description: Reshape tangent propagation (lowercase alias).
+
+Squeeze:
+  jvp: Squeeze($tangent[0])
+  description: Squeeze tangent propagation.
+
+squeeze:
+  jvp: Squeeze($tangent[0])
+  description: Squeeze tangent propagation (lowercase alias).
+
+ExpandDims:
+  jvp: ExpandDims($tangent[0])
+  description: Expand dimensions tangent propagation.
+
+expand_dims:
+  jvp: ExpandDims($tangent[0])
+  description: Expand dimensions tangent propagation (lowercase alias).
+
+Einsum:
+  jvp: Add(Einsum($tangent[0], $input[1]), Einsum($input[0], $tangent[1]))
+  description: Einstein summation tangent propagation.
+
+einsum:
+  jvp: Add(Einsum($tangent[0], $input[1]), Einsum($input[0], $tangent[1]))
+  description: Einstein summation tangent propagation (lowercase alias).
+
+ReduceSum:
+  jvp: ReduceSum($tangent[0])
+  description: Sum reduction tangent propagation.
+
+reduce_sum:
+  jvp: ReduceSum($tangent[0])
+  description: Sum reduction tangent propagation (lowercase alias).
+
+ReduceMean:
+  jvp: ReduceMean($tangent[0])
+  description: Mean reduction tangent propagation.
+
+reduce_mean:
+  jvp: ReduceMean($tangent[0])
+  description: Mean reduction tangent propagation (lowercase alias).
+
+ReduceProd:
+  jvp: ReduceSum(Mul($tangent[0], Div(BroadcastLike($output, $input[0]), $input[0])))
+  description: Product reduction tangent propagation.
+
+reduce_prod:
+  jvp: ReduceSum(Mul($tangent[0], Div(BroadcastLike($output, $input[0]), $input[0])))
+  description: Product reduction tangent propagation (lowercase alias).
+
+ReduceMax:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+  description: Maximum reduction tangent propagation.
+
+reduce_max:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+  description: Maximum reduction tangent propagation (lowercase alias).
+
+ReduceMin:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+  description: Minimum reduction tangent propagation.
+
+reduce_min:
+  jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+  description: Minimum reduction tangent propagation (lowercase alias).
+
+Norm:
+  jvp: Div(ReduceSum(Mul($input[0], $tangent[0])), BroadcastLike($output, $input[0]))
+  description: Euclidean norm tangent propagation.
+
+L2Normalize:
+  jvp: Div(Sub($tangent[0], Mul($output, ReduceSum(Mul($output, $tangent[0])))), Norm($input[0]))
+  description: L2 normalization tangent propagation.
+
+Conv1D:
+  jvp: Add(Conv1D($tangent[0], $input[1]), Conv1D($input[0], $tangent[1]))
+  description: 1D convolution tangent propagation.
+
+Conv2D:
+  jvp: Add(Conv2D($tangent[0], $input[1]), Conv2D($input[0], $tangent[1]))
+  description: 2D convolution tangent propagation.
+
+Conv3D:
+  jvp: Add(Conv3D($tangent[0], $input[1]), Conv3D($input[0], $tangent[1]))
+  description: 3D convolution tangent propagation.
+
+ConvTranspose2D:
+  jvp: Add(ConvTranspose2D($tangent[0], $input[1]), ConvTranspose2D($input[0], $tangent[1]))
+  description: 2D transposed convolution tangent propagation.
+
+MaxPool2D:
+  jvp: Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0])))
+  description: 2D max pooling tangent propagation.
+
+AvgPool2D:
+  jvp: AvgPool2D($tangent[0])
+  description: 2D average pooling tangent propagation.
+
+BatchNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  description: Batch normalization tangent propagation.
+
+LayerNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  description: Layer normalization tangent propagation.
+
+RMSNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5)))))
+  description: Root Mean Square layer normalization tangent propagation.
+
+GroupNorm:
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  description: Group normalization tangent propagation.
+
+MSELoss:
+  jvp: Mul(Constant(2.0), Div(ReduceMean(Mul(Sub($input[0], $input[1]), $tangent[0])), Constant(1.0)))
+  description: Mean Squared Error loss tangent propagation.
+
+CrossEntropyLoss:
+  jvp: ReduceMean(Mul(Sub(Softmax($input[0]), $input[1]), $tangent[0]))
+  description: Categorical cross entropy loss tangent propagation.
+
+BCELoss:
+  jvp: ReduceMean(Mul(Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0), $input[0]))), $tangent[0]))
+  description: Binary cross entropy loss tangent propagation.
+
+HuberLoss:
+  jvp: ReduceMean(Mul(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1]))), $tangent[0]))
+  description: Huber / smooth L1 loss tangent propagation.
+
+KLDivergenceLoss:
+  jvp: ReduceMean(Mul(Sub(Constant(1.0), Div($input[1], $input[0])), $tangent[0]))
+  description: Kullback-Leibler divergence loss tangent propagation.
+
+Outer:
+  jvp: Add(Outer($tangent[0], $input[1]), Outer($input[0], $tangent[1]))
+  description: Outer product forward tangent propagation.
+
+outer:
+  jvp: Add(Outer($tangent[0], $input[1]), Outer($input[0], $tangent[1]))
+  description: Outer product forward tangent propagation (lowercase alias).
+
+Cholesky:
+  jvp: CholeskyGrad($input[0], $tangent[0])
+  description: Cholesky decomposition forward tangent propagation.
+
+cholesky:
+  jvp: CholeskyGrad($input[0], $tangent[0])
+  description: Cholesky decomposition forward tangent propagation (lowercase alias).
+
+Solve:
+  jvp: Solve($input[0], Sub($tangent[1], MatMul($tangent[0], $output)))
+  description: Linear solve forward tangent propagation.
+
+solve:
+  jvp: Solve($input[0], Sub($tangent[1], MatMul($tangent[0], $output)))
+  description: Linear solve forward tangent propagation (lowercase alias).
+
+Det:
+  jvp: Mul($output, ReduceSum(Mul(Transpose(Inverse($input[0])), $tangent[0])))
+  description: Matrix determinant forward tangent propagation.
+
+det:
+  jvp: Mul($output, ReduceSum(Mul(Transpose(Inverse($input[0])), $tangent[0])))
+  description: Matrix determinant forward tangent propagation (lowercase alias).
+
+SVD:
+  jvp: SVDJVP($input[0], $tangent[0])
+  description: Singular Value Decomposition forward tangent propagation.
+
+svd:
+  jvp: SVDJVP($input[0], $tangent[0])
+  description: Singular Value Decomposition forward tangent propagation (lowercase alias).
+
+Slice:
+  jvp: Slice($tangent[0])
+  description: Tensor slice forward tangent propagation.
+
+slice:
+  jvp: Slice($tangent[0])
+  description: Tensor slice forward tangent propagation (lowercase alias).
+
+Concat:
+  jvp: Concat($tangent[0], $tangent[1])
+  description: Tensor concatenation forward tangent propagation.
+
+concat:
+  jvp: Concat($tangent[0], $tangent[1])
+  description: Tensor concatenation forward tangent propagation (lowercase alias).
+
+Split:
+  jvp: Split($tangent[0])
+  description: Tensor split forward tangent propagation.
+
+split:
+  jvp: Split($tangent[0])
+  description: Tensor split forward tangent propagation (lowercase alias).
+
+Gather:
+  jvp: Gather($tangent[0], $input[1])
+  description: Gather forward tangent propagation.
+
+gather:
+  jvp: Gather($tangent[0], $input[1])
+  description: Gather forward tangent propagation (lowercase alias).
+
+Scatter:
+  jvp: Scatter($tangent[0], $input[1], $tangent[2])
+  description: Scatter forward tangent propagation.
+
+scatter:
+  jvp: Scatter($tangent[0], $input[1], $tangent[2])
+  description: Scatter forward tangent propagation (lowercase alias).
+
+Erf:
+  jvp: Mul($tangent[0], Mul(Constant(1.1283791670955126), Exp(Neg(Square($input[0])))))
+  description: Error function forward tangent propagation.
+
+erf:
+  jvp: Mul($tangent[0], Mul(Constant(1.1283791670955126), Exp(Neg(Square($input[0])))))
+  description: Error function forward tangent propagation (lowercase alias).
+
+AllReduce:
+  jvp: AllReduce($tangent[0])
+  description: Forward tangent propagation for AllReduce.
+
+AllGather:
+  jvp: AllGather($tangent[0])
+  description: Forward tangent propagation for AllGather.
+
+ReduceScatter:
+  jvp: ReduceScatter($tangent[0])
+  description: Forward tangent propagation for ReduceScatter.
+
+Broadcast:
+  jvp: Broadcast($tangent[0])
+  description: Forward tangent propagation for Broadcast.
+
+AllToAll:
+  jvp: AllToAll($tangent[0])
+  description: Forward tangent propagation for AllToAll.

@@ -1,2 +1,2 @@
 FractionalMaxPool:
-  target_api: np.fractionalmaxpool
+  target_api: custom_op

@@ -2,25 +2,35 @@
 # Uses standard wasm_f32x4 intrinsics
 
 intrinsics:
+  Abs:
+    macro_name: "WASM_ABS_F32X4"
+    simd_expr: |
+      return wasm_f32x4_abs(x);
+    scalar_fallback: "std::abs({0})"
+  Neg:
+    macro_name: "WASM_NEG_F32X4"
+    simd_expr: |
+      return wasm_f32x4_neg(x);
+    scalar_fallback: "-{0}"
+  Sqrt:
+    macro_name: "WASM_SQRT_F32X4"
+    simd_expr: |
+      return wasm_f32x4_sqrt(x);
+    scalar_fallback: "std::sqrt({0})"
+  Relu:
+    macro_name: "WASM_RELU_F32X4"
+    simd_expr: |
+      return wasm_f32x4_max(x, wasm_f32x4_splat(0.0f));
+    scalar_fallback: "std::max(0.0f, {0})"
   Exp:
     macro_name: "WASM_EXP_F32X4"
     simd_expr: |
-      // Fast polynomial approximation for exp(x) in SIMD
-      // exp(x) = 2^(x * log2(e))
-      v128_t y = wasm_f32x4_mul(x, wasm_f32x4_splat(1.4426950408889634f)); // x * log2(e)
-      v128_t y_floor = wasm_f32x4_floor(y);
-      v128_t z = wasm_f32x4_sub(y, y_floor);
-      // Pade approximation for 2^z
-      v128_t p = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_mul(z, wasm_f32x4_splat(0.693147f)));
-      // Bitwise shift for 2^floor(y) is complex in SIMD without i32 support,
-      // We will fallback to scalar if exactness is required, but let's do a basic poly:
       v128_t sum = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_add(x, wasm_f32x4_mul(wasm_f32x4_splat(0.5f), wasm_f32x4_mul(x, x))));
       return sum;
     scalar_fallback: "std::exp({0})"
   Log:
     macro_name: "WASM_LOG_F32X4"
     simd_expr: |
-      // Log approximation
       v128_t z = wasm_f32x4_div(wasm_f32x4_sub(x, wasm_f32x4_splat(1.0f)), wasm_f32x4_add(x, wasm_f32x4_splat(1.0f)));
       v128_t z2 = wasm_f32x4_mul(z, z);
       v128_t sum = wasm_f32x4_add(z, wasm_f32x4_mul(wasm_f32x4_splat(0.333333333f), wasm_f32x4_mul(z2, z)));
@@ -29,7 +39,6 @@ intrinsics:
   Tanh:
     macro_name: "WASM_TANH_F32X4"
     simd_expr: |
-      // Fast Tanh approx
       v128_t x2 = wasm_f32x4_mul(x, x);
       v128_t num = wasm_f32x4_add(x, wasm_f32x4_mul(x2, x));
       v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), x2);
@@ -38,21 +47,80 @@ intrinsics:
   Sigmoid:
     macro_name: "WASM_SIGMOID_F32X4"
     simd_expr: |
-      // 1 / (1 + exp(-x))
-      // Using our SIMD Exp approximation (sum)
       v128_t neg_x = wasm_f32x4_neg(x);
       v128_t exp_nx = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_add(neg_x, wasm_f32x4_mul(wasm_f32x4_splat(0.5f), wasm_f32x4_mul(neg_x, neg_x))));
       v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), exp_nx);
       return wasm_f32x4_div(wasm_f32x4_splat(1.0f), den);
     scalar_fallback: "1.0f / (1.0f + std::exp(-{0}))"
-  Trig:
-    macro_name: "WASM_TRIG_F32X4"
+  Sin:
+    macro_name: "WASM_SIN_F32X4"
     simd_expr: |
-      // Simple Sine Taylor Series
       v128_t x2 = wasm_f32x4_mul(x, x);
       v128_t x3 = wasm_f32x4_mul(x2, x);
       return wasm_f32x4_sub(x, wasm_f32x4_mul(wasm_f32x4_splat(0.166666666f), x3));
     scalar_fallback: "std::sin({0})"
+  Cos:
+    macro_name: "WASM_COS_F32X4"
+    simd_expr: |
+      v128_t x2 = wasm_f32x4_mul(x, x);
+      return wasm_f32x4_sub(wasm_f32x4_splat(1.0f), wasm_f32x4_mul(wasm_f32x4_splat(0.5f), x2));
+    scalar_fallback: "std::cos({0})"
+  Ceil:
+    macro_name: "WASM_CEIL_F32X4"
+    simd_expr: |
+      return wasm_f32x4_ceil(x);
+    scalar_fallback: "std::ceil({0})"
+  Floor:
+    macro_name: "WASM_FLOOR_F32X4"
+    simd_expr: |
+      return wasm_f32x4_floor(x);
+    scalar_fallback: "std::floor({0})"
+  Round:
+    macro_name: "WASM_ROUND_F32X4"
+    simd_expr: |
+      return wasm_f32x4_nearest(x);
+    scalar_fallback: "std::round({0})"
+  Trig:
+    macro_name: "WASM_TRIG_F32X4"
+    simd_expr: |
+      v128_t x2 = wasm_f32x4_mul(x, x);
+      v128_t x3 = wasm_f32x4_mul(x2, x);
+      return wasm_f32x4_sub(x, wasm_f32x4_mul(wasm_f32x4_splat(0.166666666f), x3));
+    scalar_fallback: "std::sin({0})"
+  Add:
+    macro_name: "WASM_ADD_F32X4"
+    simd_expr: |
+      return wasm_f32x4_add(a, b);
+    scalar_fallback: "{0} + {1}"
+  Sub:
+    macro_name: "WASM_SUB_F32X4"
+    simd_expr: |
+      return wasm_f32x4_sub(a, b);
+    scalar_fallback: "{0} - {1}"
+  Mul:
+    macro_name: "WASM_MUL_F32X4"
+    simd_expr: |
+      return wasm_f32x4_mul(a, b);
+    scalar_fallback: "{0} * {1}"
+  Div:
+    macro_name: "WASM_DIV_F32X4"
+    simd_expr: |
+      return wasm_f32x4_div(a, b);
+    scalar_fallback: "{0} / {1}"
+  Min:
+    macro_name: "WASM_MIN_F32X4"
+    simd_expr: |
+      return wasm_f32x4_min(a, b);
+    scalar_fallback: "std::min({0}, {1})"
+  Max:
+    macro_name: "WASM_MAX_F32X4"
+    simd_expr: |
+      return wasm_f32x4_max(a, b);
+    scalar_fallback: "std::max({0}, {1})"
+  UnknownSIMD_Op_Test:
+    macro_name: ""
+    simd_expr: ""
+    scalar_fallback: "{0}"
 
 scalars:
   logicaland: "return (a != 0.0f && b != 0.0f) ? 1.0f : 0.0f;"
@@ -71,8 +139,12 @@ scalars:
   floor: "return std::floor(a);"
   round: "return std::round(a);"
   rsqrt: "return 1.0f / std::sqrt(a);"
+  reciprocal: "return 1.0f / a;"
+  square: "return a * a;"
   log1p: "return std::log1p(a);"
   expm1: "return std::expm1(a);"
+  log2: "return std::log2(a);"
+  log10: "return std::log10(a);"
   sin: "return std::sin(a);"
   cos: "return std::cos(a);"
   tan: "return std::tan(a);"
@@ -82,8 +154,19 @@ scalars:
   sinh: "return std::sinh(a);"
   cosh: "return std::cosh(a);"
   tanh: "return std::tanh(a);"
+  asinh: "return std::asinh(a);"
+  acosh: "return std::acosh(a);"
+  atanh: "return std::atanh(a);"
+  erf: "return std::erf(a);"
+  erfc: "return std::erfc(a);"
   gelu: "return 0.5f * a * (1.0f + std::tanh(0.7978845608f * (a + 0.044715f * a * a * a)));"
   swish: "return a / (1.0f + std::exp(-a));"
   silu: "return a / (1.0f + std::exp(-a));"
+  mish: "return a * std::tanh(std::log1p(std::exp(a)));"
+  softplus: "return std::log1p(std::exp(a));"
+  softsign: "return a / (1.0f + std::abs(a));"
+  hardswish: "return a * std::max(0.0f, std::min(6.0f, a + 3.0f)) / 6.0f;"
+  hardsigmoid: "return std::max(0.0f, std::min(1.0f, 0.2f * a + 0.5f));"
   sigmoid: "return 1.0f / (1.0f + std::exp(-a));"
   cast: "return a;"
+  unknownsimd_op_test: "return a;"

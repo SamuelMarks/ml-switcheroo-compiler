@@ -1,14 +1,14 @@
 operation: divide
 description: The Divide operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x1
-    type: Union[array, int, float, complex]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x2
-    type: Union[array, int, float, complex]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float, complex]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float, complex]
 variants:
   cupy:
     eager: cp.divide
@@ -22,10 +22,7 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: divide
   edge_stablehlo:
-
     opcode: stablehlo.divide
   edge_wgsl:
     template: binary

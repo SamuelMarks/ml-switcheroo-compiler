@@ -13,10 +13,7 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: concatenate
   edge_stablehlo:
-
     opcode: stablehlo.concatenate
   llvm_cpp:
     template: unary

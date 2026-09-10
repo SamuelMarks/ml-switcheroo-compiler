@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: MatrixExponential
-  edge_stablehlo:
-
-    opcode: stablehlo.matrix_exponential
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

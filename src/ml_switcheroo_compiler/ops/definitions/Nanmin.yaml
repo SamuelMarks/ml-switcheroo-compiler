@@ -12,11 +12,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: nanmin
-  edge_stablehlo:
-
-    opcode: stablehlo.nanmin
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

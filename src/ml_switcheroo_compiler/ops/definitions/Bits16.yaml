@@ -1,10 +1,10 @@
 operation: Bits16
 description: Internal bit casting.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Any
 variants:
   numpy:
     eager: numpy.bits16
@@ -20,11 +20,6 @@ variants:
     eager: jax.numpy.bits16
   mlx:
     eager: mlx.core.bits16
-  edge_onnx:
-    generator: Bits16
-  edge_stablehlo:
-
-    opcode: stablehlo.bits16
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,9 +1,0 @@
-operation: MemRefTransform
-description: The class representing a Python class.
-std_args:
-  - self
-type: class
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

@@ -38,21 +38,8 @@ def _np_sparsedensematmul(backend_module, *args, **kwargs):
         **kwargs (object): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
-
-    Raises:
-        RuntimeError: An exception.
+        tuple[int, ...]: Result.
     """
-    try:
-        import ml_switcheroo_compiler.ops as _ops
-
-        if hasattr(_ops, "SparseDenseMatMul"):
-            cls_or_func = _ops.SparseDenseMatMul
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
-                return cls_or_func(*args, **kwargs)
-    except Exception as e:
-        if not isinstance(e, (ImportError, AttributeError)):
-            raise RuntimeError(f"Eager execution failed: {e}") from e
     if hasattr(backend_module, "sparsedensematmul"):
         return backend_module.sparsedensematmul(*args, **kwargs)
     return np.matmul(args[0], args[1])

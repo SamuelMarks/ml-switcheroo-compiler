@@ -10,11 +10,34 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
+
+
+def _is_zero_node(graph: LogicalGraph, node_id: str) -> bool:
+    """Check if node represents a zero or identity element for addition.
+
+    Args:
+        graph (LogicalGraph): The computation graph.
+        node_id (str): Identifier of the node to check.
+
+    Returns:
+        bool: True if node represents zero.
+    """
+    if node_id not in graph.nodes:
+        return False
+    node = graph.nodes[node_id]
+    if node.op_type in ("Zeros", "ZerosLike"):
+        return True
+    if node.op_type == "Constant":
+        val = node.attributes.get("value")
+        if isinstance(val, (int, float)) and val == 0:
+            return True
+    return False
 
 
 def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
-    """Emit an Add node for gradient accumulation.
+    """Emit an Add node for gradient accumulation, avoiding redundant Add chains.
 
     Args:
         graph (LogicalGraph): The graph parameter for the operation.
@@ -24,6 +47,11 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     Returns:
         str: The computed result.
     """
+    if _is_zero_node(graph, n1_id):
+        return n2_id
+    if _is_zero_node(graph, n2_id):
+        return n1_id
+
     out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
     n1 = graph.nodes[n1_id]
 
@@ -71,6 +99,48 @@ def _get_reachable_from_output(sorted_nodes: list[LogicalNode], output_id: str) 
     return reachable_from_output
 
 
+def _load_rematerialization_rules() -> dict[str, Any]:
+    """Load rematerialization rules from YAML config.
+
+    Returns:
+        dict[str, Any]: Loaded rematerialization rules configuration.
+    """
+    import os
+
+    import yaml
+
+    yaml_path = os.path.join(os.path.dirname(__file__), "passes", "rematerialization_rules.yaml")
+    if os.path.exists(yaml_path):
+        try:
+            with open(yaml_path) as f:
+                data = yaml.safe_load(f)
+                return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _should_rematerialize(node: LogicalNode, rules: Optional[dict[str, Any]] = None) -> bool:
+    """Determine if a node should be rematerialized across backward boundary.
+
+    Args:
+        node (LogicalNode): The node to evaluate.
+        rules (Optional[dict[str, Any]]): Rematerialization rules config.
+
+    Returns:
+        bool: True if node should be rematerialized.
+    """
+    if node.attributes.get("rematerialize", False):
+        return True
+    if rules is None:
+        rules = _load_rematerialization_rules()
+    if not rules:
+        return False
+    if node.op_type in rules.get("high_cost_ops", []):
+        return False
+    return node.op_type in rules.get("target_ops", []) and bool(node.attributes.get("checkpoint", False))
+
+
 def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNode:
     """Recursively recompute a node and its rematerialized inputs.
 
@@ -93,7 +163,7 @@ def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNo
     for inp_id in getattr(node, "inputs", []):
         if inp_id in new_graph.nodes:
             inp_node = new_graph.nodes[inp_id]
-            if inp_node.attributes.get("rematerialize", False):
+            if _should_rematerialize(inp_node):
                 # Need to recompute the input as well
                 recomputed_inp = _recompute_subgraph(new_graph, inp_node)
                 new_inputs.append(recomputed_inp.id)
@@ -124,17 +194,18 @@ def _accumulate_gradients(
     Raises:
         MissingJVPRuleError: If VJP rule is missing or returns incorrect number of adjoints.
     """
-    try:
-        if node.attributes.get("rematerialize", False):
-            eval_node = _recompute_subgraph(new_graph, node)
-        else:
-            eval_node = node
-        vjp_func = get_vjp(node.op_type)
-        input_adjs = vjp_func(new_graph, eval_node, adj_id)
+    if _should_rematerialize(node):
+        eval_node = _recompute_subgraph(new_graph, node)
+    else:
+        eval_node = node
 
+    try:
+        vjp_func = get_vjp(node.op_type)
     except ValueError:
         msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
         raise MissingJVPRuleError(msg) from None
+
+    input_adjs = vjp_func(new_graph, eval_node, adj_id)
 
     if len(input_adjs) != len(node.inputs):
         msg = f"VJP for {getattr(node, 'op_type', 'Unknown')} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
@@ -237,33 +308,58 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typi
     Raises:
         ValueError: An exception.
     """
-    if output_id not in graph.nodes:
-        msg = f"Output node '{output_id}' not found in graph."
-        raise ValueError(msg)
+    if any(getattr(n, "op_type", "") == "Vmap" for n in graph.nodes.values()):
+        from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+        from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass
+
+        ir_g = IRGraph(name=graph.name)
+        ir_g.inputs = list(graph.inputs)
+        ir_g.outputs = list(graph.outputs)
+        for nid, n in graph.nodes.items():
+            ir_g.nodes[nid] = n if isinstance(n, IRNode) else IRNode(**n.__dict__)
+        graph = vectorization_pass(ir_g)
+
+    output_ids: list[str] = [output_id] if isinstance(output_id, str) else list(output_id)
+    for oid in output_ids:
+        if oid not in graph.nodes:
+            msg = f"Output node '{oid}' not found in graph."
+            raise ValueError(msg)
 
     new_graph = _copy_graph(graph)
 
     sorted_nodes = topological_sort(new_graph)
 
-    reachable_from_output = _get_reachable_from_output(sorted_nodes, output_id)
+    reachable_from_output: set[str] = set()
+    for oid in output_ids:
+        reachable_from_output.update(_get_reachable_from_output(sorted_nodes, oid))
 
     adjoints: dict[str, str] = {}
     if cotangent_id is not None:
         if isinstance(cotangent_id, dict):
             for k, v in cotangent_id.items():
                 adjoints[k] = v
+        elif isinstance(cotangent_id, (list, tuple)):
+            for oid, cid in zip(output_ids, cotangent_id):
+                adjoints[oid] = cid
         else:
-            adjoints[output_id] = cotangent_id
+            if len(output_ids) == 1:
+                adjoints[output_ids[0]] = cotangent_id
+            else:
+                for oid in output_ids:
+                    adjoints[oid] = cotangent_id
     else:
-        one_id = f"grad_ones_{uuid.uuid4().hex[:6]}"
-        ones_node = LogicalNode(
-            id=one_id,
-            op_type="Constant",
-            attributes={"value": 1.0},
-            shape_metadata=(),
-        )
-        new_graph.nodes[one_id] = ones_node
-        adjoints[output_id] = one_id
+        for oid in output_ids:
+            one_id = f"grad_ones_{uuid.uuid4().hex[:6]}"
+            target_node = new_graph.nodes[oid]
+            target_shape = getattr(target_node, "shape_metadata", ())
+            ones_node = LogicalNode(
+                id=one_id,
+                op_type="Constant",
+                attributes={"value": 1.0},
+                shape_metadata=target_shape,
+            )
+            new_graph.nodes[one_id] = ones_node
+            adjoints[oid] = one_id
 
     _backward_pass(new_graph, sorted_nodes, reachable_from_output, adjoints)
 
@@ -571,35 +667,271 @@ def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
     return new_graph
 
 
-def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str], mode: str = "forward-over-reverse") -> LogicalGraph:
-    """Evaluate hvp operation.
+def hvp(
+    graph: LogicalGraph,
+    primals: list[str],
+    tangents: list[str],
+    outputs: list[str],
+    mode: str = "forward-over-reverse",
+    projected_tangents: typing.Optional[list[str]] = None,
+) -> LogicalGraph:
+    """Evaluate Hessian-vector product (HVP) operation.
+
+    Supports both forward-over-reverse and reverse-over-forward modes, and seamlessly
+    handles multi-dimensional and non-scalar outputs via projected tangents.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
-        primals (list): The primals parameter.
-        tangents (list): The tangents parameter.
-        outputs (list): The outputs parameter.
+        graph (LogicalGraph): Base computation graph.
+        primals (list[str]): Input primal variable node IDs.
+        tangents (list[str]): Tangent vector node IDs corresponding to primals.
+        outputs (list[str]): Output node IDs to differentiate.
         mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
+        projected_tangents (typing.Optional[list[str]]): Optional projected tangent node IDs
+            for projecting non-scalar or multi-node outputs into a directional scalar/vector.
 
     Returns:
-        LogicalGraph: Result.
+        LogicalGraph: Graph computing the Hessian-vector product.
     """
     if mode == "forward-over-reverse":
-        # First get the gradient (VJP) graph
-        if len(outputs) != 1:
-            raise ValueError("hvp requires a single output node when using forward-over-reverse mode")
-        grad_graph = grad(graph, primals, outputs[0])
-        # Extract the gradient output nodes (these represent df/dx)
+        if projected_tangents is not None:
+            cot_dict = {out_id: pt for out_id, pt in zip(outputs, projected_tangents)}
+            grad_graph = grad(graph, primals, outputs, cotangent_id=cot_dict)
+        else:
+            if len(outputs) != 1:
+                raise ValueError("hvp requires a single output node when using forward-over-reverse mode without projected_tangents")
+            grad_graph = grad(graph, primals, outputs[0])
         grad_outputs = grad_graph.outputs
-        # Now compute JVP of the gradient graph
         return jvp(grad_graph, primals, tangents, grad_outputs)
     elif mode == "reverse-over-forward":
-        # First get the JVP graph
         jvp_graph = jvp(graph, primals, tangents, outputs)
         jvp_outputs = jvp_graph.outputs
-        # Now compute VJP (grad) of the JVP graph
-        if len(jvp_outputs) != 1:
-            raise ValueError("hvp requires a single output node when using reverse-over-forward mode")
-        return grad(jvp_graph, primals, jvp_outputs[0])
+        if projected_tangents is not None:
+            cot_dict = {out_id: pt for out_id, pt in zip(jvp_outputs, projected_tangents)}
+            return grad(jvp_graph, primals, jvp_outputs, cotangent_id=cot_dict)
+        else:
+            if len(jvp_outputs) != 1:
+                raise ValueError("hvp requires a single output node when using reverse-over-forward mode without projected_tangents")
+            return grad(jvp_graph, primals, jvp_outputs[0])
     else:
         raise ValueError(f"Unknown HVP mode: {mode}")
+
+
+def conv2d_vjp_input(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> str:
+    """Compute exact VJP cotangent for the input tensor of a Conv2D operation.
+
+    Handles arbitrary strides, padding, dilation, and groups.
+
+    Args:
+        graph (LogicalGraph): Computation graph.
+        node (LogicalNode): Primal Conv2D node.
+        cotangent (str): Output adjoint identifier.
+
+    Returns:
+        str: Input adjoint node identifier.
+    """
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    input_id = node.inputs[0]
+    weight_id = node.inputs[1]
+    input_node = graph.nodes.get(input_id)
+    shape_meta = getattr(input_node, "shape_metadata", None)
+
+    stride = node.attributes.get("stride", node.attributes.get("strides", (1, 1)))
+    dilation = node.attributes.get("dilation", node.attributes.get("dilations", (1, 1)))
+
+    attrs = {
+        "stride": stride,
+        "strides": stride,
+        "padding": node.attributes.get("padding", "SAME"),
+        "dilation": dilation,
+        "dilations": dilation,
+        "groups": int(node.attributes.get("groups", 1)),
+        "target_shape": shape_meta,
+    }
+    return emit_ir_node(graph, "Conv2DInputGrad", [cotangent, weight_id], shape_metadata=shape_meta, attributes=attrs)
+
+
+def conv2d_vjp_weight(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> str:
+    """Compute exact VJP cotangent for the weight tensor of a Conv2D operation.
+
+    Handles arbitrary strides, padding, dilation, and groups.
+
+    Args:
+        graph (LogicalGraph): Computation graph.
+        node (LogicalNode): Primal Conv2D node.
+        cotangent (str): Output adjoint identifier.
+
+    Returns:
+        str: Weight adjoint node identifier.
+    """
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    input_id = node.inputs[0]
+    weight_id = node.inputs[1]
+    weight_node = graph.nodes.get(weight_id)
+    shape_meta = getattr(weight_node, "shape_metadata", None)
+
+    stride = node.attributes.get("stride", node.attributes.get("strides", (1, 1)))
+    dilation = node.attributes.get("dilation", node.attributes.get("dilations", (1, 1)))
+
+    attrs = {
+        "stride": stride,
+        "strides": stride,
+        "padding": node.attributes.get("padding", "SAME"),
+        "dilation": dilation,
+        "dilations": dilation,
+        "groups": int(node.attributes.get("groups", 1)),
+        "target_shape": shape_meta,
+    }
+    return emit_ir_node(graph, "Conv2DWeightGrad", [input_id, cotangent], shape_metadata=shape_meta, attributes=attrs)
+
+
+def _conv2d_vjp_rule(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for Conv2D."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    grad_in = conv2d_vjp_input(graph, node, cotangent)
+    grad_w = conv2d_vjp_weight(graph, node, cotangent)
+    if len(node.inputs) > 2:
+        bias_id = node.inputs[2]
+        shape_b = getattr(graph.nodes.get(bias_id), "shape_metadata", None)
+        grad_b = emit_ir_node(graph, "Conv2DBiasGrad", [cotangent], shape_metadata=shape_b, attributes=node.attributes)
+        return (grad_in, grad_w, grad_b)
+    return (grad_in, grad_w)
+
+
+def _max_pool2d_with_argmax_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for MaxPool2DWithArgmax."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    input_id = node.inputs[0]
+    shape_meta = getattr(graph.nodes.get(input_id), "shape_metadata", None)
+    grad_in = emit_ir_node(graph, "MaxPool2DWithArgmaxGrad", [cotangent, input_id], shape_metadata=shape_meta, attributes=node.attributes)
+    adjs = [grad_in]
+    while len(adjs) < len(node.inputs):
+        adjs.append(UnconnectedGradients.NONE)
+    return tuple(adjs)
+
+
+def _avg_pool2d_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for AvgPool2D."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    input_id = node.inputs[0]
+    shape_meta = getattr(graph.nodes.get(input_id), "shape_metadata", None)
+    grad_in = emit_ir_node(graph, "AvgPool2DGrad", [cotangent, input_id], shape_metadata=shape_meta, attributes=node.attributes)
+    return (grad_in,)
+
+
+def _batch_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for BatchNorm."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    x_id = node.inputs[0]
+    shape_x = getattr(graph.nodes.get(x_id), "shape_metadata", None)
+    gamma_id = node.inputs[1] if len(node.inputs) > 1 else None
+    shape_gamma = getattr(graph.nodes.get(gamma_id), "shape_metadata", None) if gamma_id else None
+
+    inps_for_x = [cotangent, x_id] + ([gamma_id] if gamma_id else [])
+    grad_x = emit_ir_node(graph, "BatchNormInputGrad", inps_for_x, shape_metadata=shape_x, attributes=node.attributes)
+
+    adjs = [grad_x]
+    if len(node.inputs) > 1:
+        grad_gamma = emit_ir_node(graph, "BatchNormGammaGrad", [cotangent, x_id], shape_metadata=shape_gamma, attributes=node.attributes)
+        adjs.append(grad_gamma)
+    if len(node.inputs) > 2:
+        beta_id = node.inputs[2]
+        shape_beta = getattr(graph.nodes.get(beta_id), "shape_metadata", None)
+        grad_beta = emit_ir_node(graph, "BatchNormBetaGrad", [cotangent], shape_metadata=shape_beta, attributes=node.attributes)
+        adjs.append(grad_beta)
+
+    while len(adjs) < len(node.inputs):
+        adjs.append(UnconnectedGradients.NONE)
+    return tuple(adjs)
+
+
+def _layer_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for LayerNorm."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    x_id = node.inputs[0]
+    shape_x = getattr(graph.nodes.get(x_id), "shape_metadata", None)
+    gamma_id = node.inputs[1] if len(node.inputs) > 1 else None
+    shape_gamma = getattr(graph.nodes.get(gamma_id), "shape_metadata", None) if gamma_id else None
+
+    inps_for_x = [cotangent, x_id] + ([gamma_id] if gamma_id else [])
+    grad_x = emit_ir_node(graph, "LayerNormInputGrad", inps_for_x, shape_metadata=shape_x, attributes=node.attributes)
+
+    adjs = [grad_x]
+    if len(node.inputs) > 1:
+        grad_gamma = emit_ir_node(graph, "LayerNormGammaGrad", [cotangent, x_id], shape_metadata=shape_gamma, attributes=node.attributes)
+        adjs.append(grad_gamma)
+    if len(node.inputs) > 2:
+        beta_id = node.inputs[2]
+        shape_beta = getattr(graph.nodes.get(beta_id), "shape_metadata", None)
+        grad_beta = emit_ir_node(graph, "LayerNormBetaGrad", [cotangent], shape_metadata=shape_beta, attributes=node.attributes)
+        adjs.append(grad_beta)
+
+    while len(adjs) < len(node.inputs):
+        adjs.append(UnconnectedGradients.NONE)
+    return tuple(adjs)
+
+
+def _rms_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for RMSNorm."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    x_id = node.inputs[0]
+    shape_x = getattr(graph.nodes.get(x_id), "shape_metadata", None)
+    gamma_id = node.inputs[1] if len(node.inputs) > 1 else None
+    shape_gamma = getattr(graph.nodes.get(gamma_id), "shape_metadata", None) if gamma_id else None
+
+    inps_for_x = [cotangent, x_id] + ([gamma_id] if gamma_id else [])
+    grad_x = emit_ir_node(graph, "RMSNormInputGrad", inps_for_x, shape_metadata=shape_x, attributes=node.attributes)
+
+    adjs = [grad_x]
+    if len(node.inputs) > 1:
+        grad_gamma = emit_ir_node(graph, "RMSNormGammaGrad", [cotangent, x_id], shape_metadata=shape_gamma, attributes=node.attributes)
+        adjs.append(grad_gamma)
+
+    while len(adjs) < len(node.inputs):
+        adjs.append(UnconnectedGradients.NONE)
+    return tuple(adjs)
+
+
+def _group_norm_vjp(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> tuple[str, ...]:
+    """Exact VJP rule for GroupNorm."""
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    x_id = node.inputs[0]
+    shape_x = getattr(graph.nodes.get(x_id), "shape_metadata", None)
+    gamma_id = node.inputs[1] if len(node.inputs) > 1 else None
+    shape_gamma = getattr(graph.nodes.get(gamma_id), "shape_metadata", None) if gamma_id else None
+
+    inps_for_x = [cotangent, x_id] + ([gamma_id] if gamma_id else [])
+    grad_x = emit_ir_node(graph, "GroupNormInputGrad", inps_for_x, shape_metadata=shape_x, attributes=node.attributes)
+
+    adjs = [grad_x]
+    if len(node.inputs) > 1:
+        grad_gamma = emit_ir_node(graph, "GroupNormGammaGrad", [cotangent, x_id], shape_metadata=shape_gamma, attributes=node.attributes)
+        adjs.append(grad_gamma)
+    if len(node.inputs) > 2:
+        beta_id = node.inputs[2]
+        shape_beta = getattr(graph.nodes.get(beta_id), "shape_metadata", None)
+        grad_beta = emit_ir_node(graph, "GroupNormBetaGrad", [cotangent], shape_metadata=shape_beta, attributes=node.attributes)
+        adjs.append(grad_beta)
+
+    while len(adjs) < len(node.inputs):
+        adjs.append(UnconnectedGradients.NONE)
+    return tuple(adjs)
+
+
+# Register exact VJP rules
+_VJP_REGISTRY["Conv2D"] = _conv2d_vjp_rule
+_VJP_REGISTRY["conv2d"] = _conv2d_vjp_rule
+_VJP_REGISTRY["MaxPool2DWithArgmax"] = _max_pool2d_with_argmax_vjp
+_VJP_REGISTRY["AvgPool2D"] = _avg_pool2d_vjp
+_VJP_REGISTRY["BatchNorm"] = _batch_norm_vjp
+_VJP_REGISTRY["LayerNorm"] = _layer_norm_vjp
+_VJP_REGISTRY["RMSNorm"] = _rms_norm_vjp
+_VJP_REGISTRY["GroupNorm"] = _group_norm_vjp

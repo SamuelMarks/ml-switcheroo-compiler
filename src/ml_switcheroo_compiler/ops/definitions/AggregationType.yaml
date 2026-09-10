@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AggregationType
-  edge_stablehlo:
-
-    opcode: stablehlo.aggregation_type
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
 Log:
-  jvp: ZerosLike($tangent[0])
+  jvp: Div($tangent[0], $input[0])
   vjp:
-  - ZerosLike($cotangent)
+  - Div($cotangent, $input[0])

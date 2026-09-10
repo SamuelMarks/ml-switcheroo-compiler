@@ -10,11 +10,6 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: Fft2d
-  edge_stablehlo:
-
-    opcode: stablehlo.fft2d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

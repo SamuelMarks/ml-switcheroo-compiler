@@ -219,3 +219,170 @@ def test_math_missing():
 
     # math_testing.py (_val returning itself)
     _allclose(db, np.array([1]), np.array([1]), rtol=5.0)
+
+
+def test_math_manipulation_matrix_nn_100cov():
+    """Ensure 100% coverage for math_manipulation, math_matrix, and math_nn."""
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_manipulation import (
+        _np_broadcast_to,
+        _np_transpose,
+    )
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_matrix import (
+        _batch_matmul,
+        _dot,
+        _matmul,
+    )
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_nn import (
+        _batch_norm,
+        _bce_loss,
+        _elu,
+        _gelu,
+        _global_adaptive_pool,
+        _huber_loss,
+        _kl_loss,
+        _layer_norm,
+        _leaky_relu,
+        _mse_loss,
+        _rms_norm,
+        _silu,
+    )
+
+    db = DummyBackend()
+
+    # math_manipulation.py
+    arr = np.ones((2, 3))
+    assert _np_transpose(np, arr, permutation=(1, 0)).shape == (3, 2)
+    assert _np_transpose(np, arr).shape == (3, 2)
+    assert _np_transpose(db, arr, permutation=(1, 0)).shape == (3, 2)
+
+    assert _np_broadcast_to(np, np.ones((1, 2)), shape=(3, 2)).shape == (3, 2)
+    assert _np_broadcast_to(db, np.ones((1, 2)), shape=(3, 2)).shape == (3, 2)
+
+    # math_matrix.py
+    m1 = np.ones((2, 2))
+    m2 = np.ones((2, 2))
+    assert _matmul(np, m1, m2, transpose_a=True, transpose_b=True).shape == (2, 2)
+    assert _matmul(np, m1, m2).shape == (2, 2)
+    assert _matmul(db, m1, m2).shape == (2, 2)
+
+    bm1 = np.ones((2, 2, 2))
+    bm2 = np.ones((2, 2, 2))
+    assert _batch_matmul(np, bm1, bm2).shape == (2, 2, 2)
+    assert _batch_matmul(db, bm1, bm2).shape == (2, 2, 2)
+
+    v1 = np.ones(3)
+    v2 = np.ones(3)
+    assert _dot(np, v1, v2) == 3.0
+    assert _dot(db, v1, v2) == 3.0
+
+    # math_nn.py
+    x_2d = np.ones((2, 4))
+    assert _layer_norm(np, x_2d).shape == (2, 4)
+
+    x_4d = np.ones((2, 4, 3, 3))
+    assert _batch_norm(np, x_4d).shape == (2, 4, 3, 3)
+    assert _batch_norm(np, x_4d, 1.0, 0.0, np.zeros((1, 4, 1, 1)), np.ones((1, 4, 1, 1))).shape == (2, 4, 3, 3)
+
+    assert _rms_norm(np, x_2d).shape == (2, 4)
+    assert _mse_loss(np, np.ones((2, 2)), np.zeros((2, 2))) == 1.0
+    assert _bce_loss(np, np.array([0.2, 0.8]), np.array([0.0, 1.0])) is not None
+
+    # bce_loss fallback without clip on backend
+    db_math = DummyBackend()
+    db_math.log = np.log
+    db_math.mean = np.mean
+    assert _bce_loss(db_math, np.array([0.2, 0.8]), np.array([0.0, 1.0])) is not None
+
+    assert _huber_loss(np, np.array([0.5, 2.0]), np.array([0.0, 0.0])) is not None
+    assert _kl_loss(np, np.array([0.2, 0.8]), np.array([0.3, 0.7])) is not None
+    assert _gelu(np, np.array([0.5, -0.5])).shape == (2,)
+    assert _silu(np, np.array([0.5, -0.5])).shape == (2,)
+    assert _elu(np, np.array([0.5, -0.5])).shape == (2,)
+    assert _leaky_relu(np, np.array([0.5, -0.5])).shape == (2,)
+
+    # Line 323: 4D adaptive pool falling through
+    assert _global_adaptive_pool(np, np.ones((1, 2, 3, 4, 5)), (1, 1, 1, 1)).shape == (1, 2, 3, 4, 5)
+
+
+def test_math_reduction_full_coverage():
+    """Ensure 100% coverage for math_reduction.py."""
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_reduction import (
+        _broadcast_like,
+        _broadcast_reduce,
+        _norm,
+        _numel,
+        _reduce_max,
+        _reduce_mean,
+        _reduce_min,
+        _reduce_prod,
+        _reduce_sum,
+        _segment_sum,
+    )
+
+    db = DummyBackend()
+    arr = np.ones((2, 3))
+
+    # _reduce_sum
+    assert _reduce_sum(np, arr, axis=0).shape == (3,)
+    assert _reduce_sum(db, arr) is arr
+
+    # _reduce_mean
+    assert _reduce_mean(np, arr, axis=0).shape == (3,)
+    assert _reduce_mean(db, arr) is arr
+
+    # _reduce_prod
+    assert _reduce_prod(np, arr, axis=0).shape == (3,)
+    assert _reduce_prod(db, arr) is arr
+
+    # _reduce_max
+    assert _reduce_max(np, arr, axis=0).shape == (3,)
+    assert _reduce_max(db, arr) is arr
+
+    # _reduce_min
+    assert _reduce_min(np, arr, axis=0).shape == (3,)
+    assert _reduce_min(db, arr) is arr
+
+    # _norm
+    assert _norm(np, arr) == np.linalg.norm(arr)
+    db_sqrt = DummyBackend()
+    db_sqrt.sqrt = np.sqrt
+    db_sqrt.sum = np.sum
+    assert _norm(db_sqrt, arr) == np.linalg.norm(arr)
+
+    # _numel
+    class HasSize:
+        size = 12
+
+    class HasNumel:
+        def numel(self):
+            return 15
+
+    assert _numel(np, HasSize()) == 12.0
+    assert _numel(np, HasNumel()) == 15.0
+    assert _numel(np, [1, 2, 3]) == 3.0
+
+    # _broadcast_reduce
+    assert _broadcast_reduce(np) is None
+    assert _broadcast_reduce(np, arr) is arr
+    assert _broadcast_reduce(np, arr, arr) is arr
+    # cot_ndim > tgt_ndim
+    cot_3d = np.ones((2, 2, 3))
+    tgt_2d = np.ones((2, 3))
+    assert _broadcast_reduce(np, cot_3d, tgt_2d).shape == (2, 3)
+    # td == 1 and cd > 1
+    tgt_1d = np.ones((1, 3))
+    assert _broadcast_reduce(np, arr, tgt_1d).shape == (1, 3)
+
+    # _broadcast_like
+    assert _broadcast_like(np) is None
+    assert _broadcast_like(np, arr) is arr
+    assert _broadcast_like(np, arr, arr) is arr
+    assert _broadcast_like(np, np.ones(3), arr).shape == (2, 3)
+    assert _broadcast_like(db, np.ones(3), arr).shape == (3,)
+
+    # _segment_sum
+    assert _segment_sum(np) is None
+    data = np.ones((4, 2))
+    segments = np.array([0, 0, 1, 1])
+    res_seg = _segment_sum(np, data, segments, 2)
+    assert res_seg.shape == (2, 2)

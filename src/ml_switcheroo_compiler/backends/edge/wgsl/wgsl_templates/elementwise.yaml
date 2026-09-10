@@ -1,7 +1,49 @@
-elementwise:
-  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
-    \ = {expr};\n"
-  workgroup_size:
-  - 64
-  - 1
-  - 1
+templates:
+  unary:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\n{out_offset_code}\n\
+      {in0_offset_code}\nbuf_out_f32[out_offset] = {expr};\n"
+  unary_vec4:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let idx = global_id.x;\nlet base = idx * 4u;\nif (base + 3u < {nelem}u)\
+      \ {{\n    let in0_v = vec4<f32>(buf_in0_f32[base], buf_in0_f32[base + 1u], buf_in0_f32[base\
+      \ + 2u], buf_in0_f32[base + 3u]);\n    let out_v = in0_v;\n    buf_out_f32[base]\
+      \ = out_v.x;\n    buf_out_f32[base + 1u] = out_v.y;\n    buf_out_f32[base +\
+      \ 2u] = out_v.z;\n    buf_out_f32[base + 3u] = out_v.w;\n}} else {{\n    for\
+      \ (var i: u32 = base; i < {nelem}u; i = i + 1u) {{\n        buf_out_f32[i] =\
+      \ buf_in0_f32[i];\n    }}\n}}\n"
+  binary:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\n{out_offset_code}\n\
+      {in0_offset_code}\n{in1_offset_code}\nbuf_out_f32[out_offset] = {expr};\n"
+  binary_vec4:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let idx = global_id.x;\nlet base = idx * 4u;\nif (base + 3u < {nelem}u)\
+      \ {{\n    let v0 = vec4<f32>(buf_in0_f32[base], buf_in0_f32[base + 1u], buf_in0_f32[base\
+      \ + 2u], buf_in0_f32[base + 3u]);\n    let v1 = vec4<f32>(buf_in1_f32[base],\
+      \ buf_in1_f32[base + 1u], buf_in1_f32[base + 2u], buf_in1_f32[base + 3u]);\n\
+      \    let out_v = v0 + v1;\n    buf_out_f32[base] = out_v.x;\n    buf_out_f32[base\
+      \ + 1u] = out_v.y;\n    buf_out_f32[base + 2u] = out_v.z;\n    buf_out_f32[base\
+      \ + 3u] = out_v.w;\n}} else {{\n    for (var i: u32 = base; i < {nelem}u; i\
+      \ = i + 1u) {{\n        buf_out_f32[i] = buf_in0_f32[i] + buf_in1_f32[i];\n\
+      \    }}\n}}\n"
+  elementwise:
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\n{out_offset_code}\n\
+      {in0_offset_code}\n{in1_offset_code}\n{in2_offset_code}\nbuf_out_f32[out_offset]\
+      \ = {expr};\n"

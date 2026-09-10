@@ -1,0 +1,3 @@
+IoU:
+  ast_template: np_iou({0}, {1}, '{bounding_box_format}')
+  target_api: ''

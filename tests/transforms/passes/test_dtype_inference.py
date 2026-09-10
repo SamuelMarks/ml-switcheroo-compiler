@@ -48,10 +48,17 @@ def test_infer_output_dtype() -> None:
 
 
 def test_get_promoted_dtype() -> None:
-    assert _get_promoted_dtype(["float32"]) == "float32"
-    assert _get_promoted_dtype(["int32", "float32"]) == "float32"
-    assert _get_promoted_dtype(["int32", "float32", "complex64"]) == "complex64"
-    assert _get_promoted_dtype(["unknown1", "unknown2"]) == "unknown1"
+    from ml_switcheroo_compiler.core.config import config
+
+    old_x64 = config.jax_enable_x64
+    config.jax_enable_x64 = False
+    try:
+        assert _get_promoted_dtype(["float32"]) == "float32"
+        assert _get_promoted_dtype(["int32", "float32"]) == "float32"
+        assert _get_promoted_dtype(["int32", "float32", "complex64"]) == "complex64"
+        assert _get_promoted_dtype(["unknown1", "unknown2"]) == "unknown1"
+    finally:
+        config.jax_enable_x64 = old_x64
 
 
 def test_handle_cast_dtype() -> None:

@@ -1,9 +1,0 @@
-operation: warp_idx
-description: The class representing a Python function.
-std_args:
-  - sync
-type: function
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

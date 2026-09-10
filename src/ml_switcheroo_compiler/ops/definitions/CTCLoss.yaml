@@ -1,14 +1,14 @@
 operation: ctcloss
 description: The CtcLoss operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: y_true
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: y_pred
-    type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_true
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_pred
+  type: Tensor
 variants:
   keras:
     eager: keras_ops.ctc_loss
@@ -20,11 +20,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: ctcloss
-  edge_stablehlo:
-
-    opcode: stablehlo.ctcloss
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

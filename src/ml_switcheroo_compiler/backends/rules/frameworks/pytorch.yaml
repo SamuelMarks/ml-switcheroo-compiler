@@ -1,0 +1,13 @@
+target_module: torch
+module_path:
+  - torch
+kwarg_map:
+  axis: dim
+  keepdims: keepdim
+class_bases:
+  flax.linen.Module:
+    - nn
+    - Module
+method_map:
+  __call__: forward
+broadcast_method: expand

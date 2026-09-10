@@ -5,12 +5,15 @@ from unittest.mock import patch
 import pytest
 
 backends_to_test = {
+    "mlx": "The 'mlx' backend requires the 'mlx' library to be installed.",
     "jax": "requires the 'jax' and 'jaxlib'",
     "keras": "requires the 'keras'",
     "pytorch": "requires the 'torch'",
     "tensorflow": "requires the 'tensorflow'",
     "cupy": "requires the 'cupy'",
     "dask": "requires the 'dask'",
+    "numba": "requires the 'numba'",
+    "sparse": "requires the 'sparse'",
 }
 
 

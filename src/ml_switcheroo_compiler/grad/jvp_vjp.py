@@ -7,11 +7,12 @@ import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import Optional, Union
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -25,16 +26,110 @@ from .options import GradOptions
 from .utils import _convert_to_tensors, _get_fun_primal
 
 
-def custom_jvp(fun):
+class CustomJVPFunction:
+    """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules."""
+
+    def __init__(self, fun: Callable) -> None:
+        """Initialize CustomJVPFunction.
+
+        Args:
+            fun (Callable): The base function being wrapped.
+        """
+        self.fun = fun
+        self.jvp_rule: Optional[Callable] = None
+
+    def defjvp(self, jvp_rule: Callable) -> Callable:
+        """Define the custom Jacobian-vector product (JVP) rule.
+
+        Args:
+            jvp_rule (Callable): The JVP rule. Signature can be (primals, tangents) -> (val, out_tangent)
+                or (*primals, *tangents).
+
+        Returns:
+            Callable: The registered jvp_rule.
+        """
+        self.jvp_rule = jvp_rule
+        return jvp_rule
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another function or CustomJVPFunction.
+
+        Args:
+            other (object): Other object to compare.
+
+        Returns:
+            bool: True if equal, False otherwise.
+        """
+        if isinstance(other, CustomJVPFunction):
+            return self.fun == other.fun
+        return self.fun == other
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        """Execute the function, emitting a CustomJVP node when tracing with a registered rule.
+
+        Args:
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: The computed output.
+        """
+        if config.eager_mode or not global_tracing_state.is_tracing or self.jvp_rule is None:
+            return self.fun(*args, **kwargs)
+
+        tensor_args = [a for a in args if isinstance(a, Tensor)]
+        if not tensor_args:
+            return self.fun(*args, **kwargs)
+
+        from ml_switcheroo_compiler.core.config import ConfigContext
+
+        with ConfigContext(eager_mode=True):
+            sample_out = self.fun(*args, **kwargs)
+
+        out_shape = getattr(sample_out, "shape", ())
+        out_dtype = getattr(getattr(sample_out, "dtype", None), "value", "float32")
+        device = getattr(tensor_args[0], "device", "cpu")
+
+        in_ids: list[str] = []
+        for a in tensor_args:
+            if hasattr(a, "data") and hasattr(a.data, "id"):
+                in_ids.append(a.data.id)
+            else:
+                cid = str(uuid.uuid4())
+                arr = getattr(a, "data", a)
+                c_node = LogicalNode(
+                    id=cid,
+                    op_type="Constant",
+                    inputs=[],
+                    attributes={"value": arr},
+                    shape_metadata=getattr(arr, "shape", ()),
+                )
+                global_tracing_state.add_node(c_node)
+                in_ids.append(cid)
+
+        out_id = f"custom_jvp_{uuid.uuid4().hex[:6]}"
+        node = LogicalNode(
+            id=out_id,
+            op_type="CustomJVP",
+            inputs=in_ids,
+            attributes={"jvp_rule": self.jvp_rule, "fun": self.fun},
+            shape_metadata=out_shape,
+        )
+        global_tracing_state.add_node(node)
+        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+        return Tensor(proxy, TensorConfig(out_shape, DType(out_dtype), device))
+
+
+def custom_jvp(fun: Callable) -> CustomJVPFunction:
     """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules.
 
     Args:
         fun (Callable): The original function.
 
     Returns:
-        Callable: The wrapped function that supports custom JVPs.
+        CustomJVPFunction: The wrapped function that supports custom JVPs.
     """
-    return fun
+    return CustomJVPFunction(fun)
 
 
 def jvp(
@@ -60,6 +155,23 @@ def jvp(
 
     primals_seq = primals if isinstance(primals, (tuple, list)) else (primals,)
     tangents_seq = tangents if isinstance(tangents, (tuple, list)) else (tangents,)
+
+    if isinstance(fun, CustomJVPFunction) and fun.jvp_rule is not None:
+        with ConfigContext(eager_mode=True):
+            try:
+                res = fun.jvp_rule(primals_seq, tangents_seq)
+            except TypeError:
+                res = fun.jvp_rule(*primals_seq, *tangents_seq)
+
+            if isinstance(res, (tuple, list)) and len(res) == 2:
+                val, out_tan = res
+            else:
+                val = fun(*primals_seq)
+                out_tan = res
+
+        if has_aux:
+            return val, out_tan
+        return val, out_tan
 
     with ConfigContext(eager_mode=True):
         if has_aux:
@@ -95,8 +207,15 @@ def jvp(
     jvp_graph = graph_jvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
 
     # Evaluate JVP graph
-    inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
-    outputs_dict = evaluate_graph(jvp_graph, inputs_dict)
+    backend = get_active_backend()
+    inputs_dict = {inp_id: backend.asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
+    if backend is not None and hasattr(backend, "execute_graph"):
+        outputs_dict = backend.execute_graph(jvp_graph, inputs_dict)
+    elif backend is not None and hasattr(backend, "compile_graph"):
+        compiled_fn = backend.compile_graph(jvp_graph)
+        outputs_dict = compiled_fn(inputs_dict)
+    else:
+        outputs_dict = evaluate_graph(jvp_graph, inputs_dict)
 
     out_tangent_values = [outputs_dict[out_id] for out_id in jvp_graph.outputs]
     out_tan = out_tangent_values[0] if len(out_tangent_values) == 1 else tuple(out_tangent_values)
@@ -195,15 +314,61 @@ def vjp(
         Returns:
             tuple[int, ...]: Result.
         """
-        # Run the evaluator on grad_graph
-        inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
+        if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
+            # Inline grad_graph symbolically into the active tracing graph
+            id_map: dict[str, str] = {}
+            for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals):
+                p_data = getattr(p, "data", p)
+                id_map[inp_id] = getattr(p_data, "id", str(p_data))
+
+            flat_cot, _ = tree_flatten(cotangent)
+            for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
+                c_data = getattr(cot_val, "data", cot_val)
+                id_map[cot_id] = getattr(c_data, "id", str(c_data))
+
+            for nid, n in grad_graph.nodes.items():
+                if getattr(n, "op_type", "") != "Input":
+                    new_id = f"vjp_{uuid.uuid4().hex[:6]}_{nid}"
+                    id_map[nid] = new_id
+                    new_inputs = [id_map.get(inp, inp) for inp in n.inputs]
+                    cloned = LogicalNode(
+                        id=new_id,
+                        op_type=n.op_type,
+                        inputs=new_inputs,
+                        attributes=dict(getattr(n, "attributes", {})),
+                        shape_metadata=getattr(n, "shape_metadata", ()),
+                    )
+                    global_tracing_state.add_node(cloned)
+
+            flat_grads = []
+            for out_id in grad_graph.outputs:
+                mapped_id = id_map.get(out_id, out_id)
+                out_node = grad_graph.nodes.get(out_id)
+                out_shape = getattr(out_node, "shape_metadata", ())
+                proxy = ProxyTensor(id=mapped_id, shape=out_shape, dtype="float32")
+                from ml_switcheroo_compiler.core.device import Device
+
+                flat_grads.append(Tensor(proxy, TensorConfig(out_shape, DType.Float32, Device("cpu"))))
+
+            res = tree_unflatten(tree_def, flat_grads)
+            return tuple(res)
+
+        # Run the evaluator or native execution on grad_graph
+        backend = get_active_backend()
+        inputs_dict = {inp_id: backend.asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
 
         # Flatten the cotangent Pytree if it is nested
         flat_cot, _ = tree_flatten(cotangent)
         for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
-            inputs_dict[cot_id] = get_active_backend().asarray(getattr(cot_val, "data", cot_val))
+            inputs_dict[cot_id] = backend.asarray(getattr(cot_val, "data", cot_val))
 
-        outputs_dict = evaluate_graph(grad_graph, inputs_dict)
+        if backend is not None and hasattr(backend, "execute_graph"):
+            outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
+        elif backend is not None and hasattr(backend, "compile_graph"):
+            compiled_fn = backend.compile_graph(grad_graph)
+            outputs_dict = compiled_fn(inputs_dict)
+        else:
+            outputs_dict = evaluate_graph(grad_graph, inputs_dict)
 
         flat_grads = []
         for out_id in grad_graph.outputs:
@@ -224,6 +389,8 @@ def hvp(
     primals,
     tangents,
     has_aux: bool = False,
+    projected_tangents: Optional[Union[Tensor, Sequence[Tensor]]] = None,
+    mode: str = "forward-over-reverse",
 ):
     """Evaluate hvp operation.
 
@@ -232,6 +399,8 @@ def hvp(
         primals (object): The primals parameter.
         tangents (object): The tangents parameter.
         has_aux (bool): The has_aux parameter.
+        projected_tangents (Optional[Any]): Projected cotangents/tangents for non-scalar outputs.
+        mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
 
     Returns:
             tuple[int, ...]: Result.
@@ -274,8 +443,30 @@ def hvp(
         forward_graph.nodes[t_id] = t_node
         tangent_ids.append(t_id)
 
+    proj_tangent_ids = None
+    if projected_tangents is not None:
+        proj_seq = projected_tangents if isinstance(projected_tangents, (tuple, list)) else (projected_tangents,)
+        proj_tangent_ids = []
+        for pt, o_id in zip(proj_seq, forward_graph.outputs):
+            pt_id = f"proj_tangent_{uuid.uuid4().hex[:6]}"
+            pt_node = LogicalNode(
+                id=pt_id,
+                op_type="Constant",
+                attributes={"value": getattr(pt, "data", pt)},
+                shape_metadata=forward_graph.nodes[o_id].shape_metadata,
+            )
+            forward_graph.nodes[pt_id] = pt_node
+            proj_tangent_ids.append(pt_id)
+
     # Compute HVP graph
-    hvp_graph = graph_hvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
+    hvp_graph = graph_hvp(
+        forward_graph,
+        forward_graph.inputs,
+        tangent_ids,
+        forward_graph.outputs,
+        mode=mode,
+        projected_tangents=proj_tangent_ids,
+    )
 
     # Evaluate HVP graph
     inputs_dict = {inputs_id: get_active_backend().asarray(getattr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
@@ -312,8 +503,13 @@ def jacfwd(fun, options=None):
             tuple[int, ...]: Result.
         """
         # Evaluate fun to see input and output dimensions
-        out = fun(*args, **kwargs)
-        out_arr = get_active_backend().asarray(getattr(out, "data", out))
+        with ConfigContext(eager_mode=True):
+            out = fun(*args, **kwargs)
+            if options.has_aux:
+                out_val, _ = out
+            else:
+                out_val = out
+        out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
 
         # Build basis tangents for each input coordinate
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))

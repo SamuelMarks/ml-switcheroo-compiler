@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_a
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-from .numpy_mixins import NumpyAudioVisitor, NumpyScatterVisitor, NumpyVisionVisitor
+from .numpy_mixins import NumpyScatterVisitor
 
 
 class NumpyTypeTranslator:
@@ -55,50 +55,6 @@ class NumpyASTVisitor:
         return "return " + ", ".join(input_vars)
 
     @classmethod
-    def visit_TriInv(cls, node, input_vars: list[str], **kwargs) -> str:
-        """Generate Python code for a triangular matrix inverse operation.
-
-        Args:
-            node (object): The IR node representing the TriInv operation.
-            input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            str: The generated NumPy code string for triangular matrix inverse.
-        """
-        return f"np.linalg.inv({input_vars[0]})"
-
-    @classmethod
-    def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs) -> str:
-        """Generate Python code for a truncated division operation.
-
-        Args:
-            node (IRNode): The IR node representing the TruncateDiv operation.
-            input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            str: The generated NumPy code string for truncated division.
-        """
-        x, y = input_vars
-        return f"np.trunc(np.divide({x}, {y}))"
-
-    @classmethod
-    def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs) -> str:
-        """Generate Python code for a truncated modulo operation.
-
-        Args:
-            node (IRNode): The IR node representing the TruncateMod operation.
-            input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            str: The generated NumPy code string for truncated modulo.
-        """
-        x, y = input_vars
-        return f"np.fmod({x}, {y})"
-
-    @classmethod
     def generic_visit(cls, node, input_vars: list[str], **kwargs) -> str:
         """Generate default NumPy code.
 
@@ -141,8 +97,6 @@ class NumpyGenerator(
         self.visitors.extend(
             [
                 *get_shared_ast_visitors(generator=self),
-                NumpyVisionVisitor(),
-                NumpyAudioVisitor(),
                 NumpyScatterVisitor(),
             ]
         )
@@ -252,3 +206,53 @@ class NumpyGenerator(
             str: The fallback prefix string 'np'.
         """
         return NumpyTypeTranslator.get_fallback_prefix()
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an executable callable wrapper for NumPy.
+
+        Args:
+            graph (IRGraph): The target computation graph.
+            **kwargs (object): Compiler options.
+
+        Returns:
+            object: Callable execution wrapper.
+        """
+        from ml_switcheroo_compiler.core.dtype import DType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        def callable_aot(*w_args: object, **w_kw: object) -> object:
+            """Execute ahead-of-time compiled graph on inputs.
+
+            Args:
+                *w_args (object): Positional input tensors.
+                **w_kw (object): Keyword arguments.
+
+            Returns:
+                object: Computed tensor or collection of tensors.
+            """
+            input_map = {}
+            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            for i, inp_node in enumerate(input_nodes):
+                if i < len(w_args):
+                    arg_val = w_args[i]
+                    input_map[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+
+            res_map = evaluate_graph(graph, input_map)
+            if graph.outputs:
+                if len(graph.outputs) == 1:
+                    out_val = res_map[graph.outputs[0]]
+                    if isinstance(out_val, Tensor):
+                        return out_val
+                    return Tensor(out_val, TensorConfig(getattr(out_val, "shape", ()), DType.Float32, "cpu"))
+                outs = []
+                for out_id in graph.outputs:
+                    out_val = res_map[out_id]
+                    if isinstance(out_val, Tensor):
+                        outs.append(out_val)
+                    else:
+                        outs.append(Tensor(out_val, TensorConfig(getattr(out_val, "shape", ()), DType.Float32, "cpu")))
+                return outs
+            return None
+
+        return callable_aot

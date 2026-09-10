@@ -1,5 +1,5 @@
 Add:
   jvp: Add($tangent[0], $tangent[1])
   vjp:
-  - '- $cotangent'
-  - '- $cotangent'
+  - $cotangent
+  - $cotangent

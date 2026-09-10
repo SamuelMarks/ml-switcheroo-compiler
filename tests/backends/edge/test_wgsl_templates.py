@@ -1,2 +1,66 @@
-def test_templates_validity():
-    assert True
+from unittest.mock import patch
+
+import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as provider
+from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
+    get_js_orchestration_template,
+    get_webgpu_ops,
+    get_wgsl_global_bindings,
+    get_wgsl_template,
+)
+
+
+def test_wgsl_provider_functions():
+    """Test WGSL template and config retrieval functions."""
+    tpl = get_wgsl_template("add")
+    assert isinstance(tpl, (dict, str))
+
+    js_orch = get_js_orchestration_template("init")
+    assert isinstance(js_orch, str)
+
+    bindings = get_wgsl_global_bindings()
+    assert isinstance(bindings, str)
+
+    ops = get_webgpu_ops()
+    assert isinstance(ops, dict)
+
+    # Test cache hit on _load_webgpu_ops (branch 48->exit)
+    ops2 = get_webgpu_ops()
+    assert ops2 is ops
+
+
+def test_wgsl_provider_missing_files():
+    """Test behavior when YAML template files do not exist."""
+    with patch("os.path.exists", return_value=False):
+        provider._WGSL_TEMPLATES = {}
+        provider._WEBGPU_OPS = {}
+
+        assert get_wgsl_template("add") == {}
+        assert get_js_orchestration_template("init") == ""
+        assert get_wgsl_global_bindings() == ""
+        assert get_webgpu_ops() == {}
+
+
+def test_wgsl_provider_non_dict_fallback():
+    """Test non-dict fallbacks for templates and orchestration."""
+    provider._WGSL_TEMPLATES = {"templates": "not_a_dict", "js_orchestration": "not_a_dict"}
+    assert get_wgsl_template("add") == {}
+    assert get_js_orchestration_template("init") == ""
+
+    # Test when tpl itself is not a dict
+    provider._WGSL_TEMPLATES = {"templates": {"test": "string_template"}}
+    assert get_wgsl_template("test") == {}
+
+    # Test when modular_path returns non-dict
+    with patch("os.path.exists", return_value=True):
+        with patch("yaml.safe_load", return_value="not_a_dict"):
+            provider._merge_modular_templates({})
+
+    # Test non-yaml files and corrupted template files in modular_dir
+    with patch("os.path.exists", side_effect=lambda p: not p.endswith("templates.yaml")):
+        with patch("os.listdir", return_value=["ignore.txt", "broken.yaml"]):
+            with patch("builtins.open", side_effect=OSError("corrupted file")):
+                d: dict = {}
+                provider._merge_modular_templates(d)
+
+    # Reset
+    provider._WGSL_TEMPLATES = {}

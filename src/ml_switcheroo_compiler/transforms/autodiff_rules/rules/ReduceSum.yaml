@@ -1,4 +1,4 @@
 ReduceSum:
-  jvp: ReduceSum($tangent[0], axes=$axes, keepdims=$keepdims)
+  jvp: ReduceSum($tangent[0])
   vjp:
-  - '- BroadcastTo($cotangent, ShapeOf($input[0]))'
+  - BroadcastLike($cotangent, $input[0])

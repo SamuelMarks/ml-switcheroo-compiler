@@ -1,0 +1,5262 @@
+types:
+  ARBITRARY:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ARBITRARY
+  AbstractToken:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: AbstractToken
+  AbstractVariable:
+    attributes:
+      std_args: []
+    category: spec
+    description: Auto-generated mapping for AbstractVariable.
+    name: AbstractVariable
+  AcceleratorError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Exception raised while executing on device.
+    name: AcceleratorError
+  AdaptiveGradClipState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: AdaptiveGradClipState
+  AddDecayedWeightsState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: AddDecayedWeightsState
+  AddNoiseState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: AddNoiseState
+  ApplyIfFiniteState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ApplyIfFiniteState
+  Arch:
+    attributes:
+      std_args:
+      - self
+      - major
+      - minor
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: Arch
+  Argument:
+    attributes:
+      std_args: []
+      type: attribute
+    category: spec
+    description: JIT Argument specification.
+    name: Argument
+  ArrayMapping:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ArrayMapping
+  ArrayOrSparse:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ArrayOrSparse
+  AsyncCopyImplementation:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: AsyncCopyImplementation
+  AsyncManager:
+    attributes:
+      std_args:
+      - self
+      - timeout_secs
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: AsyncManager
+  BCOOProperties:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: BCOOProperties
+  BCSRProperties:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: BCSRProperties
+  BLOCK_SIZE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: BLOCK_SIZE
+  Backend:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Backend
+  BarrierRef:
+    attributes:
+      std_args:
+      - self
+      - base_address
+      - offset
+      - phases
+      - num_barriers
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: BarrierRef
+  BarrierTimeoutError:
+    attributes:
+      std_args: []
+      type: class
+    category: exception
+    description: The class representing a Python class.
+    name: BarrierTimeoutError
+  BatchedDotGeneralProperties:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: BatchedDotGeneralProperties
+  BlockWise128x128:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: BlockWise128x128
+  BlockWise1x128:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: BlockWise1x128
+  BlockWise1x16:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: BlockWise1x16
+  BlockWise1x32:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: BlockWise1x32
+  BroadcastInDim:
+    attributes:
+      std_args:
+      - self
+      - expression
+      - axes
+      - shape
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: BroadcastInDim
+  CALLSITE_REGEX:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CALLSITE_REGEX
+  CMEM:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CMEM
+  CMPF_IMPLS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CMPF_IMPLS
+  CMPI_IMPLS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CMPI_IMPLS
+  COLLECTIVE_ATTR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: COLLECTIVE_ATTR
+  COLLECTIVE_METADATA_SIZE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: COLLECTIVE_METADATA_SIZE
+  COL_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: COL_LAYOUT
+  COOInfo:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: COOInfo
+  CORE_PARALLEL:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CORE_PARALLEL
+  CP_ASYNC:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CP_ASYNC
+  CUSPARSE_DATA_DTYPES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CUSPARSE_DATA_DTYPES
+  CUSPARSE_INDEX_DTYPES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: CUSPARSE_INDEX_DTYPES
+  CallTfEffect:
+    attributes:
+      std_args:
+      - self
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CallTfEffect
+  CallTfOrderedEffect:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CallTfOrderedEffect
+  Chunked:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Chunked
+  ClipState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ClipState
+  ClusterBarrier:
+    attributes:
+      std_args:
+      - self
+      - collective_dims
+      - arrival_count
+      - num_barriers
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ClusterBarrier
+  CollectiveBarrierRef:
+    attributes:
+      std_args:
+      - self
+      - barrier
+      - cluster_mask
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CollectiveBarrierRef
+  CompileFn:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CompileFn
+  CompleteArgumentSpec:
+    attributes:
+      std_args: []
+    category: spec
+    description: JIT Complete Argument Specification.
+    name: CompleteArgumentSpec
+  ConditionallyMaskState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ConditionallyMaskState
+  ConditionallyTransformState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ConditionallyTransformState
+  Constant:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Constant
+  ConstraintSystemDerivationRule:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ConstraintSystemDerivationRule
+  ConstraintSystemDerivationRuleResult:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ConstraintSystemDerivationRuleResult
+  CuSparseEfficiencyWarning:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CuSparseEfficiencyWarning
+  CustomFromMask:
+    attributes:
+      std_args:
+      - self
+      - mask
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: CustomFromMask
+  CvState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: CvState
+  DEFAULT_MASK_VALUE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DEFAULT_MASK_VALUE
+  DEFAULT_NATIVE_SERIALIZATION:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DEFAULT_NATIVE_SERIALIZATION
+  DEFAULT_NUM_TRACING_ATTEMPTS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DEFAULT_NUM_TRACING_ATTEMPTS
+  DEVICE_ID_ATTR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DEVICE_ID_ATTR
+  DOWN:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DOWN
+  DYNAMIC:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DYNAMIC
+  DYNAMIC32:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DYNAMIC32
+  DeviceList:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DeviceList
+  DialectBarrierRef:
+    attributes:
+      std_args:
+      - self
+      - barrier_ref
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: DialectBarrierRef
+  DiffState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for DiffState.
+    name: DiffState
+  DisabledSafetyCheck:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: DisabledSafetyCheck
+  DynamicSlice:
+    attributes:
+      std_args:
+      - self
+      - base
+      - length
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: DynamicSlice
+  ENTER:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ENTER
+  EmaState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: EmaState
+  FWD_COMPAT_IR_VERSION:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: FWD_COMPAT_IR_VERSION
+  FatalError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Exception class for fatal errors.
+    name: FatalError
+  FilterState:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: state
+        type: State
+      - is_variadic: true
+        kind: positional_or_keyword
+        name: filters
+        type: Any
+    category: state
+    description: Filter a State into one or more States based on types/predicates.
+    name: FilterState
+  FlatState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for FlatState.
+    name: FlatState
+  ForResult:
+    attributes:
+      std_args:
+      - self
+      - op
+      - results
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ForResult
+  FragmentedArray:
+    attributes:
+      std_args:
+      - self
+      - _registers
+      - _layout
+      - _is_signed
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: FragmentedArray
+  FragmentedLayout:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: FragmentedLayout
+  FromFlatState:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: flat_state
+        type: Mapping
+    category: state
+    description: Convert flat state object into State object.
+    name: FromFlatState
+  GLOBAL_BROADCAST:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: GLOBAL_BROADCAST
+  GMEM:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: GMEM
+  GRID_SAMPLE_INTERPOLATION_MODES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: GRID_SAMPLE_INTERPOLATION_MODES
+  GRID_SAMPLE_PADDING_MODES:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: GRID_SAMPLE_PADDING_MODES'
+    name: GRID_SAMPLE_PADDING_MODES
+  GenerateDumpFn:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: GenerateDumpFn
+  GetPartitionSpec:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: tree
+        type: Any
+    category: spec
+    description: Extracts a PartitionSpec tree from a PyTree.
+    name: GetPartitionSpec
+  GlobalBroadcast:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: GlobalBroadcast
+  GraphDefState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for GraphDefState.
+    name: GraphDefState
+  GraphState:
+    attributes:
+      std_args: []
+    category: state
+    description: Graph State container.
+    name: GraphState
+  GroupMetadata:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: GroupMetadata
+  HBM:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: HBM
+  HEAD_DIM_MINOR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: HEAD_DIM_MINOR
+  HOST:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: HOST
+  IndexTransform:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: IndexTransform
+  InitFn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: InitFn
+  InjectHyperparamsState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: InjectHyperparamsState
+  InjectStatefulHyperparamsState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: InjectStatefulHyperparamsState
+  InputSpec:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: dtype
+        type: str
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: shape
+        type: tuple
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: ndim
+        type: int
+    category: spec
+    description: Specifies the rank, dtype and shape of every input to a layer.
+    name: InputSpec
+  JITException:
+    attributes:
+      std_args: []
+    category: exception
+    description: Common base class for all non-exit exceptions in JIT.
+    name: JITException
+  JaxRuntimeError:
+    attributes:
+      std_args: []
+      type: attribute
+    category: exception
+    description: The class representing a Python module/class/instance attribute.
+    name: JaxRuntimeError
+  JetTrace:
+    attributes:
+      std_args:
+      - self
+      - tag
+      - parent_trace
+      - order
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: JetTrace
+  JetTracer:
+    attributes:
+      std_args:
+      - self
+      - trace
+      - primal
+      - terms
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: JetTracer
+  KERNEL_ARG_ID_ATTR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: KERNEL_ARG_ID_ATTR
+  KNOWN_KERNELS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: KNOWN_KERNELS
+  K_HI_32:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: K_HI_32
+  K_LO_32:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: K_LO_32
+  KernelType:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: KernelType
+  LOC_REGEX:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: LOC_REGEX
+  Lane:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Lane
+  LaunchContext:
+    attributes:
+      std_args:
+      - self
+      - module
+      - scratch
+      - cluster_size
+      - profiler
+      - device_collective_metadata
+      - host_collective_metadata
+      - num_peers
+      - is_device_collective
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: LaunchContext
+  LinAlgError:
+    attributes:
+      std_args: []
+    category: exception
+    description: "Error raised by torch.linalg function when the cause of error is\
+      \ a numerical inconsistency in the data.\n For example, you can the torch.linalg.inv\
+      \ function will raise torch.linalg.LinAlgError when it finds that a matrix is\
+      \ not invertible.\n \nExample:\n >>> # xdoctest: +REQUIRES(env:TORCH_DOCKTEST_LAPACK)\n\
+      \ >>> matrix = torch.eye(3, 3)\n >>> matrix[-1, -1] = 0\n >>> matrix\n     tensor([[1.,\
+      \ 0., 0.],\n             [0., 1., 0.],\n             [0., 0., 0.]])\n >>> torch.linalg.inv(matrix)\n\
+      \ Traceback (most recent call last):\n File \"<stdin>\", line 1, in <module>\n\
+      \ torch._C._LinAlgError: torch.linalg.inv: The diagonal element 3 is zero, the\
+      \ inversion\n could not be completed because the input matrix is singular."
+    name: LinAlgError
+  Location:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Location
+  LoweringContext:
+    attributes:
+      std_args:
+      - self
+      - launch_context
+      - single_thread_per_block_predicate
+      - single_thread_per_warpgroup_predicate
+      - single_warp_per_block_predicate
+      - auto_barriers
+      - smem_requested_bytes
+      - lowered_operations
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: LoweringContext
+  LutFn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: LutFn
+  MASK_VALUE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MASK_VALUE
+  MATMUL_TOL:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MATMUL_TOL
+  MAX_INT8:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MAX_INT8
+  MAX_PAGES_PER_SEQ:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MAX_PAGES_PER_SEQ
+  MBARRIER_BYTES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MBARRIER_BYTES
+  METADATA_REGEX:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: METADATA_REGEX
+  MIN_BLOCK_SIZE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MIN_BLOCK_SIZE
+  MN:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MN
+  MOSAIC_GPU_SMEM_ALLOC_ATTR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MOSAIC_GPU_SMEM_ALLOC_ATTR
+  MUL_A:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MUL_A
+  MUL_B:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MUL_B
+  MapState:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: f
+        type: Callable
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: state
+        type: State
+    category: state
+    description: Maps a function over a State object.
+    name: MapState
+  MapTracer:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MapTracer
+  MaskFunctionType:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MaskFunctionType
+  MaskedState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: MaskedState
+  MatmulDimension:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: MatmulDimension
+  MemRefTransform:
+    attributes:
+      std_args:
+      - self
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: MemRefTransform
+  MergeState:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: state
+        type: Mapping
+      - is_variadic: true
+        kind: positional_or_keyword
+        name: states
+        type: Any
+    category: state
+    description: Merges multiple State objects.
+    name: MergeState
+  MeshAxisName:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MeshAxisName
+  MeshComputation:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MeshComputation
+  MeshExecutable:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MeshExecutable
+  MetricState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for MetricState.
+    name: MetricState
+  MismatchCAPIError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Auto-generated mapping for MismatchCAPIError.
+    name: MismatchCAPIError
+  MlirLoweringRule:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: MlirLoweringRule'
+    name: MlirLoweringRule
+  MlirLoweringRuleResult:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: MlirLoweringRuleResult'
+    name: MlirLoweringRuleResult
+  MlirOperation:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MlirOperation
+  ModuleState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for ModuleState.
+    name: ModuleState
+  MultiStepsState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: MultiStepsState
+  MultiTransformState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: MultiTransformState
+  MultimemReductionOp:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: MultimemReductionOp
+  MultimemRef:
+    attributes:
+      std_args:
+      - self
+      - ref
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: MultimemRef
+  NN_DIM_NUMBERS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NN_DIM_NUMBERS
+  NO_SWIZZLE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NO_SWIZZLE
+  NT_DIM_NUMBERS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NT_DIM_NUMBERS
+  NUM_LANES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NUM_LANES
+  NUM_SUBLANES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NUM_SUBLANES
+  NameStack:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NameStack
+  NamedShape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NamedShape
+  NativeSerializationImpl:
+    attributes:
+      std_args:
+      - self
+      - fun_jax
+      - args_specs
+      - kwargs_specs
+      - native_serialization_platforms
+      - native_serialization_disabled_checks
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: NativeSerializationImpl
+  NoSharding:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NoSharding
+  NonNegativeParamsState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: NonNegativeParamsState
+  NotMapped:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: NotMapped
+  OPERAND:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: OPERAND
+  OPTIMIZED:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: OPTIMIZED
+  ORIGINAL_KERNEL_ARG_ATTR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ORIGINAL_KERNEL_ARG_ATTR
+  OnDeviceProfiler:
+    attributes:
+      std_args:
+      - self
+      - spec
+      - smem_buffer
+      - gmem_buffer
+      - wrap_in_custom_primitive
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: OnDeviceProfiler
+  OptimizerState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: OptimizerState
+  OutOfMemoryError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Exception raised when device is out of memory.
+    name: OutOfMemoryError
+  PRUNING_TYPE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PRUNING_TYPE
+  PYTHON_RUNFILES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PYTHON_RUNFILES
+  PackedSequence_:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: PackedSequence_
+  ParamsFn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ParamsFn
+  ParseError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Auto-generated mapping for ParseError.
+    name: ParseError
+  PartialState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for PartialState.
+    name: PartialState
+  Partition1D:
+    attributes:
+      std_args:
+      - self
+      - elements
+      - base_offset
+      - num_chunks
+      - chunk_size
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: Partition1D
+  PartitionState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: PartitionState
+  PartitionsOrReplicated:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PartitionsOrReplicated
+  PickleModule:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PickleModule
+  PmapExecutable:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PmapExecutable
+  PmapSharding:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PmapSharding
+  PolyShape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PolyShape
+  PrecisionType:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PrecisionType
+  ProfilerSpec:
+    attributes:
+      std_args:
+      - self
+      - entries_per_warpgroup
+      - dump_path
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ProfilerSpec
+  PyTreeT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: PyTreeT
+  PytreeState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for PytreeState.
+    name: PytreeState
+  QKVLayout:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: QKVLayout
+  R:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: R
+  REG:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: REG
+  REGS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: REGS
+  ROW_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ROW_LAYOUT
+  RUNTIME_PATH:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: RUNTIME_PATH
+  Recursed:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: Recursed
+  Redirect:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Redirect
+  ReductionKind:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ReductionKind
+  RefTree:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: RefTree
+  Replicated:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Replicated
+  ReplicationError:
+    attributes:
+      std_args: []
+      type: class
+    category: exception
+    description: The class representing a Python class.
+    name: ReplicationError
+  RngState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for RngState.
+    name: RngState
+  RooflineResult:
+    attributes:
+      std_args:
+      - self
+      - flops
+      - unfused_flops
+      - ici_bytes
+      - ici_latency
+      - hbm_bytes
+      - peak_hbm_bytes
+      - unfused_hbm_bytes
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: RooflineResult
+  RooflineRuleContext:
+    attributes:
+      std_args:
+      - self
+      - name_stack
+      - primitive
+      - avals_in
+      - avals_out
+      - jaxpr_eqn_ctx
+      - mesh
+      - pin_lhs_in_vmem
+      - pin_rhs_in_vmem
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: RooflineRuleContext
+  RooflineShape:
+    attributes:
+      std_args:
+      - self
+      - shape
+      - dtype
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: RooflineShape
+  RowWise:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: RowWise
+  SCOPED_REGEX:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SCOPED_REGEX
+  SEMAPHORE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SEMAPHORE
+  SEQ_MINOR:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SEQ_MINOR
+  SINGLETON_INSTANCE_REGISTRY:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SINGLETON_INSTANCE_REGISTRY
+  SINGLETON_OBJECT_STORE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SINGLETON_OBJECT_STORE
+  SINGLETON_RESULT_STORE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SINGLETON_RESULT_STORE
+  SMEM_BANKS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SMEM_BANKS
+  SMEM_BANK_BYTES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SMEM_BANK_BYTES
+  SRC_REGEX:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SRC_REGEX
+  STABLE_HLO:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: STABLE_HLO
+  SUBCORE_PARALLEL:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SUBCORE_PARALLEL
+  SUPPORTED_F8_TYPES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SUPPORTED_F8_TYPES
+  SWIZZLE_32_4_4:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SWIZZLE_32_4_4
+  ScaleByTrustRatioState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ScaleByTrustRatioState
+  ScaleState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ScaleState
+  SemaphoreRef:
+    attributes:
+      std_args:
+      - self
+      - ptr
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SemaphoreRef
+  ShapeDtypeStructTree:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ShapeDtypeStructTree
+  ShapeTree:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ShapeTree
+  ShardedAxis:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ShardedAxis
+  ShardingSpec:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ShardingSpec
+  SnapshotState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: SnapshotState
+  SourceMapGeneratorFn:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SourceMapGeneratorFn
+  SparseEfficiencyError:
+    attributes:
+      std_args: []
+      type: class
+    category: exception
+    description: The class representing a Python class.
+    name: SparseEfficiencyError
+  SparseEfficiencyWarning:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseEfficiencyWarning
+  SparseInfo:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseInfo
+  SparseLayout:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseLayout
+  SparseTestCase:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseTestCase
+  SparseTrace:
+    attributes:
+      std_args:
+      - self
+      - parent_trace
+      - tag
+      - spenv
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseTrace
+  SparseTracer:
+    attributes:
+      std_args:
+      - self
+      - trace
+      - spvalue
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparseTracer
+  SparsifyValue:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SparsifyValue
+  SplashCustomReturnType:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SplashCustomReturnType
+  SplashResidualsType:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: SplashResidualsType
+  SplitState:
+    attributes:
+      std_args:
+      - is_variadic: false
+        kind: positional_or_keyword
+        name: state
+        type: Any
+    category: state
+    description: Splits a State object into multiple subsets based on filters.
+    name: SplitState
+  StaggeredTransferPlan:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: StaggeredTransferPlan
+  StaggeredTransferPlanImpl:
+    attributes:
+      std_args:
+      - self
+      - stagger
+      - dim
+      - size
+      - group_pred
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: StaggeredTransferPlanImpl
+  SwizzleTransform:
+    attributes:
+      std_args:
+      - self
+      - swizzle
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: SwizzleTransform
+  TCGEN05_COL_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TCGEN05_COL_LAYOUT
+  TCGEN05_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TCGEN05_LAYOUT
+  TCGEN05_ROW_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TCGEN05_ROW_LAYOUT
+  TCGEN05_SMEM_DESCRIPTOR_BIT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TCGEN05_SMEM_DESCRIPTOR_BIT
+  TCGEN05_TRANSPOSED_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TCGEN05_TRANSPOSED_LAYOUT
+  TMA:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMA
+  TMABarrier:
+    attributes:
+      std_args:
+      - self
+      - num_barriers
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TMABarrier
+  TMAReductionOp:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMAReductionOp
+  TMA_DESCRIPTOR_ALIGNMENT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMA_DESCRIPTOR_ALIGNMENT
+  TMA_DESCRIPTOR_BYTES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMA_DESCRIPTOR_BYTES
+  TMA_GATHER_INDICES_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMA_GATHER_INDICES_LAYOUT
+  TMEMRef:
+    attributes:
+      std_args:
+      - self
+      - address
+      - shape
+      - dtype
+      - layout
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TMEMRef
+  TMEM_MAX_COLS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMEM_MAX_COLS
+  TMEM_ROWS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TMEM_ROWS
+  TRANSPOSED_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TRANSPOSED_LAYOUT
+  TRANS_B_DIM_NUMBERS:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TRANS_B_DIM_NUMBERS
+  TUNED_BLOCK_SIZES:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TUNED_BLOCK_SIZES
+  T_destination:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: T_destination
+  TensorWise:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TensorWise
+  TfConcreteFunction:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TfConcreteFunction
+  TfVal:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TfVal
+  ThreadSubset:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ThreadSubset
+  TiledLayout:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TiledLayout
+  TopologyDescription:
+    attributes:
+      std_args:
+      - self
+      - devices
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TopologyDescription
+  TraceState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: TraceState
+  TraceTag:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TraceTag
+  TrainState:
+    attributes:
+      std_args: []
+    category: state
+    description: Auto-generated mapping for TrainState.
+    name: TrainState
+  TransferPlan:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TransferPlan
+  TransferServer:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TransferServer
+  TrivialTransferPlan:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: TrivialTransferPlan
+  TrivialTransferPlanImpl:
+    attributes:
+      std_args:
+      - self
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TrivialTransferPlanImpl
+  TuningConfig:
+    attributes:
+      std_args:
+      - self
+      - tile_m
+      - tile_n
+      - tile_k
+      - max_concurrent_steps
+      - epi_tile_n
+      - epi_tile_m
+      - grid_minor_dim
+      - grid_tile_width
+      - wg_dimension
+      - cluster_dimension
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: TuningConfig
+  UFuncTypeError:
+    attributes:
+      std_args: []
+    category: exception
+    description: Auto-generated mapping for UFuncTypeError.
+    name: UFuncTypeError
+  UP:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: UP
+  UPPER_LEFT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: UPPER_LEFT
+  Union:
+    attributes:
+      std_args:
+      - self
+      - members
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: Union
+  Unsatisfiable:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: Unsatisfiable
+  UnspecifiedOutputShapeDtype:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: UnspecifiedOutputShapeDtype
+  Unstacked:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Unstacked
+  UpdateCvState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: UpdateCvState
+  UpdateFn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: UpdateFn
+  Updates:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: Updates
+  VMEM:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: VMEM
+  VMEM_SHARED:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: VMEM_SHARED
+  ValidRooflineDtype:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ValidRooflineDtype
+  ValueSitesForVariable:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ValueSitesForVariable
+  VariableKey:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: VariableKey
+  WARP:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WARP
+  WARPGROUP_SIZE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WARPGROUP_SIZE
+  WARPS_IN_WARPGROUP:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WARPS_IN_WARPGROUP
+  WARP_SIZE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WARP_SIZE
+  WGMMA_COL_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_COL_LAYOUT
+  WGMMA_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_LAYOUT
+  WGMMA_LAYOUT_8BIT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_LAYOUT_8BIT
+  WGMMA_LAYOUT_ACC_32BIT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_LAYOUT_ACC_32BIT
+  WGMMA_LAYOUT_UPCAST_2X:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_LAYOUT_UPCAST_2X
+  WGMMA_LAYOUT_UPCAST_4X:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_LAYOUT_UPCAST_4X
+  WGMMA_ROW_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_ROW_LAYOUT
+  WGMMA_TRANSPOSED_LAYOUT:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WGMMA_TRANSPOSED_LAYOUT
+  WORKGROUP_NVPTX_ADDRESS_SPACE:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: WORKGROUP_NVPTX_ADDRESS_SPACE
+  ZeroNansState:
+    attributes:
+      std_args: []
+      type: attribute
+    category: state
+    description: Auto-generated from jax_code_defs
+    name: ZeroNansState
+  ZeroSeries:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ZeroSeries
+  ZeroTerm:
+    attributes:
+      std_args: []
+      type: class
+    category: class
+    description: The class representing a Python class.
+    name: ZeroTerm
+  acc:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: acc
+  actual_end:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: actual_end
+  actual_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: actual_size
+  actual_start:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: actual_start
+  add_zero_attn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: add_zero_attn
+  address:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: address
+  all_weights:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: all_weights
+  amount:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: amount
+  are_hlo_shardings_equal:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: are_hlo_shardings_equal
+  args_specs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: args_specs
+  array_mapping_to_axis_resources:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: array_mapping_to_axis_resources
+  arrival_count:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: arrival_count
+  assignments:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: assignments
+  auto_barriers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: auto_barriers
+  aval:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: aval
+  avals_in:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: avals_in
+  avals_out:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: avals_out
+  barrier:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: barrier
+  barrier_ref:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: barrier_ref
+  base_address:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: base_address
+  base_offset:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: base_offset
+  batch_first:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: batch_first
+  batch_sizes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: batch_sizes
+  bcoo_dot_general_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_dot_general_p
+  bcoo_dot_general_sampled_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_dot_general_sampled_p
+  bcoo_extract_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_extract_p
+  bcoo_fromdense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_fromdense_p
+  bcoo_sort_indices_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_sort_indices_p
+  bcoo_spdot_general_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_spdot_general_p
+  bcoo_sum_duplicates_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_sum_duplicates_p
+  bcoo_todense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_todense_p
+  bcoo_transpose_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcoo_transpose_p
+  bcsr_dot_general_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcsr_dot_general_p
+  bcsr_extract_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcsr_extract_p
+  bcsr_fromdense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcsr_fromdense_p
+  bcsr_todense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bcsr_todense_p
+  bidirectional:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bidirectional
+  bitwidth:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bitwidth
+  blank:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: blank
+  block_b:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_b
+  block_idx:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_idx
+  block_k:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k
+  block_k_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k_dkv
+  block_k_dq:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k_dq
+  block_k_major:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k_major
+  block_k_major_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k_major_dkv
+  block_k_major_dq:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_k_major_dq
+  block_kv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_kv
+  block_kv_compute:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_kv_compute
+  block_kv_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_kv_dkv
+  block_kv_dkv_compute:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_kv_dkv_compute
+  block_kv_dq:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_kv_dq
+  block_mask:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_mask
+  block_q:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_q
+  block_q_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_q_dkv
+  block_q_dq:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_q_dq
+  block_q_major_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_q_major_dkv
+  block_start:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: block_start
+  broadcast_bucket_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: broadcast_bucket_size
+  broadcast_buffers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: broadcast_buffers
+  bucket_bytes_cap:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bucket_bytes_cap
+  bucket_bytes_cap_default:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: bucket_bytes_cap_default
+  c_void_p:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: c_void_p'
+    name: c_void_p
+  call_impl:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: call_impl
+  call_param_updaters:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: call_param_updaters
+  call_tf_effect:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: call_tf_effect
+  call_tf_ordered_effect:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: call_tf_ordered_effect
+  call_tf_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: call_tf_p
+  causal:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: causal
+  center:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: center
+  chunk_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: chunk_size
+  clean_command:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: clean_command
+  cloud_tpu_init:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cloud_tpu_init
+  cls_to_become:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: cls_to_become'
+    name: cls_to_become
+  cluster_dimension:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cluster_dimension
+  cluster_mask:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cluster_mask
+  cluster_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cluster_size
+  col:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: col
+  collective:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: collective
+  collective_dims:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: collective_dims
+  cols_sorted:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cols_sorted
+  common_notes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: common_notes
+  common_stride:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: common_stride
+  compile_fn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: compile_fn
+  compute_wgs_bwd:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: compute_wgs_bwd
+  constraints:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: constraints
+  convert_kwargs:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: convert_kwargs'
+    name: convert_kwargs
+  convolution_notes:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: convolution_notes'
+    name: convolution_notes
+  coo_fromdense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: coo_fromdense_p
+  coo_matmat_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: coo_matmat_p
+  coo_matvec_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: coo_matvec_p
+  coo_todense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: coo_todense_p
+  cost_dictionary:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cost_dictionary
+  count_include_pad:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: count_include_pad'
+    name: count_include_pad
+  cpp_dict:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cpp_dict
+  cpp_module:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cpp_module
+  csr_fromdense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: csr_fromdense_p
+  csr_matmat_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: csr_matmat_p
+  csr_matvec_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: csr_matvec_p
+  csr_todense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: csr_todense_p
+  ctx:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ctx
+  cuda_root:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cuda_root
+  cutoffs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: cutoffs
+  data_next:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: data_next
+  data_ref:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: data_ref
+  decode:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: decode
+  delay:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: delay
+  delta:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: delta
+  deserialize_portable_artifact:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: deserialize_portable_artifact
+  device_collective_metadata:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: device_collective_metadata
+  device_put_replicated:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: device_put_replicated
+  device_put_sharded:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: device_put_sharded
+  devices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: devices
+  dimension_numbers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: dimension_numbers
+  distance_function:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: distance_function
+  divisor_override:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: divisor_override
+  dkv_mask_info:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: dkv_mask_info
+  docstrings:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: docstrings'
+    name: docstrings
+  done:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: done'
+    name: done
+  dq_mask_info:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: dq_mask_info
+  ds:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ds
+  dump_path:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: dump_path
+  elementwise_affine:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: elementwise_affine
+  embed_dim:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: embed_dim'
+    name: embed_dim
+  enable_nested_tensor:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: enable_nested_tensor
+  english_capitalize:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: english_capitalize'
+    name: english_capitalize
+  english_lower:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: english_lower'
+    name: english_lower
+  entries_per_warpgroup:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: entries_per_warpgroup
+  entries_per_wg:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: entries_per_wg
+  epi_tile_m:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: epi_tile_m
+  epi_tile_n:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: epi_tile_n
+  epilogue_tile_n:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: epilogue_tile_n
+  expression:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: expression
+  file_in_this_dir:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: file_in_this_dir'
+    name: file_in_this_dir
+  filter:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: filter
+  find_comma_decimal_point_locale:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: find_comma_decimal_point_locale'
+    name: find_comma_decimal_point_locale
+  find_unused_parameters:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: find_unused_parameters
+  full_kv_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: full_kv_indices
+  full_kv_num_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: full_kv_num_blocks
+  full_q_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: full_q_indices
+  full_q_num_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: full_q_num_blocks
+  fun_jax:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: fun_jax
+  fun_signature:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: fun_signature
+  fun_sourceinfo:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: fun_sourceinfo
+  fused_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: fused_p
+  fwd_mask_info:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: fwd_mask_info
+  generate_dump:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: generate_dump
+  generated_code:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: generated_code
+  get_aval:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: get_aval
+  get_tensorstore_spec:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: get_tensorstore_spec
+  global_array_to_host_local_array_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: global_array_to_host_local_array_p
+  global_aval_to_result_handler:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: global_aval_to_result_handler
+  global_avals_to_results_handler:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: global_avals_to_results_handler
+  global_result_handlers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: global_result_handlers
+  glorot:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: glorot
+  gmm:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: gmm
+  gradient_as_bucket_view:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: gradient_as_bucket_view
+  grid_minor_dim:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: grid_minor_dim
+  grid_tile_width:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: grid_tile_width
+  group_id:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: group_id
+  group_pred:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: group_pred
+  hardshrink:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: hardshrink
+  has_backward_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: has_backward_blocks
+  hbm_bytes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: hbm_bytes
+  head_bias:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: head_bias
+  head_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: head_size
+  hlo_to_stablehlo:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: hlo_to_stablehlo
+  host_collective_metadata:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: host_collective_metadata
+  host_init:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: host_init
+  host_local_array_to_global_array_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: host_local_array_to_global_array_p
+  ici_bytes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ici_bytes
+  ici_latency:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ici_latency
+  id:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: id
+  ifrt_programs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ifrt_programs
+  ignore_index:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ignore_index
+  in_layout_for_operand:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_layout_for_operand
+  in_proj_bias:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_proj_bias
+  in_proj_weight:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_proj_weight
+  in_specs_leaves:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_specs_leaves
+  in_specs_treedef:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_specs_treedef
+  in_transforms_for_operand:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: in_transforms_for_operand
+  include_last_offset:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: include_last_offset
+  indent:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: indent'
+    name: indent
+  indices_ref:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: indices_ref
+  indices_sorted:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: indices_sorted
+  indptr:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: indptr
+  indptr_ref:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: indptr_ref
+  init_fn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: init_fn
+  input_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: input_size
+  interned_names:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: interned_names
+  is_collective_kernel:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: is_collective_kernel
+  is_device_collective:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: is_device_collective
+  is_dynamic_mask:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: is_dynamic_mask
+  is_hlo_sharding_replicated:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: is_hlo_sharding_replicated
+  is_multi_device_module:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: is_multi_device_module
+  jacobian:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jacobian
+  jax_to_hlo:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jax_to_hlo
+  jax_to_tf:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jax_to_tf
+  jaxpr_eqn_ctx:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jaxpr_eqn_ctx
+  jet2:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jet2
+  jet_rules:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: jet_rules
+  join_device:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: join_device
+  join_process_group:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: join_process_group
+  k_layout:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: k_layout
+  k_proj_weight:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: k_proj_weight
+  kdim:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: kdim
+  kv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: kv
+  kv_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: kv_indices
+  kv_num_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: kv_num_blocks
+  kwargs_specs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: kwargs_specs
+  lane_dims:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lane_dims
+  launch_context:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: launch_context
+  left:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: left
+  length:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: length
+  lhs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lhs
+  lhs_shape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lhs_shape
+  libdevice_path:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: libdevice_path
+  live_devices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: live_devices
+  log_input:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: log_input
+  log_target:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: log_target
+  lowered_operations:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lowered_operations
+  lpmn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lpmn
+  lpmn_values:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lpmn_values
+  lse:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: lse
+  main:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: main'
+    name: main
+  major:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: major
+  make_masked_mha_reference:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_masked_mha_reference
+  make_masked_mqa_reference:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_masked_mqa_reference
+  make_splash_mha:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_splash_mha
+  make_splash_mha_single_device:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_splash_mha_single_device
+  make_splash_mqa:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_splash_mqa
+  make_splash_mqa_single_device:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: make_splash_mqa_single_device
+  mapped_aval:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mapped_aval
+  mask_next:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mask_next
+  masks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: masks
+  max_concurrent_steps:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: max_concurrent_steps
+  max_scores:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: max_scores
+  members:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: members
+  mesh:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mesh
+  minor:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: minor
+  mixed_precision:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mixed_precision
+  mlir_dtype:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mlir_dtype
+  module:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: module
+  mosaic_gpu_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: mosaic_gpu_p
+  mulf:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: mulf'
+    name: mulf
+  multihead_attn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: multihead_attn
+  n_batch:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_batch
+  n_classes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_classes
+  n_clusters:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_clusters
+  n_dense:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_dense
+  n_power_iterations:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_power_iterations
+  n_sparse:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: n_sparse
+  name_stack:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: name_stack
+  native_serialization_disabled_checks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: native_serialization_disabled_checks
+  native_serialization_platforms:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: native_serialization_platforms
+  next_offset:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: next_offset
+  nhead:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: nhead
+  nm_pack_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: nm_pack_p
+  nm_spmm_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: nm_spmm_p
+  normalized_shape:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: normalized_shape'
+    name: normalized_shape
+  nse:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: nse
+  nsys_path:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: nsys_path
+  ntensors:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ntensors
+  num_barriers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: num_barriers
+  num_channels:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: num_channels
+  num_chunks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: num_chunks
+  num_parameters:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: num_parameters
+  num_peers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: num_peers
+  num_warps:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: num_warps'
+    name: num_warps
+  object_:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: object_'
+    name: object_
+  offset:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: offset
+  op_sharding_to_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: op_sharding_to_indices
+  operation:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: operation
+  order:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: order
+  original:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: original
+  out_channels:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: out_channels
+  out_specs_fn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: out_specs_fn
+  out_specs_leaves:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: out_specs_leaves
+  out_specs_treedef:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: out_specs_treedef
+  packing:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: packing
+  parallel_callable:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: parallel_callable
+  parameters_to_ignore:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: parameters_to_ignore
+  params:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: params'
+    name: params
+  params_fn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: params_fn
+  parent_trace:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: parent_trace
+  parser:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: parser
+  partial:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: partial
+  partial_mask_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: partial_mask_blocks
+  partitioned_lane_dims:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: partitioned_lane_dims
+  partitioned_warp_dims:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: partitioned_warp_dims
+  pass_name:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pass_name
+  paths:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: paths
+  pdist:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pdist
+  peak_hbm_bytes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: peak_hbm_bytes
+  persistent:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: persistent
+  pgle_filename:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pgle_filename
+  pgle_folder:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pgle_folder
+  phases:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: phases
+  pi:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: pi'
+    name: pi
+  pin_lhs_in_vmem:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pin_lhs_in_vmem
+  pin_rhs_in_vmem:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pin_rhs_in_vmem
+  pjit:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pjit
+  plphilox_prng_impl:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: plphilox_prng_impl
+  plthreefry_prng_impl:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: plthreefry_prng_impl
+  pos_weight:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pos_weight
+  primal:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: primal
+  primitive:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: primitive
+  proc:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: proc
+  process_dynamic_mask:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: process_dynamic_mask
+  process_dynamic_mask_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: process_dynamic_mask_dkv
+  process_group:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: process_group
+  process_mask:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: process_mask
+  process_mask_dkv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: process_mask_dkv
+  profile_folder:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: profile_folder
+  profiler:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: profiler
+  proj_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: proj_size
+  ptr:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: ptr
+  pvary:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: pvary
+  q:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q
+  q_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q_indices
+  q_layout:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q_layout
+  q_num_blocks:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q_num_blocks
+  q_proj_weight:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q_proj_weight
+  q_sequence:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: q_sequence
+  query_reports_command:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: query_reports_command
+  reader:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: reader
+  recarray:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: recarray'
+    name: recarray
+  recompute_scale_factor:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: recompute_scale_factor
+  reducing_transposes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: reducing_transposes
+  refine_polymorphic_shapes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: refine_polymorphic_shapes
+  region_index:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: region_index
+  register_backend_cache:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: register_backend_cache
+  registers:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: registers
+  report_name:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: report_name
+  reports_list:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: reports_list
+  require_backward_grad_sync:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: require_backward_grad_sync
+  require_forward_param_sync:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: require_forward_param_sync
+  results:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: results
+  return_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: return_indices
+  rhs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: rhs
+  rhs_shape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: rhs_shape
+  right:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: right
+  rnn_bwd_p:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: rnn_bwd_p'
+    name: rnn_bwd_p
+  rnn_fwd_p:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: rnn_fwd_p'
+    name: rnn_fwd_p
+  round_up:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: round_up
+  rounding:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: rounding
+  row:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: row
+  rows_sorted:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: rows_sorted
+  scratch:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: scratch
+  self_attn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: self_attn
+  seq_len_kv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: seq_len_kv
+  seq_len_q:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: seq_len_q
+  seq_lengths:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: seq_lengths
+  serialize_portable_artifact:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: serialize_portable_artifact
+  set_current_trace:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: set_current_trace
+  shard_args:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: shard_args
+  shortlist_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: shortlist_size
+  single_thread:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: single_thread'
+    name: single_thread
+  single_thread_per_block_predicate:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: single_thread_per_block_predicate
+  single_thread_per_warpgroup_predicate:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: single_thread_per_warpgroup_predicate
+  single_warp_per_block_predicate:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: single_warp_per_block_predicate
+  skip_all_reduce_unused_params:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: skip_all_reduce_unused_params
+  smem_requested_bytes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: smem_requested_bytes
+  sorted_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: sorted_indices
+  source:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: source
+  source_bounds:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: source_bounds
+  source_map:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: source_map
+  source_shape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: source_shape
+  sparse_rules_bcoo:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: sparse_rules_bcoo
+  sparse_rules_bcsr:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: sparse_rules_bcsr
+  spec:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: spec
+  spec_to_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: spec_to_indices
+  spenv:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: spenv
+  sph_harm:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: sph_harm
+  spsolve_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: spsolve_p
+  src_device_obj:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: src_device_obj
+  stagger:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: stagger
+  start_transfer_server:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: start_transfer_server
+  start_within_block:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: start_within_block
+  stats_command:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: stats_command
+  subjaxprs:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: subjaxprs
+  subtree:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: subtree
+  swizzle:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: swizzle
+  tail:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tail
+  take_current_trace:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: take_current_trace
+  target:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: target
+  target_block_shape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: target_block_shape
+  target_bounds:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: target_bounds
+  target_shape:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: target_shape
+  terms:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: terms
+  thread_idx:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: thread_idx
+  thread_resources:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: thread_resources
+  threshold:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: threshold
+  thunk_re:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: thunk_re
+  tile_index_transforms:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tile_index_transforms
+  tile_k:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tile_k
+  tile_m:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tile_m
+  tile_n:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tile_n
+  tiled_tiling_rank:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tiled_tiling_rank
+  tiling:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tiling
+  tiling_multiple:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tiling_multiple
+  time_ns:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: time_ns
+  title:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: title'
+    name: title
+  tma_descriptors:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: tma_descriptors
+  todense_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: todense_p
+  translate:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: translate
+  traverse_jaxpr_params:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: traverse_jaxpr_params
+  unfused_flops:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unfused_flops
+  unfused_hbm_bytes:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unfused_hbm_bytes
+  unique_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unique_indices
+  unmapped_aval:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unmapped_aval
+  unsafe:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unsafe
+  unsorted_indices:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: unsorted_indices
+  update_fn:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: update_fn
+  upper:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: upper'
+    name: upper
+  use_fused_bwd_kernel:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: use_fused_bwd_kernel
+  use_nested_tensor:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: use_nested_tensor
+  use_schedule_barrier:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: use_schedule_barrier
+  use_side_stream_for_tensor_copies:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: use_side_stream_for_tensor_copies
+  v_layout:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: v_layout
+  v_proj_weight:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: v_proj_weight
+  value_sites_for_variable:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: value_sites_for_variable
+  variable_for_value_site:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: variable_for_value_site
+  variables:
+    attributes:
+      std_args: []
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: variables
+  vdim:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: vdim
+  vec_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: vec_size
+  vector_dim:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: vector_dim
+  vector_length:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: vector_length
+  vectorize:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: vectorize'
+    name: vectorize
+  warp_dims:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: warp_dims
+  warp_idx:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: warp_idx'
+    name: warp_idx
+  wg_dimension:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: wg_dimension
+  when:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: when'
+    name: when
+  window_size:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: window_size
+  wrap_in_custom_primitive:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: wrap_in_custom_primitive
+  xla_metadata_call_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: xla_metadata_call_p
+  xla_pmap_p:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: xla_pmap_p
+  zero_infinity:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: zero_infinity
+  zero_series:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: zero_series
+  zero_term:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: zero_term
+  zfill:
+    attributes:
+      type: attribute
+    category: attribute
+    description: 'Scraped non-math symbol or attribute: zfill'
+    name: zfill
+  zip:
+    attributes:
+      std_args: []
+      type: attribute
+    category: class
+    description: The class representing a Python module/class/instance attribute.
+    name: zip

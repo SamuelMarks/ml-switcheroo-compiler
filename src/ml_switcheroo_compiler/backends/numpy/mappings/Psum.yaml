@@ -1,2 +1,2 @@
 Psum:
-  target_api: np.psum
+  target_api: custom_op

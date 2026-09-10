@@ -2,8 +2,6 @@ operation: Pmap
 description: Auto-generated mapping for pmap.
 std_args: []
 variants:
-  edge_onnx:
-    generator: Pmap
   edge_stablehlo:
     generator: stablehlo.map
   numpy: {}

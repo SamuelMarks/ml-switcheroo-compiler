@@ -1,2 +1,2 @@
 SobolSample:
-  target_api: np.sobolsample
+  target_api: custom_op

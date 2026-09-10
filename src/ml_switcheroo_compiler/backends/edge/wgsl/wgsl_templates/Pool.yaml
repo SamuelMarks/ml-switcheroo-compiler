@@ -1,7 +1,37 @@
-Pool:
-  body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{\n    return;\n}}\nbuf_out_f32[idx]\
-    \ = {expr};\n"
-  workgroup_size:
-  - 64
-  - 1
-  - 1
+templates:
+  MaxPool2D:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "let out_x = global_id.x;\nlet out_y = global_id.y;\n\nlet out_width = {out_width}u;\n\
+      let out_height = {out_height}u;\nlet channels = {channels}u;\nlet stride_h =\
+      \ {stride_h}u;\nlet stride_w = {stride_w}u;\nlet window_h = {window_h}u;\nlet\
+      \ window_w = {window_w}u;\nlet in_width = {in_width}u;\n\nif (out_x >= out_width\
+      \ || out_y >= out_height) {{\n    return;\n}}\n\nfor (var c: u32 = 0u; c < channels;\
+      \ c = c + 1u) {{\n    var max_val: f32 = -1e30;\n    for (var wy: u32 = 0u;\
+      \ wy < window_h; wy = wy + 1u) {{\n        for (var wx: u32 = 0u; wx < window_w;\
+      \ wx = wx + 1u) {{\n            let in_y = out_y * stride_h + wy;\n        \
+      \    let in_x = out_x * stride_w + wx;\n            let in_idx = (in_y * in_width\
+      \ + in_x) * channels + c;\n            let val = buf_in0_f32[in_idx];\n    \
+      \        if (val > max_val) {{\n                max_val = val;\n           \
+      \ }}\n        }}\n    }}\n    let out_idx = (out_y * out_width + out_x) * channels\
+      \ + c;\n    buf_out_f32[out_idx] = max_val;\n}}\n"
+  AvgPool2D:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "let out_x = global_id.x;\nlet out_y = global_id.y;\n\nlet out_width = {out_width}u;\n\
+      let out_height = {out_height}u;\nlet channels = {channels}u;\nlet stride_h =\
+      \ {stride_h}u;\nlet stride_w = {stride_w}u;\nlet window_h = {window_h}u;\nlet\
+      \ window_w = {window_w}u;\nlet in_width = {in_width}u;\n\nif (out_x >= out_width\
+      \ || out_y >= out_height) {{\n    return;\n}}\n\nfor (var c: u32 = 0u; c < channels;\
+      \ c = c + 1u) {{\n    var sum: f32 = 0.0;\n    let count: f32 = f32(window_h\
+      \ * window_w);\n    for (var wy: u32 = 0u; wy < window_h; wy = wy + 1u) {{\n\
+      \        for (var wx: u32 = 0u; wx < window_w; wx = wx + 1u) {{\n          \
+      \  let in_y = out_y * stride_h + wy;\n            let in_x = out_x * stride_w\
+      \ + wx;\n            let in_idx = (in_y * in_width + in_x) * channels + c;\n\
+      \            sum = sum + buf_in0_f32[in_idx];\n        }}\n    }}\n    let out_idx\
+      \ = (out_y * out_width + out_x) * channels + c;\n    buf_out_f32[out_idx] =\
+      \ sum / count;\n}}\n"

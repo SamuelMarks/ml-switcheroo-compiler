@@ -1,14 +1,14 @@
 operation: ifftshift
 description: The Ifftshift operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axes
-    type: Optional[Union[int, Sequence[int]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: Optional[Union[int, Sequence[int]]]
 type: function
 variants:
   cupy:
@@ -27,11 +27,6 @@ variants:
     eager: jax.numpy.ifftshift
   mlx:
     eager: mlx.core.ifftshift
-  edge_onnx:
-    generator: ifftshift
-  edge_stablehlo:
-
-    opcode: stablehlo.ifftshift
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

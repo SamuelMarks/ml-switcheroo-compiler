@@ -14,11 +14,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: fft2
-  edge_stablehlo:
-
-    opcode: stablehlo.fft2
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

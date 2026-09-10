@@ -1,0 +1,182 @@
+Add:
+  vjp:
+  - $cotangent
+  - $cotangent
+Sub:
+  vjp:
+  - $cotangent
+  - Neg($cotangent)
+Mul:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+Div:
+  vjp:
+  - Div($cotangent, $input[1])
+  - Neg(Div(Mul($cotangent, $input[0]), Pow($input[1], Constant(2.0))))
+Exp:
+  vjp:
+  - Mul($cotangent, Exp($input[0]))
+Log:
+  vjp:
+  - Div($cotangent, $input[0])
+Tanh:
+  vjp:
+  - Mul($cotangent, Sub(Constant(1.0), Pow($output, Constant(2.0))))
+Relu:
+  vjp:
+  - Mul($cotangent, Greater($input[0], Constant(0.0)))
+MatMul:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+Matmul:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+Dot:
+  vjp:
+  - Mul($cotangent, $input[1])
+  - Mul($cotangent, $input[0])
+BatchMatMul:
+  vjp:
+  - BatchMatMul($cotangent, Transpose($input[1]))
+  - BatchMatMul(Transpose($input[0]), $cotangent)
+BatchMatmul:
+  vjp:
+  - BatchMatMul($cotangent, Transpose($input[1]))
+  - BatchMatMul(Transpose($input[0]), $cotangent)
+Transpose:
+  vjp:
+  - Transpose($cotangent)
+Einsum:
+  vjp:
+  - Einsum($cotangent, $input[1])
+  - Einsum($input[0], $cotangent)
+ReduceSum:
+  vjp:
+  - BroadcastLike($cotangent, $input[0])
+ReduceMean:
+  vjp:
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+ReduceProd:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Div(BroadcastLike($output, $input[0]), $input[0]))
+ReduceMax:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+ReduceMin:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+Norm:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Div($input[0], BroadcastLike($output, $input[0])))
+L2Normalize:
+  vjp:
+  - Div(Sub($cotangent, Mul($output, ReduceSum(Mul($output, $cotangent)))), Norm($input[0]))
+GELU:
+  vjp:
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+Gelu:
+  vjp:
+  - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+SiLU:
+  vjp:
+  - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+Silu:
+  vjp:
+  - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+Sigmoid:
+  vjp:
+  - Mul($cotangent, Mul($output, Sub(Constant(1.0), $output)))
+ELU:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+Elu:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Exp($input[0])))
+LeakyReLU:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+LeakyRelu:
+  vjp:
+  - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
+Softplus:
+  vjp:
+  - Mul($cotangent, Sigmoid($input[0]))
+Softmax:
+  vjp:
+  - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))
+LogSoftmax:
+  vjp:
+  - Sub($cotangent, Mul(Exp($output), ReduceSum($cotangent, axis=-1, keepdims=True)))
+Conv1D:
+  vjp:
+  - ConvTranspose1D($cotangent, $input[1])
+  - Conv1D($input[0], $cotangent)
+Conv2D:
+  vjp:
+  - ConvTranspose2D($cotangent, $input[1])
+  - Conv2D($input[0], $cotangent)
+Conv3D:
+  vjp:
+  - ConvTranspose3D($cotangent, $input[1])
+  - Conv3D($input[0], $cotangent)
+ConvTranspose2D:
+  vjp:
+  - Conv2D($cotangent, $input[1])
+  - ConvTranspose2D($input[0], $cotangent)
+MaxPool2D:
+  vjp:
+  - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output, $input[0])))
+AvgPool2D:
+  vjp:
+  - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+BatchNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+LayerNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+RMSNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Div($input[0], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))), Constant(1e-5))))))
+GroupNorm:
+  vjp:
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)
+MSELoss:
+  vjp:
+  - Mul($cotangent, Mul(Constant(2.0), Div(Sub($input[0], $input[1]), Numel($input[0]))))
+  - Mul($cotangent, Mul(Constant(-2.0), Div(Sub($input[0], $input[1]), Numel($input[0]))))
+CrossEntropyLoss:
+  vjp:
+  - Mul($cotangent, Div(Sub(Softmax($input[0]), $input[1]), Numel($input[0])))
+  - Mul($cotangent, Neg(LogSoftmax($input[0])))
+BCELoss:
+  vjp:
+  - Mul($cotangent, Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0), $input[0]))))
+  - Mul($cotangent, Sub(Log(Sub(Constant(1.0), $input[0])), Log($input[0])))
+HuberLoss:
+  vjp:
+  - Mul($cotangent, Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1]))))
+  - Mul($cotangent, Neg(Where(Less(Abs(Sub($input[0], $input[1])), Constant(1.0)), Sub($input[0], $input[1]), Sign(Sub($input[0], $input[1])))))
+KLDivergenceLoss:
+  vjp:
+  - Mul($cotangent, Sub(Constant(1.0), Div($input[1], $input[0])))
+  - Mul($cotangent, Sub(Log($input[1]), Log($input[0])))
+ExpandDims:
+  vjp:
+  - Squeeze($cotangent)
+Squeeze:
+  vjp:
+  - ExpandDims($cotangent)
+Reshape:
+  vjp:
+  - Reshape($cotangent)

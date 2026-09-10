@@ -1,2 +1,2 @@
 Schur:
-  target_api: np.schur
+  target_api: custom_op

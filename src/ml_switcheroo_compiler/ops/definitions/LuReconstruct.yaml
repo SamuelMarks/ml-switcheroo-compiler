@@ -17,11 +17,6 @@ variants:
     eager: jax.numpy.lureconstruct
   mlx:
     eager: mlx.core.lureconstruct
-  edge_onnx:
-    generator: LuReconstruct
-  edge_stablehlo:
-
-    opcode: stablehlo.lu_reconstruct
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

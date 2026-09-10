@@ -1,0 +1,336 @@
+backend_name: keras
+operations:
+  Abs:
+    target_api: keras.ops.abs
+  Neg:
+    target_api: keras.ops.negative
+  Sin:
+    target_api: keras.ops.sin
+  Cos:
+    target_api: keras.ops.cos
+  Tan:
+    target_api: keras.ops.tan
+  Sinh:
+    target_api: keras.ops.sinh
+  Cosh:
+    target_api: keras.ops.cosh
+  Tanh:
+    target_api: keras.ops.tanh
+  Exp:
+    target_api: keras.ops.exp
+  Log:
+    target_api: keras.ops.log
+  Log1p:
+    target_api: keras.ops.log1p
+  Sqrt:
+    target_api: keras.ops.sqrt
+  Square:
+    target_api: keras.ops.square
+  Floor:
+    target_api: keras.ops.floor
+  Ceil:
+    target_api: keras.ops.ceil
+  Round:
+    target_api: keras.ops.round
+  Sign:
+    target_api: keras.ops.sign
+  Reciprocal:
+    target_api: keras.ops.reciprocal
+  Add:
+    target_api: keras.ops.add
+  Subtract:
+    target_api: keras.ops.subtract
+  Multiply:
+    target_api: keras.ops.multiply
+  Divide:
+    target_api: keras.ops.divide
+  TrueDivide:
+    target_api: keras.ops.true_divide
+  FloorDivide:
+    target_api: keras.ops.floor_divide
+  Power:
+    target_api: keras.ops.power
+  Maximum:
+    target_api: keras.ops.maximum
+  Minimum:
+    target_api: keras.ops.minimum
+  Equal:
+    target_api: keras.ops.equal
+  NotEqual:
+    target_api: keras.ops.not_equal
+  Greater:
+    target_api: keras.ops.greater
+  GreaterEqual:
+    target_api: keras.ops.greater_equal
+  Less:
+    target_api: keras.ops.less
+  LessEqual:
+    target_api: keras.ops.less_equal
+  LogicalAnd:
+    target_api: keras.ops.logical_and
+  LogicalOr:
+    target_api: keras.ops.logical_or
+  LogicalNot:
+    target_api: keras.ops.logical_not
+  Sum:
+    target_api: keras.ops.sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Prod:
+    target_api: keras.ops.prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Mean:
+    target_api: keras.ops.mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Max:
+    target_api: keras.ops.max
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Min:
+    target_api: keras.ops.min
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Argmax:
+    target_api: keras.ops.argmax
+    kwarg_translations:
+      dim: axis
+  Argmin:
+    target_api: keras.ops.argmin
+    kwarg_translations:
+      dim: axis
+  Any:
+    target_api: keras.ops.any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  All:
+    target_api: keras.ops.all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Var:
+    target_api: keras.ops.var
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Std:
+    target_api: keras.ops.std
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  Matmul:
+    target_api: keras.ops.matmul
+  Dot:
+    target_api: keras.ops.dot
+  Transpose:
+    target_api: keras.ops.transpose
+  Reshape:
+    target_api: keras.ops.reshape
+  Squeeze:
+    target_api: keras.ops.squeeze
+    kwarg_translations:
+      dim: axis
+  ExpandDims:
+    target_api: keras.ops.expand_dims
+    kwarg_translations:
+      dim: axis
+  Concat:
+    target_api: keras.ops.concatenate
+    kwarg_translations:
+      dim: axis
+  Concatenate:
+    target_api: keras.ops.concatenate
+    kwarg_translations:
+      dim: axis
+  Stack:
+    target_api: keras.ops.stack
+    kwarg_translations:
+      dim: axis
+  Split:
+    target_api: keras.ops.split
+    kwarg_translations:
+      dim: axis
+  Tile:
+    target_api: keras.ops.tile
+  Pad:
+    target_api: keras.ops.pad
+  Where:
+    target_api: keras.ops.where
+  Zeros:
+    target_api: keras.ops.zeros
+  Ones:
+    target_api: keras.ops.ones
+  Eye:
+    target_api: keras.ops.eye
+  Relu:
+    target_api: keras.ops.relu
+  Sigmoid:
+    target_api: keras.ops.sigmoid
+  Silu:
+    target_api: keras.ops.silu
+  Softmax:
+    target_api: keras.ops.softmax
+    kwarg_translations:
+      dim: axis
+  LogSoftmax:
+    target_api: keras.ops.log_softmax
+    kwarg_translations:
+      dim: axis
+  SiLU:
+    target_api: keras.ops.silu
+  GELU:
+    target_api: keras.ops.gelu
+  Gelu:
+    target_api: keras.ops.gelu
+  ELU:
+    target_api: keras.ops.elu
+  Elu:
+    target_api: keras.ops.elu
+  LeakyReLU:
+    target_api: keras.ops.leaky_relu
+    kwarg_translations:
+      negative_slope: alpha
+  LeakyRelu:
+    target_api: keras.ops.leaky_relu
+    kwarg_translations:
+      negative_slope: alpha
+  Softplus:
+    target_api: keras.ops.softplus
+  MatMul:
+    target_api: keras.ops.matmul
+  BatchMatMul:
+    target_api: keras.ops.matmul
+  BatchMatmul:
+    target_api: keras.ops.matmul
+  Einsum:
+    target_api: keras.ops.einsum
+  SVD:
+    target_api: keras.ops.svd
+  QR:
+    target_api: keras.ops.qr
+  Cholesky:
+    target_api: keras.ops.cholesky
+  Solve:
+    target_api: keras.ops.solve
+  Det:
+    target_api: custom_op
+    custom_code: "lambda x: backend_module.ops.linalg.det(x) if hasattr(backend_module.ops, 'linalg') else x"
+  Norm:
+    target_api: keras.ops.norm
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  L2Normalize:
+    target_api: custom_op
+    custom_code: "lambda x, axis=-1, **kw: x / backend_module.ops.norm(x, axis=axis, keepdims=True)"
+  ReduceSum:
+    target_api: keras.ops.sum
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMean:
+    target_api: keras.ops.mean
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceProd:
+    target_api: keras.ops.prod
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMax:
+    target_api: keras.ops.max
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceMin:
+    target_api: keras.ops.min
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAll:
+    target_api: keras.ops.all
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceAny:
+    target_api: keras.ops.any
+    kwarg_translations:
+      dim: axis
+      keepdim: keepdims
+  ReduceL2:
+    target_api: custom_op
+    custom_code: "lambda x, axis=None, keepdims=False, **kw: backend_module.ops.norm(x, ord=2, axis=axis, keepdims=keepdims)"
+  CumSum:
+    target_api: keras.ops.cumsum
+    kwarg_translations:
+      dim: axis
+  CumProd:
+    target_api: keras.ops.cumprod
+    kwarg_translations:
+      dim: axis
+  Cond:
+    target_api: keras.ops.cond
+  If:
+    target_api: keras.ops.cond
+  WhileLoop:
+    target_api: keras.ops.while_loop
+  While:
+    target_api: keras.ops.while_loop
+  ArgMax:
+    target_api: keras.ops.argmax
+    kwarg_translations:
+      dim: axis
+  ArgMin:
+    target_api: keras.ops.argmin
+    kwarg_translations:
+      dim: axis
+  LayerNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, b=0.0, **kw: ((x - backend_module.ops.mean(x, axis=-1, keepdims=True)) / backend_module.ops.sqrt(backend_module.ops.var(x, axis=-1, keepdims=True) + 1e-5)) * g + b"
+  BatchNorm:
+    target_api: custom_op
+    custom_code: "lambda x, m=0.0, v=1.0, g=1.0, b=0.0, **kw: ((x - m) / backend_module.ops.sqrt(v + 1e-5)) * g + b"
+  RMSNorm:
+    target_api: custom_op
+    custom_code: "lambda x, g=1.0, **kw: (x / backend_module.ops.sqrt(backend_module.ops.mean(x**2, axis=-1, keepdims=True) + 1e-5)) * g"
+  MultiheadAttention:
+    target_api: custom_op
+    custom_code: "lambda q, k, v, **kw: backend_module.ops.matmul(backend_module.ops.softmax(backend_module.ops.matmul(q, backend_module.ops.transpose(k, (0, 1, 3, 2) if len(k.shape) == 4 else (0, 2, 1))) / backend_module.ops.sqrt(float(q.shape[-1]))), v)"
+  Conv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: backend_module.ops.conv(x, w, strides=kw.get('strides', [1, 1]), padding=kw.get('padding', 'same')) if hasattr(backend_module.ops, 'conv') else x"
+  DepthwiseConv2D:
+    target_api: custom_op
+    custom_code: "lambda x, w, **kw: backend_module.ops.depthwise_conv(x, w, strides=kw.get('strides', [1, 1]), padding=kw.get('padding', 'same')) if hasattr(backend_module.ops, 'depthwise_conv') else x"
+  MaxPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.ops.max_pool(x, pool_size=kw.get('pool_size', [2, 2]), strides=kw.get('strides', [2, 2]), padding=kw.get('padding', 'same')) if hasattr(backend_module.ops, 'max_pool') else x"
+  AvgPool2D:
+    target_api: custom_op
+    custom_code: "lambda x, **kw: backend_module.ops.average_pool(x, pool_size=kw.get('pool_size', [2, 2]), strides=kw.get('strides', [2, 2]), padding=kw.get('padding', 'same')) if hasattr(backend_module.ops, 'average_pool') else x"
+  ResizeBilinear:
+    target_api: custom_op
+    custom_code: "lambda x, size=None, **kw: backend_module.ops.image.resize(x, size=size, interpolation='bilinear') if hasattr(backend_module.ops, 'image') else x"
+  MSELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.ops.mean((p - t)**2)"
+  CrossEntropyLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.ops.mean(backend_module.ops.sum(t * backend_module.ops.log(p + 1e-12), axis=-1))"
+  BCELoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: -backend_module.ops.mean(t * backend_module.ops.log(p + 1e-12) + (1.0 - t) * backend_module.ops.log(1.0 - p + 1e-12))"
+  HuberLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, delta=1.0, **kw: backend_module.ops.mean(backend_module.ops.where(backend_module.ops.abs(p - t) < delta, 0.5 * ((p - t)**2), delta * (backend_module.ops.abs(p - t) - 0.5 * delta)))"
+  KLDivergenceLoss:
+    target_api: custom_op
+    custom_code: "lambda p, t, **kw: backend_module.ops.mean(backend_module.ops.sum(t * (backend_module.ops.log(t + 1e-12) - backend_module.ops.log(p + 1e-12)), axis=-1))"

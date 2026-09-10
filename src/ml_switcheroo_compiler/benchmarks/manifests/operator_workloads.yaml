@@ -1,0 +1,74 @@
+workloads:
+  elementwise_add:
+    description: "Elementwise addition of two 2D tensors"
+    inputs:
+      in_0:
+        shape: [128, 128]
+        dtype: "float32"
+      in_1:
+        shape: [128, 128]
+        dtype: "float32"
+    nodes:
+      - id: "add_0"
+        op_type: "Add"
+        inputs: ["in_0", "in_1"]
+        attributes: {}
+    outputs: ["add_0"]
+
+  elementwise_gelu:
+    description: "Elementwise GELU non-linear activation"
+    inputs:
+      in_0:
+        shape: [256, 256]
+        dtype: "float32"
+    nodes:
+      - id: "gelu_0"
+        op_type: "Gelu"
+        inputs: ["in_0"]
+        attributes: {}
+    outputs: ["gelu_0"]
+
+  matrix_multiplication:
+    description: "Matrix multiplication of two 2D matrices"
+    inputs:
+      in_0:
+        shape: [128, 256]
+        dtype: "float32"
+      in_1:
+        shape: [256, 128]
+        dtype: "float32"
+    nodes:
+      - id: "matmul_0"
+        op_type: "MatMul"
+        inputs: ["in_0", "in_1"]
+        attributes: {}
+    outputs: ["matmul_0"]
+
+  reduction_sum:
+    description: "Sum reduction along axis 1"
+    inputs:
+      in_0:
+        shape: [128, 256]
+        dtype: "float32"
+    nodes:
+      - id: "sum_0"
+        op_type: "ReduceSum"
+        inputs: ["in_0"]
+        attributes:
+          axis: 1
+          keepdims: false
+    outputs: ["sum_0"]
+
+  layer_norm:
+    description: "Layer normalization over last dimension"
+    inputs:
+      in_0:
+        shape: [32, 128]
+        dtype: "float32"
+    nodes:
+      - id: "norm_0"
+        op_type: "LayerNorm"
+        inputs: ["in_0"]
+        attributes:
+          eps: 1e-5
+    outputs: ["norm_0"]

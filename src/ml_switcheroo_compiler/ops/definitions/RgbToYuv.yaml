@@ -10,11 +10,6 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: RgbToYuv
-  edge_stablehlo:
-
-    opcode: stablehlo.rgb_to_yuv
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

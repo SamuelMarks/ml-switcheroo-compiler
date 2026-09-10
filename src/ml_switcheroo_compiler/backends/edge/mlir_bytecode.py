@@ -2,7 +2,7 @@
 
 import os
 import struct
-from typing import Any
+from typing import Union
 
 import yaml
 
@@ -17,7 +17,7 @@ class MLIRBytecodeEncoder:
         self.strings: list[str] = []
         self.string_map: dict[str, int] = {}
         self.dialects: list[str] = []
-        self.ops: list[dict[str, Any]] = []
+        self.ops: list[dict[str, Union[str, list[str]]]] = []
 
         path: str = os.path.join(os.path.dirname(__file__), "mlir_spec.yaml")
         with open(path) as f:

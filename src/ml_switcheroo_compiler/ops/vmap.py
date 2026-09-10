@@ -31,30 +31,55 @@ def _eager_vmap(
     out_axes: int | tuple[int, ...],
     args,
 ):
-    """Evaluate _eager_vmap operation.
+    """Evaluate _eager_vmap operation using vectorized IR execution.
 
     Args:
-        func (Callable): The func parameter.
-        in_axes (Any): The in_axes parameter.
-        out_axes (Any): The out_axes parameter.
-        args (tuple): The args parameter.
+        func (Callable): The function to vectorize.
+        in_axes (int | tuple[int, ...]): Axis or axes mapped over in inputs.
+        out_axes (int | tuple[int, ...]): Axis or axes in output tensor(s).
+        args (tuple): Input arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor: Vectorized output tensor.
     """
-    arg = args[0]
-    in_axis = in_axes if isinstance(in_axes, int) else in_axes[0]
-    out_axis = out_axes if isinstance(out_axes, int) else out_axes[0]
-    batch_size = arg.shape[in_axis] if arg.shape else 1
-    outs = []
+    first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
+    if first_tensor is None:
+        return func(*args)
+
+    in_axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
+    batch_size = first_tensor.shape[in_axis] if first_tensor.shape and in_axis < len(first_tensor.shape) else 1
+
+    symbolic_args = _create_vmap_symbolic_args(args, in_axes)
+    body_block = _trace_function(func, tuple(symbolic_args), "vmap_body")
+
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.vectorization import vectorize_graph
+
+    body_graph = IRGraph(name="vmap_body")
+    body_graph.inputs = list(body_block.inputs)
+    body_graph.outputs = list(body_block.outputs)
+    for n in body_block.nodes:
+        body_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
+
+    vectorized_graph = vectorize_graph(body_graph, in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+
     backend = get_active_backend()
-    for i in range(batch_size):
-        sliced_data = backend.execute_op("Take", arg.data, i, axis=in_axis)
-        sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != in_axis)
-        sliced_arg = Tensor(sliced_data, TensorConfig(sliced_shape, arg.dtype, arg.device))
-        outs.append(func(sliced_arg).data)
-    out_data = backend.execute_op("Stack", outs, axis=out_axis)
-    return Tensor(out_data, TensorConfig(out_data.shape, arg.dtype, arg.device))
+    input_map = {}
+    for inp_id, conc_arg in zip(body_block.inputs, args):
+        val = conc_arg.data if isinstance(conc_arg, Tensor) else conc_arg
+        input_map[inp_id] = val
+
+    out_map = evaluate_graph(vectorized_graph, input_map, backend=backend)
+    out_node_id = vectorized_graph.outputs[0]
+    out_val = out_map[out_node_id]
+
+    if hasattr(backend, "asarray"):
+        out_data = backend.asarray(out_val)
+    else:
+        out_data = out_val
+    out_shape = tuple(out_data.shape) if hasattr(out_data, "shape") else (batch_size,)
+    return Tensor(out_data, TensorConfig(out_shape, first_tensor.dtype, first_tensor.device))
 
 
 def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:

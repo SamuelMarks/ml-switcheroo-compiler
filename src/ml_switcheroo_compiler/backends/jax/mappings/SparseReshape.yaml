@@ -1,2 +1,2 @@
 SparseReshape:
-  target_api: jax.numpy.sparsereshape
+  target_api: custom_op

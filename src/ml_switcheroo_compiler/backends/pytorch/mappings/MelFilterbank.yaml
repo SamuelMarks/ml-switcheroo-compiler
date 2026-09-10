@@ -1,0 +1,3 @@
+MelFilterbank:
+  ast_template: torchaudio.functional.melscale_fbanks({0})
+  target_api: ''

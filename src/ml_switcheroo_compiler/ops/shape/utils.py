@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 @register_util("_emit_shape_node")
 def _emit_shape_node(
     op_type: str,
-    inputs: Sequence[Tensor],
+    inputs: Sequence[object],
     attrs,
     out_shape,
     out_dtype: DType,

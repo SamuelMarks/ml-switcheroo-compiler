@@ -1,6 +1,7 @@
 # ruff: noqa
-from ml_switcheroo_compiler.grad import CustomVJPFunction, RegisterGradient, checkpoint, custom_jvp, hvp, ir_grad, jvp, recompute_grad, remat, value_and_grad_wrt_vars, vjp
+from ml_switcheroo_compiler.grad import CustomJVPFunction, CustomVJPFunction, RegisterGradient, checkpoint, custom_jvp, hvp, ir_grad, jvp, recompute_grad, remat, value_and_grad_wrt_vars, vjp
 from ml_switcheroo_compiler.grad import (
+    CustomJVPFunction,
     CustomVJPFunction,
     GradCheckOptions,
     RegisterGradient,
@@ -78,11 +79,14 @@ def test_grad():
 
     tg = TensorWithGrad()
     tng = TensorNoGrad()
-    backward(tg)
-    assert tg.grad == 1.0
-    backward(tng)
-    assert tng.grad == 1.0
-    assert custom_jvp(my_fun) is my_fun
+    import pytest
+    from ml_switcheroo_compiler.core.errors import TracingError
+
+    with pytest.raises(TracingError):
+        backward(tg)
+    with pytest.raises(TracingError):
+        backward(tng)
+    assert isinstance(custom_jvp(my_fun), CustomJVPFunction)
     check_numerical_grads(my_fun, (1,))
     check_numerical_grads(my_fun, (1,), GradCheckOptions())
     RegisterGradient("op")

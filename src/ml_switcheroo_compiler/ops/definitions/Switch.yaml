@@ -4,8 +4,6 @@ std_args: []
 variants:
   keras:
     eager: keras_ops.switch
-  edge_onnx:
-    generator: Switch
   edge_stablehlo:
     generator: stablehlo.case
   numpy:

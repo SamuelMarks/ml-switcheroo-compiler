@@ -1,4 +1,6 @@
 LayerNorm:
-  jvp: ZerosLike($tangent[0])
+  jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
   vjp:
-  - ZerosLike($cotangent)
+  - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
+  - ReduceSum($cotangent)

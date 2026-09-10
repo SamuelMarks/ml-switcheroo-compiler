@@ -237,3 +237,31 @@ def test_type_promotion_129_2() -> None:
         assert isinstance(res, FakeType)
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+def test_declarative_yaml_type_promotion_consistency():
+    """Validate declarative type promotion rules across all internal backend types."""
+    with ConfigContext(jax_enable_x64=True):
+        # Boolean with numeric types
+        assert promote_types(DType.Bool, DType.Bool) == DType.Bool
+        assert promote_types(DType.Bool, DType.Int32) == DType.Int32
+        assert promote_types(DType.Bool, DType.Float16) == DType.Float16
+        assert promote_types(DType.Bool, DType.BFloat16) == DType.BFloat16
+        assert promote_types(DType.Bool, DType.Float32) == DType.Float32
+        assert promote_types(DType.Bool, DType.Float64) == DType.Float64
+
+        # Integer promotions
+        assert promote_types(DType.Int8, DType.Int16) == DType.Int16
+        assert promote_types(DType.Int16, DType.Int32) == DType.Int32
+        assert promote_types(DType.Int32, DType.Int64) == DType.Int64
+
+        # Floating point promotions
+        assert promote_types(DType.Float16, DType.Float32) == DType.Float32
+        assert promote_types(DType.BFloat16, DType.Float32) == DType.Float32
+        assert promote_types(DType.Float32, DType.Float64) == DType.Float64
+        assert promote_types(DType.Float16, DType.Float64) == DType.Float64
+
+        # Mixed integer and float
+        assert promote_types(DType.Int16, DType.Float32) == DType.Float32
+        assert promote_types(DType.Int32, DType.Float32) == DType.Float64
+        assert promote_types(DType.Int64, DType.Float32) == DType.Float64

@@ -16,11 +16,6 @@ variants:
     eager: jax.numpy.arraylike
   mlx:
     eager: mlx.core.arraylike
-  edge_onnx:
-    generator: ArrayLike
-  edge_stablehlo:
-
-    opcode: stablehlo.array_like
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

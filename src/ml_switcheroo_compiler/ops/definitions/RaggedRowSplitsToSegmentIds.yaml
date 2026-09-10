@@ -15,11 +15,6 @@ variants:
     eager: jax.numpy.raggedrowsplitstosegmentids
   mlx:
     eager: mlx.core.raggedrowsplitstosegmentids
-  edge_onnx:
-    generator: RaggedRowSplitsToSegmentIds
-  edge_stablehlo:
-
-    opcode: stablehlo.ragged_row_splits_to_segment_ids
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -18,11 +18,6 @@ variants:
     eager: jax.numpy.radians
   mlx:
     eager: mlx.core.radians
-  edge_onnx:
-    generator: radians
-  edge_stablehlo:
-
-    opcode: stablehlo.radians
   edge_wgsl:
     template: unary
     expr: radians(buf_in0_f32[in0_offset])

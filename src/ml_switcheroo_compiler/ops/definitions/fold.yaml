@@ -3,8 +3,6 @@ description: Auto-generated mapping for fold.
 std_args: []
 type: function
 variants:
-  edge_onnx:
-    generator: Fold
   edge_stablehlo:
     generator: stablehlo.reduce
   numpy: {}

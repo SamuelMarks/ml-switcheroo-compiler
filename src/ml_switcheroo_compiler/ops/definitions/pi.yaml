@@ -1,8 +1,0 @@
-operation: pi
-description: "IEEE 754 floating-point representation of the mathematical constant\
-  \ ``\u03C0``."
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

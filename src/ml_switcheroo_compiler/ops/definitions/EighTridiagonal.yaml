@@ -10,11 +10,6 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: EighTridiagonal
-  edge_stablehlo:
-
-    opcode: stablehlo.eigh_tridiagonal
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

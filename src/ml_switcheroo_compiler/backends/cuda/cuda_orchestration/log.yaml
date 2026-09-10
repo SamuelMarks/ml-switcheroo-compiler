@@ -1,0 +1,19 @@
+log:
+  body: "__global__ void log_kernel(const float* A, float* C, int N) {\n    int id\
+    \ = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] =\
+    \ logf(A[id]);\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '1'
+    z: '1'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: __nv_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

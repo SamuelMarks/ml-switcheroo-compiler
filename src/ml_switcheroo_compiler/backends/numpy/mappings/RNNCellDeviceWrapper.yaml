@@ -1,3 +1,2 @@
 RNNCellDeviceWrapper:
-  ast_template: tf.nn.rnn_cell.DeviceWrapper
-  target_api: ''
+  target_api: custom_op

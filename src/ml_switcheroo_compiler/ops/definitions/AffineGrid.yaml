@@ -10,11 +10,6 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx:
-    generator: AffineGrid
-  edge_stablehlo:
-
-    opcode: stablehlo.affine_grid
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,0 +1,24 @@
+batchmatmul:
+  body: "#include <hip/hip_runtime.h>\n__global__ void batchmatmul(const float* A,\
+    \ const float* B, float* C, int B_sz, int M, int N, int K) {\n    int b = hipBlockIdx_z;\n\
+    \    int row = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y;\n    int col =\
+    \ hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (b < B_sz && row < M\
+    \ && col < N) {\n        float sum = 0.0f;\n        const float* a_mat = A + b\
+    \ * M * K;\n        const float* b_mat = B + b * K * N;\n        for (int i =\
+    \ 0; i < K; ++i) {\n            sum += a_mat[row * K + i] * b_mat[i * N + col];\n\
+    \        }\n        C[(b * M + row) * N + col] = sum;\n    }\n}\n"
+  workgroup_size:
+  - 16
+  - 16
+  - 1
+  grid_calc:
+    x: ({N_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: ({M} + block_{node_idx}.y - 1) / block_{node_idx}.y
+    z: '{B}'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

@@ -63,10 +63,23 @@ def test_emit_utils_mixin():
     eu._emit_body_return([])
     assert eu.code == ["return None"]
 
+    eu.graph = IRGraph()
+    eu.formatter = DummyFormatter()
+    eu.graph.outputs = ["out1"]
+    eu.code = []
+    eu._emit_body_return([])
+    assert eu.code == ["return out1"]
+
+    eu.graph.outputs = ["out1", "out2"]
+    eu.code = []
+    eu._emit_body_return([])
+    assert eu.code == ["return (out1, out2)"]
+
 
 def test_base_generator_methods():
     graph = IRGraph()
     gen = DummyGenerator(graph)
+    assert gen.get_language() == "python"
     node = IRNode("id", "op", attributes={"value": [1, 2, 3]})
     assert gen.emit_constant(node) == "[1, 2, 3]"
 
@@ -573,3 +586,28 @@ def test_base_generator_get_fallback_prefix():
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     assert BaseGenerator(IRGraph()).get_fallback_prefix() == "np"
+
+
+def test_base_generator_compile_aot():
+    import pytest
+
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    class CustomGen(BaseGenerator):
+        def _compile_aot_impl(self, graph, **kwargs):
+            return "compiled_artifact"
+
+    g = IRGraph()
+    # Call as classmethod
+    res_cls = CustomGen.compile_aot(g)
+    assert res_cls == "compiled_artifact"
+
+    # Call on instance with graph=None falling back to self.graph
+    inst = CustomGen(g)
+    assert inst.compile_aot(None) == "compiled_artifact"
+
+    # Base implementation raises NotImplementedError
+    base_inst = BaseGenerator(g)
+    with pytest.raises(NotImplementedError, match="AOT compilation is not implemented"):
+        base_inst.compile_aot(g)

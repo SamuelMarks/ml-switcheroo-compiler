@@ -1,2 +1,3 @@
 Adjoint:
-  target_api: '''tf.linalg.adjoint'''
+  target_api: ''
+  ast_template: mx.swapaxes(mx.conjugate({0}), -1, -2)

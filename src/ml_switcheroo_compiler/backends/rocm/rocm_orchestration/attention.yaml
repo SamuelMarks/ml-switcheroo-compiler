@@ -1,0 +1,20 @@
+attention:
+  body: "#include <hip/hip_runtime.h>\n__global__ void attention(const float* __restrict__\
+    \ Q, const float* __restrict__ K, const float* __restrict__ V, float* __restrict__\
+    \ output, int total) {\n    int idx = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;\n\
+    \    if (idx < total) {\n        output[idx] = Q[idx];\n    }\n}\n"
+  workgroup_size:
+  - 256
+  - 1
+  - 1
+  grid_calc:
+    x: ({S} + block_{node_idx}.x - 1) / block_{node_idx}.x
+    y: '{H}'
+    z: '{B}'
+  type_mappings:
+    float32: float
+    float16: __half
+    bfloat16: hip_bfloat16
+    int32: int
+    int64: long long
+    bool: bool

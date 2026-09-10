@@ -1,7 +1,0 @@
-operation: UFuncTypeError
-description: Auto-generated mapping for UFuncTypeError.
-std_args: []
-variants:
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val

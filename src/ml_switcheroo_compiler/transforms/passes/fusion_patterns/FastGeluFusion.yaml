@@ -1,0 +1,19 @@
+FastGeluFusion:
+  pattern:
+    capture: mul
+    inputs:
+    - capture: in
+    - capture: sigmoid
+      inputs:
+      - capture: scale
+        inputs:
+        - capture: in
+        - capture: c
+        op_type: Multiply
+      op_type: Sigmoid
+    op_type: Multiply
+  replacement:
+    capture_to_replace: mul
+    inputs:
+    - in
+    op_type: FastGelu

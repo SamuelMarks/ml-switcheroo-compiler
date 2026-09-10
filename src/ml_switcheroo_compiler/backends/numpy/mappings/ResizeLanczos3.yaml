@@ -1,0 +1,3 @@
+ResizeLanczos3:
+  ast_template: np_resize({0}, {size}, 'lanczos3', {align_corners})
+  target_api: ''

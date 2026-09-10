@@ -1,2 +1,2 @@
 Hfft:
-  target_api: '''mx.fft.hfft({0})'''
+  target_api: custom_op

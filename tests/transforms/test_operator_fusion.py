@@ -97,3 +97,38 @@ def test_pass_config_missing():
         cfg = of._load_pass_config()
         assert not cfg.execution_order
         assert not cfg.fusion_patterns
+
+
+def test_operator_fusion_all_remaining_branches():
+    """Test 227->229, 260->273, 266->262, and 380->382 in operator_fusion.py."""
+    import tempfile
+    from unittest.mock import mock_open, patch
+
+    import yaml
+
+    import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    # 1. 227->229: yaml exists but contains a non-dict (e.g. a list)
+    with patch("os.path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=yaml.dump(["list_item"]))):
+            cfg_non_dict = of._load_pass_config()
+            assert not cfg_non_dict.execution_order
+
+    # 2. 260->273: patterns_dir is not a directory
+    rules_empty = of._discover_fusion_patterns("/nonexistent/directory/path/for/tests")
+    assert rules_empty == []
+
+    # 3. 266->262: yaml file in patterns_dir contains a non-dict
+    with tempfile.TemporaryDirectory() as tmpdir:
+        non_dict_yaml = f"{tmpdir}/invalid.yaml"
+        with open(non_dict_yaml, "w") as f:
+            yaml.dump(["item1", "item2"], f)
+        rules = of._discover_fusion_patterns(tmpdir)
+        assert rules == []
+
+    # 4. 380->382: memory_sizes is not a dict in is_fusion_valid
+    cm = of.MemoryAwareCostModel(config={"memory_sizes": None})
+    n = IRNode(id="n1", op_type="Add", shape_metadata=(2, 2))
+    fits = cm.is_fusion_valid({"n1": n})
+    assert fits is True

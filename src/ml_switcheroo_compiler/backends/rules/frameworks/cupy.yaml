@@ -1,0 +1,7 @@
+target_module: cupy
+module_path:
+  - cupy
+kwarg_map: {}
+class_bases: {}
+method_map: {}
+broadcast_method: broadcast_to
