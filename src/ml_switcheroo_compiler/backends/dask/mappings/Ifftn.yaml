@@ -1,2 +1,6 @@
-Ifftn:
-  target_api: da.fft.ifftn
+operation: Ifftn
+backend: dask
+target_api: da.fft.ifftn
+ast_template: '{out} = da.fft.ifftn({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

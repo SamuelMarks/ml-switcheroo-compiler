@@ -1,2 +1,6 @@
-Cumprod:
-  target_api: da.cumprod
+operation: Cumprod
+backend: dask
+target_api: da.cumprod
+ast_template: '{out} = da.cumprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

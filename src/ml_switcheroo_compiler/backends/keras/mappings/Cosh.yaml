@@ -1,2 +1,6 @@
-Cosh:
-  target_api: keras_ops.cosh
+operation: Cosh
+backend: keras
+target_api: keras_ops.cosh
+ast_template: '{out} = keras_ops.cosh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

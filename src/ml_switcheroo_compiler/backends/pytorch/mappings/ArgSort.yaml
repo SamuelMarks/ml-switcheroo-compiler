@@ -1,3 +1,6 @@
-ArgSort:
-  ast_template: torch.argsort({0}, dim={dimension})
-  target_api: ''
+operation: ArgSort
+backend: pytorch
+target_api: ''
+ast_template: torch.argsort({0}, dim={dimension})
+kwarg_map: {}
+dtype_overrides: {}

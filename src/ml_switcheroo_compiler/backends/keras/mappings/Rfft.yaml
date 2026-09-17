@@ -1,2 +1,6 @@
-Rfft:
-  target_api: keras_ops.rfft
+operation: Rfft
+backend: keras
+target_api: keras_ops.rfft
+ast_template: '{out} = keras_ops.rfft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

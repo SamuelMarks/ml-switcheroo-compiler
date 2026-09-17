@@ -1,2 +1,6 @@
-Cond:
-  target_api: tf.cond
+operation: Cond
+backend: tensorflow
+target_api: tf.cond
+ast_template: '{out} = tf.cond({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

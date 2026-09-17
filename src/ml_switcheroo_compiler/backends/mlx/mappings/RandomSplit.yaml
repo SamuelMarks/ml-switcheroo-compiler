@@ -1,2 +1,6 @@
-RandomSplit:
-  target_api: '''mx.random.split({0}, {num})'''
+operation: RandomSplit
+backend: mlx
+target_api: '''mx.random.split({0}, {num})'''
+ast_template: '{out} = ''mx.random.split({0}, {num})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Acosh:
-  target_api: torch.acosh
+operation: Acosh
+backend: pytorch
+target_api: torch.acosh
+ast_template: '{out} = torch.acosh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

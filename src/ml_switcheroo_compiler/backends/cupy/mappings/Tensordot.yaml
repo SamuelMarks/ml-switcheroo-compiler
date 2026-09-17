@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: cp.tensordot
+operation: Tensordot
+backend: cupy
+target_api: cp.tensordot
+ast_template: '{out} = cp.tensordot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

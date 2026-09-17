@@ -1,0 +1,6 @@
+operation: RepeatInterleave
+backend: pytorch
+target_api: torch.repeat_interleave
+ast_template: '{out} = torch.repeat_interleave({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

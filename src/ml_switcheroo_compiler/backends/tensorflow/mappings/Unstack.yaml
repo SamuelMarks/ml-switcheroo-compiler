@@ -1,2 +1,6 @@
-Unstack:
-  target_api: tf.unstack
+operation: Unstack
+backend: tensorflow
+target_api: tf.unstack
+ast_template: '{out} = tf.unstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

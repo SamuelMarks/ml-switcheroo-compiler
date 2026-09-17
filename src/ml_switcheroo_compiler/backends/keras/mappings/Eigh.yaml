@@ -1,2 +1,6 @@
-Eigh:
-  target_api: keras_ops.eigh
+operation: Eigh
+backend: keras
+target_api: keras_ops.eigh
+ast_template: '{out} = keras_ops.eigh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

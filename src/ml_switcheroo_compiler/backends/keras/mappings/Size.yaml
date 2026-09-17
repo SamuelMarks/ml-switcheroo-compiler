@@ -1,2 +1,6 @@
-Size:
-  target_api: keras_ops.size
+operation: Size
+backend: keras
+target_api: keras_ops.size
+ast_template: '{out} = keras_ops.size({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

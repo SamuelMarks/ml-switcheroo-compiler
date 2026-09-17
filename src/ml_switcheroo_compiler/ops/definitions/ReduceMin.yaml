@@ -52,6 +52,47 @@ variants:
     scalar_expr: std::min(res, val)
     final_combine: res
 autodiff:
+  vjp_rule_id: ReduceMin_vjp
+  jvp_rule_id: ReduceMin_jvp
   vjp:
   - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(ReduceMin($input[0]))))
   jvp: ReduceSum(Multiply($tangent[0], Equal($input[0], Broadcast(ReduceMin($input[0])))))
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: axis
+    type: int | List[int]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: keepdims
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - axis
+  - keepdims
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: reduce(in0, axis, keepdims)
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: reduction
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null

@@ -1,3 +1,6 @@
-MatrixNorm:
-  ast_template: np.linalg.norm({0}, keepdims={keepdims})
-  target_api: ''
+operation: MatrixNorm
+backend: numpy
+target_api: ''
+ast_template: np.linalg.norm({0}, keepdims={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

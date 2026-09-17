@@ -1,4 +1,7 @@
-GridSample:
-  ast_template: torch.nn.functional.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
-    align_corners={align_corners})
-  target_api: ''
+operation: GridSample
+backend: pytorch
+target_api: ''
+ast_template: torch.nn.functional.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
+  align_corners={align_corners})
+kwarg_map: {}
+dtype_overrides: {}

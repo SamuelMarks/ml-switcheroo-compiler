@@ -1,2 +1,6 @@
-Divmod:
-  target_api: da.divmod
+operation: Divmod
+backend: dask
+target_api: da.divmod
+ast_template: '{out} = da.divmod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

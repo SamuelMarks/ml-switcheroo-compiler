@@ -1,0 +1,6 @@
+operation: Nanmean
+backend: pytorch
+target_api: torch.nanmean
+ast_template: '{out} = torch.nanmean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

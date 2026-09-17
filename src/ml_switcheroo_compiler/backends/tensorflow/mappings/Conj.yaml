@@ -1,2 +1,6 @@
-Conj:
-  target_api: tf.math.conj
+operation: Conj
+backend: tensorflow
+target_api: tf.math.conj
+ast_template: '{out} = tf.math.conj({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Fft2d:
-  target_api: '''mx.fft.fft2({0}, s={s}, axes={axes})'''
+operation: Fft2d
+backend: mlx
+target_api: '''mx.fft.fft2({0}, s={s}, axes={axes})'''
+ast_template: '{out} = ''mx.fft.fft2({0}, s={s}, axes={axes})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

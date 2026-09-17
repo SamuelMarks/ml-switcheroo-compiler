@@ -1,2 +1,6 @@
-Cosh:
-  target_api: cp.cosh
+operation: Cosh
+backend: cupy
+target_api: cp.cosh
+ast_template: '{out} = cp.cosh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

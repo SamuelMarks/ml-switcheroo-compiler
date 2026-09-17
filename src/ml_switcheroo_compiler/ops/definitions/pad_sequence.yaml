@@ -1,12 +1,42 @@
 operation: pad_sequence
 description: Pad a list of variable length Tensors with :attr:`padding_value`.
 std_args:
-  - sequences
-  - batch_first
-  - padding_value
-  - padding_side
+- sequences
+- batch_first
+- padding_value
+- padding_side
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: pad_sequence_vjp
+  jvp_rule_id: pad_sequence_jvp
+  vjp: null
+  jvp: null

@@ -1,2 +1,6 @@
-BinomCdf:
-  target_api: _execute_binom_cdf
+operation: BinomCdf
+backend: jax
+target_api: _execute_binom_cdf
+ast_template: '{out} = _execute_binom_cdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

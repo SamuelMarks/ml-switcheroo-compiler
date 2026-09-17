@@ -1,2 +1,6 @@
-Take:
-  target_api: keras_ops.take
+operation: Take
+backend: keras
+target_api: keras_ops.take
+ast_template: '{out} = keras_ops.take({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

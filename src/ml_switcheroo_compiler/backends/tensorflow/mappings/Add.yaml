@@ -1,2 +1,6 @@
-Add:
-  target_api: tf.add
+operation: Add
+backend: tensorflow
+target_api: tf.add
+ast_template: '{out} = tf.add({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,29 @@
+stages:
+  - stage_name: "frontend_canonicalization"
+    passes:
+      - polyfill_lowering
+      - type_promotion_explicitizer
+      - broadcast_explicitizer
+    fixpoint_iteration: false
+    max_iterations: 1
+
+  - stage_name: "algebraic_simplification"
+    passes:
+      - constant_folding
+      - dead_code_elimination
+      - common_subexpression_elimination
+    fixpoint_iteration: true
+    max_iterations: 10
+
+  - stage_name: "fusion_and_scheduling"
+    passes:
+      - operator_fusion
+      - graph_scheduling
+      - buffer_allocation
+      - spmd
+    fixpoint_iteration: false
+    max_iterations: 1
+
 execution_order:
   - polyfill_lowering
   - type_promotion_explicitizer
@@ -9,10 +35,63 @@ execution_order:
   - graph_scheduling
   - buffer_allocation
   - spmd
+
+optimization_levels:
+  O0:
+    execution_order:
+      - polyfill_lowering
+      - type_promotion_explicitizer
+      - broadcast_explicitizer
+    fixpoint_iteration: false
+    max_iterations: 1
+
+  O1:
+    execution_order:
+      - polyfill_lowering
+      - type_promotion_explicitizer
+      - broadcast_explicitizer
+      - constant_folding
+      - dead_code_elimination
+    fixpoint_iteration: true
+    max_iterations: 5
+
+  O2:
+    execution_order:
+      - polyfill_lowering
+      - type_promotion_explicitizer
+      - broadcast_explicitizer
+      - constant_folding
+      - dead_code_elimination
+      - common_subexpression_elimination
+      - operator_fusion
+      - graph_scheduling
+      - buffer_allocation
+    fixpoint_iteration: true
+    max_iterations: 10
+
+  O3:
+    execution_order:
+      - polyfill_lowering
+      - type_promotion_explicitizer
+      - broadcast_explicitizer
+      - constant_folding
+      - dead_code_elimination
+      - common_subexpression_elimination
+      - operator_fusion
+      - mixed_precision
+      - loop_tiling
+      - vectorization
+      - graph_scheduling
+      - buffer_allocation
+      - spmd
+    fixpoint_iteration: true
+    max_iterations: 15
+
 convergence_criteria:
   max_iterations: 10
   detect_cyclic_oscillation: true
   require_fixpoint: true
+
 prerequisites:
   type_promotion_explicitizer:
     - polyfill_lowering
@@ -32,3 +111,61 @@ prerequisites:
     - graph_scheduling
   spmd:
     - buffer_allocation
+
+pass_analyses_and_invalidation:
+  dead_code_elimination:
+    prerequisites:
+      - constant_folding
+    consumed_properties:
+      - inputs
+      - outputs
+    invalidated_analyses:
+      - shape_caches
+      - liveness
+  constant_folding:
+    prerequisites:
+      - broadcast_explicitizer
+    consumed_properties:
+      - constants
+      - shapes
+    invalidated_analyses:
+      - liveness
+      - buffer_offsets
+  operator_fusion:
+    prerequisites:
+      - common_subexpression_elimination
+    consumed_properties:
+      - fusion_patterns
+    invalidated_analyses:
+      - topological_order
+      - liveness
+  buffer_allocation:
+    prerequisites:
+      - graph_scheduling
+    consumed_properties:
+      - liveness
+      - memory_alignments
+    invalidated_analyses: []
+  common_subexpression_elimination:
+    prerequisites:
+      - dead_code_elimination
+    consumed_properties:
+      - node_hashes
+    invalidated_analyses:
+      - liveness
+
+pass_configs:
+  constant_folding:
+    pass_name: "constant_folding"
+    enabled: true
+    prerequisites: ["broadcast_explicitizer"]
+    preserves: ["shape_invariants"]
+    options:
+      eager_fallback: true
+  operator_fusion:
+    pass_name: "operator_fusion"
+    enabled: true
+    prerequisites: ["common_subexpression_elimination"]
+    preserves: []
+    options:
+      max_cluster_size: 16

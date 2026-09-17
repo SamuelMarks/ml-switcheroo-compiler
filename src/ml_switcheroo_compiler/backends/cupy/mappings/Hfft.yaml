@@ -1,2 +1,6 @@
-Hfft:
-  target_api: cp.fft.hfft
+operation: Hfft
+backend: cupy
+target_api: cp.fft.hfft
+ast_template: '{out} = cp.fft.hfft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

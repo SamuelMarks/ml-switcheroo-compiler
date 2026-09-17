@@ -1,2 +1,6 @@
-ReduceEuclideanNorm:
-  target_api: tf.math.reduce_euclidean_norm
+operation: ReduceEuclideanNorm
+backend: tensorflow
+target_api: tf.math.reduce_euclidean_norm
+ast_template: '{out} = tf.math.reduce_euclidean_norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -5,6 +5,9 @@ and execution console. It allows users to write, compile, and run ML code (e.g.,
 PyTorch, TensorFlow) directly in the browser using Pyodide, WebGPU, and WASM.
 """
 
+import glob
+import json
+import os
 from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
@@ -12,6 +15,27 @@ if TYPE_CHECKING:
 
 from docutils import nodes  # type: ignore[import-untyped]
 from docutils.parsers.rst import Directive  # type: ignore[import-untyped]
+
+
+def get_wheel_assets() -> list[str]:
+    """Finds wheel (.whl) distribution files in the docs/_static directory.
+
+    Returns:
+        Sorted list of wheel filenames available in the _static directory.
+    """
+    static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "_static"))
+    if not os.path.isdir(static_dir):
+        return []
+    whls = [os.path.basename(f) for f in glob.glob(os.path.join(static_dir, "*.whl"))]
+    sorted_whls = sorted(whls)
+    if sorted_whls:
+        manifest_path = os.path.join(static_dir, "wheels.json")
+        try:
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump({"wheels": sorted_whls}, f, indent=2)
+        except OSError:
+            pass
+    return sorted_whls
 
 
 class MLPlaygroundDirective(Directive):
@@ -28,7 +52,15 @@ class MLPlaygroundDirective(Directive):
     has_content: bool = True
 
     def run(self) -> list[nodes.Node]:
-        """Execute standard operation."""
+        """Execute standard operation.
+
+        Returns:
+            list[nodes.Node]: List of docutils nodes representing the raw HTML playground.
+        """
+        wheel_assets = get_wheel_assets()
+        wheels_csv = ",".join(wheel_assets)
+        wheel_links_html = "".join(f'\n            <a href="_static/{w}" class="pg-wheel-link" download>{w}</a>' for w in wheel_assets)
+
         # We output a section with an id that our JS will hydrate
         html = """
 <section id="ml-playground-container" aria-label="ML Switcheroo Playground">
@@ -38,6 +70,8 @@ class MLPlaygroundDirective(Directive):
             <span class="slider round"></span>
         </label>
         <span class="theme-label" data-i18n="darkMode">Dark Mode</span>
+        <nav class="pg-wheel-links" aria-label="Wheel Assets" data-wheels="{wheels_attr}"><!-- WHEEL_LINKS_PLACEHOLDER -->
+        </nav>
     </header>
     <div class="pg-split-pane">
         <section class="pg-left-pane" aria-label="Source Editor">
@@ -117,8 +151,8 @@ var require = { paths: { 'vs':
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/" +
                      "0.45.0/min/vs/editor/editor.main.js"></script>
 """
-
-        return [nodes.raw("", html, format="html")]
+        rendered_html = html.replace("{wheels_attr}", wheels_csv).replace("<!-- WHEEL_LINKS_PLACEHOLDER -->", wheel_links_html)
+        return [nodes.raw("", rendered_html, format="html")]
 
 
 def setup(app: "sphinx.application.Sphinx") -> dict[str, Union[str, bool]]:

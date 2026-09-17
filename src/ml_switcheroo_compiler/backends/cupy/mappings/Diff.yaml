@@ -1,2 +1,6 @@
-Diff:
-  target_api: cp.diff
+operation: Diff
+backend: cupy
+target_api: cp.diff
+ast_template: '{out} = cp.diff({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

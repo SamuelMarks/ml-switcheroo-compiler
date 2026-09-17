@@ -1,2 +1,6 @@
-LuMatrixInverse:
-  target_api: tf.linalg.lu_matrix_inverse
+operation: LuMatrixInverse
+backend: tensorflow
+target_api: tf.linalg.lu_matrix_inverse
+ast_template: '{out} = tf.linalg.lu_matrix_inverse({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

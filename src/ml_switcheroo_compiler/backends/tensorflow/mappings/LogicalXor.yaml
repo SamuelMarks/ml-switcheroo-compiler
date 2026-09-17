@@ -1,2 +1,6 @@
-LogicalXor:
-  target_api: tf.math.logical_xor
+operation: LogicalXor
+backend: tensorflow
+target_api: tf.math.logical_xor
+ast_template: '{out} = tf.math.logical_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

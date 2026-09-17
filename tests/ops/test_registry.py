@@ -1,3 +1,8 @@
+from unittest import mock
+from unittest.mock import patch
+
+from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
+
 """Tests for the operations registry."""
 
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
@@ -133,3 +138,28 @@ def test_registry_remaining():
     shim = _RegistryShim({"TestOpShim": {"variants": {"test_backend": {"generator": "test_gen_shim"}}}})
     assert shim.get_generator_mapping("test_backend", "TestOpShim") == "test_gen_shim"
     assert shim.get_generator_mapping("test_backend", "MissingOpShim") is None
+
+
+def test_ops_registry_branches() -> None:
+    """Test get_op already cached in _REGISTRY and get_all_ops error handling."""
+    import ml_switcheroo_compiler.ops.registry as reg
+
+    op_cls = get_op("Add")
+    cached = get_op("Add")
+    assert cached is op_cls
+    reg._YAML_REGISTRY["NonMathFakeOp"] = {}
+    with mock.patch("ml_switcheroo_compiler.diagnostics.types_registry.is_non_math_type", side_effect=lambda name: name == "NonMathFakeOp"):
+        all_ops = get_all_ops()
+        assert "Add" in all_ops
+    reg._YAML_REGISTRY.pop("NonMathFakeOp", None)
+
+
+def test_ops_registry_get_all_ops_key_error() -> None:
+    """Test get_all_ops handling of KeyError when get_op fails.
+
+    Returns:
+        None
+    """
+    with patch("ml_switcheroo_compiler.ops.registry.get_op", side_effect=KeyError("Missing op")):
+        ops = get_all_ops()
+        assert isinstance(ops, dict)

@@ -1,2 +1,6 @@
-Reciprocal:
-  target_api: keras_ops.reciprocal
+operation: Reciprocal
+backend: keras
+target_api: keras_ops.reciprocal
+ast_template: '{out} = keras_ops.reciprocal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

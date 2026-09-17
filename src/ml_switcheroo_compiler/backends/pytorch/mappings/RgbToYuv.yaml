@@ -1,3 +1,6 @@
-RgbToYuv:
-  ast_template: '{0}'
-  target_api: ''
+operation: RgbToYuv
+backend: pytorch
+target_api: ''
+ast_template: '{0}'
+kwarg_map: {}
+dtype_overrides: {}

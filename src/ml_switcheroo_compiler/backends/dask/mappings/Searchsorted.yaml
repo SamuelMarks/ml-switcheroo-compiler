@@ -1,2 +1,6 @@
-Searchsorted:
-  target_api: da.searchsorted
+operation: Searchsorted
+backend: dask
+target_api: da.searchsorted
+ast_template: '{out} = da.searchsorted({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

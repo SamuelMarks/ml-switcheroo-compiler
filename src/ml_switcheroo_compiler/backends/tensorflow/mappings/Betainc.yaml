@@ -1,2 +1,6 @@
-Betainc:
-  target_api: tf.math.betainc
+operation: Betainc
+backend: tensorflow
+target_api: tf.math.betainc
+ast_template: '{out} = tf.math.betainc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

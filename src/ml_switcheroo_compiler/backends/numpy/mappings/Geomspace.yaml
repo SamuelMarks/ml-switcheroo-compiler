@@ -1,3 +1,6 @@
-Geomspace:
-  ast_template: np.geomspace
-  target_api: ''
+operation: Geomspace
+backend: numpy
+target_api: ''
+ast_template: np.geomspace
+kwarg_map: {}
+dtype_overrides: {}

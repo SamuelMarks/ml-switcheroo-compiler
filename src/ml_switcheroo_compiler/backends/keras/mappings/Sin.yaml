@@ -1,2 +1,6 @@
-Sin:
-  target_api: keras_ops.sin
+operation: Sin
+backend: keras
+target_api: keras_ops.sin
+ast_template: '{out} = keras_ops.sin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

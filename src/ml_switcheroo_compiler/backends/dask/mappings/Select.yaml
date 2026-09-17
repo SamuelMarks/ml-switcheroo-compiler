@@ -1,2 +1,6 @@
-Select:
-  target_api: da.select
+operation: Select
+backend: dask
+target_api: da.select
+ast_template: '{out} = da.select({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

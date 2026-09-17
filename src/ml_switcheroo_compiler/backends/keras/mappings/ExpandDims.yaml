@@ -1,2 +1,6 @@
-ExpandDims:
-  target_api: keras_ops.expand_dims
+operation: ExpandDims
+backend: keras
+target_api: keras_ops.expand_dims
+ast_template: '{out} = keras_ops.expand_dims({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Rfftfreq:
-  ast_template: np.fft.rfftfreq({0}, d={d})
-  target_api: ''
+operation: Rfftfreq
+backend: numpy
+target_api: ''
+ast_template: np.fft.rfftfreq({0}, d={d})
+kwarg_map: {}
+dtype_overrides: {}

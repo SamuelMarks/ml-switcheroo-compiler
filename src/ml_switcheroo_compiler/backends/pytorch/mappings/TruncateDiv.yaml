@@ -1,4 +1,6 @@
-TruncateDiv:
-  ast_template: torch.trunc({0} / {1})
-  custom_code: 'lambda x, y: torch.trunc(torch.div(x, y))'
-  target_api: custom_op
+operation: TruncateDiv
+backend: pytorch
+target_api: custom_op
+ast_template: torch.trunc({0} / {1})
+kwarg_map: {}
+dtype_overrides: {}

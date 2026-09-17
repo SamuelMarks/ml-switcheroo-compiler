@@ -1,2 +1,6 @@
-Sign:
-  target_api: keras_ops.sign
+operation: Sign
+backend: keras
+target_api: keras_ops.sign
+ast_template: '{out} = keras_ops.sign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

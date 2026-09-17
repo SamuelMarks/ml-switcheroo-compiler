@@ -1,3 +1,6 @@
-Allclose:
-  ast_template: np.allclose
-  target_api: ''
+operation: Allclose
+backend: numpy
+target_api: ''
+ast_template: np.allclose
+kwarg_map: {}
+dtype_overrides: {}

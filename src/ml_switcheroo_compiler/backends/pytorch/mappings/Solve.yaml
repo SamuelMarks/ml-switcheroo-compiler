@@ -1,0 +1,6 @@
+operation: Solve
+backend: pytorch
+target_api: torch.linalg.solve
+ast_template: '{out} = torch.linalg.solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

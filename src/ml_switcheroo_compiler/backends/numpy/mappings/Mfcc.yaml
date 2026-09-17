@@ -1,4 +1,7 @@
-Mfcc:
-  ast_template: np_mfcc({0}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz},
-    {num_mfccs})
-  target_api: ''
+operation: Mfcc
+backend: numpy
+target_api: ''
+ast_template: np_mfcc({0}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz},
+  {num_mfccs})
+kwarg_map: {}
+dtype_overrides: {}

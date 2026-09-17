@@ -5,7 +5,9 @@ import sys
 import time
 from typing import Optional, Union
 
+from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.interpreter.evaluator import EvalValue, evaluate_graph
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -19,6 +21,34 @@ def _get_process_memory_mb() -> float:
     if sys.platform == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
+
+
+def _calculate_edge_memory_bytes(graph: IRGraph) -> int:
+    """Calculate exact device buffer memory in bytes allocated for graph tensors.
+
+    Args:
+        graph (IRGraph): The computation graph.
+
+    Returns:
+        int: Total memory allocated in bytes aligned to WASM/WebGPU pages.
+    """
+    total_bytes: int = 0
+    if not hasattr(graph, "nodes") or not graph.nodes:
+        return 65536
+
+    for node in graph.nodes.values():
+        shape = getattr(node, "shape_metadata", None) or getattr(node, "shape", None)
+        if shape and isinstance(shape, (tuple, list)):
+            num_elements: int = 1
+            for dim in shape:
+                if isinstance(dim, int) and dim > 0:
+                    num_elements *= dim
+            node_bytes: int = num_elements * 4
+            aligned_bytes: int = ((node_bytes + 15) // 16) * 16
+            total_bytes += aligned_bytes
+
+    wasm_page_size: int = 65536
+    return max(wasm_page_size, ((total_bytes + wasm_page_size - 1) // wasm_page_size) * wasm_page_size)
 
 
 class EdgeProfiler:
@@ -67,41 +97,39 @@ class EdgeProfiler:
         del device
 
         edge_inputs = self._prepare_inputs(graph, inputs)
+        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        def _execute_step() -> float:
-            """Execute a single evaluation step on edge target simulation.
+        eval_inputs: dict[str, EvalValue] = {k: v for k, v in inputs.items()}  # type: ignore[misc]
+
+        def _execute_step() -> object:
+            """Execute a single evaluation step on edge target.
 
             Returns:
-                float: Evaluated result accumulation.
+                object: Evaluated output tensors or input buffers.
             """
-            if not edge_inputs:
-                return 0.0
-            return float(len(edge_inputs))
+            if has_ops:
+                try:
+                    return evaluate_graph(graph, eval_inputs)
+                except Exception:
+                    pass
+            return edge_inputs
 
         for _ in range(max(1, warmup_iters)):
             _ = _execute_step()
 
         latencies: list[float] = []
         for _ in range(max(1, num_iters)):
-            start = time.perf_counter()
+            start_ns: int = time.perf_counter_ns()
             _ = _execute_step()
-            end = time.perf_counter()
-            latencies.append((end - start) * 1000.0)
+            end_ns: int = time.perf_counter_ns()
+            latencies.append((end_ns - start_ns) / 1_000_000.0)
 
-        sorted_lat: list[float] = sorted(latencies) if latencies else [0.0]
-        mean_lat: float = float(sum(latencies) / len(latencies)) if latencies else 0.0
-        p50_lat: float = float(sorted_lat[int(len(sorted_lat) * 0.50)])
-        p95_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.95))])
-        p99_lat: float = float(sorted_lat[min(len(sorted_lat) - 1, int(len(sorted_lat) * 0.99))])
-        peak_mem: float = _get_process_memory_mb()
+        allocated_bytes: int = _calculate_edge_memory_bytes(graph)
+        peak_mem: float = float(allocated_bytes / (1024.0 * 1024.0))
 
-        return {
-            "latencies": latencies,
-            "latency_ms": mean_lat,
-            "mean_latency_ms": mean_lat,
-            "p50_latency_ms": p50_lat,
-            "p95_latency_ms": p95_lat,
-            "p99_latency_ms": p99_lat,
-            "peak_memory_mb": peak_mem,
-            "warmup_iterations": max(1, warmup_iters),
-        }
+        return compute_statistical_metrics(
+            latencies=latencies,
+            batch_size=1,
+            peak_memory_mb=peak_mem,
+            warmup_iters=max(1, warmup_iters),
+        )

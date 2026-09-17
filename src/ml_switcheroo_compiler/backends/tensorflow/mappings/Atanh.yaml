@@ -1,2 +1,6 @@
-Atanh:
-  target_api: tf.atanh
+operation: Atanh
+backend: tensorflow
+target_api: tf.atanh
+ast_template: '{out} = tf.atanh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

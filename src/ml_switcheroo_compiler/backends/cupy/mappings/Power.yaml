@@ -1,2 +1,6 @@
-Power:
-  target_api: cp.power
+operation: Power
+backend: cupy
+target_api: cp.power
+ast_template: '{out} = cp.power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

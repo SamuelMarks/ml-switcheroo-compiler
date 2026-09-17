@@ -1,2 +1,6 @@
-Floor:
-  target_api: keras_ops.floor
+operation: Floor
+backend: keras
+target_api: keras_ops.floor
+ast_template: '{out} = keras_ops.floor({in0})'
+kwarg_map: {}
+dtype_overrides: {}

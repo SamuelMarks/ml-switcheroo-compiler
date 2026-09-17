@@ -1,2 +1,6 @@
-Nextafter:
-  target_api: tf.math.nextafter
+operation: Nextafter
+backend: tensorflow
+target_api: tf.math.nextafter
+ast_template: '{out} = tf.math.nextafter({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

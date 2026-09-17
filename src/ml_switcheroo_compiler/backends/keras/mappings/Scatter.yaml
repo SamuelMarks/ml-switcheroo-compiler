@@ -1,2 +1,6 @@
-Scatter:
-  target_api: keras_ops.scatter
+operation: Scatter
+backend: keras
+target_api: keras_ops.scatter
+ast_template: '{out} = keras_ops.scatter({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BitwiseXor:
-  target_api: keras_ops.bitwise_xor
+operation: BitwiseXor
+backend: keras
+target_api: keras_ops.bitwise_xor
+ast_template: '{out} = keras_ops.bitwise_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Reciprocal:
-  target_api: da.reciprocal
+operation: Reciprocal
+backend: dask
+target_api: da.reciprocal
+ast_template: '{out} = da.reciprocal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: Norm
+backend: pytorch
+target_api: torch.linalg.norm
+ast_template: '{out} = torch.linalg.norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

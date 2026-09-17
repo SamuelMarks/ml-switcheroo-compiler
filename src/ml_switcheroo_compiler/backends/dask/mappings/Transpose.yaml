@@ -1,2 +1,6 @@
-Transpose:
-  target_api: da.transpose
+operation: Transpose
+backend: dask
+target_api: da.transpose
+ast_template: '{out} = da.transpose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

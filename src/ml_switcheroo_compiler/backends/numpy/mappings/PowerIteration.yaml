@@ -1,3 +1,6 @@
-PowerIteration:
-  ast_template: np_power_iteration({0}, {num_iters}, {1})
-  target_api: ''
+operation: PowerIteration
+backend: numpy
+target_api: ''
+ast_template: np_power_iteration({0}, {num_iters}, {1})
+kwarg_map: {}
+dtype_overrides: {}

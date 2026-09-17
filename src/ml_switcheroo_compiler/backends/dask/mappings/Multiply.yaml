@@ -1,2 +1,6 @@
-Multiply:
-  target_api: da.multiply
+operation: Multiply
+backend: dask
+target_api: da.multiply
+ast_template: '{out} = da.multiply({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

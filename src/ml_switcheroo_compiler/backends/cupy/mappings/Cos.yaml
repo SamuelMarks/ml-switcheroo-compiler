@@ -1,2 +1,6 @@
-Cos:
-  target_api: cp.cos
+operation: Cos
+backend: cupy
+target_api: cp.cos
+ast_template: '{out} = cp.cos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

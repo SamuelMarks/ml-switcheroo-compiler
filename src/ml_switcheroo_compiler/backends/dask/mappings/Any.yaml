@@ -1,2 +1,6 @@
-Any:
-  target_api: da.any
+operation: Any
+backend: dask
+target_api: da.any
+ast_template: '{out} = da.any({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Cond:
-  target_api: keras_ops.cond
+operation: Cond
+backend: keras
+target_api: keras_ops.cond
+ast_template: '{out} = keras_ops.cond({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

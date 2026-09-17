@@ -1,5 +1,52 @@
 # Declarative operator fusion patterns for middle-end optimization passes
 patterns:
+  - name: ScaledDotProductAttention
+    description: "Match Softmax(MatMul(Q, Transpose(K)) / sqrt(d)) * V -> FusedAttention"
+    target:
+      - Matmul
+      - Transpose
+      - Div
+      - Softmax
+      - Matmul
+    fused_op: FusedAttention
+    commutative: false
+    wildcard: false
+
+  - name: ConvBNActivation
+    description: "Match Relu(BatchNorm(Conv2D(X, W))) -> FusedConv2D"
+    target:
+      - Conv2D
+      - BatchNorm
+      - Relu
+    fused_op: FusedConv2D
+    commutative: false
+    wildcard: false
+
+  - name: LayerNorm
+    description: "Match (X - Mean(X)) / Sqrt(Var(X) + eps) * Gamma + Beta -> FusedLayerNorm"
+    target:
+      - Mean
+      - Sub
+      - Var
+      - Add
+      - Sqrt
+      - Div
+      - Mul
+      - Add
+    fused_op: FusedLayerNorm
+    commutative: false
+    broadcast_dims: true
+
+  - name: MatMulBiasGelu
+    description: "Match GELU(MatMul(X, W) + B) -> FusedLinearGELU"
+    target:
+      - Matmul
+      - Add
+      - Gelu
+    fused_op: FusedLinearGELU
+    commutative: true
+    wildcard: false
+
   - name: Conv2DBatchNormFusion
     target:
       - Conv2D
@@ -35,18 +82,6 @@ patterns:
       - Add
     fused_op: FusedMultiplyAdd
     commutative: true
-
-  - name: LayerNormFusion
-    target:
-      - Mean
-      - Sub
-      - Pow
-      - Mean
-      - Add
-      - Sqrt
-      - Div
-    fused_op: LayerNorm
-    commutative: false
 
   - name: MultiHeadAttentionFusion
     target:

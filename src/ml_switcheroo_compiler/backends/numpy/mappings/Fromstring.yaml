@@ -1,3 +1,6 @@
-Fromstring:
-  ast_template: np.fromstring
-  target_api: ''
+operation: Fromstring
+backend: numpy
+target_api: ''
+ast_template: np.fromstring
+kwarg_map: {}
+dtype_overrides: {}

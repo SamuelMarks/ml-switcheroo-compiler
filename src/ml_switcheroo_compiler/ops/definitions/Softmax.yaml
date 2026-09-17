@@ -17,9 +17,40 @@ variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+  edge_wasm_simd:
+    template: unary
+    scalar_expr: in0_val
+    simd_expr: in0_val
 autodiff:
+  vjp_rule_id: Softmax_vjp
+  jvp_rule_id: Softmax_jvp
   vjp:
-    - Multiply(Softmax($input[0]), Subtract($cotangent, Broadcast(ReduceSum(Multiply($cotangent,
-      Softmax($input[0]))))))
+  - Multiply(Softmax($input[0]), Subtract($cotangent, Broadcast(ReduceSum(Multiply($cotangent,
+    Softmax($input[0]))))))
   jvp: Multiply(Softmax($input[0]), Subtract($tangent[0], Broadcast(ReduceSum(Multiply($tangent[0],
     Softmax($input[0]))))))
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null

@@ -1,3 +1,6 @@
-Less:
-  ast_template: np.less
-  target_api: ''
+operation: Less
+backend: numpy
+target_api: ''
+ast_template: np.less
+kwarg_map: {}
+dtype_overrides: {}

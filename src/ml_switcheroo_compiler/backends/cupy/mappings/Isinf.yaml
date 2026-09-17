@@ -1,2 +1,6 @@
-Isinf:
-  target_api: cp.isinf
+operation: Isinf
+backend: cupy
+target_api: cp.isinf
+ast_template: '{out} = cp.isinf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

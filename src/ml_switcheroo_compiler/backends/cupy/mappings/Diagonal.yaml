@@ -1,2 +1,6 @@
-Diagonal:
-  target_api: cp.diagonal
+operation: Diagonal
+backend: cupy
+target_api: cp.diagonal
+ast_template: '{out} = cp.diagonal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

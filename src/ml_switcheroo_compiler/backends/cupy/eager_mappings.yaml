@@ -315,7 +315,7 @@ operations:
     custom_code: "lambda x, g=1.0, **kw: (x / backend_module.sqrt(backend_module.mean(x**2, axis=-1, keepdims=True) + 1e-5)) * g"
   MultiheadAttention:
     target_api: custom_op
-    custom_code: "lambda q, k, v, **kw: backend_module.matmul(backend_module.softmax(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if k.ndim == 4 else (0, 2, 1))) / backend_module.sqrt(float(q.shape[-1]))), v)"
+    custom_code: "lambda q, k, v, **kw: (lambda s: backend_module.matmul(backend_module.exp(s - backend_module.max(s, axis=-1, keepdims=True)) / backend_module.sum(backend_module.exp(s - backend_module.max(s, axis=-1, keepdims=True)), axis=-1, keepdims=True), v))(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if k.ndim == 4 else (0, 2, 1))) / backend_module.sqrt(float(q.shape[-1])))"
   Conv2D:
     target_api: custom_op
     custom_code: "lambda x, w, **kw: backend_module.conv2d(x, w, **kw)"

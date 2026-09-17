@@ -1,2 +1,6 @@
-Reshape:
-  target_api: tf.reshape
+operation: Reshape
+backend: tensorflow
+target_api: tf.reshape
+ast_template: '{out} = tf.reshape({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

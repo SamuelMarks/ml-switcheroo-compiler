@@ -1,2 +1,6 @@
-Allclose:
-  target_api: '''mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})'''
+operation: Allclose
+backend: mlx
+target_api: '''mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})'''
+ast_template: '{out} = ''mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

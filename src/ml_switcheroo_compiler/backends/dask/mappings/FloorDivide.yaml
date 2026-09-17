@@ -1,2 +1,6 @@
-FloorDivide:
-  target_api: da.floor_divide
+operation: FloorDivide
+backend: dask
+target_api: da.floor_divide
+ast_template: '{out} = da.floor_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

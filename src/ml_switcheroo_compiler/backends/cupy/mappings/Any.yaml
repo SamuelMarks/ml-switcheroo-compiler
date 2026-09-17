@@ -1,2 +1,6 @@
-Any:
-  target_api: cp.any
+operation: Any
+backend: cupy
+target_api: cp.any
+ast_template: '{out} = cp.any({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

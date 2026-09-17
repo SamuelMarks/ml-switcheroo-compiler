@@ -1,2 +1,6 @@
-Cast:
-  target_api: tf.cast
+operation: Cast
+backend: tensorflow
+target_api: tf.cast
+ast_template: '{out} = tf.cast({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

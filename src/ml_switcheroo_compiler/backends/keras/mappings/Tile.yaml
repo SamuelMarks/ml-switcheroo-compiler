@@ -1,2 +1,6 @@
-Tile:
-  target_api: keras_ops.tile
+operation: Tile
+backend: keras
+target_api: keras_ops.tile
+ast_template: '{out} = keras_ops.tile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

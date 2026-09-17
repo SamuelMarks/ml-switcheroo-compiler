@@ -1,3 +1,6 @@
-Polyfit:
-  ast_template: np.polyfit
-  target_api: ''
+operation: Polyfit
+backend: numpy
+target_api: ''
+ast_template: np.polyfit
+kwarg_map: {}
+dtype_overrides: {}

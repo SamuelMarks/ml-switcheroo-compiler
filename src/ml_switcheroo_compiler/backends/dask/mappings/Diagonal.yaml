@@ -1,2 +1,6 @@
-Diagonal:
-  target_api: da.diagonal
+operation: Diagonal
+backend: dask
+target_api: da.diagonal
+ast_template: '{out} = da.diagonal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

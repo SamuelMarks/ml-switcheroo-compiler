@@ -1,3 +1,6 @@
-MatrixExponential:
-  ast_template: getattr(backend_module.linalg, 'expm', None)
-  target_api: ''
+operation: MatrixExponential
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module.linalg, 'expm', None)
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,189 @@
+# Complete WASM SIMD v128 Opcodes and Binary Instruction Encodings
+version: "1.0.0"
+
+opcodes:
+  # Arithmetic
+  add:
+    instruction: "f32x4.add"
+    opcode_prefix: 0xfd
+    opcode: 0x4a
+    arity: 2
+    category: "arithmetic"
+  sub:
+    instruction: "f32x4.sub"
+    opcode_prefix: 0xfd
+    opcode: 0x4b
+    arity: 2
+    category: "arithmetic"
+  mul:
+    instruction: "f32x4.mul"
+    opcode_prefix: 0xfd
+    opcode: 0x4c
+    arity: 2
+    category: "arithmetic"
+  div:
+    instruction: "f32x4.div"
+    opcode_prefix: 0xfd
+    opcode: 0x4d
+    arity: 2
+    category: "arithmetic"
+  neg:
+    instruction: "f32x4.neg"
+    opcode_prefix: 0xfd
+    opcode: 0x48
+    arity: 1
+    category: "arithmetic"
+  abs:
+    instruction: "f32x4.abs"
+    opcode_prefix: 0xfd
+    opcode: 0x47
+    arity: 1
+    category: "arithmetic"
+  sqrt:
+    instruction: "f32x4.sqrt"
+    opcode_prefix: 0xfd
+    opcode: 0x49
+    arity: 1
+    category: "arithmetic"
+  ceil:
+    instruction: "f32x4.ceil"
+    opcode_prefix: 0xfd
+    opcode: 0x67
+    arity: 1
+    category: "arithmetic"
+  floor:
+    instruction: "f32x4.floor"
+    opcode_prefix: 0xfd
+    opcode: 0x68
+    arity: 1
+    category: "arithmetic"
+  trunc:
+    instruction: "f32x4.trunc"
+    opcode_prefix: 0xfd
+    opcode: 0x69
+    arity: 1
+    category: "arithmetic"
+  nearest:
+    instruction: "f32x4.nearest"
+    opcode_prefix: 0xfd
+    opcode: 0x6a
+    arity: 1
+    category: "arithmetic"
+
+  # Min / Max / Relu
+  max:
+    instruction: "f32x4.max"
+    opcode_prefix: 0xfd
+    opcode: 0x4f
+    arity: 2
+    category: "comparison"
+  min:
+    instruction: "f32x4.min"
+    opcode_prefix: 0xfd
+    opcode: 0x4e
+    arity: 2
+    category: "comparison"
+  relu:
+    instruction: "f32x4.max"
+    opcode_prefix: 0xfd
+    opcode: 0x4f
+    arity: 1
+    category: "activation"
+
+  # Bitwise and Logical
+  and:
+    instruction: "v128.and"
+    opcode_prefix: 0xfd
+    opcode: 0x4e
+    arity: 2
+    category: "bitwise"
+  or:
+    instruction: "v128.or"
+    opcode_prefix: 0xfd
+    opcode: 0x50
+    arity: 2
+    category: "bitwise"
+  xor:
+    instruction: "v128.xor"
+    opcode_prefix: 0xfd
+    opcode: 0x51
+    arity: 2
+    category: "bitwise"
+  not:
+    instruction: "v128.not"
+    opcode_prefix: 0xfd
+    opcode: 0x4d
+    arity: 1
+    category: "bitwise"
+  shl:
+    instruction: "i32x4.shl"
+    opcode_prefix: 0xfd
+    opcode: 0xab
+    arity: 2
+    category: "bitwise"
+  shr:
+    instruction: "i32x4.shr_s"
+    opcode_prefix: 0xfd
+    opcode: 0xac
+    arity: 2
+    category: "bitwise"
+
+  # Reductions
+  sum:
+    instruction: "f32x4.add"
+    opcode_prefix: 0xfd
+    opcode: 0x4a
+    arity: 1
+    category: "reduction"
+  prod:
+    instruction: "f32x4.mul"
+    opcode_prefix: 0xfd
+    opcode: 0x4c
+    arity: 1
+    category: "reduction"
+
+  # Transcendentals & Activations
+  exp:
+    instruction: "call $f32x4_exp"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "transcendental"
+  log:
+    instruction: "call $f32x4_log"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "transcendental"
+  sin:
+    instruction: "call $f32x4_sin"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "transcendental"
+  cos:
+    instruction: "call $f32x4_cos"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "transcendental"
+  tanh:
+    instruction: "call $f32x4_tanh"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "transcendental"
+  sigmoid:
+    instruction: "call $f32x4_sigmoid"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 1
+    category: "activation"
+
+  # Matrix
+  matmul:
+    instruction: "call $matmul_2d_tiled"
+    opcode_prefix: 0x10
+    opcode: 0x00
+    arity: 2
+    category: "linalg"

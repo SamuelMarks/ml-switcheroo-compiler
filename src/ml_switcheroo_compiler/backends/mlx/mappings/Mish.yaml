@@ -1,0 +1,6 @@
+operation: Mish
+backend: mlx
+target_api: mlx.core.nn.mish
+ast_template: '{out} = mlx.core.nn.mish({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

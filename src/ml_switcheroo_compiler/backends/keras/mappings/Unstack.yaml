@@ -1,2 +1,6 @@
-Unstack:
-  target_api: keras_ops.unstack
+operation: Unstack
+backend: keras
+target_api: keras_ops.unstack
+ast_template: '{out} = keras_ops.unstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

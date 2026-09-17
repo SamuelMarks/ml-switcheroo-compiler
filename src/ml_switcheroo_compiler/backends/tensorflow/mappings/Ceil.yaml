@@ -1,2 +1,6 @@
-Ceil:
-  target_api: tf.math.ceil
+operation: Ceil
+backend: tensorflow
+target_api: tf.math.ceil
+ast_template: '{out} = tf.math.ceil({in0})'
+kwarg_map: {}
+dtype_overrides: {}

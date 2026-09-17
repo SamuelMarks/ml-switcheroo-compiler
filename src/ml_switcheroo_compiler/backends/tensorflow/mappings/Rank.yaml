@@ -1,2 +1,6 @@
-Rank:
-  target_api: tf.rank
+operation: Rank
+backend: tensorflow
+target_api: tf.rank
+ast_template: '{out} = tf.rank({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

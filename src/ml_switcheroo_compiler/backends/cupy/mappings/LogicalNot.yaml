@@ -1,2 +1,6 @@
-LogicalNot:
-  target_api: cp.logical_not
+operation: LogicalNot
+backend: cupy
+target_api: cp.logical_not
+ast_template: '{out} = cp.logical_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

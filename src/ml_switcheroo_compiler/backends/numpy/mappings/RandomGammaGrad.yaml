@@ -1,3 +1,6 @@
-RandomGammaGrad:
-  ast_template: 'lambda a, x: a'
-  target_api: ''
+operation: RandomGammaGrad
+backend: numpy
+target_api: ''
+ast_template: 'lambda a, x: a'
+kwarg_map: {}
+dtype_overrides: {}

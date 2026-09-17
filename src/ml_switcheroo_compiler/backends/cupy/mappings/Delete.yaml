@@ -1,2 +1,6 @@
-Delete:
-  target_api: cp.delete
+operation: Delete
+backend: cupy
+target_api: cp.delete
+ast_template: '{out} = cp.delete({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

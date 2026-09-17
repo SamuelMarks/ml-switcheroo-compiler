@@ -1,2 +1,6 @@
-Where:
-  target_api: tf.where
+operation: Where
+backend: tensorflow
+target_api: tf.where
+ast_template: '{out} = tf.where({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

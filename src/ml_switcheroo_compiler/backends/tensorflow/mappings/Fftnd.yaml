@@ -1,2 +1,6 @@
-Fftnd:
-  target_api: tf.fftnd
+operation: Fftnd
+backend: tensorflow
+target_api: tf.fftnd
+ast_template: '{out} = tf.fftnd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

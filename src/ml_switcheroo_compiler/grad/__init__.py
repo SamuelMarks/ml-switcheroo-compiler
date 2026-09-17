@@ -8,7 +8,10 @@ from .api import (
     backward,
     grad,
     hook_gradient,
+    hvp_graph,
     ir_grad,
+    nth_order_grad,
+    nth_order_grad_graph,
     overwrite_with_gradient,
     value_and_grad,
 )
@@ -38,6 +41,7 @@ from .jvp_vjp import (
 )
 from .options import DEFAULT_GRAD_EPSILON, GradCheckOptions, GradOptions, JitOptions
 from .testing import (
+    check_jvp_vjp_duality,
     check_numerical_grads,
 )
 from .utils import (
@@ -71,6 +75,7 @@ __all__ = [
     "_get_inputs_dict",
     "_to_original_type",
     "backward",
+    "check_jvp_vjp_duality",
     "check_numerical_grads",
     "checkpoint",
     "custom_jvp",
@@ -80,11 +85,14 @@ __all__ = [
     "grad",
     "hessian",
     "hvp",
+    "hvp_graph",
     "ir_grad",
     "jacfwd",
     "jacrev",
     "jit",
     "jvp",
+    "nth_order_grad",
+    "nth_order_grad_graph",
     "overwrite_with_gradient",
     "hook_gradient",
     "recompute_grad",

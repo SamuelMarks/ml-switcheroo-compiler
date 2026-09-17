@@ -1,11 +1,45 @@
 operation: LogicalAxisRules
 description: Context manager for setting logical to mesh axis bindings.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: rules
-    type: Sequence
+- is_variadic: false
+  kind: positional_or_keyword
+  name: rules
+  type: Sequence
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: rules
+    type: Sequence
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - rules
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: LogicalAxisRules_vjp
+  jvp_rule_id: LogicalAxisRules_jvp
+  vjp: null
+  jvp: null

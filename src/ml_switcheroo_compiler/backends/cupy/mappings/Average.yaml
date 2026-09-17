@@ -1,2 +1,6 @@
-Average:
-  target_api: cp.average
+operation: Average
+backend: cupy
+target_api: cp.average
+ast_template: '{out} = cp.average({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-ExtractVolumePatches:
-  target_api: tf.extract_volume_patches
+operation: ExtractVolumePatches
+backend: tensorflow
+target_api: tf.extract_volume_patches
+ast_template: '{out} = tf.extract_volume_patches({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

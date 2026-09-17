@@ -1,2 +1,6 @@
-Split:
-  target_api: keras_ops.split
+operation: Split
+backend: keras
+target_api: keras_ops.split
+ast_template: '{out} = keras_ops.split({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

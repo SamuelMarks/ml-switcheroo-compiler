@@ -1,2 +1,6 @@
-Svdvals:
-  target_api: '''mx.linalg.svd({0}, compute_uv=False)'''
+operation: Svdvals
+backend: mlx
+target_api: '''mx.linalg.svd({0}, compute_uv=False)'''
+ast_template: '{out} = ''mx.linalg.svd({0}, compute_uv=False)''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Power:
-  target_api: keras_ops.power
+operation: Power
+backend: keras
+target_api: keras_ops.power
+ast_template: '{out} = keras_ops.power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

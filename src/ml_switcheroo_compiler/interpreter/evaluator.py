@@ -51,7 +51,9 @@ def evaluate_graph(
     Raises:
         RuntimeError: If an output node was never evaluated during the graph execution.
     """
-    env = Environment(inputs)
+    initial_env: dict[str, EvalValue] = dict(getattr(graph, "initializers", {}) or {})
+    initial_env.update(inputs)
+    env = Environment(initial_env)
     sorted_nodes = topological_sort(graph)
     active_backend = backend if backend is not None else get_active_backend()
 
@@ -231,6 +233,32 @@ def _handle_getitem(
     env.set(node.id, cast(IndexableArray, backend.asarray(in_vals[0]))[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], parsed_key)])
 
 
+def _handle_index_put(
+    node: LogicalNode,
+    env: Environment,
+    backend: "type[BaseGenerator]",
+    in_vals: list[EvalValue],
+    kwargs: dict[str, EvalValue],
+) -> None:
+    """Execute an index_put/scatter operation placing update elements into tensor.
+
+    Args:
+        node (LogicalNode): The IR node representing the index_put operation.
+        env (Environment): The local variable environment.
+        backend (type[BaseGenerator]): The active compute backend for array manipulation.
+        in_vals (list[EvalValue]): List containing the base tensor and update values.
+        kwargs (dict[str, EvalValue]): Keyword arguments containing the target index or key.
+    """
+    key = kwargs.get("key", kwargs.get("index", 0))
+    parsed_key = _parse_slice_string(str(key))
+    import numpy as np
+
+    arr = np.array(in_vals[0], copy=True)
+    val = in_vals[1]
+    arr[cast(Union[int, slice, tuple, list, str, "builtins.ellipsis", None], parsed_key)] = val
+    env.set(node.id, arr)
+
+
 def _handle_checkpoint(
     node: LogicalNode,
     env: Environment,
@@ -243,7 +271,7 @@ def _handle_checkpoint(
         env (Environment): The local variable environment.
         in_vals (list): List of input tensors to feed into the subgraph.
     """
-    subgraph = node.attributes["subgraph"]
+    subgraph = getattr(node, "subgraphs", {}).get("body") or getattr(node, "subgraphs", {}).get("subgraph") or node.attributes.get("subgraph")
     sub_inputs = {}
     for inp_val, in_id in zip(in_vals, subgraph.inputs):
         sub_inputs[in_id] = inp_val
@@ -305,6 +333,8 @@ def _dispatch_op(node: LogicalNode, env: Environment, backend: "type[BaseGenerat
         _handle_slice(node, env, backend, in_vals, kwargs)
     elif target_op == "GetItem":
         _handle_getitem(node, env, backend, in_vals, kwargs)
+    elif target_op in ("IndexPut", "SetItem"):
+        _handle_index_put(node, env, backend, in_vals, kwargs)
     elif target_op == "Checkpoint":
         _handle_checkpoint(node, env, in_vals)
     elif target_op == "Meshgrid":
@@ -327,9 +357,12 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: "type[BaseGe
     """
     cond_val = env.get(node.inputs[0])
     is_true = bool(cond_val) if isinstance(cond_val, (bool, int, float)) else bool(getattr(cond_val, "item", lambda cr=cond_val: cr)())
-    branch = node.attributes.get("then_branch" if is_true else "else_branch")
-    if not branch:
-        branch = node.attributes.get("true_branch" if is_true else "false_branch")
+    branch = (
+        getattr(node, "subgraphs", {}).get("then_branch" if is_true else "else_branch")
+        or node.attributes.get("then_branch" if is_true else "else_branch")
+        or getattr(node, "subgraphs", {}).get("true_branch" if is_true else "false_branch")
+        or node.attributes.get("true_branch" if is_true else "false_branch")
+    )
     if branch:
         nodes = branch.nodes if isinstance(branch.nodes, list) else list(branch.nodes.values())
         for sub_node in nodes:
@@ -355,8 +388,8 @@ def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: "type[Base
     Returns:
         EvalValue: Result.
     """
-    cond_graph = node.attributes.get("cond")
-    body_graph = node.attributes.get("body")
+    cond_graph = getattr(node, "subgraphs", {}).get("cond") or node.attributes.get("cond")
+    body_graph = getattr(node, "subgraphs", {}).get("body") or node.attributes.get("body")
     curr_val = env.get(node.inputs[0])
     while True:
         cond_input_id = cond_graph.nodes[0].id if isinstance(cond_graph.nodes, list) else list(cond_graph.nodes.keys())[0]
@@ -487,7 +520,10 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, EvalVal
     Returns:
         dict: A mapping of argument names to values.
     """
-    kwargs = {k: v for k, v in node.attributes.items() if k not in ("var_name", "is_parameter", "param_name")}
+    kwargs: dict[str, EvalValue] = cast(
+        dict[str, EvalValue],
+        {k: v for k, v in node.attributes.items() if k not in ("var_name", "is_parameter", "param_name")},
+    )
     if "strides" in kwargs and target_op not in {
         "Conv",
         "Conv1D",

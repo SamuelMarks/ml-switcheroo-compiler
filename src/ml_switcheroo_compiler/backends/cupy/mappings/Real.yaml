@@ -1,2 +1,6 @@
-Real:
-  target_api: cp.real
+operation: Real
+backend: cupy
+target_api: cp.real
+ast_template: '{out} = cp.real({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

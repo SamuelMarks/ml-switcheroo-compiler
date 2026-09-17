@@ -1,2 +1,6 @@
-CountNonzero:
-  target_api: keras_ops.count_nonzero
+operation: CountNonzero
+backend: keras
+target_api: keras_ops.count_nonzero
+ast_template: '{out} = keras_ops.count_nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

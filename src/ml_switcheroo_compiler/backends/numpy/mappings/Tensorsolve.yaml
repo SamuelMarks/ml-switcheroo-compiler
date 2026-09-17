@@ -1,3 +1,6 @@
-Tensorsolve:
-  ast_template: np.linalg.tensorsolve({0}, {1}, axes={axes})
-  target_api: ''
+operation: Tensorsolve
+backend: numpy
+target_api: ''
+ast_template: np.linalg.tensorsolve({0}, {1}, axes={axes})
+kwarg_map: {}
+dtype_overrides: {}

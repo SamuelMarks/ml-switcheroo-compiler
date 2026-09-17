@@ -1,2 +1,6 @@
-Round:
-  target_api: keras_ops.round
+operation: Round
+backend: keras
+target_api: keras_ops.round
+ast_template: '{out} = keras_ops.round({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

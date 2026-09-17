@@ -22,7 +22,8 @@ with ConfigContext(backend="numpy"):
     # trace forward pass
     block = _trace_function(simple_fn, (x,), "fwd")
     fwd_graph = LogicalGraph(name="fwd")
-    for node in block.nodes:
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
         fwd_graph.nodes[node.id] = node
     fwd_graph.inputs = block.inputs
     fwd_graph.outputs = block.outputs
@@ -86,4 +87,57 @@ with ConfigContext(backend="numpy"):
     assert.deepStrictEqual(bwdResult, [4.0, 6.0, 8.0, 10.0]);
 
     console.log("WASM AD Graph numerical verification successful with real SIMD-128 instructions.");
+});
+
+test('WASM AD Graph with dynamic shape learning feedback loop on arbitrary tensor shapes', async () => {
+    const script = `
+import ml_switcheroo_compiler as compiler
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
+from ml_switcheroo_compiler.ir.core import LogicalGraph
+from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass, annotate_learned_shapes
+
+def simple_fn(x):
+    return x * x
+
+x = Tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], TensorConfig((8,), "float32", "cpu"))
+
+with ConfigContext(backend="numpy"):
+    block = _trace_function(simple_fn, (x,), "fwd8")
+    graph = LogicalGraph(name="fwd8")
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
+        graph.nodes[node.id] = node
+    graph.inputs = block.inputs
+    graph.outputs = block.outputs
+
+    # Simulate dynamic shape feedback loop
+    shape_inference_pass(graph)
+    annotate_learned_shapes(graph, {"fwd8_0": [8], "fwd8_1": [8]})
+
+    grad_graph = graph_grad(graph, graph.inputs, graph.outputs[0])
+    gen = WasmCodeGenerator(grad_graph)
+    wat = gen.generate_wat()
+    with open("temp_arbitrary_shape.wat", "w") as f:
+        f.write(wat)
+`;
+    fs.writeFileSync('temp_arbitrary_test.py', script);
+    execSync('python3 temp_arbitrary_test.py');
+    fs.unlinkSync('temp_arbitrary_test.py');
+
+    execSync('wat2wasm temp_arbitrary_shape.wat -o temp_arbitrary_shape.wasm');
+    const wasmBytes = fs.readFileSync('temp_arbitrary_shape.wasm');
+    fs.unlinkSync('temp_arbitrary_shape.wat');
+    fs.unlinkSync('temp_arbitrary_shape.wasm');
+
+    const instance = (await WebAssembly.instantiate(wasmBytes)).instance;
+    const mem = new Float32Array(instance.exports.memory.buffer);
+    mem.set([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], 0);
+    // Execute gradient across 8 elements: write to offset 64 bytes (index 16)
+    instance.exports.compute(0, 8, 64);
+    const gradResult = Array.from(mem.slice(16, 24));
+    assert.deepStrictEqual(gradResult, [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0]);
 });

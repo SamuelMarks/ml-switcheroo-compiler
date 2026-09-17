@@ -1,2 +1,6 @@
-Asinh:
-  target_api: torch.asinh
+operation: Asinh
+backend: pytorch
+target_api: torch.asinh
+ast_template: '{out} = torch.asinh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

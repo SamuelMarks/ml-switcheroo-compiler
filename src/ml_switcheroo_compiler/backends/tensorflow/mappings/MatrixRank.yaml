@@ -1,2 +1,6 @@
-MatrixRank:
-  target_api: tf.linalg.matrix_rank
+operation: MatrixRank
+backend: tensorflow
+target_api: tf.linalg.matrix_rank
+ast_template: '{out} = tf.linalg.matrix_rank({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Nonzero:
-  target_api: keras_ops.nonzero
+operation: Nonzero
+backend: keras
+target_api: keras_ops.nonzero
+ast_template: '{out} = keras_ops.nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

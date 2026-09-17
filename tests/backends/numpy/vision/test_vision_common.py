@@ -50,3 +50,17 @@ def disabled_test_np_power_iteration():
     u = np.array([[1.0], [0.0]])
     res3 = _np_power_iteration(np, w, num_iters=1, u=u)
     assert len(res3) == 3
+
+
+def test_backends_numpy_vision_power_iteration() -> None:
+    """Test _np_power_iteration in backends/numpy/eager/vision_common.py."""
+    from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+    func = numpy_eager_registry.get("PowerIteration")
+    assert func is not None
+    w = np.eye(3, dtype=np.float32)
+    (v, u, s) = func(np, w, num_iters=2)
+    assert v.shape == (3,)
+    assert u.shape == (3,)
+    (v2, u2, s2) = func(np, w, num_iters=1, u=np.array([1.0, 0.0, 0.0], dtype=np.float32))
+    assert v2.shape == (3,)

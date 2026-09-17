@@ -1,2 +1,6 @@
-Atan:
-  target_api: tf.atan
+operation: Atan
+backend: tensorflow
+target_api: tf.atan
+ast_template: '{out} = tf.atan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Tanh:
-  target_api: keras_ops.tanh
+operation: Tanh
+backend: keras
+target_api: keras_ops.tanh
+ast_template: '{out} = keras_ops.tanh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

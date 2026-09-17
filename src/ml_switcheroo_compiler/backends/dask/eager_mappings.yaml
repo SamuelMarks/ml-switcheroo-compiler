@@ -169,7 +169,7 @@ operations:
       dim: axis
   Split:
     target_api: custom_op
-    custom_code: "lambda x, indices_or_sections, axis=0: [backend_module.from_array(p) for p in np.split(np.asarray(x), indices_or_sections, axis=axis)]"
+    custom_code: "lambda x, indices_or_sections, axis=0: [x[tuple(slice(i, i+1) if d == axis else slice(None) for d in range(x.ndim))] for i in range(x.shape[axis])]"
     kwarg_translations:
       dim: axis
   Tile:
@@ -243,7 +243,7 @@ operations:
     target_api: dask.array.linalg.solve
   Det:
     target_api: custom_op
-    custom_code: "lambda x: backend_module.from_array(np.linalg.det(np.asarray(x)))"
+    custom_code: "lambda x: backend_module.prod(backend_module.diag(backend_module.linalg.lu(x)[2]))"
   Norm:
     target_api: dask.array.linalg.norm
     kwarg_translations:
@@ -317,7 +317,7 @@ operations:
     custom_code: "lambda x, g=1.0, **kw: (x / backend_module.sqrt(backend_module.mean(x**2, axis=-1, keepdims=True) + 1e-5)) * g"
   MultiheadAttention:
     target_api: custom_op
-    custom_code: "lambda q, k, v, **kw: backend_module.matmul(backend_module.softmax(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if k.ndim == 4 else (0, 2, 1))) / backend_module.sqrt(float(q.shape[-1]))), v)"
+    custom_code: "lambda q, k, v, **kw: (lambda s: backend_module.matmul(backend_module.exp(s - backend_module.max(s, axis=-1, keepdims=True)) / backend_module.sum(backend_module.exp(s - backend_module.max(s, axis=-1, keepdims=True)), axis=-1, keepdims=True), v))(backend_module.matmul(q, backend_module.transpose(k, (0, 1, 3, 2) if k.ndim == 4 else (0, 2, 1))) / backend_module.sqrt(float(q.shape[-1])))"
   Conv2D:
     target_api: custom_op
     custom_code: "lambda x, w, **kw: backend_module.conv2d(x, w, **kw)"
@@ -335,10 +335,10 @@ operations:
     custom_code: "lambda x, size=None, **kw: backend_module.resize_bilinear(x, size=size, **kw)"
   Eig:
     target_api: custom_op
-    custom_code: "lambda x: tuple(backend_module.from_array(a) for a in np.linalg.eig(np.asarray(x)))"
+    custom_code: "lambda x: backend_module.linalg.svd(x)[1:]"
   Eigh:
     target_api: custom_op
-    custom_code: "lambda x: tuple(backend_module.from_array(a) for a in np.linalg.eigh(np.asarray(x)))"
+    custom_code: "lambda x: (backend_module.linalg.svd(x)[1], backend_module.linalg.svd(x)[0])"
   MSELoss:
     target_api: custom_op
     custom_code: "lambda p, t, **kw: backend_module.mean((p - t)**2)"

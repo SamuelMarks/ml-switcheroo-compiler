@@ -1,2 +1,6 @@
-Equal:
-  target_api: torch.eq
+operation: Equal
+backend: pytorch
+target_api: torch.eq
+ast_template: '{out} = torch.eq({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

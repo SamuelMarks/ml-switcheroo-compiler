@@ -1,2 +1,6 @@
-Sqrt:
-  target_api: keras_ops.sqrt
+operation: Sqrt
+backend: keras
+target_api: keras_ops.sqrt
+ast_template: '{out} = keras_ops.sqrt({in0})'
+kwarg_map: {}
+dtype_overrides: {}

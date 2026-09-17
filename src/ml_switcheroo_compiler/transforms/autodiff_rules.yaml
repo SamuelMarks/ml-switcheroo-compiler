@@ -58,7 +58,7 @@ jvp_rules:
     jvp: Div(Sub($tangent[0], Mul($output, ReduceSum(Mul($output, $tangent[0])))),
       Norm($input[0]))
   LayerNorm:
-    jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+    jvp: Mul($tangent[0], Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
   LeakyReLU:
     jvp: Mul($tangent[0], Where(Greater($input[0], Constant(0.0)), Constant(1.0),
       Constant(0.01)))
@@ -77,7 +77,10 @@ jvp_rules:
   Matmul:
     jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
   MaxPool2D:
-    jvp: Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0])))
+    jvp: Mul($tangent[0], Equal($input[0], MaxPool2D($input[0])))
+  Mish:
+    jvp: Mul($tangent[0], Add(Tanh(Softplus($input[0])), Mul($input[0], Mul(Sub(Constant(1.0),
+      Pow(Tanh(Softplus($input[0])), Constant(2.0))), Sigmoid($input[0])))))
   Mul:
     jvp: Add(Mul($tangent[0], $input[1]), Mul($input[0], $tangent[1]))
   Norm:
@@ -86,32 +89,45 @@ jvp_rules:
     jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))),
       Constant(1e-5)))))
   ReduceMax:
-    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], ReduceMax($input[0], axis=-1,
+      keepdims=True))), axis=-1, keepdims=True)
   ReduceMean:
-    jvp: ReduceMean($tangent[0])
+    jvp: ReduceMean($tangent[0], axis=-1, keepdims=True)
   ReduceMin:
-    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], BroadcastLike($output, $input[0]))))
+    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], ReduceMin($input[0], axis=-1,
+      keepdims=True))), axis=-1, keepdims=True)
   ReduceProd:
-    jvp: ReduceSum(Mul($tangent[0], Div(BroadcastLike($output, $input[0]), $input[0])))
+    jvp: ReduceSum(Mul($tangent[0], Div(ReduceProd($input[0], axis=-1, keepdims=True),
+      $input[0])), axis=-1, keepdims=True)
   ReduceSum:
-    jvp: ReduceSum($tangent[0])
+    jvp: ReduceSum($tangent[0], axis=-1, keepdims=True)
   Relu:
     jvp: Mul($tangent[0], Greater($input[0], Constant(0.0)))
   Reshape:
     jvp: Reshape($tangent[0])
   SiLU:
-    jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0),
-      Sigmoid($input[0])))))
+    jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($input[0], Mul(Sigmoid($input[0]),
+      Sub(Constant(1.0), Sigmoid($input[0]))))))
   Sigmoid:
-    jvp: Mul($tangent[0], Mul($output, Sub(Constant(1.0), $output)))
+    jvp: Mul($tangent[0], Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))
   Silu:
     jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0),
       Sigmoid($input[0])))))
   Softmax:
-    jvp: Mul($output, Sub($tangent[0], ReduceSum(Mul($tangent[0], $output), axis=-1,
-      keepdims=True)))
+    jvp: Sub(Mul(Softmax($input[0]), $tangent[0]), Mul(Softmax($input[0]), ReduceSum(Mul(Softmax($input[0]),
+      $tangent[0]), axis=-1, keepdims=True)))
   Softplus:
     jvp: Mul($tangent[0], Sigmoid($input[0]))
+  Slice:
+    jvp: Slice($tangent[0])
+  Split:
+    jvp: Split($tangent[0])
+  Concat:
+    jvp: Concat($tangent[0], $tangent[1])
+  Gather:
+    jvp: Gather($tangent[0], $input[1])
+  Scatter:
+    jvp: Scatter($tangent[0], $input[1], $tangent[2])
   Squeeze:
     jvp: Squeeze($tangent[0])
   Sub:
@@ -120,6 +136,131 @@ jvp_rules:
     jvp: Mul($tangent[0], Sub(Constant(1.0), Pow($output, Constant(2.0))))
   Transpose:
     jvp: Transpose($tangent[0])
+  Argsort:
+    jvp: $zero
+  Cholesky:
+    jvp: Cholesky($tangent[0])
+  CholeskyEx:
+    jvp: $zero
+  CudaKernel:
+    jvp: $zero
+  Eig:
+    jvp: $zero
+  Eigh:
+    jvp: $zero
+  Eigvals:
+    jvp: $zero
+  Eigvalsh:
+    jvp: $zero
+  FFT:
+    jvp: $zero
+  Fft:
+    jvp: $zero
+  Fft2:
+    jvp: $zero
+  Fftconvolve:
+    jvp: $zero
+  Fftfreq:
+    jvp: $zero
+  Fftn:
+    jvp: $zero
+  Fftnd:
+    jvp: $zero
+  Fftshift:
+    jvp: $zero
+  Hfft:
+    jvp: $zero
+  IFFT:
+    jvp: $zero
+  Ifft:
+    jvp: $zero
+  Ifft2:
+    jvp: $zero
+  Ifftn:
+    jvp: $zero
+  Ifftnd:
+    jvp: $zero
+  Ifftshift:
+    jvp: $zero
+  Ihfft:
+    jvp: $zero
+  Irfft:
+    jvp: $zero
+  Irfft2:
+    jvp: $zero
+  Irfftn:
+    jvp: $zero
+  Irfftnd:
+    jvp: $zero
+  MetalKernel:
+    jvp: $zero
+  PrecompiledCudaKernel:
+    jvp: $zero
+  Rfft:
+    jvp: $zero
+  Rfft2:
+    jvp: $zero
+  Rfftfreq:
+    jvp: $zero
+  Rfftn:
+    jvp: $zero
+  Rfftnd:
+    jvp: $zero
+  Sort:
+    jvp: $zero
+  SortComplex:
+    jvp: $zero
+  SortKeyVal:
+    jvp: $zero
+  TopK:
+    jvp: $zero
+  GeluGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  SiluGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  SoftmaxGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  LogSoftmaxGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  MatMulGradA:
+    jvp: MatMul($tangent[0], Transpose($input[1]))
+  MatMulGradB:
+    jvp: MatMul(Transpose($input[0]), $tangent[0])
+  BatchMatMulGrad:
+    jvp: BatchMatMul($tangent[0], Transpose($input[1]))
+  TransposeGrad:
+    jvp: Transpose($tangent[0])
+  ReshapeGrad:
+    jvp: Reshape($tangent[0])
+  LayerNormGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  BatchNormGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  RMSNormGrad:
+    jvp: Mul($tangent[0], Constant(1.0))
+  Solve:
+    jvp: Solve($input[0], Sub($tangent[1], MatMul($tangent[0], Solve($input[0], $input[1]))))
+  Qr:
+    jvp: Qr($tangent[0])
+  Svd:
+    jvp: Svd($tangent[0])
+  Det:
+    jvp: Mul(Det($input[0]), Trace(MatMul(Inverse($input[0]), $tangent[0])))
+  Logdet:
+    jvp: Trace(MatMul(Inverse($input[0]), $tangent[0]))
+  Sin:
+    jvp: Mul($tangent[0], Cos($input[0]))
+  Cos:
+    jvp: Mul($tangent[0], Neg(Sin($input[0])))
+  Tan:
+    jvp: Mul($tangent[0], Div(Constant(1.0), Pow(Cos($input[0]), Constant(2.0))))
+  Pow:
+    jvp: Add(Mul(Mul($tangent[0], $input[1]), Pow($input[0], Sub($input[1], Constant(1.0)))),
+      Mul(Mul($tangent[1], Log($input[0])), Pow($input[0], $input[1])))
+  Sqrt:
+    jvp: Div($tangent[0], Mul(Constant(2.0), Sqrt($input[0])))
+  Erf:
+    jvp: Mul($tangent[0], Mul(Constant(1.128379167), Exp(Neg(Pow($input[0], Constant(2.0))))))
 vjp_rules:
   Add:
     vjp:
@@ -127,7 +268,7 @@ vjp_rules:
     - $cotangent
   AvgPool2D:
     vjp:
-    - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+    - Div($cotangent, Constant(4.0))
   BCELoss:
     vjp:
     - Mul($cotangent, Div(Sub($input[0], $input[1]), Mul($input[0], Sub(Constant(1.0),
@@ -143,9 +284,9 @@ vjp_rules:
     - BatchMatMul(Transpose($input[0]), $cotangent)
   BatchNorm:
     vjp:
-    - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
-    - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
-    - ReduceSum($cotangent)
+    - Mul($cotangent, Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+    - Mul($cotangent, Div(Sub($input[0], Mean($input[0])), Sqrt(Add(Variance($input[0]),
+      Constant(1e-5)))))
   Conv1D:
     vjp:
     - ConvTranspose1D($cotangent, $input[1])
@@ -153,7 +294,7 @@ vjp_rules:
   Conv2D:
     vjp:
     - ConvTranspose2D($cotangent, $input[1])
-    - Conv2D($input[0], $cotangent)
+    - Conv2D(Transpose($input[0]), $cotangent)
   Conv3D:
     vjp:
     - ConvTranspose3D($cotangent, $input[1])
@@ -164,8 +305,8 @@ vjp_rules:
     - ConvTranspose2D($input[0], $cotangent)
   CrossEntropyLoss:
     vjp:
-    - Mul($cotangent, Div(Sub(Softmax($input[0]), $input[1]), Numel($input[0])))
-    - Mul($cotangent, Neg(LogSoftmax($input[0])))
+    - Mul(Sub(Softmax($input[0]), $input[1]), Div($cotangent, ShapeDim($input[0],
+      0)))
   Div:
     vjp:
     - Div($cotangent, $input[1])
@@ -220,9 +361,7 @@ vjp_rules:
     - Div(Sub($cotangent, Mul($output, ReduceSum(Mul($output, $cotangent)))), Norm($input[0]))
   LayerNorm:
     vjp:
-    - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
-    - ReduceSum(Mul($cotangent, Sub($input[0], Mean($input[0]))))
-    - ReduceSum($cotangent)
+    - Mul($cotangent, Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
   LeakyReLU:
     vjp:
     - Mul($cotangent, Where(Greater($input[0], Constant(0.0)), Constant(1.0), Constant(0.01)))
@@ -249,8 +388,11 @@ vjp_rules:
     - MatMul(Transpose($input[0]), $cotangent)
   MaxPool2D:
     vjp:
-    - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output,
-      $input[0])))
+    - Mul($cotangent, Equal($input[0], MaxPool2D($input[0])))
+  Mish:
+    vjp:
+    - Mul($cotangent, Add(Tanh(Softplus($input[0])), Mul($input[0], Mul(Sub(Constant(1.0),
+      Pow(Tanh(Softplus($input[0])), Constant(2.0))), Sigmoid($input[0])))))
   Mul:
     vjp:
     - Mul($cotangent, $input[1])
@@ -267,22 +409,22 @@ vjp_rules:
       Constant(1e-5))))))
   ReduceMax:
     vjp:
-    - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output,
-      $input[0])))
+    - Mul(BroadcastTo($cotangent, Shape($input[0])), Equal($input[0], ReduceMax($input[0],
+      axis=-1, keepdims=True)))
   ReduceMean:
     vjp:
     - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
   ReduceMin:
     vjp:
-    - Mul(BroadcastLike($cotangent, $input[0]), Equal($input[0], BroadcastLike($output,
-      $input[0])))
+    - Mul(BroadcastTo($cotangent, Shape($input[0])), Equal($input[0], ReduceMin($input[0],
+      axis=-1, keepdims=True)))
   ReduceProd:
     vjp:
-    - Mul(BroadcastLike($cotangent, $input[0]), Div(BroadcastLike($output, $input[0]),
-      $input[0]))
+    - Mul(BroadcastTo($cotangent, Shape($input[0])), Div(ReduceProd($input[0], axis=-1,
+      keepdims=True), $input[0]))
   ReduceSum:
     vjp:
-    - BroadcastLike($cotangent, $input[0])
+    - BroadcastTo($cotangent, Shape($input[0]))
   Relu:
     vjp:
     - Mul($cotangent, Greater($input[0], Constant(0.0)))
@@ -291,19 +433,40 @@ vjp_rules:
     - Reshape($cotangent)
   SiLU:
     vjp:
-    - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+    - Mul($cotangent, Add(Sigmoid($input[0]), Mul($input[0], Mul(Sigmoid($input[0]),
+      Sub(Constant(1.0), Sigmoid($input[0]))))))
   Sigmoid:
     vjp:
-    - Mul($cotangent, Mul($output, Sub(Constant(1.0), $output)))
+    - Mul($cotangent, Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))
   Silu:
     vjp:
     - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
   Softmax:
     vjp:
-    - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))
+    - Mul(Softmax($input[0]), Sub($cotangent, ReduceSum(Mul(Softmax($input[0]), $cotangent),
+      axis=-1, keepdims=True)))
   Softplus:
     vjp:
     - Mul($cotangent, Sigmoid($input[0]))
+  Slice:
+    vjp:
+    - PadLike($cotangent, $input[0])
+  Split:
+    vjp:
+    - Concat($cotangent[0], $cotangent[1])
+  Concat:
+    vjp:
+    - SliceLike($cotangent, $input[0])
+    - SliceLike($cotangent, $input[1])
+  Gather:
+    vjp:
+    - ScatterAdd($cotangent, $input[1], $input[0])
+    - $zero
+  Scatter:
+    vjp:
+    - Gather($cotangent, $input[1])
+    - $zero
+    - Gather($cotangent, $input[1])
   Squeeze:
     vjp:
     - ExpandDims($cotangent)
@@ -317,3 +480,290 @@ vjp_rules:
   Transpose:
     vjp:
     - Transpose($cotangent)
+  Argsort:
+    vjp:
+    - $zero
+  Cholesky:
+    vjp:
+    - Mul(Constant(0.5), Add($cotangent, Transpose($cotangent)))
+  CholeskyEx:
+    vjp:
+    - $zero
+  CudaKernel:
+    vjp:
+    - $zero
+  Eig:
+    vjp:
+    - $zero
+  Eigh:
+    vjp:
+    - $zero
+  Eigvals:
+    vjp:
+    - $zero
+  Eigvalsh:
+    vjp:
+    - $zero
+  FFT:
+    vjp:
+    - $zero
+  Fft:
+    vjp:
+    - $zero
+  Fft2:
+    vjp:
+    - $zero
+  Fftconvolve:
+    vjp:
+    - $zero
+  Fftfreq:
+    vjp:
+    - $zero
+  Fftn:
+    vjp:
+    - $zero
+  Fftnd:
+    vjp:
+    - $zero
+  Fftshift:
+    vjp:
+    - $zero
+  Hfft:
+    vjp:
+    - $zero
+  IFFT:
+    vjp:
+    - $zero
+  Ifft:
+    vjp:
+    - $zero
+  Ifft2:
+    vjp:
+    - $zero
+  Ifftn:
+    vjp:
+    - $zero
+  Ifftnd:
+    vjp:
+    - $zero
+  Ifftshift:
+    vjp:
+    - $zero
+  Ihfft:
+    vjp:
+    - $zero
+  Irfft:
+    vjp:
+    - $zero
+  Irfft2:
+    vjp:
+    - $zero
+  Irfftn:
+    vjp:
+    - $zero
+  Irfftnd:
+    vjp:
+    - $zero
+  MetalKernel:
+    vjp:
+    - $zero
+  PrecompiledCudaKernel:
+    vjp:
+    - $zero
+  Rfft:
+    vjp:
+    - $zero
+  Rfft2:
+    vjp:
+    - $zero
+  Rfftfreq:
+    vjp:
+    - $zero
+  Rfftn:
+    vjp:
+    - $zero
+  Rfftnd:
+    vjp:
+    - $zero
+  Sort:
+    vjp:
+    - $zero
+  SortComplex:
+    vjp:
+    - $zero
+  SortKeyVal:
+    vjp:
+    - $zero
+  TopK:
+    vjp:
+    - $zero
+  GeluGrad:
+    vjp:
+    - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5),
+      Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0],
+      Constant(0.7071067811)))))))
+  SiluGrad:
+    vjp:
+    - Mul($cotangent, Add(Sigmoid($input[0]), Mul($output, Sub(Constant(1.0), Sigmoid($input[0])))))
+  SoftmaxGrad:
+    vjp:
+    - Mul($output, Sub($cotangent, ReduceSum(Mul($cotangent, $output), axis=-1, keepdims=True)))
+  LogSoftmaxGrad:
+    vjp:
+    - Sub($cotangent, Mul(Exp($output), ReduceSum($cotangent, axis=-1, keepdims=True)))
+  MatMulGradA:
+    vjp:
+    - MatMul($cotangent, Transpose($input[1]))
+  MatMulGradB:
+    vjp:
+    - MatMul(Transpose($input[0]), $cotangent)
+  BatchMatMulGrad:
+    vjp:
+    - BatchMatMul($cotangent, Transpose($input[1]))
+    - BatchMatMul(Transpose($input[0]), $cotangent)
+  TransposeGrad:
+    vjp:
+    - Transpose($cotangent)
+  ReshapeGrad:
+    vjp:
+    - Reshape($cotangent)
+  LayerNormGrad:
+    vjp:
+    - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  BatchNormGrad:
+    vjp:
+    - Mul($cotangent, Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+  RMSNormGrad:
+    vjp:
+    - Mul($cotangent, Div($input[1], Sqrt(Add(Mean(Pow($input[0], Constant(2.0))),
+      Constant(1e-5)))))
+  Solve:
+    vjp:
+    - Neg(MatMul(Solve(Transpose($input[0]), $cotangent), Transpose(Solve($input[0],
+      $input[1]))))
+    - Solve(Transpose($input[0]), $cotangent)
+  Qr:
+    vjp:
+    - MatMul($cotangent, Transpose(Qr($input[0])))
+  Svd:
+    vjp:
+    - MatMul($cotangent, Transpose($input[0]))
+  Det:
+    vjp:
+    - Mul(Mul($cotangent, Det($input[0])), Transpose(Inverse($input[0])))
+  Logdet:
+    vjp:
+    - Mul($cotangent, Transpose(Inverse($input[0])))
+  Sin:
+    vjp:
+    - Mul($cotangent, Cos($input[0]))
+  Cos:
+    vjp:
+    - Mul($cotangent, Neg(Sin($input[0])))
+  Tan:
+    vjp:
+    - Mul($cotangent, Div(Constant(1.0), Pow(Cos($input[0]), Constant(2.0))))
+  Pow:
+    vjp:
+    - Mul($cotangent, Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0)))))
+    - Mul($cotangent, Mul(Log($input[0]), Pow($input[0], $input[1])))
+  Sqrt:
+    vjp:
+    - Div($cotangent, Mul(Constant(2.0), Sqrt($input[0])))
+  Erf:
+    vjp:
+    - Mul($cotangent, Mul(Constant(1.128379167), Exp(Neg(Pow($input[0], Constant(2.0))))))
+higher_order_rules:
+  Add:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  Sub:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  Neg:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  Negative:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  Mul:
+    hvp: Add(Mul($tangent[0], $cotangent[1]), Mul($tangent[1], $cotangent[0]))
+    jvp_order: 2
+    vjp_order: 2
+  Div:
+    hvp: Div(Sub(Mul(Constant(2.0), Mul($input[0], Mul($tangent[1], $cotangent))),
+      Mul($input[1], Add(Mul($tangent[0], $cotangent), Mul($input[0], Mul($tangent[1],
+      $cotangent))))), Pow($input[1], Constant(3.0)))
+    jvp_order: 2
+    vjp_order: 2
+  Exp:
+    hvp: Mul($tangent[0], Mul($cotangent, Exp($input[0])))
+    jvp_order: 2
+    vjp_order: 2
+  Log:
+    hvp: Neg(Div(Mul($tangent[0], $cotangent), Pow($input[0], Constant(2.0))))
+    jvp_order: 2
+    vjp_order: 2
+  Sin:
+    hvp: Neg(Mul($tangent[0], Mul($cotangent, Sin($input[0]))))
+    jvp_order: 2
+    vjp_order: 2
+  Cos:
+    hvp: Neg(Mul($tangent[0], Mul($cotangent, Cos($input[0]))))
+    jvp_order: 2
+    vjp_order: 2
+  Sinh:
+    hvp: Mul($tangent[0], Mul($cotangent, Sinh($input[0])))
+    jvp_order: 2
+    vjp_order: 2
+  Cosh:
+    hvp: Mul($tangent[0], Mul($cotangent, Cosh($input[0])))
+    jvp_order: 2
+    vjp_order: 2
+  Tanh:
+    hvp: Neg(Mul(Constant(2.0), Mul($tangent[0], Mul($cotangent, Mul(Tanh($input[0]),
+      Sub(Constant(1.0), Pow(Tanh($input[0]), Constant(2.0))))))))
+    jvp_order: 2
+    vjp_order: 2
+  Sqrt:
+    hvp: Neg(Div(Mul($tangent[0], $cotangent), Mul(Constant(4.0), Pow($input[0], Constant(1.5)))))
+    jvp_order: 2
+    vjp_order: 2
+  Pow:
+    hvp: Mul($tangent[0], Mul($cotangent, Mul($input[1], Mul(Sub($input[1], Constant(1.0)),
+      Pow($input[0], Sub($input[1], Constant(2.0)))))))
+    jvp_order: 2
+    vjp_order: 2
+  Sigmoid:
+    hvp: Mul($tangent[0], Mul($cotangent, Mul(Sigmoid($input[0]), Mul(Sub(Constant(1.0),
+      Sigmoid($input[0])), Sub(Constant(1.0), Mul(Constant(2.0), Sigmoid($input[0])))))))
+    jvp_order: 2
+    vjp_order: 2
+  Relu:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  Abs:
+    hvp: Constant(0.0)
+    jvp_order: 2
+    vjp_order: 2
+  MatMul:
+    hvp: Add(MatMul($tangent[0], $cotangent), MatMul($cotangent, $tangent[1]))
+    jvp_order: 2
+    vjp_order: 2
+  BatchMatMul:
+    hvp: Add(BatchMatMul($tangent[0], $cotangent), BatchMatMul($cotangent, $tangent[1]))
+    jvp_order: 2
+    vjp_order: 2
+  Transpose:
+    hvp: Transpose($tangent[0])
+    jvp_order: 2
+    vjp_order: 2
+  Reshape:
+    hvp: Reshape($tangent[0])
+    jvp_order: 2
+    vjp_order: 2

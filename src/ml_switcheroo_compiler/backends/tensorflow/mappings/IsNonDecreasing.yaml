@@ -1,2 +1,6 @@
-IsNonDecreasing:
-  target_api: tf.math.is_non_decreasing
+operation: IsNonDecreasing
+backend: tensorflow
+target_api: tf.math.is_non_decreasing
+ast_template: '{out} = tf.math.is_non_decreasing({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

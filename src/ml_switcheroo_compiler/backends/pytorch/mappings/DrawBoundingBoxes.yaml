@@ -1,3 +1,6 @@
-DrawBoundingBoxes:
-  ast_template: torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors}, labels={texts})
-  target_api: ''
+operation: DrawBoundingBoxes
+backend: pytorch
+target_api: ''
+ast_template: torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors}, labels={texts})
+kwarg_map: {}
+dtype_overrides: {}

@@ -131,6 +131,8 @@ BACKEND_ALLOWED: dict[str, set[str]] = {
     "sparse": {"sparse", "scipy"},
 }
 
+FORBIDDEN_UPWARD_PREFIXES: tuple[str, ...] = ("zero_", "zero_zoo", "zero")
+
 
 def check_dependencies(directory: str) -> list[str]:
     """Scan Python files and detect any non-whitelisted third-party imports.
@@ -195,6 +197,9 @@ def _check_module_name(
         violations (list[str]): Output list to record violations.
     """
     if not mod_name:
+        return
+    if any(mod_name == prefix or mod_name.startswith(f"{prefix}_") or mod_name.startswith(f"{prefix}-") for prefix in ("zero", "zero_zoo")):
+        violations.append(f"{file_path}:{lineno}: Upward import from '{mod_name}' is strictly forbidden by Tier 2 DAG constraints.")
         return
     if mod_name in STDLIB_MODULES or mod_name in ALLOWED_GLOBAL_EXTERNAL or mod_name in backend_allowed:
         return

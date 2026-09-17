@@ -1,2 +1,6 @@
-Vdot:
-  target_api: keras_ops.vdot
+operation: Vdot
+backend: keras
+target_api: keras_ops.vdot
+ast_template: '{out} = keras_ops.vdot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

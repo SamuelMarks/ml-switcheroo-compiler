@@ -1,2 +1,6 @@
-TridiagonalSolve:
-  target_api: tf.linalg.tridiagonal_solve
+operation: TridiagonalSolve
+backend: tensorflow
+target_api: tf.linalg.tridiagonal_solve
+ast_template: '{out} = tf.linalg.tridiagonal_solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

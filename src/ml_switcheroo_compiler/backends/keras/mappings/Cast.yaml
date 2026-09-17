@@ -1,2 +1,6 @@
-Cast:
-  target_api: keras_ops.cast
+operation: Cast
+backend: keras
+target_api: keras_ops.cast
+ast_template: '{out} = keras_ops.cast({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

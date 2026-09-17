@@ -1,2 +1,6 @@
-NormPdf:
-  target_api: jax.scipy.stats.norm.pdf
+operation: NormPdf
+backend: jax
+target_api: jax.scipy.stats.norm.pdf
+ast_template: '{out} = jax.scipy.stats.norm.pdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

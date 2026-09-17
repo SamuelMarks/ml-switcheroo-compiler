@@ -2,28 +2,82 @@ operation: eye
 description: Returns a two-dimensional array with ones on the ``k``\th diagonal and
   zeros elsewhere.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: n_rows
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: n_cols
-    type: Optional[int]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: k
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: Optional[dtype]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: device
-    type: Optional[device]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n_rows
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n_cols
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: k
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
 type: attribute
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: n_rows
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: n_cols
+    type: Optional[int]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: k
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: dtype
+    type: Optional[dtype]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: device
+    type: Optional[device]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - n_rows
+  - n_cols
+  - k
+  - dtype
+  - device
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: eye_vjp
+  jvp_rule_id: eye_jvp
+  vjp: null
+  jvp: null

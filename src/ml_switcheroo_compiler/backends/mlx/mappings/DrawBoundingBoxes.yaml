@@ -1,2 +1,6 @@
-DrawBoundingBoxes:
-  target_api: '''{0}'''
+operation: DrawBoundingBoxes
+backend: mlx
+target_api: '''{0}'''
+ast_template: '{out} = ''{0}''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

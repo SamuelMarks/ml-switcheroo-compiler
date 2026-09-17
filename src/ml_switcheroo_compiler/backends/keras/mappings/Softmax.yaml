@@ -1,2 +1,6 @@
-Softmax:
-  target_api: keras_ops.softmax
+operation: Softmax
+backend: keras
+target_api: keras_ops.softmax
+ast_template: '{out} = keras_ops.softmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

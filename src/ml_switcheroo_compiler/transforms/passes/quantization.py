@@ -67,7 +67,7 @@ class PTQPass:
         for node_id, node in graph.nodes.items():
             if node.op_type in lowering_map:
                 new_attrs = dict(node.attributes)
-                new_attrs["dtype"] = self.config.target_dtype.name
+                new_attrs["dtype"] = self.config.target_dtype.value
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
                 new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], attributes=new_attrs)
@@ -254,7 +254,7 @@ class IntegerQuantizationLoweringPass:
 
             if node.op_type in lowering_map and ("calibration_min" in node.attributes or any(inp in fq_replacements for inp in node.inputs)):
                 new_attrs = dict(node.attributes)
-                new_attrs["dtype"] = self.config.target_dtype.name
+                new_attrs["dtype"] = self.config.target_dtype.value
                 new_attrs["q_scale"] = q_scale
                 new_attrs["q_zero_point"] = q_zp
                 new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)

@@ -1,3 +1,6 @@
-MultiDot:
-  ast_template: np.linalg.multi_dot({0})
-  target_api: ''
+operation: MultiDot
+backend: numpy
+target_api: ''
+ast_template: np.linalg.multi_dot({0})
+kwarg_map: {}
+dtype_overrides: {}

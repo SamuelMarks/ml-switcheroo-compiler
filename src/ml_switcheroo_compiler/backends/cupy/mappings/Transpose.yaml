@@ -1,2 +1,6 @@
-Transpose:
-  target_api: cp.transpose
+operation: Transpose
+backend: cupy
+target_api: cp.transpose
+ast_template: '{out} = cp.transpose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

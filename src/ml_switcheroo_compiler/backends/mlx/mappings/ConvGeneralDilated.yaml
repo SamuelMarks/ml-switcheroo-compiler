@@ -1,2 +1,6 @@
-ConvGeneralDilated:
-  target_api: '''{0}.conv_general_dilated({1}, {2})'''
+operation: ConvGeneralDilated
+backend: mlx
+target_api: '''{0}.conv_general_dilated({1}, {2})'''
+ast_template: '{out} = ''{0}.conv_general_dilated({1}, {2})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

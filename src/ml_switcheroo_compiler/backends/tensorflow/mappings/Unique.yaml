@@ -1,2 +1,6 @@
-Unique:
-  target_api: tf.unique
+operation: Unique
+backend: tensorflow
+target_api: tf.unique
+ast_template: '{out} = tf.unique({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

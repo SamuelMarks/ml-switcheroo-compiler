@@ -1,3 +1,6 @@
-ArrayStr:
-  custom_code: 'lambda arr, **kwargs: str(arr)'
-  target_api: custom_op
+operation: ArrayStr
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

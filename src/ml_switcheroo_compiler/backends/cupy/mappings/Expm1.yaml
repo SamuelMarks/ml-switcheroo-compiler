@@ -1,2 +1,6 @@
-Expm1:
-  target_api: cp.expm1
+operation: Expm1
+backend: cupy
+target_api: cp.expm1
+ast_template: '{out} = cp.expm1({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

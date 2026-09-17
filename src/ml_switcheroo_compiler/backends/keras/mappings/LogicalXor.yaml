@@ -1,2 +1,6 @@
-LogicalXor:
-  target_api: keras_ops.logical_xor
+operation: LogicalXor
+backend: keras
+target_api: keras_ops.logical_xor
+ast_template: '{out} = keras_ops.logical_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

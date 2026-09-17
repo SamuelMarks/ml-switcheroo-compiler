@@ -1,2 +1,6 @@
-Quantile:
-  target_api: np.quantile
+operation: Quantile
+backend: numpy
+target_api: np.quantile
+ast_template: '{out} = np.quantile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

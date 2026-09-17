@@ -1,3 +1,6 @@
-HistogramBinEdges:
-  ast_template: np.histogram_bin_edges
-  target_api: ''
+operation: HistogramBinEdges
+backend: numpy
+target_api: ''
+ast_template: np.histogram_bin_edges
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Inv:
-  target_api: cp.linalg.inv
+operation: Inv
+backend: cupy
+target_api: cp.linalg.inv
+ast_template: '{out} = cp.linalg.inv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

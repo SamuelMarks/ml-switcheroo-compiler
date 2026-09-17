@@ -1,2 +1,6 @@
-Equal:
-  target_api: da.equal
+operation: Equal
+backend: dask
+target_api: da.equal
+ast_template: '{out} = da.equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

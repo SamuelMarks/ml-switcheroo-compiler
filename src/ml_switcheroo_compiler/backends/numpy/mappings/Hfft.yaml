@@ -1,3 +1,6 @@
-Hfft:
-  ast_template: np.fft.hfft
-  target_api: ''
+operation: Hfft
+backend: numpy
+target_api: ''
+ast_template: np.fft.hfft
+kwarg_map: {}
+dtype_overrides: {}

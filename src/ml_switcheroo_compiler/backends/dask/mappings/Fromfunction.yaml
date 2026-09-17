@@ -1,2 +1,6 @@
-Fromfunction:
-  target_api: da.fromfunction
+operation: Fromfunction
+backend: dask
+target_api: da.fromfunction
+ast_template: '{out} = da.fromfunction({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

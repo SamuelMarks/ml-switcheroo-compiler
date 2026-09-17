@@ -149,3 +149,19 @@ def test_buffer_allocation_run_branches() -> None:
         res4 = pass_obj.run(g4)
         assert res4 is True
         assert "buffer_color" in n4.attributes
+
+
+def test_allocate_arena_symbolic_1d_shape() -> None:
+    """Test allocate_arena with symbolic node size and 1D shape covering branch 412->418."""
+    pass_obj = BufferAllocationPass(alignment=256)
+    g = IRGraph(name="test_symbolic_1d")
+    n1 = IRNode(id="n1", op_type="Input", shape_metadata=["B"])
+    n1.attributes["dtype"] = "float32"
+    g.nodes = {"n1": n1}
+    g.outputs = ["n1"]
+
+    with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="sym_size"):
+        offsets = pass_obj.calculate_arena_offsets(g)
+        assert offsets == {}
+        assert n1.attributes["stride_multiplier"] == 1
+        assert n1.attributes["dynamic_batch"] is True

@@ -1,2 +1,6 @@
-Dstack:
-  target_api: da.dstack
+operation: Dstack
+backend: dask
+target_api: da.dstack
+ast_template: '{out} = da.dstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

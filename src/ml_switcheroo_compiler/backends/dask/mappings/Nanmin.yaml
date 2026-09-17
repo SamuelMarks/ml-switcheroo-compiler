@@ -1,2 +1,6 @@
-Nanmin:
-  target_api: da.nanmin
+operation: Nanmin
+backend: dask
+target_api: da.nanmin
+ast_template: '{out} = da.nanmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

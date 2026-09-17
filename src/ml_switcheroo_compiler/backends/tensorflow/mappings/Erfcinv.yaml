@@ -1,2 +1,6 @@
-Erfcinv:
-  target_api: tf.math.erfcinv
+operation: Erfcinv
+backend: tensorflow
+target_api: tf.math.erfcinv
+ast_template: '{out} = tf.math.erfcinv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

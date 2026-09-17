@@ -1,2 +1,6 @@
-NormCdf:
-  target_api: jax.scipy.stats.norm.cdf
+operation: NormCdf
+backend: jax
+target_api: jax.scipy.stats.norm.cdf
+ast_template: '{out} = jax.scipy.stats.norm.cdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

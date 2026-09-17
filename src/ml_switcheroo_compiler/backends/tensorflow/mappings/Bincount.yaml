@@ -1,2 +1,6 @@
-Bincount:
-  target_api: tf.math.bincount
+operation: Bincount
+backend: tensorflow
+target_api: tf.math.bincount
+ast_template: '{out} = tf.math.bincount({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BesselJn:
-  target_api: _execute_bessel_jn
+operation: BesselJn
+backend: jax
+target_api: _execute_bessel_jn
+ast_template: '{out} = _execute_bessel_jn({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

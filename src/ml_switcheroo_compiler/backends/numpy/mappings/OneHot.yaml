@@ -1,3 +1,6 @@
-OneHot:
-  ast_template: np.eye({depth})[{0}]
-  target_api: ''
+operation: OneHot
+backend: numpy
+target_api: ''
+ast_template: np.eye({depth})[{0}]
+kwarg_map: {}
+dtype_overrides: {}

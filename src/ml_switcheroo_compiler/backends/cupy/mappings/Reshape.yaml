@@ -1,2 +1,6 @@
-Reshape:
-  target_api: cp.reshape
+operation: Reshape
+backend: cupy
+target_api: cp.reshape
+ast_template: '{out} = cp.reshape({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

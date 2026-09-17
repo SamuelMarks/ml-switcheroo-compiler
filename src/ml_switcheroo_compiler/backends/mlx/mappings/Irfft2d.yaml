@@ -1,2 +1,6 @@
-Irfft2d:
-  target_api: '''mx.fft.irfft2({0}, s={s}, axes={axes})'''
+operation: Irfft2d
+backend: mlx
+target_api: '''mx.fft.irfft2({0}, s={s}, axes={axes})'''
+ast_template: '{out} = ''mx.fft.irfft2({0}, s={s}, axes={axes})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

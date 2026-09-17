@@ -1,2 +1,6 @@
-ApplyOverAxes:
-  target_api: da.apply_over_axes
+operation: ApplyOverAxes
+backend: dask
+target_api: da.apply_over_axes
+ast_template: '{out} = da.apply_over_axes({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

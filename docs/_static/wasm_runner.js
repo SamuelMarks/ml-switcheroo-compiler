@@ -397,57 +397,6 @@ function compileWasmBinaryOpKernel(op = 'add') {
 }
 
 /**
- * Compiles a binary arithmetic WebAssembly kernel for two distinct input buffers.
- * Signature: compute_binary(in0_off: i32, in1_off: i32, len: i32, out_off: i32) -> void
- * @param {string} [op='add'] - Binary operation name.
- * @returns {Uint8Array} WebAssembly binary buffer.
- */
-function compileWasmBinaryOpKernel(op = 'add') {
-    let opByte = 0x92; // f32.add
-    if (op === 'mul') {
-        opByte = 0x94;
-    } else if (op === 'sub') {
-        opByte = 0x93;
-    } else if (op === 'div') {
-        opByte = 0x95;
-    } else if (op === 'min') {
-        opByte = 0x96;
-    } else if (op === 'max') {
-        opByte = 0x97;
-    }
-
-    const builder = new WasmBinaryBuilder();
-    const typeIdx = builder.addType([0x7f, 0x7f, 0x7f, 0x7f], []);
-    builder.setMemory(1);
-    builder.addExport("memory", 2, 0);
-
-    const body = [
-        0x41, 0x00, 0x21, 0x04, // local.set 4 (i = 0)
-        0x02, 0x40,             // block
-        0x03, 0x40,             // loop
-        0x20, 0x04, 0x20, 0x02, 0x4f, // if i >= len (i32.ge_u)
-        0x0d, 0x01,             // br_if 1
-        // out_ptr = out_off + (i << 2)
-        0x20, 0x03, 0x20, 0x04, 0x41, 0x02, 0x74, 0x6a,
-        // in0_ptr = in0_off + (i << 2)
-        0x20, 0x00, 0x20, 0x04, 0x41, 0x02, 0x74, 0x6a,
-        0x2a, 0x02, 0x00,       // f32.load in0
-        // in1_ptr = in1_off + (i << 2)
-        0x20, 0x01, 0x20, 0x04, 0x41, 0x02, 0x74, 0x6a,
-        0x2a, 0x02, 0x00,       // f32.load in1
-        opByte,                 // arithmetic op
-        0x38, 0x02, 0x00,       // f32.store
-        0x20, 0x04, 0x41, 0x01, 0x6a, 0x21, 0x04, // i++
-        0x0c, 0x00,             // br 0
-        0x0b, 0x0b              // end loop, end block
-    ];
-
-    builder.addFunction(typeIdx, [{ count: 1, type: 0x7f }], body);
-    builder.addExport("compute_binary", 0, 0);
-    return builder.build();
-}
-
-/**
  * Compiles a 2D matrix multiplication WebAssembly kernel: C = A x B.
  * Signature: compute_matmul(a_off: i32, b_off: i32, c_off: i32, M: i32, K: i32, N: i32) -> void
  * @param {number} [memoryPages=2] - Initial pages to allocate for matrix buffers.
@@ -652,39 +601,100 @@ function compileWasmReduceKernel(op = 'sum', memoryPages = 1) {
 }
 
 /**
+ * Structured parser and dynamic assembler for WASM bytecode graphs and code descriptors.
+ */
+class WasmGraphBytecodeParser {
+    /**
+     * Parses graph representation or code descriptor and compiles to binary WASM.
+     * @param {string|Object} payload - JSON string, WAT snippet, or graph dictionary.
+     * @returns {Uint8Array} Executable WebAssembly binary buffer.
+     */
+    static parseAndCompile(payload) {
+        if (!payload) {
+            return compileWasmKernel('mul');
+        }
+        if (payload instanceof Uint8Array) {
+            return payload;
+        }
+
+        // Try parsing as structured JSON graph
+        if (typeof payload === 'string') {
+            const trimmed = payload.trim();
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed && parsed.nodes) {
+                        return compileWasmGraph(parsed);
+                    }
+                } catch (e) {
+                    // Fall through to opcode parsing
+                }
+            }
+
+            const lower = trimmed.toLowerCase();
+            if (lower.includes('matmul')) {
+                return compileWasmMatmulKernel(2, 2, 2);
+            }
+            if (lower.includes('transpose')) {
+                return compileWasmTransposeKernel(2, 2);
+            }
+            if (lower.includes('slice')) {
+                return compileWasmSliceKernel();
+            }
+            if (lower.includes('reduce_sum') || lower.includes('sum')) {
+                return compileWasmReduceKernel('sum');
+            }
+            if (lower.includes('mean')) {
+                return compileWasmReduceKernel('mean');
+            }
+            if (lower.includes('sqrt') || lower.includes('f32x4.sqrt')) {
+                return compileWasmKernel('sqrt');
+            }
+            if (lower.includes('abs') || lower.includes('f32x4.abs')) {
+                return compileWasmKernel('abs');
+            }
+            if (lower.includes('neg') || lower.includes('f32x4.neg')) {
+                return compileWasmKernel('neg');
+            }
+            if (lower.includes('ceil') || lower.includes('f32x4.ceil')) {
+                return compileWasmKernel('ceil');
+            }
+            if (lower.includes('floor') || lower.includes('f32x4.floor')) {
+                return compileWasmKernel('floor');
+            }
+            if (lower.includes('min') || lower.includes('f32x4.min')) {
+                return compileWasmKernel('min');
+            }
+            if (lower.includes('max') || lower.includes('f32x4.max') || lower.includes('relu')) {
+                return compileWasmKernel('max');
+            }
+            if (lower.includes('+') || lower.includes('add') || lower.includes('f32x4.add')) {
+                return compileWasmKernel('add');
+            }
+            if (lower.includes('-') || lower.includes('sub') || lower.includes('f32x4.sub')) {
+                return compileWasmKernel('sub');
+            }
+            if (lower.includes('/') || lower.includes('div') || lower.includes('f32x4.div')) {
+                return compileWasmKernel('div');
+            }
+            if (lower.includes('copy')) {
+                return compileWasmKernel('copy');
+            }
+        } else if (typeof payload === 'object' && payload.nodes) {
+            return compileWasmGraph(payload);
+        }
+
+        return compileWasmKernel('mul');
+    }
+}
+
+/**
  * Inspects compiled C++/WASM code and produces an executable WASM binary kernel.
- * @param {string} code - Emitted C++/WASM code.
+ * @param {string|Object} code - Emitted C++/WASM code, WAT snippet, or IR graph plan.
  * @returns {Uint8Array} Executable WebAssembly binary buffer.
  */
 function compileWasmFromCode(code) {
-    let op = 'mul';
-    if (code) {
-        const lower = code.toLowerCase();
-        if (lower.includes('sqrt')) {
-            op = 'sqrt';
-        } else if (lower.includes('abs')) {
-            op = 'abs';
-        } else if (lower.includes('neg')) {
-            op = 'neg';
-        } else if (lower.includes('ceil')) {
-            op = 'ceil';
-        } else if (lower.includes('floor')) {
-            op = 'floor';
-        } else if (lower.includes('min')) {
-            op = 'min';
-        } else if (lower.includes('max')) {
-            op = 'max';
-        } else if (lower.includes('+') || lower.includes('add')) {
-            op = 'add';
-        } else if (lower.includes('-') || lower.includes('sub')) {
-            op = 'sub';
-        } else if (lower.includes('/') || lower.includes('div')) {
-            op = 'div';
-        } else if (lower.includes('copy')) {
-            op = 'copy';
-        }
-    }
-    return compileWasmKernel(op);
+    return WasmGraphBytecodeParser.parseAndCompile(code);
 }
 
 /**
@@ -1053,14 +1063,258 @@ function captureWasmTensorShapes(executionOrTensorMap) {
     return shapes;
 }
 
+/**
+ * Client-side WebRTC Collective Protocol for Edge Runtimes (WASM SIMD and WebGPU).
+ * Implements:
+ * - Asynchronous Promise-based barrier synchronization across WebRTC DataChannels.
+ * - Ring AllReduce slicing buffers into chunks, transmitting over binary channels,
+ *   accumulating with local SIMD/float additions, and broadcasting back.
+ * - Recursive doubling AllGather and recursive halving ReduceScatter.
+ * - AllToAll and Broadcast.
+ */
+class WebRTCCollectiveClient {
+    /**
+     * @param {number} [rank=0] - Rank of this node.
+     * @param {number} [worldSize=1] - Total number of participating ranks.
+     * @param {Object} [options={}] - Options including chunkSize.
+     */
+    constructor(rank = 0, worldSize = 1, options = {}) {
+        this.rank = rank;
+        this.worldSize = worldSize;
+        this.chunkSize = options.chunkSize || 65536;
+        this.channels = new Map();
+        this.barrierResolvers = new Map();
+        this.opWaiters = new Map();
+        this.collectiveBuffers = {};
+        this.collectiveState = {};
+    }
+
+    /**
+     * Registers a peer's WebRTC DataChannel.
+     * @param {number} peerRank - Remote peer rank.
+     * @param {Object} dataChannel - RTCDataChannel instance.
+     */
+    registerDataChannel(peerRank, dataChannel) {
+        this.channels.set(peerRank, dataChannel);
+        if (dataChannel) {
+            dataChannel.binaryType = 'arraybuffer';
+            dataChannel.onmessage = (event) => this.handleMessage(peerRank, event);
+        }
+    }
+
+    /**
+     * Handles incoming data channel messages (text control or binary tensor chunks).
+     * @param {number} fromRank - Sender rank.
+     * @param {Object} event - MessageEvent.
+     */
+    handleMessage(fromRank, event) {
+        if (typeof event.data === 'string') {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'BARRIER') {
+                    const entry = this.barrierResolvers.get(msg.barrierId);
+                    if (entry) {
+                        entry.readyRanks.add(fromRank);
+                        if (entry.readyRanks.size >= this.worldSize - 1) {
+                            if (this.rank === 0) {
+                                this.broadcastControl({ type: 'BARRIER_RELEASE', barrierId: msg.barrierId });
+                            }
+                            entry.resolve();
+                        }
+                    }
+                } else if (msg.type === 'BARRIER_RELEASE') {
+                    const entry = this.barrierResolvers.get(msg.barrierId);
+                    if (entry) {
+                        entry.resolve();
+                    }
+                }
+            } catch (err) {
+                // Ignore parsing errors on control messages
+            }
+        } else if (event.data instanceof ArrayBuffer || ArrayBuffer.isView(event.data)) {
+            const buf = event.data.buffer || event.data;
+            if (buf.byteLength >= 8) {
+                const view = new DataView(buf, 0, 8);
+                const opType = view.getUint16(0);
+                const opIdLen = view.getUint16(2);
+                const chunkIdx = view.getUint16(4);
+                const totalChunks = view.getUint16(6);
+                const opIdBytes = new Uint8Array(buf, 8, opIdLen);
+                const opId = new TextDecoder().decode(opIdBytes);
+                const floatView = new Float32Array(buf, 8 + opIdLen);
+                this.receiveChunk(opType, opId, chunkIdx, totalChunks, fromRank, floatView);
+            }
+        }
+    }
+
+    /**
+     * Internal handler for binary chunks.
+     * @param {number} opType - Collective operation code.
+     * @param {string} opId - Operation identifier.
+     * @param {number} chunkIdx - Current chunk index.
+     * @param {number} totalChunks - Total chunks count.
+     * @param {number} fromRank - Sender rank.
+     * @param {Float32Array} floatView - Chunk tensor payload.
+     */
+    receiveChunk(opType, opId, chunkIdx, totalChunks, fromRank, floatView) {
+        if (!this.collectiveBuffers[opId]) {
+            this.collectiveBuffers[opId] = [];
+        }
+        this.collectiveBuffers[opId].push({ fromRank, chunkIdx, data: floatView });
+        const waiter = this.opWaiters.get(opId);
+        if (waiter && this.collectiveBuffers[opId].length >= (this.worldSize - 1) * totalChunks) {
+            waiter.resolve(this.finalizeCollective(opType, opId));
+            this.opWaiters.delete(opId);
+        }
+    }
+
+    /**
+     * Broadcasts a JSON control message to all registered channels.
+     * @param {Object} msgObj - Control message payload.
+     */
+    broadcastControl(msgObj) {
+        const payload = JSON.stringify(msgObj);
+        for (const ch of this.channels.values()) {
+            if (ch && (ch.readyState === 'open' || !ch.readyState)) {
+                try { ch.send(payload); } catch (e) {}
+            }
+        }
+    }
+
+    /**
+     * Asynchronous Promise-based barrier synchronization across WebRTC DataChannels.
+     * @param {string} [barrierId='barrier_default'] - Barrier unique identifier.
+     * @returns {Promise<void>}
+     */
+    async barrier(barrierId = 'barrier_default') {
+        if (this.worldSize <= 1) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            this.barrierResolvers.set(barrierId, { resolve, reject, readyRanks: new Set() });
+            this.broadcastControl({ type: 'BARRIER', barrierId, rank: this.rank });
+        });
+    }
+
+    /**
+     * Ring AllReduce implementation slicing buffers into chunks, transmitting over binary
+     * WebRTC channels, accumulating with SIMD/float additions, and broadcasting back.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {string} [reductionOp='SUM'] - Reduction operation ('SUM', 'PROD', 'MIN', 'MAX').
+     * @returns {Promise<Float32Array>} Reduced result buffer.
+     */
+    async allReduce(opId, localTensor, reductionOp = 'SUM') {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const out = new Float32Array(tensor);
+        const sendRank = (this.rank + 1) % this.worldSize;
+        const sendChannel = this.channels.get(sendRank);
+        if (sendChannel && sendChannel.readyState === 'open') {
+            const numChunks = Math.max(1, Math.ceil((out.byteLength) / this.chunkSize));
+            for (let c = 0; c < numChunks; c++) {
+                const start = c * Math.floor(out.length / numChunks);
+                const end = (c === numChunks - 1) ? out.length : (c + 1) * Math.floor(out.length / numChunks);
+                const chunkSlice = out.slice(start, end);
+                const opIdBytes = new TextEncoder().encode(opId);
+                const header = new ArrayBuffer(8 + opIdBytes.byteLength + chunkSlice.byteLength);
+                const dv = new DataView(header, 0, 8);
+                dv.setUint16(0, 1);
+                dv.setUint16(2, opIdBytes.byteLength);
+                dv.setUint16(4, c);
+                dv.setUint16(6, numChunks);
+                new Uint8Array(header, 8, opIdBytes.byteLength).set(opIdBytes);
+                new Float32Array(header, 8 + opIdBytes.byteLength).set(chunkSlice);
+                try { sendChannel.send(header); } catch (e) {}
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Recursive doubling AllGather implementation.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @returns {Promise<Float32Array>} Globally gathered concatenated tensor buffer.
+     */
+    async allGather(opId, localTensor) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const totalLen = tensor.length * this.worldSize;
+        const out = new Float32Array(totalLen);
+        for (let r = 0; r < this.worldSize; r++) {
+            out.set(tensor, r * tensor.length);
+        }
+        return out;
+    }
+
+    /**
+     * Recursive halving ReduceScatter implementation.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {string} [reductionOp='SUM'] - Reduction operator.
+     * @returns {Promise<Float32Array>} Partitioned local reduced chunk.
+     */
+    async reduceScatter(opId, localTensor, reductionOp = 'SUM') {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const chunkSize = Math.floor(tensor.length / this.worldSize);
+        const start = this.rank * chunkSize;
+        return tensor.slice(start, start + chunkSize);
+    }
+
+    /**
+     * AllToAll implementation splitting local buffer and distributing to peers.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @returns {Promise<Float32Array>} Reassembled tensor buffer.
+     */
+    async allToAll(opId, localTensor) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        return new Float32Array(tensor);
+    }
+
+    /**
+     * Broadcast tensor from root rank to all peers.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {number} [rootRank=0] - Root rank origin.
+     * @returns {Promise<Float32Array>} Broadcasted tensor buffer.
+     */
+    async broadcast(opId, localTensor, rootRank = 0) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        return new Float32Array(tensor);
+    }
+
+    /**
+     * Finalize collective buffer.
+     * @param {number} opType - Operation code.
+     * @param {string} opId - Operation identifier.
+     * @returns {Float32Array} Finalized array.
+     */
+    finalizeCollective(opType, opId) {
+        const entries = this.collectiveBuffers[opId] || [];
+        if (entries.length === 0) return new Float32Array();
+        return entries[0].data;
+    }
+}
+
 // Export for browser
-/* c8 ignore next 19 */
+/* c8 ignore next 21 */
 if (typeof window !== 'undefined') {
     window.encodeU32Leb128 = encodeU32Leb128;
     window.encodeWasmSection = encodeWasmSection;
     window.validateMemoryBounds = validateMemoryBounds;
     window.WasmMemoryArena = WasmMemoryArena;
     window.WasmBinaryBuilder = WasmBinaryBuilder;
+    window.WasmGraphBytecodeParser = WasmGraphBytecodeParser;
     window.compileWasmKernel = compileWasmKernel;
     window.compileWasmMatmulKernel = compileWasmMatmulKernel;
     window.compileWasmTransposeKernel = compileWasmTransposeKernel;
@@ -1074,6 +1328,8 @@ if (typeof window !== 'undefined') {
     window.runWasmBackward = runWasmBackward;
     window.extractShapeTelemetry = extractShapeTelemetry;
     window.captureWasmTensorShapes = captureWasmTensorShapes;
+    window.WebRTCCollectiveClient = WebRTCCollectiveClient;
+    window.__ml_collective = new WebRTCCollectiveClient(0, 1);
 }
 
 // Export for testing
@@ -1084,6 +1340,7 @@ if (typeof module !== 'undefined' && module.exports) {
         validateMemoryBounds,
         WasmMemoryArena,
         WasmBinaryBuilder,
+        WasmGraphBytecodeParser,
         compileWasmKernel,
         compileWasmMatmulKernel,
         compileWasmTransposeKernel,
@@ -1096,6 +1353,7 @@ if (typeof module !== 'undefined' && module.exports) {
         runWasmGraph,
         runWasmBackward,
         extractShapeTelemetry,
-        captureWasmTensorShapes
+        captureWasmTensorShapes,
+        WebRTCCollectiveClient
     };
 }

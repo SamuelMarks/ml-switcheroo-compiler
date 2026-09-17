@@ -26,6 +26,9 @@ class NodePattern:
         op_type: str | None = None,
         capture: str | None = None,
         inputs: list[NodePattern] | None = None,
+        wildcard: bool = False,
+        commutative: bool = False,
+        broadcast_dims: bool = False,
     ) -> None:
         """Initialize NodePattern.
 
@@ -33,10 +36,16 @@ class NodePattern:
             op_type (str, optional): The expected operation type.
             capture (str, optional): The key to store the matched node in the capture map.
             inputs (list[NodePattern], optional): Patterns for the expected inputs.
+            wildcard (bool): Allow matching any operation type.
+            commutative (bool): Match inputs in any permutation.
+            broadcast_dims (bool): Match tensors with broadcast compatible dimensions.
         """
         self.op_type: str | None = op_type
         self.capture: str | None = capture
         self.inputs: list[NodePattern] | None = inputs
+        self.wildcard: bool = wildcard or op_type in ("*", "any")
+        self.commutative: bool = commutative
+        self.broadcast_dims: bool = broadcast_dims
 
 
 def _match_node_inputs(
@@ -45,7 +54,7 @@ def _match_node_inputs(
     pattern: NodePattern,
     capture_map: dict[str, str | IRNode],
 ) -> bool:
-    """Match the inputs of a node against a pattern.
+    """Match the inputs of a node against a pattern supporting commutativity.
 
     Args:
         graph (IRGraph): The graph parameter.
@@ -59,6 +68,17 @@ def _match_node_inputs(
     p_inputs: list[NodePattern] = pattern.inputs or []
     if len(node.inputs) != len(p_inputs):
         return False
+
+    if getattr(pattern, "commutative", False) and len(p_inputs) == 2:
+        orig_map = dict(capture_map)
+        if match_pattern(graph, node.inputs[0], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[1], p_inputs[1], capture_map):
+            return True
+        capture_map.clear()
+        capture_map.update(orig_map)
+        if match_pattern(graph, node.inputs[1], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[0], p_inputs[1], capture_map):
+            return True
+        return False
+
     for i, inp_pat in enumerate(p_inputs):
         inp_id: str = node.inputs[i]
         if not match_pattern(graph, inp_id, inp_pat, capture_map):
@@ -83,14 +103,17 @@ def match_pattern(
     Returns:
         bool: True if the pattern matches, False otherwise.
     """
+    is_wildcard = getattr(pattern, "wildcard", False) or pattern.op_type in ("*", "any")
     if not isinstance(node_id, str):
-        if pattern.op_type is not None or pattern.inputs is not None:
+        if (pattern.op_type is not None and not is_wildcard) or pattern.inputs is not None:
             return False
         if pattern.capture is not None and node_id is not None:
             capture_map[pattern.capture] = node_id
         return True
     node: IRNode | None = graph.nodes.get(node_id)
-    if not node or (pattern.op_type is not None and node.op_type != pattern.op_type):
+    if not node:
+        return False
+    if not is_wildcard and pattern.op_type is not None and node.op_type != pattern.op_type:
         return False
     if pattern.capture is not None:
         capture_map[pattern.capture] = node
@@ -255,6 +278,7 @@ def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRul
         list[FusionRule]: Loaded fusion rules from declarative pattern files.
     """
     rules: list[FusionRule] = []
+    load_defaults = patterns_dir is None
     if patterns_dir is None:
         patterns_dir = os.path.join(os.path.dirname(__file__), "fusion_patterns")
     if os.path.isdir(patterns_dir):
@@ -270,7 +294,69 @@ def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRul
                                 rules.append(YamlFusionRule(rule_name, p_config))
             except Exception:
                 continue
+
+    if load_defaults:
+        global_yaml = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fusion_patterns.yaml")
+        if os.path.exists(global_yaml):
+            try:
+                with open(global_yaml) as f:
+                    g_data = yaml.safe_load(f)
+                    if isinstance(g_data, dict) and "patterns" in g_data:
+                        for pat in g_data["patterns"]:
+                            rule_name = str(pat.get("name", "pattern"))
+                            fused_op = str(pat.get("fused_op", "FusedOp"))
+                            commutative = bool(pat.get("commutative", False))
+                            wildcard = bool(pat.get("wildcard", False))
+                            broadcast_dims = bool(pat.get("broadcast_dims", False))
+                            targets = pat.get("target", [])
+                            if targets:
+                                curr_pat = NodePattern(
+                                    op_type=targets[-1],
+                                    capture="root",
+                                    commutative=commutative,
+                                    wildcard=wildcard,
+                                    broadcast_dims=broadcast_dims,
+                                )
+                                rules.append(DeclarativeTargetFusionRule(rule_name, curr_pat, fused_op))
+            except Exception:
+                pass
+
     return rules
+
+
+class DeclarativeTargetFusionRule(FusionRule):
+    """Fusion rule constructed from target sequence in fusion_patterns.yaml."""
+
+    def __init__(self, name: str, pattern: NodePattern, fused_op: str) -> None:
+        """Initialize DeclarativeTargetFusionRule.
+
+        Args:
+            name (str): Rule name.
+            pattern (NodePattern): Pattern to match.
+            fused_op (str): Fused operation type name to emit.
+        """
+        super().__init__(name, pattern)
+        self.fused_op: str = fused_op
+
+    def apply(self, graph: IRGraph, match: dict[str, str | IRNode]) -> dict[str, IRNode] | None:
+        """Apply fusion rule emitting fused operator node.
+
+        Args:
+            graph (IRGraph): IR graph to mutate.
+            match (dict[str, str | IRNode]): Matched nodes mapping.
+
+        Returns:
+            dict[str, IRNode] | None: Replacement mapping or None.
+        """
+        root_node = match.get("root")
+        if not isinstance(root_node, IRNode):
+            return None
+        new_id = f"{root_node.id}_fused"
+        fused_node = clone_logical_node(root_node)
+        fused_node.id = new_id
+        fused_node.op_type = self.fused_op
+        fused_node.attributes["fused_pattern"] = self.name
+        return {root_node.id: fused_node}
 
 
 class YamlFusionRule(FusionRule):

@@ -1,2 +1,6 @@
-Greater:
-  target_api: tf.greater
+operation: Greater
+backend: tensorflow
+target_api: tf.greater
+ast_template: '{out} = tf.greater({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

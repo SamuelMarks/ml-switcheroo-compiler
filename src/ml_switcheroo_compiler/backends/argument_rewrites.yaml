@@ -1,0 +1,54 @@
+# Declarative argument renaming and keyword transformation schemas
+argument_rewrites:
+  keyword_transformations:
+    - pattern: "dim_to_axis"
+      source_kwarg: "dim"
+      target_kwarg: "axis"
+      source_framework: "pytorch"
+      target_framework: "jax"
+    - pattern: "keepdim_to_keepdims"
+      source_kwarg: "keepdim"
+      target_kwarg: "keepdims"
+      source_framework: "pytorch"
+      target_framework: "jax"
+    - pattern: "axis_to_dim"
+      source_kwarg: "axis"
+      target_kwarg: "dim"
+      source_framework: "jax"
+      target_framework: "pytorch"
+    - pattern: "keepdims_to_keepdim"
+      source_kwarg: "keepdims"
+      target_kwarg: "keepdim"
+      source_framework: "jax"
+      target_framework: "pytorch"
+    - pattern: "dim_to_axis_mlx"
+      source_kwarg: "dim"
+      target_kwarg: "axis"
+      source_framework: "pytorch"
+      target_framework: "mlx"
+
+  argument_reorderings:
+    - op_name: "transpose"
+      source_framework: "pytorch"
+      target_framework: "jax"
+      permutation: [0, 2, 1]
+    - op_name: "tensordot"
+      source_framework: "pytorch"
+      target_framework: "jax"
+      permutation: [0, 1]
+
+  default_insertions:
+    - op_name: "tensordot"
+      target_framework: "jax"
+      default_kwargs:
+        axes: 2
+    - op_name: "norm"
+      target_framework: "jax"
+      default_kwargs:
+        ord: 2
+
+  keyword_to_positional:
+    - op_name: "clip"
+      target_framework: "jax"
+      keyword_names: ["a_min", "a_max"]
+      target_positions: [1, 2]

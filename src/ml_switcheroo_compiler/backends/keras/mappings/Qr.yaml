@@ -1,2 +1,6 @@
-Qr:
-  target_api: keras_ops.qr
+operation: QR
+backend: keras
+target_api: keras.ops.linalg.qr
+ast_template: '{out} = keras.ops.linalg.qr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Pad:
-  target_api: keras_ops.pad
+operation: Pad
+backend: keras
+target_api: keras_ops.pad
+ast_template: '{out} = keras_ops.pad({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

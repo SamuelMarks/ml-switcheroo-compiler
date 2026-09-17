@@ -1,2 +1,6 @@
-Irfft2:
-  target_api: da.fft.irfft2
+operation: Irfft2
+backend: dask
+target_api: da.fft.irfft2
+ast_template: '{out} = da.fft.irfft2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

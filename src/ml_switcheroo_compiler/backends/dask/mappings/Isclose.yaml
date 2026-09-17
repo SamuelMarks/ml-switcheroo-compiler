@@ -1,2 +1,6 @@
-Isclose:
-  target_api: da.isclose
+operation: Isclose
+backend: dask
+target_api: da.isclose
+ast_template: '{out} = da.isclose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

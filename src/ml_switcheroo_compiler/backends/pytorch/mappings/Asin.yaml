@@ -1,2 +1,6 @@
-Asin:
-  target_api: torch.asin
+operation: Asin
+backend: pytorch
+target_api: torch.asin
+ast_template: '{out} = torch.asin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

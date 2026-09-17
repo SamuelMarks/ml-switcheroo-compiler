@@ -1,2 +1,6 @@
-Fftconvolve:
-  target_api: jax.scipy.signal.fftconvolve
+operation: Fftconvolve
+backend: jax
+target_api: jax.scipy.signal.fftconvolve
+ast_template: '{out} = jax.scipy.signal.fftconvolve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Add:
-  target_api: torch.add
+operation: Add
+backend: pytorch
+target_api: torch.add
+ast_template: '{out} = torch.add({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

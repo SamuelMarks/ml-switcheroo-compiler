@@ -1,2 +1,6 @@
-Exp:
-  target_api: torch.exp
+operation: Exp
+backend: pytorch
+target_api: torch.exp
+ast_template: '{out} = torch.exp({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Abs:
-  target_api: tf.abs
+operation: Abs
+backend: tensorflow
+target_api: tf.abs
+ast_template: '{out} = tf.abs({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Remainder:
-  target_api: cp.remainder
+operation: Remainder
+backend: cupy
+target_api: cp.remainder
+ast_template: '{out} = cp.remainder({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

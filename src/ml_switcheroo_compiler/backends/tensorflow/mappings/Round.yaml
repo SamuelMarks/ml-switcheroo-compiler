@@ -1,2 +1,6 @@
-Round:
-  target_api: tf.round
+operation: Round
+backend: tensorflow
+target_api: tf.round
+ast_template: '{out} = tf.round({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

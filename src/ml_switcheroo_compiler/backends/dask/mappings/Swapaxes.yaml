@@ -1,2 +1,6 @@
-Swapaxes:
-  target_api: da.swapaxes
+operation: Swapaxes
+backend: dask
+target_api: da.swapaxes
+ast_template: '{out} = da.swapaxes({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

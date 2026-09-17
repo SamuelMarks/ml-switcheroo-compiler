@@ -1,2 +1,6 @@
-Isnan:
-  target_api: keras_ops.isnan
+operation: Isnan
+backend: keras
+target_api: keras_ops.isnan
+ast_template: '{out} = keras_ops.isnan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

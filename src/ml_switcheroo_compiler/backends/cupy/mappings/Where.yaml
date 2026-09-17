@@ -1,2 +1,6 @@
-Where:
-  target_api: cp.where
+operation: Where
+backend: cupy
+target_api: cp.where
+ast_template: '{out} = cp.where({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Nonzero:
-  target_api: cp.nonzero
+operation: Nonzero
+backend: cupy
+target_api: cp.nonzero
+ast_template: '{out} = cp.nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

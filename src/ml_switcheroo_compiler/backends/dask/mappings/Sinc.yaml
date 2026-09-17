@@ -1,2 +1,6 @@
-Sinc:
-  target_api: da.sinc
+operation: Sinc
+backend: dask
+target_api: da.sinc
+ast_template: '{out} = da.sinc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

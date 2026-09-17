@@ -1,2 +1,6 @@
-BitwiseAnd:
-  target_api: cp.bitwise_and
+operation: BitwiseAnd
+backend: cupy
+target_api: cp.bitwise_and
+ast_template: '{out} = cp.bitwise_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

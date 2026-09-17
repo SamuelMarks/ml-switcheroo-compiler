@@ -1,2 +1,6 @@
-Minimum:
-  target_api: tf.minimum
+operation: Minimum
+backend: tensorflow
+target_api: tf.minimum
+ast_template: '{out} = tf.minimum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

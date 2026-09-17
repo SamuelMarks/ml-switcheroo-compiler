@@ -1,2 +1,6 @@
-Svd:
-  target_api: keras_ops.svd
+operation: Svd
+backend: keras
+target_api: keras_ops.svd
+ast_template: '{out} = keras_ops.svd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -16,19 +16,19 @@ def test_emit_webrtc_op() -> None:
     code_reduce = emit_webrtc_op("AllReduce", "bufferX", "op_1")
     assert "AllReduce" in code_reduce
     assert "bufferX" in code_reduce
-    assert "waitForReduce" in code_reduce
+    assert "window.__ml_collective.allReduce" in code_reduce
 
     code_gather = emit_webrtc_op("AllGather", "bufferY", "op_2")
     assert "AllGather" in code_gather
-    assert "waitForGather" in code_gather
+    assert "window.__ml_collective.allGather" in code_gather
 
     code_to_all = emit_webrtc_op("AllToAll", "bufferZ", "op_3")
     assert "AllToAll" in code_to_all
-    assert "waitForAllToAll" in code_to_all
+    assert "window.__ml_collective.allToAll" in code_to_all
 
     code_scatter = emit_webrtc_op("ReduceScatter", "bufferW", "op_4")
     assert "ReduceScatter" in code_scatter
-    assert "waitForReduceScatter" in code_scatter
+    assert "window.__ml_collective.reduceScatter" in code_scatter
 
     code_invalid = emit_webrtc_op("NonExistentOp", "buf", "op_5")
     assert code_invalid == ""

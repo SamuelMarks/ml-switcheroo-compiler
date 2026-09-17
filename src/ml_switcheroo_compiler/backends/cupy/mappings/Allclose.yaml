@@ -1,2 +1,6 @@
-Allclose:
-  target_api: cp.allclose
+operation: Allclose
+backend: cupy
+target_api: cp.allclose
+ast_template: '{out} = cp.allclose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

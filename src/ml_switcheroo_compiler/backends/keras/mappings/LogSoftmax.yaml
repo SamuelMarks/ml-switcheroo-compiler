@@ -1,2 +1,6 @@
-LogSoftmax:
-  target_api: keras_ops.log_softmax
+operation: LogSoftmax
+backend: keras
+target_api: keras_ops.log_softmax
+ast_template: '{out} = keras_ops.log_softmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

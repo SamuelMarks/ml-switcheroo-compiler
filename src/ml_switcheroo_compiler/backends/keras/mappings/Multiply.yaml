@@ -1,2 +1,6 @@
-Multiply:
-  target_api: keras_ops.multiply
+operation: Multiply
+backend: keras
+target_api: keras_ops.multiply
+ast_template: '{out} = keras_ops.multiply({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

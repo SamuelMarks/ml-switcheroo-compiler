@@ -1,3 +1,6 @@
-Poly:
-  ast_template: np.poly
-  target_api: ''
+operation: Poly
+backend: numpy
+target_api: ''
+ast_template: np.poly
+kwarg_map: {}
+dtype_overrides: {}

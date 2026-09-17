@@ -1,2 +1,6 @@
-Moveaxis:
-  target_api: cp.moveaxis
+operation: Moveaxis
+backend: cupy
+target_api: cp.moveaxis
+ast_template: '{out} = cp.moveaxis({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

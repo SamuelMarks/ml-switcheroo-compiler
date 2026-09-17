@@ -1,2 +1,6 @@
-Bincount:
-  target_api: keras_ops.bincount
+operation: Bincount
+backend: keras
+target_api: keras_ops.bincount
+ast_template: '{out} = keras_ops.bincount({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

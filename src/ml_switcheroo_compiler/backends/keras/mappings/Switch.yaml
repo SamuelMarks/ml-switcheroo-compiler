@@ -1,2 +1,6 @@
-Switch:
-  target_api: keras_ops.switch
+operation: Switch
+backend: keras
+target_api: keras_ops.switch
+ast_template: '{out} = keras_ops.switch({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

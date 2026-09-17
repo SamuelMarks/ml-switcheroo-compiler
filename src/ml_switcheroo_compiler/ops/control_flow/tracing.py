@@ -44,6 +44,7 @@ def cond_tracing(pred: Tensor, true_fn, false_fn):
         op_type="If",
         inputs=[pred.data.id],
         attributes={"then_branch": true_graph, "else_branch": false_graph},
+        subgraphs={"then_branch": true_graph, "else_branch": false_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
@@ -75,6 +76,7 @@ def while_loop_tracing(cond_fn, body_fn, init_val):
         op_type="Loop",
         inputs=[a.data.id for a in args],
         attributes={"body": body_graph, "cond": cond_graph},
+        subgraphs={"body": body_graph, "cond": cond_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
@@ -130,6 +132,7 @@ def scan_tracing(f, init, xs, length: int | None = None):
         op_type="Scan",
         inputs=init_ids + [xs.data.id],
         attributes={"body": body_graph},
+        subgraphs={"body": body_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
@@ -163,6 +166,7 @@ def map_fn_tracing(fn, elems: Tensor, dtype: DType | None = None):
         op_type="Map",
         inputs=[elems.data.id],
         attributes={"body": body_graph},
+        subgraphs={"body": body_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
@@ -211,6 +215,7 @@ def pmap_tracing(func, axis_name: str | None = None):
             op_type="Pmap",
             inputs=[str(getattr(getattr(a, "data", None), "id", "")) for a in args if isinstance(a, Tensor)],
             attributes={"axis_name": axis_name, "body": body_graph},
+            subgraphs={"body": body_graph},
             shape_metadata=(),
         )
         global_tracing_state.add_node(node)

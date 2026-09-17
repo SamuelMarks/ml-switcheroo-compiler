@@ -1,2 +1,6 @@
-Argsort:
-  target_api: keras_ops.argsort
+operation: Argsort
+backend: keras
+target_api: keras_ops.argsort
+ast_template: '{out} = keras_ops.argsort({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Inv:
-  ast_template: np.linalg.inv
-  target_api: ''
+operation: Inv
+backend: numpy
+target_api: ''
+ast_template: np.linalg.inv
+kwarg_map: {}
+dtype_overrides: {}

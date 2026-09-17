@@ -1,0 +1,6 @@
+operation: Svd
+backend: jax
+target_api: jax.numpy.linalg.svd
+ast_template: '{out} = jax.numpy.linalg.svd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

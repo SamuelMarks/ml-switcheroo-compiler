@@ -1,2 +1,6 @@
-Tan:
-  target_api: cp.tan
+operation: Tan
+backend: cupy
+target_api: cp.tan
+ast_template: '{out} = cp.tan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Append:
-  target_api: keras_ops.append
+operation: Append
+backend: keras
+target_api: keras_ops.append
+ast_template: '{out} = keras_ops.append({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-ElasticTransform:
-  ast_template: torchvision.transforms.functional.elastic_transform({0}, {1})
-  target_api: ''
+operation: ElasticTransform
+backend: pytorch
+target_api: ''
+ast_template: torchvision.transforms.functional.elastic_transform({0}, {1})
+kwarg_map: {}
+dtype_overrides: {}

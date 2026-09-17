@@ -1,2 +1,6 @@
-Abs:
-  target_api: keras_ops.abs
+operation: Abs
+backend: keras
+target_api: keras_ops.abs
+ast_template: '{out} = keras_ops.abs({in0})'
+kwarg_map: {}
+dtype_overrides: {}

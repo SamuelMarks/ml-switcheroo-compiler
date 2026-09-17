@@ -1,2 +1,6 @@
-Average:
-  target_api: da.average
+operation: Average
+backend: dask
+target_api: da.average
+ast_template: '{out} = da.average({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

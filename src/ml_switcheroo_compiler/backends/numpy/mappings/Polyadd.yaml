@@ -1,3 +1,6 @@
-Polyadd:
-  ast_template: np.polyadd
-  target_api: ''
+operation: Polyadd
+backend: numpy
+target_api: ''
+ast_template: np.polyadd
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-VectorNorm:
-  ast_template: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
-  target_api: ''
+operation: VectorNorm
+backend: numpy
+target_api: ''
+ast_template: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-LogicalAnd:
-  target_api: keras_ops.logical_and
+operation: LogicalAnd
+backend: keras
+target_api: keras_ops.logical_and
+ast_template: '{out} = keras_ops.logical_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

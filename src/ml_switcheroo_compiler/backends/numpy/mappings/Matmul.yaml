@@ -1,3 +1,6 @@
-Matmul:
-  ast_template: np.matmul
-  target_api: ''
+operation: Matmul
+backend: numpy
+target_api: ''
+ast_template: np.matmul
+kwarg_map: {}
+dtype_overrides: {}

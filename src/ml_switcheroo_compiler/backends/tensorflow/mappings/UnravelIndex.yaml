@@ -1,2 +1,6 @@
-UnravelIndex:
-  target_api: tf.unravel_index
+operation: UnravelIndex
+backend: tensorflow
+target_api: tf.unravel_index
+ast_template: '{out} = tf.unravel_index({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

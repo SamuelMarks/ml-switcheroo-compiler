@@ -1,2 +1,6 @@
-StridedSlice:
-  target_api: tf.strided_slice
+operation: StridedSlice
+backend: tensorflow
+target_api: tf.strided_slice
+ast_template: '{out} = tf.strided_slice({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Multiply:
-  target_api: tf.multiply
+operation: Multiply
+backend: tensorflow
+target_api: tf.multiply
+ast_template: '{out} = tf.multiply({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

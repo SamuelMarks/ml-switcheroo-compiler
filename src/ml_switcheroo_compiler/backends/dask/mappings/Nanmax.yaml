@@ -1,2 +1,6 @@
-Nanmax:
-  target_api: da.nanmax
+operation: Nanmax
+backend: dask
+target_api: da.nanmax
+ast_template: '{out} = da.nanmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

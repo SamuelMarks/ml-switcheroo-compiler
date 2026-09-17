@@ -1,2 +1,6 @@
-Argmax:
-  target_api: keras_ops.argmax
+operation: Argmax
+backend: keras
+target_api: keras_ops.argmax
+ast_template: '{out} = keras_ops.argmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

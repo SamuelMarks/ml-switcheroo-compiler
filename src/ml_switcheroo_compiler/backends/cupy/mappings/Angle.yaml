@@ -1,2 +1,6 @@
-Angle:
-  target_api: cp.angle
+operation: Angle
+backend: cupy
+target_api: cp.angle
+ast_template: '{out} = cp.angle({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

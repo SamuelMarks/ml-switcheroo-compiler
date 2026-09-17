@@ -1,2 +1,6 @@
-Gather:
-  target_api: tf.gather
+operation: Gather
+backend: tensorflow
+target_api: tf.gather
+ast_template: '{out} = tf.gather({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

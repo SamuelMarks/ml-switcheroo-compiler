@@ -1,2 +1,6 @@
-Mean:
-  target_api: cp.mean
+operation: Mean
+backend: cupy
+target_api: cp.mean
+ast_template: '{out} = cp.mean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

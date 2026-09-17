@@ -1,2 +1,6 @@
-Subtract:
-  target_api: cp.subtract
+operation: Subtract
+backend: cupy
+target_api: cp.subtract
+ast_template: '{out} = cp.subtract({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

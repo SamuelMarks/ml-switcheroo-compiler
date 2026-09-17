@@ -135,3 +135,74 @@ cst_rewrite_rules:
       permutation:
         source_arg: "keepdim"
         target_arg: "keepdims"
+
+  call_rules:
+    - match:
+        pattern: "view"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "reshape"
+        target_framework: "jax"
+      description: "Rewrite tensor.view() calls to reshape"
+    - match:
+        pattern: "permute"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "transpose"
+        target_framework: "jax"
+      description: "Rewrite tensor.permute() calls to transpose"
+    - match:
+        pattern: "t"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "swapaxes"
+        target_framework: "jax"
+      description: "Rewrite tensor.t() to swapaxes"
+
+  attribute_rules:
+    - match:
+        pattern: "T"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "T"
+        target_framework: "all"
+      description: "Property access for transpose"
+    - match:
+        pattern: "ndim"
+        source_framework: "all"
+      replacement:
+        target_name: "ndim"
+        target_framework: "all"
+      description: "Property access for number of dimensions"
+
+  import_rules:
+    - match:
+        pattern: "torch"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "jax"
+        target_framework: "jax"
+      description: "Rewrite torch module import to jax"
+    - match:
+        pattern: "torch.nn"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "flax.linen"
+        target_framework: "jax"
+      description: "Rewrite torch.nn import to flax.linen"
+
+  function_def_rules:
+    - match:
+        pattern: "forward"
+        source_framework: "pytorch"
+      replacement:
+        target_name: "__call__"
+        target_framework: "jax"
+      description: "Rename forward method to __call__ in functional frameworks"
+    - match:
+        pattern: "__call__"
+        source_framework: "jax"
+      replacement:
+        target_name: "forward"
+        target_framework: "pytorch"
+      description: "Rename __call__ method to forward in PyTorch"

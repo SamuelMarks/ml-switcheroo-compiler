@@ -1,2 +1,6 @@
-NanToNum:
-  target_api: da.nan_to_num
+operation: NanToNum
+backend: dask
+target_api: da.nan_to_num
+ast_template: '{out} = da.nan_to_num({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

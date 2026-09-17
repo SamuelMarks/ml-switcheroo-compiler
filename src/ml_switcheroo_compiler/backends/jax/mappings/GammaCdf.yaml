@@ -1,2 +1,6 @@
-GammaCdf:
-  target_api: jax.scipy.stats.gamma.cdf
+operation: GammaCdf
+backend: jax
+target_api: jax.scipy.stats.gamma.cdf
+ast_template: '{out} = jax.scipy.stats.gamma.cdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

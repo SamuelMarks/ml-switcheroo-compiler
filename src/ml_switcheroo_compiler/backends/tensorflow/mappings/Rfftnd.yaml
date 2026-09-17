@@ -1,2 +1,6 @@
-Rfftnd:
-  target_api: tf.rfftnd
+operation: Rfftnd
+backend: tensorflow
+target_api: tf.rfftnd
+ast_template: '{out} = tf.rfftnd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

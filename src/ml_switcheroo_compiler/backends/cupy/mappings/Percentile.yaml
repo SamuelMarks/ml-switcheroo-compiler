@@ -1,2 +1,6 @@
-Percentile:
-  target_api: cp.percentile
+operation: Percentile
+backend: cupy
+target_api: cp.percentile
+ast_template: '{out} = cp.percentile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

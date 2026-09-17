@@ -1,2 +1,6 @@
-Outer:
-  target_api: keras_ops.outer
+operation: Outer
+backend: keras
+target_api: keras_ops.outer
+ast_template: '{out} = keras_ops.outer({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

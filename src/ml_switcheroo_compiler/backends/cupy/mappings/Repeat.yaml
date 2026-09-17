@@ -1,2 +1,6 @@
-Repeat:
-  target_api: cp.repeat
+operation: Repeat
+backend: cupy
+target_api: cp.repeat
+ast_template: '{out} = cp.repeat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

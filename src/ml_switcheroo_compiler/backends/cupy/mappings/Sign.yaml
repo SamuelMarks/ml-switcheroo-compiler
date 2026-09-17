@@ -1,2 +1,6 @@
-Sign:
-  target_api: cp.sign
+operation: Sign
+backend: cupy
+target_api: cp.sign
+ast_template: '{out} = cp.sign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -6,205 +6,146 @@ from __future__ import annotations
 
 """Unified Intermediate Representation (IR) Schema."""
 
-
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import (
+    AttributeValue,
+    LogicalGraph,
+    LogicalNode,
+    PartitionSpec,
+)
+from ml_switcheroo_ir import (
+    LogicalGraph as IRGraph,
+)
+from ml_switcheroo_ir import (
+    LogicalNode as IRNode,
+)
+from ml_switcheroo_ir.types import DType, TensorSpec
 
-from ml_switcheroo_compiler.core.dtype import DType
+# Re-export TensorSpec from ml_switcheroo_ir.types
+TensorSpec = TensorSpec
+
+__all__ = [
+    "DType",
+    "IRBlock",
+    "IRGraph",
+    "IRNode",
+    "LogicalGraph",
+    "LogicalNode",
+    "NoTangent",
+    "TensorSpec",
+    "ZeroTangent",
+    "clone_logical_node",
+]
 
 
-def clone_logical_node(node: LogicalNode, **kwargs) -> LogicalNode:
+def clone_logical_node(
+    node: LogicalNode,
+    **kwargs: (str | int | float | bool | list[str] | dict[str, AttributeValue] | dict[str, LogicalGraph] | list[TensorSpec] | Sequence[int | str] | PartitionSpec | DType | None),
+) -> LogicalNode:
     """Clones a LogicalNode, allowing overrides via kwargs.
 
     Args:
         node (LogicalNode): The node parameter.
-        **kwargs (object): Keyword args.
+        **kwargs: Keyword overrides.
 
     Returns:
-        LogicalNode: Result.
+        LogicalNode: The cloned LogicalNode.
     """
     attributes = dict(node.attributes)
     inputs = list(node.inputs)
+    outputs = list(node.outputs) if getattr(node, "outputs", None) is not None else None
+    output_specs = list(node.output_specs) if getattr(node, "output_specs", None) is not None else []
+    subgraphs = dict(node.subgraphs) if getattr(node, "subgraphs", None) is not None else {}
 
-    clone_kwargs = {
+    clone_kwargs: dict[
+        str,
+        (str | int | float | bool | list[str] | dict[str, AttributeValue] | dict[str, LogicalGraph] | list[TensorSpec] | Sequence[int | str] | PartitionSpec | DType | None),
+    ] = {
         "id": node.id,
         "op_type": node.op_type,
         "domain": node.domain,
         "version": node.version,
         "attributes": attributes,
         "inputs": inputs,
+        "outputs": outputs,
         "shape_metadata": node.shape_metadata,
         "source_ast_ref": node.source_ast_ref,
         "sharding": node.sharding,
+        "dtype": getattr(node, "dtype", None),
+        "output_specs": output_specs,
+        "subgraphs": subgraphs,
+        "device": getattr(node, "device", None),
+        "stream": getattr(node, "stream", None),
     }
     clone_kwargs.update(kwargs)
     return LogicalNode(**clone_kwargs)
 
 
-@dataclass
-class IRNode(LogicalNode):
-    """Extended LogicalNode for ml_switcheroo_compiler compiler internal IR."""
-
-    stream: str | None = None
-    device: str | None = None
-
-    @property
-    def is_dynamic_shape(self) -> bool:
-        """Return whether the node's shape metadata is dynamic.
-
-        Returns:
-            bool: True if the shape is dynamic or unknown.
-        """
-        if self.shape_metadata is None:
-            return False
-        if not isinstance(self.shape_metadata, (tuple, list)):
-            return False
-        return any(not isinstance(dim, int) for dim in self.shape_metadata)
-
-    @property
-    def static_shape(self) -> tuple[int, ...]:
-        """Return the static shape, raising an error if it's dynamic.
-
-        Returns:
-            tuple[int, ...]: The static shape.
-
-        Raises:
-            ValueError: If the shape is dynamic or not available.
-        """
-        if self.shape_metadata is None or not isinstance(self.shape_metadata, (tuple, list)):
-            msg = "Shape metadata is not available or not a sequence."
-            raise ValueError(msg)
-        if self.is_dynamic_shape:
-            msg = f"Cannot get static shape from dynamic node shape: {self.shape_metadata}"
-            raise ValueError(msg)
-        return tuple(int(dim) for dim in self.shape_metadata)
-
-    @property
-    def rank(self) -> int:
-        """Return the number of dimensions of the node's output.
-
-        Returns:
-            int: The rank of the node.
-        """
-        if self.shape_metadata is None or not isinstance(self.shape_metadata, (tuple, list)):
-            return 0
-        return len(self.shape_metadata)
-
-
-# Re-export base IR classes
-IRGraph = LogicalGraph
-
-
-@dataclass
-class TensorSpec:
-    """Specification of a tensor's properties in the IR.
+class IRBlock(LogicalGraph):
+    """Deprecated: Legacy container for nested control flow scopes; use LogicalGraph instead.
 
     Attributes:
-        shape: The shape of the tensor. Can contain strings for dynamic dims
-        dtype: The data type of the tensor
-        sparsity: Optional sparsity pattern metadata
+        id: Unique identifier for the block (maps to graph name).
+        nodes: The nodes dictionary in this block.
+        inputs: List of input variable names from the outer scope.
+        outputs: List of output variable names.
     """
 
-    shape: Sequence[int | str]
-    dtype: DType
-    sparsity = None
+    def __init__(
+        self,
+        id: str,
+        nodes: list[LogicalNode] | dict[str, LogicalNode] | None = None,
+        inputs: list[str] | None = None,
+        outputs: list[str] | None = None,
+    ) -> None:
+        """Initialize deprecated IRBlock.
 
-    @property
-    def is_dynamic(self) -> bool:
-        """Return whether any dimension in the shape is dynamic.
-
-        Returns:
-            bool: True if any dimension is not a static integer.
+        Args:
+            id (str): Unique identifier for the block.
+            nodes (list | dict | None): Nodes contained in this block.
+            inputs (list | None): Input node IDs.
+            outputs (list | None): Output node IDs.
         """
-        return any(not isinstance(dim, int) for dim in self.shape)
+        import warnings
 
-    @property
-    def static_shape(self) -> tuple[int, ...]:
-        """Return the static shape as a tuple of integers.
-
-        Returns:
-            tuple[int, ...]: The static shape.
-
-        Raises:
-            ValueError: If the shape contains dynamic dimensions.
-        """
-        if self.is_dynamic:
-            msg = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
-            raise ValueError(msg)
-        return tuple(int(dim) for dim in self.shape)
-
-    @property
-    def rank(self) -> int:
-        """Return the number of dimensions (rank) of the tensor.
-
-        Returns:
-            int: The rank of the tensor.
-        """
-        return len(self.shape)
+        warnings.warn("IRBlock is deprecated, use LogicalGraph instead.", DeprecationWarning, stacklevel=2)
+        super().__init__(name=id, nodes=nodes, outputs=outputs, inputs=inputs)
+        self.id = id
 
 
-@dataclass
-class IRBlock:
-    """Represents nested scopes for control flow like cond and while_loop.
-
-    Attributes:
-        id: Unique identifier for the block
-        nodes: The list of nodes in this block
-        inputs: List of input variable names from the outer scope
-        outputs: List of output variable names
-    """
-
-    id: str
-    nodes: list[IRNode] = field(default_factory=list)
-    inputs: list[str] = field(default_factory=list)
-    outputs: list[str] = field(default_factory=list)
-
-
-@dataclass
-class ZeroTangent(IRNode):
+class ZeroTangent(LogicalNode):
     """Represents a mathematically zero tangent (e.g. gradient wrt integer or unconnected)."""
 
-    def __init__(self, id: str, shape_metadata=None, **kwargs):
-        """__init__ function.
+    def __init__(
+        self,
+        id: str,
+        shape_metadata: tuple[int | str, ...] | Sequence[int | str] | None = None,
+        **kwargs: str | int | float | bool | list[str] | dict[str, AttributeValue] | None,
+    ) -> None:
+        """Initialize ZeroTangent node.
 
         Args:
-            id: The node id.
-            kwargs: Additional kwargs.
-
-        Args:
-            id: The node id.
+            id (str): The node id.
             shape_metadata: Shape metadata.
-            kwargs: Additional kwargs.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (object): The node.
-            **kwargs (object): Keyword arguments.
-        self (object): The self parameter.
-        id (object): The id parameter.
-        shape_metadata (object): The shape_metadata parameter.
-
-        Returns:
-        object: Result.
+            **kwargs: Additional kwargs.
         """
         super().__init__(id=id, op_type="ZeroTangent", shape_metadata=shape_metadata, **kwargs)
 
 
-@dataclass
-class NoTangent(IRNode):
+class NoTangent(LogicalNode):
     """Represents a structurally missing or non-differentiable tangent path."""
 
-    def __init__(self, id: str, **kwargs):
-        """__init__ function.
+    def __init__(
+        self,
+        id: str,
+        **kwargs: str | int | float | bool | list[str] | dict[str, AttributeValue] | None,
+    ) -> None:
+        """Initialize NoTangent node.
 
         Args:
             id (str): The node id.
-            **kwargs (object): Keyword arguments.
-
-        Returns:
-            object: Result.
+            **kwargs: Additional kwargs.
         """
         super().__init__(id=id, op_type="NoTangent", **kwargs)

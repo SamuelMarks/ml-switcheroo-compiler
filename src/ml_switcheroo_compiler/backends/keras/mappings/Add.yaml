@@ -1,2 +1,6 @@
-Add:
-  target_api: keras_ops.add
+operation: Add
+backend: keras
+target_api: keras_ops.add
+ast_template: '{out} = keras_ops.add({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

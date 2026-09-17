@@ -1,2 +1,6 @@
-Einsum:
-  target_api: tf.einsum
+operation: Einsum
+backend: tensorflow
+target_api: tf.einsum
+ast_template: '{out} = tf.einsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

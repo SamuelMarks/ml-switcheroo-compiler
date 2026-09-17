@@ -1,2 +1,6 @@
-Norm:
-  target_api: cp.linalg.norm
+operation: Norm
+backend: cupy
+target_api: cp.linalg.norm
+ast_template: '{out} = cp.linalg.norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

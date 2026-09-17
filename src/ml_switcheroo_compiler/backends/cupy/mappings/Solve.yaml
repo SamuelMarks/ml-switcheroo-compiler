@@ -1,2 +1,6 @@
-Solve:
-  target_api: cp.linalg.solve
+operation: Solve
+backend: cupy
+target_api: cp.linalg.solve
+ast_template: '{out} = cp.linalg.solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

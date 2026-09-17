@@ -1,3 +1,6 @@
-BroadcastTo:
-  ast_template: np.broadcast_to
-  target_api: ''
+operation: BroadcastTo
+backend: numpy
+target_api: ''
+ast_template: np.broadcast_to
+kwarg_map: {}
+dtype_overrides: {}

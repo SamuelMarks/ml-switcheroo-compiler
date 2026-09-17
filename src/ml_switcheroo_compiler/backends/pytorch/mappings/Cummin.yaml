@@ -1,0 +1,6 @@
+operation: Cummin
+backend: pytorch
+target_api: torch.cummin
+ast_template: '{out} = torch.cummin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

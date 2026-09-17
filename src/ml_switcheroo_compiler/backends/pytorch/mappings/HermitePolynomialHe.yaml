@@ -1,2 +1,6 @@
-HermitePolynomialHe:
-  target_api: torch.special.hermite_polynomial_he
+operation: HermitePolynomialHe
+backend: pytorch
+target_api: torch.special.hermite_polynomial_he
+ast_template: '{out} = torch.special.hermite_polynomial_he({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

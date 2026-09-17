@@ -1,2 +1,6 @@
-UnravelIndex:
-  target_api: cp.unravel_index
+operation: UnravelIndex
+backend: cupy
+target_api: cp.unravel_index
+ast_template: '{out} = cp.unravel_index({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Erfinv:
-  target_api: '''mx.erfinv({0})'''
+operation: Erfinv
+backend: mlx
+target_api: '''mx.erfinv({0})'''
+ast_template: '{out} = ''mx.erfinv({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

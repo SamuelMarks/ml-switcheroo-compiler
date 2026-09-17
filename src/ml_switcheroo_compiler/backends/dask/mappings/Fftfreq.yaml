@@ -1,2 +1,6 @@
-Fftfreq:
-  target_api: da.fft.fftfreq
+operation: Fftfreq
+backend: dask
+target_api: da.fft.fftfreq
+ast_template: '{out} = da.fft.fftfreq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Take:
-  target_api: cp.take
+operation: Take
+backend: cupy
+target_api: cp.take
+ast_template: '{out} = cp.take({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

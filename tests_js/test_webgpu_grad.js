@@ -39,7 +39,8 @@ with ConfigContext(backend="numpy"):
     # trace forward pass
     block = _trace_function(simple_fn, (x,), "fwd")
     fwd_graph = LogicalGraph(name="fwd")
-    for node in block.nodes:
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
         fwd_graph.nodes[node.id] = node
     fwd_graph.inputs = block.inputs
     fwd_graph.outputs = block.outputs

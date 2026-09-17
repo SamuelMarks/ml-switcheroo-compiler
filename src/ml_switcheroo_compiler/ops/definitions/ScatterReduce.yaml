@@ -2,32 +2,91 @@ operation: ScatterReduce
 description: Reduces values into a tensor at indices specified by index using a reduction
   operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: index
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: src
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: reduce
-    type: str
-  - default: true
-    is_variadic: false
-    kind: positional_or_keyword
-    name: include_self
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: index
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: src
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: reduce
+  type: str
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: include_self
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: axis
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: index
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: src
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: reduce
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: include_self
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - axis
+  - index
+  - src
+  - reduce
+  - include_self
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: ScatterReduce_vjp
+  jvp_rule_id: ScatterReduce_jvp
+  vjp: null
+  jvp: null

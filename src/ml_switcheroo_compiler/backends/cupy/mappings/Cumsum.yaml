@@ -1,2 +1,6 @@
-Cumsum:
-  target_api: cp.cumsum
+operation: Cumsum
+backend: cupy
+target_api: cp.cumsum
+ast_template: '{out} = cp.cumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

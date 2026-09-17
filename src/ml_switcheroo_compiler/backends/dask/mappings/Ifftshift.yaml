@@ -1,2 +1,6 @@
-Ifftshift:
-  target_api: da.fft.ifftshift
+operation: Ifftshift
+backend: dask
+target_api: da.fft.ifftshift
+ast_template: '{out} = da.fft.ifftshift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Irfftn:
-  target_api: cp.fft.irfftn
+operation: Irfftn
+backend: cupy
+target_api: cp.fft.irfftn
+ast_template: '{out} = cp.fft.irfftn({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

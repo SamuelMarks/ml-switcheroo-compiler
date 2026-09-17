@@ -1,3 +1,6 @@
-Multiply:
-  ast_template: np.multiply
-  target_api: ''
+operation: Multiply
+backend: numpy
+target_api: ''
+ast_template: np.multiply
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Sigmoid:
-  target_api: tf.sigmoid
+operation: Sigmoid
+backend: tensorflow
+target_api: tf.sigmoid
+ast_template: '{out} = tf.sigmoid({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

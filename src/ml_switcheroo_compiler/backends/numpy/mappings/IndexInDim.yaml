@@ -1,3 +1,6 @@
-IndexInDim:
-  ast_template: np.take({0}, {1}, axis={2})
-  target_api: ''
+operation: IndexInDim
+backend: numpy
+target_api: ''
+ast_template: np.take({0}, {1}, axis={2})
+kwarg_map: {}
+dtype_overrides: {}

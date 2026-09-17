@@ -539,3 +539,179 @@ def load_edge_control_flow_templates(path: str) -> EdgeControlFlowTemplatesConfi
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return EdgeControlFlowTemplatesConfig.model_validate(data)
+
+
+class BindGroupMemoryAlignmentConfig(BaseModel):
+    """Memory buffer alignment constraints for WebGPU bind groups.
+
+    Attributes:
+        min_storage_buffer_offset_alignment (int): Minimum alignment in bytes for storage buffers.
+        min_uniform_buffer_offset_alignment (int): Minimum alignment in bytes for uniform buffers.
+        struct_alignment_bytes (int): Alignment boundary for struct types.
+        scalar_alignment_bytes (int): Alignment boundary for scalar types.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    min_storage_buffer_offset_alignment: int = 256
+    min_uniform_buffer_offset_alignment: int = 256
+    struct_alignment_bytes: int = 16
+    scalar_alignment_bytes: int = 4
+
+
+class BindGroupRulesConfig(BaseModel):
+    """Configuration rules for dynamic WGSL bind group layout generation.
+
+    Attributes:
+        default_group (int): Default group index.
+        max_storage_buffers_per_shader_stage (int): Hardware limit for storage buffers.
+        max_uniform_buffers_per_shader_stage (int): Hardware limit for uniform buffers.
+        dynamic_layout_generation (bool): Whether dynamic bindgroup generation is active.
+        input_binding_start (int): Starting index for input bindings.
+        input_access (str): WGSL storage buffer access qualifier for inputs.
+        output_access (str): WGSL storage buffer access qualifier for outputs.
+        uniform_access (str): WGSL uniform buffer access qualifier.
+        storage_buffer_declaration (str): Template for storage buffer declaration.
+        uniform_buffer_declaration (str): Template for uniform buffer declaration.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    default_group: int = 0
+    max_storage_buffers_per_shader_stage: int = 8
+    max_uniform_buffers_per_shader_stage: int = 12
+    dynamic_layout_generation: bool = True
+    input_binding_start: int = 0
+    input_access: str = "read"
+    output_access: str = "read_write"
+    uniform_access: str = "read"
+    storage_buffer_declaration: str = "@group({group}) @binding({binding}) var<storage, {access}> {name}: array<{dtype}>;"
+    uniform_buffer_declaration: str = "@group({group}) @binding({binding}) var<uniform> {name}: {dtype};"
+
+
+class BindGroupNamingConventionsConfig(BaseModel):
+    """Naming conventions for dynamic WGSL buffer bindings.
+
+    Attributes:
+        input_prefix (str): Prefix for input storage buffers.
+        output_prefix (str): Prefix for output storage buffers.
+        uniform_prefix (str): Prefix for uniform buffers.
+        single_output_name (str): Identifier for single output storage buffer.
+        indexed_input_name (str): Template for indexed input storage buffer.
+        indexed_output_name (str): Template for indexed output storage buffer.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    input_prefix: str = "buf_in"
+    output_prefix: str = "buf_out"
+    uniform_prefix: str = "buf_uniform"
+    single_output_name: str = "buf_out_{dtype}"
+    indexed_input_name: str = "buf_in{index}_{dtype}"
+    indexed_output_name: str = "buf_out{index}_{dtype}"
+
+
+class BindGroupSchemasConfig(BaseModel):
+    """Schema model for WebGPU WGSL bind group layouts and memory alignment rules.
+
+    Attributes:
+        version (str): Schema version string.
+        memory_alignment (BindGroupMemoryAlignmentConfig): Memory buffer alignment constraints.
+        bindgroup_rules (BindGroupRulesConfig): Rules for dynamic binding generation.
+        naming_conventions (BindGroupNamingConventionsConfig): Naming patterns.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    version: str = "1.0.0"
+    memory_alignment: BindGroupMemoryAlignmentConfig = Field(default_factory=BindGroupMemoryAlignmentConfig)
+    bindgroup_rules: BindGroupRulesConfig = Field(default_factory=BindGroupRulesConfig)
+    naming_conventions: BindGroupNamingConventionsConfig = Field(default_factory=BindGroupNamingConventionsConfig)
+
+
+def load_bindgroup_schemas(path: str | None = None) -> BindGroupSchemasConfig:
+    """Load and validate WebGPU bind group schemas from YAML.
+
+    Args:
+        path (str, optional): Custom path to bindgroup_schemas.yaml.
+
+    Returns:
+        BindGroupSchemasConfig: Validated bindgroup schema model.
+    """
+    import os
+
+    import yaml
+
+    resolved_path = path or os.path.join(os.path.dirname(__file__), "wgsl", "bindgroup_schemas.yaml")
+    with open(resolved_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return BindGroupSchemasConfig.model_validate(data)
+
+
+class DtypeEmulationTypeConfig(BaseModel):
+    """Configuration for emulated scalar types.
+
+    Attributes:
+        wgsl_type (str): Emulated WGSL type.
+        components (dict[str, str]): Component names and primitive types.
+        description (str): Human-readable explanation.
+        warning (str): Warning string to emit on compile/translation.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    wgsl_type: str
+    components: dict[str, str] = Field(default_factory=dict)
+    description: str = ""
+    warning: str = ""
+
+
+class DtypeEmulationOpConfig(BaseModel):
+    """Configuration for an emulated precision math operation.
+
+    Attributes:
+        signature (str): WGSL function signature.
+        body (str): WGSL function body.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    signature: str
+    body: str
+
+
+class DtypeEmulationConfig(BaseModel):
+    """Configuration schema for double precision (float64) emulation rules in WGSL.
+
+    Attributes:
+        version (str): Schema version string.
+        emulation_types (dict[str, DtypeEmulationTypeConfig]): Map of type names to emulation configs.
+        device_requirements (dict[str, str | bool]): WebGPU feature requirements.
+        emulation_ops (dict[str, DtypeEmulationOpConfig]): Map of operation names to WGSL math implementations.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    version: str = "1.0.0"
+    emulation_types: dict[str, DtypeEmulationTypeConfig] = Field(default_factory=dict)
+    device_requirements: dict[str, str | bool] = Field(default_factory=dict)
+    emulation_ops: dict[str, DtypeEmulationOpConfig] = Field(default_factory=dict)
+
+
+def load_dtype_emulation_config(path: str | None = None) -> DtypeEmulationConfig:
+    """Load and validate double-precision emulation rules from YAML.
+
+    Args:
+        path (str, optional): Custom path to dtype_emulation.yaml.
+
+    Returns:
+        DtypeEmulationConfig: Validated dtype emulation configuration model.
+    """
+    import os
+
+    import yaml
+
+    resolved_path = path or os.path.join(os.path.dirname(__file__), "wgsl", "dtype_emulation.yaml")
+    with open(resolved_path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    return DtypeEmulationConfig.model_validate(data)

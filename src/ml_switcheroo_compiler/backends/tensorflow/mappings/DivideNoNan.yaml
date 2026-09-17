@@ -1,2 +1,6 @@
-DivideNoNan:
-  target_api: tf.math.divide_no_nan
+operation: DivideNoNan
+backend: tensorflow
+target_api: tf.math.divide_no_nan
+ast_template: '{out} = tf.math.divide_no_nan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -155,3 +155,19 @@ def test_builder_extract_proxy_inputs_tensor_missing():
     assert len(ids) == 1
     assert shapes[0] == ()
     bmod.global_tracing_state = old_state
+
+
+def test_builder_infer_shape_none_branch() -> None:
+    """Test TracingNodeBuilder.emit_tracing_node when infer_shape returns None."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.tracing import global_tracing_state
+    from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+
+    global_tracing_state.start_tracing("test_infer_none")
+    try:
+        with patch("ml_switcheroo_compiler.tracing.builder.infer_shape", return_value=None):
+            tensor = TracingNodeBuilder.emit_tracing_node("CustomOpWithNoneShape")
+            assert tensor.shape == ()
+    finally:
+        global_tracing_state.stop_tracing()

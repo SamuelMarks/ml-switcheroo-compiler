@@ -1,2 +1,6 @@
-Psum:
-  target_api: '''{0}.psum({1})'''
+operation: Psum
+backend: mlx
+target_api: '''{0}.psum({1})'''
+ast_template: '{out} = ''{0}.psum({1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

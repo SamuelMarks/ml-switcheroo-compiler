@@ -1,2 +1,6 @@
-Isneginf:
-  target_api: da.isneginf
+operation: Isneginf
+backend: dask
+target_api: da.isneginf
+ast_template: '{out} = da.isneginf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Irfft3d:
-  ast_template: torch.fft.irfftn({0}, s={s}, dim={axes})
-  target_api: ''
+operation: Irfft3d
+backend: pytorch
+target_api: ''
+ast_template: torch.fft.irfftn({0}, s={s}, dim={axes})
+kwarg_map: {}
+dtype_overrides: {}

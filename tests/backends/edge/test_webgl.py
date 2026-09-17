@@ -96,6 +96,8 @@ def test_webgl_expanded_ops():
         ("sm", "Softmax", [IRNode(id="in_sm", op_type="Input", shape_metadata=(1, 32))]),
         ("tp", "Transpose", [IRNode(id="in_tp", op_type="Input", shape_metadata=(16, 32))]),
         ("bc", "BroadcastTo", [IRNode(id="in_bc", op_type="Input", shape_metadata=(1, 32))]),
+        ("dw", "DepthwiseConv2D", [IRNode(id="in_dw_x", op_type="Input", shape_metadata=(1, 32, 32)), IRNode(id="in_dw_w", op_type="Input", shape_metadata=(3, 3))]),
+        ("mha", "MultiheadAttention", [IRNode(id="in_q", op_type="Input", shape_metadata=(16, 32)), IRNode(id="in_k", op_type="Input", shape_metadata=(16, 32)), IRNode(id="in_v", op_type="Input", shape_metadata=(16, 32))]),
     ]
     for prefix, op_type, inputs in ops:
         graph = IRGraph()
@@ -256,3 +258,26 @@ def test_webgl_nd_packing_and_mrt():
     assert "gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);" in out
     assert "texOut_split_node_0" in out
     assert "texOut_split_node_1" in out
+
+
+def test_webgl_generator_conv2d_shape_branches() -> None:
+    """Test WebGLCodeGenerator with 4D Conv2D and non-int symbolic dimensions."""
+    from ml_switcheroo_ir import LogicalNode
+
+    graph = IRGraph(name="webgl_conv")
+    node_in = LogicalNode(id="in_0", op_type="Input", shape_metadata=(1, 3, 32, 32))
+    node_w = LogicalNode(id="w_0", op_type="Input", shape_metadata=(16, 3, 3, 3))
+    node_conv = LogicalNode(id="conv_0", op_type="Conv2D", inputs=["in_0", "w_0"], shape_metadata=(1, 16, 30, 30))
+    graph.nodes = {"in_0": node_in, "w_0": node_w, "conv_0": node_conv}
+    graph.inputs = ["in_0", "w_0"]
+    graph.outputs = ["conv_0"]
+    gen = WebGLCodeGenerator(graph)
+    assert gen.generate() is not None
+
+    graph_sym = IRGraph(name="webgl_sym")
+    node_sym = LogicalNode(id="sym_add", op_type="Add", inputs=[], shape_metadata=("batch", 4, 8))
+    graph_sym.nodes = {"sym_add": node_sym}
+    graph_sym.inputs = []
+    graph_sym.outputs = ["sym_add"]
+    gen_sym = WebGLCodeGenerator(graph_sym)
+    assert gen_sym.generate() is not None

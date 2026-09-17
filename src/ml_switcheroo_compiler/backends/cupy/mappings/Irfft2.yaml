@@ -1,2 +1,6 @@
-Irfft2:
-  target_api: cp.fft.irfft2
+operation: Irfft2
+backend: cupy
+target_api: cp.fft.irfft2
+ast_template: '{out} = cp.fft.irfft2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

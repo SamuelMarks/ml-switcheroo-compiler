@@ -1,2 +1,6 @@
-Concatenate:
-  target_api: keras_ops.concatenate
+operation: Concatenate
+backend: keras
+target_api: keras_ops.concatenate
+ast_template: '{out} = keras_ops.concatenate({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

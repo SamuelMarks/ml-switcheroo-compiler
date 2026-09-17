@@ -1,2 +1,6 @@
-Mod:
-  target_api: keras_ops.mod
+operation: Mod
+backend: keras
+target_api: keras_ops.mod
+ast_template: '{out} = keras_ops.mod({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

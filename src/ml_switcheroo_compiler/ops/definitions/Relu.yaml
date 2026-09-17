@@ -32,6 +32,33 @@ variants:
     template: unary
     scalar_expr: std::max(0.0f, in0_val)
 autodiff:
+  vjp_rule_id: Relu_vjp
+  jvp_rule_id: Relu_jvp
   vjp:
   - Multiply($cotangent, Greater($input[0], Constant(0.0)))
   jvp: Multiply($tangent[0], Greater($input[0], Constant(0.0)))
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: elementwise
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: true
+  identity_value: null
+  absorbing_value: null

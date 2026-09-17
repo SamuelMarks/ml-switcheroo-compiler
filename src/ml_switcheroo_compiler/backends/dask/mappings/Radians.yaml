@@ -1,2 +1,6 @@
-Radians:
-  target_api: da.radians
+operation: Radians
+backend: dask
+target_api: da.radians
+ast_template: '{out} = da.radians({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

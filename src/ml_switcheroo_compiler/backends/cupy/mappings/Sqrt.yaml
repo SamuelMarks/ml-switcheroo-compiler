@@ -1,2 +1,6 @@
-Sqrt:
-  target_api: cp.sqrt
+operation: Sqrt
+backend: cupy
+target_api: cp.sqrt
+ast_template: '{out} = cp.sqrt({in0})'
+kwarg_map: {}
+dtype_overrides: {}

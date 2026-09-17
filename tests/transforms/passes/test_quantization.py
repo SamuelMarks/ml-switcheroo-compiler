@@ -26,7 +26,7 @@ def test_ptq_pass() -> None:
     optimized_graph = ptq(graph)
 
     assert "dtype" in optimized_graph.nodes["dot"].attributes
-    assert optimized_graph.nodes["dot"].attributes["dtype"] == "Int8"
+    assert optimized_graph.nodes["dot"].attributes["dtype"] == "int8"
     assert "q_scale" in optimized_graph.nodes["dot"].attributes
 
     assert "dtype" not in optimized_graph.nodes["add"].attributes
@@ -133,7 +133,7 @@ def test_integer_quantization_lowering_pass() -> None:
     assert graph.nodes["matmul"].attributes["q_zero_point"] == 128
 
     assert graph.nodes["conv"].op_type == "QuantizedConv2D"
-    assert graph.nodes["conv"].attributes["dtype"] == "Int8"
+    assert graph.nodes["conv"].attributes["dtype"] == "int8"
 
 
 def test_integer_quantization_lowering_no_op() -> None:

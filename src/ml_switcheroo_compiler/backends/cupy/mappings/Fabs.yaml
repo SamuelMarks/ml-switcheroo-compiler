@@ -1,2 +1,6 @@
-Fabs:
-  target_api: cp.fabs
+operation: Fabs
+backend: cupy
+target_api: cp.fabs
+ast_template: '{out} = cp.fabs({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

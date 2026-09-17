@@ -1,30 +1,84 @@
 operation: GridSampler2d
 description: Performs 2D grid sampling.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: grid
-    type: Tensor
-  - default: 0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: interpolation_mode
-    type: int
-  - default: 0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: padding_mode
-    type: int
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: align_corners
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: grid
+  type: Tensor
+- default: 0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: interpolation_mode
+  type: int
+- default: 0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: padding_mode
+  type: int
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: align_corners
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: grid
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: interpolation_mode
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: padding_mode
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: align_corners
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - grid
+  - interpolation_mode
+  - padding_mode
+  - align_corners
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: GridSampler2d_vjp
+  jvp_rule_id: GridSampler2d_jvp
+  vjp: null
+  jvp: null

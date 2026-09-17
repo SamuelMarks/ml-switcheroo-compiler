@@ -1,2 +1,6 @@
-Less:
-  target_api: torch.lt
+operation: Less
+backend: pytorch
+target_api: torch.lt
+ast_template: '{out} = torch.lt({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

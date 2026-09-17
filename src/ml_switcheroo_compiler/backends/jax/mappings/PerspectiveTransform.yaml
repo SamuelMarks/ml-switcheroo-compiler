@@ -1,3 +1,6 @@
-PerspectiveTransform:
-  ast_template: jax_perspective_transform({0}, {1}, {2})
-  target_api: ''
+operation: PerspectiveTransform
+backend: jax
+target_api: ''
+ast_template: jax_perspective_transform({0}, {1}, {2})
+kwarg_map: {}
+dtype_overrides: {}

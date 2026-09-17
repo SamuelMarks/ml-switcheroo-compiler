@@ -1,2 +1,6 @@
-PoissonCdf:
-  target_api: jax.scipy.stats.poisson.cdf
+operation: PoissonCdf
+backend: jax
+target_api: jax.scipy.stats.poisson.cdf
+ast_template: '{out} = jax.scipy.stats.poisson.cdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

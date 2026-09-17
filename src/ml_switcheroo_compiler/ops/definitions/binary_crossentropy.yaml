@@ -1,20 +1,64 @@
 operation: binary_crossentropy
 description: Computes the binary crossentropy loss.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: y_true
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: y_pred
-    type: Any
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: from_logits
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_true
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_pred
+  type: Any
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: from_logits
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: y_true
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: y_pred
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: from_logits
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - y_true
+  - y_pred
+  - from_logits
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: binary_crossentropy_vjp
+  jvp_rule_id: binary_crossentropy_jvp
+  vjp: null
+  jvp: null

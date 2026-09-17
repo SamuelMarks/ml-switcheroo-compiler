@@ -1,2 +1,6 @@
-FloorDivide:
-  target_api: cp.floor_divide
+operation: FloorDivide
+backend: cupy
+target_api: cp.floor_divide
+ast_template: '{out} = cp.floor_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

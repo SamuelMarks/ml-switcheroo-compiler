@@ -1,2 +1,6 @@
-Expm1:
-  target_api: tf.math.expm1
+operation: Expm1
+backend: tensorflow
+target_api: tf.math.expm1
+ast_template: '{out} = tf.math.expm1({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

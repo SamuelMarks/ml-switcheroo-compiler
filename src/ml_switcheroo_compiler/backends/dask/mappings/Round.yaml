@@ -1,2 +1,6 @@
-Round:
-  target_api: da.round
+operation: Round
+backend: dask
+target_api: da.round
+ast_template: '{out} = da.round({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

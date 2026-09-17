@@ -1,2 +1,6 @@
-NotEqual:
-  target_api: torch.ne
+operation: NotEqual
+backend: pytorch
+target_api: torch.ne
+ast_template: '{out} = torch.ne({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

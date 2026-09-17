@@ -1,2 +1,6 @@
-LogicalOr:
-  target_api: da.logical_or
+operation: LogicalOr
+backend: dask
+target_api: da.logical_or
+ast_template: '{out} = da.logical_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

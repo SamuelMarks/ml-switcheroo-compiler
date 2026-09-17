@@ -1,0 +1,6 @@
+operation: Conv3D
+backend: pytorch
+target_api: torch.nn.functional.conv3d
+ast_template: '{out} = torch.nn.functional.conv3d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

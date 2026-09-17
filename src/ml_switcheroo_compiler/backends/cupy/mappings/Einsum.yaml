@@ -1,2 +1,6 @@
-Einsum:
-  target_api: cp.einsum
+operation: Einsum
+backend: cupy
+target_api: cp.einsum
+ast_template: '{out} = cp.einsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

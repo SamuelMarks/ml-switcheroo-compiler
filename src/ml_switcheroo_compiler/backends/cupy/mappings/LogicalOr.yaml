@@ -1,2 +1,6 @@
-LogicalOr:
-  target_api: cp.logical_or
+operation: LogicalOr
+backend: cupy
+target_api: cp.logical_or
+ast_template: '{out} = cp.logical_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

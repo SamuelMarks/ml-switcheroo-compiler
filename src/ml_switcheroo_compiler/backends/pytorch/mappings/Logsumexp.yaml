@@ -1,0 +1,6 @@
+operation: Logsumexp
+backend: pytorch
+target_api: torch.logsumexp
+ast_template: '{out} = torch.logsumexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

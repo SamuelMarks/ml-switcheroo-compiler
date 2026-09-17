@@ -1,2 +1,6 @@
-Xlog1py:
-  target_api: tf.math.xlog1py
+operation: Xlog1py
+backend: tensorflow
+target_api: tf.math.xlog1py
+ast_template: '{out} = tf.math.xlog1py({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

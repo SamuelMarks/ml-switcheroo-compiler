@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
-import h5py
+from typing import TYPE_CHECKING
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
+
+try:
+    import h5py
+except ImportError:
+    h5py = None  # type: ignore[assignment]
+
+if TYPE_CHECKING:
+    import h5py as h5py_types
 
 
 class WeightSchema(BaseModel):
@@ -27,15 +36,21 @@ class HDF5WeightLoader(WeightLoader):
 
         Returns:
             dict[str, np.ndarray]: The loaded weights.
+
+        Raises:
+            ImportError: If h5py is not installed.
         """
+        if h5py is None:
+            raise ImportError("h5py is required for HDF5 weight loading. Please install h5py.")
+
         weights: dict[str, np.ndarray] = {}
 
-        def _visit_func(name: str, node: h5py.Group | h5py.Dataset) -> None:
+        def _visit_func(name: str, node: h5py_types.Group | h5py_types.Dataset) -> None:
             """Visit HDF5 nodes and extract datasets.
 
             Args:
                 name (str): The name of the node.
-                node (h5py.Group | h5py.Dataset): The HDF5 node (Group or Dataset).
+                node (h5py_types.Group | h5py_types.Dataset): The HDF5 node (Group or Dataset).
             """
             if isinstance(node, h5py.Dataset):
                 weights[name] = node[()]
@@ -57,7 +72,13 @@ class HDF5WeightSaver(WeightSaver):
         Args:
             weights_np (dict[str, np.ndarray]): The weights to save.
             filepath (str): Path to the HDF5 file.
+
+        Raises:
+            ImportError: If h5py is not installed.
         """
+        if h5py is None:
+            raise ImportError("h5py is required for HDF5 weight saving. Please install h5py.")
+
         # Validate through schema
         validated = WeightSchema(data=weights_np)
 

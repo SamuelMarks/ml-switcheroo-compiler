@@ -1,2 +1,6 @@
-Mean:
-  target_api: keras_ops.mean
+operation: Mean
+backend: keras
+target_api: keras_ops.mean
+ast_template: '{out} = keras_ops.mean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

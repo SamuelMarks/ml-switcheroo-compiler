@@ -1,2 +1,6 @@
-EditDistance:
-  target_api: tf.edit_distance
+operation: EditDistance
+backend: tensorflow
+target_api: tf.edit_distance
+ast_template: '{out} = tf.edit_distance({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Corrcoef:
-  target_api: da.corrcoef
+operation: Corrcoef
+backend: dask
+target_api: da.corrcoef
+ast_template: '{out} = da.corrcoef({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

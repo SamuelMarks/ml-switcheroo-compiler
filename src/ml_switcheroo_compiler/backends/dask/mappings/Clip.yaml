@@ -1,2 +1,6 @@
-Clip:
-  target_api: da.clip
+operation: Clip
+backend: dask
+target_api: da.clip
+ast_template: '{out} = da.clip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

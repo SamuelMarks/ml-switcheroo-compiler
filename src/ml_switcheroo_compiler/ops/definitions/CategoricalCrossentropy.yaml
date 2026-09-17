@@ -1,27 +1,83 @@
 operation: CategoricalCrossentropy
 description: Computes the crossentropy loss between the labels and predictions.
 std_args:
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: from_logits
-    type: bool
-  - default: 0.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: label_smoothing
-    type: float
-  - default: -1
-    is_variadic: false
-    kind: positional_or_keyword
-    name: axis
-    type: int
-  - default: sum_over_batch_size
-    is_variadic: false
-    kind: positional_or_keyword
-    name: reduction
-    type: str
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: from_logits
+  type: bool
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: label_smoothing
+  type: float
+- default: -1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- default: sum_over_batch_size
+  is_variadic: false
+  kind: positional_or_keyword
+  name: reduction
+  type: str
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+  edge_wasm_simd:
+    template: unary
+    scalar_expr: in0_val
+    simd_expr: in0_val
+  edge_wgsl:
+    template: unary
+    expr: buf_in0_f32[in0_offset]
+signature:
+  args:
+  - name: from_logits
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: label_smoothing
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: axis
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: reduction
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - from_logits
+  - label_smoothing
+  - axis
+  - reduction
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: CategoricalCrossentropy_vjp
+  jvp_rule_id: CategoricalCrossentropy_jvp
+  vjp: null
+  jvp: null

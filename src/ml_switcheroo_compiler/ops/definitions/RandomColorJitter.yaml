@@ -1,23 +1,72 @@
 operation: RandomColorJitter
 description: Randomly apply brightness, contrast, saturation and hue image processing.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: brightness_factor
-    type: float
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: contrast_factor
-    type: float
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: saturation_factor
-    type: float
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: hue_factor
-    type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: brightness_factor
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: contrast_factor
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: saturation_factor
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: hue_factor
+  type: float
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: brightness_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: contrast_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: saturation_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: hue_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - brightness_factor
+  - contrast_factor
+  - saturation_factor
+  - hue_factor
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: RandomColorJitter_vjp
+  jvp_rule_id: RandomColorJitter_jvp
+  vjp: null
+  jvp: null

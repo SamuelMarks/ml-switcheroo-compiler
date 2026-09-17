@@ -1,2 +1,6 @@
-Isin:
-  target_api: cp.isin
+operation: Isin
+backend: cupy
+target_api: cp.isin
+ast_template: '{out} = cp.isin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

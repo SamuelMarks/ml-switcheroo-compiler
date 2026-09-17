@@ -1,2 +1,6 @@
-Igammac:
-  target_api: tf.math.igammac
+operation: Igammac
+backend: tensorflow
+target_api: tf.math.igammac
+ast_template: '{out} = tf.math.igammac({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

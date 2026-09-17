@@ -1,2 +1,6 @@
-AssociativeScan:
-  target_api: keras_ops.associative_scan
+operation: AssociativeScan
+backend: keras
+target_api: keras_ops.associative_scan
+ast_template: '{out} = keras_ops.associative_scan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

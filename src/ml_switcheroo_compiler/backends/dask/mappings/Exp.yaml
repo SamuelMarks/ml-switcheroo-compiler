@@ -1,2 +1,6 @@
-Exp:
-  target_api: da.exp
+operation: Exp
+backend: dask
+target_api: da.exp
+ast_template: '{out} = da.exp({in0})'
+kwarg_map: {}
+dtype_overrides: {}

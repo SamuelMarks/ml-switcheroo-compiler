@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: '''mx.tensordot({0}, {1}, axes={axes})'''
+operation: Tensordot
+backend: mlx
+target_api: '''mx.tensordot({0}, {1}, axes={axes})'''
+ast_template: '{out} = ''mx.tensordot({0}, {1}, axes={axes})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

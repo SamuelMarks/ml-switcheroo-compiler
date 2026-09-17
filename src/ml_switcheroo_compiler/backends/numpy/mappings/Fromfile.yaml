@@ -1,3 +1,6 @@
-Fromfile:
-  ast_template: np.fromfile
-  target_api: ''
+operation: Fromfile
+backend: numpy
+target_api: ''
+ast_template: np.fromfile
+kwarg_map: {}
+dtype_overrides: {}

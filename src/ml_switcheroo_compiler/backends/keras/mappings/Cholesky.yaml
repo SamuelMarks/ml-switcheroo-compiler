@@ -1,2 +1,6 @@
-Cholesky:
-  target_api: keras_ops.cholesky
+operation: Cholesky
+backend: keras
+target_api: keras_ops.cholesky
+ast_template: '{out} = keras_ops.cholesky({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

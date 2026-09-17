@@ -1,2 +1,6 @@
-Argmax:
-  target_api: cp.argmax
+operation: Argmax
+backend: cupy
+target_api: cp.argmax
+ast_template: '{out} = cp.argmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-OneHot:
-  target_api: '''mx.eye({depth})[{0}]'''
+operation: OneHot
+backend: mlx
+target_api: '''mx.eye({depth})[{0}]'''
+ast_template: '{out} = ''mx.eye({depth})[{0}]''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

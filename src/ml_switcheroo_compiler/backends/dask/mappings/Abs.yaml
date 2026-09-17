@@ -1,2 +1,6 @@
-Abs:
-  target_api: da.abs
+operation: Abs
+backend: dask
+target_api: da.abs
+ast_template: '{out} = da.abs({in0})'
+kwarg_map: {}
+dtype_overrides: {}

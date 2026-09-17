@@ -1,2 +1,6 @@
-Frexp:
-  target_api: cp.frexp
+operation: Frexp
+backend: cupy
+target_api: cp.frexp
+ast_template: '{out} = cp.frexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

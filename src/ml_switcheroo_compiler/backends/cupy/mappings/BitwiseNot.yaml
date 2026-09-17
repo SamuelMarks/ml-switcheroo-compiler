@@ -1,2 +1,6 @@
-BitwiseNot:
-  target_api: cp.bitwise_not
+operation: BitwiseNot
+backend: cupy
+target_api: cp.bitwise_not
+ast_template: '{out} = cp.bitwise_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

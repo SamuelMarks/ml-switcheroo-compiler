@@ -1,2 +1,6 @@
-Arange:
-  target_api: '''mx.arange({0})'''
+operation: Arange
+backend: mlx
+target_api: '''mx.arange({0})'''
+ast_template: '{out} = ''mx.arange({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

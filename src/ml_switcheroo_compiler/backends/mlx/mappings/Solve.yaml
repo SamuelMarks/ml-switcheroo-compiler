@@ -1,2 +1,6 @@
-Solve:
-  target_api: '''mx.linalg.solve({0}, {1})'''
+operation: Solve
+backend: mlx
+target_api: '''mx.linalg.solve({0}, {1})'''
+ast_template: '{out} = ''mx.linalg.solve({0}, {1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

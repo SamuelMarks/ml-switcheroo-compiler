@@ -1,2 +1,6 @@
-Scan:
-  target_api: keras_ops.scan
+operation: Scan
+backend: keras
+target_api: keras_ops.scan
+ast_template: '{out} = keras_ops.scan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

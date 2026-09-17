@@ -1,2 +1,6 @@
-Divmod:
-  target_api: cp.divmod
+operation: Divmod
+backend: cupy
+target_api: cp.divmod
+ast_template: '{out} = cp.divmod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

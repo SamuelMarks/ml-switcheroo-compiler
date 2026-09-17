@@ -1,2 +1,6 @@
-Dstack:
-  target_api: cp.dstack
+operation: Dstack
+backend: cupy
+target_api: cp.dstack
+ast_template: '{out} = cp.dstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

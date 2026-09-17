@@ -1,2 +1,6 @@
-Nanmean:
-  target_api: cp.nanmean
+operation: Nanmean
+backend: cupy
+target_api: cp.nanmean
+ast_template: '{out} = cp.nanmean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

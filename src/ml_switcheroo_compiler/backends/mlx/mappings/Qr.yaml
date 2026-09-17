@@ -1,2 +1,6 @@
-Qr:
-  target_api: '''mx.linalg.qr({0})'''
+operation: QR
+backend: mlx
+target_api: mlx.core.linalg.qr
+ast_template: '{out} = mlx.core.linalg.qr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

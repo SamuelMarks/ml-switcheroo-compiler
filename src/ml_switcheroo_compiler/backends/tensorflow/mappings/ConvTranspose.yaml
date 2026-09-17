@@ -1,2 +1,6 @@
-ConvTranspose:
-  target_api: tf.nn.conv_transpose
+operation: ConvTranspose
+backend: tensorflow
+target_api: tf.nn.conv_transpose
+ast_template: '{out} = tf.nn.conv_transpose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

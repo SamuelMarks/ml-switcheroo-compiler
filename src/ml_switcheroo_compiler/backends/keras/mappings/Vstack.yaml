@@ -1,2 +1,6 @@
-Vstack:
-  target_api: keras_ops.vstack
+operation: Vstack
+backend: keras
+target_api: keras_ops.vstack
+ast_template: '{out} = keras_ops.vstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

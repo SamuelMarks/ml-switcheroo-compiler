@@ -1,2 +1,6 @@
-Less:
-  target_api: tf.less
+operation: Less
+backend: tensorflow
+target_api: tf.less
+ast_template: '{out} = tf.less({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

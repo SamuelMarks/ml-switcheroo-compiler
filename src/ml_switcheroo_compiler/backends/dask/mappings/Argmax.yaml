@@ -1,2 +1,6 @@
-Argmax:
-  target_api: da.argmax
+operation: Argmax
+backend: dask
+target_api: da.argmax
+ast_template: '{out} = da.argmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

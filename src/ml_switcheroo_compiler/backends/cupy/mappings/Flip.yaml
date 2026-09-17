@@ -1,2 +1,6 @@
-Flip:
-  target_api: cp.flip
+operation: Flip
+backend: cupy
+target_api: cp.flip
+ast_template: '{out} = cp.flip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

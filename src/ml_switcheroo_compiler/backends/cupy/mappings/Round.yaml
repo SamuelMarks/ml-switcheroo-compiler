@@ -1,2 +1,6 @@
-Round:
-  target_api: cp.round
+operation: Round
+backend: cupy
+target_api: cp.round
+ast_template: '{out} = cp.round({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

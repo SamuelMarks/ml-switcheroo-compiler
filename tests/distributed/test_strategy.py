@@ -1,6 +1,5 @@
 import io
 import json
-import os
 import socket
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -9,10 +8,10 @@ import pytest
 
 from ml_switcheroo_compiler.distributed.config_models import MeshMappingConfig, MicrobatchSplittingConfig, ScheduleConfig, SchedulePhaseConfig, StageCommunicationConfig, TopologyConfig
 from ml_switcheroo_compiler.distributed.strategy import (
-    CentralStorageStrategy,
     Coordinator,
-    KubernetesClusterResolver,
+    DataParallelStrategy,
     MeshShardingStrategy,
+    ModelParallelStrategy,
     MultiWorkerMirroredStrategy,
     ParameterServerStrategy,
     PerWorkerValue,
@@ -20,9 +19,6 @@ from ml_switcheroo_compiler.distributed.strategy import (
     PreemptionCheckpointHandler,
     RemoteValue,
     Server,
-    SlurmClusterResolver,
-    TFConfigClusterResolver,
-    TPUStrategy,
     _load_webrtc_topology,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -93,29 +89,30 @@ def test_load_webrtc_topology_missing():
         assert _load_device_mesh_config() == {}
 
 
-def test_central_storage_strategy():
-    strategy = CentralStorageStrategy()
-    assert strategy.fetch() is None
-    assert strategy.update() is None
-
-
-def test_multi_worker_mirrored():
-    strategy = MultiWorkerMirroredStrategy()
+def test_data_parallel_strategy():
+    strategy = DataParallelStrategy(mesh_axis="dp")
     graph = _make_graph()
     assert strategy.sync_gradients(graph)
-    assert any(n.op_type == "AllReduce" for n in graph.nodes.values())
+    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in graph.nodes.values())
 
     # Try with empty graph
     assert not strategy.sync_gradients(IRGraph())
     assert isinstance(strategy.get_communication_protocol(), str)
-    s2 = MultiWorkerMirroredStrategy(target_env="browser")
+    s2 = DataParallelStrategy(target_env="browser")
     assert s2.get_communication_protocol() == "webrtc"
 
 
-def test_tpu_strategy():
-    strategy = TPUStrategy()
-    with pytest.raises(RuntimeError, match="TPU sync is only supported"):
-        strategy.sync()
+def test_model_parallel_strategy():
+    strategy = ModelParallelStrategy(mesh_axis="tp", row_parallel_dim=0, col_parallel_dim=1)
+    graph = IRGraph()
+    n_in = IRNode(id="x", op_type="Input")
+    n_lin = IRNode(id="lin", op_type="Linear", inputs=["x"])
+    n_out = IRNode(id="out", op_type="Relu", inputs=["lin"])
+    graph.nodes = {"x": n_in, "lin": n_lin, "out": n_out}
+    assert strategy.partition_linear(graph)
+    assert "lin_tp_all_reduce" in graph.nodes
+    assert "lin_tp_all_reduce" in graph.nodes["out"].inputs
+    assert not strategy.partition_linear(IRGraph())
 
 
 def test_pipeline_parallel_strategy():
@@ -174,53 +171,19 @@ def test_mesh_sharding_strategy():
     strategy.lower_sharding(IRGraph())
 
 
-def test_resolvers():
-    with patch.dict(os.environ, {"TF_CONFIG": json.dumps({"cluster": {"worker": ["host1:80", "host2:80"]}})}):
-        res = TFConfigClusterResolver()
-        assert len(res.cluster["worker"]) == 2
+def test_declarative_cluster_topology_and_cost_matrices():
+    from ml_switcheroo_compiler.distributed.config_models import load_cluster_topology, load_distributed_topologies
 
-    with patch.dict(os.environ, {"TF_CONFIG": "invalid json"}):
-        res = TFConfigClusterResolver()
-        assert not res.cluster
+    cluster_top = load_cluster_topology()
+    assert "default" in cluster_top.cluster_meshes
 
-    with patch.dict(os.environ, {"MASTER_ADDR": "host1", "MASTER_PORT": "80", "KUBERNETES_SERVICE_NAME": "svc"}):
-        with patch("socket.gethostbyname_ex", return_value=(None, None, ["1.1.1.1"])):
-            res = KubernetesClusterResolver()
-            assert res.cluster["worker"] == ["1.1.1.1:80"]
-
-        with patch("socket.gethostbyname_ex", side_effect=OSError):
-            res = KubernetesClusterResolver()
-            assert res.cluster["worker"] == ["host1:80"]
-
-    with patch.dict(os.environ, {"MASTER_ADDR": "host1", "MASTER_PORT": "80", "KUBERNETES_SERVICE_HOST": "host2"}):
-        if "KUBERNETES_SERVICE_NAME" in os.environ:
-            del os.environ["KUBERNETES_SERVICE_NAME"]
-        res = KubernetesClusterResolver()
-        assert res.cluster["worker"] == ["host1:80"]  # HOSTNAME is not set
-
-    with patch.dict(os.environ, {"MASTER_ADDR": "host1", "MASTER_PORT": "80"}):
-        if "KUBERNETES_SERVICE_NAME" in os.environ:
-            del os.environ["KUBERNETES_SERVICE_NAME"]
-        if "KUBERNETES_SERVICE_HOST" in os.environ:
-            del os.environ["KUBERNETES_SERVICE_HOST"]
-        res = KubernetesClusterResolver()
-        assert res.cluster["worker"] == ["host1:80"]
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": "node[01-03]"}):
-        res = SlurmClusterResolver()
-        assert len(res.cluster["worker"]) == 3
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": "node1"}):
-        res = SlurmClusterResolver()
-        assert res.cluster["worker"] == ["node1"]
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": "node1,node2"}):
-        res = SlurmClusterResolver()
-        assert res.cluster["worker"] == ["node1", "node2"]
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": ""}):
-        res = SlurmClusterResolver()
-        assert not res.cluster
+    dist_top = load_distributed_topologies()
+    assert "mesh_dp_tp" in dist_top.cluster_meshes
+    assert "host_0_cost_matrix" in dist_top.communication_cost_matrices
+    matrix = dist_top.communication_cost_matrices["host_0_cost_matrix"]
+    assert len(matrix.device_ids) == 8
+    assert matrix.latency_matrix_us[0][0] == 0.0
+    assert matrix.bandwidth_matrix_gbps[0][0] == 900.0
 
 
 def test_server_and_coordinator():
@@ -293,25 +256,11 @@ def test_backend_hooks():
         assert ps.pull_weights(IRGraph()) is True
         assert ps.push_gradients(IRGraph()) is True
 
-        # CentralStorageStrategy fetch/update
-        cs = CentralStorageStrategy()
-        cs.config = {"registry_hooks": {"fetch": "fetch_hook", "update": "update_hook"}}
-        backend_mock.fetch_hook.return_value = "f"
-        backend_mock.update_hook.return_value = "u"
-        assert cs.fetch() == "f"
-        assert cs.update() == "u"
-
-        # TPUStrategy sync
-        ts = TPUStrategy()
-        ts.config = {"registry_hooks": {"sync": "sync_hook"}}
-        backend_mock.sync_hook.return_value = "s"
-        assert ts.sync() == "s"
-
-        # MultiWorkerMirroredStrategy sync
-        mw = MultiWorkerMirroredStrategy()
-        mw.config = {"registry_hooks": {"sync": "sync_hook2"}}
+        # DataParallelStrategy sync
+        dp = DataParallelStrategy()
+        dp.config = {"registry_hooks": {"sync": "sync_hook2"}}
         backend_mock.sync_hook2.return_value = True
-        assert mw.sync_gradients(IRGraph()) is True
+        assert dp.sync_gradients(IRGraph()) is True
 
         # Server custom start/join
         server = Server()

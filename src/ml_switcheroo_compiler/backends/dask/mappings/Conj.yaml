@@ -1,2 +1,6 @@
-Conj:
-  target_api: da.conj
+operation: Conj
+backend: dask
+target_api: da.conj
+ast_template: '{out} = da.conj({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

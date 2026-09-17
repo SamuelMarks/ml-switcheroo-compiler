@@ -1,2 +1,6 @@
-Allclose:
-  target_api: da.allclose
+operation: Allclose
+backend: dask
+target_api: da.allclose
+ast_template: '{out} = da.allclose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Matmul:
-  target_api: da.matmul
+operation: Matmul
+backend: dask
+target_api: da.matmul
+ast_template: '{out} = da.matmul({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

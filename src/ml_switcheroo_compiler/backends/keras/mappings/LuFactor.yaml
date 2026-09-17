@@ -1,2 +1,6 @@
-LuFactor:
-  target_api: keras_ops.lu_factor
+operation: LuFactor
+backend: keras
+target_api: keras_ops.lu_factor
+ast_template: '{out} = keras_ops.lu_factor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

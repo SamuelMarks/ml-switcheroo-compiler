@@ -1,2 +1,6 @@
-Std:
-  target_api: cp.std
+operation: Std
+backend: cupy
+target_api: cp.std
+ast_template: '{out} = cp.std({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

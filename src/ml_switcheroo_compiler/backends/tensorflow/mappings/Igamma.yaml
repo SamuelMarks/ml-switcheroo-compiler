@@ -1,2 +1,6 @@
-Igamma:
-  target_api: tf.math.igamma
+operation: Igamma
+backend: tensorflow
+target_api: tf.math.igamma
+ast_template: '{out} = tf.math.igamma({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

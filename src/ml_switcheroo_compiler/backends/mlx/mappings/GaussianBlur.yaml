@@ -1,3 +1,6 @@
-GaussianBlur:
-  ast_template: mlx_gaussian_blur({0})
-  target_api: ''
+operation: GaussianBlur
+backend: mlx
+target_api: ''
+ast_template: mlx_gaussian_blur({0})
+kwarg_map: {}
+dtype_overrides: {}

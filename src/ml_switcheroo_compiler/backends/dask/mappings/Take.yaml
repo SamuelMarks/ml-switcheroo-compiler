@@ -1,2 +1,6 @@
-Take:
-  target_api: da.take
+operation: Take
+backend: dask
+target_api: da.take
+ast_template: '{out} = da.take({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

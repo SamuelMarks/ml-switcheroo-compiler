@@ -1,2 +1,6 @@
-LeftShift:
-  target_api: cp.left_shift
+operation: LeftShift
+backend: cupy
+target_api: cp.left_shift
+ast_template: '{out} = cp.left_shift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

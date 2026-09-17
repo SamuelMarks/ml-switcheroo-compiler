@@ -1,2 +1,6 @@
-Reciprocal:
-  target_api: cp.reciprocal
+operation: Reciprocal
+backend: cupy
+target_api: cp.reciprocal
+ast_template: '{out} = cp.reciprocal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

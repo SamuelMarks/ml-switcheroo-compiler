@@ -1,3 +1,6 @@
-Frompyfunc:
-  ast_template: np.frompyfunc
-  target_api: ''
+operation: Frompyfunc
+backend: numpy
+target_api: ''
+ast_template: np.frompyfunc
+kwarg_map: {}
+dtype_overrides: {}

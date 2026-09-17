@@ -1,2 +1,6 @@
-Logaddexp2:
-  target_api: cp.logaddexp2
+operation: Logaddexp2
+backend: cupy
+target_api: cp.logaddexp2
+ast_template: '{out} = cp.logaddexp2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

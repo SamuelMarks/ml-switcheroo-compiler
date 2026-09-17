@@ -1,2 +1,6 @@
-BroadcastTo:
-  target_api: tf.broadcast_to
+operation: BroadcastTo
+backend: tensorflow
+target_api: tf.broadcast_to
+ast_template: '{out} = tf.broadcast_to({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

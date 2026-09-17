@@ -1,2 +1,6 @@
-Pmean:
-  target_api: '''{0}.pmean({1})'''
+operation: Pmean
+backend: mlx
+target_api: '''{0}.pmean({1})'''
+ast_template: '{out} = ''{0}.pmean({1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

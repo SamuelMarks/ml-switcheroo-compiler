@@ -2,57 +2,141 @@ operation: EmbeddingBag
 description: Computes sums or means of bags of embeddings, without instantiating the
   intermediate embeddings.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: weight
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: offsets
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: max_norm
-    type: float
-  - default: 2.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: norm_type
-    type: float
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: scale_grad_by_freq
-    type: bool
-  - default: mean
-    is_variadic: false
-    kind: positional_or_keyword
-    name: mode
-    type: str
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: sparse
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: per_sample_weights
-    type: Tensor
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: include_last_offset
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: padding_idx
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: offsets
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: max_norm
+  type: float
+- default: 2.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: norm_type
+  type: float
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: scale_grad_by_freq
+  type: bool
+- default: mean
+  is_variadic: false
+  kind: positional_or_keyword
+  name: mode
+  type: str
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: sparse
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: per_sample_weights
+  type: Tensor
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: include_last_offset
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: padding_idx
+  type: int
 type: class
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: weight
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: offsets
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: max_norm
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: norm_type
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: scale_grad_by_freq
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: mode
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: sparse
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: per_sample_weights
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: include_last_offset
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: padding_idx
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - weight
+  - offsets
+  - max_norm
+  - norm_type
+  - scale_grad_by_freq
+  - mode
+  - sparse
+  - per_sample_weights
+  - include_last_offset
+  - padding_idx
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: EmbeddingBag_vjp
+  jvp_rule_id: EmbeddingBag_jvp
+  vjp: null
+  jvp: null

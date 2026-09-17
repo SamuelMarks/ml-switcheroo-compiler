@@ -1,0 +1,6 @@
+operation: Eigh
+backend: jax
+target_api: jax.numpy.linalg.eigh
+ast_template: '{out} = jax.numpy.linalg.eigh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

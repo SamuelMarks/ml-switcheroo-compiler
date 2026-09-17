@@ -1,2 +1,6 @@
-Nanvar:
-  target_api: cp.nanvar
+operation: Nanvar
+backend: cupy
+target_api: cp.nanvar
+ast_template: '{out} = cp.nanvar({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

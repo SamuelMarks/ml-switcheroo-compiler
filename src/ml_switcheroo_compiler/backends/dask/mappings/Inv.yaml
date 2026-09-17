@@ -1,2 +1,6 @@
-Inv:
-  target_api: da.linalg.inv
+operation: Inv
+backend: dask
+target_api: da.linalg.inv
+ast_template: '{out} = da.linalg.inv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

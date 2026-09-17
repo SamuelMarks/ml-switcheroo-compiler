@@ -28,7 +28,8 @@ def test_np_distributed_context() -> None:
     """Test mock distributed context."""
     from unittest.mock import MagicMock, patch
 
-    from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_to_all, _tcp_dist_ctx
+    from ml_switcheroo_compiler.backends.numpy.eager import distributed as dist_mod
+    from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_to_all
 
     mock_conn = MagicMock()
     mock_conn.recv.return_value = np.array([3, 4])
@@ -72,11 +73,11 @@ def test_np_distributed_context() -> None:
                 _np_all_to_all(np, t)
 
                 # also test the underlying ring
-                _tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
-                _tcp_dist_ctx.all_reduce_ring(t, op_type="max")
-                _tcp_dist_ctx.all_reduce_ring(t, op_type="min")
+                dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
+                dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="max")
+                dist_mod._tcp_dist_ctx.all_reduce_ring(t, op_type="min")
 
-                _tcp_dist_ctx.shutdown()
+                dist_mod._tcp_dist_ctx.shutdown()
 
     # test world_size=1
     set_np_distributed_context(world_size=1, rank=0)
@@ -89,8 +90,8 @@ def test_np_distributed_context() -> None:
     assert np.array_equal(_np_reduce(np, t), t)
     assert np.array_equal(_np_shard_tensor(np, t), t)
     assert np.array_equal(_np_broadcast(np, t), t)
-    assert np.array_equal(_tcp_dist_ctx.all_reduce_ring(t), t)
-    assert np.array_equal(_tcp_dist_ctx.all_gather_tensors(t)[0], t)
+    assert np.array_equal(dist_mod._tcp_dist_ctx.all_reduce_ring(t), t)
+    assert np.array_equal(dist_mod._tcp_dist_ctx.all_gather_tensors(t)[0], t)
 
 
 def test_distributed_initialize_timeout():

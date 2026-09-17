@@ -1,2 +1,6 @@
-TrueDivide:
-  target_api: keras_ops.true_divide
+operation: TrueDivide
+backend: keras
+target_api: keras_ops.true_divide
+ast_template: '{out} = keras_ops.true_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

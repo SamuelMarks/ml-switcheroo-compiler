@@ -1,0 +1,972 @@
+All:
+  autodiff:
+    vjp_rule_id: All_vjp
+    jvp_rule_id: All_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The All operation.
+  domain: reduction
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: All
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.all
+    dask:
+      eager: da.all
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.all
+    keras:
+      eager: keras_ops.all
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.all
+    numpy:
+      eager: np.all
+    pytorch:
+      generator: torch.all({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.reduce_all
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Any:
+  autodiff:
+    vjp_rule_id: Any_vjp
+    jvp_rule_id: Any_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Any operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Any
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.any
+    dask:
+      eager: da.any
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.any
+    keras:
+      eager: keras_ops.any
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.any
+    numpy:
+      eager: np.any
+    pytorch:
+      generator: torch.any({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.reduce_any
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+ArgMax:
+  autodiff:
+    vjp_rule_id: ArgMax_vjp
+    jvp_rule_id: ArgMax_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Argmax operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: ArgMax
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.argmax
+    dask:
+      eager: da.argmax
+    edge_onnx:
+      generator: ArgMax
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      init_code: var res = 0.0;
+      loop_code: res = max(res, buf_in0_f32[i]);
+      post_loop_code: ''
+      result_var: res
+      start_idx: '0'
+      template: reduction
+    jax: {}
+    keras:
+      eager: keras_ops.argmax
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch:
+      generator: torch.argmax({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.argmax
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+ArgMin:
+  autodiff:
+    vjp_rule_id: ArgMin_vjp
+    jvp_rule_id: ArgMin_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Argmin operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: ArgMin
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.argmin
+    dask:
+      eager: da.argmin
+    edge_onnx:
+      generator: ArgMin
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      init_code: var res = 0.0;
+      loop_code: res = max(res, buf_in0_f32[i]);
+      post_loop_code: ''
+      result_var: res
+      start_idx: '0'
+      template: reduction
+    jax: {}
+    keras:
+      eager: keras_ops.argmin
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch:
+      generator: torch.argmin({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.argmin
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+LogSumExp:
+  autodiff:
+    vjp_rule_id: LogSumExp_vjp
+    jvp_rule_id: LogSumExp_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Logsumexp operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: LogSumExp
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    keras:
+      eager: keras_ops.logsumexp
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Max:
+  autodiff:
+    vjp_rule_id: Max_vjp
+    jvp_rule_id: Max_jvp
+    vjp:
+    - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(Max($input[0]))))
+    jvp: Sum(Multiply($tangent[0], Equal($input[0], Broadcast(Max($input[0])))))
+  broadcast_semantics: numpy
+  description: The Max operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Max
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.max
+      generator: cp.max
+    dask:
+      eager: da.max
+      generator: da.max
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: max(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])
+      template: binary
+    jax: {}
+    keras:
+      eager: keras_ops.max
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.max
+    pytorch:
+      generator: torch.max({0}, dim={axis}, keepdim={keepdims})
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Mean:
+  autodiff:
+    vjp_rule_id: Mean_vjp
+    jvp_rule_id: Mean_jvp
+    vjp:
+    - TrueDivide(Broadcast($cotangent), Constant($nelem))
+    jvp: Mean($tangent[0])
+  broadcast_semantics: numpy
+  description: The Mean operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Mean
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.mean
+      generator: cp.mean
+    dask:
+      eager: da.mean
+      generator: da.mean
+    edge_onnx:
+      generator: Mean
+    edge_stablehlo:
+      opcode: stablehlo.reduce
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      init_code: var res = 0.0;
+      loop_code: res = res + buf_in0_f32[i];
+      post_loop_code: res = res / f32({nelem_in}u);
+      result_var: res
+      start_idx: '0'
+      template: reduction
+    jax:
+      eager: jax.numpy.mean
+    keras:
+      eager: keras_ops.mean
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.mean
+    numpy:
+      generator: np.mean
+    pytorch:
+      generator: torch.mean({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.math.reduce_mean
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Min:
+  autodiff:
+    vjp_rule_id: Min_vjp
+    jvp_rule_id: Min_jvp
+    vjp:
+    - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(Min($input[0]))))
+    jvp: Sum(Multiply($tangent[0], Equal($input[0], Broadcast(Min($input[0])))))
+  broadcast_semantics: numpy
+  description: The Min operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Min
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.min
+      generator: cp.min
+    dask:
+      eager: da.min
+      generator: da.min
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: min(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])
+      template: binary
+    jax: {}
+    keras:
+      eager: keras_ops.min
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.min
+    pytorch:
+      generator: torch.min({0}, dim={axis}, keepdim={keepdims})
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+NormL1:
+  autodiff:
+    vjp_rule_id: NormL1_vjp
+    jvp_rule_id: NormL1_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Norm operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: NormL1
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.norm
+    dask:
+      eager: da.linalg.norm
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.norm
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.norm
+    tensorflow:
+      eager: tf.norm
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+NormL2:
+  autodiff:
+    vjp_rule_id: NormL2_vjp
+    jvp_rule_id: NormL2_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Norm operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: NormL2
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.norm
+    dask:
+      eager: da.linalg.norm
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.norm
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.norm
+    tensorflow:
+      eager: tf.norm
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Prod:
+  autodiff:
+    vjp_rule_id: Prod_vjp
+    jvp_rule_id: Prod_jvp
+    vjp:
+    - Multiply(Broadcast(Multiply($cotangent, Prod($input[0]))), TrueDivide(Constant(1.0),
+      $input[0]))
+    jvp: Sum(Multiply($tangent[0], Multiply(Broadcast(Prod($input[0])), TrueDivide(Constant(1.0),
+      $input[0]))))
+  broadcast_semantics: numpy
+  description: The Prod operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Prod
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.prod
+    dask:
+      eager: da.prod
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      init_code: var res = 1.0;
+      loop_code: res = res * buf_in0_f32[i];
+      post_loop_code: ''
+      result_var: res
+      start_idx: '0'
+      template: reduction
+    jax:
+      eager: jax.numpy.prod
+    keras:
+      eager: keras_ops.prod
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.prod
+    numpy:
+      eager: numpy.prod
+    pytorch:
+      generator: torch.prod({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.prod
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Std:
+  autodiff:
+    vjp_rule_id: Std_vjp
+    jvp_rule_id: Std_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Std operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Std
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.std
+    dask:
+      eager: da.std
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.std
+    keras:
+      eager: keras_ops.std
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.std
+    numpy:
+      eager: numpy.std
+    pytorch:
+      eager: torch.std
+    tensorflow:
+      eager: tf.std
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sum:
+  autodiff:
+    vjp_rule_id: Sum_vjp
+    jvp_rule_id: Sum_jvp
+    vjp:
+    - Broadcast($cotangent)
+    jvp: Sum($tangent[0])
+  broadcast_semantics: numpy
+  description: The Sum operation.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sum
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.sum
+      generator: cp.sum
+    dask:
+      eager: da.sum
+      generator: da.sum
+    edge_onnx:
+      generator: Sum
+    edge_stablehlo:
+      opcode: stablehlo.reduce
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      init_code: var res = 0.0;
+      loop_code: res = res + buf_in0_f32[i];
+      post_loop_code: ''
+      result_var: res
+      start_idx: '0'
+      template: reduction
+    jax:
+      eager: jax.numpy.sum
+    keras:
+      eager: keras_ops.sum
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.sum
+    numpy:
+      generator: np.sum
+    pytorch:
+      generator: torch.sum({0}, dim={axis}, keepdim={keepdims})
+    tensorflow:
+      eager: tf.sum
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reduce(in0, axis, keepdims)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reduction
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Var:
+  autodiff:
+    vjp_rule_id: Var_vjp
+    jvp_rule_id: Var_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Calculates the variance of the input array ``x``.
+  domain: reduction
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Var
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

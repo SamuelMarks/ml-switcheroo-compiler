@@ -1,2 +1,6 @@
-Fmod:
-  target_api: da.fmod
+operation: Fmod
+backend: dask
+target_api: da.fmod
+ast_template: '{out} = da.fmod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

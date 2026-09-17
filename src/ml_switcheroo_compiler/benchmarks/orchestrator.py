@@ -6,10 +6,14 @@ import pathlib
 from typing import Optional, Protocol, Union
 
 import numpy as np
-import yaml
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
-from ml_switcheroo_compiler.benchmarks.config_models import BenchmarkPlan, BenchmarkRunResult
+from ml_switcheroo_compiler.benchmarks.config_models import (
+    BenchmarkPlan,
+    BenchmarkRunResult,
+    ProfilerProfileModel,
+    load_backend_profiles,
+)
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -89,13 +93,11 @@ class BenchmarkOrchestrator:
         if not manifest_path.exists():
             return {}
         try:
-            with open(manifest_path, encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
-            profiles = data.get("profiles", {})
+            profiles = load_backend_profiles(str(manifest_path))
             specs: dict[str, tuple[str, str]] = {}
-            for bname, pdata in profiles.items():
-                if isinstance(pdata, dict) and "profiler_module" in pdata and "profiler_class" in pdata:
-                    specs[str(bname)] = (str(pdata["profiler_module"]), str(pdata["profiler_class"]))
+            for bname, profile in profiles.items():
+                if profile.profiler_module and profile.profiler_class:
+                    specs[str(bname)] = (str(profile.profiler_module), str(profile.profiler_class))
             return specs
         except Exception:
             return {}
@@ -113,33 +115,13 @@ class BenchmarkOrchestrator:
             BackendNotSupportedError: If backend has no supported profiler or import fails.
         """
         canonical: str = "pytorch" if backend_name in ("torch", "pytorch") else backend_name
+        profiles = load_backend_profiles()
+        profile: Optional[ProfilerProfileModel] = profiles.get(canonical.lower()) or profiles.get(backend_name.lower())
 
-        profiler_modules: dict[str, tuple[str, str]] = {
-            "numpy": ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler"),
-            "pytorch": ("ml_switcheroo_compiler.backends.pytorch.profiler", "PyTorchProfiler"),
-            "jax": ("ml_switcheroo_compiler.backends.jax.profiler", "JAXProfiler"),
-            "mlx": ("ml_switcheroo_compiler.backends.mlx.profiler", "MLXProfiler"),
-            "cupy": ("ml_switcheroo_compiler.backends.cupy.profiler", "CupyProfiler"),
-            "tensorflow": ("ml_switcheroo_compiler.backends.tensorflow.profiler", "TensorFlowProfiler"),
-            "keras": ("ml_switcheroo_compiler.backends.keras.profiler", "KerasProfiler"),
-            "dask": ("ml_switcheroo_compiler.backends.dask.profiler", "DaskProfiler"),
-            "llvm_cpp": ("ml_switcheroo_compiler.backends.llvm_cpp.profiler", "CppProfiler"),
-            "numba": ("ml_switcheroo_compiler.backends.numba.profiler", "NumbaProfiler"),
-            "sparse": ("ml_switcheroo_compiler.backends.sparse.profiler", "SparseProfiler"),
-            "pure_python": ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler"),
-            "edge": ("ml_switcheroo_compiler.backends.edge.profiler", "EdgeProfiler"),
-            "edge_wgsl": ("ml_switcheroo_compiler.backends.edge.profiler", "EdgeProfiler"),
-            "edge_wasm_simd": ("ml_switcheroo_compiler.backends.edge.profiler", "EdgeProfiler"),
-        }
-        manifest_specs = self._load_manifest_profiles()
-        profiler_modules.update(manifest_specs)
-
-        lookup_key: str = canonical.lower()
-        if lookup_key in profiler_modules:
-            mod_name, cls_name = profiler_modules[lookup_key]
+        if profile is not None and profile.profiler_module and profile.profiler_class:
             try:
-                mod = importlib.import_module(mod_name)
-                profiler_cls = getattr(mod, cls_name)
+                mod = importlib.import_module(profile.profiler_module)
+                profiler_cls = getattr(mod, profile.profiler_class)
                 return profiler_cls()
             except ImportError as err:
                 raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
@@ -172,8 +154,12 @@ class BenchmarkOrchestrator:
             RuntimeError: If isolated execution fails or times out.
         """
         canonical = "pytorch" if backend_name in ("torch", "pytorch") else backend_name
-        manifest_specs = self._load_manifest_profiles()
-        spec = manifest_specs.get(canonical.lower(), ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler"))
+        profiles = load_backend_profiles()
+        profile = profiles.get(canonical.lower()) or profiles.get(backend_name.lower())
+        if profile is not None and profile.profiler_module and profile.profiler_class:
+            spec = (profile.profiler_module, profile.profiler_class)
+        else:
+            spec = ("ml_switcheroo_compiler.backends.numpy.profiler", "NumpyProfiler")
 
         ctx = multiprocessing.get_context()
         queue: multiprocessing.Queue = ctx.Queue()

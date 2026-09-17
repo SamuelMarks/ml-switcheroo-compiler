@@ -1,2 +1,6 @@
-Searchsorted:
-  target_api: cp.searchsorted
+operation: Searchsorted
+backend: cupy
+target_api: cp.searchsorted
+ast_template: '{out} = cp.searchsorted({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

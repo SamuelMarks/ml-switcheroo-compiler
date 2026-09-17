@@ -1,3 +1,6 @@
-Reverse:
-  ast_template: np.flip
-  target_api: ''
+operation: Reverse
+backend: numpy
+target_api: ''
+ast_template: np.flip
+kwarg_map: {}
+dtype_overrides: {}

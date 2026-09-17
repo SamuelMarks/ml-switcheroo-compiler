@@ -1,3 +1,6 @@
-Sin:
-  ast_template: np.sin
-  target_api: ''
+operation: Sin
+backend: numpy
+target_api: ''
+ast_template: np.sin
+kwarg_map: {}
+dtype_overrides: {}

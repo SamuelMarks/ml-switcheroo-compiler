@@ -1,2 +1,6 @@
-SparsePlus:
-  target_api: keras_ops.sparse_plus
+operation: SparsePlus
+backend: keras
+target_api: keras_ops.sparse_plus
+ast_template: '{out} = keras_ops.sparse_plus({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

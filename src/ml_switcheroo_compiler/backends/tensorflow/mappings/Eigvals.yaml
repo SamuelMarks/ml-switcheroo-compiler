@@ -1,2 +1,6 @@
-Eigvals:
-  target_api: tf.eigvals
+operation: Eigvals
+backend: tensorflow
+target_api: tf.eigvals
+ast_template: '{out} = tf.eigvals({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

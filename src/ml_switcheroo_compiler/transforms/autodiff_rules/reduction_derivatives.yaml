@@ -1,0 +1,30 @@
+# reduction_derivatives.yaml
+# Declarative reduction operation tangent (JVP) and cotangent (VJP) derivative rules.
+
+version: "1.0.0"
+
+rules:
+  ReduceSum:
+    jvp: ReduceSum($tangent[0])
+    vjp:
+      - BroadcastLike($cotangent, $input[0])
+
+  ReduceMean:
+    jvp: ReduceMean($tangent[0])
+    vjp:
+      - Div(BroadcastLike($cotangent, $input[0]), Numel($input[0]))
+
+  ReduceMax:
+    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], ReduceMax($input[0], axis=-1, keepdims=True))), axis=-1, keepdims=True)
+    vjp:
+      - Mul(BroadcastTo($cotangent, Shape($input[0])), Equal($input[0], ReduceMax($input[0], axis=-1, keepdims=True)))
+
+  ReduceMin:
+    jvp: ReduceSum(Mul($tangent[0], Equal($input[0], ReduceMin($input[0], axis=-1, keepdims=True))), axis=-1, keepdims=True)
+    vjp:
+      - Mul(BroadcastTo($cotangent, Shape($input[0])), Equal($input[0], ReduceMin($input[0], axis=-1, keepdims=True)))
+
+  ReduceProd:
+    jvp: ReduceSum(Mul($tangent[0], Div(ReduceProd($input[0], axis=-1, keepdims=True), $input[0])), axis=-1, keepdims=True)
+    vjp:
+      - Mul(BroadcastTo($cotangent, Shape($input[0])), Div(ReduceProd($input[0], axis=-1, keepdims=True), $input[0]))

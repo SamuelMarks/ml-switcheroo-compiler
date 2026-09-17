@@ -1,17 +1,17 @@
 def test_strategy_resolvers():
-    import os
     from unittest.mock import patch
 
-    import pytest
-
+    from ml_switcheroo_compiler.distributed.config_models import (
+        load_cluster_topology,
+        load_distributed_topologies,
+    )
     from ml_switcheroo_compiler.distributed.strategy import (
-        CentralStorageStrategy,
         Coordinator,
-        KubernetesClusterResolver,
-        MeshShardingStrategy,
-        SlurmClusterResolver,
-        TFConfigClusterResolver,
-        TPUStrategy,
+        DataParallelStrategy,
+        ModelParallelStrategy,
+        SPMDShardingStrategy,
+        _load_strategy_config,
+        _load_webrtc_topology,
     )
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -20,61 +20,26 @@ def test_strategy_resolvers():
     c.join()
     assert c.joined
 
-    with patch.dict(os.environ, {"TF_CONFIG": '{"cluster": {"worker": ["localhost:8080"]}}'}):
-        tf = TFConfigClusterResolver()
-        assert tf.cluster == {"worker": ["localhost:8080"]}
+    # Cluster topology and distributed topologies
+    cluster_top = load_cluster_topology()
+    assert "default" in cluster_top.cluster_meshes
 
-    with patch.dict(os.environ, {"TF_CONFIG": "invalid_json"}):
-        with pytest.warns(UserWarning):
-            tf = TFConfigClusterResolver()
-
-    with patch.dict(os.environ, {}, clear=True):
-        tf = TFConfigClusterResolver()
-        assert tf.cluster == {}
-
-    with patch.dict(os.environ, {"KUBERNETES_SERVICE_NAME": "my_svc"}):
-        with patch("socket.gethostbyname_ex", return_value=(None, None, ["127.0.0.1"])):
-            k = KubernetesClusterResolver()
-            assert k.cluster == {"worker": ["127.0.0.1:8080"]}
-
-    with patch.dict(os.environ, {"KUBERNETES_SERVICE_NAME": "my_svc"}):
-        with patch("socket.gethostbyname_ex", side_effect=OSError("mock")):
-            k = KubernetesClusterResolver()
-            assert k.cluster == {"worker": ["localhost:8080"]}
-
-    with patch.dict(os.environ, {"KUBERNETES_SERVICE_HOST": "1.2.3.4"}):
-        k = KubernetesClusterResolver()
-        assert len(k.cluster["worker"]) == 1
-
-    with patch.dict(os.environ, {}, clear=True):
-        k = KubernetesClusterResolver()
-        assert k.cluster == {"worker": ["localhost:8080"]}
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": "node[01-03,05]"}):
-        s = SlurmClusterResolver()
-        assert s.cluster == {"worker": ["node01", "node02", "node03", "node05"]}
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": "node1,node2"}):
-        s = SlurmClusterResolver()
-        assert s.cluster == {"worker": ["node1", "node2"]}
-
-    with patch.dict(os.environ, {"SLURM_JOB_NODELIST": ""}):
-        s = SlurmClusterResolver()
-        assert s.cluster == {}
+    dist_top = load_distributed_topologies()
+    assert "mesh_dp_tp" in dist_top.cluster_meshes
+    assert "host_0_cost_matrix" in dist_top.communication_cost_matrices
 
     with patch("os.path.exists", return_value=False):
-        from ml_switcheroo_compiler.distributed.strategy import _load_strategy_config, _load_webrtc_topology
-
         assert _load_webrtc_topology() == {}
         assert _load_strategy_config() == {}
 
-    c = CentralStorageStrategy()
-    assert c.config == {}
+    dp = DataParallelStrategy(mesh_axis="dp")
+    assert dp.mesh_axis == "dp"
+    assert dp.get_communication_protocol() == "tcp"
 
-    t = TPUStrategy()
-    assert t.config == {}
+    mp = ModelParallelStrategy(mesh_axis="tp")
+    assert mp.mesh_axis == "tp"
 
-    m = MeshShardingStrategy(layout_map={"n_out": "spec"})
+    m = SPMDShardingStrategy(layout_map={"n_out": "spec"})
     g_mesh = IRGraph()
     n_in_mesh = IRNode(id="n_in_mesh", op_type="Input")
     n_in_mesh.sharding = "in_spec"
@@ -98,7 +63,7 @@ def test_strategy_more_coverage():
     import pytest
 
     from ml_switcheroo_compiler.distributed.strategy import (
-        CentralStorageStrategy,
+        ModelParallelStrategy,
         PerWorkerValue,
         PipelineParallelismStrategy,
         PreemptionCheckpointHandler,
@@ -106,23 +71,15 @@ def test_strategy_more_coverage():
     )
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-    # CentralStorageStrategy
-    c = CentralStorageStrategy()
-    assert c.fetch() is None
-    assert c.update() is None
-
-    c.config = {"registry_hooks": {"fetch": "mock_fetch", "update": "mock_update"}}
-
-    class MockBackendCS:
-        def mock_fetch(self, *args, **kwargs):
-            return "fetched"
-
-        def mock_update(self, *args, **kwargs):
-            return "updated"
-
-    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackendCS()):
-        assert c.fetch() == "fetched"
-        assert c.update() == "updated"
+    # ModelParallelStrategy
+    mp = ModelParallelStrategy(mesh_axis="tp", row_parallel_dim=0, col_parallel_dim=1)
+    g_mp = IRGraph()
+    n_in = IRNode(id="x", op_type="Input")
+    n_lin = IRNode(id="linear", op_type="Linear", inputs=["x"])
+    n_act = IRNode(id="relu", op_type="Relu", inputs=["linear"])
+    g_mp.nodes = {"x": n_in, "linear": n_lin, "relu": n_act}
+    assert mp.partition_linear(g_mp) is True
+    assert "linear_tp_all_reduce" in g_mp.nodes
 
     # PreemptionCheckpointHandler
     import os

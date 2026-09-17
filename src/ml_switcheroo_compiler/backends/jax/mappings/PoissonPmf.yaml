@@ -1,2 +1,6 @@
-PoissonPmf:
-  target_api: jax.scipy.stats.poisson.pmf
+operation: PoissonPmf
+backend: jax
+target_api: jax.scipy.stats.poisson.pmf
+ast_template: '{out} = jax.scipy.stats.poisson.pmf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

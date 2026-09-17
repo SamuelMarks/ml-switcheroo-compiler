@@ -1,2 +1,6 @@
-Negative:
-  target_api: da.negative
+operation: Negative
+backend: dask
+target_api: da.negative
+ast_template: '{out} = da.negative({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

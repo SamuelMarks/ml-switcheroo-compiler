@@ -1,3 +1,6 @@
-Mfcc:
-  ast_template: torchaudio.transforms.MFCC()({0})
-  target_api: ''
+operation: Mfcc
+backend: pytorch
+target_api: ''
+ast_template: torchaudio.transforms.MFCC()({0})
+kwarg_map: {}
+dtype_overrides: {}

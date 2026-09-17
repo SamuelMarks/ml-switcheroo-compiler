@@ -1,2 +1,6 @@
-Flip:
-  target_api: da.flip
+operation: Flip
+backend: dask
+target_api: da.flip
+ast_template: '{out} = da.flip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

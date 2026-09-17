@@ -1,3 +1,6 @@
-Polyder:
-  ast_template: np.polyder
-  target_api: ''
+operation: Polyder
+backend: numpy
+target_api: ''
+ast_template: np.polyder
+kwarg_map: {}
+dtype_overrides: {}

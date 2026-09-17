@@ -1,0 +1,838 @@
+BatchMatMul:
+  autodiff:
+    vjp_rule_id: BatchMatMul_vjp
+    jvp_rule_id: BatchMatMul_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Performs a batch matrix-matrix product.
+  domain: linalg
+  input_tensors: &id001
+  - a
+  - b
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: BatchMatMul
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      template: matmul
+    llvm_cpp:
+      template: matmul
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: matmul(in0, in1)
+    symbolic_expression: '[B, M, K], [B, K, N] -> [B, M, N]'
+    category: linalg
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Cholesky:
+  autodiff:
+    vjp_rule_id: Cholesky_vjp
+    jvp_rule_id: Cholesky_jvp
+    vjp:
+    - MatMul($cotangent, Transpose($input[0]))
+    jvp: MatMul($tangent[0], Transpose($input[0]))
+  broadcast_semantics: numpy
+  description: The Cholesky operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Cholesky
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.cholesky
+    dask:
+      eager: da.linalg.cholesky
+    edge_stablehlo:
+      generator: stablehlo.cholesky
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.cholesky
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.cholesky
+    tensorflow:
+      eager: tf.linalg.cholesky
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Determinant:
+  autodiff:
+    vjp_rule_id: Determinant_vjp
+    jvp_rule_id: Determinant_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Det operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Determinant
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.det
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.det
+    tensorflow:
+      eager: tf.linalg.det
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Dot:
+  autodiff:
+    vjp_rule_id: Dot_vjp
+    jvp_rule_id: Dot_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Dot operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Dot
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.dot
+    dask:
+      eager: da.dot
+    edge_onnx:
+      generator: Dot
+    edge_stablehlo:
+      opcode: stablehlo.dot
+    edge_wasm_simd:
+      template: matmul
+    edge_wgsl:
+      template: matmul
+    jax: {}
+    keras:
+      eager: keras_ops.dot
+    llvm_cpp:
+      template: matmul
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: dot(in0, in1)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: contracting
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Eig:
+  autodiff:
+    vjp_rule_id: Eig_vjp
+    jvp_rule_id: Eig_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Eig operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Eig
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.eig
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.eig
+    tensorflow:
+      eager: tf.eig
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+MatMul:
+  autodiff:
+    vjp_rule_id: MatMul_vjp
+    jvp_rule_id: MatMul_jvp
+    vjp:
+    - MatMul($cotangent, Transpose($input[1]))
+    - MatMul(Transpose($input[0]), $cotangent)
+    jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+  broadcast_semantics: numpy
+  description: The MatMul operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: MatMul
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: MatMul
+    edge_stablehlo:
+      generator: stablehlo.dot_general
+    edge_wasm_simd:
+      template: matmul
+    edge_wgsl:
+      template: matmul
+    llvm_cpp:
+      template: matmul
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: matmul(in0, in1)
+    symbolic_expression: '[B, M, K], [B, K, N] -> [B, M, N]'
+    category: linalg
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+MatrixInverse:
+  autodiff:
+    vjp_rule_id: MatrixInverse_vjp
+    jvp_rule_id: MatrixInverse_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Inv operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: MatrixInverse
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.inv
+    dask:
+      eager: da.linalg.inv
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.inv
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.inv
+    tensorflow:
+      eager: tf.linalg.inv
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+QR:
+  autodiff:
+    vjp_rule_id: QR_vjp
+    jvp_rule_id: QR_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Qr operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: QR
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.qr
+    dask:
+      eager: da.linalg.qr
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.qr
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.qr
+    tensorflow:
+      eager: tf.linalg.qr
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+SVD:
+  autodiff:
+    vjp_rule_id: SVD_vjp
+    jvp_rule_id: SVD_jvp
+    vjp:
+    - MatMul($cotangent, Transpose($input[0]))
+    jvp: MatMul($tangent[0], Transpose($input[0]))
+  broadcast_semantics: numpy
+  description: The Svd operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: SVD
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.svd
+    dask:
+      eager: da.linalg.svd
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.svd
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.svd
+    tensorflow:
+      eager: tf.linalg.svd
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Solve:
+  autodiff:
+    vjp_rule_id: Solve_vjp
+    jvp_rule_id: Solve_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Solve operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Solve
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.linalg.solve
+    dask:
+      eager: da.linalg.solve
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.solve
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.solve
+    tensorflow:
+      eager: tf.linalg.solve
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+TensorDot:
+  autodiff:
+    vjp_rule_id: TensorDot_vjp
+    jvp_rule_id: TensorDot_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Tensordot operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: TensorDot
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.tensordot
+    dask:
+      eager: da.tensordot
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.tensordot
+    keras:
+      eager: keras_ops.tensordot
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.tensordot
+    numpy:
+      generator: np.tensordot({0}, {1}, axes={axes})
+    pytorch:
+      eager: torch.tensordot
+    tensorflow:
+      eager: tf.tensordot
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Trace:
+  autodiff:
+    vjp_rule_id: Trace_vjp
+    jvp_rule_id: Trace_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Trace operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Trace
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.trace
+    dask:
+      eager: da.trace
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.trace
+    keras:
+      eager: keras_ops.trace
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.trace
+    numpy:
+      generator: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+    pytorch:
+      eager: torch.trace
+    tensorflow:
+      eager: tf.linalg.trace
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+VectorDot:
+  autodiff:
+    vjp_rule_id: VectorDot_vjp
+    jvp_rule_id: VectorDot_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Vdot operation.
+  domain: linalg
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: VectorDot
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.vdot
+    dask:
+      eager: da.vdot
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.vdot
+    keras:
+      eager: keras_ops.vdot
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.vdot
+    numpy:
+      eager: numpy.vdot
+    pytorch:
+      eager: torch.vdot
+    tensorflow:
+      eager: tf.vdot
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

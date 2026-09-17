@@ -1,3 +1,6 @@
-Rfftn:
-  ast_template: np.fft.rfftn
-  target_api: ''
+operation: Rfftn
+backend: numpy
+target_api: ''
+ast_template: np.fft.rfftn
+kwarg_map: {}
+dtype_overrides: {}

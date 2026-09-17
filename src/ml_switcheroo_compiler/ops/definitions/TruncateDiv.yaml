@@ -5,27 +5,21 @@ variants:
     generator: torch.trunc({0} / {1})
   numpy:
     eager: numpy.truncatediv
-  cupy: {}
-  cp:
+  cupy:
     generator: cp.trunc(cp.divide({0}, {1}))
-  dask: {}
-  da:
+  dask:
     generator: da.trunc(da.divide({0}, {1}))
-  jnp:
-    generator: jnp.trunc(jnp.divide({0}, {1}))
   tensorflow:
     eager: tf.truncatediv
-  tf:
     generator: tf.trunc(tf.divide({0}, {1}))
   keras:
     eager: keras_ops.truncatediv
-  keras.ops:
     generator: keras.ops.trunc(keras.ops.divide({0}, {1}))
   jax:
     eager: jax.numpy.truncatediv
+    generator: jnp.trunc(jnp.divide({0}, {1}))
   mlx:
     eager: mlx.core.truncatediv
-  mx:
     generator: mx.trunc(mx.divide({0}, {1}))
   edge_wgsl:
     template: binary
@@ -37,3 +31,33 @@ variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: TruncateDiv_vjp
+  jvp_rule_id: TruncateDiv_jvp
+  vjp: null
+  jvp: null

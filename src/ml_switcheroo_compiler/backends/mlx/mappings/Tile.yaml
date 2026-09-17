@@ -1,0 +1,6 @@
+operation: Tile
+backend: mlx
+target_api: mlx.core.tile
+ast_template: '{out} = mlx.core.tile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

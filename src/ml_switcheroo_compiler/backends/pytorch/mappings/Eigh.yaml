@@ -1,0 +1,6 @@
+operation: Eigh
+backend: pytorch
+target_api: torch.linalg.eigh
+ast_template: '{out} = torch.linalg.eigh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

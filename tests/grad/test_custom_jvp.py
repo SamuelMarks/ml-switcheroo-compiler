@@ -282,3 +282,114 @@ def test_custom_jvp_and_vjp_tracing_and_unpacked_jvp():
     finally:
         global_tracing_state.is_tracing = False
         global_tracing_state.active_graph = None
+
+
+def test_custom_jvp_and_custom_vjp_subgraph_branches():
+    """Verify subgraph assignment and tracing in custom_jvp and custom_vjp."""
+    from ml_switcheroo_ir import LogicalGraph
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
+    from ml_switcheroo_compiler.grad.jvp_vjp import custom_jvp
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    # 1. Test custom_jvp defjvp branches:
+    subgraph_jvp = LogicalGraph("jvp_sub")
+
+    @custom_jvp
+    def fn_jvp_sub(x):
+        return x * 2
+
+    fn_jvp_sub.defjvp(lambda p, t: (p[0] * 2, t[0] * 2), jvp_subgraph=subgraph_jvp)
+    assert fn_jvp_sub.jvp_subgraph is subgraph_jvp
+
+    @custom_jvp
+    def fn_jvp_rule_graph(x):
+        return x * 2
+
+    graph_rule = LogicalGraph("graph_rule")
+    fn_jvp_rule_graph.defjvp(graph_rule)
+    assert fn_jvp_rule_graph.jvp_subgraph is graph_rule
+
+    class RuleWithGraph:
+        graph = LogicalGraph("rule_with_graph")
+
+        def __call__(self, primals, tangents):
+            return primals[0], tangents[0]
+
+    @custom_jvp
+    def fn_jvp_hasattr_graph(x):
+        return x * 2
+
+    fn_jvp_hasattr_graph.defjvp(RuleWithGraph())
+    assert fn_jvp_hasattr_graph.jvp_subgraph is RuleWithGraph.graph
+
+    fn_jvp_hasattr_graph.defjvp_subgraph(subgraph_jvp)
+    assert fn_jvp_hasattr_graph.jvp_subgraph is subgraph_jvp
+
+    # Trace custom_jvp with jvp_subgraph not None
+    g_trace_jvp = LogicalGraph("trace_jvp")
+    global_tracing_state.is_tracing = True
+    global_tracing_state.active_graph = g_trace_jvp
+    try:
+        config.eager_mode = False
+        t = Tensor(2.0, TensorConfig((), DType.Float32, Device("cpu")))
+        out = fn_jvp_sub(t)
+        assert out is not None
+        assert any(n.op_type == "CustomJVP" and n.attributes.get("jvp_graph") is subgraph_jvp for n in g_trace_jvp.nodes.values())
+    finally:
+        global_tracing_state.is_tracing = False
+        global_tracing_state.active_graph = None
+        config.eager_mode = True
+
+    # 2. Test custom_vjp defvjp branches:
+    subgraph_vjp = LogicalGraph("vjp_sub")
+
+    @custom_vjp
+    def fn_vjp(x):
+        return x * 3
+
+    fn_vjp.defvjp(lambda x: (x * 3, x), lambda res, cot: (cot * 3,), bwd_subgraph=subgraph_vjp)
+    assert fn_vjp.bwd_subgraph is subgraph_vjp
+
+    @custom_vjp
+    def fn_vjp_graph(x):
+        return x * 3
+
+    fn_vjp_graph.defvjp(lambda x: (x * 3, x), subgraph_vjp)
+    assert fn_vjp_graph.bwd_subgraph is subgraph_vjp
+
+    class BwdWithGraph:
+        graph = LogicalGraph("bwd_with_graph")
+
+        def __call__(self, *args):
+            return args
+
+    @custom_vjp
+    def fn_vjp_hasattr(x):
+        return x * 3
+
+    fn_vjp_hasattr.defvjp(lambda x: (x * 3, x), BwdWithGraph())
+    assert fn_vjp_hasattr.bwd_subgraph is BwdWithGraph.graph
+
+    fn_vjp_hasattr.defvjp_subgraph(subgraph_vjp)
+    assert fn_vjp_hasattr.bwd_subgraph is subgraph_vjp
+
+    # Trace custom_vjp with bwd_subgraph and Tensor lacking data.id
+    g_trace_vjp = LogicalGraph("trace_vjp")
+    global_tracing_state.is_tracing = True
+    global_tracing_state.active_graph = g_trace_vjp
+    try:
+        config.eager_mode = False
+        t_noid = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
+        out_v = fn_vjp(t_noid)
+        assert out_v is not None
+        assert any(n.op_type == "CustomVJP" and n.attributes.get("bwd_graph") is subgraph_vjp for n in g_trace_vjp.nodes.values())
+        assert any(n.op_type == "Constant" for n in g_trace_vjp.nodes.values())
+    finally:
+        global_tracing_state.is_tracing = False
+        global_tracing_state.active_graph = None
+        config.eager_mode = True

@@ -1,2 +1,6 @@
-Nancumprod:
-  target_api: da.nancumprod
+operation: Nancumprod
+backend: dask
+target_api: da.nancumprod
+ast_template: '{out} = da.nancumprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

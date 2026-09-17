@@ -1,2 +1,6 @@
-Softsign:
-  target_api: tf.math.softsign
+operation: Softsign
+backend: tensorflow
+target_api: tf.math.softsign
+ast_template: '{out} = tf.math.softsign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

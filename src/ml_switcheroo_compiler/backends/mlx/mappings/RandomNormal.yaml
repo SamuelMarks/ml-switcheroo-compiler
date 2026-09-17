@@ -1,2 +1,6 @@
-RandomNormal:
-  target_api: '''mx.random.normal(shape={shape}, key={0})'''
+operation: RandomNormal
+backend: mlx
+target_api: '''mx.random.normal(shape={shape}, key={0})'''
+ast_template: '{out} = ''mx.random.normal(shape={shape}, key={0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

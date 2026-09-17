@@ -1,2 +1,6 @@
-BitwiseOr:
-  target_api: da.bitwise_or
+operation: BitwiseOr
+backend: dask
+target_api: da.bitwise_or
+ast_template: '{out} = da.bitwise_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

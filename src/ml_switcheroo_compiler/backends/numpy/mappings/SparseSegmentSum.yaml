@@ -1,2 +1,6 @@
-SparseSegmentSum:
-  target_api: custom_op
+operation: SparseSegmentSum
+backend: numpy
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

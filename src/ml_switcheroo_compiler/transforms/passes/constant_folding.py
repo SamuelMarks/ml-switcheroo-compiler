@@ -118,4 +118,14 @@ def constant_folding_pass(graph: IRGraph) -> bool:
                         raise
             id_map[node.id] = node.id
 
+    for node in graph.nodes.values():
+        for sub in getattr(node, "subgraphs", {}).values():
+            if isinstance(sub, LogicalGraph):
+                if constant_folding_pass(sub):
+                    total_modified = True
+        for attr_val in node.attributes.values():
+            if isinstance(attr_val, LogicalGraph):
+                if constant_folding_pass(attr_val):
+                    total_modified = True
+
     return total_modified

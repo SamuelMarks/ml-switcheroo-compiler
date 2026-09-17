@@ -1,2 +1,6 @@
-HardSwish:
-  target_api: keras_ops.hard_swish
+operation: HardSwish
+backend: keras
+target_api: keras_ops.hard_swish
+ast_template: '{out} = keras_ops.hard_swish({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

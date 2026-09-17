@@ -1,2 +1,6 @@
-Concatenate:
-  target_api: da.concatenate
+operation: Concatenate
+backend: dask
+target_api: da.concatenate
+ast_template: '{out} = da.concatenate({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

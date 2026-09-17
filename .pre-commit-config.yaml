@@ -79,9 +79,8 @@ repos:
   hooks:
   - id: validate-backend-mappings
     name: Validate Backend Mappings
-    entry: python scripts/validate_backend_mappings.py
-    language: python
-    additional_dependencies: [pyyaml]
+    entry: python3 scripts/validate_backend_mappings.py
+    language: system
     files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     pass_filenames: false
   - id: validate-rules

@@ -1,2 +1,6 @@
-Stack:
-  target_api: cp.stack
+operation: Stack
+backend: cupy
+target_api: cp.stack
+ast_template: '{out} = cp.stack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Polar:
-  target_api: jax.scipy.linalg.polar
+operation: Polar
+backend: jax
+target_api: jax.scipy.linalg.polar
+ast_template: '{out} = jax.scipy.linalg.polar({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

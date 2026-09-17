@@ -1,3 +1,6 @@
-AffineGrid:
-  ast_template: torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})
-  target_api: ''
+operation: AffineGrid
+backend: pytorch
+target_api: ''
+ast_template: torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-FloatPower:
-  target_api: da.float_power
+operation: FloatPower
+backend: dask
+target_api: da.float_power
+ast_template: '{out} = da.float_power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

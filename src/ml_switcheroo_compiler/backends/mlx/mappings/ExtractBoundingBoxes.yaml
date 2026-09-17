@@ -1,3 +1,6 @@
-ExtractBoundingBoxes:
-  ast_template: mlx_roi_align({0}, {1}, 1.0)
-  target_api: ''
+operation: ExtractBoundingBoxes
+backend: mlx
+target_api: ''
+ast_template: mlx_roi_align({0}, {1}, 1.0)
+kwarg_map: {}
+dtype_overrides: {}

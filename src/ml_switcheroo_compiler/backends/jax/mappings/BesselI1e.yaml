@@ -1,2 +1,6 @@
-BesselI1e:
-  target_api: jax.scipy.special.i1e
+operation: BesselI1e
+backend: jax
+target_api: jax.scipy.special.i1e
+ast_template: '{out} = jax.scipy.special.i1e({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -54,11 +54,11 @@ def _load_webrtc_topology():
 class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
-    def __init__(self, cluster_resolver: Union["TFConfigClusterResolver", "KubernetesClusterResolver", "SlurmClusterResolver", dict, None] = None) -> None:
+    def __init__(self, cluster_resolver: Optional[object] = None) -> None:
         """Initialize ParameterServerStrategy.
 
         Args:
-            cluster_resolver (Union[TFConfigClusterResolver, KubernetesClusterResolver, SlurmClusterResolver, dict, None]): The cluster_resolver parameter.
+            cluster_resolver (Optional[object]): The cluster_resolver parameter.
         """
         super().__init__()
         self.cluster_resolver = cluster_resolver
@@ -189,23 +189,37 @@ class ParameterServerStrategy(Distribution):
         return modified
 
 
-class MultiWorkerMirroredStrategy(Distribution):
-    """Multi-worker mirrored strategy."""
+class DataParallelStrategy(Distribution):
+    """Universal data parallel distribution strategy parameterized by mesh axis."""
 
-    def __init__(self, cluster_resolver=None, target_env: str = "host") -> None:
-        """Initialize MultiWorkerMirroredStrategy.
+    def __init__(
+        self,
+        mesh_axis: str = "data",
+        all_reduce_algorithm: str = "ring",
+        target_env: str = "host",
+        cluster_resolver: Optional[object] = None,
+    ) -> None:
+        """Initialize DataParallelStrategy.
 
         Args:
-            cluster_resolver (Union[TFConfigClusterResolver, KubernetesClusterResolver, SlurmClusterResolver, dict, None]): The cluster_resolver parameter.
-            target_env (str): The deployment environment ("host" or "browser").
+            mesh_axis (str): Logical mesh axis name for gradient synchronization.
+            all_reduce_algorithm (str): Reduction algorithm name ('ring', 'tree').
+            target_env (str): Deployment environment ('host' or 'browser').
+            cluster_resolver (Optional[object]): Cluster configuration or resolver object.
         """
         super().__init__()
-        self.cluster_resolver = cluster_resolver
-        self.target_env = target_env
-        self.config = _load_strategy_config().get("MultiWorkerMirroredStrategy", {})
+        self.mesh_axis: str = mesh_axis
+        self.all_reduce_algorithm: str = all_reduce_algorithm
+        self.target_env: str = target_env
+        self.cluster_resolver: Optional[object] = cluster_resolver
+        self.config: dict[str, AttrType] = _load_strategy_config().get("DataParallelStrategy", {})
 
     def get_communication_protocol(self) -> str:
-        """Get the communication protocol based on the target environment."""
+        """Get the communication protocol based on the target environment.
+
+        Returns:
+            str: Communication protocol string.
+        """
         if self.target_env == "browser":
             return "webrtc"
         return "tcp"
@@ -234,7 +248,13 @@ class MultiWorkerMirroredStrategy(Distribution):
         for node in list(graph.nodes.values()):
             if node.op_type == "Grad":
                 ar_id = f"{node.id}_all_reduce"
-                ar_node = IRNode(id=ar_id, op_type="AllReduce", inputs=[node.id], attributes={"algorithm": self.config.get("all_reduce_algorithm", "ring")})
+                algo = str(self.config.get("all_reduce_algorithm", self.all_reduce_algorithm))
+                ar_node = IRNode(
+                    id=ar_id,
+                    op_type="AllReduce",
+                    inputs=[node.id],
+                    attributes={"algorithm": algo, "mesh_axis": self.mesh_axis},
+                )
                 new_nodes[ar_id] = ar_node
                 modified = True
 
@@ -249,51 +269,65 @@ class MultiWorkerMirroredStrategy(Distribution):
         return modified
 
 
-class CentralStorageStrategy(Distribution):
-    """Central storage strategy."""
-
-    def __init__(self) -> None:
-        """Initialize CentralStorageStrategy."""
-        super().__init__()
-        self.config = _load_strategy_config().get("CentralStorageStrategy", {})
-
-    def fetch(self, *args: AttrType, **kwargs: AttrType) -> AttrType:
-        """Fetch variables from central storage."""
-        backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("fetch")
-        if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(*args, **kwargs)
-        return None
-
-    def update(self, *args: AttrType, **kwargs: AttrType) -> AttrType:
-        """Update variables in central storage."""
-        backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("update")
-        if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(*args, **kwargs)
-        return None
+MultiWorkerMirroredStrategy = DataParallelStrategy
 
 
-class TPUStrategy(Distribution):
-    """TPU strategy."""
+class ModelParallelStrategy(Distribution):
+    """Universal model parallel strategy implementing Megatron-style tensor splits."""
 
-    def __init__(self, tpu_cluster_resolver: Union[dict, None] = None) -> None:
-        """Initialize TPUStrategy.
+    def __init__(
+        self,
+        mesh_axis: str = "model",
+        row_parallel_dim: int = 0,
+        col_parallel_dim: int = 1,
+    ) -> None:
+        """Initialize ModelParallelStrategy.
 
         Args:
-            tpu_cluster_resolver (Union[TFConfigClusterResolver, KubernetesClusterResolver, SlurmClusterResolver, dict, None]): The tpu_cluster_resolver parameter.
+            mesh_axis (str): Logical mesh axis name for tensor parallelism.
+            row_parallel_dim (int): Sharding dimension for row-parallel partitions.
+            col_parallel_dim (int): Sharding dimension for column-parallel partitions.
         """
         super().__init__()
-        self.tpu_cluster_resolver = tpu_cluster_resolver
-        self.config = _load_strategy_config().get("TPUStrategy", {})
+        self.mesh_axis: str = mesh_axis
+        self.row_parallel_dim: int = row_parallel_dim
+        self.col_parallel_dim: int = col_parallel_dim
 
-    def sync(self, *args: AttrType, **kwargs: AttrType) -> AttrType:
-        """Synchronize across TPU cores."""
-        backend = registry.get_active_backend()
-        hook_name = self.config.get("registry_hooks", {}).get("sync")
-        if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(self.tpu_cluster_resolver, *args, **kwargs)
-        raise RuntimeError("TPU sync is only supported when the active backend provides a TPU sync hook.")
+    def partition_linear(self, graph: IRGraph) -> bool:
+        """Apply Megatron-style column/row parallel decomposition on Linear/MatMul ops.
+
+        Args:
+            graph (IRGraph): The IR graph to mutate.
+
+        Returns:
+            bool: True if the graph was mutated.
+        """
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        modified = False
+        new_nodes = dict(graph.nodes)
+
+        for node in list(graph.nodes.values()):
+            if node.op_type in ("MatMul", "Linear", "Dense"):
+                node.attributes["mesh_axis"] = self.mesh_axis
+                node.attributes["row_parallel_dim"] = self.row_parallel_dim
+                node.attributes["col_parallel_dim"] = self.col_parallel_dim
+                ar_id = f"{node.id}_tp_all_reduce"
+                ar_node = IRNode(
+                    id=ar_id,
+                    op_type="AllReduce",
+                    inputs=[node.id],
+                    attributes={"algorithm": "ring", "mesh_axis": self.mesh_axis},
+                )
+                new_nodes[ar_id] = ar_node
+                for consumer in list(graph.nodes.values()):
+                    if node.id in consumer.inputs and consumer.id != ar_id:
+                        consumer.inputs = [ar_id if inp == node.id else inp for inp in consumer.inputs]
+                modified = True
+
+        if modified:
+            graph.nodes = new_nodes
+        return modified
 
 
 class PreemptionCheckpointHandler:
@@ -527,82 +561,6 @@ class Coordinator:
         self.joined = True
 
 
-class TFConfigClusterResolver:
-    """Resolve cluster topology from TF_CONFIG env var."""
-
-    def __init__(self) -> None:
-        """Initialize."""
-        import json
-        import os
-
-        self.cluster = {}
-        tf_config = os.environ.get("TF_CONFIG")
-        if tf_config:
-            try:
-                self.cluster = json.loads(tf_config).get("cluster", {})
-            except json.JSONDecodeError as e:
-                import warnings
-
-                warnings.warn(f"TF_CONFIG parsing failed: {e}", stacklevel=2)
-
-
-class KubernetesClusterResolver:
-    """Resolve cluster topology from Kubernetes env vars."""
-
-    def __init__(self) -> None:
-        """Initialize."""
-        import os
-        import socket
-
-        self.cluster = {}
-        master_addr = os.environ.get("MASTER_ADDR", "localhost")
-        master_port = os.environ.get("MASTER_PORT", "8080")
-
-        service_name = os.environ.get("KUBERNETES_SERVICE_NAME")
-        if service_name:
-            try:
-                _, _, ips = socket.gethostbyname_ex(service_name)
-                self.cluster = {"worker": [f"{ip}:{master_port}" for ip in ips]}
-            except OSError:
-                self.cluster = {"worker": [f"{master_addr}:{master_port}"]}
-        elif "KUBERNETES_SERVICE_HOST" in os.environ:
-            self.cluster = {"worker": [f"{os.environ.get('HOSTNAME', master_addr)}:{master_port}"]}
-        else:
-            self.cluster = {"worker": [f"{master_addr}:{master_port}"]}
-
-
-class SlurmClusterResolver:
-    """Resolve cluster topology from Slurm env vars."""
-
-    def __init__(self) -> None:
-        """Initialize."""
-        import os
-        import re
-
-        self.cluster = {}
-        nodelist = os.environ.get("SLURM_JOB_NODELIST", "")
-        if not nodelist:
-            return
-
-        nodes = []
-        match = re.match(r"([a-zA-Z0-9_-]+)\[(.*)\]", nodelist)
-        if match:
-            prefix = match.group(1)
-            ranges = match.group(2).split(",")
-            for r in ranges:
-                if "-" in r:
-                    start, end = r.split("-")
-                    width = len(start)
-                    for i in range(int(start), int(end) + 1):
-                        nodes.append(f"{prefix}{str(i).zfill(width)}")
-                else:
-                    nodes.append(f"{prefix}{r}")
-        else:
-            nodes = nodelist.split(",")
-
-        self.cluster = {"worker": nodes}
-
-
 class PerWorkerValue:
     """Represents a value that varies across workers."""
 
@@ -623,7 +581,7 @@ class RemoteValue:
         self.value = None
 
 
-class PipelineParallelismStrategy(Distribution):
+class PipelineParallelStrategy(Distribution):
     """Pipeline parallelism strategy for large models."""
 
     def __init__(self, topology_name: str = "default", num_microbatches: Optional[int] = None, devices_per_stage: Optional[int] = None, target_env: str = "host") -> None:
@@ -931,11 +889,14 @@ class PipelineParallelismStrategy(Distribution):
             graph.nodes[accum_id] = accum_node
 
 
-class MeshShardingStrategy(Distribution):
+PipelineParallelismStrategy = PipelineParallelStrategy
+
+
+class SPMDShardingStrategy(Distribution):
     """1D/2D Mesh Sharding Strategy for SPMD Graph Partitioning and Lowering."""
 
     def __init__(self, mesh: Union[dict, list, tuple, None] = None, layout_map: Union[dict, None] = None) -> None:
-        """Initialize MeshShardingStrategy.
+        """Initialize SPMDShardingStrategy.
 
         Args:
             mesh (Union[dict, list, tuple, None]): The mesh parameter.
@@ -983,3 +944,6 @@ class MeshShardingStrategy(Distribution):
         from ml_switcheroo_compiler.transforms.passes.spmd import spmd_partitioning_pass
 
         return spmd_partitioning_pass(graph)
+
+
+MeshShardingStrategy = SPMDShardingStrategy

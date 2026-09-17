@@ -1,0 +1,42 @@
+# nn_derivatives.yaml
+# Declarative neural network operation tangent (JVP) and cotangent (VJP) derivative rules.
+
+version: "1.0.0"
+
+rules:
+  Conv2D:
+    jvp: Add(Conv2D($tangent[0], $input[1]), Conv2D($input[0], $tangent[1]))
+    vjp:
+      - ConvTranspose2D($cotangent, $input[1])
+      - Conv2D(Transpose($input[0]), $cotangent)
+
+  MaxPool2D:
+    jvp: Mul($tangent[0], Equal($input[0], MaxPool2D($input[0])))
+    vjp:
+      - Mul($cotangent, Equal($input[0], MaxPool2D($input[0])))
+
+  AvgPool2D:
+    jvp: AvgPool2D($tangent[0])
+    vjp:
+      - Div($cotangent, Constant(4.0))
+
+  BatchNorm:
+    jvp: Mul($tangent[0], Div($input[1], Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+    vjp:
+      - Mul($cotangent, Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+      - Mul($cotangent, Div(Sub($input[0], Mean($input[0])), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+
+  LayerNorm:
+    jvp: Mul($tangent[0], Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+    vjp:
+      - Mul($cotangent, Div(Constant(1.0), Sqrt(Add(Variance($input[0]), Constant(1e-5)))))
+
+  Softmax:
+    jvp: Sub(Mul(Softmax($input[0]), $tangent[0]), Mul(Softmax($input[0]), ReduceSum(Mul(Softmax($input[0]), $tangent[0]), axis=-1, keepdims=True)))
+    vjp:
+      - Mul(Softmax($input[0]), Sub($cotangent, ReduceSum(Mul(Softmax($input[0]), $cotangent), axis=-1, keepdims=True)))
+
+  CrossEntropyLoss:
+    jvp: ReduceMean(Mul(Sub(Softmax($input[0]), $input[1]), $tangent[0]))
+    vjp:
+      - Mul(Sub(Softmax($input[0]), $input[1]), Div($cotangent, ShapeDim($input[0], 0)))

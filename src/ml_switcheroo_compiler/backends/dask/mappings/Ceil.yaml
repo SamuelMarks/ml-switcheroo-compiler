@@ -1,2 +1,6 @@
-Ceil:
-  target_api: da.ceil
+operation: Ceil
+backend: dask
+target_api: da.ceil
+ast_template: '{out} = da.ceil({in0})'
+kwarg_map: {}
+dtype_overrides: {}

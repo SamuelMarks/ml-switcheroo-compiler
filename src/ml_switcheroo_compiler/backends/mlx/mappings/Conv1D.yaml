@@ -1,0 +1,6 @@
+operation: Conv1D
+backend: mlx
+target_api: mlx.core.conv1d
+ast_template: '{out} = mlx.core.conv1d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

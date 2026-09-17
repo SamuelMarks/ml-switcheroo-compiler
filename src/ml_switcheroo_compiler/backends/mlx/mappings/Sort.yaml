@@ -1,2 +1,6 @@
-Sort:
-  target_api: '''mx.sort({0}, axis={dimension})'''
+operation: Sort
+backend: mlx
+target_api: '''mx.sort({0}, axis={dimension})'''
+ast_template: '{out} = ''mx.sort({0}, axis={dimension})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Irfftnd:
-  target_api: tf.irfftnd
+operation: Irfftnd
+backend: tensorflow
+target_api: tf.irfftnd
+ast_template: '{out} = tf.irfftnd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

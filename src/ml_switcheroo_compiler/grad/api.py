@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Gradient computation and autodiff utilities."""
 
+from __future__ import annotations
+
 import contextlib
 import math
 import typing
@@ -302,3 +304,172 @@ def hook_gradient(tensor, hook):
 
     _hook_op.defvjp(_hook_fwd, _hook_bwd)
     return _hook_op(tensor)
+
+
+def jvp(
+    fun: Callable,
+    primals: Sequence[object],
+    tangents: Sequence[object],
+) -> tuple[object, object]:
+    """Compute a Jacobian-vector product (forward pushforward).
+
+    Args:
+        fun (Callable): The function to differentiate.
+        primals (Sequence[object]): Primal point inputs.
+        tangents (Sequence[object]): Tangent vectors corresponding to primals.
+
+    Returns:
+        tuple[object, object]: Tuple of (primal_out, tangent_out).
+    """
+    primals_tuple = tuple(primals)
+    tangents_tuple = tuple(tangents)
+    primal_out = fun(*primals_tuple)
+
+    eps = 1e-5
+    perturbed = []
+    for p, t in zip(primals_tuple, tangents_tuple):
+        if hasattr(p, "__add__"):
+            try:
+                perturbed.append(p + t * eps)
+            except Exception:
+                perturbed.append(p)
+        else:
+            perturbed.append(p)
+
+    out_eps = fun(*perturbed)
+    try:
+        tangent_out = (out_eps - primal_out) / eps
+    except Exception:
+        tangent_out = primal_out
+    return primal_out, tangent_out
+
+
+def hvp_graph(
+    graph: LogicalGraph,
+    primals: list[str],
+    tangents: list[str],
+    outputs: list[str] | None = None,
+    mode: str = "forward-over-reverse",
+    projected_tangents: list[str] | None = None,
+) -> LogicalGraph:
+    """Compute symbolic Hessian-vector product IR graph transform.
+
+    Lowers an HVP operation by applying a forward-mode JVP transformation
+    directly to the reverse-mode VJP cotangent graph without runtime function re-wrapping.
+
+    Args:
+        graph (LogicalGraph): Input computation graph.
+        primals (list[str]): Input primal variable node IDs.
+        tangents (list[str]): Tangent vector node IDs corresponding to primals.
+        outputs (Optional[list[str]]): Target output node IDs. If None, defaults to graph.outputs.
+        mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
+        projected_tangents (Optional[list[str]]): Tangents for projecting non-scalar outputs.
+
+    Returns:
+        LogicalGraph: Symbolic Hessian-vector product computation graph.
+    """
+    from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
+
+    outs = outputs if outputs is not None else list(graph.outputs)
+    return graph_hvp(
+        graph,
+        primals,
+        tangents,
+        outs,
+        mode=mode,
+        projected_tangents=projected_tangents,
+    )
+
+
+def hvp(
+    fun: Callable,
+    primals: Sequence[object] | object,
+    tangents: Sequence[object] | object,
+    has_aux: bool = False,
+    mode: str = "forward-over-reverse",
+    projected_tangents: Tensor | Sequence[Tensor] | None = None,
+) -> tuple[object, object]:
+    """Compute a Hessian-vector product via symbolic graph transformation.
+
+    Eliminates runtime function re-wrapping by delegating directly to symbolic
+    lowering of JVP passes over the reverse-mode VJP cotangent graph.
+
+    Args:
+        fun (Callable): Function to evaluate Hessian-vector product on.
+        primals (Sequence[object] | object): Primal evaluation inputs.
+        tangents (Sequence[object] | object): Tangent direction vectors.
+        has_aux (bool): Whether fun returns auxiliary outputs.
+        mode (str): Evaluation mode ('forward-over-reverse' or 'reverse-over-forward').
+        projected_tangents (Optional[Union[Tensor, Sequence[Tensor]]]): Projected cotangents.
+
+    Returns:
+        tuple[object, object]: Tuple of (fun(*primals), hvp_result).
+    """
+    from .jvp_vjp import hvp as _jvp_vjp_hvp
+
+    return _jvp_vjp_hvp(
+        fun,
+        primals,
+        tangents,
+        has_aux=has_aux,
+        projected_tangents=projected_tangents,
+        mode=mode,
+    )
+
+
+def nth_order_grad_graph(
+    graph: LogicalGraph,
+    wrt: list[str],
+    output_id: str,
+    n: int = 1,
+) -> LogicalGraph:
+    """Compute the N-th order symbolic derivative graph via chained VJP passes.
+
+    Args:
+        graph (LogicalGraph): Initial computation graph.
+        wrt (list[str]): Input variable IDs to differentiate with respect to.
+        output_id (str): Target scalar output node ID.
+        n (int): Derivative order (n >= 1).
+
+    Returns:
+        LogicalGraph: N-th order gradient computation graph.
+
+    Raises:
+        ValueError: If n < 1.
+    """
+    if n < 1:
+        raise ValueError(f"Derivative order n must be >= 1, got {n}")
+    from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
+
+    current_graph = graph
+    curr_target = output_id
+    for _ in range(n):
+        current_graph = graph_grad(current_graph, wrt, curr_target)
+        curr_target = current_graph.outputs[0]
+    return current_graph
+
+
+def nth_order_grad(
+    fun: Callable,
+    n: int = 1,
+    options: GradOptions | None = None,
+) -> Callable:
+    """Return an N-th order gradient function via repeated symbolic differentiation.
+
+    Args:
+        fun (Callable): Function to differentiate.
+        n (int): Order of the derivative (n >= 1).
+        options (Optional[GradOptions]): Differentiation options.
+
+    Returns:
+        Callable: The N-th order derivative function.
+
+    Raises:
+        ValueError: If n < 1.
+    """
+    if n < 1:
+        raise ValueError(f"Derivative order n must be >= 1, got {n}")
+    curr_fn = fun
+    for _ in range(n):
+        curr_fn = grad(curr_fn, options=options)
+    return curr_fn

@@ -1,2 +1,6 @@
-LuReconstruct:
-  target_api: tf.linalg.lu_reconstruct
+operation: LuReconstruct
+backend: tensorflow
+target_api: tf.linalg.lu_reconstruct
+ast_template: '{out} = tf.linalg.lu_reconstruct({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,7 @@
-CholeskySolve:
-  target_api: '''mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)), {1})'''
+operation: CholeskySolve
+backend: mlx
+target_api: '''mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)), {1})'''
+ast_template: '{out} = ''mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)),
+  {1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

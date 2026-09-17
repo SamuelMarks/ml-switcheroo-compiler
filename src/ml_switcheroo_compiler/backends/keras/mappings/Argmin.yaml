@@ -1,2 +1,6 @@
-Argmin:
-  target_api: keras_ops.argmin
+operation: Argmin
+backend: keras
+target_api: keras_ops.argmin
+ast_template: '{out} = keras_ops.argmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

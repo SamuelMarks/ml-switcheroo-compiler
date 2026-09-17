@@ -1,2 +1,6 @@
-Log2:
-  target_api: keras_ops.log2
+operation: Log2
+backend: keras
+target_api: keras_ops.log2
+ast_template: '{out} = keras_ops.log2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

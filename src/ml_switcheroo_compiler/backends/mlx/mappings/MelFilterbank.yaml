@@ -1,3 +1,6 @@
-MelFilterbank:
-  ast_template: mlx_mel_filterbank({0})
-  target_api: ''
+operation: MelFilterbank
+backend: mlx
+target_api: ''
+ast_template: mlx_mel_filterbank({0})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Sum:
-  target_api: keras_ops.sum
+operation: Sum
+backend: keras
+target_api: keras_ops.sum
+ast_template: '{out} = keras_ops.sum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

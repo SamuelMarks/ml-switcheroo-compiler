@@ -1,3 +1,6 @@
-Irfftnd:
-  ast_template: np.fft.irfftn({0})
-  target_api: ''
+operation: Irfftnd
+backend: numpy
+target_api: ''
+ast_template: np.fft.irfftn({0})
+kwarg_map: {}
+dtype_overrides: {}

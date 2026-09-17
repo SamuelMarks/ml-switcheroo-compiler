@@ -1,0 +1,324 @@
+Cond:
+  autodiff:
+    vjp_rule_id: Cond_vjp
+    jvp_rule_id: Cond_jvp
+    vjp:
+    - $cotangent
+    jvp: Cond($tangent[0], $tangent[1], $tangent[2])
+  broadcast_semantics: numpy
+  description: The Cond operation.
+  domain: control_flow
+  input_tensors: &id001
+  - pred
+  - true_fn
+  - false_fn
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Cond
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: If
+    edge_stablehlo:
+      generator: stablehlo.cond
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.cond
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: np.linalg.cond
+    tensorflow:
+      eager: tf.cond
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Map:
+  autodiff:
+    vjp_rule_id: Map_vjp
+    jvp_rule_id: Map_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for ShardMapFn.
+  domain: control_flow
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Map
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Scan:
+  autodiff:
+    vjp_rule_id: Scan_vjp
+    jvp_rule_id: Scan_jvp
+    vjp:
+    - $cotangent
+    jvp: $tangent[0]
+  broadcast_semantics: numpy
+  description: The Scan operation.
+  domain: control_flow
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Scan
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_stablehlo:
+      generator: stablehlo.reduce_window
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.scan
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.scan
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Switch:
+  autodiff:
+    vjp_rule_id: Switch_vjp
+    jvp_rule_id: Switch_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Switch operation.
+  domain: control_flow
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Switch
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_stablehlo:
+      generator: stablehlo.case
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.switch
+    keras:
+      eager: keras_ops.switch
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.switch
+    numpy:
+      eager: numpy.switch
+    pytorch:
+      eager: torch.switch
+    tensorflow:
+      eager: tf.switch
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+WhileLoop:
+  autodiff:
+    vjp_rule_id: WhileLoop_vjp
+    jvp_rule_id: WhileLoop_jvp
+    vjp:
+    - $cotangent
+    jvp: $tangent[0]
+  broadcast_semantics: numpy
+  description: The WhileLoop operation.
+  domain: control_flow
+  input_tensors: *id001
+  math_semantics:
+    differentiable: false
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: WhileLoop
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Loop
+    edge_stablehlo:
+      generator: stablehlo.while
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras: {}
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

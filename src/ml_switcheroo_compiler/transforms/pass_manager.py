@@ -143,11 +143,12 @@ class PassManager:
         self.passes.append(ir_pass)
         self.pass_names.append(name or getattr(ir_pass, "__name__", "unknown_pass"))
 
-    def load_from_config(self, config_path: str | None = None) -> None:
+    def load_from_config(self, config_path: str | None = None, opt_level: str | None = None) -> None:
         """Load passes based on pass pipeline configuration or pass_config.yaml.
 
         Args:
             config_path (str, optional): Path to YAML configuration file.
+            opt_level (str, optional): Optimization level identifier ('O0', 'O1', 'O2', 'O3').
 
         Raises:
             CompilationError: If prerequisite passes are missing.
@@ -184,7 +185,11 @@ class PassManager:
         if isinstance(res, dict) and "prerequisites" in res:
             pipeline_config = PassPipelineConfig(**res)
             self.convergence_criteria = pipeline_config.convergence_criteria
-            execution_order = pipeline_config.execution_order
+
+            if opt_level and opt_level in pipeline_config.optimization_levels:
+                execution_order = pipeline_config.optimization_levels[opt_level].execution_order
+            else:
+                execution_order = pipeline_config.execution_order
 
             seen_passes: set[str] = set()
             for p_name in execution_order:

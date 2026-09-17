@@ -2,19 +2,63 @@ operation: Movedim
 description: Moves the dimension(s) of input at the position(s) in source to the position(s)
   in destination.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: source
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: destination
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: source
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: destination
+  type: int
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: source
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: destination
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - source
+  - destination
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: movedim(in0, source, destination)
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: transpose
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Movedim_vjp
+  jvp_rule_id: Movedim_jvp
+  vjp: null
+  jvp: null

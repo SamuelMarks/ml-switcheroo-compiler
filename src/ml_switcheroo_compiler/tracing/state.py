@@ -65,6 +65,11 @@ class TracingState:
 
         self._enrich_node(node)
         self.active_graph.nodes[node.id] = node
+        if getattr(node, "op_type", "") != "Input" and hasattr(self.active_graph, "inputs"):
+            if node.id in self.active_graph.inputs:
+                self.active_graph.inputs.remove(node.id)
+                if hasattr(self.active_graph, "input_specs"):
+                    self.active_graph.input_specs.pop(node.id, None)
 
     def start_tracing(self, name: str = "Model"):
         """Activate the tracing context and initialize a new empty graph.

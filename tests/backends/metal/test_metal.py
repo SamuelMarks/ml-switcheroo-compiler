@@ -260,17 +260,20 @@ def test_metal_runner_launch_kernel():
     with patch.dict(sys.modules, {"Metal": mock_metal}):
         # 2. Library is None (compilation failed)
         mock_dev.newLibraryWithSource_options_error_.return_value = (None, "comp_error")
-        runner.compile_and_dispatch("bad_src", "main", [16, 1, 1])
+        with pytest.raises(RuntimeError, match="Metal compilation failed"):
+            runner.compile_and_dispatch("bad_src", "main", [16, 1, 1])
 
         # 3. Func is None (entry point not found)
         mock_dev.newLibraryWithSource_options_error_.return_value = (mock_lib, None)
         mock_lib.newFunctionWithName_.return_value = None
-        runner.compile_and_dispatch("src", "missing_entry", [16, 1, 1])
+        with pytest.raises(RuntimeError, match="not found in library"):
+            runner.compile_and_dispatch("src", "missing_entry", [16, 1, 1])
 
         # 4. Pipeline state is None
         mock_lib.newFunctionWithName_.return_value = mock_func
         mock_dev.newComputePipelineStateWithFunction_error_.return_value = (None, "pipe_error")
-        runner.compile_and_dispatch("src", "main", [16, 1, 1])
+        with pytest.raises(RuntimeError, match="Failed to create pipeline state"):
+            runner.compile_and_dispatch("src", "main", [16, 1, 1])
 
         # 5. Success with buffers and 3D grid_size
         mock_dev.newComputePipelineStateWithFunction_error_.return_value = (mock_pipe, None)

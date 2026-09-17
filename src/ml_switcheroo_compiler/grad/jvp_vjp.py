@@ -37,19 +37,37 @@ class CustomJVPFunction:
         """
         self.fun = fun
         self.jvp_rule: Optional[Callable] = None
+        self.jvp_subgraph: Optional[LogicalGraph] = None
 
-    def defjvp(self, jvp_rule: Callable) -> Callable:
+    def defjvp(self, jvp_rule: Callable, jvp_subgraph: Optional[LogicalGraph] = None) -> Callable:
         """Define the custom Jacobian-vector product (JVP) rule.
 
         Args:
             jvp_rule (Callable): The JVP rule. Signature can be (primals, tangents) -> (val, out_tangent)
                 or (*primals, *tangents).
+            jvp_subgraph (Optional[LogicalGraph]): Optional declarative forward/tangent IR subgraph.
 
         Returns:
             Callable: The registered jvp_rule.
         """
         self.jvp_rule = jvp_rule
+        if jvp_subgraph is not None:
+            self.jvp_subgraph = jvp_subgraph
+        elif isinstance(jvp_rule, LogicalGraph):
+            self.jvp_subgraph = jvp_rule
+        elif hasattr(jvp_rule, "graph") and isinstance(getattr(jvp_rule, "graph", None), LogicalGraph):
+            self.jvp_subgraph = jvp_rule.graph
+        else:
+            self.jvp_subgraph = None
         return jvp_rule
+
+    def defjvp_subgraph(self, jvp_subgraph: LogicalGraph) -> None:
+        """Attach a declarative forward/tangent IR subgraph directly.
+
+        Args:
+            jvp_subgraph (LogicalGraph): Custom forward/tangent IR subgraph.
+        """
+        self.jvp_subgraph = jvp_subgraph
 
     def __eq__(self, other: object) -> bool:
         """Check equality with another function or CustomJVPFunction.
@@ -108,11 +126,19 @@ class CustomJVPFunction:
                 in_ids.append(cid)
 
         out_id = f"custom_jvp_{uuid.uuid4().hex[:6]}"
+        jvp_attrs = {"jvp_rule": self.jvp_rule, "fun": self.fun}
+        subgraphs: dict[str, LogicalGraph] = {}
+        if self.jvp_subgraph is not None:
+            jvp_attrs["jvp_graph"] = self.jvp_subgraph
+            jvp_attrs["custom_forward_subgraph"] = self.jvp_subgraph
+            subgraphs["jvp"] = self.jvp_subgraph
+
         node = LogicalNode(
             id=out_id,
             op_type="CustomJVP",
             inputs=in_ids,
-            attributes={"jvp_rule": self.jvp_rule, "fun": self.fun},
+            attributes=jvp_attrs,
+            subgraphs=subgraphs,
             shape_metadata=out_shape,
         )
         global_tracing_state.add_node(node)
@@ -184,8 +210,9 @@ def jvp(
 
     # Trace
     block = _trace_function(fun_primal, tuple(tensor_primals), f"jvp_{uuid.uuid4().hex[:6]}")
-    forward_graph = LogicalGraph(name=block.id)
-    for node in block.nodes:
+    forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "jvp")))
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
     forward_graph.outputs = block.outputs
@@ -272,8 +299,9 @@ def vjp(
 
     # 3. Trace the flat primal function
     block = _trace_function(fun_primal, tuple(tensor_primals), f"vjp_{uuid.uuid4().hex[:6]}")
-    forward_graph = LogicalGraph(name=block.id)
-    for node in block.nodes:
+    forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "vjp")))
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
     forward_graph.outputs = block.outputs
@@ -424,8 +452,9 @@ def hvp(
 
     # Trace
     block = _trace_function(fun_primal, tuple(tensor_primals), f"hvp_{uuid.uuid4().hex[:6]}")
-    forward_graph = LogicalGraph(name=block.id)
-    for node in block.nodes:
+    forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "hvp")))
+    nodes_iter = block.nodes.values() if isinstance(block.nodes, dict) else block.nodes
+    for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
     forward_graph.outputs = block.outputs

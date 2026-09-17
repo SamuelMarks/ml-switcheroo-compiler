@@ -1,2 +1,6 @@
-Isinf:
-  target_api: da.isinf
+operation: Isinf
+backend: dask
+target_api: da.isinf
+ast_template: '{out} = da.isinf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

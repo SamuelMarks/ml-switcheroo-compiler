@@ -1,3 +1,8 @@
-TriangularSolve:
-  target_api: '''mx.linalg.solve_triangular({0}.swapaxes(-1, -2).conjugate() if {adjoint}
-    else {0}, {1}, upper=not {lower} if not {adjoint} else {lower})'''
+operation: TriangularSolve
+backend: mlx
+target_api: '''mx.linalg.solve_triangular({0}.swapaxes(-1, -2).conjugate() if {adjoint}
+  else {0}, {1}, upper=not {lower} if not {adjoint} else {lower})'''
+ast_template: '{out} = ''mx.linalg.solve_triangular({0}.swapaxes(-1, -2).conjugate()
+  if {adjoint} else {0}, {1}, upper=not {lower} if not {adjoint} else {lower})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

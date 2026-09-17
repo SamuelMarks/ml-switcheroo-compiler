@@ -1,2 +1,6 @@
-Rsqrt:
-  target_api: tf.math.rsqrt
+operation: Rsqrt
+backend: tensorflow
+target_api: tf.math.rsqrt
+ast_template: '{out} = tf.math.rsqrt({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

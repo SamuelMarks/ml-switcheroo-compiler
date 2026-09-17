@@ -1,2 +1,6 @@
-Sqrt:
-  target_api: da.sqrt
+operation: Sqrt
+backend: dask
+target_api: da.sqrt
+ast_template: '{out} = da.sqrt({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -21,6 +21,7 @@ from ml_playground_directive import setup as setup_directive
 projects: list[str] = [
     "../ml-switcheroo-compiler",
     "../ml-switcheroo-ir",
+    "../ml-framework-snapshots",
     "../zero-chex",
     "../zero-flax",
     "../zero-grain",
@@ -32,6 +33,7 @@ projects: list[str] = [
     "../zero-pax",
     "../zero-pytorch",
     "../zero-tensorflow",
+    "../zero-zoo",
 ]
 
 fast_build: bool = os.environ.get("FAST_BUILD", "0") == "1"

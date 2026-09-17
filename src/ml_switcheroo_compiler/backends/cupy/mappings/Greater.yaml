@@ -1,2 +1,6 @@
-Greater:
-  target_api: cp.greater
+operation: Greater
+backend: cupy
+target_api: cp.greater
+ast_template: '{out} = cp.greater({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: Map
+backend: jax
+target_api: jax.lax.map
+ast_template: '{out} = jax.lax.map({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

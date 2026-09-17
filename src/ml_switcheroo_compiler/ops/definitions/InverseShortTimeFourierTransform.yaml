@@ -1,51 +1,130 @@
 operation: InverseShortTimeFourierTransform
 description: Inverse short time Fourier Transform.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    rank: 3
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: n_fft
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: hop_length
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: win_length
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: window
-    type: Tensor
-  - default: true
-    is_variadic: false
-    kind: positional_or_keyword
-    name: center
-    type: bool
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: normalized
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: onesided
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: length
-    type: int
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: return_complex
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  rank: 3
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n_fft
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: hop_length
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: win_length
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: window
+  type: Tensor
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: center
+  type: bool
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: normalized
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: onesided
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: length
+  type: int
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: return_complex
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: n_fft
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: hop_length
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: win_length
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: window
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: center
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: normalized
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: onesided
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: length
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: return_complex
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - n_fft
+  - hop_length
+  - win_length
+  - window
+  - center
+  - normalized
+  - onesided
+  - length
+  - return_complex
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: InverseShortTimeFourierTransform_vjp
+  jvp_rule_id: InverseShortTimeFourierTransform_jvp
+  vjp: null
+  jvp: null

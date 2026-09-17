@@ -1,2 +1,6 @@
-Log:
-  target_api: tf.math.log
+operation: Log
+backend: tensorflow
+target_api: tf.math.log
+ast_template: '{out} = tf.math.log({in0})'
+kwarg_map: {}
+dtype_overrides: {}

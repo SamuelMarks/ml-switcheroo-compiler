@@ -1,3 +1,6 @@
-AssignAdd:
-  custom_code: 'lambda ref, value, **kwargs: ref + value'
-  target_api: custom_op
+operation: AssignAdd
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

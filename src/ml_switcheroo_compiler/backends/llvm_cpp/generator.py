@@ -23,6 +23,35 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
+def get_supported_mlir_dialects() -> tuple[str, ...]:
+    """Return supported canonical MLIR dialect prefixes.
+
+    Returns:
+        tuple[str, ...]: Dialect prefixes ('arith', 'math', 'tensor', 'linalg', 'scf').
+    """
+    return ("arith", "math", "tensor", "linalg", "scf")
+
+
+def validate_mlir_operation(op_name: str) -> bool:
+    """Validate an MLIR operation name against the canonical MLIR_REGISTRY.
+
+    Args:
+        op_name (str): The full MLIR operation name (e.g. 'arith.addi', 'math.exp').
+
+    Returns:
+        bool: True if the operation is valid in a recognized dialect in MLIR_REGISTRY.
+    """
+    try:
+        from ml_switcheroo_ir.schema.mlir_registry import MLIR_REGISTRY
+
+        if op_name in MLIR_REGISTRY:
+            return True
+        dialect = op_name.split(".")[0] if "." in op_name else ""
+        return dialect in get_supported_mlir_dialects() and op_name in MLIR_REGISTRY
+    except ImportError:
+        return False
+
+
 @register_backend("llvm_cpp")
 class CppGenerator(BaseGenerator):
     """High-performance C++17 backend generator compiling kernels via system compilers (clang++/g++)."""
@@ -104,7 +133,7 @@ class CppGenerator(BaseGenerator):
         prelude: str = data.get("prelude", "")
         self.lines = prelude.strip().split("\n")
 
-        self.lines.append('extern "C" void compute_graph() {')
+        self.lines.append('extern "C" void compute_graph(const float** inputs = nullptr, float** outputs = nullptr, const int64_t* shapes = nullptr) {')
 
         graph_to_use: IRGraph | None = graph if graph is not None else self.graph
         if not graph_to_use:
@@ -122,8 +151,25 @@ class CppGenerator(BaseGenerator):
             self.lines.append(f"    // Allocate global arena buffer of size {max_offset} bytes")
             self.lines.append(f"    AlignedBuffer<uint8_t> global_arena({max_offset});")
 
+        inp_idx = 0
         for _, node in graph_to_use.nodes.items():
-            self._visit_node(node, graph_to_use)
+            if node.op_type == "Input":
+                self._visit_node(node, graph_to_use)
+                self.lines.append(f"    if (inputs && inputs[{inp_idx}]) {{")
+                self.lines.append(f"        std::memcpy({node.id}.data.data(), inputs[{inp_idx}], {node.id}.size() * sizeof(float));")
+                self.lines.append("    }")
+                inp_idx += 1
+            else:
+                self._visit_node(node, graph_to_use)
+
+        out_idx = 0
+        for out_name in getattr(graph_to_use, "outputs", []):
+            if out_name in graph_to_use.nodes:
+                clean_out = graph_to_use.nodes[out_name].id
+                self.lines.append(f"    if (outputs && outputs[{out_idx}]) {{")
+                self.lines.append(f"        std::memcpy(outputs[{out_idx}], {clean_out}.data.data(), {clean_out}.size() * sizeof(float));")
+                self.lines.append("    }")
+                out_idx += 1
 
         self.lines.append("}")
         return "\n".join(self.lines)
@@ -316,7 +362,8 @@ class CppGenerator(BaseGenerator):
             from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
             op_def: dict[str, AttrType] = OPS_REGISTRY.get(op, {})
-            mapping: dict[str, AttrType] = op_def.get("variants", {}).get("llvm_cpp", {})
+            raw_mapping: dict[str, AttrType] = op_def.get("variants", {}).get("llvm_cpp", {})
+            mapping: dict[str, AttrType] = raw_mapping if (raw_mapping and raw_mapping.get("template")) else {}
 
             op_key = op.lower()
             decl_op = get_cpp_operation(op_key)
@@ -347,11 +394,23 @@ class CppGenerator(BaseGenerator):
                 N: int = out_shape[1] if len(out_shape) > 1 else 1
                 K: int = in0_shape[1] if len(in0_shape) > 1 else 1
 
+                in0_var = node.inputs[0] if len(node.inputs) > 0 else "dummy"
+                in1_var = node.inputs[1] if len(node.inputs) > 1 else "dummy"
+                if graph_to_use and hasattr(graph_to_use, "edges"):
+                    for edge in graph_to_use.edges:
+                        tgt = getattr(edge, "target", getattr(edge, "target_node", None))
+                        src = getattr(edge, "source", getattr(edge, "source_node", None))
+                        if tgt == node.id:
+                            if getattr(edge, "target_idx", 0) == 0 and getattr(edge, "source_idx", 0) > 0:
+                                in0_var = str(src)
+                            elif getattr(edge, "target_idx", 0) == 1 and getattr(edge, "source_idx", 0) > 0:
+                                in1_var = str(src)
+
                 expr_format_args: dict[str, AttrType] = {
                     "clean_id": node.id,
                     "out_shape_str": out_shape_str,
-                    "in0": node.inputs[0] if len(node.inputs) > 0 else "dummy",
-                    "in1": node.inputs[1] if len(node.inputs) > 1 else "dummy",
+                    "in0": in0_var,
+                    "in1": in1_var,
                     "rank": len(out_shape),
                     "M": M,
                     "N": N,
@@ -363,6 +422,10 @@ class CppGenerator(BaseGenerator):
                 for line in body.split("\n"):
                     if line.strip():
                         self.lines.append(f"    {line}")
+
+                if hasattr(node, "outputs") and len(node.outputs) > 1:
+                    for idx, out_id in enumerate(node.outputs):
+                        self.lines.append(f"    NDArrayView<float> {out_id} = {node.id}; // multi-output alias {idx}")
 
     def compile(self, code: str) -> Callable[[], str]:
         """Compile the generated C++ code into a shared library.
@@ -469,13 +532,23 @@ class LLVMCPPRunner:
             shutil.rmtree(temp_dir, ignore_errors=True)
             raise RuntimeError(f"Compilation or load failed: {e}") from e
 
-        def executable() -> str:
-            """Execute the compiled C++ graph.
+        def executable(*args: object) -> str:
+            """Execute the compiled C++ graph with optional input/output buffer pointers.
+
+            Args:
+                *args (object): Optional (c_inputs, c_outputs, c_shapes) buffer pointers.
 
             Returns:
                 str: Status message.
             """
-            compute_func()
+            if len(args) >= 3:
+                compute_func(args[0], args[1], args[2])
+            elif len(args) == 2:
+                compute_func(args[0], args[1], None)
+            elif len(args) == 1:
+                compute_func(args[0], None, None)
+            else:
+                compute_func(None, None, None)
             return "Execution successful"
 
         return executable

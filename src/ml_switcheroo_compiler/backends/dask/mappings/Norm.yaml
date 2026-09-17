@@ -1,2 +1,6 @@
-Norm:
-  target_api: da.linalg.norm
+operation: Norm
+backend: dask
+target_api: da.linalg.norm
+ast_template: '{out} = da.linalg.norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

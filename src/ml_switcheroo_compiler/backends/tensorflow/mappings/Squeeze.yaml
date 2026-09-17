@@ -1,2 +1,6 @@
-Squeeze:
-  target_api: tf.squeeze
+operation: Squeeze
+backend: tensorflow
+target_api: tf.squeeze
+ast_template: '{out} = tf.squeeze({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

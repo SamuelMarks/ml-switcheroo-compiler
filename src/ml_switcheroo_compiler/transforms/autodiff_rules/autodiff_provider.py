@@ -1,4 +1,4 @@
-# ruff: noqa: C901, PLR0911, PLR0912
+# ruff: noqa: C901, PLR0911, PLR0912, PLR0915
 """Autodiff Provider for Data-Driven Rules."""
 
 import re
@@ -201,12 +201,13 @@ def _fallback_finite_difference_jvp(graph, node, tangents) -> str:
     pos_inputs = []
     neg_inputs = []
 
-    for _idx, (inp, tang) in enumerate(zip(node.inputs, tangents)):
+    tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+    for _idx, (inp, tang) in enumerate(zip(node.inputs, tangents_list)):
         eps_t = emit_ir_node(graph, "Multiply", [epsilon, tang], getattr(graph.nodes.get(inp), "shape_metadata", None))
         pos_inputs.append(emit_ir_node(graph, "Add", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
         neg_inputs.append(emit_ir_node(graph, "Subtract", [inp, eps_t], getattr(graph.nodes.get(inp), "shape_metadata", None)))
 
-    for i in range(len(tangents), len(node.inputs)):
+    for i in range(len(tangents_list), len(node.inputs)):
         pos_inputs.append(node.inputs[i])
         neg_inputs.append(node.inputs[i])
 
@@ -217,8 +218,78 @@ def _fallback_finite_difference_jvp(graph, node, tangents) -> str:
     return emit_ir_node(graph, "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
+_MANIFEST_MODEL_CACHE: Optional[Any] = None
+_MODULAR_RULES_CACHE: Optional[dict[str, dict[str, Any]]] = None
+
+
+def _get_autodiff_manifest() -> Optional[Any]:
+    """Retrieve cached AutodiffRulesManifestModel parsed from autodiff_rules.yaml.
+
+    Returns:
+        Optional[Any]: Validated AutodiffRulesManifestModel instance or None.
+    """
+    global _MANIFEST_MODEL_CACHE
+    if _MANIFEST_MODEL_CACHE is not None:
+        return _MANIFEST_MODEL_CACHE
+
+    import os
+
+    import yaml
+
+    from ml_switcheroo_compiler.grad.config_models import AutodiffRulesManifestModel
+
+    manifest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "autodiff_rules.yaml"))
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate(data)
+            return _MANIFEST_MODEL_CACHE
+        except Exception:
+            pass
+    return None
+
+
+def _get_modular_rules() -> dict[str, dict[str, Any]]:
+    """Load and cache modular derivative YAML schemas.
+
+    Returns:
+        dict[str, dict[str, Any]]: Dictionary containing parsed jvp_rules and vjp_rules.
+    """
+    global _MODULAR_RULES_CACHE
+    if _MODULAR_RULES_CACHE is not None:
+        return _MODULAR_RULES_CACHE
+
+    import os
+
+    import yaml
+
+    combined: dict[str, dict[str, Any]] = {"jvp_rules": {}, "vjp_rules": {}}
+    dir_path = os.path.dirname(__file__)
+    for filename in (
+        "linalg_derivatives.yaml",
+        "nn_derivatives.yaml",
+        "reduction_derivatives.yaml",
+        "math_derivatives.yaml",
+    ):
+        file_path = os.path.join(dir_path, filename)
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, encoding="utf-8") as f:
+                    content = yaml.safe_load(f) or {}
+                if isinstance(content, dict):
+                    if "jvp_rules" in content and isinstance(content["jvp_rules"], dict):
+                        combined["jvp_rules"].update(content["jvp_rules"])
+                    if "vjp_rules" in content and isinstance(content["vjp_rules"], dict):
+                        combined["vjp_rules"].update(content["vjp_rules"])
+            except Exception:
+                pass
+    _MODULAR_RULES_CACHE = combined
+    return combined
+
+
 def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]]:
-    """Load autodiff rule from registry or YAML files.
+    """Load autodiff rule from typed manifest model, modular files, registry or YAML files.
 
     Args:
         op_type (str): Name of the operation.
@@ -227,6 +298,27 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]
     Returns:
         Optional[dict[str, Any]]: Rule dictionary if found, else None.
     """
+    # 1. Primary: Strongly typed AutodiffRulesManifestModel
+    manifest = _get_autodiff_manifest()
+    if manifest is not None:
+        rules_dict = manifest.vjp_rules if rule_type == "vjp" else manifest.jvp_rules
+        for candidate in (op_type, op_type.capitalize(), op_type.lower()):
+            if candidate in rules_dict:
+                rule_obj = rules_dict[candidate]
+                if rule_type == "vjp" and rule_obj.vjp:
+                    return {"vjp": rule_obj.vjp if isinstance(rule_obj.vjp, list) else [rule_obj.vjp]}
+                if rule_type == "jvp" and rule_obj.jvp:
+                    return {"jvp": rule_obj.jvp}
+
+    # 2. Modular derivative files
+    modular = _get_modular_rules()
+    target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
+    for candidate in (op_type, op_type.capitalize(), op_type.lower()):
+        if candidate in modular.get(target_section, {}):
+            entry = modular[target_section][candidate]
+            if isinstance(entry, dict):
+                return entry
+
     if rule_type == "vjp":
         from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import load_primitive_vjp_rules
 
@@ -250,6 +342,19 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]
         if isinstance(ad_rules, dict) and rule_type in ad_rules:
             return ad_rules
 
+    return _load_rule_from_yaml_files(op_type, rule_type)
+
+
+def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[str, Any]]:
+    """Load autodiff rule from fallback filesystem YAML files.
+
+    Args:
+        op_type (str): Name of the operation.
+        rule_type (str): 'vjp' or 'jvp'.
+
+    Returns:
+        Optional[dict[str, Any]]: Rule dictionary if found, else None.
+    """
     import os
 
     import yaml
@@ -267,6 +372,18 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]
             data = yaml.safe_load(f) or {}
             if isinstance(data, dict) and op_type in data:
                 return data[op_type]
+
+    manifest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "autodiff_rules.yaml"))
+    if os.path.exists(manifest_path):
+        with open(manifest_path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
+            if isinstance(data, dict) and target_section in data and isinstance(data[target_section], dict):
+                for candidate in (op_type, op_type.capitalize(), op_type.lower()):
+                    if candidate in data[target_section]:
+                        rule_entry = data[target_section][candidate]
+                        if isinstance(rule_entry, dict):
+                            return rule_entry
 
     legacy_path = os.path.join(os.path.dirname(__file__), "autodiff_rules.yaml")
     if os.path.exists(legacy_path):
@@ -288,7 +405,7 @@ def get_vjp_from_data(op_type: str) -> Any:
         Any: Evaluator callable or None.
     """
     ad_rules = _load_autodiff_rule(op_type, "vjp")
-    if not ad_rules or "vjp" not in ad_rules:
+    if not ad_rules or "vjp" not in ad_rules or not ad_rules["vjp"]:
         return None
 
     vjp_exprs = ad_rules["vjp"]
@@ -320,7 +437,7 @@ def get_jvp_from_data(op_type: str) -> Any:
         Any: Evaluator callable.
     """
     ad_rules = _load_autodiff_rule(op_type, "jvp")
-    if not ad_rules or "jvp" not in ad_rules:
+    if not ad_rules or "jvp" not in ad_rules or not ad_rules["jvp"]:
         return _fallback_finite_difference_jvp
 
     jvp_expr = ad_rules["jvp"]

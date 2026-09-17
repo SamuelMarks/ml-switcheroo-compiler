@@ -1,2 +1,6 @@
-Norm:
-  target_api: keras_ops.norm
+operation: Norm
+backend: keras
+target_api: keras_ops.norm
+ast_template: '{out} = keras_ops.norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

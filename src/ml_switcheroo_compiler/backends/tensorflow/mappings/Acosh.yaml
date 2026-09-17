@@ -1,2 +1,6 @@
-Acosh:
-  target_api: tf.acosh
+operation: Acosh
+backend: tensorflow
+target_api: tf.acosh
+ast_template: '{out} = tf.acosh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

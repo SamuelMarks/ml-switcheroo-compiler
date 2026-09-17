@@ -1,2 +1,6 @@
-ZeroFraction:
-  target_api: tf.math.zero_fraction
+operation: ZeroFraction
+backend: tensorflow
+target_api: tf.math.zero_fraction
+ast_template: '{out} = tf.math.zero_fraction({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

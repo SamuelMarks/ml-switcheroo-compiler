@@ -1,2 +1,6 @@
-GatherNd:
-  target_api: custom_op
+operation: GatherNd
+backend: mlx
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

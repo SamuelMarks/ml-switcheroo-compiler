@@ -1,2 +1,6 @@
-Cov:
-  target_api: da.cov
+operation: Cov
+backend: dask
+target_api: da.cov
+ast_template: '{out} = da.cov({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

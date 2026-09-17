@@ -1,3 +1,6 @@
-Cumlogsumexp:
-  ast_template: np.logaddexp.accumulate
-  target_api: ''
+operation: Cumlogsumexp
+backend: numpy
+target_api: ''
+ast_template: np.logaddexp.accumulate
+kwarg_map: {}
+dtype_overrides: {}

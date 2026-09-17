@@ -1,3 +1,6 @@
-Cumsum:
-  ast_template: np.cumsum
-  target_api: ''
+operation: Cumsum
+backend: numpy
+target_api: ''
+ast_template: np.cumsum
+kwarg_map: {}
+dtype_overrides: {}

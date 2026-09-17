@@ -5,27 +5,21 @@ variants:
     generator: torch.fmod({0}, {1})
   numpy:
     eager: numpy.truncatemod
-  cupy: {}
-  cp:
+  cupy:
     generator: cp.fmod({0}, {1})
-  dask: {}
-  da:
+  dask:
     generator: da.fmod({0}, {1})
-  jnp:
-    generator: jnp.fmod({0}, {1})
   tensorflow:
     eager: tf.truncatemod
-  tf:
     generator: tf.math.floormod({0}, {1})
   keras:
     eager: keras_ops.truncatemod
-  keras.ops:
     generator: keras.ops.fmod({0}, {1})
   jax:
     eager: jax.numpy.truncatemod
+    generator: jnp.fmod({0}, {1})
   mlx:
     eager: mlx.core.truncatemod
-  mx:
     generator: mx.fmod({0}, {1})
   llvm_cpp:
     template: unary
@@ -37,3 +31,33 @@ variants:
     template: unary
     scalar_expr: in0_val
     simd_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: TruncateMod_vjp
+  jvp_rule_id: TruncateMod_jvp
+  vjp: null
+  jvp: null

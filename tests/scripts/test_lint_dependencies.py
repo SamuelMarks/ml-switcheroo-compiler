@@ -89,6 +89,21 @@ def test_check_module_name_empty() -> None:
     assert len(violations) == 0
 
 
+def test_check_dependencies_forbidden_upward_import() -> None:
+    """Test detecting forbidden upward imports from zero frontend or zero_zoo packages."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        core_dir: str = os.path.join(temp_dir, "core")
+        os.makedirs(core_dir)
+        bad_file: str = os.path.join(core_dir, "bad_upward.py")
+        with open(bad_file, "w", encoding="utf-8") as f:
+            f.write("import zero_pytorch\nimport zero_zoo\n")
+
+        violations: list[str] = check_dependencies(temp_dir)
+        assert len(violations) == 2
+        assert any("zero_pytorch" in v for v in violations)
+        assert any("zero_zoo" in v for v in violations)
+
+
 def test_main_clean() -> None:
     """Test main function when no violations are found."""
     with patch("scripts.lint_dependencies.check_dependencies", return_value=[]):

@@ -79,3 +79,27 @@ def test_group_norm_5d_eager():
     except Exception as e:
         raise e
         pass
+
+
+def test_group_norm_invalid_channels():
+    """Test group norm with channels not divisible by groups."""
+    import pytest
+
+    from ml_switcheroo_compiler.ops.nn.normalization import group_norm
+
+    class DummyTensor:
+        shape = (1, 3, 2, 2)
+
+    with pytest.raises(ValueError):
+        group_norm(DummyTensor(), num_groups=2)
+
+
+def test_backends_eager_group_ops_affine_branches() -> None:
+    """Test _apply_affine_transform with weight and bias in core_group_ops.py."""
+    from ml_switcheroo_compiler.backends.eager.core_group_ops import _apply_affine_transform
+
+    out = np.ones((2, 4), dtype=np.float32)
+    weight = np.array([2.0, 2.0, 2.0, 2.0], dtype=np.float32)
+    bias = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
+    res = _apply_affine_transform(np, out, axis=1, weight=weight, bias=bias)
+    assert np.allclose(res, 3.0)

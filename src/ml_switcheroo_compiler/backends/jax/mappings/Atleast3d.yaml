@@ -1,2 +1,6 @@
-Atleast3d:
-  target_api: jax.numpy.atleast_3d
+operation: Atleast3d
+backend: jax
+target_api: jax.numpy.atleast_3d
+ast_template: '{out} = jax.numpy.atleast_3d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

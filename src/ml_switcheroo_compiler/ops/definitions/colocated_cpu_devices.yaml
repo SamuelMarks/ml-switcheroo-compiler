@@ -2,9 +2,39 @@ operation: colocated_cpu_devices
 description: Finds devices or a mesh that has CPU devices colocated with the given
   devices or mesh.
 std_args:
-  - devices_or_mesh
+- devices_or_mesh
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: colocated_cpu_devices_vjp
+  jvp_rule_id: colocated_cpu_devices_jvp
+  vjp: null
+  jvp: null

@@ -1,2 +1,6 @@
-Diff:
-  target_api: keras_ops.diff
+operation: Diff
+backend: keras
+target_api: keras_ops.diff
+ast_template: '{out} = keras_ops.diff({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

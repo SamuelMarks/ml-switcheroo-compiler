@@ -197,6 +197,72 @@ function clearConsole(doc) {
  * Pyodide instance singleton.
  * @type {Object|null}
  */
+/**
+ * Resolves wheel URLs dynamically via global config, DOM attributes/links, fetch manifest, or fallback.
+ * @param {Document|null} doc - HTML Document
+ * @param {Window|Object} [win={}] - Window or global object
+ * @param {string} [basePath='./_static/'] - Base static path
+ * @returns {Promise<Array<string>>} List of resolved wheel URLs
+ */
+async function resolveWheelUrls(doc, win = typeof window !== 'undefined' ? window : {}, basePath = './_static/') {
+    if (win && Array.isArray(win.__ML_SWITCHEROO_WHEELS__) && win.__ML_SWITCHEROO_WHEELS__.length > 0) {
+        return win.__ML_SWITCHEROO_WHEELS__.map(w => (w.startsWith('http://') || w.startsWith('https://')) ? w : (basePath + w));
+    }
+
+    if (doc && typeof doc.querySelector === 'function') {
+        const dataEl = doc.querySelector('[data-wheels]');
+        if (dataEl && dataEl.dataset && dataEl.dataset.wheels) {
+            const raw = dataEl.dataset.wheels.split(',').map(s => s.trim()).filter(Boolean);
+            if (raw.length > 0) {
+                return raw.map(w => (w.startsWith('http://') || w.startsWith('https://')) ? w : (basePath + w));
+            }
+        }
+    }
+
+    if (doc && typeof doc.querySelectorAll === 'function') {
+        const links = doc.querySelectorAll('a.pg-wheel-link');
+        if (links && links.length > 0) {
+            const urls = [];
+            for (let i = 0; i < links.length; i++) {
+                const href = links[i].getAttribute('href');
+                if (href) {
+                    let normalized = href;
+                    if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('./')) {
+                        normalized = href;
+                    } else if (href.startsWith('_static/')) {
+                        normalized = './' + href;
+                    } else {
+                        normalized = basePath + href;
+                    }
+                    urls.push(normalized);
+                }
+            }
+            if (urls.length > 0) {
+                return urls;
+            }
+        }
+    }
+
+    if (win && typeof win.fetch === 'function') {
+        try {
+            const resp = await win.fetch(basePath + 'wheels.json');
+            if (resp && resp.ok && typeof resp.json === 'function') {
+                const data = await resp.json();
+                if (data && Array.isArray(data.wheels) && data.wheels.length > 0) {
+                    return data.wheels.map(w => (w.startsWith('http://') || w.startsWith('https://')) ? w : (basePath + w));
+                }
+            }
+        } catch (_) {
+            // fallback
+        }
+    }
+
+    return [
+        basePath + "ml_switcheroo_ir-0.1.0-py3-none-any.whl",
+        basePath + "ml_switcheroo_compiler-0.1.0-py3-none-any.whl"
+    ];
+}
+
 let pyodideInstance = null;
 
 /**
@@ -214,35 +280,13 @@ async function loadPyodideEnvironment(doc, win) {
         await pyodideInstance.loadPackage("micropip");
         const micropip = pyodideInstance.pyimport("micropip");
 
-        // Load numpy and our custom wheels
-        // Determine the base path for static assets
         let basePath = "./_static/";
-        // It could be different depending on Sphinx structure, we assume we are in html root or use relative
-        const wheels = [
-            basePath + "ml_switcheroo_ir-0.1.0-py3-none-any.whl",
-            basePath + "ml_switcheroo_compiler-0.1.0-py3-none-any.whl"
-        ];
+        const wheels = await resolveWheelUrls(doc, win, basePath);
 
         logToConsole(doc, t('depsInstall'));
         await micropip.install("numpy");
         for (const whl of wheels) {
-            try {
-                if (typeof micropip.install.callKwargs === 'function') {
-                    await micropip.install.callKwargs(whl, { deps: false });
-                } else {
-                    await micropip.install(whl);
-                }
-            } catch (installErr) {
-                try {
-                    await pyodideInstance.runPythonAsync(`
-import micropip
-await micropip.install("${whl}", deps=False)
-`);
-                } catch (fallbackErr) {
-                    /* c8 ignore next 2 */
-                    throw installErr;
-                }
-            }
+            await micropip.install(whl);
         }
 
         logToConsole(doc, t('pythonReady'));
@@ -251,6 +295,47 @@ await micropip.install("${whl}", deps=False)
         logToConsole(doc, t('pyodideFailed') + err.message, true);
         throw err;
     }
+}
+
+let lastCompiledGraphMetadata = null;
+
+/**
+ * Generates a deterministic pseudorandom typed array for an input shape and dtype.
+ * @param {Array<number>} shape - Tensor dimensions.
+ * @param {string} [dtype='float32'] - Tensor element data type.
+ * @returns {Float32Array|Int32Array} Initialized typed buffer.
+ */
+function generateDeterministicInputBuffer(shape, dtype = 'float32') {
+    const totalElements = (Array.isArray(shape) && shape.length > 0)
+        ? shape.reduce((a, b) => a * b, 1)
+        : 4;
+    const isInt = (dtype && dtype.startsWith('int'));
+    const arr = isInt ? new Int32Array(totalElements) : new Float32Array(totalElements);
+    for (let i = 0; i < totalElements; i++) {
+        const val = (((i * 1103515245 + 12345) & 0x7fffffff) % 1000) / 100.0 + 0.5;
+        arr[i] = isInt ? Math.floor(val) : val;
+    }
+    return arr;
+}
+
+/**
+ * Extracts concrete runtime shape and stride metadata from execution output buffers.
+ * @param {Float32Array|Object} result - Execution output tensor or result object.
+ * @param {Object} [outputMeta=null] - Expected output shape metadata.
+ * @returns {Object.<string, Array<number>>} Inferred concrete tensor shapes.
+ */
+function extractRuntimeShapesAndStrides(result, outputMeta = null) {
+    const learnedShapes = {};
+    if (!result) return learnedShapes;
+
+    if (result.shape && Array.isArray(result.shape)) {
+        learnedShapes["out_0"] = Array.from(result.shape);
+    } else if (outputMeta && outputMeta.shape) {
+        learnedShapes["out_0"] = Array.from(outputMeta.shape);
+    } else if (result.length) {
+        learnedShapes["out_0"] = [result.length];
+    }
+    return learnedShapes;
 }
 
 /**
@@ -287,16 +372,32 @@ def _compile_payload():
                 annotate_learned_shapes(graph, observed_shapes)
             shapes = {}
             for nid, node in list(graph.nodes.items()):
-                if getattr(node, "shape_metadata", None) is None:
-                    node.shape_metadata = (4,)
-                shape_meta = node.shape_metadata
+                shape_meta = getattr(node, "shape_metadata", None)
+                if shape_meta is None:
+                    shape_meta = getattr(node, "shape", None) or (1,)
                 shapes[node.id] = {
                     "op": getattr(node, "op_type", ""),
                     "shape": list(shape_meta) if hasattr(shape_meta, "__iter__") else [shape_meta]
                 }
+            inputs_meta = {}
+            for inp_id in getattr(graph, "inputs", []):
+                inp_node = graph.nodes.get(inp_id)
+                s = getattr(inp_node, "shape_metadata", None) or getattr(inp_node, "shape", None) or [4]
+                inputs_meta[inp_id] = {
+                    "shape": list(s) if hasattr(s, "__iter__") else [s],
+                    "dtype": getattr(inp_node, "dtype", "float32")
+                }
+            outputs_meta = {}
+            for out_id in getattr(graph, "outputs", []):
+                out_node = graph.nodes.get(out_id)
+                s = getattr(out_node, "shape_metadata", None) or getattr(out_node, "shape", None) or [4]
+                outputs_meta[out_id] = {
+                    "shape": list(s) if hasattr(s, "__iter__") else [s],
+                    "dtype": getattr(out_node, "dtype", "float32")
+                }
             generator = WebGPUCodeGenerator(graph)
             code = generator.generate()
-            return {"code": code, "shapes": shapes, "target": target_fw, "learned": bool(observed_shapes)}
+            return {"code": code, "shapes": shapes, "inputs": inputs_meta, "outputs": outputs_meta, "target": target_fw, "learned": bool(observed_shapes)}
 
         elif target_fw in ("wasm_simd", "wasm"):
             from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
@@ -306,25 +407,41 @@ def _compile_payload():
                 annotate_learned_shapes(graph, observed_shapes)
             shapes = {}
             for nid, node in list(graph.nodes.items()):
-                if getattr(node, "shape_metadata", None) is None:
-                    node.shape_metadata = (4,)
-                shape_meta = node.shape_metadata
+                shape_meta = getattr(node, "shape_metadata", None)
+                if shape_meta is None:
+                    shape_meta = getattr(node, "shape", None) or (1,)
                 shapes[node.id] = {
                     "op": getattr(node, "op_type", ""),
                     "shape": list(shape_meta) if hasattr(shape_meta, "__iter__") else [shape_meta]
                 }
+            inputs_meta = {}
+            for inp_id in getattr(graph, "inputs", []):
+                inp_node = graph.nodes.get(inp_id)
+                s = getattr(inp_node, "shape_metadata", None) or getattr(inp_node, "shape", None) or [4]
+                inputs_meta[inp_id] = {
+                    "shape": list(s) if hasattr(s, "__iter__") else [s],
+                    "dtype": getattr(inp_node, "dtype", "float32")
+                }
+            outputs_meta = {}
+            for out_id in getattr(graph, "outputs", []):
+                out_node = graph.nodes.get(out_id)
+                s = getattr(out_node, "shape_metadata", None) or getattr(out_node, "shape", None) or [4]
+                outputs_meta[out_id] = {
+                    "shape": list(s) if hasattr(s, "__iter__") else [s],
+                    "dtype": getattr(out_node, "dtype", "float32")
+                }
             generator = WasmCodeGenerator(graph)
             code = generator.generate()
-            return {"code": code, "shapes": shapes, "target": target_fw, "learned": bool(observed_shapes)}
+            return {"code": code, "shapes": shapes, "inputs": inputs_meta, "outputs": outputs_meta, "target": target_fw, "learned": bool(observed_shapes)}
 
         else:
             transpiled = transpile_source(source_code, target_framework=target_fw)
             return {"code": transpiled, "shapes": {}, "target": target_fw, "learned": False}
 
-    except ImportError:
+    except Exception as err:
         return {
-            "code": f"# Compiled code for target: {target_fw}\\n# Source:\\n{source_code}",
-            "shapes": {},
+            "error": str(err),
+            "traceback": traceback.format_exc(),
             "target": target_fw,
             "learned": False
         }
@@ -346,10 +463,17 @@ _out
         }
 
         if (parsed && parsed.error) {
+            if (doc) {
+                logToConsole(doc, t('compileError') + parsed.error, true);
+                if (parsed.traceback) {
+                    logToConsole(doc, parsed.traceback, true);
+                }
+            }
             return t('compileFailed') + parsed.error;
         }
 
         if (parsed && typeof parsed.code === 'string') {
+            lastCompiledGraphMetadata = parsed;
             if (doc && parsed.shapes && Object.keys(parsed.shapes).length > 0) {
                 const header = parsed.learned
                     ? "[Shape Learning Feedback Loop] Inferred updated tensor shapes from runtime feedback:"
@@ -491,9 +615,28 @@ function initPlayground(doc, storage, win) {
                                 logToConsole(doc, t('webgpuNotLoaded'), true);
                                 return;
                             }
-                            // Example input
-                            const inputData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
-                            const outputSizeInBytes = 4 * Float32Array.BYTES_PER_ELEMENT;
+                            // Derive deterministic input buffers matching compiled tensor dimensions
+                            const inputsMeta = (lastCompiledGraphMetadata && lastCompiledGraphMetadata.inputs) || {};
+                            const inputEntries = Object.entries(inputsMeta);
+                            let inputData;
+                            if (inputEntries.length > 0) {
+                                const firstInp = inputEntries[0][1];
+                                inputData = generateDeterministicInputBuffer(firstInp.shape, firstInp.dtype);
+                            } else {
+                                inputData = generateDeterministicInputBuffer([4], 'float32');
+                            }
+
+                            const outputsMeta = (lastCompiledGraphMetadata && lastCompiledGraphMetadata.outputs) || {};
+                            const outEntries = Object.entries(outputsMeta);
+                            let expectedOutputElements = 4;
+                            let firstOutMeta = null;
+                            if (outEntries.length > 0) {
+                                firstOutMeta = outEntries[0][1];
+                                expectedOutputElements = (Array.isArray(firstOutMeta.shape) && firstOutMeta.shape.length > 0)
+                                    ? firstOutMeta.shape.reduce((a, b) => a * b, 1)
+                                    : 4;
+                            }
+                            const outputSizeInBytes = expectedOutputElements * Float32Array.BYTES_PER_ELEMENT;
 
                             const result = await runWebGPUCompute(win.navigator, code, inputData, outputSizeInBytes);
                             logToConsole(doc, t('webgpuComplete'));
@@ -502,7 +645,9 @@ function initPlayground(doc, storage, win) {
                             const capturer = (typeof captureRuntimeShapes === 'function')
                                 ? captureRuntimeShapes
                                 : (win.captureRuntimeShapes || null);
-                            const learnedShapes = capturer ? capturer(result) : (result && result.shape ? { "out_0": result.shape } : {});
+                            const learnedShapes = capturer
+                                ? capturer(result)
+                                : extractRuntimeShapesAndStrides(result, firstOutMeta);
                             if (Object.keys(learnedShapes).length > 0 && win.pyodideInstance) {
                                 logToConsole(doc, "[Shape Learning] Feedback loop triggered with runtime shapes: " + JSON.stringify(learnedShapes));
                                 const sourceCode = sourceEditor ? sourceEditor.getValue() : "";
@@ -535,8 +680,27 @@ function initPlayground(doc, storage, win) {
                                 wasmBinary = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
                             }
 
-                            const inputData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
-                            const expectedOutputLength = 4;
+                            // Derive deterministic input buffers matching compiled tensor dimensions
+                            const inputsMeta = (lastCompiledGraphMetadata && lastCompiledGraphMetadata.inputs) || {};
+                            const inputEntries = Object.entries(inputsMeta);
+                            let inputData;
+                            if (inputEntries.length > 0) {
+                                const firstInp = inputEntries[0][1];
+                                inputData = generateDeterministicInputBuffer(firstInp.shape, firstInp.dtype);
+                            } else {
+                                inputData = generateDeterministicInputBuffer([4], 'float32');
+                            }
+
+                            const outputsMeta = (lastCompiledGraphMetadata && lastCompiledGraphMetadata.outputs) || {};
+                            const outEntries = Object.entries(outputsMeta);
+                            let expectedOutputLength = 4;
+                            let firstOutMeta = null;
+                            if (outEntries.length > 0) {
+                                firstOutMeta = outEntries[0][1];
+                                expectedOutputLength = (Array.isArray(firstOutMeta.shape) && firstOutMeta.shape.length > 0)
+                                    ? firstOutMeta.shape.reduce((a, b) => a * b, 1)
+                                    : 4;
+                            }
 
                             const result = await runWasmCompute(wasmBinary, inputData, expectedOutputLength);
                             logToConsole(doc, t('wasmComplete'));
@@ -545,7 +709,9 @@ function initPlayground(doc, storage, win) {
                             const wasmCapturer = (typeof captureWasmTensorShapes === 'function')
                                 ? captureWasmTensorShapes
                                 : (win.captureWasmTensorShapes || null);
-                            const learnedShapes = wasmCapturer ? wasmCapturer({ "out_0": [result.length] }) : { "out_0": [result.length] };
+                            const learnedShapes = wasmCapturer
+                                ? wasmCapturer({ "out_0": [result.length] })
+                                : extractRuntimeShapesAndStrides(result, firstOutMeta);
                             if (Object.keys(learnedShapes).length > 0 && win.pyodideInstance) {
                                 logToConsole(doc, "[Shape Learning] Feedback loop triggered with runtime shapes: " + JSON.stringify(learnedShapes));
                                 const sourceCode = sourceEditor ? sourceEditor.getValue() : "";
@@ -580,7 +746,7 @@ if (!compileWasmFromCodeRef && typeof require !== 'undefined') {
 }
 
 // Export for testing
-/* c8 ignore next 17 */
+/* c8 ignore next 19 */
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         applyI18n,
@@ -591,9 +757,12 @@ if (typeof module !== 'undefined' && module.exports) {
         updateExecuteButtonVisibility,
         logToConsole,
         clearConsole,
+        resolveWheelUrls,
         loadPyodideEnvironment,
         compileCode,
         initPlayground,
+        generateDeterministicInputBuffer,
+        extractRuntimeShapesAndStrides,
         compileWasmKernel: compileWasmKernelRef,
         compileWasmFromCode: compileWasmFromCodeRef
     };

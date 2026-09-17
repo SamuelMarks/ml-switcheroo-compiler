@@ -1,2 +1,6 @@
-Squareplus:
-  target_api: keras_ops.squareplus
+operation: Squareplus
+backend: keras
+target_api: keras_ops.squareplus
+ast_template: '{out} = keras_ops.squareplus({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

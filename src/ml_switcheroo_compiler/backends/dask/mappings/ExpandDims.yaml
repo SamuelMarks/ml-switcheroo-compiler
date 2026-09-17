@@ -1,2 +1,6 @@
-ExpandDims:
-  target_api: da.expand_dims
+operation: ExpandDims
+backend: dask
+target_api: da.expand_dims
+ast_template: '{out} = da.expand_dims({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

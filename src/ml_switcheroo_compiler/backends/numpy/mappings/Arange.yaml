@@ -1,3 +1,6 @@
-Arange:
-  ast_template: np.arange
-  target_api: ''
+operation: Arange
+backend: numpy
+target_api: ''
+ast_template: np.arange
+kwarg_map: {}
+dtype_overrides: {}

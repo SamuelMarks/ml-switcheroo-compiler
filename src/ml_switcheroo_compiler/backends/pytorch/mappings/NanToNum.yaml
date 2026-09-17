@@ -1,3 +1,6 @@
-NanToNum:
-  ast_template: torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})
-  target_api: ''
+operation: NanToNum
+backend: pytorch
+target_api: ''
+ast_template: torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})
+kwarg_map: {}
+dtype_overrides: {}

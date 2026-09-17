@@ -1,2 +1,6 @@
-Degrees:
-  target_api: da.degrees
+operation: Degrees
+backend: dask
+target_api: da.degrees
+ast_template: '{out} = da.degrees({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

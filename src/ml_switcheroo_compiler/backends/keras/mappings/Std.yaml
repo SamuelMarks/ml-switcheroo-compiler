@@ -1,2 +1,6 @@
-Std:
-  target_api: keras_ops.std
+operation: Std
+backend: keras
+target_api: keras_ops.std
+ast_template: '{out} = keras_ops.std({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

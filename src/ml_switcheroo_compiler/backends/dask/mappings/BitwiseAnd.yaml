@@ -1,2 +1,6 @@
-BitwiseAnd:
-  target_api: da.bitwise_and
+operation: BitwiseAnd
+backend: dask
+target_api: da.bitwise_and
+ast_template: '{out} = da.bitwise_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

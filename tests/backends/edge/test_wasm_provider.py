@@ -1,10 +1,12 @@
+from pathlib import Path
+from unittest import mock
 from unittest.mock import mock_open, patch
 
 import pytest
 import yaml
 
 import ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider as provider
-from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template, load_yaml, load_yaml_dir
+from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_simd_op, get_wasm_simd_ops, get_wasm_template, load_yaml, load_yaml_dir
 
 
 @pytest.fixture(autouse=True)
@@ -98,3 +100,38 @@ def test_get_wasm_template_empty_global(monkeypatch):
 def test_get_wasm_template_not_dict():
     provider._WASM_TEMPLATES = {"templates": {"my_tpl": ["not", "dict"]}}
     assert get_wasm_template("my_tpl") == {}
+
+
+def test_wasm_simd_provider_branches(tmp_path: Path) -> None:
+    """Test wasm_provider when simd_path does not exist or has non-dict data."""
+    import ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider as wp
+
+    orig_simd_ops = dict(wp._WASM_SIMD_OPS)
+    try:
+        wp._WASM_SIMD_OPS.clear()
+        non_existent = tmp_path / "does_not_exist.yaml"
+        with mock.patch.object(Path, "is_file", return_value=False):
+            ops = get_wasm_simd_ops()
+            assert isinstance(ops, dict)
+        with mock.patch.object(Path, "is_file", return_value=True), mock.patch("builtins.open", mock.mock_open(read_data="[1, 2, 3]")):
+            wp._WASM_SIMD_OPS.clear()
+            ops2 = get_wasm_simd_ops()
+            assert isinstance(ops2, dict)
+    finally:
+        wp._WASM_SIMD_OPS = orig_simd_ops
+
+
+def test_wasm_simd_ops_retrieval() -> None:
+    """Test get_wasm_simd_ops and get_wasm_simd_op.
+
+    Returns:
+        None
+    """
+    ops = get_wasm_simd_ops()
+    assert isinstance(ops, dict)
+    add_op = get_wasm_simd_op("Add")
+    assert isinstance(add_op, dict)
+    missing_op = get_wasm_simd_op("NonExistentSimdOp")
+    assert missing_op == {}
+    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_simd_ops", return_value={"operations": {"bad_op": "not_a_dict"}}):
+        assert get_wasm_simd_op("bad_op") == {}

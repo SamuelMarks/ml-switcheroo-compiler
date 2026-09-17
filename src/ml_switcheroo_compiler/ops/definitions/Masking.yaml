@@ -1,12 +1,46 @@
 operation: Masking
 description: Masks a sequence by using a mask value to skip timesteps.
 std_args:
-  - default: 0.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: mask_value
-    type: float
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: mask_value
+  type: float
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: mask_value
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - mask_value
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Masking_vjp
+  jvp_rule_id: Masking_jvp
+  vjp: null
+  jvp: null

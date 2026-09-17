@@ -1,3 +1,6 @@
-Eigh:
-  ast_template: np.linalg.eigh
-  target_api: ''
+operation: Eigh
+backend: numpy
+target_api: ''
+ast_template: np.linalg.eigh
+kwarg_map: {}
+dtype_overrides: {}

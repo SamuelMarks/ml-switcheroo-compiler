@@ -1,3 +1,6 @@
-Svdvals:
-  ast_template: np.linalg.svd({0}, compute_uv=False)
-  target_api: ''
+operation: Svdvals
+backend: numpy
+target_api: ''
+ast_template: np.linalg.svd({0}, compute_uv=False)
+kwarg_map: {}
+dtype_overrides: {}

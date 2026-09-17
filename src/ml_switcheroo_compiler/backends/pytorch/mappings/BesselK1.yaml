@@ -1,2 +1,6 @@
-BesselK1:
-  target_api: torch.special.modified_bessel_k1
+operation: BesselK1
+backend: pytorch
+target_api: torch.special.modified_bessel_k1
+ast_template: '{out} = torch.special.modified_bessel_k1({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

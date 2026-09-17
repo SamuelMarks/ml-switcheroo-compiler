@@ -1,2 +1,6 @@
-Mean:
-  target_api: da.mean
+operation: Mean
+backend: dask
+target_api: da.mean
+ast_template: '{out} = da.mean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

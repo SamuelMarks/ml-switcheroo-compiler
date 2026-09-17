@@ -1,2 +1,6 @@
-Nanstd:
-  target_api: cp.nanstd
+operation: Nanstd
+backend: cupy
+target_api: cp.nanstd
+ast_template: '{out} = cp.nanstd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

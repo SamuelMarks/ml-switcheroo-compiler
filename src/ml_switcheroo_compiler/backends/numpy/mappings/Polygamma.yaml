@@ -1,3 +1,6 @@
-Polygamma:
-  ast_template: getattr(backend_module, 'polygamma', None)
-  target_api: ''
+operation: Polygamma
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'polygamma', None)
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: MatrixPower
+backend: pytorch
+target_api: torch.linalg.matrix_power
+ast_template: '{out} = torch.linalg.matrix_power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Floor:
-  target_api: da.floor
+operation: Floor
+backend: dask
+target_api: da.floor
+ast_template: '{out} = da.floor({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Maximum:
-  target_api: tf.maximum
+operation: Maximum
+backend: tensorflow
+target_api: tf.maximum
+ast_template: '{out} = tf.maximum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Lstsq:
-  target_api: keras_ops.lstsq
+operation: Lstsq
+backend: keras
+target_api: keras_ops.lstsq
+ast_template: '{out} = keras_ops.lstsq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

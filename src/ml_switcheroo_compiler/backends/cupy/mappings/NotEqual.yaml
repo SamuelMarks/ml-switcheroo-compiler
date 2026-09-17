@@ -1,2 +1,6 @@
-NotEqual:
-  target_api: cp.not_equal
+operation: NotEqual
+backend: cupy
+target_api: cp.not_equal
+ast_template: '{out} = cp.not_equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Unique:
-  target_api: da.unique
+operation: Unique
+backend: dask
+target_api: da.unique
+ast_template: '{out} = da.unique({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Min:
-  target_api: da.min
+operation: Min
+backend: dask
+target_api: da.min
+ast_template: '{out} = da.min({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

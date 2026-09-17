@@ -1,2 +1,6 @@
-Fft:
-  target_api: cp.fft.fft
+operation: Fft
+backend: cupy
+target_api: cp.fft.fft
+ast_template: '{out} = cp.fft.fft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

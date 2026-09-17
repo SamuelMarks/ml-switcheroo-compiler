@@ -1,2 +1,6 @@
-Correlate:
-  target_api: keras_ops.correlate
+operation: Correlate
+backend: keras
+target_api: keras_ops.correlate
+ast_template: '{out} = keras_ops.correlate({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

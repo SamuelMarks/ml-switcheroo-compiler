@@ -1,3 +1,6 @@
-MelFilterbank:
-  ast_template: jax_mel_filterbank({0})
-  target_api: ''
+operation: MelFilterbank
+backend: jax
+target_api: ''
+ast_template: jax_mel_filterbank({0})
+kwarg_map: {}
+dtype_overrides: {}

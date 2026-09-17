@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 CompileOptionValue = Union[str, int, float, bool]
 NodeAttributeValue = Union[str, int, float, bool, list[int], list[float]]
@@ -142,6 +142,12 @@ class BenchmarkRunResult(BaseModel):
         p99_latency_ms (float): 99th percentile latency in milliseconds.
         peak_memory_mb (Optional[float]): Peak memory allocation in megabytes.
         throughput_items_per_sec (float): Processed items per second.
+        p90_latency_ms (Optional[float]): 90th percentile latency in milliseconds.
+        min_latency_ms (Optional[float]): Minimum observed latency in milliseconds.
+        max_latency_ms (Optional[float]): Maximum observed latency in milliseconds.
+        std_latency_ms (Optional[float]): Sample standard deviation of latencies.
+        gflops (Optional[float]): Computed gigaflops throughput metric.
+        bandwidth_gb_s (Optional[float]): Estimated memory bandwidth in GB/s.
     """
 
     model: str
@@ -154,6 +160,31 @@ class BenchmarkRunResult(BaseModel):
     p99_latency_ms: float
     peak_memory_mb: Optional[float] = None
     throughput_items_per_sec: float
+    p90_latency_ms: Optional[float] = None
+    min_latency_ms: Optional[float] = None
+    max_latency_ms: Optional[float] = None
+    std_latency_ms: Optional[float] = None
+    gflops: Optional[float] = None
+    bandwidth_gb_s: Optional[float] = None
+    model_config = ConfigDict(extra="allow")
+
+    def to_json(self) -> str:
+        """Export benchmark result to JSON string format.
+
+        Returns:
+            str: Serialized JSON representation.
+        """
+        import json
+
+        return json.dumps(self.model_dump(), indent=2)
+
+    def to_yaml(self) -> str:
+        """Export benchmark result to YAML string format.
+
+        Returns:
+            str: Serialized YAML representation.
+        """
+        return str(yaml.safe_dump(self.model_dump(), sort_keys=False))
 
 
 class WorkloadTensorSpec(BaseModel):
@@ -223,6 +254,8 @@ class BackendProfile(BaseModel):
         default_warmup_iterations (int): Recommended warmup iterations.
         default_measured_iterations (int): Recommended measured iterations.
         memory_tracking (str): Strategy for reporting memory utilization.
+        profiler_module (Optional[str]): Qualified module path for profiler class.
+        profiler_class (Optional[str]): Profiler class name.
     """
 
     timer: str
@@ -230,6 +263,12 @@ class BackendProfile(BaseModel):
     default_warmup_iterations: int
     default_measured_iterations: int
     memory_tracking: str
+    profiler_module: Optional[str] = None
+    profiler_class: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
+
+
+ProfilerProfileModel = BackendProfile
 
 
 class BackendProfilesManifest(BaseModel):
@@ -240,6 +279,61 @@ class BackendProfilesManifest(BaseModel):
     """
 
     profiles: dict[str, BackendProfile] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+
+class BaselinePerformanceTarget(BaseModel):
+    """Declarative baseline performance target and regression threshold for a benchmark workload.
+
+    Attributes:
+        workload_name (str): Workload or model name.
+        backend (str): Target backend name.
+        device (str): Device target (e.g. 'cpu', 'cuda', 'mps').
+        precision (str): Precision mode ('float32', 'float16').
+        batch_size (int): Target batch size.
+        baseline_mean_latency_ms (float): Expected baseline latency in milliseconds.
+        regression_threshold_percent (float): Maximum allowed regression percent.
+        target_throughput_items_per_sec (float): Minimum expected throughput.
+        max_peak_memory_mb (Optional[float]): Upper bound memory ceiling limit.
+    """
+
+    workload_name: str
+    backend: str
+    device: str = "cpu"
+    precision: str = "float32"
+    batch_size: int = 1
+    baseline_mean_latency_ms: float
+    regression_threshold_percent: float = 15.0
+    target_throughput_items_per_sec: float = 10.0
+    max_peak_memory_mb: Optional[float] = None
+    model_config = ConfigDict(extra="allow")
+
+
+class PerfBaselinesManifestModel(BaseModel):
+    """Manifest specifying declarative baseline performance targets and regression thresholds.
+
+    Attributes:
+        baselines (dict[str, BaselinePerformanceTarget]): Mapping from baseline key to target model.
+    """
+
+    baselines: dict[str, BaselinePerformanceTarget] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+
+def load_perf_baselines(path: Optional[str] = None) -> PerfBaselinesManifestModel:
+    """Load baseline performance targets and regression thresholds from YAML.
+
+    Args:
+        path (Optional[str]): Path to perf_baselines.yaml. Defaults to bundled YAML.
+
+    Returns:
+        PerfBaselinesManifestModel: Validated performance baselines manifest.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "manifests", "perf_baselines.yaml")
+    with open(path, encoding="utf-8") as f:
+        raw_data = yaml.safe_load(f) or {}
+    return PerfBaselinesManifestModel.model_validate(raw_data)
 
 
 def load_benchmark_plan(yaml_path: str) -> BenchmarkPlan:
@@ -332,14 +426,14 @@ def load_workloads(yaml_path: Optional[str] = None) -> dict[str, ModelWorkload]:
     return load_model_workloads(yaml_path)
 
 
-def load_backend_profiles(yaml_path: Optional[str] = None) -> dict[str, BackendProfile]:
-    """Load backend profiles from declarative YAML manifest.
+def load_backend_profiles_manifest(yaml_path: Optional[str] = None) -> BackendProfilesManifest:
+    """Load backend profiles manifest from YAML configuration.
 
     Args:
         yaml_path (Optional[str]): Path to backend profiles YAML, defaults to internal manifest.
 
     Returns:
-        dict[str, BackendProfile]: Map of backend names to execution profiles.
+        BackendProfilesManifest: Validated backend profiles manifest.
 
     Raises:
         FileNotFoundError: If the manifest path does not exist.
@@ -354,7 +448,23 @@ def load_backend_profiles(yaml_path: Optional[str] = None) -> dict[str, BackendP
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
         raise ValueError(f"Invalid backend profiles YAML in {yaml_path}")
-    manifest = BackendProfilesManifest(**data)
+    return BackendProfilesManifest(**data)
+
+
+def load_backend_profiles(yaml_path: Optional[str] = None) -> dict[str, BackendProfile]:
+    """Load backend profiles from declarative YAML manifest.
+
+    Args:
+        yaml_path (Optional[str]): Path to backend profiles YAML, defaults to internal manifest.
+
+    Returns:
+        dict[str, BackendProfile]: Map of backend names to execution profiles.
+
+    Raises:
+        FileNotFoundError: If the manifest path does not exist.
+        ValueError: If YAML contents are invalid.
+    """
+    manifest = load_backend_profiles_manifest(yaml_path)
     return manifest.profiles
 
 

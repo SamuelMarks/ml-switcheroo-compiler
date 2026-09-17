@@ -1,3 +1,6 @@
-Atleast1d:
-  custom_code: 'lambda *args, **kwargs: torch.atleast_1d(*args)'
-  target_api: custom_op
+operation: Atleast1d
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

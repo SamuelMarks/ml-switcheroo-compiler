@@ -1,0 +1,6 @@
+operation: Roll
+backend: pytorch
+target_api: torch.roll
+ast_template: '{out} = torch.roll({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

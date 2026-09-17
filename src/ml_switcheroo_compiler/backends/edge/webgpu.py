@@ -43,12 +43,61 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             str: WGSL primitive type representation.
         """
+        lowered: str = str(dtype).lower()
+        if lowered == "float64":
+            import warnings
+
+            warnings.warn(
+                "WebGPU WGSL lacks native float64 support; using emulated double-precision vec2<f32> representation.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return "vec2<f32>"
         return {
             "float32": "f32",
-            "float64": "f32",
             "int32": "i32",
             "bool": "bool",
-        }.get(str(dtype).lower(), "f32")
+        }.get(lowered, "f32")
+
+    def _get_binding_for_input(self, input_idx: int) -> int:
+        """Get the WebGPU binding index for an input tensor.
+
+        Args:
+            input_idx (int): Zero-based index of the input.
+
+        Returns:
+            int: Binding index in bind group 0.
+        """
+        if input_idx < 3:
+            return input_idx
+        return input_idx + 1
+
+    def _get_binding_for_output(self, output_idx: int) -> int:
+        """Get the WebGPU binding index for an output tensor.
+
+        Args:
+            output_idx (int): Zero-based index of the output.
+
+        Returns:
+            int: Binding index in bind group 0.
+        """
+        if output_idx == 0:
+            return 3
+        return 5 + output_idx
+
+    def _generate_bind_group_declarations(self, max_inputs: int, max_outputs: int = 1) -> str:
+        """Generate dynamic WGSL bind group declarations for storage buffers.
+
+        Args:
+            max_inputs (int): Maximum input count needed across all graph nodes.
+            max_outputs (int): Maximum output count needed across all graph nodes.
+
+        Returns:
+            str: Dynamic WGSL declarations for storage buffer bind group 0.
+        """
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import generate_dynamic_bindgroup_declarations
+
+        return generate_dynamic_bindgroup_declarations(num_inputs=max_inputs, num_outputs=max_outputs)
 
     def _get_shape_and_strides(self, node: IRNode | None) -> tuple[list[int], list[int]]:
         """Get the shape and contiguous strides of an IR node.
@@ -283,6 +332,12 @@ class WebGPUCodeGenerator(BaseGenerator):
         ):
             expr_format_args.setdefault(k, 1)
 
+        expr_format_args.setdefault("start_idx", 0)
+        expr_format_args.setdefault("post_loop_code", "")
+        expr_format_args.setdefault("result_var", "acc")
+        expr_format_args.setdefault("loop_code", "acc = acc + buf_in0_f32[i];")
+        expr_format_args.setdefault("init_code", "var acc: f32 = 0.0f;")
+
         if mapping.get("template") == "tiled_matmul":
             expr_format_args["TILE_M"] = 16
             expr_format_args["TILE_N"] = 16
@@ -512,8 +567,16 @@ class WebGPUCodeGenerator(BaseGenerator):
         wgsl: list[str] = []
         js: list[str] = []
 
-        # 1. WGSL Global Bindings
-        wgsl.append(get_wgsl_global_bindings())
+        # 1. WGSL Global Bindings with dynamic input and output count support
+        all_inputs_lens: list[int] = [len(getattr(n, "inputs", [])) for n in self.sorted_nodes]
+        max_inputs: int = max(all_inputs_lens + [3]) if all_inputs_lens else 3
+        max_outputs: int = 1
+        for n in self.sorted_nodes:
+            raw_outs = getattr(n, "outputs", None) or getattr(n, "attributes", {}).get("outputs")
+            if isinstance(raw_outs, (list, tuple)):
+                max_outputs = max(max_outputs, len(raw_outs))
+
+        wgsl.append(self._generate_bind_group_declarations(max_inputs, max_outputs))
 
         # Removed static helper function because N-dimensional offsetting is dynamically generated via AST per-node
         wgsl.append("")
@@ -602,11 +665,20 @@ class WebGPUCodeGenerator(BaseGenerator):
 
                 entries: list[str] = []
                 for j, inp in enumerate(inputs):
-                    if j < 3:
-                        inp_arena_id: str = node_arenas.get(inp, "0")
-                        entries.append(f"{{ binding: {j}, resource: {{ buffer: buf_arena_{inp_arena_id} }} }}")
-                out_arena_id: str = node_arenas.get(node.id, "0")
-                entries.append(f"{{ binding: 3, resource: {{ buffer: buf_arena_{out_arena_id} }} }}")
+                    inp_arena_id: str = node_arenas.get(inp, "0")
+                    b_idx: int = self._get_binding_for_input(j)
+                    entries.append(f"{{ binding: {b_idx}, resource: {{ buffer: buf_arena_{inp_arena_id} }} }}")
+
+                raw_outs = getattr(node, "attributes", {}).get("outputs") or getattr(node, "outputs", None)
+                if isinstance(raw_outs, (list, tuple)):
+                    out_nodes = [str(o) for o in raw_outs]
+                else:
+                    out_nodes = [getattr(node, "id", "0")]
+
+                for k, out_id in enumerate(out_nodes):
+                    out_arena_id = node_arenas.get(out_id, node_arenas.get(node.id, "0"))
+                    b_idx = self._get_binding_for_output(k)
+                    entries.append(f"{{ binding: {b_idx}, resource: {{ buffer: buf_arena_{out_arena_id} }} }}")
 
                 js.append(get_js_orchestration_template("compute_pass").format(clean_id=clean_id, entries=", ".join(entries), dispatch_x=dispatch_x, dispatch_y=dispatch_y, dispatch_z=dispatch_z))
                 js.append("")

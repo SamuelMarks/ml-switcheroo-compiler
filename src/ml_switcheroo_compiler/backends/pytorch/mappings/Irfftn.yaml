@@ -1,3 +1,6 @@
-Irfftn:
-  custom_code: 'lambda *args, **kwargs: torch.fft.irfftn(args[0], **kwargs)'
-  target_api: custom_op
+operation: Irfftn
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-NanToNum:
-  target_api: keras_ops.nan_to_num
+operation: NanToNum
+backend: keras
+target_api: keras_ops.nan_to_num
+ast_template: '{out} = keras_ops.nan_to_num({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

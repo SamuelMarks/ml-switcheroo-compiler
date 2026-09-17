@@ -2,4 +2,4 @@ pytest
 pytest-cov
 pre-commit
 radon>=6.0.0
-ml-framework-snapshots @ file:///Users/samuel/repos/ml-framework-snapshots
+ml-framework-snapshots @ git+https://github.com/SamuelMarks/ml-framework-snapshots.git@master

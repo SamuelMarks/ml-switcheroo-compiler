@@ -1,2 +1,6 @@
-Nanmean:
-  target_api: da.nanmean
+operation: Nanmean
+backend: dask
+target_api: da.nanmean
+ast_template: '{out} = da.nanmean({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

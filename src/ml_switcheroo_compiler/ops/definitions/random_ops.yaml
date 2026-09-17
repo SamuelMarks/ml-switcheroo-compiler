@@ -1,0 +1,364 @@
+Bernoulli:
+  autodiff:
+    vjp_rule_id: Bernoulli_vjp
+    jvp_rule_id: Bernoulli_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Draws binary random numbers (0 or 1) from a Bernoulli distribution.
+  domain: random
+  input_tensors: &id001
+  - shape
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Bernoulli
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.bernoulli
+    keras:
+      eager: keras_ops.bernoulli
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.bernoulli
+    numpy:
+      eager: numpy.bernoulli
+    pytorch:
+      eager: torch.bernoulli
+    tensorflow:
+      eager: tf.bernoulli
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Categorical:
+  broadcast_semantics: numpy
+  description: Declarative Categorical operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Categorical
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+  autodiff:
+    vjp_rule_id: Categorical_vjp
+    jvp_rule_id: Categorical_jvp
+    vjp: null
+    jvp: null
+Exponential:
+  broadcast_semantics: numpy
+  description: Declarative Exponential operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Exponential
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+  autodiff:
+    vjp_rule_id: Exponential_vjp
+    jvp_rule_id: Exponential_jvp
+    vjp: null
+    jvp: null
+Poisson:
+  broadcast_semantics: numpy
+  description: Declarative Poisson operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Poisson
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+  autodiff:
+    vjp_rule_id: Poisson_vjp
+    jvp_rule_id: Poisson_jvp
+    vjp: null
+    jvp: null
+RandomNormal:
+  broadcast_semantics: numpy
+  description: Declarative RandomNormal operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: RandomNormal
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+  autodiff:
+    vjp_rule_id: RandomNormal_vjp
+    jvp_rule_id: RandomNormal_jvp
+    vjp: null
+    jvp: null
+RandomUniform:
+  broadcast_semantics: numpy
+  description: Declarative RandomUniform operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: RandomUniform
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+  autodiff:
+    vjp_rule_id: RandomUniform_vjp
+    jvp_rule_id: RandomUniform_jvp
+    vjp: null
+    jvp: null
+StandardGamma:
+  autodiff:
+    vjp_rule_id: StandardGamma_vjp
+    jvp_rule_id: StandardGamma_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Gamma operation.
+  domain: random
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: StandardGamma
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.gamma
+    keras:
+      eager: keras_ops.gamma
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.gamma
+    numpy:
+      generator: np.random.gamma({1}, size={shape})
+    pytorch:
+      eager: torch.gamma
+    tensorflow:
+      eager: tf.gamma
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

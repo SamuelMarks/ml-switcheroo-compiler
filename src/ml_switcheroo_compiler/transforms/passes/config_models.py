@@ -2,7 +2,7 @@
 
 from typing import Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NodePatternConfig(BaseModel):
@@ -11,6 +11,9 @@ class NodePatternConfig(BaseModel):
     op_type: Optional[str] = None
     capture: Optional[str] = None
     inputs: Optional[list["NodePatternConfig"]] = None
+    wildcard: bool = False
+    commutative: bool = False
+    broadcast_dims: bool = False
 
 
 class ReplacementConfig(BaseModel):
@@ -64,12 +67,91 @@ class ConvergenceCriteria(BaseModel):
     require_fixpoint: bool = True
 
 
-class PassPipelineConfig(BaseModel):
-    """Declarative pass pipeline configuration."""
+class PipelineStageModel(BaseModel):
+    """Declarative specification of an optimization pipeline stage.
 
-    execution_order: list[str]
-    convergence_criteria: ConvergenceCriteria = ConvergenceCriteria()
-    prerequisites: dict[str, list[str]] = {}
+    Attributes:
+        stage_name (str): Unique stage identifier.
+        passes (list[str]): Names of compiler passes to execute in this stage.
+        fixpoint_iteration (bool): Whether to iterate passes within this stage until fixpoint convergence.
+        max_iterations (int): Maximum iterations when running fixpoint iteration.
+    """
+
+    stage_name: str
+    passes: list[str] = Field(default_factory=list)
+    fixpoint_iteration: bool = False
+    max_iterations: int = 10
+    model_config = ConfigDict(extra="allow")
+
+
+class PassConfigModel(BaseModel):
+    """Declarative configuration model for individual compiler optimization passes.
+
+    Attributes:
+        pass_name (str): Identifier name of the compiler pass.
+        enabled (bool): Whether the pass is actively executed.
+        prerequisites (list[str]): Passes that must execute prior to this pass.
+        preserves (list[str]): Analysis/transform invariants preserved by this pass.
+        options (dict[str, Union[str, int, float, bool, list[str]]]): Custom configuration knobs.
+    """
+
+    pass_name: str
+    enabled: bool = True
+    prerequisites: list[str] = Field(default_factory=list)
+    preserves: list[str] = Field(default_factory=list)
+    options: dict[str, Union[str, int, float, bool, list[str]]] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+
+class OptLevelConfig(BaseModel):
+    """Configuration for an optimization level pipeline.
+
+    Attributes:
+        execution_order (list[str]): Passes executed in this level.
+        fixpoint_iteration (bool): Whether to iterate until convergence.
+        max_iterations (int): Maximum iterations allowed.
+    """
+
+    execution_order: list[str] = Field(default_factory=list)
+    fixpoint_iteration: bool = False
+    max_iterations: int = 1
+
+
+class PassAnalysisContract(BaseModel):
+    """Prerequisites, consumed properties, and analysis invalidations for a compiler pass.
+
+    Attributes:
+        prerequisites (list[str]): Required passes prior to execution.
+        consumed_properties (list[str]): Graph properties read by this pass.
+        invalidated_analyses (list[str]): Analyses invalidated by mutations in this pass.
+    """
+
+    prerequisites: list[str] = Field(default_factory=list)
+    consumed_properties: list[str] = Field(default_factory=list)
+    invalidated_analyses: list[str] = Field(default_factory=list)
+
+
+class PassPipelineConfig(BaseModel):
+    """Declarative pass pipeline configuration.
+
+    Attributes:
+        execution_order (list[str]): Sequential pass execution order.
+        convergence_criteria (ConvergenceCriteria): Fixpoint criteria.
+        prerequisites (dict[str, list[str]]): Pass prerequisite dependencies.
+        stages (list[PipelineStageModel]): Optimization pipeline stages.
+        pass_configs (dict[str, PassConfigModel]): Pass-specific configurations.
+        optimization_levels (dict[str, OptLevelConfig]): Optimization level configurations.
+        pass_analyses_and_invalidation (dict[str, PassAnalysisContract]): Analysis invalidation contracts.
+    """
+
+    execution_order: list[str] = Field(default_factory=list)
+    convergence_criteria: ConvergenceCriteria = Field(default_factory=ConvergenceCriteria)
+    prerequisites: dict[str, list[str]] = Field(default_factory=dict)
+    stages: list[PipelineStageModel] = Field(default_factory=list)
+    pass_configs: dict[str, PassConfigModel] = Field(default_factory=dict)
+    optimization_levels: dict[str, OptLevelConfig] = Field(default_factory=dict)
+    pass_analyses_and_invalidation: dict[str, PassAnalysisContract] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
 
 
 class RematerializationThresholds(BaseModel):
@@ -157,6 +239,27 @@ class ShapeInspectionPayload(BaseModel):
     tensor_metadata: Optional[dict[str, RuntimeTensorMetadata]] = None
     execution_time_ms: Optional[float] = None
     memory_usage_bytes: Optional[int] = None
+
+
+class RuntimeShapePacket(BaseModel):
+    """Standardized runtime shape observation packet transmitted from browser/edge runners.
+
+    Attributes:
+        packet_id (str): Unique packet identifier or execution cycle nonce.
+        runtime (str): Runtime target emitting the packet ('webgpu', 'wasm_simd', 'webgl').
+        graph_name (str): Identifier of the computation graph being executed.
+        observations (list[ObservedNodeShape]): Concrete shape and stride measurements.
+        execution_time_ms (Optional[float]): Kernel/graph execution time in milliseconds.
+        memory_usage_bytes (Optional[int]): Total device/linear memory consumed.
+    """
+
+    packet_id: str
+    runtime: str
+    graph_name: str = "default_graph"
+    observations: list[ObservedNodeShape] = Field(default_factory=list)
+    execution_time_ms: Optional[float] = None
+    memory_usage_bytes: Optional[int] = None
+    model_config = ConfigDict(extra="allow")
 
 
 class ShapeLearningProtocolConfig(BaseModel):

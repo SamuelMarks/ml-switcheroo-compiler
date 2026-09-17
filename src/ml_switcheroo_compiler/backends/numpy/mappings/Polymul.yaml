@@ -1,3 +1,6 @@
-Polymul:
-  ast_template: np.polymul
-  target_api: ''
+operation: Polymul
+backend: numpy
+target_api: ''
+ast_template: np.polymul
+kwarg_map: {}
+dtype_overrides: {}

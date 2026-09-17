@@ -1,2 +1,6 @@
-Fliplr:
-  target_api: cp.fliplr
+operation: Fliplr
+backend: cupy
+target_api: cp.fliplr
+ast_template: '{out} = cp.fliplr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

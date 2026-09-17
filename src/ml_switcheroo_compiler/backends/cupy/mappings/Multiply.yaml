@@ -1,2 +1,6 @@
-Multiply:
-  target_api: cp.multiply
+operation: Multiply
+backend: cupy
+target_api: cp.multiply
+ast_template: '{out} = cp.multiply({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

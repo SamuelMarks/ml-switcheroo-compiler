@@ -1,2 +1,6 @@
-Reshape:
-  target_api: keras_ops.reshape
+operation: Reshape
+backend: keras
+target_api: keras_ops.reshape
+ast_template: '{out} = keras_ops.reshape({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

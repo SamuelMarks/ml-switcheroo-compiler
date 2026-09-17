@@ -1,3 +1,6 @@
-IgammaGradA:
-  ast_template: 'lambda a, x: a'
-  target_api: ''
+operation: IgammaGradA
+backend: numpy
+target_api: ''
+ast_template: 'lambda a, x: a'
+kwarg_map: {}
+dtype_overrides: {}

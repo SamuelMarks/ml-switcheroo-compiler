@@ -1,2 +1,6 @@
-BitwiseNot:
-  target_api: keras_ops.bitwise_not
+operation: BitwiseNot
+backend: keras
+target_api: keras_ops.bitwise_not
+ast_template: '{out} = keras_ops.bitwise_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

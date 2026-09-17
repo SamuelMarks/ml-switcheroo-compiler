@@ -1,2 +1,6 @@
-Repeat:
-  target_api: tf.repeat
+operation: Repeat
+backend: tensorflow
+target_api: tf.repeat
+ast_template: '{out} = tf.repeat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

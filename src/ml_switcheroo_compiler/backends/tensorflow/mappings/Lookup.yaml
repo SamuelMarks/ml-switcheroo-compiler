@@ -1,2 +1,6 @@
-Lookup:
-  target_api: tf.lookup
+operation: Lookup
+backend: tensorflow
+target_api: tf.lookup
+ast_template: '{out} = tf.lookup({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

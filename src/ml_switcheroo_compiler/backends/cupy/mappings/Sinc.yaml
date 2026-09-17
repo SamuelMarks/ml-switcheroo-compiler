@@ -1,2 +1,6 @@
-Sinc:
-  target_api: cp.sinc
+operation: Sinc
+backend: cupy
+target_api: cp.sinc
+ast_template: '{out} = cp.sinc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

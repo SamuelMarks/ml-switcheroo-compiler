@@ -1,0 +1,6 @@
+operation: Unfold
+backend: pytorch
+target_api: torch.nn.functional.unfold
+ast_template: '{out} = torch.nn.functional.unfold({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

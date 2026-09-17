@@ -1,0 +1,6 @@
+operation: Diagonal
+backend: pytorch
+target_api: torch.diagonal
+ast_template: '{out} = torch.diagonal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

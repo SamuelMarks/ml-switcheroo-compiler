@@ -1,2 +1,6 @@
-Add:
-  target_api: cp.add
+operation: Add
+backend: cupy
+target_api: cp.add
+ast_template: '{out} = cp.add({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

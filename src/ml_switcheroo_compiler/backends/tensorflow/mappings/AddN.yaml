@@ -1,2 +1,6 @@
-AddN:
-  target_api: tf.add_n
+operation: AddN
+backend: tensorflow
+target_api: tf.add_n
+ast_template: '{out} = tf.add_n({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

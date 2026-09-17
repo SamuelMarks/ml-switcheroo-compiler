@@ -1,2 +1,6 @@
-Greater:
-  target_api: keras_ops.greater
+operation: Greater
+backend: keras
+target_api: keras_ops.greater
+ast_template: '{out} = keras_ops.greater({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

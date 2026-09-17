@@ -1,3 +1,6 @@
-Eigvalsh:
-  ast_template: np.linalg.eigvalsh
-  target_api: ''
+operation: Eigvalsh
+backend: numpy
+target_api: ''
+ast_template: np.linalg.eigvalsh
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: Cholesky
+backend: jax
+target_api: jax.numpy.linalg.cholesky
+ast_template: '{out} = jax.numpy.linalg.cholesky({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

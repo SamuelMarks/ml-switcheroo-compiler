@@ -1,2 +1,6 @@
-Argsort:
-  target_api: tf.argsort
+operation: Argsort
+backend: tensorflow
+target_api: tf.argsort
+ast_template: '{out} = tf.argsort({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Select:
-  target_api: keras_ops.select
+operation: Select
+backend: keras
+target_api: keras_ops.select
+ast_template: '{out} = keras_ops.select({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

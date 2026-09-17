@@ -1,2 +1,6 @@
-SparseSigmoid:
-  target_api: keras_ops.sparse_sigmoid
+operation: SparseSigmoid
+backend: keras
+target_api: keras_ops.sparse_sigmoid
+ast_template: '{out} = keras_ops.sparse_sigmoid({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

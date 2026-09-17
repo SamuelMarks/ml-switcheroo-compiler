@@ -1,2 +1,6 @@
-BinomPmf:
-  target_api: jax.scipy.stats.binom.pmf
+operation: BinomPmf
+backend: jax
+target_api: jax.scipy.stats.binom.pmf
+ast_template: '{out} = jax.scipy.stats.binom.pmf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Sinh:
-  target_api: cp.sinh
+operation: Sinh
+backend: cupy
+target_api: cp.sinh
+ast_template: '{out} = cp.sinh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

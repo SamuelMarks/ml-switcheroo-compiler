@@ -1,0 +1,652 @@
+version: 1.0.0
+backends:
+  cupy:
+    _verify_gpu_residency:
+      args:
+      - res
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    cupy_conv2d:
+      args:
+      - x
+      - w
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    cupy_maxpool2d:
+      args:
+      - x
+      - kernel_size
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    cupy_avgpool2d:
+      args:
+      - x
+      - kernel_size
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    cupy_resize_bilinear:
+      args:
+      - x
+      - size
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _attach_vision_ops:
+      args:
+      - backend_mod
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _prepare_cupy_args:
+      args:
+      - args
+      - backend_mod
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  dask:
+    _verify_dask_task_graph:
+      args:
+      - res
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    propagate_chunk_shapes:
+      args:
+      - arr
+      - chunks
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    dask_conv2d:
+      args:
+      - x
+      - w
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    dask_maxpool2d:
+      args:
+      - x
+      - kernel_size
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    dask_avgpool2d:
+      args:
+      - x
+      - kernel_size
+      - stride
+      - padding
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    dask_resize_bilinear:
+      args:
+      - x
+      - size
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _attach_dask_vision_ops:
+      args:
+      - backend_mod
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  jax:
+    _execute_adaptive_avg_pool:
+      args:
+      - operand
+      - output_size
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _execute_adaptive_max_pool:
+      args:
+      - operand
+      - output_size
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _execute_accumulate_n:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_binom_cdf:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_bessel_jn:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_unsorted_segment_sum:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_unsorted_segment_max:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_unsorted_segment_min:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_unsorted_segment_prod:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_variance:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_cast:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_ragged_tensor_to_dense:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  keras:
+    _get_keras_module:
+      args: []
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _convert_arg:
+      args:
+      - arg
+      - keras
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _try_dispatch_mapped_op:
+      args:
+      - op_spec
+      - keras
+      - args
+      - kwargs
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  mlx:
+    _get_mlx_func:
+      args:
+      - op_type
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_cast:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_relu:
+      args:
+      - backend_module
+      - x
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_ragged_tensor_to_dense:
+      args:
+      - backend_module
+      - rt_input
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _mlx_take_along_axis:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_take:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_tensor_scatter_update:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_tensor_scatter_add:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_tensor_scatter_max:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_tensor_scatter_min:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_scatter_nd:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_reshape:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _resolve_dtype:
+      args:
+      - backend_module
+      - dtype_val
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _mlx_zeros:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_ones:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_full:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _parse_partition_k:
+      args:
+      - k
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _mlx_partition:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_nan_to_num:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_cummax:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_cummin:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_cumprod:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_slice:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_eye:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_rope:
+      args:
+      - backend_module
+      - x
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _mlx_variance:
+      args:
+      - backend_module
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _mlx_all_reduce:
+      args:
+      - backend_module
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _mlx_all_gather:
+      args:
+      - backend_module
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _mlx_all_to_all:
+      args:
+      - backend_module
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _mlx_reduce_scatter:
+      args:
+      - backend_module
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+  numba:
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  pytorch:
+    _execute_accumulate_n:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_tensor_scatter_max:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_tensor_scatter_min:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_tensor_scatter_update:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_tensor_scatter_add:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_power_iteration:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_broadcast_to:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_one_hot:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_cast:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_cummax:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_cummin:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_cumlogsumexp:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _execute_ragged_tensor_to_dense:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _get_custom_torch_op_map:
+      args: []
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _torch_variance:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _torch_tensordot:
+      args: []
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+    _get_torch_reduce_op:
+      args:
+      - op_type
+      kwargs: []
+      vararg: false
+      kwarg: false
+      return_type: tensor
+    _torch_all_gather:
+      args:
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _torch_all_reduce:
+      args:
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _torch_reduce_scatter:
+      args:
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    _torch_all_to_all:
+      args:
+      - tensor
+      kwargs: []
+      vararg: false
+      kwarg: true
+      return_type: tensor
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  sparse:
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor
+  tensorflow:
+    execute_op:
+      args:
+      - cls
+      - op_type
+      kwargs: []
+      vararg: true
+      kwarg: true
+      return_type: tensor

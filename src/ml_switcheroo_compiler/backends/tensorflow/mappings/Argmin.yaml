@@ -1,2 +1,6 @@
-Argmin:
-  target_api: tf.argmin
+operation: Argmin
+backend: tensorflow
+target_api: tf.argmin
+ast_template: '{out} = tf.argmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

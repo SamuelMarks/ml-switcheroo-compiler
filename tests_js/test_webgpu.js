@@ -480,6 +480,94 @@ test('WebGPUPipelineChain manages chained passes and dynamic uniform buffers', a
     assert.ok(destroyedCount > 0);
 });
 
+test('WebGPUPipelineChain supports pipeline caching across iterative steps, buffer recycling, and arena aliasing', async () => {
+    let pipelineCreateCount = 0;
+    let bufferCreateCount = 0;
+
+    const mockDevice = {
+        createBuffer: ({ size }) => {
+            bufferCreateCount++;
+            return {
+                size: size,
+                destroy: () => {},
+                mapAsync: async () => {},
+                getMappedRange: () => new ArrayBuffer(size),
+                unmap: () => {}
+            };
+        },
+        queue: {
+            writeBuffer: () => {},
+            submit: () => {}
+        },
+        createShaderModule: () => ({}),
+        createComputePipeline: () => {
+            pipelineCreateCount++;
+            return {
+                getBindGroupLayout: () => ({})
+            };
+        },
+        createBindGroup: () => ({}),
+        createCommandEncoder: () => ({
+            beginComputePass: () => ({
+                setPipeline: () => {},
+                setBindGroup: () => {},
+                dispatchWorkgroups: () => {},
+                end: () => {}
+            }),
+            copyBufferToBuffer: () => {},
+            finish: () => ({})
+        })
+    };
+
+    const chain = new webgpuModule.WebGPUPipelineChain(mockDevice);
+    chain.setStorageBuffer('in0', new Float32Array([1, 2, 3, 4]));
+    chain.setStorageBuffer('intermediate', 64);
+    chain.setStorageBuffer('out1', 64);
+    chain.setStorageBuffer('out2', 64);
+
+    // Test arena aliasing
+    chain.aliasBuffer('in0_alias', 'in0');
+    assert.strictEqual(chain.getStorageBuffer('in0_alias'), chain.getStorageBuffer('in0'));
+
+    chain.addPass({
+        pipelineId: 'step1',
+        wgslCode: 'step1_wgsl',
+        inputIds: ['in0_alias'],
+        outputId: 'intermediate',
+        recycleInputs: []
+    });
+
+    chain.addPass({
+        pipelineId: 'step2',
+        wgslCode: 'step2_wgsl',
+        inputIds: ['intermediate'],
+        outputIds: ['out1', 'out2'],
+        recycleInputs: ['intermediate']
+    });
+
+    // Iteration 1
+    await chain.execute(['out1', 'out2']);
+    assert.strictEqual(pipelineCreateCount, 2);
+
+    // Intermediate buffer should have been recycled
+    assert.strictEqual(chain.recycledBuffers.length, 1);
+
+    // Buffer allocation should reuse the recycled intermediate buffer
+    const bufCountBefore = bufferCreateCount;
+    chain.setStorageBuffer('reused_buf', 32);
+    // Buffer count should NOT have increased because recycled buffer was reused
+    assert.strictEqual(bufferCreateCount, bufCountBefore);
+
+    // Iteration 2 - pipelines should be reused from cache!
+    await chain.execute(['out1', 'out2']);
+    assert.strictEqual(pipelineCreateCount, 2, 'Pipelines must be reused across iterative steps without recompilation');
+    assert.ok(chain.pipelineCacheHits >= 2);
+
+    chain.destroy();
+    assert.strictEqual(chain.storageBuffers.size, 0);
+    assert.strictEqual(chain.recycledBuffers.length, 0);
+});
+
 test('runWebGPUMultiPassCompute supports timestamp query telemetry', async () => {
     const rawBuffer = new ArrayBuffer(16);
     new Float32Array(rawBuffer).set([1.0, 2.0, 3.0, 4.0]);

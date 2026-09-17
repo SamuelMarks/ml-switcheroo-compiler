@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_strategy_server():
     import io
     import json
@@ -202,7 +199,7 @@ def test_strategy_server():
     server.join()
     from unittest.mock import MagicMock, patch
 
-    from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy, Server, TPUStrategy
+    from ml_switcheroo_compiler.distributed.strategy import DataParallelStrategy, MultiWorkerMirroredStrategy, Server
 
     server = Server()
     server.join()
@@ -292,14 +289,6 @@ def test_strategy_server():
     mwms = MultiWorkerMirroredStrategy(target_env="host")
     assert mwms.get_communication_protocol() == "tcp"
 
-    tpu = TPUStrategy()
-    with pytest.raises(RuntimeError):
-        tpu.sync()
-
-    class MockBackendTPU:
-        def mock_sync(self, resolver, *args, **kwargs):
-            return "synced"
-
-    tpu.config = {"registry_hooks": {"sync": "mock_sync"}}
-    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackendTPU()):
-        assert tpu.sync() == "synced"
+    dp = DataParallelStrategy(mesh_axis="data")
+    assert dp.mesh_axis == "data"
+    assert dp.get_communication_protocol() == "tcp"

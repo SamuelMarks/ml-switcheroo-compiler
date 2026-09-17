@@ -1,2 +1,6 @@
-Bincount:
-  target_api: da.bincount
+operation: Bincount
+backend: dask
+target_api: da.bincount
+ast_template: '{out} = da.bincount({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Trunc:
-  target_api: keras_ops.trunc
+operation: Trunc
+backend: keras
+target_api: keras_ops.trunc
+ast_template: '{out} = keras_ops.trunc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

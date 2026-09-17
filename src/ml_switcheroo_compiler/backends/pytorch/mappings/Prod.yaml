@@ -1,3 +1,6 @@
-Prod:
-  ast_template: torch.prod({0}, dim={axis}, keepdim={keepdims})
-  target_api: ''
+operation: Prod
+backend: pytorch
+target_api: ''
+ast_template: torch.prod({0}, dim={axis}, keepdim={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

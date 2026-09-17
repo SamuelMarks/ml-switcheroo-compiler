@@ -1,2 +1,6 @@
-Ifft2:
-  target_api: '''mx.fft.ifft2({0})'''
+operation: Ifft2
+backend: mlx
+target_api: '''mx.fft.ifft2({0})'''
+ast_template: '{out} = ''mx.fft.ifft2({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

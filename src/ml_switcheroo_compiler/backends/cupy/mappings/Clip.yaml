@@ -1,2 +1,6 @@
-Clip:
-  target_api: cp.clip
+operation: Clip
+backend: cupy
+target_api: cp.clip
+ast_template: '{out} = cp.clip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

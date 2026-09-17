@@ -1,2 +1,6 @@
-BitwiseOr:
-  target_api: cp.bitwise_or
+operation: BitwiseOr
+backend: cupy
+target_api: cp.bitwise_or
+ast_template: '{out} = cp.bitwise_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

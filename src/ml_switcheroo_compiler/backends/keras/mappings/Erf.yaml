@@ -1,2 +1,6 @@
-Erf:
-  target_api: keras_ops.erf
+operation: Erf
+backend: keras
+target_api: keras_ops.erf
+ast_template: '{out} = keras_ops.erf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

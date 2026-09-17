@@ -1,2 +1,6 @@
-GammaPdf:
-  target_api: jax.scipy.stats.gamma.pdf
+operation: GammaPdf
+backend: jax
+target_api: jax.scipy.stats.gamma.pdf
+ast_template: '{out} = jax.scipy.stats.gamma.pdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

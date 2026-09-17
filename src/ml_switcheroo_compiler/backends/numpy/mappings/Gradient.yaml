@@ -1,3 +1,6 @@
-Gradient:
-  ast_template: np.gradient
-  target_api: ''
+operation: Gradient
+backend: numpy
+target_api: ''
+ast_template: np.gradient
+kwarg_map: {}
+dtype_overrides: {}

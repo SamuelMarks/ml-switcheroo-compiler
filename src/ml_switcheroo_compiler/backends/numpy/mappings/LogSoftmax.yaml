@@ -1,3 +1,6 @@
-LogSoftmax:
-  ast_template: getattr(backend_module, 'log_softmax', None)({0}, axis={axis})
-  target_api: ''
+operation: LogSoftmax
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'log_softmax', None)({0}, axis={axis})
+kwarg_map: {}
+dtype_overrides: {}

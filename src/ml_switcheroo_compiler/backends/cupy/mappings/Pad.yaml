@@ -1,2 +1,6 @@
-Pad:
-  target_api: cp.pad
+operation: Pad
+backend: cupy
+target_api: cp.pad
+ast_template: '{out} = cp.pad({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

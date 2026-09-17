@@ -1,0 +1,61 @@
+# math_derivatives.yaml
+# Declarative elementwise and transcendental operation tangent (JVP) and cotangent (VJP) derivative rules.
+
+version: "1.0.0"
+
+rules:
+  Sin:
+    jvp: Mul($tangent[0], Cos($input[0]))
+    vjp:
+      - Mul($cotangent, Cos($input[0]))
+
+  Cos:
+    jvp: Mul($tangent[0], Neg(Sin($input[0])))
+    vjp:
+      - Mul($cotangent, Neg(Sin($input[0])))
+
+  Tan:
+    jvp: Mul($tangent[0], Div(Constant(1.0), Pow(Cos($input[0]), Constant(2.0))))
+    vjp:
+      - Mul($cotangent, Div(Constant(1.0), Pow(Cos($input[0]), Constant(2.0))))
+
+  Exp:
+    jvp: Mul($tangent[0], Exp($input[0]))
+    vjp:
+      - Mul($cotangent, Exp($input[0]))
+
+  Log:
+    jvp: Div($tangent[0], $input[0])
+    vjp:
+      - Div($cotangent, $input[0])
+
+  Pow:
+    jvp: Add(Mul(Mul($tangent[0], $input[1]), Pow($input[0], Sub($input[1], Constant(1.0)))), Mul(Mul($tangent[1], Log($input[0])), Pow($input[0], $input[1])))
+    vjp:
+      - Mul($cotangent, Mul($input[1], Pow($input[0], Sub($input[1], Constant(1.0)))))
+      - Mul($cotangent, Mul(Log($input[0]), Pow($input[0], $input[1])))
+
+  Sqrt:
+    jvp: Div($tangent[0], Mul(Constant(2.0), Sqrt($input[0])))
+    vjp:
+      - Div($cotangent, Mul(Constant(2.0), Sqrt($input[0])))
+
+  Erf:
+    jvp: Mul($tangent[0], Mul(Constant(1.128379167), Exp(Neg(Pow($input[0], Constant(2.0))))))
+    vjp:
+      - Mul($cotangent, Mul(Constant(1.128379167), Exp(Neg(Pow($input[0], Constant(2.0))))))
+
+  Sigmoid:
+    jvp: Mul($tangent[0], Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))
+    vjp:
+      - Mul($cotangent, Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))
+
+  SiLU:
+    jvp: Mul($tangent[0], Add(Sigmoid($input[0]), Mul($input[0], Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))))
+    vjp:
+      - Mul($cotangent, Add(Sigmoid($input[0]), Mul($input[0], Mul(Sigmoid($input[0]), Sub(Constant(1.0), Sigmoid($input[0]))))))
+
+  GELU:
+    jvp: Mul($tangent[0], Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))
+    vjp:
+      - Mul($cotangent, Add(Mul($input[0], Mul(Constant(0.3989422804), Exp(Mul(Constant(-0.5), Pow($input[0], Constant(2.0)))))), Mul(Constant(0.5), Add(Constant(1.0), Erf(Mul($input[0], Constant(0.7071067811)))))))

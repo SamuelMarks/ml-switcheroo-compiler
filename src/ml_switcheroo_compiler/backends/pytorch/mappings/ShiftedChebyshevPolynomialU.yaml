@@ -1,2 +1,6 @@
-ShiftedChebyshevPolynomialU:
-  target_api: torch.special.shifted_chebyshev_polynomial_u
+operation: ShiftedChebyshevPolynomialU
+backend: pytorch
+target_api: torch.special.shifted_chebyshev_polynomial_u
+ast_template: '{out} = torch.special.shifted_chebyshev_polynomial_u({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

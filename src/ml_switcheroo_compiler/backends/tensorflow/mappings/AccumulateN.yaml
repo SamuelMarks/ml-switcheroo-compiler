@@ -1,2 +1,6 @@
-AccumulateN:
-  target_api: tf.math.accumulate_n
+operation: AccumulateN
+backend: tensorflow
+target_api: tf.math.accumulate_n
+ast_template: '{out} = tf.math.accumulate_n({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

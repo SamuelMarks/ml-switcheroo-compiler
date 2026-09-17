@@ -1,2 +1,6 @@
-Frompyfunc:
-  target_api: da.frompyfunc
+operation: Frompyfunc
+backend: dask
+target_api: da.frompyfunc
+ast_template: '{out} = da.frompyfunc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

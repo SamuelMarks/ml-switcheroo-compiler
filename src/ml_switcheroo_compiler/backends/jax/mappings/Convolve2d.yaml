@@ -1,2 +1,6 @@
-Convolve2d:
-  target_api: jax.scipy.signal.convolve2d
+operation: Convolve2d
+backend: jax
+target_api: jax.scipy.signal.convolve2d
+ast_template: '{out} = jax.scipy.signal.convolve2d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

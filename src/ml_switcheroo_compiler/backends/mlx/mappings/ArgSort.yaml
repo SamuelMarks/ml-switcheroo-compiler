@@ -1,2 +1,6 @@
-ArgSort:
-  target_api: '''mx.argsort({0}, axis={dimension})'''
+operation: ArgSort
+backend: mlx
+target_api: '''mx.argsort({0}, axis={dimension})'''
+ast_template: '{out} = ''mx.argsort({0}, axis={dimension})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

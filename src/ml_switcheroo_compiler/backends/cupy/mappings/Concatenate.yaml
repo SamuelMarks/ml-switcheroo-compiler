@@ -1,2 +1,6 @@
-Concatenate:
-  target_api: cp.concatenate
+operation: Concatenate
+backend: cupy
+target_api: cp.concatenate
+ast_template: '{out} = cp.concatenate({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

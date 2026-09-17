@@ -1,2 +1,6 @@
-Tanh:
-  target_api: tf.tanh
+operation: Tanh
+backend: tensorflow
+target_api: tf.tanh
+ast_template: '{out} = tf.tanh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Ceil:
-  target_api: cp.ceil
+operation: Ceil
+backend: cupy
+target_api: cp.ceil
+ast_template: '{out} = cp.ceil({in0})'
+kwarg_map: {}
+dtype_overrides: {}

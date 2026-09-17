@@ -1,2 +1,6 @@
-Flip:
-  target_api: keras_ops.flip
+operation: Flip
+backend: keras
+target_api: keras_ops.flip
+ast_template: '{out} = keras_ops.flip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

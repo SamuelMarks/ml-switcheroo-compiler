@@ -534,12 +534,20 @@ templates:
     - 1
     - 1
   matmul:
-    body: "#include <hip/hip_runtime.h>\n__global__ void matmul(const float* A, const\
-      \ float* B, float* C, int M, int N, int K) {\n    int row = hipBlockIdx_y *\
-      \ hipBlockDim_y + hipThreadIdx_y;\n    int col = hipBlockIdx_x * hipBlockDim_x\
-      \ + hipThreadIdx_x;\n    if (row < M && col < N) {\n        float sum = 0.0f;\n\
-      \        for (int i = 0; i < K; ++i) {\n            sum += A[row * K + i] *\
-      \ B[i * N + col];\n        }\n        C[row * N + col] = sum;\n    }\n}\n"
+    body: "#include <hip/hip_runtime.h>\n#define TILE_WIDTH 16\n__global__ void matmul(const\
+      \ float* A, const float* B, float* C, int M, int N, int K) {\n    __shared__\
+      \ float tileA[TILE_WIDTH][TILE_WIDTH];\n    __shared__ float tileB[TILE_WIDTH][TILE_WIDTH];\n\
+      \    int row = hipBlockIdx_y * TILE_WIDTH + hipThreadIdx_y;\n    int col = hipBlockIdx_x\
+      \ * TILE_WIDTH + hipThreadIdx_x;\n    float sum = 0.0f;\n    int numTiles =\
+      \ (K + TILE_WIDTH - 1) / TILE_WIDTH;\n    for (int t = 0; t < numTiles; ++t)\
+      \ {\n        int aCol = t * TILE_WIDTH + hipThreadIdx_x;\n        int bRow =\
+      \ t * TILE_WIDTH + hipThreadIdx_y;\n        tileA[hipThreadIdx_y][hipThreadIdx_x]\
+      \ = (row < M && aCol < K) ? A[row * K + aCol] : 0.0f;\n        tileB[hipThreadIdx_y][hipThreadIdx_x]\
+      \ = (bRow < K && col < N) ? B[bRow * N + col] : 0.0f;\n        __syncthreads();\n\
+      \        #pragma unroll\n        for (int k = 0; k < TILE_WIDTH; ++k) {\n  \
+      \          sum += tileA[hipThreadIdx_y][k] * tileB[k][hipThreadIdx_x];\n   \
+      \     }\n        __syncthreads();\n    }\n    if (row < M && col < N) {\n  \
+      \      C[row * N + col] = sum;\n    }\n}\n"
     grid_calc:
       x: ({N_dim} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: ({M} + block_{node_idx}.y - 1) / block_{node_idx}.y
@@ -1041,10 +1049,18 @@ templates:
     - 1
     - 1
   sum:
-    body: "#include <hip/hip_runtime.h>\n__global__ void sum(const float* A, float*\
-      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
-      \    if (id == 0) {\n        float s = 0.0f;\n        for (int i = 0; i < N;\
-      \ ++i) {\n            s += A[i];\n        }\n        C[0] = s;\n    }\n}\n"
+    body: "#include <hip/hip_runtime.h>\n__inline__ __device__ float wave_reduce_sum(float\
+      \ val) {\n    for (int offset = 16; offset > 0; offset /= 2) {\n        val\
+      \ += __shfl_down(val, offset);\n    }\n    return val;\n}\n__global__ void sum(const\
+      \ float* A, float* C, int N) {\n    float my_val = 0.0f;\n    int idx = hipBlockIdx_x\
+      \ * hipBlockDim_x + hipThreadIdx_x;\n    for (int i = idx; i < N; i += hipBlockDim_x\
+      \ * hipGridDim_x) {\n        my_val += A[i];\n    }\n    my_val = wave_reduce_sum(my_val);\n\
+      \    __shared__ float wave_sums[32];\n    int lane = hipThreadIdx_x % 32;\n\
+      \    int wid = hipThreadIdx_x / 32;\n    if (lane == 0) {\n        wave_sums[wid]\
+      \ = my_val;\n    }\n    __syncthreads();\n    float block_sum = (hipThreadIdx_x\
+      \ < (hipBlockDim_x / 32)) ? wave_sums[lane] : 0.0f;\n    if (wid == 0) {\n \
+      \       block_sum = wave_reduce_sum(block_sum);\n        if (lane == 0) {\n\
+      \            atomicAdd(C, block_sum);\n        }\n    }\n}\n"
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -1097,4 +1113,835 @@ templates:
     workgroup_size:
     - 256
     - 1
+    - 1
+  tan:
+    body: "__global__ void tan_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = tanf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  sinh:
+    body: "__global__ void sinh_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = sinhf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  cosh:
+    body: "__global__ void cosh_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = coshf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  asin:
+    body: "__global__ void asin_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = asinf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  acos:
+    body: "__global__ void acos_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = acosf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  atan:
+    body: "__global__ void atan_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = atanf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  atan2:
+    body: "__global__ void atan2_kernel(const float* A, const float* B, float* C,\
+      \ int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n \
+      \   if (id < N) {\n        C[id] = atan2f(A[id], B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  floor:
+    body: "__global__ void floor_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = floorf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  ceil:
+    body: "__global__ void ceil_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = ceilf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  round:
+    body: "__global__ void round_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = roundf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  trunc:
+    body: "__global__ void trunc_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = truncf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  sign:
+    body: "__global__ void sign_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = (A[id] > 0.0f) ? 1.0f : ((A[id] < 0.0f) ? -1.0f : 0.0f);\n\
+      \    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  square:
+    body: "__global__ void square_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = A[id] * A[id];\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  reciprocal:
+    body: "__global__ void reciprocal_kernel(const float* A, float* C, int N) {\n\
+      \    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id <\
+      \ N) {\n        C[id] = 1.0f / A[id];\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  rsqrt:
+    body: "__global__ void rsqrt_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = rsqrtf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  log2:
+    body: "__global__ void log2_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = log2f(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  log10:
+    body: "__global__ void log10_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = log10f(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  exp2:
+    body: "__global__ void exp2_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = exp2f(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  expm1:
+    body: "__global__ void expm1_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = expm1f(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  log1p:
+    body: "__global__ void log1p_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = log1pf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  erf:
+    body: "__global__ void erf_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = erff(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  erfc:
+    body: "__global__ void erfc_kernel(const float* A, float* C, int N) {\n    int\
+      \ id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {\n\
+      \        C[id] = erfcf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  equal:
+    body: "__global__ void equal_kernel(const float* A, const float* B, float* C,\
+      \ int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n \
+      \   if (id < N) {\n        C[id] = (A[id] == B[id]) ? 1.0f : 0.0f;\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  notequal:
+    body: "__global__ void notequal_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (A[id] != B[id]) ? 1.0f : 0.0f;\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  less:
+    body: "__global__ void less_kernel(const float* A, const float* B, float* C, int\
+      \ N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if\
+      \ (id < N) {\n        C[id] = (A[id] < B[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  lessequal:
+    body: "__global__ void lessequal_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (A[id] <= B[id]) ? 1.0f : 0.0f;\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  greater:
+    body: "__global__ void greater_kernel(const float* A, const float* B, float* C,\
+      \ int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n \
+      \   if (id < N) {\n        C[id] = (A[id] > B[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  greaterequal:
+    body: "__global__ void greaterequal_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (A[id] >= B[id]) ? 1.0f : 0.0f;\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  bitwise_and:
+    body: "__global__ void bitwise_and_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (float)((int)A[id] & (int)B[id]);\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  bitwise_or:
+    body: "__global__ void bitwise_or_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (float)((int)A[id] | (int)B[id]);\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  bitwise_xor:
+    body: "__global__ void bitwise_xor_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (float)((int)A[id] ^ (int)B[id]);\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  bitwise_not:
+    body: "__global__ void bitwise_not_kernel(const float* A, float* C, int N) {\n\
+      \    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id <\
+      \ N) {\n        C[id] = (float)(~(int)A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  logical_and:
+    body: "__global__ void logical_and_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (A[id] != 0.0f && B[id] != 0.0f) ? 1.0f\
+      \ : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  logical_or:
+    body: "__global__ void logical_or_kernel(const float* A, const float* B, float*\
+      \ C, int N) {\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    if (id < N) {\n        C[id] = (A[id] != 0.0f || B[id] != 0.0f) ? 1.0f\
+      \ : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  logical_not:
+    body: "__global__ void logical_not_kernel(const float* A, float* C, int N) {\n\
+      \    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id <\
+      \ N) {\n        C[id] = (A[id] == 0.0f) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  softplus:
+    body: "__global__ void softplus_kernel(const float* A, float* C, int N) {\n  \
+      \  int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N)\
+      \ {\n        C[id] = log1pf(expf(A[id]));\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      float32: float
+      float16: __half
+      bfloat16: hip_bfloat16
+      int32: int
+      int64: long long
+      bool: bool
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  warp_shuffle_reduce:
+    body: "__inline__ __device__ float wavefront_reduce_sum(float val) {\n    #pragma\
+      \ unroll\n    for (int offset = 32; offset > 0; offset /= 2) {\n        val\
+      \ += __shfl_down(val, offset, 64);\n    }\n    return val;\n}\n__global__ void\
+      \ wavefront_shuffle_reduce_kernel(const float* A, float* C, int N) {\n    float\
+      \ sum = 0.0f;\n    int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n\
+      \    int stride = hipBlockDim_x * hipGridDim_x;\n    for (int i = idx; i < N;\
+      \ i += stride) {\n        sum += A[i];\n    }\n    sum = wavefront_reduce_sum(sum);\n\
+      \    if ((hipThreadIdx_x & 63) == 0) {\n        atomicAdd(C, sum);\n    }\n\
+      }\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  shared_memory_tree_reduce:
+    body: "__global__ void shared_memory_tree_reduce_kernel(const float* A, float*\
+      \ C, int N) {\n    __shared__ float sdata[256];\n    unsigned int tid = hipThreadIdx_x;\n\
+      \    unsigned int i = hipBlockIdx_x * (hipBlockDim_x * 2) + hipThreadIdx_x;\n\
+      \    float my_sum = (i < N) ? A[i] : 0.0f;\n    if (i + hipBlockDim_x < N) my_sum\
+      \ += A[i + hipBlockDim_x];\n    sdata[tid] = my_sum;\n    __syncthreads();\n\
+      \    for (unsigned int s = hipBlockDim_x / 2; s > 32; s >>= 1) {\n        if\
+      \ (tid < s) {\n            sdata[tid] = my_sum = my_sum + sdata[tid + s];\n\
+      \        }\n        __syncthreads();\n    }\n    if (tid < 32) {\n        volatile\
+      \ float* smem = sdata;\n        if (hipBlockDim_x >= 64) smem[tid] = my_sum\
+      \ = my_sum + smem[tid + 32];\n        smem[tid] = my_sum = my_sum + smem[tid\
+      \ + 16];\n        smem[tid] = my_sum = my_sum + smem[tid + 8];\n        smem[tid]\
+      \ = my_sum = my_sum + smem[tid + 4];\n        smem[tid] = my_sum = my_sum +\
+      \ smem[tid + 2];\n        smem[tid] = my_sum = my_sum + smem[tid + 1];\n   \
+      \ }\n    if (tid == 0) atomicAdd(C, sdata[0]);\n}\n"
+    grid_calc:
+      x: ({num_elements} + 511) / 512
+      y: '1'
+      z: '1'
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    shared_memory_bytes: 1024
+  tiled_matmul_2d:
+    body: "#define TILE_DIM 16\n__global__ void tiled_matmul_2d_kernel(const float*\
+      \ A, const float* B, float* C, int M, int N, int K) {\n    __shared__ float\
+      \ tileA[2][TILE_DIM][TILE_DIM];\n    __shared__ float tileB[2][TILE_DIM][TILE_DIM];\n\
+      \    int row = hipBlockIdx_y * TILE_DIM + hipThreadIdx_y;\n    int col = hipBlockIdx_x\
+      \ * TILE_DIM + hipThreadIdx_x;\n    float acc = 0.0f;\n    int num_tiles = (K\
+      \ + TILE_DIM - 1) / TILE_DIM;\n    for (int t = 0; t < num_tiles; ++t) {\n \
+      \       int aCol = t * TILE_DIM + hipThreadIdx_x;\n        int bRow = t * TILE_DIM\
+      \ + hipThreadIdx_y;\n        tileA[0][hipThreadIdx_y][hipThreadIdx_x] = (row\
+      \ < M && aCol < K) ? A[row * K + aCol] : 0.0f;\n        tileB[0][hipThreadIdx_y][hipThreadIdx_x]\
+      \ = (bRow < K && col < N) ? B[bRow * N + col] : 0.0f;\n        __syncthreads();\n\
+      \        #pragma unroll\n        for (int k = 0; k < TILE_DIM; ++k) {\n    \
+      \        acc += tileA[0][hipThreadIdx_y][k] * tileB[0][k][hipThreadIdx_x];\n\
+      \        }\n        __syncthreads();\n    }\n    if (row < M && col < N) {\n\
+      \        C[row * N + col] = acc;\n    }\n}\n"
+    grid_calc:
+      x: ({N_dim} + 15) / 16
+      y: ({M_dim} + 15) / 16
+      z: '1'
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    shared_memory_bytes: 2048
+  conv2d_shared_halo:
+    body: "#define T_W 16\n#define T_H 16\n__global__ void conv2d_shared_halo_kernel(const\
+      \ float* input, const float* weights, float* output, int B, int C_in, int H,\
+      \ int W, int C_out, int K_H, int K_W, int stride_h, int stride_w) {\n    int\
+      \ out_x = hipBlockIdx_x * T_W + hipThreadIdx_x;\n    int out_y = hipBlockIdx_y\
+      \ * T_H + hipThreadIdx_y;\n    int b = hipBlockIdx_z / C_out;\n    int oc =\
+      \ hipBlockIdx_z % C_out;\n    int out_w = (W - K_W) / stride_w + 1;\n    int\
+      \ out_h = (H - K_H) / stride_h + 1;\n    if (out_x < out_w && out_y < out_h\
+      \ && b < B) {\n        float sum = 0.0f;\n        for (int ic = 0; ic < C_in;\
+      \ ++ic) {\n            for (int fy = 0; fy < K_H; ++fy) {\n                #pragma\
+      \ unroll\n                for (int fx = 0; fx < K_W; ++fx) {\n             \
+      \       int in_idx = ((b * C_in + ic) * H + (out_y * stride_h + fy)) * W + (out_x\
+      \ * stride_w + fx);\n                    int w_idx = ((oc * C_in + ic) * K_H\
+      \ + fy) * K_W + fx;\n                    sum += input[in_idx] * weights[w_idx];\n\
+      \                }\n            }\n        }\n        output[((b * C_out + oc)\
+      \ * out_h + out_y) * out_w + out_x] = sum;\n    }\n}\n"
+    grid_calc:
+      x: ({out_w} + 15) / 16
+      y: ({out_h} + 15) / 16
+      z: '{B} * {C_out}'
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+  maxpool2d_dynamic:
+    body: "__global__ void maxpool2d_dynamic_kernel(const float* in, float* out, int\
+      \ B, int C, int H, int W, int out_H, int out_W, int filter_h, int filter_w,\
+      \ int stride_h, int stride_w, int pad_h, int pad_w, int dilation_h, int dilation_w)\
+      \ {\n    int ox = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    int oy\
+      \ = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y;\n    int bc = hipBlockIdx_z;\n\
+      \    int b = bc / C;\n    int c = bc % C;\n    if (ox < out_W && oy < out_H\
+      \ && b < B) {\n        float max_val = -1e38f;\n        for (int fy = 0; fy\
+      \ < filter_h; ++fy) {\n            for (int fx = 0; fx < filter_w; ++fx) {\n\
+      \                int in_y = oy * stride_h + fy * dilation_h - pad_h;\n     \
+      \           int in_x = ox * stride_w + fx * dilation_w - pad_w;\n          \
+      \      if (in_y >= 0 && in_y < H && in_x >= 0 && in_x < W) {\n             \
+      \       max_val = fmaxf(max_val, in[((b * C + c) * H + in_y) * W + in_x]);\n\
+      \                }\n            }\n        }\n        out[((b * C + c) * out_H\
+      \ + oy) * out_W + ox] = max_val;\n    }\n}\n"
+    grid_calc:
+      x: ({out_W} + 15) / 16
+      y: ({out_H} + 15) / 16
+      z: '{B} * {C}'
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+  avgpool2d_dynamic:
+    body: "__global__ void avgpool2d_dynamic_kernel(const float* in, float* out, int\
+      \ B, int C, int H, int W, int out_H, int out_W, int filter_h, int filter_w,\
+      \ int stride_h, int stride_w, int pad_h, int pad_w, int dilation_h, int dilation_w)\
+      \ {\n    int ox = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    int oy\
+      \ = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y;\n    int bc = hipBlockIdx_z;\n\
+      \    int b = bc / C;\n    int c = bc % C;\n    if (ox < out_W && oy < out_H\
+      \ && b < B) {\n        float sum_val = 0.0f;\n        int count = 0;\n     \
+      \   for (int fy = 0; fy < filter_h; ++fy) {\n            for (int fx = 0; fx\
+      \ < filter_w; ++fx) {\n                int in_y = oy * stride_h + fy * dilation_h\
+      \ - pad_h;\n                int in_x = ox * stride_w + fx * dilation_w - pad_w;\n\
+      \                if (in_y >= 0 && in_y < H && in_x >= 0 && in_x < W) {\n   \
+      \                 sum_val += in[((b * C + c) * H + in_y) * W + in_x];\n    \
+      \                count++;\n                }\n            }\n        }\n   \
+      \     out[((b * C + c) * out_H + oy) * out_W + ox] = (count > 0) ? (sum_val\
+      \ / count) : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({out_W} + 15) / 16
+      y: ({out_H} + 15) / 16
+      z: '{B} * {C}'
+    workgroup_size:
+    - 16
+    - 16
     - 1

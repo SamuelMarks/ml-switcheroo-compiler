@@ -1,2 +1,6 @@
-Prod:
-  target_api: da.prod
+operation: Prod
+backend: dask
+target_api: da.prod
+ast_template: '{out} = da.prod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

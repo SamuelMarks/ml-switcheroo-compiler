@@ -1,2 +1,6 @@
-Searchsorted:
-  target_api: keras_ops.searchsorted
+operation: Searchsorted
+backend: keras
+target_api: keras_ops.searchsorted
+ast_template: '{out} = keras_ops.searchsorted({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

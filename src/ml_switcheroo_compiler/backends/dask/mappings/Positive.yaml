@@ -1,2 +1,6 @@
-Positive:
-  target_api: da.positive
+operation: Positive
+backend: dask
+target_api: da.positive
+ast_template: '{out} = da.positive({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

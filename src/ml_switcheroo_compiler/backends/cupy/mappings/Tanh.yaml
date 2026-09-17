@@ -1,2 +1,6 @@
-Tanh:
-  target_api: cp.tanh
+operation: Tanh
+backend: cupy
+target_api: cp.tanh
+ast_template: '{out} = cp.tanh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

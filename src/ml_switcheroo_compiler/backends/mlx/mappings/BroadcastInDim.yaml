@@ -1,2 +1,6 @@
-BroadcastInDim:
-  target_api: '''{0}.broadcast_in_dim({1}, {2})'''
+operation: BroadcastInDim
+backend: mlx
+target_api: '''{0}.broadcast_in_dim({1}, {2})'''
+ast_template: '{out} = ''{0}.broadcast_in_dim({1}, {2})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

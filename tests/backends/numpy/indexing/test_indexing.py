@@ -230,3 +230,15 @@ def test_dynamic_update_slice_with_item() -> None:
     start_indices = [MockItem(), MockItem()]
     res = _dynamic_update_slice(x, update, start_indices)
     assert res[1, 1] == 1.0
+
+
+def test_backends_numpy_indexing_setitem() -> None:
+    """Test _np_setitem in backends/numpy/eager/indexing.py."""
+    from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+    func = numpy_eager_registry.get("SetItem")
+    assert func is not None
+    x = np.array([10, 20, 30])
+    res = func(np, x, 99, "1")
+    assert res[1] == 99
+    assert res[0] == 10

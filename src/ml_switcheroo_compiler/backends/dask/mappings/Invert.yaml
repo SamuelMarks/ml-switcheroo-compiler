@@ -1,2 +1,6 @@
-Invert:
-  target_api: da.invert
+operation: Invert
+backend: dask
+target_api: da.invert
+ast_template: '{out} = da.invert({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

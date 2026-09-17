@@ -1,15 +1,54 @@
 operation: WithPartitioning
 description: Annotates an initializer with sharding constraints.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: initializer
-    type: Callable
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: sharding
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: initializer
+  type: Callable
+- is_variadic: false
+  kind: positional_or_keyword
+  name: sharding
+  type: Any
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: initializer
+    type: Callable
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: sharding
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - initializer
+  - sharding
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: WithPartitioning_vjp
+  jvp_rule_id: WithPartitioning_jvp
+  vjp: null
+  jvp: null

@@ -1,2 +1,6 @@
-Delete:
-  target_api: da.delete
+operation: Delete
+backend: dask
+target_api: da.delete
+ast_template: '{out} = da.delete({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

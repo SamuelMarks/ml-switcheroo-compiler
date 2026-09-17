@@ -2,32 +2,91 @@ operation: ZerosLike
 description: Returns a tensor filled with the scalar value 0, with the same size as
   input.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: DType
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: device
-    type: Device
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: requires_grad
-    type: bool
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: layout
-    type: Layout
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: memory_format
-    type: MemoryFormat
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: DType
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Device
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: requires_grad
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: layout
+  type: Layout
+- is_variadic: false
+  kind: positional_or_keyword
+  name: memory_format
+  type: MemoryFormat
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: dtype
+    type: DType
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: device
+    type: Device
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: requires_grad
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: layout
+    type: Layout
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: memory_format
+    type: MemoryFormat
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - dtype
+  - device
+  - requires_grad
+  - layout
+  - memory_format
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: ZerosLike_vjp
+  jvp_rule_id: ZerosLike_jvp
+  vjp: null
+  jvp: null

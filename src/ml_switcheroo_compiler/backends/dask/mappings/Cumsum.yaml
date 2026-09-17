@@ -1,2 +1,6 @@
-Cumsum:
-  target_api: da.cumsum
+operation: Cumsum
+backend: dask
+target_api: da.cumsum
+ast_template: '{out} = da.cumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

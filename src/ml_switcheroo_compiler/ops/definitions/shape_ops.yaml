@@ -1,0 +1,1030 @@
+BroadcastTo:
+  autodiff:
+    vjp_rule_id: BroadcastTo_vjp
+    jvp_rule_id: BroadcastTo_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The BroadcastTo operation.
+  domain: shape
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: BroadcastTo
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.broadcast_to
+      generator: cp.broadcast_to
+    dask:
+      eager: da.broadcast_to
+      generator: da.broadcast_to
+    edge_stablehlo:
+      opcode: stablehlo.broadcast_in_dim
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.broadcast_to
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.broadcast_to
+    pytorch:
+      generator: '{0}.expand({shape})'
+    tensorflow:
+      eager: tf.broadcast_to
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: broadcast_to(in0, shape)
+    symbolic_expression: '[*shape], [*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Concat:
+  autodiff:
+    vjp_rule_id: Concat_vjp
+    jvp_rule_id: Concat_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Concat operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Concat
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Concat
+    edge_stablehlo:
+      generator: stablehlo.concatenate
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax: {}
+    keras: {}
+    llvm_cpp:
+      template: fallback_copy
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: concat(inputs, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: concat
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+ExpandDims:
+  autodiff:
+    vjp_rule_id: ExpandDims_vjp
+    jvp_rule_id: ExpandDims_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The ExpandDims operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: ExpandDims
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.expand_dims
+    dask:
+      eager: da.expand_dims
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.expand_dims
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.expand_dims
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: expand_dims(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Gather:
+  autodiff:
+    vjp_rule_id: Gather_vjp
+    jvp_rule_id: Gather_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Gather operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Gather
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Gather
+    edge_stablehlo:
+      generator: stablehlo.gather
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.gather
+    keras:
+      eager: keras_ops.gather
+    llvm_cpp:
+      template: fallback_copy
+    mlx:
+      eager: mlx.core.gather
+    numpy:
+      eager: numpy.gather
+    pytorch:
+      eager: torch.gather
+    tensorflow:
+      eager: tf.gather
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Pad:
+  autodiff:
+    vjp_rule_id: Pad_vjp
+    jvp_rule_id: Pad_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Pad operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Pad
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.pad
+    dask:
+      eager: da.pad
+    edge_onnx:
+      generator: Pad
+    edge_stablehlo:
+      generator: stablehlo.pad
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.pad
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.pad
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Permute:
+  autodiff:
+    vjp_rule_id: Permute_vjp
+    jvp_rule_id: Permute_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Returns a view of the original tensor input with its dimensions permuted.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Permute
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: transpose(in0, axes)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: transpose
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Reshape:
+  autodiff:
+    vjp_rule_id: Reshape_vjp
+    jvp_rule_id: Reshape_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Reshape operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Reshape
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.reshape
+      generator: cp.reshape
+    dask:
+      eager: da.reshape
+      generator: da.reshape
+    edge_onnx:
+      generator: Reshape
+    edge_stablehlo:
+      generator: stablehlo.reshape
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.reshape
+    keras:
+      eager: keras_ops.reshape
+    llvm_cpp:
+      template: fallback_copy
+    mlx:
+      eager: mlx.core.reshape
+    numpy:
+      generator: np.reshape
+    pytorch:
+      generator: torch.reshape({0}, {shape})
+    tensorflow:
+      eager: tf.reshape
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: reshape(in0, shape)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: reshape
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Scatter:
+  autodiff:
+    vjp_rule_id: Scatter_vjp
+    jvp_rule_id: Scatter_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Scatter operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Scatter
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_stablehlo:
+      generator: stablehlo.scatter
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.scatter
+    llvm_cpp:
+      template: fallback_copy
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Slice:
+  autodiff:
+    vjp_rule_id: Slice_vjp
+    jvp_rule_id: Slice_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Slice operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Slice
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Slice
+    edge_stablehlo:
+      generator: stablehlo.slice
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.slice
+    llvm_cpp:
+      template: fallback_copy
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.slice
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Split:
+  autodiff:
+    vjp_rule_id: Split_vjp
+    jvp_rule_id: Split_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Split operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Split
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Split
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.split
+    keras:
+      eager: keras_ops.split
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.split
+    numpy:
+      eager: numpy.split
+    pytorch:
+      eager: torch.split
+    tensorflow:
+      eager: tf.split
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: split(in0, num_or_size_splits, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: split
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Squeeze:
+  autodiff:
+    vjp_rule_id: Squeeze_vjp
+    jvp_rule_id: Squeeze_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Squeeze operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Squeeze
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.squeeze
+    dask:
+      eager: da.squeeze
+    edge_onnx:
+      generator: Squeeze
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.squeeze
+    keras:
+      eager: keras_ops.squeeze
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.squeeze
+    numpy:
+      eager: numpy.squeeze
+    pytorch:
+      eager: torch.squeeze
+    tensorflow:
+      eager: tf.squeeze
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: squeeze(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: squeeze
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Stack:
+  autodiff:
+    vjp_rule_id: Stack_vjp
+    jvp_rule_id: Stack_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Stack operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Stack
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.stack
+    dask:
+      eager: da.stack
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.stack
+    keras:
+      eager: keras_ops.stack
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.stack
+    numpy:
+      eager: numpy.stack
+    pytorch:
+      eager: torch.stack
+    tensorflow:
+      eager: tf.stack
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: stack(inputs, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: stack
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Tile:
+  autodiff:
+    vjp_rule_id: Tile_vjp
+    jvp_rule_id: Tile_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Tile operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Tile
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.tile
+    dask:
+      eager: da.tile
+    edge_onnx:
+      generator: Tile
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.tile
+    keras:
+      eager: keras_ops.tile
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.tile
+    numpy:
+      eager: numpy.tile
+    pytorch:
+      eager: torch.tile
+    tensorflow:
+      eager: tf.tile
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Transpose:
+  autodiff:
+    vjp_rule_id: Transpose_vjp
+    jvp_rule_id: Transpose_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Transpose operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Transpose
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.transpose
+      generator: cp.transpose
+    dask:
+      eager: da.transpose
+      generator: da.transpose
+    edge_onnx:
+      generator: Transpose
+    edge_stablehlo:
+      generator: stablehlo.transpose
+    edge_wasm_simd:
+      template: fallback_copy
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.transpose
+    keras:
+      eager: keras_ops.transpose
+    llvm_cpp:
+      template: fallback_copy
+    mlx:
+      eager: mlx.core.transpose
+    numpy:
+      generator: np.transpose
+    pytorch:
+      generator: torch.permute({0}, {axes})
+    tensorflow:
+      eager: tf.transpose
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: transpose(in0, axes)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: transpose
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Unsqueeze:
+  autodiff:
+    vjp_rule_id: Unsqueeze_vjp
+    jvp_rule_id: Unsqueeze_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Unsqueeze operation.
+  domain: shape
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Unsqueeze
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Unsqueeze
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.unsqueeze
+    keras:
+      eager: keras_ops.unsqueeze
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.unsqueeze
+    numpy:
+      eager: numpy.unsqueeze
+    pytorch:
+      eager: torch.unsqueeze
+    tensorflow:
+      eager: tf.unsqueeze
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: unsqueeze(in0, axis)
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: expand_dims
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

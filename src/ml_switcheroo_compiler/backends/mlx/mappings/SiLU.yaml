@@ -1,0 +1,6 @@
+operation: SiLU
+backend: mlx
+target_api: mlx.core.nn.silu
+ast_template: '{out} = mlx.core.nn.silu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

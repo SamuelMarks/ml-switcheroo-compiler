@@ -1,2 +1,6 @@
-Polygamma:
-  target_api: tf.math.polygamma
+operation: Polygamma
+backend: tensorflow
+target_api: tf.math.polygamma
+ast_template: '{out} = tf.math.polygamma({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

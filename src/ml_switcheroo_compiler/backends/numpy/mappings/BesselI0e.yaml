@@ -1,3 +1,6 @@
-BesselI0e:
-  ast_template: getattr(backend_module, 'i0e', None)
-  target_api: ''
+operation: BesselI0e
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'i0e', None)
+kwarg_map: {}
+dtype_overrides: {}

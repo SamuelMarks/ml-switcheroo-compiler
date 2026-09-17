@@ -1,2 +1,6 @@
-Dot:
-  target_api: da.dot
+operation: Dot
+backend: dask
+target_api: da.dot
+ast_template: '{out} = da.dot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

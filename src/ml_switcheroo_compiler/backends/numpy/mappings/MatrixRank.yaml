@@ -1,3 +1,6 @@
-MatrixRank:
-  ast_template: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
-  target_api: ''
+operation: MatrixRank
+backend: numpy
+target_api: ''
+ast_template: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
+kwarg_map: {}
+dtype_overrides: {}

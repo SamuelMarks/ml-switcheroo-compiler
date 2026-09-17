@@ -1,0 +1,77 @@
+# playground_workloads.yaml
+# Declarative workload specifications for in-browser WebGPU/WASM execution and shape learning feedback loops.
+
+version: "1.0.0"
+
+workloads:
+  mlp_block:
+    name: "Multi-Layer Perceptron"
+    framework: "jax"
+    description: "2-layer dense MLP block with Relu activation and backward gradient pass"
+    inputs:
+      x:
+        shape: [2, 16]
+        dtype: "float32"
+      w1:
+        shape: [16, 32]
+        dtype: "float32"
+      b1:
+        shape: [32]
+        dtype: "float32"
+      w2:
+        shape: [32, 8]
+        dtype: "float32"
+    operations:
+      - "MatMul"
+      - "Add"
+      - "Relu"
+      - "MatMul"
+    expected_forward_shape: [2, 8]
+    expected_gradient_shapes:
+      grad_x: [2, 16]
+      grad_w1: [16, 32]
+      grad_w2: [32, 8]
+
+  cnn_block:
+    name: "Convolutional Neural Network Block"
+    framework: "pytorch"
+    description: "Conv2D followed by ReLU and MaxPool2D spatial reduction"
+    inputs:
+      x:
+        shape: [1, 3, 28, 28]
+        dtype: "float32"
+      kernel:
+        shape: [8, 3, 3, 3]
+        dtype: "float32"
+    operations:
+      - "Conv2D"
+      - "Relu"
+      - "MaxPool2D"
+    expected_forward_shape: [1, 8, 13, 13]
+    expected_gradient_shapes:
+      grad_x: [1, 3, 28, 28]
+
+  transformer_block:
+    name: "Transformer Self-Attention Block"
+    framework: "jax"
+    description: "Scaled Dot-Product Self Attention block (Q, K, V) with Softmax and linear projection"
+    inputs:
+      q:
+        shape: [2, 4, 16]
+        dtype: "float32"
+      k:
+        shape: [2, 4, 16]
+        dtype: "float32"
+      v:
+        shape: [2, 4, 16]
+        dtype: "float32"
+    operations:
+      - "MatMul"
+      - "Div"
+      - "Softmax"
+      - "MatMul"
+    expected_forward_shape: [2, 4, 16]
+    expected_gradient_shapes:
+      grad_q: [2, 4, 16]
+      grad_k: [2, 4, 16]
+      grad_v: [2, 4, 16]

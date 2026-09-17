@@ -72,3 +72,21 @@ def test_type_promotion_explicitizer_extra():
     else:
         assert n_add3.inputs[1].startswith("cast_")
         assert n_add3.inputs[0] == "n2"
+
+
+def test_type_promotion_lattice_exceptions_and_missing_file() -> None:
+    """Test _load_declarative_promotion_lattice error branches."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.core.type_promotion import _load_declarative_promotion_lattice
+
+    mock_yaml1 = {"lattice": {"InvalidDTypeKey": {"OtherInvalid": "InvalidResult"}}}
+    with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_yaml1):
+        _load_declarative_promotion_lattice()
+
+    mock_yaml2 = {"lattice": {"float32": {"InvalidInnerDType": "float32"}}}
+    with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_yaml2):
+        _load_declarative_promotion_lattice()
+
+    with patch("os.path.exists", return_value=False):
+        _load_declarative_promotion_lattice()

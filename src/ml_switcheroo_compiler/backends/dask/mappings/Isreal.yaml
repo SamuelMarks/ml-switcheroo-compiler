@@ -1,2 +1,6 @@
-Isreal:
-  target_api: da.isreal
+operation: Isreal
+backend: dask
+target_api: da.isreal
+ast_template: '{out} = da.isreal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

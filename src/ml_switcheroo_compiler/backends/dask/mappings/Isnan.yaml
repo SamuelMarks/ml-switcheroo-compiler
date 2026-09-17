@@ -1,2 +1,6 @@
-Isnan:
-  target_api: da.isnan
+operation: Isnan
+backend: dask
+target_api: da.isnan
+ast_template: '{out} = da.isnan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

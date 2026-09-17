@@ -1,2 +1,6 @@
-Xdivy:
-  target_api: tf.math.xdivy
+operation: Xdivy
+backend: tensorflow
+target_api: tf.math.xdivy
+ast_template: '{out} = tf.math.xdivy({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

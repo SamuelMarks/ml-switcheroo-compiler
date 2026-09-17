@@ -1,2 +1,6 @@
-Sigmoid:
-  target_api: keras_ops.sigmoid
+operation: Sigmoid
+backend: keras
+target_api: keras_ops.sigmoid
+ast_template: '{out} = keras_ops.sigmoid({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

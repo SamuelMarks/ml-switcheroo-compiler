@@ -1,21 +1,51 @@
 operation: as_gpu_kernel
 description: The class representing a Python function.
 std_args:
-  - body
-  - grid
-  - block
-  - in_shape
-  - out_shape
-  - smem_scratch_shape
-  - prof_spec
-  - cluster
-  - module_name
-  - kernel_name
-  - ir_version
-  - thread_semantics
-  - inout_shape
+- body
+- grid
+- block
+- in_shape
+- out_shape
+- smem_scratch_shape
+- prof_spec
+- cluster
+- module_name
+- kernel_name
+- ir_version
+- thread_semantics
+- inout_shape
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: as_gpu_kernel_vjp
+  jvp_rule_id: as_gpu_kernel_jvp
+  vjp: null
+  jvp: null

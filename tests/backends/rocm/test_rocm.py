@@ -104,7 +104,8 @@ def test_rocm_generate_missing_template_branches():
     gen = RocmCodeGenerator(graph)
     out = gen.generate()
     assert "evaluate_rocm" in out
-    assert "d_out_0" not in out
+    assert "d_out_0" in out
+    assert "outputs[0]" not in out
 
 
 def test_rocm_runner_ctypes_no_rocm_lib_branches():
@@ -461,3 +462,93 @@ def test_rocm_full_coverage_branches():
         assert "calc" in res
         assert res["calc"] == b"result_bytes"
         assert len(freed) > 0
+
+
+def test_rocm_streams():
+    """Test ROCm HIP stream creation, synchronization, and dispatch with shared memory."""
+    runner = ROCmRunner()
+    runner.mode = "ctypes"
+    mock_lib = MagicMock()
+    mock_lib.hipStreamCreate.return_value = 0
+    mock_lib.hipStreamSynchronize.return_value = 0
+    runner.rocm_lib = mock_lib
+
+    stream = runner.create_stream()
+    assert stream is not None
+    runner.synchronize_stream(stream)
+
+    # Test error paths
+    mock_lib.hipStreamCreate.return_value = 1
+    with pytest.raises(RuntimeError, match="hipStreamCreate failed"):
+        runner.create_stream()
+
+    mock_lib.hipStreamSynchronize.return_value = 1
+    with pytest.raises(RuntimeError, match="hipStreamSynchronize failed"):
+        runner.synchronize_stream(stream)
+
+    # CuPy mode
+    runner_cupy = ROCmRunner()
+    mock_cupy = MagicMock()
+    with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
+        runner_cupy.mode = "cupy"
+        c_stream = runner_cupy.create_stream()
+        assert c_stream is not None
+        runner_cupy.synchronize_stream(c_stream)
+        runner_cupy.synchronize_stream(None)
+
+
+def test_rocm_emitter_branches() -> None:
+    """Test ROCmRunner stream creation and synchronization without rocm_lib."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    emitter = ROCmRunner()
+    emitter.mode = "native"
+    emitter.rocm_lib = None
+    stream = emitter.create_stream()
+    assert stream is None
+    emitter.synchronize_stream(None)
+
+    g = LogicalGraph(name="g", outputs=["out_node"])
+    n = LogicalNode(id="out_node", op_type="NonExistentUnsupportedOp")
+    g.nodes["out_node"] = n
+    gen = RocmCodeGenerator(g)
+    try:
+        gen.generate()
+    except BackendNotSupportedError:
+        pass
+
+
+def test_rocm_synthesized_kernels_and_fused_elementwise() -> None:
+    """Verify synthesized kernels for 1, 2, and 3 inputs, and FusedElementwise template handling."""
+    # 1. Synthesize kernels with 1, 2, and 3 inputs (lines 113-117)
+    g = IRGraph()
+    n_unary = IRNode(id="n_un", op_type="CustomSynthUnary", inputs=["in0"])
+    n_bin = IRNode(id="n_bin", op_type="CustomSynthBinary", inputs=["in0", "in1"])
+    n_tri = IRNode(id="n_tri", op_type="CustomSynthTernary", inputs=["in0", "in1", "in2"])
+    g.nodes = {"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri}
+    gen = RocmCodeGenerator(g)
+    tpl_un = gen._ensure_template(n_unary, 0)
+    assert tpl_un is not None and "customsynthunary" in tpl_un.body
+    tpl_bin = gen._ensure_template(n_bin, 1)
+    assert tpl_bin is not None and "customsynthbinary" in tpl_bin.body
+    tpl_tri = gen._ensure_template(n_tri, 2)
+    assert tpl_tri is not None and "customsynthternary" in tpl_tri.body
+
+    # 2. FusedElementwise node returns None from _ensure_template
+    n_fused = IRNode(id="n_fuse", op_type="FusedElementwise", inputs=["in0"])
+    assert gen._ensure_template(n_fused, 3) is None
+
+    # Emit node when _ensure_template returns None (line 169)
+    hip_lines: list[str] = []
+    with patch.object(gen, "_ensure_template", return_value=None):
+        gen._emit_node(n_unary, 3, {}, {}, set(), set(), hip_lines)
+    assert hip_lines == []
+
+    # 3. generate() loop where _ensure_template returns None for op_type not in (input, output) (branch 243->227)
+    g_custom = IRGraph()
+    n_custom = IRNode(id="n_c", op_type="CustomNoTpl", inputs=[])
+    g_custom.nodes = {"n_c": n_custom}
+    gen_custom = RocmCodeGenerator(g_custom)
+    with patch.object(gen_custom, "_ensure_template", return_value=None):
+        code = gen_custom.generate()
+        assert "evaluate_rocm" in code

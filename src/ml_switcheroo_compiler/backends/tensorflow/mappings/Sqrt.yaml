@@ -1,2 +1,6 @@
-Sqrt:
-  target_api: tf.sqrt
+operation: Sqrt
+backend: tensorflow
+target_api: tf.sqrt
+ast_template: '{out} = tf.sqrt({in0})'
+kwarg_map: {}
+dtype_overrides: {}

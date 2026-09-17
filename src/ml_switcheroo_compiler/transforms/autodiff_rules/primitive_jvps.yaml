@@ -1,4 +1,12 @@
 # Declarative Primitive JVP Rules for Unified IR Operators
+GetItem:
+  jvp: GetItem($tangent[0])
+  description: Element/slice indexing tangent propagation.
+
+getitem:
+  jvp: GetItem($tangent[0])
+  description: Element/slice indexing tangent propagation (lowercase alias).
+
 Add:
   jvp: Add($tangent[0], $tangent[1])
   description: Element-wise addition tangent propagation.

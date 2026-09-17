@@ -311,6 +311,22 @@ class SignalingTopologySpec(BaseModel):
     chunk_size_bytes: int = 65536
 
 
+class CommunicationCostMatrixSpec(BaseModel):
+    """Declarative specification for pairwise communication latency and bandwidth cost matrices.
+
+    Attributes:
+        matrix_name (str): Identifier for cost matrix.
+        device_ids (list[int]): List of device IDs corresponding to matrix rows/columns.
+        latency_matrix_us (list[list[float]]): NxN matrix of interconnect latency in microseconds.
+        bandwidth_matrix_gbps (list[list[float]]): NxN matrix of interconnect bandwidth in GB/s.
+    """
+
+    matrix_name: str
+    device_ids: list[int]
+    latency_matrix_us: list[list[float]]
+    bandwidth_matrix_gbps: list[list[float]]
+
+
 class DistributedTopologiesConfig(BaseModel):
     """Container for declarative cluster, device, and signaling topologies.
 
@@ -318,11 +334,13 @@ class DistributedTopologiesConfig(BaseModel):
         cluster_meshes (dict[str, ClusterMeshSpec]): Map of cluster mesh names to specs.
         device_topologies (dict[str, DeviceTopologySpec]): Map of host IDs to device specs.
         signaling_topologies (dict[str, SignalingTopologySpec]): Map of signaling setups.
+        communication_cost_matrices (dict[str, CommunicationCostMatrixSpec]): Map of cost matrices.
     """
 
     cluster_meshes: dict[str, ClusterMeshSpec] = Field(default_factory=dict)
     device_topologies: dict[str, DeviceTopologySpec] = Field(default_factory=dict)
     signaling_topologies: dict[str, SignalingTopologySpec] = Field(default_factory=dict)
+    communication_cost_matrices: dict[str, CommunicationCostMatrixSpec] = Field(default_factory=dict)
 
 
 class DistributedTopologiesRootConfig(BaseModel):
@@ -333,6 +351,22 @@ class DistributedTopologiesRootConfig(BaseModel):
     """
 
     distributed_topologies: DistributedTopologiesConfig
+
+
+def load_cluster_topology(path: Optional[str] = None) -> DeviceMeshYamlConfig:
+    """Load and validate declarative cluster topology specification from device_mesh.yaml.
+
+    Args:
+        path (Optional[str]): Optional custom path to device_mesh.yaml.
+
+    Returns:
+        DeviceMeshYamlConfig: Validated device mesh YAML configuration.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "device_mesh.yaml")
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    return DeviceMeshYamlConfig.model_validate(data)
 
 
 def load_distributed_topologies(path: Optional[str] = None) -> DistributedTopologiesConfig:

@@ -1,0 +1,63 @@
+layouts:
+  contiguous:
+    layout_name: "contiguous"
+    dimension_order: [0, 1, 2, 3]
+    stride_formula: "row_major"
+    is_contiguous: true
+
+  nchw:
+    layout_name: "nchw"
+    dimension_order: [0, 1, 2, 3]
+    stride_formula: "row_major_nchw"
+    is_contiguous: true
+
+  nhwc:
+    layout_name: "nhwc"
+    dimension_order: [0, 2, 3, 1]
+    stride_formula: "channel_last_nhwc"
+    is_contiguous: true
+
+  channel_last:
+    layout_name: "channel_last"
+    dimension_order: [0, 2, 3, 1]
+    stride_formula: "channel_last_nhwc"
+    is_contiguous: true
+
+  transposed_2d:
+    layout_name: "transposed_2d"
+    dimension_order: [1, 0]
+    stride_formula: "column_major"
+    is_contiguous: false
+
+  strided:
+    layout_name: "strided"
+    dimension_order: []
+    stride_formula: "arbitrary_strides"
+    is_contiguous: false
+
+transformations:
+  NCHW_to_NHWC: [0, 2, 3, 1]
+  NHWC_to_NCHW: [0, 3, 1, 2]
+  transpose_2d: [1, 0]
+
+memory_alignments:
+  avx512:
+    target: "cpu_avx512"
+    alignment_bytes: 64
+    description: "64-byte boundary for 512-bit vector registers"
+  avx2:
+    target: "cpu_avx2"
+    alignment_bytes: 32
+    description: "32-byte boundary for 256-bit vector registers"
+  gpu_global:
+    target: "gpu_global"
+    alignment_bytes: 128
+    description: "128-byte boundary for coalesced global memory transactions"
+  webgpu:
+    target: "webgpu"
+    alignment_bytes: 256
+    description: "256-byte uniform/storage buffer alignment for WebGPU"
+  wasm_simd:
+    target: "wasm_simd"
+    alignment_bytes: 16
+    description: "16-byte boundary for 128-bit WASM SIMD"

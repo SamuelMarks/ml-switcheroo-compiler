@@ -1,0 +1,15 @@
+cd46971cbd488a0086a4284e40a70e81dd9cdc8067e399ac7d2e6fac26bbb7da  ml_framework_snapshots-0.0.2-py3-none-any.whl
+6429414ee6adb47bf7d1b89f6c8ca910f3ff313c2ce2b486bccb3f19030c9ca4  ml_switcheroo_compiler-0.1.0-py3-none-any.whl
+9c1b8afcc70de6f93cd4bdb57740d84a132ce7526f3e05bb345bc53d7032cec7  ml_switcheroo_ir-0.0.3-py3-none-any.whl
+ac6b8d2d282d51dcecb4e6173d89077939865cfef438689d81ac41888eef2712  zero_chex-0.1.90-py3-none-any.whl
+f7224b00b7b1ecb97ffefefc5b8549430374d4a5239140478caa90ef3ec40ac2  zero_flax-0.8.5-py3-none-any.whl
+f3bac0e1f43eec494fe94b9e3c92bc69f5e2eb02b85e78965a785ccd3b1a671b  zero_grain-0.2.16.dev20260112-py2.py3-none-any.whl
+79e2810bc6ca7f62d60eaa14bde3ac3018ec4fed7ee8ae0dc127b3f15d127015  zero_jax-0.4.30-py3-none-any.whl
+fcd72ca151673b251a6b8230cf446872922f2c36e851e89910f366d3df8a8fee  zero_keras-0.1.0-py3-none-any.whl
+878028a3e22492bf562929ca86ccb4efb4ac29da065797fed07c6f90d3a9cc7b  zero_mlx-0.1.0-py3-none-any.whl
+4424a65ca5cde3e051e3f0f40898efb411b4f37d79e93e844e9c643f63d262d3  zero_optax-0.2.4-py3-none-any.whl
+f178299bbfa9295438ca6cb985f6fdac077157f188fe487a90281eb88bf453cc  zero_orbax-0.6.4-py3-none-any.whl
+781d5f0135b7beb94c24a17bde93483cf62c892583250d30c0269161a7a4c9ff  zero_pax-0.1.0-py3-none-any.whl
+790778487fa5edcb331c7db92522f5201e3f5220fd9f470b3ab436bd47e3fb71  zero_pytorch-2.10.0-py3-none-any.whl
+ae388c4cd8a40362e5a87e7d6299b59e58f9f0e5ded122183401650b1027da37  zero_tensorflow-2.20.0-py3-none-any.whl
+09d4573823132bbf64af7d17d25da5922aee91da17a40bef678746ed8edf1199  zero_zoo-0.1.0-py3-none-any.whl

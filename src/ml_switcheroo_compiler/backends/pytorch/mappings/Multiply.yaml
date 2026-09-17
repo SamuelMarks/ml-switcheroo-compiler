@@ -1,2 +1,6 @@
-Multiply:
-  target_api: torch.mul
+operation: Multiply
+backend: pytorch
+target_api: torch.mul
+ast_template: '{out} = torch.mul({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

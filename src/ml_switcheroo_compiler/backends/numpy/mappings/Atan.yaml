@@ -1,3 +1,6 @@
-Atan:
-  ast_template: np.arctan
-  target_api: ''
+operation: Atan
+backend: numpy
+target_api: ''
+ast_template: np.arctan
+kwarg_map: {}
+dtype_overrides: {}

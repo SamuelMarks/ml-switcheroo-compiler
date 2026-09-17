@@ -1,2 +1,6 @@
-Asin:
-  target_api: tf.asin
+operation: Asin
+backend: tensorflow
+target_api: tf.asin
+ast_template: '{out} = tf.asin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

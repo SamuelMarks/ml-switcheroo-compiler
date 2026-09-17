@@ -1,2 +1,6 @@
-TriangularSolve:
-  target_api: tf.linalg.triangular_solve
+operation: TriangularSolve
+backend: tensorflow
+target_api: tf.linalg.triangular_solve
+ast_template: '{out} = tf.linalg.triangular_solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

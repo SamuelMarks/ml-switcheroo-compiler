@@ -1,2 +1,6 @@
-Imag:
-  target_api: tf.math.imag
+operation: Imag
+backend: tensorflow
+target_api: tf.math.imag
+ast_template: '{out} = tf.math.imag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

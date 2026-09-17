@@ -1,3 +1,6 @@
-TriInv:
-  ast_template: np.linalg.inv({0})
-  target_api: ''
+operation: TriInv
+backend: numpy
+target_api: ''
+ast_template: np.linalg.inv({0})
+kwarg_map: {}
+dtype_overrides: {}

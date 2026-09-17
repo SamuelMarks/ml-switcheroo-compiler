@@ -1,2 +1,6 @@
-Cumprod:
-  target_api: keras_ops.cumprod
+operation: Cumprod
+backend: keras
+target_api: keras_ops.cumprod
+ast_template: '{out} = keras_ops.cumprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

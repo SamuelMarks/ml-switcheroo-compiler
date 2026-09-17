@@ -1,2 +1,6 @@
-AdaptiveAvgPool3D:
-  target_api: _execute_adaptive_avg_pool
+operation: AdaptiveAvgPool3D
+backend: jax
+target_api: _execute_adaptive_avg_pool
+ast_template: '{out} = _execute_adaptive_avg_pool({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

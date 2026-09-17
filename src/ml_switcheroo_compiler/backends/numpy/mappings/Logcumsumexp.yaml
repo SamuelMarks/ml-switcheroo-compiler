@@ -1,3 +1,6 @@
-Logcumsumexp:
-  ast_template: getattr(backend_module, 'logsumexp', None)
-  target_api: ''
+operation: Logcumsumexp
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'logsumexp', None)
+kwarg_map: {}
+dtype_overrides: {}

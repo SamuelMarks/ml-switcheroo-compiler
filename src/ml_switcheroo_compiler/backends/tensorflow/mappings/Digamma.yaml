@@ -1,2 +1,6 @@
-Digamma:
-  target_api: tf.math.digamma
+operation: Digamma
+backend: tensorflow
+target_api: tf.math.digamma
+ast_template: '{out} = tf.math.digamma({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

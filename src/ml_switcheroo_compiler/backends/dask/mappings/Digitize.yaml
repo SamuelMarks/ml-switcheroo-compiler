@@ -1,2 +1,6 @@
-Digitize:
-  target_api: da.digitize
+operation: Digitize
+backend: dask
+target_api: da.digitize
+ast_template: '{out} = da.digitize({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

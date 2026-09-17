@@ -1,2 +1,6 @@
-Logaddexp:
-  target_api: keras_ops.logaddexp
+operation: Logaddexp
+backend: keras
+target_api: keras_ops.logaddexp
+ast_template: '{out} = keras_ops.logaddexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -4,34 +4,36 @@
 import typing
 from collections.abc import Callable, Iterable
 
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _get_node_items(block: typing.Union[IRGraph, IRBlock]) -> Iterable[tuple[str, IRNode]]:
+def _get_node_items(block: LogicalGraph) -> Iterable[tuple[str, LogicalNode]]:
     """Get all (node_id, node) pairs from a block or graph.
 
     Args:
-        block (typing.Union[IRGraph, IRBlock]): The block or graph to inspect.
+        block (LogicalGraph): The block or graph to inspect.
 
     Returns:
-        Iterable[tuple[str, IRNode]]: Sequence of node ID and IRNode pairs.
+        Iterable[tuple[str, LogicalNode]]: Sequence of node ID and LogicalNode pairs.
     """
     if not hasattr(block, "nodes"):
         return []
-    nodes: typing.Union[list[IRNode], dict[str, IRNode]] = block.nodes
+    nodes: typing.Union[list[LogicalNode], dict[str, LogicalNode]] = block.nodes
     if isinstance(nodes, dict):
         return list(nodes.items())
     return [(n.id, n) for n in nodes]
 
 
-def _lift_node_state(node: IRNode, nid: str, block: typing.Union[IRGraph, IRBlock]) -> bool:
+def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph) -> bool:
     """Lift stateful ReadVariable/AssignVariable operations into pure functional inputs/outputs.
 
     Args:
-        node (IRNode): Node being inspected.
+        node (LogicalNode): Node being inspected.
         nid (str): Unique node identifier.
-        block (typing.Union[IRGraph, IRBlock]): Containing block or graph.
+        block (LogicalGraph): Containing block or graph.
 
     Returns:
         bool: True if node was modified, False otherwise.
@@ -55,11 +57,11 @@ def _lift_node_state(node: IRNode, nid: str, block: typing.Union[IRGraph, IRBloc
     return False
 
 
-def _lift_block(block: typing.Union[IRGraph, IRBlock]) -> bool:
+def _lift_block(block: LogicalGraph) -> bool:
     """Recursively lift stateful operations across blocks and nested subgraphs.
 
     Args:
-        block (typing.Union[IRGraph, IRBlock]): Block or graph to lift.
+        block (LogicalGraph): Block or graph to lift.
 
     Returns:
         bool: True if any stateful operation was lifted.
@@ -68,9 +70,11 @@ def _lift_block(block: typing.Union[IRGraph, IRBlock]) -> bool:
     for nid, node in _get_node_items(block):
         block_mod = _lift_node_state(node, nid, block) or block_mod
 
+        for sub in getattr(node, "subgraphs", {}).values():
+            block_mod = _lift_block(sub) or block_mod
         for attr_val in node.attributes.values():
             if hasattr(attr_val, "nodes"):
-                block_mod = _lift_block(typing.cast(typing.Union[IRGraph, IRBlock], attr_val)) or block_mod
+                block_mod = _lift_block(typing.cast(LogicalGraph, attr_val)) or block_mod
     return block_mod
 
 

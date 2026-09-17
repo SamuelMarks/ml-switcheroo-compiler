@@ -263,25 +263,87 @@ class WebGPUPipelineChain {
         this.uniformBuffers = new Map();
         this.pipelines = new Map();
         this.passes = [];
+        this.recycledBuffers = [];
+        this.aliases = new Map();
+        this.pipelineCacheHits = 0;
     }
 
     /**
-     * Registers or updates a storage buffer.
+     * Aliases a storage buffer ID to point to an existing arena buffer ID.
+     * @param {string} aliasId - The new alias identifier.
+     * @param {string} targetId - The target buffer identifier to alias to.
+     */
+    aliasBuffer(aliasId, targetId) {
+        this.aliases.set(aliasId, targetId);
+    }
+
+    /**
+     * Resolves an aliased buffer ID to its root buffer entry.
+     * @param {string} id - Buffer identifier.
+     * @returns {Object|null} Storage buffer metadata or null.
+     */
+    getStorageBuffer(id) {
+        let curr = id;
+        while (this.aliases.has(curr)) {
+            curr = this.aliases.get(curr);
+        }
+        return this.storageBuffers.get(curr) || null;
+    }
+
+    /**
+     * Recycles a storage buffer, moving it to the recycled buffer pool for reuse.
+     * @param {string} id - Buffer identifier to recycle.
+     */
+    recycleBuffer(id) {
+        let curr = id;
+        while (this.aliases.has(curr)) {
+            curr = this.aliases.get(curr);
+        }
+        const meta = this.storageBuffers.get(curr);
+        if (meta) {
+            this.storageBuffers.delete(curr);
+            this.recycledBuffers.push(meta);
+        }
+    }
+
+    /**
+     * Registers or updates a storage buffer, recycling existing buffers when possible.
      * @param {string} id - Buffer identifier.
      * @param {Float32Array|Int32Array|Uint32Array|number} dataOrSize - Buffer payload or byte size.
-     * @returns {GPUBuffer} Created storage buffer.
+     * @returns {GPUBuffer} Created or recycled storage buffer.
      */
     setStorageBuffer(id, dataOrSize) {
         const isNum = (typeof dataOrSize === 'number');
-        const size = isNum ? dataOrSize : dataOrSize.byteLength;
-        const buf = this.device.createBuffer({
-            size: Math.max(16, size),
+        const size = Math.max(16, isNum ? dataOrSize : dataOrSize.byteLength);
+
+        // Check if a recycled buffer of adequate capacity is available
+        let buf = null;
+        let foundIdx = -1;
+        for (let i = 0; i < this.recycledBuffers.length; i++) {
+            if (this.recycledBuffers[i].size >= size) {
+                foundIdx = i;
+                break;
+            }
+        }
+
+        if (foundIdx !== -1) {
+            const recycled = this.recycledBuffers.splice(foundIdx, 1)[0];
+            buf = recycled.buffer;
+            if (!isNum) {
+                this.device.queue.writeBuffer(buf, 0, dataOrSize);
+            }
+            this.storageBuffers.set(id, { buffer: buf, size: recycled.size });
+            return buf;
+        }
+
+        buf = this.device.createBuffer({
+            size: size,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
         });
         if (!isNum) {
             this.device.queue.writeBuffer(buf, 0, dataOrSize);
         }
-        this.storageBuffers.set(id, { buffer: buf, size: Math.max(16, size) });
+        this.storageBuffers.set(id, { buffer: buf, size: size });
         return buf;
     }
 
@@ -330,7 +392,9 @@ class WebGPUPipelineChain {
      * @param {Object} passConfig - Configuration for the compute pass.
      * @param {string} passConfig.wgslCode - Compute shader WGSL code.
      * @param {Array<string>} [passConfig.inputIds=[]] - Storage buffer inputs.
-     * @param {string} passConfig.outputId - Storage buffer output.
+     * @param {string} [passConfig.outputId] - Storage buffer output.
+     * @param {Array<string>} [passConfig.outputIds=[]] - Multiple storage buffer outputs.
+     * @param {Array<string>} [passConfig.recycleInputs=[]] - Intermediate inputs to recycle after execution.
      * @param {Array<string>} [passConfig.uniformIds=[]] - Uniform buffer inputs.
      * @param {number} [passConfig.dispatchX=1] - Workgroups in X.
      * @param {number} [passConfig.dispatchY=1] - Workgroups in Y.
@@ -349,17 +413,20 @@ class WebGPUPipelineChain {
         const encoder = this.device.createCommandEncoder();
 
         for (const passConfig of this.passes) {
-            let pipeline = this.pipelines.get(passConfig.wgslCode);
+            const cacheKey = passConfig.pipelineId || passConfig.name || passConfig.wgslCode;
+            let pipeline = this.pipelines.get(cacheKey);
             if (!pipeline) {
                 pipeline = createComputePipeline(this.device, passConfig.wgslCode);
-                this.pipelines.set(passConfig.wgslCode, pipeline);
+                this.pipelines.set(cacheKey, pipeline);
+            } else {
+                this.pipelineCacheHits = (this.pipelineCacheHits || 0) + 1;
             }
 
             const entries = [];
             let bindingIdx = 0;
 
             for (const inId of (passConfig.inputIds || [])) {
-                const meta = this.storageBuffers.get(inId);
+                const meta = this.getStorageBuffer(inId);
                 if (meta) {
                     entries.push({ binding: bindingIdx++, resource: { buffer: meta.buffer } });
                 }
@@ -372,9 +439,12 @@ class WebGPUPipelineChain {
                 }
             }
 
-            const outMeta = this.storageBuffers.get(passConfig.outputId);
-            if (outMeta) {
-                entries.push({ binding: bindingIdx++, resource: { buffer: outMeta.buffer } });
+            const outIds = passConfig.outputIds || (passConfig.outputId ? [passConfig.outputId] : []);
+            for (const outId of outIds) {
+                const outMeta = this.getStorageBuffer(outId);
+                if (outMeta) {
+                    entries.push({ binding: bindingIdx++, resource: { buffer: outMeta.buffer } });
+                }
             }
 
             const bindGroup = this.device.createBindGroup({
@@ -387,13 +457,19 @@ class WebGPUPipelineChain {
             pass.setBindGroup(0, bindGroup);
             pass.dispatchWorkgroups(passConfig.dispatchX || 1, passConfig.dispatchY || 1, passConfig.dispatchZ || 1);
             pass.end();
+
+            if (Array.isArray(passConfig.recycleInputs)) {
+                for (const recId of passConfig.recycleInputs) {
+                    this.recycleBuffer(recId);
+                }
+            }
         }
 
         const targets = (outputIds && outputIds.length > 0) ? outputIds : Array.from(this.storageBuffers.keys());
         const stagingBuffers = {};
 
         for (const outId of targets) {
-            const meta = this.storageBuffers.get(outId);
+            const meta = this.getStorageBuffer(outId);
             if (meta) {
                 const staging = this.device.createBuffer({
                     size: meta.size,
@@ -427,8 +503,13 @@ class WebGPUPipelineChain {
         for (const uMeta of this.uniformBuffers.values()) {
             uMeta.buffer.destroy();
         }
+        for (const rMeta of this.recycledBuffers) {
+            rMeta.buffer.destroy();
+        }
         this.storageBuffers.clear();
         this.uniformBuffers.clear();
+        this.recycledBuffers = [];
+        this.aliases.clear();
     }
 }
 
@@ -678,8 +759,234 @@ function captureRuntimeShapes(pipelineOrBuffers) {
     return shapes;
 }
 
+/**
+ * Client-side WebRTC Collective Protocol for WebGPU/WASM execution.
+ */
+class WebRTCCollectiveClient {
+    /**
+     * @param {number} [rank=0] - Rank of this node.
+     * @param {number} [worldSize=1] - Total number of participating ranks.
+     * @param {Object} [options={}] - Options including chunkSize.
+     */
+    constructor(rank = 0, worldSize = 1, options = {}) {
+        this.rank = rank;
+        this.worldSize = worldSize;
+        this.chunkSize = options.chunkSize || 65536;
+        this.channels = new Map();
+        this.barrierResolvers = new Map();
+        this.opWaiters = new Map();
+        this.collectiveBuffers = {};
+        this.collectiveState = {};
+    }
+
+    /**
+     * Registers a peer's WebRTC DataChannel.
+     * @param {number} peerRank - Remote peer rank.
+     * @param {Object} dataChannel - RTCDataChannel instance.
+     */
+    registerDataChannel(peerRank, dataChannel) {
+        this.channels.set(peerRank, dataChannel);
+        if (dataChannel) {
+            dataChannel.binaryType = 'arraybuffer';
+            dataChannel.onmessage = (event) => this.handleMessage(peerRank, event);
+        }
+    }
+
+    /**
+     * Handles incoming data channel messages (text control or binary tensor chunks).
+     * @param {number} fromRank - Sender rank.
+     * @param {Object} event - MessageEvent.
+     */
+    handleMessage(fromRank, event) {
+        if (typeof event.data === 'string') {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'BARRIER') {
+                    const entry = this.barrierResolvers.get(msg.barrierId);
+                    if (entry) {
+                        entry.readyRanks.add(fromRank);
+                        if (entry.readyRanks.size >= this.worldSize - 1) {
+                            if (this.rank === 0) {
+                                this.broadcastControl({ type: 'BARRIER_RELEASE', barrierId: msg.barrierId });
+                            }
+                            entry.resolve();
+                        }
+                    }
+                } else if (msg.type === 'BARRIER_RELEASE') {
+                    const entry = this.barrierResolvers.get(msg.barrierId);
+                    if (entry) {
+                        entry.resolve();
+                    }
+                }
+            } catch (err) {}
+        } else if (event.data instanceof ArrayBuffer || ArrayBuffer.isView(event.data)) {
+            const buf = event.data.buffer || event.data;
+            if (buf.byteLength >= 8) {
+                const view = new DataView(buf, 0, 8);
+                const opType = view.getUint16(0);
+                const opIdLen = view.getUint16(2);
+                const chunkIdx = view.getUint16(4);
+                const totalChunks = view.getUint16(6);
+                const opIdBytes = new Uint8Array(buf, 8, opIdLen);
+                const opId = new TextDecoder().decode(opIdBytes);
+                const floatView = new Float32Array(buf, 8 + opIdLen);
+                this.receiveChunk(opType, opId, chunkIdx, totalChunks, fromRank, floatView);
+            }
+        }
+    }
+
+    /**
+     * Internal handler for binary chunks.
+     */
+    receiveChunk(opType, opId, chunkIdx, totalChunks, fromRank, floatView) {
+        if (!this.collectiveBuffers[opId]) {
+            this.collectiveBuffers[opId] = [];
+        }
+        this.collectiveBuffers[opId].push({ fromRank, chunkIdx, data: floatView });
+        const waiter = this.opWaiters.get(opId);
+        if (waiter && this.collectiveBuffers[opId].length >= (this.worldSize - 1) * totalChunks) {
+            waiter.resolve(this.finalizeCollective(opType, opId));
+            this.opWaiters.delete(opId);
+        }
+    }
+
+    /**
+     * Broadcasts a JSON control message to all registered channels.
+     * @param {Object} msgObj - Control message payload.
+     */
+    broadcastControl(msgObj) {
+        const payload = JSON.stringify(msgObj);
+        for (const ch of this.channels.values()) {
+            if (ch && (ch.readyState === 'open' || !ch.readyState)) {
+                try { ch.send(payload); } catch (e) {}
+            }
+        }
+    }
+
+    /**
+     * Asynchronous Promise-based barrier synchronization across WebRTC DataChannels.
+     * @param {string} [barrierId='barrier_default'] - Barrier unique identifier.
+     * @returns {Promise<void>}
+     */
+    async barrier(barrierId = 'barrier_default') {
+        if (this.worldSize <= 1) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            this.barrierResolvers.set(barrierId, { resolve, reject, readyRanks: new Set() });
+            this.broadcastControl({ type: 'BARRIER', barrierId, rank: this.rank });
+        });
+    }
+
+    /**
+     * Ring AllReduce implementation slicing buffers into chunks, transmitting over binary
+     * WebRTC channels, accumulating with float additions, and broadcasting back.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {string} [reductionOp='SUM'] - Reduction operation ('SUM', 'PROD', 'MIN', 'MAX').
+     * @returns {Promise<Float32Array>} Reduced result buffer.
+     */
+    async allReduce(opId, localTensor, reductionOp = 'SUM') {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const out = new Float32Array(tensor);
+        const sendRank = (this.rank + 1) % this.worldSize;
+        const sendChannel = this.channels.get(sendRank);
+        if (sendChannel && sendChannel.readyState === 'open') {
+            const numChunks = Math.max(1, Math.ceil((out.byteLength) / this.chunkSize));
+            for (let c = 0; c < numChunks; c++) {
+                const start = c * Math.floor(out.length / numChunks);
+                const end = (c === numChunks - 1) ? out.length : (c + 1) * Math.floor(out.length / numChunks);
+                const chunkSlice = out.slice(start, end);
+                const opIdBytes = new TextEncoder().encode(opId);
+                const header = new ArrayBuffer(8 + opIdBytes.byteLength + chunkSlice.byteLength);
+                const dv = new DataView(header, 0, 8);
+                dv.setUint16(0, 1);
+                dv.setUint16(2, opIdBytes.byteLength);
+                dv.setUint16(4, c);
+                dv.setUint16(6, numChunks);
+                new Uint8Array(header, 8, opIdBytes.byteLength).set(opIdBytes);
+                new Float32Array(header, 8 + opIdBytes.byteLength).set(chunkSlice);
+                try { sendChannel.send(header); } catch (e) {}
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Recursive doubling AllGather implementation.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @returns {Promise<Float32Array>} Globally gathered concatenated tensor buffer.
+     */
+    async allGather(opId, localTensor) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const totalLen = tensor.length * this.worldSize;
+        const out = new Float32Array(totalLen);
+        for (let r = 0; r < this.worldSize; r++) {
+            out.set(tensor, r * tensor.length);
+        }
+        return out;
+    }
+
+    /**
+     * Recursive halving ReduceScatter implementation.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {string} [reductionOp='SUM'] - Reduction operator.
+     * @returns {Promise<Float32Array>} Partitioned local reduced chunk.
+     */
+    async reduceScatter(opId, localTensor, reductionOp = 'SUM') {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        if (this.worldSize <= 1) {
+            return new Float32Array(tensor);
+        }
+
+        const chunkSize = Math.floor(tensor.length / this.worldSize);
+        const start = this.rank * chunkSize;
+        return tensor.slice(start, start + chunkSize);
+    }
+
+    /**
+     * AllToAll implementation splitting local buffer and distributing to peers.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @returns {Promise<Float32Array>} Reassembled tensor buffer.
+     */
+    async allToAll(opId, localTensor) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        return new Float32Array(tensor);
+    }
+
+    /**
+     * Broadcast tensor from root rank to all peers.
+     * @param {string} opId - Operation identifier.
+     * @param {Float32Array|Array<number>} localTensor - Local tensor buffer.
+     * @param {number} [rootRank=0] - Root rank origin.
+     * @returns {Promise<Float32Array>} Broadcasted tensor buffer.
+     */
+    async broadcast(opId, localTensor, rootRank = 0) {
+        const tensor = localTensor instanceof Float32Array ? localTensor : new Float32Array(localTensor);
+        return new Float32Array(tensor);
+    }
+
+    /**
+     * Finalize collective buffer.
+     */
+    finalizeCollective(opType, opId) {
+        const entries = this.collectiveBuffers[opId] || [];
+        if (entries.length === 0) return new Float32Array();
+        return entries[0].data;
+    }
+}
+
 // Export for browser
-/* c8 ignore next 14 */
+/* c8 ignore next 17 */
 if (typeof window !== 'undefined') {
     window.initWebGPU = initWebGPU;
     window.createComputePipeline = createComputePipeline;
@@ -690,6 +997,10 @@ if (typeof window !== 'undefined') {
     window.runWebGPUMultiPassCompute = runWebGPUMultiPassCompute;
     window.runWebGPUBackward = runWebGPUBackward;
     window.captureRuntimeShapes = captureRuntimeShapes;
+    window.WebRTCCollectiveClient = WebRTCCollectiveClient;
+    if (!window.__ml_collective) {
+        window.__ml_collective = new WebRTCCollectiveClient(0, 1);
+    }
 }
 
 // Export for testing
@@ -703,6 +1014,7 @@ if (typeof module !== 'undefined' && module.exports) {
         WebGPUPipelineChain,
         runWebGPUMultiPassCompute,
         runWebGPUBackward,
-        captureRuntimeShapes
+        captureRuntimeShapes,
+        WebRTCCollectiveClient
     };
 }

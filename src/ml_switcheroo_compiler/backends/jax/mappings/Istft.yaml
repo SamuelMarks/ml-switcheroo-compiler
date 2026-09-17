@@ -1,3 +1,6 @@
-Istft:
-  ast_template: jax_istft({0})
-  target_api: ''
+operation: Istft
+backend: jax
+target_api: ''
+ast_template: jax_istft({0})
+kwarg_map: {}
+dtype_overrides: {}

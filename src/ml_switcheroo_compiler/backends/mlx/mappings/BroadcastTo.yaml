@@ -1,2 +1,6 @@
-BroadcastTo:
-  target_api: '''mx.broadcast_to({0}, {shape})'''
+operation: BroadcastTo
+backend: mlx
+target_api: '''mx.broadcast_to({0}, {shape})'''
+ast_template: '{out} = ''mx.broadcast_to({0}, {shape})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

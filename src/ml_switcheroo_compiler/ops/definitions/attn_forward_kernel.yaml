@@ -1,19 +1,49 @@
 operation: attn_forward_kernel
 description: The class representing a Python function.
 std_args:
-  - q_ref
-  - k_ref
-  - v_ref
-  - start_idx_ref
-  - kv_seq_len_ref
-  - o_ref
-  - residual_refs
-  - sm_scale
-  - block_k
-  - block_h
-  - num_heads
+- q_ref
+- k_ref
+- v_ref
+- start_idx_ref
+- kv_seq_len_ref
+- o_ref
+- residual_refs
+- sm_scale
+- block_k
+- block_h
+- num_heads
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: attn_forward_kernel_vjp
+  jvp_rule_id: attn_forward_kernel_jvp
+  vjp: null
+  jvp: null

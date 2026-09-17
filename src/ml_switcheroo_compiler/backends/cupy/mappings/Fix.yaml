@@ -1,2 +1,6 @@
-Fix:
-  target_api: cp.fix
+operation: Fix
+backend: cupy
+target_api: cp.fix
+ast_template: '{out} = cp.fix({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

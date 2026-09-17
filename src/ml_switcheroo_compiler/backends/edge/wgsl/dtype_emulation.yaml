@@ -1,0 +1,52 @@
+# dtype_emulation.yaml
+# Declarative double precision (float64) emulation rules for WebGPU WGSL via two f32 components (two-sum / double-single representation).
+
+version: "1.0.0"
+
+emulation_types:
+  float64:
+    wgsl_type: "vec2<f32>"
+    components:
+      hi: "f32"
+      lo: "f32"
+    description: "Emulated double precision float64 using two f32 components (hi + lo)"
+    warning: "WebGPU WGSL lacks native float64 support; using emulated double-precision vec2<f32> representation."
+
+device_requirements:
+  native_feature: "shader-f16"
+  float64_supported: false
+  fallback_action: "warn_and_emulate"
+
+emulation_ops:
+  two_sum:
+    signature: "fn two_sum(a: f32, b: f32) -> vec2<f32>"
+    body: |
+      let s = a + b;
+      let v = s - a;
+      let e = (a - (s - v)) + (b - v);
+      return vec2<f32>(s, e);
+
+  df64_add:
+    signature: "fn df64_add(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>"
+    body: |
+      let s = a.x + b.x;
+      let v = s - a.x;
+      let e = (a.x - (s - v)) + (b.x - v);
+      let t = a.y + b.y;
+      return vec2<f32>(s, e + t);
+
+  df64_sub:
+    signature: "fn df64_sub(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>"
+    body: |
+      let s = a.x - b.x;
+      let v = s - a.x;
+      let e = (a.x - (s - v)) - (b.x + v);
+      let t = a.y - b.y;
+      return vec2<f32>(s, e + t);
+
+  df64_mul:
+    signature: "fn df64_mul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32>"
+    body: |
+      let p = a.x * b.x;
+      let q = fma(a.x, b.x, -p);
+      return vec2<f32>(p, q + a.x * b.y + a.y * b.x);

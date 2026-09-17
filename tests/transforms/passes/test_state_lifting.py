@@ -429,3 +429,21 @@ def test_functionalize_nested_state() -> None:
     res, new_st = pure_fn({"inner.param": 7}, 3)
     assert res == 21
     assert new_st["inner.param"] == 7
+
+
+def test_state_lifting_subgraphs() -> None:
+    """Verify state lifting pass recursively traverses node.subgraphs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    sub = LogicalGraph(name="sub")
+    sub.nodes["r1"] = LogicalNode(id="r1", op_type="ReadVariable", attributes={"variable_name": "alpha"})
+    sub.nodes["a1"] = LogicalNode(id="a1", op_type="AssignVariable", attributes={"variable_name": "alpha"})
+
+    parent = LogicalGraph(name="parent")
+    parent.nodes["loop"] = LogicalNode(id="loop", op_type="Loop", subgraphs={"body": sub})
+
+    res = state_lifting_pass(parent)
+    assert res is True
+    assert sub.nodes["r1"].op_type == "Input"
+    assert sub.nodes["a1"].op_type == "Output"
+    assert "a1" in sub.outputs

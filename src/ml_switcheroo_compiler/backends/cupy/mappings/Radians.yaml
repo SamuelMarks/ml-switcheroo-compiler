@@ -1,2 +1,6 @@
-Radians:
-  target_api: cp.radians
+operation: Radians
+backend: cupy
+target_api: cp.radians
+ast_template: '{out} = cp.radians({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

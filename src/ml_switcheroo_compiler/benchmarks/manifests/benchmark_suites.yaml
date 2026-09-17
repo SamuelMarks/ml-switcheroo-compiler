@@ -1,0 +1,32 @@
+benchmarks:
+  - name: "standard_dense_suite"
+    description: "Standard dense and MLP benchmarking suite"
+    models: ["mlp_model"]
+    batch_sizes: [1, 8, 32]
+    dtypes: ["float32", "float16"]
+    input_shapes:
+      in_0: [128]
+    targets:
+      - backend: "numpy"
+        device: "cpu"
+      - backend: "pytorch"
+        device: "cpu"
+      - backend: "jax"
+        device: "cpu"
+    num_iterations: 20
+    warmup_iterations: 5
+
+  - name: "vision_conv_suite"
+    description: "Spatial convolution and pooling suite"
+    models: ["conv_net"]
+    batch_sizes: [1, 4]
+    dtypes: ["float32"]
+    input_shapes:
+      in_0: [3, 32, 32]
+    targets:
+      - backend: "numpy"
+        device: "cpu"
+      - backend: "pytorch"
+        device: "cpu"
+    num_iterations: 15
+    warmup_iterations: 3

@@ -1,4 +1,6 @@
-AdaptiveLogSoftmaxWithLoss:
-  custom_code: 'lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((),
-    dtype=target.dtype))'
-  target_api: custom_op
+operation: AdaptiveLogSoftmaxWithLoss
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

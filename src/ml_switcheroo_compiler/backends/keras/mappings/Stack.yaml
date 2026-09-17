@@ -1,2 +1,6 @@
-Stack:
-  target_api: keras_ops.stack
+operation: Stack
+backend: keras
+target_api: keras_ops.stack
+ast_template: '{out} = keras_ops.stack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Fmax:
-  target_api: da.fmax
+operation: Fmax
+backend: dask
+target_api: da.fmax
+ast_template: '{out} = da.fmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

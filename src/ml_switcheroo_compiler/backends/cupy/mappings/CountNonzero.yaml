@@ -1,2 +1,6 @@
-CountNonzero:
-  target_api: cp.count_nonzero
+operation: CountNonzero
+backend: cupy
+target_api: cp.count_nonzero
+ast_template: '{out} = cp.count_nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

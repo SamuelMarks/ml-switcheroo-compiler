@@ -1,15 +1,45 @@
 operation: roofline_and_grad
 description: The class representing a Python function.
 std_args:
-  - f
-  - mesh
-  - in_specs
-  - out_specs
-  - pin_lhs_in_vmem
-  - pin_rhs_in_vmem
-  - print_jaxpr
+- f
+- mesh
+- in_specs
+- out_specs
+- pin_lhs_in_vmem
+- pin_rhs_in_vmem
+- print_jaxpr
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: roofline_and_grad_vjp
+  jvp_rule_id: roofline_and_grad_jvp
+  vjp: null
+  jvp: null

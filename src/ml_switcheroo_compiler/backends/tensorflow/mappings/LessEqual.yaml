@@ -1,2 +1,6 @@
-LessEqual:
-  target_api: tf.less_equal
+operation: LessEqual
+backend: tensorflow
+target_api: tf.less_equal
+ast_template: '{out} = tf.less_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

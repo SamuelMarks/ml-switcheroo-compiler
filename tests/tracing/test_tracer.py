@@ -17,3 +17,20 @@ def test_proxy_tensor_binary_op() -> None:
     out_unary = p1._unary_op("Neg")
     assert out_unary.shape == (2,)
     global_tracing_state.stop_tracing()
+
+
+def test_tracing_inputs_and_specs() -> None:
+    """Verify active_graph.inputs and input_specs extraction during tracing."""
+    g = global_tracing_state.start_tracing("spec_test")
+    p1 = ProxyTensor(id="in1", shape=(4, 8), dtype="float32")
+    p2 = ProxyTensor(id="in2", shape=(4, 8), dtype="float32")
+
+    assert "in1" in g.inputs
+    assert "in2" in g.inputs
+    assert g.input_specs["in1"].shape == (4, 8)
+    assert g.input_specs["in1"].dtype == "float32"
+
+    out = p1._binary_op(p2, "Add")
+    # Output node should not be in inputs
+    assert out.id not in g.inputs
+    global_tracing_state.stop_tracing()

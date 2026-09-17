@@ -1,2 +1,6 @@
-Diag:
-  target_api: keras_ops.diag
+operation: Diag
+backend: keras
+target_api: keras_ops.diag
+ast_template: '{out} = keras_ops.diag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

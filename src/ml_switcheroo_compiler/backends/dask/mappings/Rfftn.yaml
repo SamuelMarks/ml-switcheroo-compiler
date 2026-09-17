@@ -1,2 +1,6 @@
-Rfftn:
-  target_api: da.fft.rfftn
+operation: Rfftn
+backend: dask
+target_api: da.fft.rfftn
+ast_template: '{out} = da.fft.rfftn({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

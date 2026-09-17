@@ -1,2 +1,6 @@
-AssignVariable:
-  target_api: '''{0}'''
+operation: AssignVariable
+backend: mlx
+target_api: '''{0}'''
+ast_template: '{out} = ''{0}''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

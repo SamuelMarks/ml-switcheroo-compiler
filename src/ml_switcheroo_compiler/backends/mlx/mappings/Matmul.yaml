@@ -1,2 +1,6 @@
-Matmul:
-  target_api: '''mx.matmul({0}, {1})'''
+operation: MatMul
+backend: mlx
+target_api: mlx.core.matmul
+ast_template: '{out} = mlx.core.matmul({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

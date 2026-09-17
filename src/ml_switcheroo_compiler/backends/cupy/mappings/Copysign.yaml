@@ -1,2 +1,6 @@
-Copysign:
-  target_api: cp.copysign
+operation: Copysign
+backend: cupy
+target_api: cp.copysign
+ast_template: '{out} = cp.copysign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BitwiseOr:
-  target_api: keras_ops.bitwise_or
+operation: BitwiseOr
+backend: keras
+target_api: keras_ops.bitwise_or
+ast_template: '{out} = keras_ops.bitwise_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

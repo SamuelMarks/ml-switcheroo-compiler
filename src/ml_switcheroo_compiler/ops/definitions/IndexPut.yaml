@@ -1,24 +1,73 @@
 operation: IndexPut
 description: Puts values into tensor at indices (tuple).
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: indices
-    type: Tuple[Tensor]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: values
-    type: Tensor
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: accumulate
-    type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: indices
+  type: Tuple[Tensor]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: values
+  type: Tensor
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: accumulate
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: indices
+    type: Tuple[Tensor]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: values
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: accumulate
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - indices
+  - values
+  - accumulate
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: IndexPut_vjp
+  jvp_rule_id: IndexPut_jvp
+  vjp: null
+  jvp: null

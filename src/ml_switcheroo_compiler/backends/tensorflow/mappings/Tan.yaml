@@ -1,2 +1,6 @@
-Tan:
-  target_api: tf.tan
+operation: Tan
+backend: tensorflow
+target_api: tf.tan
+ast_template: '{out} = tf.tan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

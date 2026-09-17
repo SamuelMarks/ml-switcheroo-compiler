@@ -1,2 +1,6 @@
-Exp:
-  target_api: keras_ops.exp
+operation: Exp
+backend: keras
+target_api: keras_ops.exp
+ast_template: '{out} = keras_ops.exp({in0})'
+kwarg_map: {}
+dtype_overrides: {}

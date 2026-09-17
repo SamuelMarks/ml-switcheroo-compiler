@@ -1,3 +1,6 @@
-Solve:
-  ast_template: np.linalg.solve
-  target_api: ''
+operation: Solve
+backend: numpy
+target_api: ''
+ast_template: np.linalg.solve
+kwarg_map: {}
+dtype_overrides: {}

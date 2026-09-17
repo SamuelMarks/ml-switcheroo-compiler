@@ -1,2 +1,6 @@
-Tan:
-  target_api: keras_ops.tan
+operation: Tan
+backend: keras
+target_api: keras_ops.tan
+ast_template: '{out} = keras_ops.tan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Negative:
-  target_api: tf.negative
+operation: Negative
+backend: tensorflow
+target_api: tf.negative
+ast_template: '{out} = tf.negative({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

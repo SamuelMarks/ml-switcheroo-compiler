@@ -1,2 +1,6 @@
-Less:
-  target_api: da.less
+operation: Less
+backend: dask
+target_api: da.less
+ast_template: '{out} = da.less({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

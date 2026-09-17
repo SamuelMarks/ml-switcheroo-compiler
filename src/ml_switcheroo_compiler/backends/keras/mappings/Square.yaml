@@ -1,2 +1,6 @@
-Square:
-  target_api: keras_ops.square
+operation: Square
+backend: keras
+target_api: keras_ops.square
+ast_template: '{out} = keras_ops.square({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

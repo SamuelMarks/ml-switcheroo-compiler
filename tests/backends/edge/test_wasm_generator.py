@@ -307,3 +307,63 @@ def test_wasm_additional_edges_and_telemetry() -> None:
     gen2.apply_shape_telemetry(telemetry_payload)
     assert n_valid_str.shape_metadata == (16, 64)
     assert n_failing_eval.shape_metadata == (1,)
+
+
+def test_wasm_generate_wat_expanded_opcodes():
+    """Test WASM Text (WAT) generation for expanded unary and binary SIMD operations."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[16])
+    n_add = IRNode(id="n_add", op_type="Add", inputs=["in0"], shape_metadata=[16])
+    n_sqrt = IRNode(id="n_sqrt", op_type="Sqrt", inputs=["n_add"], shape_metadata=[16])
+    n_ceil = IRNode(id="n_ceil", op_type="Ceil", inputs=["n_sqrt"], shape_metadata=[16])
+    n_floor = IRNode(id="n_floor", op_type="Floor", inputs=["n_ceil"], shape_metadata=[16])
+    n_and = IRNode(id="n_and", op_type="And", inputs=["n_floor"], shape_metadata=[16])
+
+    g.nodes = {
+        "in0": n_in,
+        "n_add": n_add,
+        "n_sqrt": n_sqrt,
+        "n_ceil": n_ceil,
+        "n_floor": n_floor,
+        "n_and": n_and,
+    }
+    g.inputs = ["in0"]
+    g.outputs = ["n_and"]
+
+    gen = WasmCodeGenerator(g)
+    wat = gen.generate_wat()
+
+    assert "(module" in wat
+    assert 'export "compute"' in wat
+    assert "f32x4.add" in wat
+    assert "f32x4.sqrt" in wat
+    assert "f32x4.ceil" in wat
+    assert "f32x4.floor" in wat
+    assert "v128.and" in wat
+
+
+def test_wasm_generate_wat_missing_or_invalid_opcodes_yaml() -> None:
+    """Test WAT generation when wasm_opcodes.yaml is missing or does not contain opcodes dict."""
+    from unittest.mock import mock_open, patch
+
+    g = IRGraph()
+    n_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[16])
+    n_add = IRNode(id="n_add", op_type="Add", inputs=["in0"], shape_metadata=[16])
+    g.nodes = {"in0": n_in, "n_add": n_add}
+    g.inputs = ["in0"]
+    g.outputs = ["n_add"]
+    gen = WasmCodeGenerator(g)
+
+    # 1. os.path.exists returns False (branch 1235->1241)
+    with patch("os.path.exists", return_value=False):
+        wat_missing_file = gen.generate_wat()
+        assert "(module" in wat_missing_file
+
+    # 2. yaml.safe_load returns non-dict or dict without opcodes dict (branch 1238->1241)
+    with patch("os.path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data="opcodes: not_a_dict\n")):
+            wat_invalid_yaml = gen.generate_wat()
+            assert "(module" in wat_invalid_yaml

@@ -1,2 +1,6 @@
-LogSigmoid:
-  target_api: keras_ops.log_sigmoid
+operation: LogSigmoid
+backend: keras
+target_api: keras_ops.log_sigmoid
+ast_template: '{out} = keras_ops.log_sigmoid({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

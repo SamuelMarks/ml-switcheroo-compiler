@@ -1,0 +1,6 @@
+operation: Nansum
+backend: pytorch
+target_api: torch.nansum
+ast_template: '{out} = torch.nansum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

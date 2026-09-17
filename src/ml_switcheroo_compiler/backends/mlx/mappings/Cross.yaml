@@ -1,2 +1,6 @@
-Cross:
-  target_api: '''mx.linalg.cross({0}, {1}, axis={axis})'''
+operation: Cross
+backend: mlx
+target_api: '''mx.linalg.cross({0}, {1}, axis={axis})'''
+ast_template: '{out} = ''mx.linalg.cross({0}, {1}, axis={axis})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Sigmoid:
-  custom_code: 'lambda *args, **kwargs: jax.nn.sigmoid(args[0])'
-  target_api: custom_op
+operation: Sigmoid
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

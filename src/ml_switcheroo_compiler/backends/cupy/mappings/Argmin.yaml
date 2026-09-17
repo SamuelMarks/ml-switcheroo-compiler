@@ -1,2 +1,6 @@
-Argmin:
-  target_api: cp.argmin
+operation: Argmin
+backend: cupy
+target_api: cp.argmin
+ast_template: '{out} = cp.argmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

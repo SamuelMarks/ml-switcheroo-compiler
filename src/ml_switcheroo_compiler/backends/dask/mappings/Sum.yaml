@@ -1,2 +1,6 @@
-Sum:
-  target_api: da.sum
+operation: Sum
+backend: dask
+target_api: da.sum
+ast_template: '{out} = da.sum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

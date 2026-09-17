@@ -1,2 +1,6 @@
-Outer:
-  target_api: da.outer
+operation: Outer
+backend: dask
+target_api: da.outer
+ast_template: '{out} = da.outer({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

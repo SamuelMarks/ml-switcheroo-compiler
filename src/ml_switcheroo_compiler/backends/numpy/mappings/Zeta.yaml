@@ -1,3 +1,6 @@
-Zeta:
-  ast_template: getattr(backend_module, 'zeta', None)
-  target_api: ''
+operation: Zeta
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'zeta', None)
+kwarg_map: {}
+dtype_overrides: {}

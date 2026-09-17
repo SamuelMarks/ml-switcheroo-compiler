@@ -1,3 +1,6 @@
-Igamma:
-  ast_template: getattr(backend_module, 'gammainc', None)
-  target_api: ''
+operation: Igamma
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'gammainc', None)
+kwarg_map: {}
+dtype_overrides: {}

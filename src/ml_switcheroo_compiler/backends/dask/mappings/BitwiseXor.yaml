@@ -1,2 +1,6 @@
-BitwiseXor:
-  target_api: da.bitwise_xor
+operation: BitwiseXor
+backend: dask
+target_api: da.bitwise_xor
+ast_template: '{out} = da.bitwise_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

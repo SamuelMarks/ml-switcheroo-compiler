@@ -1,2 +1,6 @@
-Lu:
-  target_api: '''mx.linalg.lu({0})'''
+operation: Lu
+backend: mlx
+target_api: '''mx.linalg.lu({0})'''
+ast_template: '{out} = ''mx.linalg.lu({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

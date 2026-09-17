@@ -1,0 +1,6 @@
+operation: TransformerEncoderLayer
+backend: pytorch
+target_api: torch.nn.TransformerEncoderLayer
+ast_template: '{out} = torch.nn.TransformerEncoderLayer({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

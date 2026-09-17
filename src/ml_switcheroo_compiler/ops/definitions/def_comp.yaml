@@ -2,11 +2,41 @@ operation: def_comp
 description: Define the jet rule for a primitive in terms of a composition of simpler
   primitives.
 std_args:
-  - prim
-  - comp
-  - kwargs
+- prim
+- comp
+- kwargs
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: def_comp_vjp
+  jvp_rule_id: def_comp_jvp
+  vjp: null
+  jvp: null

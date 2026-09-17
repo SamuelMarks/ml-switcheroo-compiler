@@ -1,2 +1,6 @@
-OneHot:
-  target_api: keras_ops.one_hot
+operation: OneHot
+backend: keras
+target_api: keras_ops.one_hot
+ast_template: '{out} = keras_ops.one_hot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

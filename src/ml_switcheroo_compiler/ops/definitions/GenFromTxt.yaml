@@ -1,20 +1,64 @@
 operation: GenFromTxt
 description: Load data from a text file, with missing values handled as specified.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: fname
-    type: str
-  - default: float
-    is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: type
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: delimiter
-    type: Optional[str]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: fname
+  type: str
+- default: float
+  is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: type
+- is_variadic: false
+  kind: positional_or_keyword
+  name: delimiter
+  type: Optional[str]
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: fname
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: dtype
+    type: type
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: delimiter
+    type: Optional[str]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - fname
+  - dtype
+  - delimiter
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: GenFromTxt_vjp
+  jvp_rule_id: GenFromTxt_jvp
+  vjp: null
+  jvp: null

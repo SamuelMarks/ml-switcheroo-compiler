@@ -1,2 +1,6 @@
-UnravelIndex:
-  target_api: da.unravel_index
+operation: UnravelIndex
+backend: dask
+target_api: da.unravel_index
+ast_template: '{out} = da.unravel_index({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

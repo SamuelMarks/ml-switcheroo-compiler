@@ -1,2 +1,6 @@
-GreaterEqual:
-  target_api: da.greater_equal
+operation: GreaterEqual
+backend: dask
+target_api: da.greater_equal
+ast_template: '{out} = da.greater_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

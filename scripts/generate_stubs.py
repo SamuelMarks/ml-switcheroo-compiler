@@ -47,13 +47,14 @@ def _clean_type_annotation(raw_annot: Optional[str]) -> str:
     cleaned = cleaned.replace("`np._NoValue`", "None")
 
     # If it contains operators, curly braces, dashes, or unknown words, simplify
-    if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "", "|"]):
+    if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]):
         return "Tensor"
 
     # Validate syntax and identifiers
     try:
         parsed = ast.parse(f"x: {cleaned}")
-        for node in ast.walk(parsed):
+        ann = parsed.body[0].annotation  # type: ignore[attr-defined]
+        for node in ast.walk(ann):
             if isinstance(node, ast.Name):
                 if node.id not in SAFE_TYPES and node.id not in {"Optional", "Union", "Sequence", "tuple"}:
                     return "Tensor"
@@ -119,7 +120,7 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
     ]
 
     categories: dict[str, object] = data.get("categories", {})  # type: ignore[assignment]
-    seen_funcs: set[str] = {"Tensor"}
+    seen_funcs: set[str] = {"Tensor", "Optional", "Union", "Sequence"}
 
     for _, items in categories.items():
         if not isinstance(items, list):
@@ -158,7 +159,9 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
                     else:
                         pos_args.append(formatted)
 
-            param_strs: list[str] = list(pos_args)
+            pos_no_default: list[str] = [p for p in pos_args if not p.endswith("= ...")]
+            pos_with_default: list[str] = [p for p in pos_args if p.endswith("= ...")]
+            param_strs: list[str] = pos_no_default + pos_with_default
             if var_pos:
                 param_strs.append(var_pos)
             elif kw_only:

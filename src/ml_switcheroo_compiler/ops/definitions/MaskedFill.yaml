@@ -1,20 +1,64 @@
 operation: MaskedFill
 description: Fills elements of self tensor with value where mask is True.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: input
-    type: Tensor
-  - dtype: bool
-    is_variadic: false
-    kind: positional_or_keyword
-    name: mask
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: value
-    type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- dtype: bool
+  is_variadic: false
+  kind: positional_or_keyword
+  name: mask
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: value
+  type: float
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: mask
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: value
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - mask
+  - value
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: MaskedFill_vjp
+  jvp_rule_id: MaskedFill_jvp
+  vjp: null
+  jvp: null

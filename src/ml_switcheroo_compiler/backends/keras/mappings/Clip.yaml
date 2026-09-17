@@ -1,2 +1,6 @@
-Clip:
-  target_api: keras_ops.clip
+operation: Clip
+backend: keras
+target_api: keras_ops.clip
+ast_template: '{out} = keras_ops.clip({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Conj:
-  target_api: keras_ops.conj
+operation: Conj
+backend: keras
+target_api: keras_ops.conj
+ast_template: '{out} = keras_ops.conj({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

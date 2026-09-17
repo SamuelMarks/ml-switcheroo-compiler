@@ -1,2 +1,6 @@
-Imag:
-  target_api: keras_ops.imag
+operation: Imag
+backend: keras
+target_api: keras_ops.imag
+ast_template: '{out} = keras_ops.imag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

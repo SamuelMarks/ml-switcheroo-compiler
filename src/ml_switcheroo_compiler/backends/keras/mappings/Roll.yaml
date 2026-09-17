@@ -1,2 +1,6 @@
-Roll:
-  target_api: keras_ops.roll
+operation: Roll
+backend: keras
+target_api: keras_ops.roll
+ast_template: '{out} = keras_ops.roll({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: Cholesky
+backend: pytorch
+target_api: torch.linalg.cholesky
+ast_template: '{out} = torch.linalg.cholesky({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -35,3 +35,62 @@ variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: input
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: kernel_size
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: stride
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: padding
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: dilation
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: ceil_mode
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - input
+  - kernel_size
+  - stride
+  - padding
+  - dilation
+  - ceil_mode
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: MkldnnMaxPool2d_vjp
+  jvp_rule_id: MkldnnMaxPool2d_jvp
+  vjp: null
+  jvp: null

@@ -1,23 +1,24 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module base.py."""
-
 """Define base interfaces for weight formats."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+
+import numpy as np
 
 
 class WeightLoader(ABC):
     """Interface for loading weights from a file."""
 
     @abstractmethod
-    def load(self, filepath: str):
+    def load(self, filepath: str) -> dict[str, np.ndarray]:
         """Load weights from a file.
 
         Args:
             filepath (str): Path to the file.
 
         Returns:
-            dict: The loaded weights.
+            dict[str, np.ndarray]: The loaded weights dictionary.
         """
         ...
 
@@ -26,11 +27,11 @@ class WeightSaver(ABC):
     """Interface for saving weights to a file."""
 
     @abstractmethod
-    def save(self, weights_np, filepath: str) -> None:
+    def save(self, weights_np: dict[str, np.ndarray], filepath: str) -> None:
         """Save weights to a file.
 
         Args:
-            weights_np (dict): The weights to save.
+            weights_np (dict[str, np.ndarray]): The weights to save.
             filepath (str): Path to the file.
         """
         ...

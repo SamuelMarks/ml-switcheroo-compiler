@@ -1,2 +1,6 @@
-Erfinv:
-  target_api: keras_ops.erfinv
+operation: Erfinv
+backend: keras
+target_api: keras_ops.erfinv
+ast_template: '{out} = keras_ops.erfinv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

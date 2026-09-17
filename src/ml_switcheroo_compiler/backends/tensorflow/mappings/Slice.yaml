@@ -1,2 +1,6 @@
-Slice:
-  target_api: tf.slice
+operation: Slice
+backend: tensorflow
+target_api: tf.slice
+ast_template: '{out} = tf.slice({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-GetItem:
-  target_api: keras_ops.get_item
+operation: GetItem
+backend: keras
+target_api: keras_ops.get_item
+ast_template: '{out} = keras_ops.get_item({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

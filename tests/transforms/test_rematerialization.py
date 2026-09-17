@@ -84,3 +84,28 @@ def test_rematerialization_already_exists():
     # the cloned node is already in graph, but the inputs to consumers will still be updated if they weren't
     assert modified
     assert n2.attributes.get("rematerialize") is True
+
+
+def test_rematerialization_max_dist():
+    """Test _find_target_nodes when distance between nodes is within threshold."""
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.transforms.passes.rematerialization import _find_target_nodes
+
+    node = LogicalNode(id="n1", op_type="A", inputs=[], shape_metadata=(1024, 1024), attributes={"dtype": "float32"})
+    consumers = {"n1": ["n2"]}
+    node_indices = {"n1": 0, "n2": 5}
+
+    rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
+
+    res = _find_target_nodes([node], consumers, node_indices, rules)
+    assert not res
+
+
+def test_rematerialization_rules_existing_target_path() -> None:
+    """Test _load_rules when default rules file path exists."""
+    from ml_switcheroo_compiler.transforms.passes.rematerialization import _load_rules
+
+    rules = _load_rules()
+    assert isinstance(rules, dict)
+    assert "target_ops" in rules

@@ -1,2 +1,6 @@
-Cbrt:
-  target_api: cp.cbrt
+operation: Cbrt
+backend: cupy
+target_api: cp.cbrt
+ast_template: '{out} = cp.cbrt({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

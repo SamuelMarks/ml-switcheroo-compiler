@@ -1,2 +1,6 @@
-BetaCdf:
-  target_api: jax.scipy.stats.beta.cdf
+operation: BetaCdf
+backend: jax
+target_api: jax.scipy.stats.beta.cdf
+ast_template: '{out} = jax.scipy.stats.beta.cdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

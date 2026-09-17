@@ -1,2 +1,6 @@
-Frexp:
-  target_api: da.frexp
+operation: Frexp
+backend: dask
+target_api: da.frexp
+ast_template: '{out} = da.frexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

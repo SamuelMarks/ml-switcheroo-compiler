@@ -1,2 +1,6 @@
-CholeskySolve:
-  target_api: tf.linalg.cholesky_solve
+operation: CholeskySolve
+backend: tensorflow
+target_api: tf.linalg.cholesky_solve
+ast_template: '{out} = tf.linalg.cholesky_solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

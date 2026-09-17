@@ -1,2 +1,6 @@
-Choose:
-  target_api: da.choose
+operation: Choose
+backend: dask
+target_api: da.choose
+ast_template: '{out} = da.choose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

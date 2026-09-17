@@ -1,3 +1,6 @@
-Acos:
-  ast_template: np.arccos
-  target_api: ''
+operation: Acos
+backend: numpy
+target_api: ''
+ast_template: np.arccos
+kwarg_map: {}
+dtype_overrides: {}

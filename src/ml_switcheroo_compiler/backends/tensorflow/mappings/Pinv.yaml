@@ -1,2 +1,6 @@
-Pinv:
-  target_api: tf.linalg.pinv
+operation: Pinv
+backend: tensorflow
+target_api: tf.linalg.pinv
+ast_template: '{out} = tf.linalg.pinv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

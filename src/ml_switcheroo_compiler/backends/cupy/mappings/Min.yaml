@@ -1,2 +1,6 @@
-Min:
-  target_api: cp.min
+operation: Min
+backend: cupy
+target_api: cp.min
+ast_template: '{out} = cp.min({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,4 +1,6 @@
-StopGradient:
-  ast_template: '{0}.detach()'
-  custom_code: 'lambda x: x.detach()'
-  target_api: custom_op
+operation: StopGradient
+backend: pytorch
+target_api: custom_op
+ast_template: '{0}.detach()'
+kwarg_map: {}
+dtype_overrides: {}

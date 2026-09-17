@@ -17,7 +17,8 @@ def test_webgpu_map_type():
     graph = IRGraph()
     generator = WebGPUCodeGenerator(graph, [])
     assert generator._map_type("float32") == "f32"
-    assert generator._map_type("float64") == "f32"
+    with pytest.warns(UserWarning, match="lacks native float64"):
+        assert generator._map_type("float64") == "vec2<f32>"
     assert generator._map_type("int32") == "i32"
     assert generator._map_type("bool") == "bool"
     assert generator._map_type("unknown") == "f32"
@@ -497,7 +498,15 @@ def test_webgpu_webrtc_empty_coverage():
     mocked_data = copy.deepcopy(real_data)
     mocked_data["schemas"]["js_orchestration_templates"]["dynamic_resize"] = ""
 
-    with patch("yaml.safe_load", return_value=mocked_data), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value=""), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value=""):
+    orig_safe_load = yaml.safe_load
+
+    def _conditional_safe_load(stream):
+        name = getattr(stream, "name", "")
+        if "memory_schemas" in str(name):
+            return mocked_data
+        return orig_safe_load(stream)
+
+    with patch("yaml.safe_load", side_effect=_conditional_safe_load), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value=""), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value=""):
         g = IRGraph()
         g.attributes = {"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}}
         n_allreduce = IRNode("allreduce", "AllReduce", inputs=["in1"])
@@ -744,14 +753,30 @@ def test_webgpu_parameterized_control_flow():
     cond_sub = IRGraph()
     cond_sub_node = IRNode(id="cmp", op_type="Greater", attributes={"threshold": "100.0"})
     cond_sub.nodes = {"cmp": cond_sub_node}
+    body_sub = IRGraph()
+    body_sub_node = IRNode(id="step", op_type="Add", attributes={})
+    body_sub.nodes = {"step": body_sub_node}
     while_cond_graph_node = IRNode(
         id="while_2",
         op_type="WhileLoop",
         inputs=["x"],
-        attributes={"cond": cond_sub},
+        attributes={"cond": cond_sub, "body": body_sub},
     )
     wgsl_while_sub, _, _, _ = gen.visit_WhileLoop(while_cond_graph_node, ["x"], nelem=16, clean_id="while_2")
     assert any("current_state > 100.0" in line for line in wgsl_while_sub)
+    assert any("tmp_step" in line for line in wgsl_while_sub)
+
+    # WhileLoop with body graph containing unmapped op covering branch 445->448
+    body_empty = IRGraph()
+    body_empty.nodes = {"sub": IRNode(id="sub", op_type="NonExistentOpForLoopBody")}
+    while_empty_body_node = IRNode(
+        id="while_empty",
+        op_type="WhileLoop",
+        inputs=["x"],
+        attributes={"body": body_empty},
+    )
+    wgsl_while_empty, _, _, _ = gen.visit_WhileLoop(while_empty_body_node, ["x"], nelem=16, clean_id="while_empty")
+    assert any("current_state + buf_in1_f32[idx]" in line for line in wgsl_while_empty)
 
     # 5. Softmax, AvgPool2D, LayerNorm, and Trig op resolution
     node_softmax = IRNode(id="sm", op_type="Softmax", inputs=["x"], shape_metadata=[4, 4])
@@ -840,3 +865,83 @@ def test_webgpu_generate_training_step():
     empty_gen = WebGPUCodeGenerator(empty_out_g)
     with pytest.raises(ValueError, match="Target output cannot be identified"):
         empty_gen.generate_training_step()
+
+
+def test_webgpu_visit_broadcast_and_empty_outputs_exception() -> None:
+    """Test WebGPU visit_Broadcast and compile_forward_backward empty outputs."""
+    from ml_switcheroo_ir import LogicalNode
+
+    graph = IRGraph(name="webgpu_extra")
+    node_bc = LogicalNode(id="bc_0", op_type="Broadcast", inputs=["in_0"], shape_metadata=(4,))
+    node_out = LogicalNode(id="out_0", op_type="Relu", inputs=["bc_0"], shape_metadata=(4,))
+    graph.nodes = {"bc_0": node_bc, "out_0": node_out}
+    graph.inputs = ["in_0"]
+    graph.outputs = ["out_0"]
+    gen = WebGPUCodeGenerator(graph)
+    (lines, x, y, z) = gen.visit_Broadcast(node_bc, ["buf_in0_f32"])
+    assert len(lines) > 0
+    assert (x, y, z) == ("1", "1", "1")
+
+    mock_bwd = IRGraph(name="mock_bwd", nodes={"out_0": node_out})
+    mock_bwd.inputs = []
+    with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=mock_bwd):
+        step_code = gen.generate_training_step(target_output=None)
+        assert len(step_code) > 0
+
+    graph_empty = IRGraph(name="empty_outputs", nodes={})
+    graph_empty.inputs = []
+    graph_empty.outputs = []
+    gen_empty = WebGPUCodeGenerator(graph_empty)
+    with pytest.raises(ValueError, match="Target output cannot be identified"):
+        gen_empty.generate_training_step(target_output=None)
+
+
+def test_webgpu_arbitrary_inputs_and_multiple_outputs() -> None:
+    """Test WebGPU code generation with >3 inputs and multiple outputs."""
+    graph = IRGraph()
+    inputs = [IRNode(id=f"in_{i}", op_type="Input", inputs=[]) for i in range(5)]
+    for inp in inputs:
+        inp.shape_metadata = [2, 2]
+        graph.nodes[inp.id] = inp
+
+    multi_op = IRNode(id="multi_1", op_type="Add", inputs=[f"in_{i}" for i in range(5)])
+    multi_op.shape_metadata = [2, 2]
+    multi_op.attributes["outputs"] = ["out_primary", "out_secondary"]
+    graph.nodes[multi_op.id] = multi_op
+
+    out1 = IRNode(id="out_primary", op_type="Output", inputs=["multi_1"])
+    out1.shape_metadata = [2, 2]
+    out2 = IRNode(id="out_secondary", op_type="Output", inputs=["multi_1"])
+    out2.shape_metadata = [2, 2]
+    graph.nodes[out1.id] = out1
+    graph.nodes[out2.id] = out2
+
+    graph.sorted_nodes = [*inputs, multi_op, out1, out2]
+    graph.inputs = [f"in_{i}" for i in range(5)]
+    graph.outputs = ["out_primary", "out_secondary"]
+
+    gen = WebGPUCodeGenerator(graph, [])
+    js_code = gen.generate()
+    assert "binding: 0" in js_code
+    assert "binding: 1" in js_code
+    assert "binding: 2" in js_code
+    assert "binding: 4" in js_code
+    assert "binding: 5" in js_code
+    assert "binding: 3" in js_code
+    assert "binding: 6" in js_code
+
+
+def test_wgsl_grounding_schema_validation() -> None:
+    """Verify validation of WGSL statements against canonical wgsl_ops schema."""
+    from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
+        get_wgsl_grounding_schema,
+        validate_wgsl_statement,
+    )
+
+    schema = get_wgsl_grounding_schema()
+    assert "ops" in schema
+    assert len(schema["ops"]) > 0
+
+    assert validate_wgsl_statement("storageStore") is True
+    assert validate_wgsl_statement("add") is True
+    assert validate_wgsl_statement("non_existent_fake_wgsl_op") is False

@@ -1,0 +1,6 @@
+operation: Mish
+backend: pytorch
+target_api: torch.nn.functional.mish
+ast_template: '{out} = torch.nn.functional.mish({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

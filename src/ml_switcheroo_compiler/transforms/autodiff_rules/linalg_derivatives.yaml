@@ -1,0 +1,47 @@
+# linalg_derivatives.yaml
+# Declarative linear algebra tangent (JVP) and cotangent (VJP) derivative rules.
+
+version: "1.0.0"
+
+rules:
+  Matmul:
+    jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))
+    vjp:
+      - MatMul($cotangent, Transpose($input[1]))
+      - MatMul(Transpose($input[0]), $cotangent)
+
+  Transpose:
+    jvp: Transpose($tangent[0])
+    vjp:
+      - Transpose($cotangent)
+
+  Solve:
+    jvp: Solve($input[0], Sub($tangent[1], MatMul($tangent[0], Solve($input[0], $input[1]))))
+    vjp:
+      - Neg(MatMul(Solve(Transpose($input[0]), $cotangent), Transpose(Solve($input[0], $input[1]))))
+      - Solve(Transpose($input[0]), $cotangent)
+
+  Qr:
+    jvp: Qr($tangent[0])
+    vjp:
+      - MatMul($cotangent, Transpose(Qr($input[0])))
+
+  Svd:
+    jvp: Svd($tangent[0])
+    vjp:
+      - MatMul($cotangent, Transpose($input[0]))
+
+  Cholesky:
+    jvp: Cholesky($tangent[0])
+    vjp:
+      - Mul(Constant(0.5), Add($cotangent, Transpose($cotangent)))
+
+  Det:
+    jvp: Mul(Det($input[0]), Trace(MatMul(Inverse($input[0]), $tangent[0])))
+    vjp:
+      - Mul(Mul($cotangent, Det($input[0])), Transpose(Inverse($input[0])))
+
+  Logdet:
+    jvp: Trace(MatMul(Inverse($input[0]), $tangent[0]))
+    vjp:
+      - Mul($cotangent, Transpose(Inverse($input[0])))

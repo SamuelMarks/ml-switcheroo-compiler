@@ -1,0 +1,6 @@
+operation: GELU
+backend: mlx
+target_api: mlx.core.nn.gelu
+ast_template: '{out} = mlx.core.nn.gelu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

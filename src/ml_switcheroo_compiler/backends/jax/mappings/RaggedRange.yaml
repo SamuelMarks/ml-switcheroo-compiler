@@ -1,2 +1,6 @@
-RaggedRange:
-  target_api: custom_op
+operation: RaggedRange
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

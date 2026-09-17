@@ -1,3 +1,6 @@
-Asinh:
-  ast_template: np.arcsinh
-  target_api: ''
+operation: Asinh
+backend: numpy
+target_api: ''
+ast_template: np.arcsinh
+kwarg_map: {}
+dtype_overrides: {}

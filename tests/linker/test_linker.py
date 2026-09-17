@@ -86,3 +86,21 @@ def test_linker_exception(monkeypatch) -> None:
         assert get_source_ast_ref() is None
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+def test_backends_linker_edge_cases() -> None:
+    """Test get_source_ast_ref edge cases in backends/linker.py."""
+    from unittest.mock import MagicMock, patch
+
+    with patch("inspect.currentframe", return_value=None):
+        assert get_source_ast_ref() is None
+
+    mock_frame = MagicMock()
+    mock_frame.f_back = None
+    with patch("inspect.currentframe", return_value=mock_frame):
+        with patch("inspect.getframeinfo", return_value=MagicMock(filename="test.py", lineno=10)):
+            ref = get_source_ast_ref(back_frames=5)
+            assert ref == "test.py:10"
+
+    with patch("inspect.getframeinfo", side_effect=ValueError("frame error")):
+        assert get_source_ast_ref() is None

@@ -1,2 +1,6 @@
-Cumsum:
-  target_api: keras_ops.cumsum
+operation: Cumsum
+backend: keras
+target_api: keras_ops.cumsum
+ast_template: '{out} = keras_ops.cumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

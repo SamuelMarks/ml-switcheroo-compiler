@@ -1,2 +1,6 @@
-Rsqrt:
-  target_api: keras_ops.rsqrt
+operation: Rsqrt
+backend: keras
+target_api: keras_ops.rsqrt
+ast_template: '{out} = keras_ops.rsqrt({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

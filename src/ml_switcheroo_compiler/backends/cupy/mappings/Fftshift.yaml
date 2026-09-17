@@ -1,2 +1,6 @@
-Fftshift:
-  target_api: cp.fft.fftshift
+operation: Fftshift
+backend: cupy
+target_api: cp.fft.fftshift
+ast_template: '{out} = cp.fft.fftshift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Ediff1d:
-  target_api: cp.ediff1d
+operation: Ediff1d
+backend: cupy
+target_api: cp.ediff1d
+ast_template: '{out} = cp.ediff1d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

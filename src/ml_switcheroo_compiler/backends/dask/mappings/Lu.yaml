@@ -1,2 +1,6 @@
-Lu:
-  target_api: da.linalg.lu
+operation: Lu
+backend: dask
+target_api: da.linalg.lu
+ast_template: '{out} = da.linalg.lu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

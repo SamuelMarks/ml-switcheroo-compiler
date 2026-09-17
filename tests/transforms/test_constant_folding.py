@@ -310,3 +310,138 @@ def test_constant_folding_exception(monkeypatch):
     monkeypatch.setattr("ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", mock_eval)
     with pytest.raises(KeyError):
         constant_folding_pass(graph)
+
+
+def test_constant_folding_backend_item_branch() -> None:
+    """Test eager node evaluation with and without backend item method."""
+    from unittest import mock
+
+    from ml_switcheroo_compiler.transforms.passes.constant_folding import _evaluate_constant_node
+
+    class DummyBackend:
+        """Dummy backend implementing item method."""
+
+        @staticmethod
+        def item(val: object) -> int:
+            """Extract item.
+
+            Args:
+                val (object): Input value.
+
+            Returns:
+                int: Evaluated item.
+            """
+            return 42
+
+    class ScalarNoItem:
+        """Scalar-like object with size == 1 but no item method."""
+
+        size = 1
+
+    graph = LogicalGraph(name="g")
+    c1 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 42})
+    graph.nodes["c1"] = c1
+    node = LogicalNode(id="n1", op_type="Identity", inputs=["c1"], attributes={})
+    graph.nodes["n1"] = node
+
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
+        return_value={"n1": np.array([42])},
+    ):
+        val1 = _evaluate_constant_node(node, ["c1"], graph, backend=DummyBackend)
+        assert val1 == 42
+
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
+        return_value={"n1": ScalarNoItem()},
+    ):
+        val2 = _evaluate_constant_node(node, ["c1"], graph, backend=None)
+        assert isinstance(val2, ScalarNoItem)
+
+    with mock.patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
+        return_value={"n1": np.array([42])},
+    ):
+        val3 = _evaluate_constant_node(node, ["c1"], graph, backend=None)
+        assert val3 == 42
+
+
+def test_constant_folding_backend_instance_item_branch() -> None:
+    """Test constant folding pass with backend having item method on instance and direct _evaluate_constant_node."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.transforms.passes.constant_folding import _evaluate_constant_node
+
+    class MockBackendWithItem:
+        """Mock backend with item method."""
+
+        def item(self, val: object) -> float:
+            """Return float item.
+
+            Args:
+                val (object): Input value.
+
+            Returns:
+                float: Unwrapped item.
+            """
+            return 42.0
+
+    node = LogicalNode(id="c0", op_type="Add", inputs=[], attributes={}, shape_metadata=(1,))
+    graph = IRGraph(name="cf_backend_item", nodes={"c0": node})
+    with patch(
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
+        return_value={"c0": np.array([42.0])},
+    ):
+        val = _evaluate_constant_node(node, [], graph, MockBackendWithItem())
+        assert val == 42.0
+
+
+def test_constant_folding_exceptions_and_fallback() -> None:
+    """Test constant folding pass with fallback backend, ValueError, and UnimplementedMathError."""
+    from unittest import mock
+
+    from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
+
+    class UnimplementedMathError(Exception):
+        """Custom math exception."""
+
+    g = LogicalGraph(name="g", outputs=["n_out"])
+    c1 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 1.0})
+    n_val_err = LogicalNode(id="n_err", op_type="Add", inputs=["c1"])
+    n_unimpl = LogicalNode(id="n_unimpl", op_type="Sub", inputs=["c1"])
+    n_out = LogicalNode(id="n_out", op_type="Relu", inputs=["c1"])
+    g.nodes = {"c1": c1, "n_err": n_val_err, "n_unimpl": n_unimpl, "n_out": n_out}
+
+    def mock_eval(node: LogicalNode, *args: object, **kwargs: object) -> np.ndarray:
+        if node.id == "n_err":
+            raise ValueError("Value error in folding")
+        if node.id == "n_unimpl":
+            raise UnimplementedMathError("Unimplemented math")
+        return np.array([2.0])
+
+    with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None):
+        with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=mock_eval):
+            res = constant_folding_pass(g)
+            assert res is True
+
+
+def test_constant_folding_subgraphs() -> None:
+    """Test constant folding pass recursively folds constants inside node.subgraphs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    subgraph = LogicalGraph(name="then_branch", outputs=["add_res"])
+    c1 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 2.0})
+    c2 = LogicalNode(id="c2", op_type="Constant", attributes={"value": 3.0})
+    add_node = LogicalNode(id="add_res", op_type="Add", inputs=["c1", "c2"])
+    subgraph.nodes = {"c1": c1, "c2": c2, "add_res": add_node}
+
+    parent = LogicalGraph(name="parent", outputs=["if_node"])
+    parent.nodes["if_node"] = LogicalNode(
+        id="if_node",
+        op_type="If",
+        subgraphs={"then_branch": subgraph},
+    )
+
+    res = constant_folding_pass(parent)
+    assert res is True
+    assert subgraph.nodes["add_res"].op_type == "Constant"

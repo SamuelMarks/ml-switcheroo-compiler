@@ -1,3 +1,6 @@
-Tensordot:
-  ast_template: np.tensordot({0}, {1}, axes={axes})
-  target_api: ''
+operation: Tensordot
+backend: numpy
+target_api: ''
+ast_template: np.tensordot({0}, {1}, axes={axes})
+kwarg_map: {}
+dtype_overrides: {}

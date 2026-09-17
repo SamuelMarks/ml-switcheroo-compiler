@@ -1,2 +1,6 @@
-BitwiseAnd:
-  target_api: keras_ops.bitwise_and
+operation: BitwiseAnd
+backend: keras
+target_api: keras_ops.bitwise_and
+ast_template: '{out} = keras_ops.bitwise_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

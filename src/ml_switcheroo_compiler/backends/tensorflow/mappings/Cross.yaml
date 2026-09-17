@@ -1,2 +1,6 @@
-Cross:
-  target_api: tf.linalg.cross
+operation: Cross
+backend: tensorflow
+target_api: tf.linalg.cross
+ast_template: '{out} = tf.linalg.cross({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

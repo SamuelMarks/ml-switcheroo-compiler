@@ -1,0 +1,6 @@
+operation: Repeat
+backend: mlx
+target_api: mlx.core.repeat
+ast_template: '{out} = mlx.core.repeat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

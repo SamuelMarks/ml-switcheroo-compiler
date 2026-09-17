@@ -1,2 +1,6 @@
-LessEqual:
-  target_api: cp.less_equal
+operation: LessEqual
+backend: cupy
+target_api: cp.less_equal
+ast_template: '{out} = cp.less_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

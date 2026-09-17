@@ -1,3 +1,6 @@
-LuFactor:
-  ast_template: getattr(backend_module.linalg, 'lu_factor', None)
-  target_api: ''
+operation: LuFactor
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module.linalg, 'lu_factor', None)
+kwarg_map: {}
+dtype_overrides: {}

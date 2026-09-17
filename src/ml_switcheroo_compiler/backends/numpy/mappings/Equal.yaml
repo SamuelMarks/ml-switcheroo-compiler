@@ -1,3 +1,6 @@
-Equal:
-  ast_template: np.equal
-  target_api: ''
+operation: Equal
+backend: numpy
+target_api: ''
+ast_template: np.equal
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Svd:
-  ast_template: np.linalg.svd
-  target_api: ''
+operation: Svd
+backend: numpy
+target_api: ''
+ast_template: np.linalg.svd
+kwarg_map: {}
+dtype_overrides: {}

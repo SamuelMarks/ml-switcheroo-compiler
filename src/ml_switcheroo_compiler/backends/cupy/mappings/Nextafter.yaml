@@ -1,2 +1,6 @@
-Nextafter:
-  target_api: cp.nextafter
+operation: Nextafter
+backend: cupy
+target_api: cp.nextafter
+ast_template: '{out} = cp.nextafter({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

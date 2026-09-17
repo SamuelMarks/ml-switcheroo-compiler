@@ -1,11 +1,13 @@
 """WGSL template provider."""
 
+from __future__ import annotations
+
 import os
-from typing import Any, Union
+from typing import Any
 
 import yaml
 
-_WGSL_TEMPLATES: dict[str, Union[dict[str, dict[str, Union[str, list[int], None]]], dict[str, str], str, None]] = {}
+_WGSL_TEMPLATES: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
 _WGSL_KERNELS: dict[str, object] = {}
 
 
@@ -31,7 +33,7 @@ def _load_kernels() -> dict[str, object]:
     return _WGSL_KERNELS
 
 
-def get_wgsl_op_mapping(op_name: str) -> dict[str, Union[str, int, float, None]]:
+def get_wgsl_op_mapping(op_name: str) -> dict[str, str | int | float | None]:
     """Retrieve declarative WGSL mapping for an op.
 
     Args:
@@ -59,7 +61,7 @@ def get_wgsl_kernels_config() -> dict[str, object]:
 
 
 def _merge_modular_templates(
-    loaded_templates: dict[str, Union[dict[str, dict[str, Union[str, list[int], None]]], dict[str, str], str, None]],
+    loaded_templates: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None],
 ) -> None:
     """Merge modular WGSL templates from templates.yaml into loaded templates.
 
@@ -103,7 +105,7 @@ def _load_templates() -> None:
     if not _WGSL_TEMPLATES:
         from ml_switcheroo_compiler.backends.edge.config_models import WgslTemplatesConfig
 
-        loaded: dict[str, Union[dict[str, dict[str, Union[str, list[int], None]]], dict[str, str], str, None]] = {
+        loaded: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {
             "templates": {},
             "js_orchestration": {},
             "global_bindings": None,
@@ -173,7 +175,7 @@ def get_wgsl_global_bindings() -> str:
     return str(val) if val else ""
 
 
-_WEBGPU_OPS: dict[str, Union[str, dict[str, str], dict[str, dict[str, str]]]] = {}
+_WEBGPU_OPS: dict[str, str | dict[str, str] | dict[str, dict[str, str]]] = {}
 
 
 def _load_webgpu_ops() -> None:
@@ -187,7 +189,7 @@ def _load_webgpu_ops() -> None:
                 _WEBGPU_OPS = raw_data if isinstance(raw_data, dict) else {}
 
 
-def get_webgpu_ops() -> dict[str, Union[str, dict[str, str], dict[str, dict[str, str]]]]:
+def get_webgpu_ops() -> dict[str, str | dict[str, str] | dict[str, dict[str, str]]]:
     """Retrieve WebGPU operations dispatch rules and coordinate calculation templates.
 
     Returns:
@@ -195,3 +197,120 @@ def get_webgpu_ops() -> dict[str, Union[str, dict[str, str], dict[str, dict[str,
     """
     _load_webgpu_ops()
     return _WEBGPU_OPS
+
+
+def get_bindgroup_schemas(path: str | None = None) -> dict[str, object]:
+    """Retrieve WebGPU bind group configuration schemas dictionary.
+
+    Args:
+        path (str, optional): Custom path to bindgroup_schemas.yaml.
+
+    Returns:
+        dict[str, object]: Parsed bindgroup schemas dictionary.
+    """
+    from ml_switcheroo_compiler.backends.edge.config_models import load_bindgroup_schemas
+
+    return load_bindgroup_schemas(path).model_dump()
+
+
+def get_dtype_emulation_config(path: str | None = None) -> dict[str, object]:
+    """Retrieve WGSL double-precision emulation configuration dictionary.
+
+    Args:
+        path (str, optional): Custom path to dtype_emulation.yaml.
+
+    Returns:
+        dict[str, object]: Parsed dtype emulation dictionary.
+    """
+    from ml_switcheroo_compiler.backends.edge.config_models import load_dtype_emulation_config
+
+    return load_dtype_emulation_config(path).model_dump()
+
+
+def generate_dynamic_bindgroup_declarations(
+    num_inputs: int,
+    num_outputs: int = 1,
+    input_dtype: str = "f32",
+    output_dtype: str = "f32",
+) -> str:
+    """Generate dynamic WGSL storage buffer bindings for arbitrary input and output counts.
+
+    Args:
+        num_inputs (int): Number of input storage buffers.
+        num_outputs (int): Number of output storage buffers.
+        input_dtype (str): Data type of input storage buffers.
+        output_dtype (str): Data type of output storage buffers.
+
+    Returns:
+        str: WGSL declarations for bind group 0.
+    """
+    lines: list[str] = []
+    # Bindings 0, 1, 2 for first 3 inputs
+    for j in range(min(num_inputs, 3)):
+        lines.append(f"@group(0) @binding({j}) var<storage, read> buf_in{j}_{input_dtype}: array<{input_dtype}>;")
+    if num_inputs < 3:
+        for j in range(num_inputs, 3):
+            lines.append(f"@group(0) @binding({j}) var<storage, read> buf_in{j}_{input_dtype}: array<{input_dtype}>;")
+
+    # Primary output at binding 3
+    lines.append(f"@group(0) @binding(3) var<storage, read_write> buf_out_{output_dtype}: array<{output_dtype}>;")
+
+    # Additional inputs (index 3 and higher) starting at binding 4
+    for j in range(3, num_inputs):
+        lines.append(f"@group(0) @binding({j + 1}) var<storage, read> buf_in{j}_{input_dtype}: array<{input_dtype}>;")
+
+    # Additional outputs (index 1 and higher) starting at binding 6
+    for k in range(1, num_outputs):
+        lines.append(f"@group(0) @binding({5 + k}) var<storage, read_write> buf_out{k}_{output_dtype}: array<{output_dtype}>;")
+
+    return "\n".join(lines)
+
+
+_WGSL_GROUNDING_SCHEMA: dict[str, object] | None = None
+
+
+def get_wgsl_grounding_schema() -> dict[str, object]:
+    """Load and return the canonical WGSL grounding schema from ml_switcheroo_ir.schema.wgsl_ops.json.
+
+    Returns:
+        dict[str, object]: The parsed WGSL ops schema.
+    """
+    global _WGSL_GROUNDING_SCHEMA
+    if _WGSL_GROUNDING_SCHEMA is not None:
+        return _WGSL_GROUNDING_SCHEMA
+    import json
+
+    import ml_switcheroo_ir.schema
+
+    schema_dir = os.path.dirname(ml_switcheroo_ir.schema.__file__)
+    schema_path = os.path.join(schema_dir, "wgsl_ops.json")
+    if os.path.exists(schema_path):
+        with open(schema_path, encoding="utf-8") as f:
+            _WGSL_GROUNDING_SCHEMA = json.load(f)
+    else:
+        _WGSL_GROUNDING_SCHEMA = {"ops": []}
+    return _WGSL_GROUNDING_SCHEMA
+
+
+def validate_wgsl_statement(op_name: str) -> bool:
+    """Validate a generated WebGPU WGSL operation or statement against canonical wgsl_ops schema.
+
+    Args:
+        op_name (str): The WGSL op identifier to validate.
+
+    Returns:
+        bool: True if op is supported in the WGSL grounding schema or core templates.
+    """
+    schema = get_wgsl_grounding_schema()
+    ops_list = schema.get("ops", [])
+    if isinstance(ops_list, list):
+        for op_entry in ops_list:
+            if isinstance(op_entry, dict) and op_entry.get("name") == op_name:
+                return True
+    if bool(get_wgsl_op_mapping(op_name)):
+        return True
+    _load_templates()
+    templates = _WGSL_TEMPLATES.get("templates", {})
+    if isinstance(templates, dict):
+        return op_name.lower() in templates or op_name in templates
+    return False

@@ -74,7 +74,8 @@ class WebGLCodeGenerator(BaseGenerator):
                 width = int(shape[-1]) if isinstance(shape[-1], int) else 32
 
         norm_op: str = op_type.lower()
-        template_config = self.config.templates.get(norm_op) or self.config.templates.get(norm_op.replace("_", ""))
+        norm_no_underscore: str = norm_op.replace("_", "")
+        template_config = self.config.templates.get(norm_op) or self.config.templates.get(norm_no_underscore) or next((v for k, v in self.config.templates.items() if k.replace("_", "") == norm_no_underscore), None)
         if not template_config:
             raise ValueError(f"Missing WebGL shader template for operation: {op_type}")
 

@@ -1,2 +1,6 @@
-Isposinf:
-  target_api: da.isposinf
+operation: Isposinf
+backend: dask
+target_api: da.isposinf
+ast_template: '{out} = da.isposinf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

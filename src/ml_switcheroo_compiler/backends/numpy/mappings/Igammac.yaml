@@ -1,3 +1,6 @@
-Igammac:
-  ast_template: getattr(backend_module, 'gammaincc', None)
-  target_api: ''
+operation: Igammac
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'gammaincc', None)
+kwarg_map: {}
+dtype_overrides: {}

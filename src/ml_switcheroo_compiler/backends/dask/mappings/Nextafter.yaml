@@ -1,2 +1,6 @@
-Nextafter:
-  target_api: da.nextafter
+operation: Nextafter
+backend: dask
+target_api: da.nextafter
+ast_template: '{out} = da.nextafter({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

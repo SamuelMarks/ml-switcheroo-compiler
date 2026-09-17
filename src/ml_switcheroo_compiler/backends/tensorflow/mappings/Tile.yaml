@@ -1,2 +1,6 @@
-Tile:
-  target_api: tf.tile
+operation: Tile
+backend: tensorflow
+target_api: tf.tile
+ast_template: '{out} = tf.tile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Cross:
-  target_api: keras_ops.cross
+operation: Cross
+backend: keras
+target_api: keras_ops.cross
+ast_template: '{out} = keras_ops.cross({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Greater:
-  target_api: da.greater
+operation: Greater
+backend: dask
+target_api: da.greater
+ast_template: '{out} = da.greater({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Cumsum:
-  target_api: tf.cumsum
+operation: Cumsum
+backend: tensorflow
+target_api: tf.cumsum
+ast_template: '{out} = tf.cumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

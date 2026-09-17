@@ -12,3 +12,34 @@ variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: conv3d(N, C_in, D, H, W), (C_out, C_in, kD, kH, kW) -> (N, C_out, D_out,
+    H_out, W_out)
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: spatial
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Conv3D_vjp
+  jvp_rule_id: Conv3D_jvp
+  vjp: null
+  jvp: null

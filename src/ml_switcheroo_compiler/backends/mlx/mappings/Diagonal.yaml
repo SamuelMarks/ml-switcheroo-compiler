@@ -1,2 +1,6 @@
-Diagonal:
-  target_api: '''mx.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})'''
+operation: Diagonal
+backend: mlx
+target_api: '''mx.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})'''
+ast_template: '{out} = ''mx.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-IsStrictlyIncreasing:
-  target_api: tf.math.is_strictly_increasing
+operation: IsStrictlyIncreasing
+backend: tensorflow
+target_api: tf.math.is_strictly_increasing
+ast_template: '{out} = tf.math.is_strictly_increasing({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

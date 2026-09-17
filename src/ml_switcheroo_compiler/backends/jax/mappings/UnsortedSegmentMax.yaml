@@ -1,2 +1,6 @@
-UnsortedSegmentMax:
-  target_api: _execute_unsorted_segment_max
+operation: UnsortedSegmentMax
+backend: jax
+target_api: _execute_unsorted_segment_max
+ast_template: '{out} = _execute_unsorted_segment_max({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

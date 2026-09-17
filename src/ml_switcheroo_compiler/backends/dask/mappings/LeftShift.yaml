@@ -1,2 +1,6 @@
-LeftShift:
-  target_api: da.left_shift
+operation: LeftShift
+backend: dask
+target_api: da.left_shift
+ast_template: '{out} = da.left_shift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

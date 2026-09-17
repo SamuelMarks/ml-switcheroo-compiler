@@ -1,2 +1,6 @@
-Polar:
-  target_api: keras_ops.polar
+operation: Polar
+backend: keras
+target_api: keras_ops.polar
+ast_template: '{out} = keras_ops.polar({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

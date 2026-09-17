@@ -1,3 +1,6 @@
-Acosh:
-  ast_template: np.arccosh
-  target_api: ''
+operation: Acosh
+backend: numpy
+target_api: ''
+ast_template: np.arccosh
+kwarg_map: {}
+dtype_overrides: {}

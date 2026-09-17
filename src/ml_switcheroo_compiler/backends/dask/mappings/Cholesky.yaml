@@ -1,2 +1,6 @@
-Cholesky:
-  target_api: da.linalg.cholesky
+operation: Cholesky
+backend: dask
+target_api: da.linalg.cholesky
+ast_template: '{out} = da.linalg.cholesky({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

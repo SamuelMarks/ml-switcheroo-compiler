@@ -1,7 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """WASM Target Emission with Native v128 SIMD Intrinsics and Remainder Loop Peeling."""
 
+import os
 from typing import Optional, Union, cast
+
+import yaml
 
 WasmAttrType = Union["IRNode", "IRGraph", dict[str, Union[int, float, str, bool, list, tuple, dict, None]], list, str, int, float, tuple, bool, None]
 
@@ -1227,6 +1230,14 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             str: WAT module string suitable for wat2wasm compilation.
         """
+        yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "wasm_opcodes.yaml")
+        op_map: dict[str, dict[str, object]] = {}
+        if os.path.exists(yaml_path):
+            with open(yaml_path, encoding="utf-8") as f:
+                raw = yaml.safe_load(f)
+                if isinstance(raw, dict) and "opcodes" in raw and isinstance(raw["opcodes"], dict):
+                    op_map = raw["opcodes"]
+
         nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") != "Input"]
         wat_lines: list[str] = [
             "(module",
@@ -1239,23 +1250,13 @@ class WasmCodeGenerator(BaseGenerator):
             "        (br_if $B (i32.ge_u (local.get $i) (local.get $len)))",
         ]
 
-        op_map: dict[str, str] = {
-            "mul": "f32x4.mul",
-            "add": "f32x4.add",
-            "sub": "f32x4.sub",
-            "div": "f32x4.div",
-            "neg": "f32x4.neg",
-            "sqrt": "f32x4.sqrt",
-            "abs": "f32x4.abs",
-            "relu": "f32x4.max",
-            "max": "f32x4.max",
-            "min": "f32x4.min",
-        }
-
         for node in nodes:
             op_type = getattr(node, "op_type", "").lower()
-            simd_inst = op_map.get(op_type, "f32x4.mul")
-            if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs"):
+            spec = op_map.get(op_type, {})
+            simd_inst: str = str(spec.get("instruction", "f32x4.mul"))
+            arity: int = int(spec.get("arity", 1 if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs", "f32x4.ceil", "f32x4.floor", "f32x4.trunc", "f32x4.nearest") else 2))
+
+            if arity == 1:
                 wat_lines.extend(
                     [
                         "        (v128.store",

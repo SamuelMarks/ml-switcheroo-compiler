@@ -1,2 +1,6 @@
-Cos:
-  target_api: keras_ops.cos
+operation: Cos
+backend: keras
+target_api: keras_ops.cos
+ast_template: '{out} = keras_ops.cos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

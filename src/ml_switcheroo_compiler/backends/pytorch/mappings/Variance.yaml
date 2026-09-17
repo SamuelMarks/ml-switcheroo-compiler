@@ -1,2 +1,6 @@
-Variance:
-  target_api: _torch_variance
+operation: Variance
+backend: pytorch
+target_api: _torch_variance
+ast_template: '{out} = _torch_variance({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BesselJ0:
-  target_api: torch.special.bessel_j0
+operation: BesselJ0
+backend: pytorch
+target_api: torch.special.bessel_j0
+ast_template: '{out} = torch.special.bessel_j0({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

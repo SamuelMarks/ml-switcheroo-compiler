@@ -229,3 +229,41 @@ def test_ir_to_ast_defaults() -> None:
 
     assert _get_compute_method_name("unknown_fw") == "forward"
     assert _get_class_base_expr("unknown_fw").value == "object"
+
+
+def test_ir_to_ast_missing_branches() -> None:
+    """Test Cond with < 3 inputs and ForeignCall with varargs, varkwargs, and no var_name."""
+    from ml_switcheroo_compiler.backends.ir_to_ast import (
+        _emit_control_flow_statement,
+        _emit_foreign_statement,
+    )
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    # 1. Cond with len(inputs) < 3 falls through (branch 84->91)
+    cond_node = IRNode("cond1", "Cond", inputs=["cond_flag", "true_val"])
+    res_cond = _emit_control_flow_statement(cond_node)
+    assert res_cond is None
+
+    # 2. ForeignCall with has_varargs and has_varkwargs (branches 155->157, 157->159)
+    foreign_node = IRNode(
+        "fc1",
+        "ForeignCall",
+        inputs=["x"],
+        attributes={"callee": "pkg.foo", "has_varargs": True, "has_varkwargs": True},
+    )
+    stmt = _emit_foreign_statement(foreign_node)
+    assert stmt is not None
+    code = cst.Module(body=[stmt]).code
+    assert "*args" in code
+    assert "**kwargs" in code
+
+    # 3. ForeignCall with empty var_name returning cst.Expr (line 163, branch 160->163)
+    foreign_no_var = IRNode(
+        "",
+        "ForeignCall",
+        inputs=["x"],
+        attributes={"var_name": "", "callee": "pkg.bar"},
+    )
+    stmt_no_var = _emit_foreign_statement(foreign_no_var)
+    assert stmt_no_var is not None
+    assert isinstance(stmt_no_var.body[0], cst.Expr)

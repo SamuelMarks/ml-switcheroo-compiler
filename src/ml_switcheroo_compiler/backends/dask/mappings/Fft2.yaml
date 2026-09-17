@@ -1,2 +1,6 @@
-Fft2:
-  target_api: da.fft.fft2
+operation: Fft2
+backend: dask
+target_api: da.fft.fft2
+ast_template: '{out} = da.fft.fft2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

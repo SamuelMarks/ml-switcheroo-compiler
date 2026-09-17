@@ -1,2 +1,6 @@
-Solve:
-  target_api: tf.linalg.solve
+operation: Solve
+backend: tensorflow
+target_api: tf.linalg.solve
+ast_template: '{out} = tf.linalg.solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

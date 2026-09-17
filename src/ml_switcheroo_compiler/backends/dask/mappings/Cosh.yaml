@@ -1,2 +1,6 @@
-Cosh:
-  target_api: da.cosh
+operation: Cosh
+backend: dask
+target_api: da.cosh
+ast_template: '{out} = da.cosh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

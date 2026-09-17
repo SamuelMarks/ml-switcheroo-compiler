@@ -1,2 +1,6 @@
-Subtract:
-  target_api: torch.sub
+operation: Subtract
+backend: pytorch
+target_api: torch.sub
+ast_template: '{out} = torch.sub({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

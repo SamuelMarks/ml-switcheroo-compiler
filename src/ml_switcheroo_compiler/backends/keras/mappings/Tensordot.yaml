@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: keras_ops.tensordot
+operation: Tensordot
+backend: keras
+target_api: keras_ops.tensordot
+ast_template: '{out} = keras_ops.tensordot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

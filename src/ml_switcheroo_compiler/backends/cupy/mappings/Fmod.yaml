@@ -1,2 +1,6 @@
-Fmod:
-  target_api: cp.fmod
+operation: Fmod
+backend: cupy
+target_api: cp.fmod
+ast_template: '{out} = cp.fmod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

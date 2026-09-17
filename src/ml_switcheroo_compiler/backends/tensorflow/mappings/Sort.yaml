@@ -1,2 +1,6 @@
-Sort:
-  target_api: tf.sort
+operation: Sort
+backend: tensorflow
+target_api: tf.sort
+ast_template: '{out} = tf.sort({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

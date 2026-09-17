@@ -1,2 +1,6 @@
-Cast:
-  target_api: _execute_cast
+operation: Cast
+backend: jax
+target_api: _execute_cast
+ast_template: '{out} = _execute_cast({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

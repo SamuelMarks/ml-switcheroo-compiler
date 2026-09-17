@@ -1,2 +1,6 @@
-Argpartition:
-  target_api: keras_ops.argpartition
+operation: Argpartition
+backend: keras
+target_api: keras_ops.argpartition
+ast_template: '{out} = keras_ops.argpartition({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

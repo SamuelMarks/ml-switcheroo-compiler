@@ -1156,3 +1156,70 @@ def test_evaluator_vmap_and_identity_exception():
     }
     res_ir = evaluate_graph(g_vmap_ir, {"arr": np.array([10.0, 20.0])})
     assert "v_out" in res_ir
+
+
+def test_evaluator_subgraphs_and_initializers() -> None:
+    """Test evaluating nested subgraphs and fallback to graph.initializers."""
+    # 1. Subgraph in If node
+    then_graph = LogicalGraph(name="then_branch")
+    then_graph.inputs = ["x"]
+    then_graph.nodes["x"] = LogicalNode(id="x", op_type="Input")
+    then_graph.nodes["const_10"] = LogicalNode(id="const_10", op_type="Constant", attributes={"value": 10})
+    then_graph.nodes["res_then"] = LogicalNode(id="res_then", op_type="Add", inputs=["x", "const_10"])
+    then_graph.outputs = ["res_then"]
+
+    else_graph = LogicalGraph(name="else_branch")
+    else_graph.inputs = ["x"]
+    else_graph.nodes["x"] = LogicalNode(id="x", op_type="Input")
+    else_graph.nodes["res_else"] = LogicalNode(id="res_else", op_type="Negative", inputs=["x"])
+    else_graph.outputs = ["res_else"]
+
+    if_graph = LogicalGraph(name="if_graph")
+    if_graph.inputs = ["pred", "val"]
+    if_graph.nodes["pred"] = LogicalNode(id="pred", op_type="Input")
+    if_graph.nodes["val"] = LogicalNode(id="val", op_type="Input")
+    if_graph.nodes["cond_node"] = LogicalNode(
+        id="cond_node",
+        op_type="If",
+        inputs=["pred"],
+        subgraphs={"then_branch": then_graph, "else_branch": else_graph},
+    )
+    if_graph.outputs = ["cond_node"]
+
+    out_true = evaluate_graph(if_graph, {"pred": True, "val": 5, "x": 5})
+    assert out_true["cond_node"] == 15
+
+    out_false = evaluate_graph(if_graph, {"pred": False, "val": 5, "x": 5})
+    assert out_false["cond_node"] == -5
+
+    # 2. Checkpoint node using node.subgraphs["body"]
+    cp_sub = LogicalGraph(name="cp_sub")
+    cp_sub.inputs = ["a"]
+    cp_sub.nodes["a"] = LogicalNode(id="a", op_type="Input")
+    cp_sub.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["a", "a"])
+    cp_sub.outputs = ["out"]
+
+    cp_graph = LogicalGraph(name="cp_graph")
+    cp_graph.inputs = ["inp"]
+    cp_graph.nodes["inp"] = LogicalNode(id="inp", op_type="Input")
+    cp_graph.nodes["cp_node"] = LogicalNode(
+        id="cp_node",
+        op_type="Checkpoint",
+        inputs=["inp"],
+        subgraphs={"body": cp_sub},
+    )
+    cp_graph.outputs = ["cp_node"]
+
+    out_cp = evaluate_graph(cp_graph, {"inp": np.array([3.0])})
+    assert out_cp["cp_node"] == 6.0
+
+    # 3. Graph initializers fallback
+    init_graph = LogicalGraph(name="init_graph")
+    init_graph.inputs = ["in_val"]
+    init_graph.initializers["weight"] = np.array([4.0])
+    init_graph.nodes["in_val"] = LogicalNode(id="in_val", op_type="Input")
+    init_graph.nodes["add_node"] = LogicalNode(id="add_node", op_type="Add", inputs=["in_val", "weight"])
+    init_graph.outputs = ["add_node"]
+
+    out_init = evaluate_graph(init_graph, {"in_val": np.array([1.0])})
+    assert out_init["add_node"] == 5.0

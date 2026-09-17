@@ -1,2 +1,6 @@
-Adjoint:
-  target_api: tf.linalg.adjoint
+operation: Adjoint
+backend: tensorflow
+target_api: tf.linalg.adjoint
+ast_template: '{out} = tf.linalg.adjoint({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -133,7 +133,7 @@ Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `
 ### Base Structures
 - **IRGraph**: Represents the complete computation module, encapsulating Inputs, Outputs, and internal `IRNode`s.
 - **IRNode**: Tracks individual operations with fields for `id`, `opcode`, `inputs`, `outputs`, `attributes`, and `metadata`.
-- **IRBlock**: Defines nested scopes for complex control flow.
+- **Nested Subgraphs**: Scoped control flow and functional blocks encapsulated within `node.subgraphs: dict[str, LogicalGraph]` (e.g., `"body"`, `"cond"`, `"then_branch"`, `"else_branch"`).
 - **TensorSpec**: Maintains `shape`, `dtype`, and `sparsity`.
 
 ### Type & Shape System

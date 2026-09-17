@@ -1,0 +1,6 @@
+operation: Svd
+backend: pytorch
+target_api: torch.linalg.svd
+ast_template: '{out} = torch.linalg.svd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -135,3 +135,12 @@ class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticM
         self.shape = shape
         self.dtype = dtype
         self.sparsity = sparsity
+
+        if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
+            active_g = global_tracing_state.active_graph
+            if self.id not in active_g.nodes and self.id not in active_g.inputs:
+                active_g.inputs.append(self.id)
+                if hasattr(active_g, "input_specs"):
+                    from ml_switcheroo_ir.types import TensorSpec
+
+                    active_g.input_specs[self.id] = TensorSpec(shape=self.shape, dtype=self.dtype)

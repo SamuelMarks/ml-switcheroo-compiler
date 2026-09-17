@@ -1,0 +1,6 @@
+operation: Hardswish
+backend: mlx
+target_api: mlx.core.nn.hardswish
+ast_template: '{out} = mlx.core.nn.hardswish({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

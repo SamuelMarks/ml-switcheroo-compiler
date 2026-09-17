@@ -1,2 +1,6 @@
-Isinf:
-  target_api: keras_ops.isinf
+operation: Isinf
+backend: keras
+target_api: keras_ops.isinf
+ast_template: '{out} = keras_ops.isinf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

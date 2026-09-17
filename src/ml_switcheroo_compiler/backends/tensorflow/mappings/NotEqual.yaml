@@ -1,2 +1,6 @@
-NotEqual:
-  target_api: tf.not_equal
+operation: NotEqual
+backend: tensorflow
+target_api: tf.not_equal
+ast_template: '{out} = tf.not_equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

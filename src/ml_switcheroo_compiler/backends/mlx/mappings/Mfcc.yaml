@@ -1,3 +1,6 @@
-Mfcc:
-  ast_template: mlx_mfcc({0})
-  target_api: ''
+operation: Mfcc
+backend: mlx
+target_api: ''
+ast_template: mlx_mfcc({0})
+kwarg_map: {}
+dtype_overrides: {}

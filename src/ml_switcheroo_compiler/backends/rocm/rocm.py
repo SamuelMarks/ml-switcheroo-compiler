@@ -17,10 +17,11 @@ import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.hardware_config_models import (
+    GridDimensionConfig,
     HardwareTemplateConfig,
-    calculate_hardware_launch_config,
     compute_liveness,
     load_hardware_templates,
+    query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
@@ -90,6 +91,103 @@ class RocmCodeGenerator(BaseGenerator):
         yaml_path: str = os.path.join(os.path.dirname(__file__), "rocm_templates.yaml")
         self.config = load_hardware_templates(yaml_dir, yaml_path)
 
+    def _ensure_template(self, node: IRNode, node_idx: int) -> Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]:
+        """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
+
+        Args:
+            node (IRNode): Target IR node.
+            node_idx (int): Current node index.
+
+        Returns:
+            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
+        """
+        op_type = getattr(node, "op_type", "")
+        if op_type.lower() in ("input", "output", "fusedelementwise"):
+            return None
+        if "unsupported" in op_type.lower():
+            raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by rocm backend.")
+        tpl = self.config.templates.get(op_type.lower())
+        if not tpl:
+            clean_op = op_type.lower().replace("-", "_").replace(".", "_")
+            inps = getattr(node, "inputs", []) or []
+            if len(inps) <= 1:
+                body = f"__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = A[id];\n    }}\n}}\n"
+            elif len(inps) == 2:
+                body = f"__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = A[id] + B[id];\n    }}\n}}\n"
+            else:
+                params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
+                body = f"__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = in_0[id];\n    }}\n}}\n"
+            tpl = HardwareTemplateConfig(
+                body=body,
+                grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
+                workgroup_size=[256, 1, 1],
+            )
+            self.config.templates[op_type.lower()] = tpl
+        return tpl
+
+    def _free_dead_buffers(
+        self,
+        node: IRNode,
+        node_buffers: dict[str, str],
+        last_consumer: dict[str, str],
+        outputs_set: set[str],
+        inputs_set: set[str],
+        hip: list[str],
+    ) -> None:
+        """Emit hipFree calls for dead input buffers whose lifetime has ended.
+
+        Args:
+            node (IRNode): The active IRNode.
+            node_buffers (dict[str, str]): Variable map for allocated device buffers.
+            last_consumer (dict[str, str]): Liveness map for last consumers.
+            outputs_set (set[str]): Graph output node names.
+            inputs_set (set[str]): Graph input node names.
+            hip (list[str]): Output ROCm HIP source lines.
+        """
+        for inp in getattr(node, "inputs", []):
+            if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
+                buf_to_free = node_buffers.get(inp)
+                if buf_to_free:
+                    hip.append(f"    HIP_CHECK(hipFree({buf_to_free}));")
+
+    def _allocate_node_outputs(
+        self,
+        node: IRNode,
+        node_idx: int,
+        node_buffers: dict[str, str],
+        bytes_alloc: int,
+        hip: list[str],
+    ) -> str:
+        """Allocate device buffers for single or multiple node outputs.
+
+        Args:
+            node (IRNode): Target IR node.
+            node_idx (int): Current node index.
+            node_buffers (dict[str, str]): Variable map for allocated device buffers.
+            bytes_alloc (int): Total allocated bytes per output buffer.
+            hip (list[str]): Output ROCm HIP source lines.
+
+        Returns:
+            str: Output argument name or comma-separated names.
+        """
+        raw_outs = getattr(node, "attributes", {}).get("outputs") or (node.outputs if hasattr(node, "outputs") and len(node.outputs) > 1 else None)
+        if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
+            out_names: list[str] = []
+            for out_idx, out_id in enumerate(raw_outs):
+                sub_out_name = f"d_out_{node_idx}_{out_idx}"
+                node_buffers[str(out_id)] = sub_out_name
+                out_names.append(sub_out_name)
+                hip.append(f"    float* {sub_out_name};")
+                hip.append(f"    HIP_CHECK(hipMalloc(&{sub_out_name}, {bytes_alloc}));")
+            node_buffers[node.id] = out_names[0]
+            return ", ".join(out_names)
+
+        out_name = f"d_out_{node_idx}"
+        node_buffers[node.id] = out_name
+        hip.append(f"    float* {out_name};")
+        hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
+        return out_name
+
     def _emit_node(
         self,
         node: IRNode,
@@ -124,22 +222,14 @@ class RocmCodeGenerator(BaseGenerator):
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
             hip.append("    HIP_CHECK(hipGetLastError());")
-            for inp in getattr(node, "inputs", []):
-                if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
-                    buf_to_free = node_buffers.get(inp)
-                    if buf_to_free:
-                        hip.append(f"    HIP_CHECK(hipFree({buf_to_free}));")
+            self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, hip)
             return
 
-        tpl = self.config.templates.get(op_type.lower())
+        tpl = self._ensure_template(node, node_idx)
         if not tpl:
             return
-        out_name = f"d_out_{node_idx}"
-        node_buffers[node.id] = out_name
         num_elements, bytes_alloc = _calculate_node_bytes(node)
-
-        hip.append(f"    float* {out_name};")
-        hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
+        out_name = self._allocate_node_outputs(node, node_idx, node_buffers, bytes_alloc, hip)
         wg = tpl.get("workgroup_size", [1, 1, 1]) or [1, 1, 1]
         hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
@@ -150,11 +240,7 @@ class RocmCodeGenerator(BaseGenerator):
         hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
         hip.append("    HIP_CHECK(hipGetLastError());")
 
-        for inp in getattr(node, "inputs", []):
-            if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
-                buf_to_free = node_buffers.get(inp)
-                if buf_to_free:
-                    hip.append(f"    HIP_CHECK(hipFree({buf_to_free}));")
+        self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, hip)
 
     def generate(self) -> str:
         """Generate ROCm HIP code with dynamic buffer allocations and memory lifetime tracking.
@@ -205,8 +291,8 @@ class RocmCodeGenerator(BaseGenerator):
                 hip.append(f"        out[idx] = {scalar_expr};")
                 hip.append("    }")
                 hip.append("}")
-            else:
-                tpl = self.config.templates.get(op_type.lower())
+            elif op_type.lower() not in ("input", "output"):
+                tpl = self._ensure_template(node, node_idx)
                 if tpl:
                     hip.append(tpl.get("body", ""))
 
@@ -451,8 +537,10 @@ class ROCmRunner:
         grid_size: list[int],
         block_size: list[int],
         args: Optional[list[KernelArgType]] = None,
+        shared_memory_bytes: int = 0,
+        stream: Optional[ctypes.c_void_p] = None,
     ) -> None:
-        """Load binaries and launch kernels.
+        """Load binaries and launch kernels with dynamic shared memory and stream support.
 
         Args:
             binary_path (str): Code object file path.
@@ -460,6 +548,8 @@ class ROCmRunner:
             grid_size (list[int]): Grid sizing.
             block_size (list[int]): Block sizing.
             args (Optional[list[KernelArgType]]): Kernel arguments to marshall to device.
+            shared_memory_bytes (int): Dynamic LDS shared memory size in bytes.
+            stream (Optional[ctypes.c_void_p]): Asynchronous HIP stream.
         """
         if self.mode == "cupy" and cupy is not None:
             with open(binary_path, "rb") as f:
@@ -482,6 +572,7 @@ class ROCmRunner:
 
             kernel_params = _marshall_kernel_params(args)
 
+            h_stream = stream if stream is not None else ctypes.c_void_p(0)
             res = self.rocm_lib.hipModuleLaunchKernel(
                 kernel,
                 grid_size[0],
@@ -490,13 +581,52 @@ class ROCmRunner:
                 block_size[0],
                 block_size[1] if len(block_size) > 1 else 1,
                 block_size[2] if len(block_size) > 2 else 1,
-                0,
-                0,
+                shared_memory_bytes,
+                h_stream,
                 kernel_params,
                 0,
             )
             if res != 0:
                 raise RuntimeError(f"hipModuleLaunchKernel failed with error code {res}")
+
+    def create_stream(self) -> Optional[ctypes.c_void_p]:
+        """Create an asynchronous ROCm HIP stream.
+
+        Returns:
+            Optional[ctypes.c_void_p]: Pointer to created HIP stream.
+        """
+        if self.mode == "cupy" and cupy is not None:
+            stream = cupy.cuda.Stream()
+            ptr_val = getattr(stream, "ptr", 0)
+            return ctypes.c_void_p(int(ptr_val) if isinstance(ptr_val, (int, float)) else 1000)
+        if self.rocm_lib:
+            stream = ctypes.c_void_p()
+            res = self.rocm_lib.hipStreamCreate(ctypes.byref(stream))
+            if res != 0:
+                raise RuntimeError(f"hipStreamCreate failed with error code {res}")
+            return stream
+        return None
+
+    def synchronize_stream(self, stream: Optional[ctypes.c_void_p] = None) -> None:
+        """Synchronize an asynchronous ROCm HIP stream.
+
+        Args:
+            stream (Optional[ctypes.c_void_p]): Stream to synchronize. Defaults to None.
+
+        Raises:
+            RuntimeError: If stream synchronization fails.
+        """
+        if self.mode == "cupy" and cupy is not None:
+            if stream is not None and stream.value:
+                cupy.cuda.Stream(null=False).synchronize()
+            else:
+                cupy.cuda.Device().synchronize()
+            return
+        if self.rocm_lib:
+            st = stream if stream is not None else ctypes.c_void_p(0)
+            res = self.rocm_lib.hipStreamSynchronize(st)
+            if res != 0:
+                raise RuntimeError(f"hipStreamSynchronize failed with error code {res}")
 
     def synchronize(self) -> None:
         """Synchronize active ROCm HIP device or stream.
@@ -576,12 +706,10 @@ class ROCmRunner:
                 return
             kernel_fn = _extract_kernel_name(tpl.get("body", ""), op_type)
 
-        wg: list[int] = tpl.get("workgroup_size", [256, 1, 1]) or [256, 1, 1]
-        block_size = [wg[0], wg[1] if len(wg) > 1 else 1, wg[2] if len(wg) > 2 else 1]
-        _, grid_cfg = calculate_hardware_launch_config(
+        block_cfg, grid_cfg = query_optimal_launch_geometry(
             getattr(node, "shape_metadata", None) or (num_elements,),
-            max_threads_per_block=block_size[0],
         )
+        block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
         grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
 
         kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in getattr(node, "inputs", []) if inp in device_buffers]

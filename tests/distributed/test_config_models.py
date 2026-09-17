@@ -164,3 +164,19 @@ def test_load_distributed_topologies(tmp_path: object) -> None:
     yaml_path = os.path.join(os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/distributed_topologies.yaml")
     cfg_custom = load_distributed_topologies(path=yaml_path)
     assert cfg_custom is not None
+
+
+def test_load_cluster_topology() -> None:
+    """Test load_cluster_topology loader with default and custom paths."""
+    from ml_switcheroo_compiler.distributed.config_models import load_cluster_topology
+
+    # Default path (path is None)
+    cfg_default = load_cluster_topology()
+    assert cfg_default.version == "1.0"
+    assert "default" in cfg_default.cluster_meshes
+
+    # Custom path
+    yaml_path = os.path.join(os.path.dirname(__file__), "../../src/ml_switcheroo_compiler/distributed/device_mesh.yaml")
+    cfg_custom = load_cluster_topology(path=yaml_path)
+    assert cfg_custom.version == "1.0"
+    assert "default" in cfg_custom.cluster_meshes

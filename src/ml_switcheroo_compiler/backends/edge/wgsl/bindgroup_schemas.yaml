@@ -1,0 +1,30 @@
+# bindgroup_schemas.yaml
+# Declarative WebGPU WGSL bind group layout generation and memory buffer alignment rules.
+
+version: "1.0.0"
+
+memory_alignment:
+  min_storage_buffer_offset_alignment: 256
+  min_uniform_buffer_offset_alignment: 256
+  struct_alignment_bytes: 16
+  scalar_alignment_bytes: 4
+
+bindgroup_rules:
+  default_group: 0
+  max_storage_buffers_per_shader_stage: 8
+  max_uniform_buffers_per_shader_stage: 12
+  dynamic_layout_generation: true
+  input_binding_start: 0
+  input_access: "read"
+  output_access: "read_write"
+  uniform_access: "read"
+  storage_buffer_declaration: "@group({group}) @binding({binding}) var<storage, {access}> {name}: array<{dtype}>;"
+  uniform_buffer_declaration: "@group({group}) @binding({binding}) var<uniform> {name}: {dtype};"
+
+naming_conventions:
+  input_prefix: "buf_in"
+  output_prefix: "buf_out"
+  uniform_prefix: "buf_uniform"
+  single_output_name: "buf_out_{dtype}"
+  indexed_input_name: "buf_in{index}_{dtype}"
+  indexed_output_name: "buf_out{index}_{dtype}"

@@ -35,8 +35,44 @@ variants:
     template: binary
     scalar_expr: std::min(in0_val, in1_val)
 autodiff:
+  vjp_rule_id: Minimum_vjp
+  jvp_rule_id: Minimum_jvp
   vjp:
   - Multiply($cotangent, Less($input[0], $input[1]))
   - Multiply($cotangent, GreaterEqual($input[0], $input[1]))
   jvp: Add(Multiply($tangent[0], Less($input[0], $input[1])), Multiply($tangent[1],
     GreaterEqual($input[0], $input[1])))
+signature:
+  args:
+  - name: x1
+    type: Union[array, int, float]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: x2
+    type: Union[array, int, float]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - x1
+  - x2
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: broadcast(in0, in1)
+  symbolic_expression: '[*shape], [*shape] -> [*shape]'
+  category: elementwise
+invariants:
+  is_commutative: true
+  is_associative: true
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null

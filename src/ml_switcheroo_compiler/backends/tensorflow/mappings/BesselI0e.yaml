@@ -1,2 +1,6 @@
-BesselI0e:
-  target_api: tf.math.bessel_i0e
+operation: BesselI0e
+backend: tensorflow
+target_api: tf.math.bessel_i0e
+ast_template: '{out} = tf.math.bessel_i0e({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

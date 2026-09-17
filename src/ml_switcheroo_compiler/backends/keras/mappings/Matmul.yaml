@@ -1,2 +1,6 @@
-Matmul:
-  target_api: keras_ops.matmul
+operation: Matmul
+backend: keras
+target_api: keras_ops.matmul
+ast_template: '{out} = keras_ops.matmul({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

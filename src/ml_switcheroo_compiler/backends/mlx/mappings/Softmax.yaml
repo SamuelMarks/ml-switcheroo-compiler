@@ -1,2 +1,6 @@
-Softmax:
-  target_api: '''mx.softmax({0}, axis={axis})'''
+operation: Softmax
+backend: mlx
+target_api: '''mx.softmax({0}, axis={axis})'''
+ast_template: '{out} = ''mx.softmax({0}, axis={axis})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Tan:
-  target_api: da.tan
+operation: Tan
+backend: dask
+target_api: da.tan
+ast_template: '{out} = da.tan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

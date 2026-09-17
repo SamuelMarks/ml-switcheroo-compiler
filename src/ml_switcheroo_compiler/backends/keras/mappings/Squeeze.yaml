@@ -1,2 +1,6 @@
-Squeeze:
-  target_api: keras_ops.squeeze
+operation: Squeeze
+backend: keras
+target_api: keras_ops.squeeze
+ast_template: '{out} = keras_ops.squeeze({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

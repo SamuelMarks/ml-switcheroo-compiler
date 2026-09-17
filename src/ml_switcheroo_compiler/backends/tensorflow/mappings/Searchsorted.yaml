@@ -1,2 +1,6 @@
-Searchsorted:
-  target_api: tf.searchsorted
+operation: Searchsorted
+backend: tensorflow
+target_api: tf.searchsorted
+ast_template: '{out} = tf.searchsorted({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

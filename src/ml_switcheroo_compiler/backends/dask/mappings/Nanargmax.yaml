@@ -1,2 +1,6 @@
-Nanargmax:
-  target_api: da.nanargmax
+operation: Nanargmax
+backend: dask
+target_api: da.nanargmax
+ast_template: '{out} = da.nanargmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

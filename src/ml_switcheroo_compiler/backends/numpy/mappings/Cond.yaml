@@ -1,3 +1,6 @@
-Cond:
-  ast_template: np.linalg.cond
-  target_api: ''
+operation: Cond
+backend: numpy
+target_api: ''
+ast_template: np.linalg.cond
+kwarg_map: {}
+dtype_overrides: {}

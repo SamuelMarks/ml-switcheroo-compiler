@@ -1,2 +1,6 @@
-Variance:
-  target_api: _execute_variance
+operation: Variance
+backend: jax
+target_api: _execute_variance
+ast_template: '{out} = _execute_variance({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

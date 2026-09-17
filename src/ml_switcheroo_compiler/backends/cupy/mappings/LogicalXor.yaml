@@ -1,2 +1,6 @@
-LogicalXor:
-  target_api: cp.logical_xor
+operation: LogicalXor
+backend: cupy
+target_api: cp.logical_xor
+ast_template: '{out} = cp.logical_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

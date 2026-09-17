@@ -1,2 +1,6 @@
-Prod:
-  target_api: cp.prod
+operation: Prod
+backend: cupy
+target_api: cp.prod
+ast_template: '{out} = cp.prod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

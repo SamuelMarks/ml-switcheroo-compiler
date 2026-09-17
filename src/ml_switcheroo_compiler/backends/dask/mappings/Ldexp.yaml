@@ -1,2 +1,6 @@
-Ldexp:
-  target_api: da.ldexp
+operation: Ldexp
+backend: dask
+target_api: da.ldexp
+ast_template: '{out} = da.ldexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

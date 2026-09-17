@@ -1,2 +1,6 @@
-Equal:
-  target_api: keras_ops.equal
+operation: Equal
+backend: keras
+target_api: keras_ops.equal
+ast_template: '{out} = keras_ops.equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

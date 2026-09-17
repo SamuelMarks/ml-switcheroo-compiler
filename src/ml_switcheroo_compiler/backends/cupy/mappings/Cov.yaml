@@ -1,2 +1,6 @@
-Cov:
-  target_api: cp.cov
+operation: Cov
+backend: cupy
+target_api: cp.cov
+ast_template: '{out} = cp.cov({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-LogicalAnd:
-  target_api: da.logical_and
+operation: LogicalAnd
+backend: dask
+target_api: da.logical_and
+ast_template: '{out} = da.logical_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

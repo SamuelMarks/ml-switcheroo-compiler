@@ -1,3 +1,6 @@
-Mean:
-  ast_template: torch.mean({0}, dim={axis}, keepdim={keepdims})
-  target_api: torch.mean
+operation: Mean
+backend: pytorch
+target_api: torch.mean
+ast_template: torch.mean({0}, dim={axis}, keepdim={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

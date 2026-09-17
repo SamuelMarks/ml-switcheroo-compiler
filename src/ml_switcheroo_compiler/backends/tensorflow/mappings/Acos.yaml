@@ -1,2 +1,6 @@
-Acos:
-  target_api: tf.acos
+operation: Acos
+backend: tensorflow
+target_api: tf.acos
+ast_template: '{out} = tf.acos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

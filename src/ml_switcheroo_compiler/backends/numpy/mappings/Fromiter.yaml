@@ -1,3 +1,6 @@
-Fromiter:
-  ast_template: np.fromiter
-  target_api: ''
+operation: Fromiter
+backend: numpy
+target_api: ''
+ast_template: np.fromiter
+kwarg_map: {}
+dtype_overrides: {}

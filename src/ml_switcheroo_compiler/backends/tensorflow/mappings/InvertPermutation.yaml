@@ -1,2 +1,6 @@
-InvertPermutation:
-  target_api: tf.math.invert_permutation
+operation: InvertPermutation
+backend: tensorflow
+target_api: tf.math.invert_permutation
+ast_template: '{out} = tf.math.invert_permutation({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

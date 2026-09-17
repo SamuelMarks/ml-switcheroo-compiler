@@ -1,2 +1,6 @@
-Hypot:
-  target_api: cp.hypot
+operation: Hypot
+backend: cupy
+target_api: cp.hypot
+ast_template: '{out} = cp.hypot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

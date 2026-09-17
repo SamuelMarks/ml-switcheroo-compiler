@@ -1,2 +1,6 @@
-Append:
-  target_api: da.append
+operation: Append
+backend: dask
+target_api: da.append
+ast_template: '{out} = da.append({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

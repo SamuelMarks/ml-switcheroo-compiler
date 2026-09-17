@@ -1,2 +1,6 @@
-Lgamma:
-  target_api: tf.math.lgamma
+operation: Lgamma
+backend: tensorflow
+target_api: tf.math.lgamma
+ast_template: '{out} = tf.math.lgamma({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

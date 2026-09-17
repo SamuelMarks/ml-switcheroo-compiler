@@ -1,2 +1,6 @@
-Diagflat:
-  target_api: keras_ops.diagflat
+operation: Diagflat
+backend: keras
+target_api: keras_ops.diagflat
+ast_template: '{out} = keras_ops.diagflat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

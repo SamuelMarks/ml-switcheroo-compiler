@@ -1,2 +1,6 @@
-Expm1:
-  target_api: keras_ops.expm1
+operation: Expm1
+backend: keras
+target_api: keras_ops.expm1
+ast_template: '{out} = keras_ops.expm1({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

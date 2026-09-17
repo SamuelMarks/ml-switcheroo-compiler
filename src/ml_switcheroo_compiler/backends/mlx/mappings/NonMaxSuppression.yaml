@@ -1,3 +1,6 @@
-NonMaxSuppression:
-  ast_template: mlx_nms({0}, {1}, 0.5)
-  target_api: ''
+operation: NonMaxSuppression
+backend: mlx
+target_api: ''
+ast_template: mlx_nms({0}, {1}, 0.5)
+kwarg_map: {}
+dtype_overrides: {}

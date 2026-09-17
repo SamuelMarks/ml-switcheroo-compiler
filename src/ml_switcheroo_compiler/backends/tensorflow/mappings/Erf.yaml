@@ -1,2 +1,6 @@
-Erf:
-  target_api: tf.math.erf
+operation: Erf
+backend: tensorflow
+target_api: tf.math.erf
+ast_template: '{out} = tf.math.erf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

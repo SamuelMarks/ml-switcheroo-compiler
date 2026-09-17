@@ -1,0 +1,6 @@
+operation: WhileLoop
+backend: jax
+target_api: jax.lax.while_loop
+ast_template: '{out} = jax.lax.while_loop({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

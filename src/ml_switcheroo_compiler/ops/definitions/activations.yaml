@@ -1,0 +1,730 @@
+Elu:
+  autodiff:
+    vjp_rule_id: Elu_vjp
+    jvp_rule_id: Elu_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for elu.
+  domain: activation
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Elu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: Elu
+    llvm_cpp:
+      scalar_expr: 'in0_val > 0 ? in0_val : std::exp(in0_val) - 1.0f'
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Gelu:
+  autodiff:
+    vjp_rule_id: Gelu_vjp
+    jvp_rule_id: Gelu_jvp
+    vjp:
+    - Multiply($cotangent, Add(Multiply(Constant(0.5), Add(Constant(1.0), Tanh(Multiply(Constant(0.7978845608),
+      Add($input[0], Multiply(Constant(0.044715), Power($input[0], Constant(3.0)))))))),
+      Multiply(Multiply(Constant(0.5), $input[0]), Multiply(Subtract(Constant(1.0),
+      Power(Tanh(Multiply(Constant(0.7978845608), Add($input[0], Multiply(Constant(0.044715),
+      Power($input[0], Constant(3.0)))))), Constant(2.0))), Multiply(Constant(0.7978845608),
+      Add(Constant(1.0), Multiply(Constant(0.134145), Power($input[0], Constant(2.0)))))))))
+    jvp: Multiply($tangent[0], Add(Multiply(Constant(0.5), Add(Constant(1.0), Tanh(Multiply(Constant(0.7978845608),
+      Add($input[0], Multiply(Constant(0.044715), Power($input[0], Constant(3.0)))))))),
+      Multiply(Multiply(Constant(0.5), $input[0]), Multiply(Subtract(Constant(1.0),
+      Power(Tanh(Multiply(Constant(0.7978845608), Add($input[0], Multiply(Constant(0.044715),
+      Power($input[0], Constant(3.0)))))), Constant(2.0))), Multiply(Constant(0.7978845608),
+      Add(Constant(1.0), Multiply(Constant(0.134145), Power($input[0], Constant(2.0)))))))))
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for gelu.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Gelu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: Gelu
+    llvm_cpp:
+      scalar_expr: 0.5f * in0_val * (1.0f + std::erf(in0_val * 0.70710678f))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+HardSigmoid:
+  autodiff:
+    vjp_rule_id: HardSigmoid_vjp
+    jvp_rule_id: HardSigmoid_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for hardsigmoid.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: HardSigmoid
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: HardSigmoid
+    llvm_cpp:
+      scalar_expr: std::max(0.0f, std::min(1.0f, 0.2f * in0_val + 0.5f))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+LeakyRelu:
+  autodiff:
+    vjp_rule_id: LeakyRelu_vjp
+    jvp_rule_id: LeakyRelu_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Applies the LeakyReLU activation function.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: LeakyRelu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: LeakyRelu
+    llvm_cpp:
+      scalar_expr: 'in0_val > 0 ? in0_val : 0.01f * in0_val'
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+LogSoftmax:
+  autodiff:
+    vjp_rule_id: LogSoftmax_vjp
+    jvp_rule_id: LogSoftmax_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The LogSoftmax operation.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: LogSoftmax
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: LogSoftmax
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[idx]
+      template: unary
+    keras:
+      eager: keras_ops.log_softmax
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: scipy.special.log_softmax({0}, axis={axis})
+    tensorflow:
+      eager: tf.math.log_softmax
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Mish:
+  autodiff:
+    vjp_rule_id: Mish_vjp
+    jvp_rule_id: Mish_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for mish.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Mish
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val * std::tanh(std::log1p(std::exp(in0_val)))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Relu:
+  autodiff:
+    vjp_rule_id: Relu_vjp
+    jvp_rule_id: Relu_jvp
+    vjp:
+    - Multiply($cotangent, Greater($input[0], Constant(0.0)))
+    jvp: Multiply($tangent[0], Greater($input[0], Constant(0.0)))
+  broadcast_semantics: numpy
+  description: The Relu operation.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: true
+  operation: Relu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Relu
+    edge_stablehlo:
+      generator: stablehlo.maximum
+    edge_wasm_simd:
+      scalar_expr: std::max(0.0f, in0_val)
+      simd_expr: wasm_f32x4_max(in0_val, wasm_f32x4_splat(0.0f))
+      template: unary
+    edge_wgsl:
+      expr: max(0.0, buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.relu
+    keras:
+      eager: keras_ops.relu
+    llvm_cpp:
+      scalar_expr: std::max(0.0f, in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.relu
+    numpy:
+      eager: numpy.relu
+    pytorch:
+      eager: torch.relu
+    tensorflow:
+      eager: tf.relu
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: true
+    identity_value: null
+    absorbing_value: null
+Selu:
+  autodiff:
+    vjp_rule_id: Selu_vjp
+    jvp_rule_id: Selu_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for selu.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Selu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: Selu
+    llvm_cpp:
+      scalar_expr: '1.0507f * (in0_val > 0 ? in0_val : 1.67326f * (std::exp(in0_val)
+        - 1.0f))'
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sigmoid:
+  autodiff:
+    vjp_rule_id: Sigmoid_vjp
+    jvp_rule_id: Sigmoid_jvp
+    vjp:
+    - Multiply($cotangent, Multiply(Sigmoid($input[0]), Subtract(Constant(1.0), Sigmoid($input[0]))))
+    jvp: Multiply($tangent[0], Multiply(Sigmoid($input[0]), Subtract(Constant(1.0),
+      Sigmoid($input[0]))))
+  broadcast_semantics: numpy
+  description: The Sigmoid operation.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sigmoid
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Sigmoid
+    edge_stablehlo:
+      generator: stablehlo.logistic
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: 1.0 / (1.0 + exp(-buf_in0_f32[in0_offset]))
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.sigmoid
+    llvm_cpp:
+      scalar_expr: 1.0f / (1.0f + std::exp(-in0_val))
+      template: unary
+    mlx: {}
+    numpy:
+      generator: scipy.special.expit({0})
+    pytorch: {}
+    tensorflow:
+      eager: tf.sigmoid
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Silu:
+  autodiff:
+    vjp_rule_id: Silu_vjp
+    jvp_rule_id: Silu_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for silu.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Silu
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val / (1.0f + std::exp(-in0_val))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Softmax:
+  autodiff:
+    vjp_rule_id: Softmax_vjp
+    jvp_rule_id: Softmax_jvp
+    vjp:
+    - Multiply(Softmax($input[0]), Subtract($cotangent, Broadcast(ReduceSum(Multiply($cotangent,
+      Softmax($input[0]))))))
+    jvp: Multiply(Softmax($input[0]), Subtract($tangent[0], Broadcast(ReduceSum(Multiply($tangent[0],
+      Softmax($input[0]))))))
+  broadcast_semantics: numpy
+  description: The Softmax operation.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Softmax
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: Softmax
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[idx]
+      template: unary
+    keras:
+      eager: keras_ops.softmax
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    numpy:
+      generator: scipy.special.softmax({0}, axis={axis})
+    tensorflow:
+      eager: tf.math.softmax
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Softplus:
+  autodiff:
+    vjp_rule_id: Softplus_vjp
+    jvp_rule_id: Softplus_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Auto-generated mapping for softplus.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Softplus
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: std::log1p(std::exp(in0_val))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Swish:
+  autodiff:
+    vjp_rule_id: Swish_vjp
+    jvp_rule_id: Swish_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Swish activation layer.
+  domain: activation
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Swish
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    llvm_cpp:
+      scalar_expr: in0_val / (1.0f + std::exp(-in0_val))
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

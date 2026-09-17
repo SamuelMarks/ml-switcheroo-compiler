@@ -1,2 +1,6 @@
-DivideNoNan:
-  target_api: keras_ops.divide_no_nan
+operation: DivideNoNan
+backend: keras
+target_api: keras_ops.divide_no_nan
+ast_template: '{out} = keras_ops.divide_no_nan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

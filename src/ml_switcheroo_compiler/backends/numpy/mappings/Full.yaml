@@ -1,3 +1,6 @@
-Full:
-  ast_template: np.full
-  target_api: ''
+operation: Full
+backend: numpy
+target_api: ''
+ast_template: np.full
+kwarg_map: {}
+dtype_overrides: {}

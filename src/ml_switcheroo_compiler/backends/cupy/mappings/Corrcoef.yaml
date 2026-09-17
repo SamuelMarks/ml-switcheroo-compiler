@@ -1,2 +1,6 @@
-Corrcoef:
-  target_api: cp.corrcoef
+operation: Corrcoef
+backend: cupy
+target_api: cp.corrcoef
+ast_template: '{out} = cp.corrcoef({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

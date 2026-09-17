@@ -1,2 +1,6 @@
-Scan:
-  target_api: tf.scan
+operation: Scan
+backend: tensorflow
+target_api: tf.scan
+ast_template: '{out} = tf.scan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

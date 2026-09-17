@@ -266,14 +266,14 @@ def test_cpp_generator_if_with_else():
     then_graph.nodes = {"n_then": LogicalNode(id="n_then", op_type="Add", inputs=["a", "b"])}
 
     else_graph = IRGraph()
-    else_graph.nodes = {"n_else": LogicalNode(id="n_else", op_type="Sub", inputs=["a", "b"])}
+    else_graph.nodes = {"n_else": LogicalNode(id="n_else", op_type="UnsupportedOp", inputs=["a", "b"])}
 
     node = LogicalNode(id="n1", op_type="If", inputs=["cond"])
     node.attributes = {"then_branch": then_graph, "else_branch": else_graph}
 
     gen._visit_node(node, graph)
     lines = "".join(gen.lines)
-    assert "Fallback Unimplemented Sub" in lines
+    assert "Fallback Unimplemented UnsupportedOp" in lines
 
 
 def test_cpp_generator_while_with_body():
@@ -281,7 +281,7 @@ def test_cpp_generator_while_with_body():
     gen = CppGenerator(graph)
 
     cond_graph = IRGraph()
-    cond_graph.nodes = {"n_cond": LogicalNode(id="n_cond", op_type="Equal", inputs=["a", "b"])}
+    cond_graph.nodes = {"n_cond": LogicalNode(id="n_cond", op_type="UnsupportedOp", inputs=["a", "b"])}
 
     body_graph = IRGraph()
     body_graph.nodes = {"n_body": LogicalNode(id="n_body", op_type="Add", inputs=["a", "b"])}
@@ -291,7 +291,7 @@ def test_cpp_generator_while_with_body():
 
     gen._visit_node(node, graph)
     lines = "".join(gen.lines)
-    assert "Fallback Unimplemented Equal" in lines
+    assert "Fallback Unimplemented UnsupportedOp" in lines
 
 
 def test_cpp_generator_arena_buffer():
@@ -461,7 +461,7 @@ def test_cpp_generate_no_graph():
     gen = CppGenerator(IRGraph())
     gen.graph = None
     res = gen.generate(None)
-    assert 'extern "C" void compute_graph()' in res
+    assert 'extern "C" void compute_graph(' in res
 
 
 @patch("subprocess.run")
@@ -554,3 +554,85 @@ def test_cpp_generator_genuine_expr_override():
         with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "{scalar_expr}"}):
             gen._visit_node(node)
             assert any("std::max(0.0f, in0_val)" in l for l in gen.lines)
+
+    # Cover line 342: mapping is empty in _YAML_REGISTRY but decl_op exists in get_cpp_operation
+    gen2 = CppGenerator(g)
+    with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {}):
+        with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "{scalar_expr}"}):
+            gen2._visit_node(node)
+            assert any("std::max(0.0f, in0_val)" in l for l in gen2.lines)
+
+
+def test_cpp_generator_missing_output_and_executable_arg_counts():
+    """Verify branch 138->137 (missing output node) and lines 500, 502, 504 (executable arg branches)."""
+    # 1. Output in graph.nodes followed by output not in graph.nodes (branch 138->137)
+    g = IRGraph()
+    n = IRNode("in1", "Input", [])
+    n.shape_metadata = [2, 2]
+    g.nodes["in1"] = n
+    g.outputs = ["in1", "missing_node"]
+    gen = CppGenerator(g)
+    code = gen.generate()
+    assert "void compute_graph" in code
+
+    # 2. compile_aot executable arg branches: len(args) == 2, 1, 0
+    mock_compute = MagicMock()
+    mock_dll = MagicMock()
+    mock_dll.compute_graph = mock_compute
+
+    with patch("subprocess.run"):
+        with patch("ctypes.CDLL", return_value=mock_dll):
+            exec_fn = gen.compile_aot(g)
+            # len(args) == 3
+            assert exec_fn("in", "out", "shapes") == "Execution successful"
+            mock_compute.assert_called_with("in", "out", "shapes")
+
+            # len(args) == 2 (line 500)
+            assert exec_fn("in", "out") == "Execution successful"
+            mock_compute.assert_called_with("in", "out", None)
+
+            # len(args) == 1 (line 502)
+            assert exec_fn("in") == "Execution successful"
+            mock_compute.assert_called_with("in", None, None)
+
+            # len(args) == 0 (line 504)
+            assert exec_fn() == "Execution successful"
+            mock_compute.assert_called_with(None, None, None)
+
+
+def test_cpp_generator_multi_output_indexed_routing() -> None:
+    """Verify indexed routing from multi-output nodes via LogicalEdge."""
+    g = IRGraph(name="multi_out_graph")
+    n_in = IRNode(id="x", op_type="Input", inputs=[])
+    n_in.shape_metadata = [2, 2]
+    n_split = IRNode(id="split_op", op_type="Relu", inputs=["x"], outputs=["split_out_0", "split_out_1"])
+    n_split.shape_metadata = [2, 2]
+    n_add = IRNode(id="add_op", op_type="Add", inputs=["split_out_0", "split_out_1"])
+    n_add.shape_metadata = [2, 2]
+
+    g.nodes = {"x": n_in, "split_op": n_split, "add_op": n_add}
+    g.outputs = ["add_op"]
+
+    gen = CppGenerator(g)
+    code = gen.generate(g)
+    assert "split_out_1" in code
+    assert any(e.source_idx == 1 for e in g.edges)
+
+
+def test_mlir_dialect_validation() -> None:
+    """Verify MLIR dialect operation validation against canonical MLIR_REGISTRY."""
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import (
+        get_supported_mlir_dialects,
+        validate_mlir_operation,
+    )
+
+    dialects = get_supported_mlir_dialects()
+    assert "arith" in dialects
+    assert "math" in dialects
+    assert "tensor" in dialects
+    assert "linalg" in dialects
+    assert "scf" in dialects
+
+    assert validate_mlir_operation("arith.addi") is True
+    assert validate_mlir_operation("math.exp") is True
+    assert validate_mlir_operation("unknown_dialect.fake_op") is False

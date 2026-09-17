@@ -1,2 +1,6 @@
-Slice:
-  target_api: keras_ops.slice
+operation: Slice
+backend: keras
+target_api: keras_ops.slice
+ast_template: '{out} = keras_ops.slice({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

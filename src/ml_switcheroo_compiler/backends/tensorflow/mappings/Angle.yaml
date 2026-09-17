@@ -1,2 +1,6 @@
-Angle:
-  target_api: tf.math.angle
+operation: Angle
+backend: tensorflow
+target_api: tf.math.angle
+ast_template: '{out} = tf.math.angle({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Diag:
-  target_api: tf.linalg.diag
+operation: Diag
+backend: tensorflow
+target_api: tf.linalg.diag
+ast_template: '{out} = tf.linalg.diag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

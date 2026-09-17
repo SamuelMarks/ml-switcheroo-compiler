@@ -7,6 +7,7 @@ import pytest
 
 from ml_switcheroo_compiler.benchmarks.config_models import (
     BackendProfile,
+    BaselinePerformanceTarget,
     BenchmarkPlan,
     BenchmarkSuite,
     BenchmarkTarget,
@@ -15,9 +16,11 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     WorkloadTensorSpec,
     build_ir_graph_from_workload,
     load_backend_profiles,
+    load_backend_profiles_manifest,
     load_benchmark_plan,
     load_benchmark_suite,
     load_model_workloads,
+    load_perf_baselines,
     load_workloads,
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
@@ -40,6 +43,26 @@ def test_load_default_manifests() -> None:
     assert "mlx" in profiles
     assert "cupy" in profiles
     assert isinstance(profiles["numpy"], BackendProfile)
+
+
+def test_load_perf_baselines_and_backend_manifest() -> None:
+    """Verify loading declarative performance baselines and backend profiles manifest."""
+    manifest = load_backend_profiles_manifest()
+    assert "numpy" in manifest.profiles
+    assert "pytorch" in manifest.profiles
+    numpy_profile = manifest.profiles["numpy"]
+    assert numpy_profile.profiler_module == "ml_switcheroo_compiler.backends.numpy.profiler"
+    assert numpy_profile.profiler_class == "NumpyProfiler"
+
+    baselines_manifest = load_perf_baselines()
+    assert "mlp_model_numpy_cpu" in baselines_manifest.baselines
+    assert "mlp_model_pytorch_cpu" in baselines_manifest.baselines
+    target = baselines_manifest.baselines["mlp_model_numpy_cpu"]
+    assert isinstance(target, BaselinePerformanceTarget)
+    assert target.workload_name == "mlp_model"
+    assert target.backend == "numpy"
+    assert target.baseline_mean_latency_ms > 0
+    assert target.regression_threshold_percent > 0
 
 
 def test_manifest_file_not_found() -> None:
@@ -328,3 +351,38 @@ def test_benchmark_specs_and_constraints() -> None:
     )
     assert plan.latency_thresholds is not None
     assert plan.latency_thresholds.max_mean_latency_ms == 10.0
+
+
+def test_perf_baselines_custom_path(tmp_path) -> None:
+    """Test load_perf_baselines with an explicit path argument.
+
+    Args:
+        tmp_path: Temporary path fixture.
+    """
+    from ml_switcheroo_compiler.benchmarks.config_models import load_perf_baselines
+
+    custom_yaml = tmp_path / "custom_perf.yaml"
+    custom_yaml.write_text(
+        """
+baselines:
+  relu:
+    workload_name: "relu_workload"
+    backend: "pytorch"
+    baseline_mean_latency_ms: 10.0
+""",
+        encoding="utf-8",
+    )
+    manifest = load_perf_baselines(path=str(custom_yaml))
+    assert "relu" in manifest.baselines
+
+
+def test_benchmarks_orchestrator_invalid_profile_branch() -> None:
+    """Test _load_manifest_profiles with invalid non-dict profiles entry."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
+
+    mock_manifest = {"profiles": {"invalid_backend": "not_a_dict_payload"}}
+    with patch("pathlib.Path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_manifest):
+        specs = BenchmarkOrchestrator._load_manifest_profiles()
+        assert specs == {}

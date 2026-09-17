@@ -1,2 +1,6 @@
-TruncateMod:
-  target_api: '''mx.remainder({0}, {1})'''
+operation: TruncateMod
+backend: mlx
+target_api: '''mx.remainder({0}, {1})'''
+ast_template: '{out} = ''mx.remainder({0}, {1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

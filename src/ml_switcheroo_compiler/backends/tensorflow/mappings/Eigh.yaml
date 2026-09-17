@@ -1,2 +1,6 @@
-Eigh:
-  target_api: tf.linalg.eigh
+operation: Eigh
+backend: tensorflow
+target_api: tf.linalg.eigh
+ast_template: '{out} = tf.linalg.eigh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

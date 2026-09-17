@@ -1,3 +1,6 @@
-Ones:
-  ast_template: np.ones
-  target_api: ''
+operation: Ones
+backend: numpy
+target_api: ''
+ast_template: np.ones
+kwarg_map: {}
+dtype_overrides: {}

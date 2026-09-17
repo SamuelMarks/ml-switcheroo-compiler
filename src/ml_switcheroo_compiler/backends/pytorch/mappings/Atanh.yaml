@@ -1,2 +1,6 @@
-Atanh:
-  target_api: torch.atanh
+operation: Atanh
+backend: pytorch
+target_api: torch.atanh
+ast_template: '{out} = torch.atanh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

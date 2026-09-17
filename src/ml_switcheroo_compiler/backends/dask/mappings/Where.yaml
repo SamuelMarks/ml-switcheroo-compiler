@@ -1,2 +1,6 @@
-Where:
-  target_api: da.where
+operation: Where
+backend: dask
+target_api: da.where
+ast_template: '{out} = da.where({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

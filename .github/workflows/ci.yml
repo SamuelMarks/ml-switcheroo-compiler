@@ -50,6 +50,9 @@ jobs:
     - name: Duplicate Code Check
       run: pylint src/ml_switcheroo_compiler --disable=all --enable=duplicate-code
 
+    - name: Validate Backend Mappings
+      run: python3 scripts/validate_backend_mappings.py
+
     - name: Update Badges
       run: |
         python3 scripts/update_badges.py

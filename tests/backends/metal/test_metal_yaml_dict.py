@@ -83,8 +83,27 @@ def test_metal_runner_compile_dispatch():
         with patch("ctypes.cdll.LoadLibrary", return_value=MagicMock()):
             runner = MetalRunner()
             runner.compile_and_dispatch("code", "entry", [1, 1, 1])
-            assert runner.allocate_buffer(100).value is None
+            assert runner.allocate_buffer(100) is None
             runner.write_buffer(None, b"test")
+
+
+def test_metal_runner_ctypes_real_buffer_allocation():
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.backends.metal.metal import MetalRunner
+
+    mock_objc = MagicMock()
+    mock_metal = MagicMock()
+    mock_metal.MTLCreateSystemDefaultDevice.return_value = 0x1000
+    mock_objc.objc_msgSend.return_value = 0x2000
+
+    runner = MetalRunner()
+    runner.objc = mock_objc
+    runner.metal = mock_metal
+    runner.device = 0x1000
+
+    buf = runner.allocate_buffer(256)
+    assert buf is not None and buf.value == 0x2000
 
 
 def test_metal_runner_methods():

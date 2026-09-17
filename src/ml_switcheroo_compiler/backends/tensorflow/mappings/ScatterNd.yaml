@@ -1,2 +1,6 @@
-ScatterNd:
-  target_api: tf.scatter_nd
+operation: ScatterNd
+backend: tensorflow
+target_api: tf.scatter_nd
+ast_template: '{out} = tf.scatter_nd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,4 +1,7 @@
-BroadcastToRank:
-  ast_template: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
-    'ndim') else {0}
-  target_api: ''
+operation: BroadcastToRank
+backend: numpy
+target_api: ''
+ast_template: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
+  'ndim') else {0}
+kwarg_map: {}
+dtype_overrides: {}

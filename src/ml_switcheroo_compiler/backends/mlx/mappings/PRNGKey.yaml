@@ -1,2 +1,6 @@
-PRNGKey:
-  target_api: '''mx.random.key({seed})'''
+operation: PRNGKey
+backend: mlx
+target_api: '''mx.random.key({seed})'''
+ast_template: '{out} = ''mx.random.key({seed})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

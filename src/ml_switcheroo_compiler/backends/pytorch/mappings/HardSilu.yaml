@@ -1,4 +1,6 @@
-HardSilu:
-  custom_code: 'lambda x: torch.nn.functional.hardsilu(x) if hasattr(torch.nn.functional,
-    ''hardsilu'') else torch.nn.functional.hardswish(x)'
-  target_api: custom_op
+operation: HardSilu
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

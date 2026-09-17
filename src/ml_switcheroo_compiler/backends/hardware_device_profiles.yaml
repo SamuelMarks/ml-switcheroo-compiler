@@ -1,0 +1,54 @@
+# hardware_device_profiles.yaml
+# Declarative hardware execution limits and dynamic dispatch tile configurations across accelerator architectures.
+
+version: "1.0.0"
+
+profiles:
+  cuda:
+    architecture: "nvidia_cuda"
+    warp_size: 32
+    max_threads_per_block: 1024
+    max_block_dim: [1024, 1024, 64]
+    max_grid_dim: [2147483647, 65535, 65535]
+    shared_memory_limit_bytes: 49152
+    max_shared_memory_per_multiprocessor: 102400
+    max_threads_per_multiprocessor: 2048
+    dynamic_tile_sizes:
+      tile_1d: 256
+      tile_2d: [16, 16]
+      tile_3d: [8, 8, 4]
+
+  rocm:
+    architecture: "amd_hip_rocm"
+    wavefront_size: 64
+    max_threads_per_block: 1024
+    max_block_dim: [1024, 1024, 64]
+    max_grid_dim: [2147483647, 65535, 65535]
+    shared_memory_limit_bytes: 65536
+    max_threads_per_multiprocessor: 2048
+    dynamic_tile_sizes:
+      tile_1d: 256
+      tile_2d: [16, 16]
+      tile_3d: [8, 8, 4]
+
+  metal:
+    architecture: "apple_metal"
+    simdgroup_size: 32
+    max_threads_per_threadgroup: 1024
+    max_threadgroup_dim: [1024, 1024, 64]
+    max_grid_dim: [2147483647, 2147483647, 2147483647]
+    threadgroup_memory_limit_bytes: 32768
+    dynamic_tile_sizes:
+      tile_1d: 256
+      tile_2d: [16, 16]
+      tile_3d: [8, 8, 4]
+
+  llvm_cpp:
+    architecture: "host_llvm_openmp"
+    vector_width: 8
+    max_threads: 64
+    openmp_chunk_size: 256
+    dynamic_tile_sizes:
+      tile_1d: 1024
+      tile_2d: [32, 32]
+      tile_3d: [8, 8, 8]

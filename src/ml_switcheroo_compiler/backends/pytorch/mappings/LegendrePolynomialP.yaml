@@ -1,2 +1,6 @@
-LegendrePolynomialP:
-  target_api: torch.special.legendre_polynomial_p
+operation: LegendrePolynomialP
+backend: pytorch
+target_api: torch.special.legendre_polynomial_p
+ast_template: '{out} = torch.special.legendre_polynomial_p({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

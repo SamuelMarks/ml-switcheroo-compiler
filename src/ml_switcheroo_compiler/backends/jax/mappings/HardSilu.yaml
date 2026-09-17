@@ -1,3 +1,6 @@
-HardSilu:
-  custom_code: 'lambda x: jax.nn.hard_silu(x)'
-  target_api: custom_op
+operation: HardSilu
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

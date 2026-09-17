@@ -1,2 +1,6 @@
-Moveaxis:
-  target_api: keras_ops.moveaxis
+operation: Moveaxis
+backend: keras
+target_api: keras_ops.moveaxis
+ast_template: '{out} = keras_ops.moveaxis({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

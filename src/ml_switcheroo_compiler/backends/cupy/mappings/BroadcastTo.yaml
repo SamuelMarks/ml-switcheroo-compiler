@@ -1,2 +1,6 @@
-BroadcastTo:
-  target_api: cp.broadcast_to
+operation: BroadcastTo
+backend: cupy
+target_api: cp.broadcast_to
+ast_template: '{out} = cp.broadcast_to({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

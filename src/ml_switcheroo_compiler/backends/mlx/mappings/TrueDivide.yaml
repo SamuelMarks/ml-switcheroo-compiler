@@ -1,2 +1,6 @@
-TrueDivide:
-  target_api: '''mx.divide({0}, {1})'''
+operation: TrueDivide
+backend: mlx
+target_api: '''mx.divide({0}, {1})'''
+ast_template: '{out} = ''mx.divide({0}, {1})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BesselJ0:
-  target_api: custom_op
+operation: BesselJ0
+backend: numpy
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

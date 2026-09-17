@@ -1,2 +1,6 @@
-Rfft2d:
-  target_api: '''mx.fft.rfft2({0}, s={s}, axes={axes})'''
+operation: Rfft2d
+backend: mlx
+target_api: '''mx.fft.rfft2({0}, s={s}, axes={axes})'''
+ast_template: '{out} = ''mx.fft.rfft2({0}, s={s}, axes={axes})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

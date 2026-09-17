@@ -1,2 +1,7 @@
-RandomRandint:
-  target_api: '''mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})'''
+operation: RandomRandint
+backend: mlx
+target_api: '''mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})'''
+ast_template: '{out} = ''mx.random.randint(low={minval}, high={maxval}, shape={shape},
+  key={0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

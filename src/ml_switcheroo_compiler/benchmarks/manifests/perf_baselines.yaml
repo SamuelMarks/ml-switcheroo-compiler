@@ -1,0 +1,66 @@
+baselines:
+  mlp_model_numpy_cpu:
+    workload_name: "mlp_model"
+    backend: "numpy"
+    device: "cpu"
+    precision: "float32"
+    batch_size: 1
+    baseline_mean_latency_ms: 2.5
+    regression_threshold_percent: 20.0
+    target_throughput_items_per_sec: 400.0
+    max_peak_memory_mb: 50.0
+
+  mlp_model_pytorch_cpu:
+    workload_name: "mlp_model"
+    backend: "pytorch"
+    device: "cpu"
+    precision: "float32"
+    batch_size: 1
+    baseline_mean_latency_ms: 1.8
+    regression_threshold_percent: 20.0
+    target_throughput_items_per_sec: 550.0
+    max_peak_memory_mb: 80.0
+
+  conv_net_numpy_cpu:
+    workload_name: "conv_net"
+    backend: "numpy"
+    device: "cpu"
+    precision: "float32"
+    batch_size: 1
+    baseline_mean_latency_ms: 5.0
+    regression_threshold_percent: 25.0
+    target_throughput_items_per_sec: 200.0
+    max_peak_memory_mb: 60.0
+
+  attention_block_jax_cpu:
+    workload_name: "attention_block"
+    backend: "jax"
+    device: "cpu"
+    precision: "float32"
+    batch_size: 1
+    baseline_mean_latency_ms: 3.2
+    regression_threshold_percent: 20.0
+    target_throughput_items_per_sec: 300.0
+    max_peak_memory_mb: 90.0
+
+  elementwise_add_cupy_cuda:
+    workload_name: "elementwise_add"
+    backend: "cupy"
+    device: "cuda"
+    precision: "float32"
+    batch_size: 32
+    baseline_mean_latency_ms: 0.15
+    regression_threshold_percent: 15.0
+    target_throughput_items_per_sec: 200000.0
+    max_peak_memory_mb: 128.0
+
+  tiled_matmul_mlx_metal:
+    workload_name: "tiled_matmul"
+    backend: "mlx"
+    device: "metal"
+    precision: "float32"
+    batch_size: 16
+    baseline_mean_latency_ms: 0.8
+    regression_threshold_percent: 15.0
+    target_throughput_items_per_sec: 20000.0
+    max_peak_memory_mb: 128.0

@@ -1,2 +1,6 @@
-Fliplr:
-  target_api: da.fliplr
+operation: Fliplr
+backend: dask
+target_api: da.fliplr
+ast_template: '{out} = da.fliplr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Nanprod:
-  target_api: cp.nanprod
+operation: Nanprod
+backend: cupy
+target_api: cp.nanprod
+ast_template: '{out} = cp.nanprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-LessEqual:
-  target_api: da.less_equal
+operation: LessEqual
+backend: dask
+target_api: da.less_equal
+ast_template: '{out} = da.less_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

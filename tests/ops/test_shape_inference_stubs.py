@@ -281,3 +281,16 @@ def test_pdot_infer_shape_edge_cases():
         op.infer_shape(MockTensor((2, 3, 4)), MockTensor((4, 5)))
     except ValueError:
         pass
+
+
+def test_ops_shape_inference_inputs_type_and_missing_op() -> None:
+    """Test infer_shape with non-sequence inputs kwarg and non-existent op."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.ops.shape_inference import infer_shape
+
+    res1 = infer_shape("Add", inputs=12345)
+    assert res1 == ()
+    with patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=None):
+        res2 = infer_shape("NonExistentOpXYZ_12345")
+        assert res2 == ()

@@ -1,3 +1,6 @@
-Norm:
-  ast_template: np.linalg.norm
-  target_api: ''
+operation: Norm
+backend: numpy
+target_api: ''
+ast_template: np.linalg.norm
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: Fft
+backend: jax
+target_api: jax.numpy.fft.fft
+ast_template: '{out} = jax.numpy.fft.fft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

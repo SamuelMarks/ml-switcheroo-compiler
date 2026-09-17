@@ -1,2 +1,6 @@
-Eigh:
-  target_api: '''mx.linalg.eigh({0})'''
+operation: Eigh
+backend: mlx
+target_api: '''mx.linalg.eigh({0})'''
+ast_template: '{out} = ''mx.linalg.eigh({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

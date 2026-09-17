@@ -22,6 +22,7 @@ class NodeSerializationDict(TypedDict, total=False):
         shape_metadata: Tensor shape dimensions.
         shape: Duplicate shape field for browser runner compatibility.
         attributes: Dictionary of node attributes.
+        subgraphs: Nested subgraphs dictionary.
     """
 
     id: str
@@ -31,6 +32,7 @@ class NodeSerializationDict(TypedDict, total=False):
     shape_metadata: list[int | str]
     shape: list[int | str]
     attributes: dict[str, str | int | float | bool]
+    subgraphs: dict[str, GraphSerializationDict]
 
 
 class GraphSerializationDict(TypedDict, total=False):
@@ -40,12 +42,14 @@ class GraphSerializationDict(TypedDict, total=False):
         name: Name of the computational graph.
         inputs: List of graph input node IDs.
         outputs: List of graph output node IDs.
+        initializers: Static weights and tensor initializers map.
         nodes: Mapping of node ID to NodeSerializationDict.
     """
 
     name: str
     inputs: list[str]
     outputs: list[str]
+    initializers: dict[str, object]
     nodes: dict[str, NodeSerializationDict]
 
 
@@ -58,9 +62,19 @@ def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:
     Returns:
         GraphSerializationDict: Structured serialization dictionary.
     """
-    inputs_list: list[str] = [node_id for node_id, node in graph.nodes.items() if getattr(node, "op_type", "") == "Input"]
+    inputs_list: list[str] = list(getattr(graph, "inputs", [])) if getattr(graph, "inputs", None) else [node_id for node_id, node in graph.nodes.items() if getattr(node, "op_type", "") == "Input"]
     outputs_list: list[str] = list(getattr(graph, "outputs", []))
     nodes_dict: dict[str, NodeSerializationDict] = {}
+
+    initializers_dict: dict[str, object] = {}
+    if hasattr(graph, "initializers") and graph.initializers:
+        for k, v in graph.initializers.items():
+            if hasattr(v, "tolist"):
+                initializers_dict[str(k)] = v.tolist()
+            elif isinstance(v, (int, float, str, bool, list, dict)):
+                initializers_dict[str(k)] = v
+            else:
+                initializers_dict[str(k)] = str(v)
 
     for node_id, node in graph.nodes.items():
         shape_meta = getattr(node, "shape_metadata", None)
@@ -91,6 +105,11 @@ def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:
                 else:
                     clean_attrs[str(k)] = str(v)
 
+        serialized_subgraphs: dict[str, GraphSerializationDict] = {}
+        for sub_k, sub_g in getattr(node, "subgraphs", {}).items():
+            if hasattr(sub_g, "nodes"):
+                serialized_subgraphs[str(sub_k)] = _build_serialization_dict(sub_g)
+
         node_entry: NodeSerializationDict = {
             "id": node_id,
             "op": node.op_type,
@@ -100,12 +119,15 @@ def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:
             "shape": shape_list,
             "attributes": clean_attrs,
         }
+        if serialized_subgraphs:
+            node_entry["subgraphs"] = serialized_subgraphs
         nodes_dict[node_id] = node_entry
 
     return {
         "name": getattr(graph, "name", "graph"),
         "inputs": inputs_list,
         "outputs": outputs_list,
+        "initializers": initializers_dict,
         "nodes": nodes_dict,
     }
 
@@ -122,9 +144,18 @@ def _parse_serialization_dict(data: dict[str, object]) -> IRGraph:
     graph_name = str(data.get("name", "graph"))
     graph = IRGraph(name=graph_name)
 
+    raw_inputs = data.get("inputs", [])
+    if isinstance(raw_inputs, list):
+        graph.inputs = [str(inp) for inp in raw_inputs]
+
     raw_outputs = data.get("outputs", [])
     if isinstance(raw_outputs, list):
         graph.outputs = [str(out) for out in raw_outputs]
+
+    raw_inits = data.get("initializers", {})
+    if isinstance(raw_inits, dict) and hasattr(graph, "initializers"):
+        for k, v in raw_inits.items():
+            graph.initializers[str(k)] = v
 
     raw_nodes = data.get("nodes", {})
     if isinstance(raw_nodes, dict):
@@ -164,6 +195,13 @@ def _parse_serialization_dict(data: dict[str, object]) -> IRGraph:
                 shape_metadata=shape_tuple,
                 attributes=attributes,
             )
+
+            raw_subgraphs = raw_node.get("subgraphs", {})
+            if isinstance(raw_subgraphs, dict):
+                for sub_k, sub_data in raw_subgraphs.items():
+                    if isinstance(sub_data, dict):
+                        node.subgraphs[str(sub_k)] = _parse_serialization_dict(sub_data)
+
             graph.nodes[str(node_id)] = node
 
     return graph

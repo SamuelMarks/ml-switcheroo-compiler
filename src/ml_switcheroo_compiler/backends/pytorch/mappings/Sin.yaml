@@ -1,2 +1,6 @@
-Sin:
-  target_api: torch.sin
+operation: Sin
+backend: pytorch
+target_api: torch.sin
+ast_template: '{out} = torch.sin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

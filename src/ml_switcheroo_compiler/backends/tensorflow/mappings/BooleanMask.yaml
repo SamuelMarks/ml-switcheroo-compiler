@@ -1,2 +1,6 @@
-BooleanMask:
-  target_api: tf.boolean_mask
+operation: BooleanMask
+backend: tensorflow
+target_api: tf.boolean_mask
+ast_template: '{out} = tf.boolean_mask({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

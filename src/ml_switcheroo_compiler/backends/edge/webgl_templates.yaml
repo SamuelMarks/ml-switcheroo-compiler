@@ -104,6 +104,88 @@ templates:
       gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''pad_w''), 0);
 
       '
+  depthwise_conv2d:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform int in_h;\nuniform int in_w;\nuniform int k_h;\nuniform\
+      \ int k_w;\nuniform int stride_h;\nuniform int stride_w;\nuniform int pad_h;\n\
+      uniform int pad_w;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord =\
+      \ ivec2(gl_FragCoord.xy);\n    int out_x = outCoord.x;\n    int out_y = outCoord.y;\n\
+      \    float sum = 0.0;\n    for (int kh = 0; kh < k_h; ++kh) {\n        for (int\
+      \ kw = 0; kw < k_w; ++kw) {\n            int in_x = out_x * stride_w + kw -\
+      \ pad_w;\n            int in_y = out_y * stride_h + kh - pad_h;\n          \
+      \  if (in_x >= 0 && in_x < in_w && in_y >= 0 && in_y < in_h) {\n           \
+      \     float a = texelFetch(A, ivec2(in_x, in_y), 0).r;\n                float\
+      \ b = texelFetch(B, ivec2(kw, kh), 0).r;\n                sum += a * b;\n  \
+      \          }\n        }\n    }\n    fragColor = vec4(sum, 0.0, 0.0, 0.0);\n\
+      }\n"
+    uniforms:
+    - in_h
+    - in_w
+    - k_h
+    - k_w
+    - stride_h
+    - stride_w
+    - pad_h
+    - pad_w
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''in_h''),
+      {in_h});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''in_w''), {in_w});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''k_h''), {k_h});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''k_w''), {k_w});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''stride_h''), 1);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''stride_w''), 1);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''pad_h''), 0);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''pad_w''), 0);
+
+      '
+  depthwiseconv2d:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform int in_h;\nuniform int in_w;\nuniform int k_h;\nuniform\
+      \ int k_w;\nuniform int stride_h;\nuniform int stride_w;\nuniform int pad_h;\n\
+      uniform int pad_w;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord =\
+      \ ivec2(gl_FragCoord.xy);\n    int out_x = outCoord.x;\n    int out_y = outCoord.y;\n\
+      \    float sum = 0.0;\n    for (int kh = 0; kh < k_h; ++kh) {\n        for (int\
+      \ kw = 0; kw < k_w; ++kw) {\n            int in_x = out_x * stride_w + kw -\
+      \ pad_w;\n            int in_y = out_y * stride_h + kh - pad_h;\n          \
+      \  if (in_x >= 0 && in_x < in_w && in_y >= 0 && in_y < in_h) {\n           \
+      \     float a = texelFetch(A, ivec2(in_x, in_y), 0).r;\n                float\
+      \ b = texelFetch(B, ivec2(kw, kh), 0).r;\n                sum += a * b;\n  \
+      \          }\n        }\n    }\n    fragColor = vec4(sum, 0.0, 0.0, 0.0);\n\
+      }\n"
+    uniforms:
+    - in_h
+    - in_w
+    - k_h
+    - k_w
+    - stride_h
+    - stride_w
+    - pad_h
+    - pad_w
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''in_h''),
+      {in_h});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''in_w''), {in_w});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''k_h''), {k_h});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''k_w''), {k_w});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''stride_h''), 1);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''stride_w''), 1);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''pad_h''), 0);
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''pad_w''), 0);
+
+      '
   maxpool2d:
     body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
       \ int in_h;\nuniform int in_w;\nuniform int pool_h;\nuniform int pool_w;\nuniform\
@@ -556,6 +638,60 @@ templates:
     uniforms:
     - K
     custom_setup: gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'K'), {k_dim});
+  attention:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform sampler2D C;\nuniform int seq_len;\nuniform int head_dim;\n\
+      out vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n\
+      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim || i\
+      \ >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n \
+      \   float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
+      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n    \
+      \    for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
+      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n     \
+      \   score *= scale;\n        if (score > max_score) max_score = score;\n  \
+      \  }\n    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0;\
+      \ j < seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0;\
+      \ kd < head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r\
+      \ * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
+      \ * scale - max_score);\n        sum_exp += weight;\n        out_val += weight\
+      \ * texelFetch(C, ivec2(d, j), 0).r;\n    }\n    if (sum_exp > 0.0) out_val\
+      \ /= sum_exp;\n    fragColor = vec4(out_val, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - seq_len
+    - head_dim
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''seq_len''),
+      {height});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''head_dim''), {width});
+
+      '
+  multihead_attention:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform sampler2D C;\nuniform int seq_len;\nuniform int head_dim;\n\
+      out vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n\
+      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim || i\
+      \ >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n \
+      \   float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
+      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n    \
+      \    for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
+      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n     \
+      \   score *= scale;\n        if (score > max_score) max_score = score;\n  \
+      \  }\n    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0;\
+      \ j < seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0;\
+      \ kd < head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r\
+      \ * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
+      \ * scale - max_score);\n        sum_exp += weight;\n        out_val += weight\
+      \ * texelFetch(C, ivec2(d, j), 0).r;\n    }\n    if (sum_exp > 0.0) out_val\
+      \ /= sum_exp;\n    fragColor = vec4(out_val, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - seq_len
+    - head_dim
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''seq_len''),
+      {height});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''head_dim''), {width});
+
+      '
 texture_packing:
   internal_format: R32F
   format: RED

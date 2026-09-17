@@ -1,0 +1,6 @@
+operation: PReLU
+backend: mlx
+target_api: mlx.core.nn.prelu
+ast_template: '{out} = mlx.core.nn.prelu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

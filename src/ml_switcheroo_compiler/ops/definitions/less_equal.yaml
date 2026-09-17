@@ -3,15 +3,54 @@ description: Computes the truth value of ``x1_i <= x2_i`` for each element ``x1_
   of the input array ``x1`` with the respective element ``x2_i`` of the input array
   ``x2``.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x1
-    type: Union[array, int, float]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x2
-    type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: x1
+    type: Union[array, int, float]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: x2
+    type: Union[array, int, float]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - x1
+  - x2
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: less_equal_vjp
+  jvp_rule_id: less_equal_jvp
+  vjp: null
+  jvp: null

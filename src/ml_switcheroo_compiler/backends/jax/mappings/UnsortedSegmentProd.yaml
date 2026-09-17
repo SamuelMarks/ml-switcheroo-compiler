@@ -1,2 +1,6 @@
-UnsortedSegmentProd:
-  target_api: _execute_unsorted_segment_prod
+operation: UnsortedSegmentProd
+backend: jax
+target_api: _execute_unsorted_segment_prod
+ast_template: '{out} = _execute_unsorted_segment_prod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

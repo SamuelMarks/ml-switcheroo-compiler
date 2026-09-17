@@ -1,2 +1,6 @@
-Union1d:
-  target_api: cp.union1d
+operation: Union1d
+backend: cupy
+target_api: cp.union1d
+ast_template: '{out} = cp.union1d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

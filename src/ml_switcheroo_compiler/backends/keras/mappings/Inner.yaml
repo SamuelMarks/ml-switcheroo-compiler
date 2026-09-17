@@ -1,2 +1,6 @@
-Inner:
-  target_api: keras_ops.inner
+operation: Inner
+backend: keras
+target_api: keras_ops.inner
+ast_template: '{out} = keras_ops.inner({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-CumulativeLogsumexp:
-  target_api: tf.math.cumulative_logsumexp
+operation: CumulativeLogsumexp
+backend: tensorflow
+target_api: tf.math.cumulative_logsumexp
+ast_template: '{out} = tf.math.cumulative_logsumexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

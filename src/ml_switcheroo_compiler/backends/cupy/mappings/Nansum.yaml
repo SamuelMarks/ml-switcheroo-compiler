@@ -1,2 +1,6 @@
-Nansum:
-  target_api: cp.nansum
+operation: Nansum
+backend: cupy
+target_api: cp.nansum
+ast_template: '{out} = cp.nansum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

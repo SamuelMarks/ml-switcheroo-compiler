@@ -1,2 +1,6 @@
-ExpandDims:
-  target_api: tf.expand_dims
+operation: ExpandDims
+backend: tensorflow
+target_api: tf.expand_dims
+ast_template: '{out} = tf.expand_dims({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Cummax:
-  ast_template: np.maximum.accumulate
-  target_api: ''
+operation: Cummax
+backend: numpy
+target_api: ''
+ast_template: np.maximum.accumulate
+kwarg_map: {}
+dtype_overrides: {}

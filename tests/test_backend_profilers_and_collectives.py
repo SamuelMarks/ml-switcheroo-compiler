@@ -302,3 +302,82 @@ def test_jax_distributed_collectives() -> None:
     with patch.dict("sys.modules", {"jax.lax": None}):
         assert jax_all_reduce(arr, op="SUM") is arr
         assert jax_all_gather(arr) is arr
+
+
+def test_backends_jax_distributed_collectives_branches() -> None:
+    """Test jax_all_reduce branches (MAX, MIN, and import error)."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.backends.jax.distributed_collectives import jax_all_reduce
+
+    mock_jax = MagicMock()
+    mock_jax.lax.psum.return_value = "sum_reduced"
+    mock_jax.lax.pmax.return_value = "max_reduced"
+    mock_jax.lax.pmin.return_value = "min_reduced"
+    with patch.dict("sys.modules", {"jax": mock_jax, "jax.lax": mock_jax.lax}):
+        assert jax_all_reduce("tensor", op="MAX", axis_name="x") == "max_reduced"
+        assert jax_all_reduce("tensor", op="MIN", axis_name="x") == "min_reduced"
+
+    with patch.dict("sys.modules", {"jax": None, "jax.lax": None}):
+        assert jax_all_reduce("fallback_tensor", op="MAX", axis_name="x") == "fallback_tensor"
+
+
+def test_backends_pytorch_distributed_collectives_branches() -> None:
+    """Test pytorch distributed collectives when dist is initialized and for various ops."""
+    from unittest.mock import patch
+
+    import torch.distributed as dist
+
+    from ml_switcheroo_compiler.backends.pytorch.distributed_collectives import (
+        pytorch_all_gather,
+        pytorch_all_reduce,
+        pytorch_broadcast,
+        pytorch_reduce_scatter,
+    )
+
+    if torch is not None and dist is not None:
+        t = torch.tensor([1.0, 2.0])
+        with patch.object(dist, "is_available", return_value=True):
+            with patch.object(dist, "is_initialized", return_value=True):
+                with patch.object(dist, "all_reduce", return_value=None):
+                    with patch.object(dist, "all_gather", return_value=None):
+                        with patch.object(dist, "reduce_scatter", return_value=None):
+                            with patch.object(dist, "broadcast", return_value=None):
+                                with patch.object(dist, "get_world_size", return_value=2):
+                                    res_prod = pytorch_all_reduce(t, op="PRODUCT")
+                                    assert res_prod is not None
+                                    res_max = pytorch_all_reduce(t, op="MAX")
+                                    assert res_max is not None
+                                    res_min = pytorch_all_reduce(t, op="MIN")
+                                    assert res_min is not None
+                                    res_sum = pytorch_all_reduce(t, op="SUM")
+                                    assert res_sum is not None
+                                    res_gather = pytorch_all_gather(t, axis=0)
+                                    assert res_gather is not None
+                                    res_scatter_sum = pytorch_reduce_scatter(t, op="SUM", scatter_dim=0)
+                                    assert res_scatter_sum is not None
+                                    res_scatter_prod = pytorch_reduce_scatter(t, op="PROD", scatter_dim=0)
+                                    assert res_scatter_prod is not None
+                                    res_bcast = pytorch_broadcast(t, src=0)
+                                    assert res_bcast is not None
+
+        with patch.object(dist, "is_available", return_value=False):
+            assert pytorch_all_reduce("raw_tensor") == "raw_tensor"
+            assert pytorch_all_gather("raw_tensor") == "raw_tensor"
+            assert pytorch_reduce_scatter("raw_tensor") == "raw_tensor"
+            assert pytorch_broadcast("raw_tensor") == "raw_tensor"
+
+    import builtins
+
+    orig_import = builtins.__import__
+
+    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+        if name in ("torch", "torch.distributed"):
+            raise ImportError("torch missing")
+        return orig_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
+        assert pytorch_all_reduce("raw_tensor") == "raw_tensor"
+        assert pytorch_all_gather("raw_tensor") == "raw_tensor"
+        assert pytorch_reduce_scatter("raw_tensor") == "raw_tensor"
+        assert pytorch_broadcast("raw_tensor") == "raw_tensor"

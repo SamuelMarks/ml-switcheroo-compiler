@@ -1,2 +1,6 @@
-Dot:
-  target_api: cp.dot
+operation: Dot
+backend: cupy
+target_api: cp.dot
+ast_template: '{out} = cp.dot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

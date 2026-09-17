@@ -1,2 +1,6 @@
-RandomBernoulli:
-  target_api: '''mx.random.bernoulli(p={p}, shape={shape}, key={0})'''
+operation: RandomBernoulli
+backend: mlx
+target_api: '''mx.random.bernoulli(p={p}, shape={shape}, key={0})'''
+ast_template: '{out} = ''mx.random.bernoulli(p={p}, shape={shape}, key={0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

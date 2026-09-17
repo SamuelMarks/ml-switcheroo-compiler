@@ -168,3 +168,36 @@ def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
     # Assert node shapes are statically resolved to concrete tuples
     assert graph.nodes["x"].shape_metadata == (4, 16)
     assert graph.nodes["dense"].shape_metadata == (4, 32)
+
+
+def test_ir_format_initializers_and_subgraphs() -> None:
+    """Verify serialization and deserialization of initializers and nested subgraphs."""
+    import numpy as np
+
+    sub = IRGraph(name="then_branch")
+    sub.inputs = ["sub_in"]
+    sub.nodes["sub_in"] = IRNode(id="sub_in", op_type="Input")
+    sub.nodes["sub_out"] = IRNode(id="sub_out", op_type="Relu", inputs=["sub_in"])
+    sub.outputs = ["sub_out"]
+
+    graph = IRGraph(name="init_subgraph_net")
+    graph.inputs = ["x"]
+    graph.initializers["weight"] = np.array([1.5, 2.5])
+    graph.nodes["x"] = IRNode(id="x", op_type="Input")
+    graph.nodes["if_node"] = IRNode(id="if_node", op_type="If", inputs=["x"], subgraphs={"then_branch": sub})
+    graph.outputs = ["if_node"]
+
+    serialized_json = graph_to_json(graph)
+    assert "initializers" in serialized_json
+    assert "weight" in serialized_json
+    assert "then_branch" in serialized_json
+
+    deserialized = json_to_graph(serialized_json)
+    assert deserialized.inputs == ["x"]
+    assert deserialized.outputs == ["if_node"]
+    assert "weight" in deserialized.initializers
+    assert deserialized.initializers["weight"] == [1.5, 2.5]
+    assert "then_branch" in deserialized.nodes["if_node"].subgraphs
+    sub_deserialized = deserialized.nodes["if_node"].subgraphs["then_branch"]
+    assert sub_deserialized.name == "then_branch"
+    assert "sub_out" in sub_deserialized.nodes

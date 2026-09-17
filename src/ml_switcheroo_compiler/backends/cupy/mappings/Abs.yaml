@@ -1,2 +1,6 @@
-Abs:
-  target_api: cp.abs
+operation: Abs
+backend: cupy
+target_api: cp.abs
+ast_template: '{out} = cp.abs({in0})'
+kwarg_map: {}
+dtype_overrides: {}

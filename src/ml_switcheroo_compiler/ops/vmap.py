@@ -59,7 +59,8 @@ def _eager_vmap(
     body_graph = IRGraph(name="vmap_body")
     body_graph.inputs = list(body_block.inputs)
     body_graph.outputs = list(body_block.outputs)
-    for n in body_block.nodes:
+    nodes_iter = body_block.nodes.values() if isinstance(body_block.nodes, dict) else body_block.nodes
+    for n in nodes_iter:
         body_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
 
     vectorized_graph = vectorize_graph(body_graph, in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
@@ -157,6 +158,7 @@ def _trace_vmap(
         op_type="Vmap",
         inputs=[a.data.id for a in args if isinstance(a, Tensor)],
         attributes={"in_axes": in_axes, "out_axes": out_axes, "body": body_graph},
+        subgraphs={"body": body_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)

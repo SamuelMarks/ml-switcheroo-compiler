@@ -1,2 +1,6 @@
-FloatPower:
-  target_api: cp.float_power
+operation: FloatPower
+backend: cupy
+target_api: cp.float_power
+ast_template: '{out} = cp.float_power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

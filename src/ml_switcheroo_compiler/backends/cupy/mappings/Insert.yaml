@@ -1,2 +1,6 @@
-Insert:
-  target_api: cp.insert
+operation: Insert
+backend: cupy
+target_api: cp.insert
+ast_template: '{out} = cp.insert({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

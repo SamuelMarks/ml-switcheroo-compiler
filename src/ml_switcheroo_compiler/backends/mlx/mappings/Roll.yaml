@@ -1,0 +1,6 @@
+operation: Roll
+backend: mlx
+target_api: mlx.core.roll
+ast_template: '{out} = mlx.core.roll({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,6 @@
+operation: MatrixDeterminant
+backend: tensorflow
+target_api: tf.linalg.det
+ast_template: '{out} = tf.linalg.det({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

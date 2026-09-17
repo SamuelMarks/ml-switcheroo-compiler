@@ -1,2 +1,6 @@
-Ifft2:
-  target_api: keras_ops.ifft2
+operation: Ifft2
+backend: keras
+target_api: keras_ops.ifft2
+ast_template: '{out} = keras_ops.ifft2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

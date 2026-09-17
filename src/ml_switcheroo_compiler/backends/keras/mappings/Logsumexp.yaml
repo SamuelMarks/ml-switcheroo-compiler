@@ -1,2 +1,6 @@
-Logsumexp:
-  target_api: keras_ops.logsumexp
+operation: Logsumexp
+backend: keras
+target_api: keras_ops.logsumexp
+ast_template: '{out} = keras_ops.logsumexp({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

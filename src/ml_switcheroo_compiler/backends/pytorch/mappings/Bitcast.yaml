@@ -1,3 +1,6 @@
-Bitcast:
-  ast_template: '{0}.view(getattr(torch, str(''{dtype}'')))'
-  target_api: ''
+operation: Bitcast
+backend: pytorch
+target_api: ''
+ast_template: '{0}.view(getattr(torch, str(''{dtype}'')))'
+kwarg_map: {}
+dtype_overrides: {}

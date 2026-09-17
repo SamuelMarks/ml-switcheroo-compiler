@@ -1,2 +1,6 @@
-Norm:
-  target_api: '''mx.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})'''
+operation: Norm
+backend: mlx
+target_api: '''mx.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})'''
+ast_template: '{out} = ''mx.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

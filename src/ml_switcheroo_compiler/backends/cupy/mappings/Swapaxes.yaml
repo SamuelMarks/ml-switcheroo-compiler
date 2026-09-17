@@ -1,2 +1,6 @@
-Swapaxes:
-  target_api: cp.swapaxes
+operation: Swapaxes
+backend: cupy
+target_api: cp.swapaxes
+ast_template: '{out} = cp.swapaxes({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

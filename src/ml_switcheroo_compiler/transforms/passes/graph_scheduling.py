@@ -300,12 +300,32 @@ class GraphSchedulingPass:
         scheduled_order = self.schedule(graph)
         if len(scheduled_order) != len(graph.nodes):
             return False
-        if scheduled_order == list(graph.nodes.keys()):
-            return False
-        new_nodes = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
-        graph.nodes.clear()
-        graph.nodes.update(new_nodes)
-        return True
+
+        order_modified = scheduled_order != list(graph.nodes.keys())
+        if order_modified:
+            new_nodes = {node_id: graph.nodes[node_id] for node_id in scheduled_order}
+            graph.nodes.clear()
+            graph.nodes.update(new_nodes)
+
+        # Populate node.stream for asynchronous stream scheduling
+        stream_modified = False
+        stream_counter = 0
+        for nid in scheduled_order:
+            node = graph.nodes[nid]
+            if getattr(node, "stream", None) is None:
+                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and getattr(graph.nodes[inp], "stream", None) is not None}
+                if len(parent_streams) == 1:
+                    node.stream = next(iter(parent_streams))
+                    stream_modified = True
+                elif not parent_streams:
+                    node.stream = f"stream_{stream_counter}"
+                    stream_counter += 1
+                    stream_modified = True
+                else:
+                    node.stream = min(parent_streams)
+                    stream_modified = True
+
+        return order_modified or stream_modified
 
 
 def graph_scheduling_pass(graph: IRGraph) -> bool:

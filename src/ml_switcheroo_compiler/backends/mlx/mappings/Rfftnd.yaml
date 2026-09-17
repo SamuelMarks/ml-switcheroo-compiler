@@ -1,2 +1,6 @@
-Rfftnd:
-  target_api: '''mx.fft.rfftn({0})'''
+operation: Rfftnd
+backend: mlx
+target_api: '''mx.fft.rfftn({0})'''
+ast_template: '{out} = ''mx.fft.rfftn({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

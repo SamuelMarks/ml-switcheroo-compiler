@@ -1,2 +1,6 @@
-Solve:
-  target_api: keras_ops.solve
+operation: Solve
+backend: keras
+target_api: keras_ops.solve
+ast_template: '{out} = keras_ops.solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Isclose:
-  target_api: keras_ops.isclose
+operation: Isclose
+backend: keras
+target_api: keras_ops.isclose
+ast_template: '{out} = keras_ops.isclose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BroadcastTo:
-  target_api: da.broadcast_to
+operation: BroadcastTo
+backend: dask
+target_api: da.broadcast_to
+ast_template: '{out} = da.broadcast_to({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

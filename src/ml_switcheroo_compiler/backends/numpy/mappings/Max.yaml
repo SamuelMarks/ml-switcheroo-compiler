@@ -1,3 +1,6 @@
-Max:
-  ast_template: np.max
-  target_api: ''
+operation: Max
+backend: numpy
+target_api: ''
+ast_template: np.max
+kwarg_map: {}
+dtype_overrides: {}

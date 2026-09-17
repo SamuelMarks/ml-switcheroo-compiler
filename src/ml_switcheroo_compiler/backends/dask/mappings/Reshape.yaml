@@ -1,2 +1,6 @@
-Reshape:
-  target_api: da.reshape
+operation: Reshape
+backend: dask
+target_api: da.reshape
+ast_template: '{out} = da.reshape({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

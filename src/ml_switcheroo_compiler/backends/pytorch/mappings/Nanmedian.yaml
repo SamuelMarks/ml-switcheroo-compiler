@@ -1,0 +1,6 @@
+operation: Nanmedian
+backend: pytorch
+target_api: torch.nanmedian
+ast_template: '{out} = torch.nanmedian({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Tensorinv:
-  ast_template: np.linalg.tensorinv({0}, ind={ind})
-  target_api: ''
+operation: Tensorinv
+backend: numpy
+target_api: ''
+ast_template: np.linalg.tensorinv({0}, ind={ind})
+kwarg_map: {}
+dtype_overrides: {}

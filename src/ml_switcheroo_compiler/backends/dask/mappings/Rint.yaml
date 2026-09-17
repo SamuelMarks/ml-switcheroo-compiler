@@ -1,2 +1,6 @@
-Rint:
-  target_api: da.rint
+operation: Rint
+backend: dask
+target_api: da.rint
+ast_template: '{out} = da.rint({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

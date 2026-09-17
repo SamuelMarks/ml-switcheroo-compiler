@@ -1,2 +1,6 @@
-Isneginf:
-  target_api: cp.isneginf
+operation: Isneginf
+backend: cupy
+target_api: cp.isneginf
+ast_template: '{out} = cp.isneginf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

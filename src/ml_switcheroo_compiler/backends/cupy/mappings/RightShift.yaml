@@ -1,2 +1,6 @@
-RightShift:
-  target_api: cp.right_shift
+operation: RightShift
+backend: cupy
+target_api: cp.right_shift
+ast_template: '{out} = cp.right_shift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

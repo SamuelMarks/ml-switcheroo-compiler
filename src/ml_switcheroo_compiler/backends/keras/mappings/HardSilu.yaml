@@ -1,2 +1,6 @@
-HardSilu:
-  target_api: keras_ops.hard_silu
+operation: HardSilu
+backend: keras
+target_api: keras_ops.hard_silu
+ast_template: '{out} = keras_ops.hard_silu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

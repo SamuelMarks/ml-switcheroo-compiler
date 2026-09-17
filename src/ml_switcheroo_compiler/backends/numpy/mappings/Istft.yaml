@@ -1,4 +1,7 @@
-Istft:
-  ast_template: np_istft({0}, {frame_length}, {frame_step}, {fft_length}, '{window_fn}',
-    {center})
-  target_api: ''
+operation: Istft
+backend: numpy
+target_api: ''
+ast_template: np_istft({0}, {frame_length}, {frame_step}, {fft_length}, '{window_fn}',
+  {center})
+kwarg_map: {}
+dtype_overrides: {}

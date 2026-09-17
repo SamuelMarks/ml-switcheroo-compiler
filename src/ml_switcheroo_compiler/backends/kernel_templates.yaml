@@ -1,0 +1,236 @@
+kernel_templates:
+  Add:
+    opcode: "Add"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] + in1[idx];"
+    cuda_body: "__global__ void add_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] + in1[idx]; }"
+    rocm_body: "__global__ void add_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] + in1[idx]; }"
+    metal_body: "kernel void add_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] + in1[idx]; }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Sub:
+    opcode: "Sub"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] - in1[idx];"
+    cuda_body: "__global__ void sub_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
+    rocm_body: "__global__ void sub_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
+    metal_body: "kernel void sub_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] - in1[idx]; }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Mul:
+    opcode: "Mul"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] * in1[idx];"
+    cuda_body: "__global__ void mul_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] * in1[idx]; }"
+    rocm_body: "__global__ void mul_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
+    metal_body: "kernel void mul_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] * in1[idx]; }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Div:
+    opcode: "Div"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] / in1[idx];"
+    cuda_body: "__global__ void div_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] / in1[idx]; }"
+    rocm_body: "__global__ void div_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] / in1[idx]; }"
+    metal_body: "kernel void div_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] / in1[idx]; }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Relu:
+    opcode: "Relu"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] > 0.0f ? in0[idx] : 0.0f;"
+    cuda_body: "__global__ void relu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = fmaxf(0.0f, in0[idx]); }"
+    rocm_body: "__global__ void relu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = fmaxf(0.0f, in0[idx]); }"
+    metal_body: "kernel void relu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], uint idx [[thread_position_in_grid]]) { out[idx] = max(0.0f, in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  MatMul:
+    opcode: "MatMul"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "float sum = 0.0f; for (int k = 0; k < K; ++k) sum += in0[row * K + k] * in1[k * N + col]; out[row * N + col] = sum;"
+    cuda_body: "__global__ void matmul_kernel(const float* A, const float* B, float* C, int M, int N, int K) { int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x; if (row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    rocm_body: "__global__ void matmul_kernel(const float* A, const float* B, float* C, int M, int N, int K) { int row = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y; int col = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    metal_body: "kernel void matmul_kernel(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]], device float* C [[buffer(2)]], constant uint4& dims [[buffer(3)]], uint2 gid [[thread_position_in_grid]]) { uint row = gid.y; uint col = gid.x; uint M = dims.x; uint N = dims.y; uint K = dims.z; if (row < M && col < N) { float sum = 0.0f; for (uint k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    parameters:
+      - name: "A"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "B"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "C"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "M"
+        param_type: "int"
+        source: "shape"
+        source_key: "M"
+      - name: "N"
+        param_type: "int"
+        source: "shape"
+        source_key: "N"
+      - name: "K"
+        param_type: "int"
+        source: "shape"
+        source_key: "K"
+
+  BatchMatMul:
+    opcode: "BatchMatMul"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[b * M * K + row * K + k] * B[b * K * N + k * N + col]; C[b * M * N + row * N + col] = sum;"
+    parameters:
+      - name: "A"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "B"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "C"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "B_sz"
+        param_type: "int"
+        source: "shape"
+        source_key: "batch_size"
+      - name: "M"
+        param_type: "int"
+        source: "shape"
+        source_key: "M"
+      - name: "N"
+        param_type: "int"
+        source: "shape"
+        source_key: "N"
+      - name: "K"
+        param_type: "int"
+        source: "shape"
+        source_key: "K"
+
+  Conv2D:
+    opcode: "Conv2D"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int oc = blockIdx.y; int hw = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "nchw"]
+    body: "float sum = 0.0f; /* 2D spatial convolution */"
+    parameters:
+      - name: "x"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "w"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  ReduceSum:
+    opcode: "ReduceSum"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "atomicAdd(out, in0[idx]);"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"

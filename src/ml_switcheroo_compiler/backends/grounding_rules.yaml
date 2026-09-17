@@ -1,0 +1,106 @@
+# Declarative grounding rules for backend mappings
+version: "1.0.0"
+
+backend_allowed_roots:
+  pytorch:
+    - "torch"
+    - "pytorch"
+    - "torchaudio"
+    - "torchvision"
+  jax:
+    - "jax"
+    - "jnp"
+    - "lax"
+  mlx:
+    - "mlx"
+    - "mx"
+  tensorflow:
+    - "tensorflow"
+    - "tf"
+  keras:
+    - "keras"
+    - "keras_ops"
+  cupy:
+    - "cupy"
+    - "cp"
+  dask:
+    - "dask"
+    - "da"
+  numpy:
+    - "numpy"
+    - "np"
+  edge_stablehlo:
+    - "stablehlo"
+  edge_mlir:
+    - "mlir"
+  cuda:
+    - "cuda"
+    - "ptx"
+    - "sass"
+  rocm:
+    - "rocm"
+    - "hip"
+    - "rdna"
+  edge_onnx:
+    - "onnx"
+    - "ai.onnx"
+  webgpu:
+    - "webgpu"
+    - "wgsl"
+  metal:
+    - "metal"
+    - "msl"
+
+backend_default_root:
+  pytorch: "torch"
+  jax: "jax"
+  mlx: "mlx.core"
+  tensorflow: "tf"
+  keras: "keras"
+  cupy: "cupy"
+  dask: "dask.array"
+  numpy: "numpy"
+  edge_stablehlo: "stablehlo"
+  edge_mlir: "mlir"
+  cuda: "cuda"
+  rocm: "rocm"
+  edge_onnx: "onnx"
+  webgpu: "webgpu"
+  metal: "metal"
+
+root_expansions:
+  jnp: "jax.numpy"
+  tf: "tensorflow"
+  np: "numpy"
+  cp: "cupy"
+  da: "dask.array"
+  mx: "mlx.core"
+  keras_ops: "keras.ops"
+
+root_map:
+  torch: "pytorch"
+  pytorch: "pytorch"
+  torchaudio: "pytorch"
+  torchvision: "pytorch"
+  jax: "jax"
+  jnp: "jax"
+  mlx: "mlx"
+  mx: "mlx"
+  tensorflow: "tensorflow"
+  tf: "tensorflow"
+  keras: "keras"
+  keras_ops: "keras"
+  cupy: "cupy"
+  cp: "cupy"
+  dask: "dask"
+  da: "dask"
+  numpy: "numpy"
+  np: "numpy"
+  stablehlo: "edge_stablehlo"
+  mlir: "edge_mlir"
+  cuda: "cuda"
+  ptx: "cuda"
+  sass: "cuda"
+  rocm: "rocm"
+  hip: "rocm"
+  rdna: "rocm"

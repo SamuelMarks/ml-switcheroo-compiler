@@ -1,2 +1,6 @@
-Divide:
-  target_api: da.divide
+operation: Divide
+backend: dask
+target_api: da.divide
+ast_template: '{out} = da.divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Size:
-  target_api: tf.size
+operation: Size
+backend: tensorflow
+target_api: tf.size
+ast_template: '{out} = tf.size({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

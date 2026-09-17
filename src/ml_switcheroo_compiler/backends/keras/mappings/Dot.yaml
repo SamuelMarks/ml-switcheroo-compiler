@@ -1,2 +1,6 @@
-Dot:
-  target_api: keras_ops.dot
+operation: Dot
+backend: keras
+target_api: keras_ops.dot
+ast_template: '{out} = keras_ops.dot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

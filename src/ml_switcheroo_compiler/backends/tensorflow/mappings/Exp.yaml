@@ -1,2 +1,6 @@
-Exp:
-  target_api: tf.exp
+operation: Exp
+backend: tensorflow
+target_api: tf.exp
+ast_template: '{out} = tf.exp({in0})'
+kwarg_map: {}
+dtype_overrides: {}

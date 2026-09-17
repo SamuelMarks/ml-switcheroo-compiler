@@ -1,2 +1,6 @@
-Sort:
-  target_api: keras_ops.sort
+operation: Sort
+backend: keras
+target_api: keras_ops.sort
+ast_template: '{out} = keras_ops.sort({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

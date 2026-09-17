@@ -1,2 +1,6 @@
-Fmin:
-  target_api: da.fmin
+operation: Fmin
+backend: dask
+target_api: da.fmin
+ast_template: '{out} = da.fmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

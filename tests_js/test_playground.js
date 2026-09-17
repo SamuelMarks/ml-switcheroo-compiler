@@ -39,10 +39,126 @@ test('getExampleCode returns correct string', () => {
     const code = playgroundModule.getExampleCode('jax', 'simple_mlp');
     assert.match(code, /import jax\.numpy/);
 });
-
 test('getExampleCode fallback for missing', () => {
     const code = playgroundModule.getExampleCode('unknown', 'unknown');
     assert.match(code, /# Example code not found for/);
+});
+
+test('generateDeterministicInputBuffer generates valid buffers for arbitrary shapes and dtypes', () => {
+    const floatBuf2D = playgroundModule.generateDeterministicInputBuffer([2, 16], 'float32');
+    assert.ok(floatBuf2D instanceof Float32Array);
+    assert.strictEqual(floatBuf2D.length, 32);
+    assert.ok(floatBuf2D[0] > 0);
+
+    const intBuf4D = playgroundModule.generateDeterministicInputBuffer([1, 3, 28, 28], 'int32');
+    assert.ok(intBuf4D instanceof Int32Array);
+    assert.strictEqual(intBuf4D.length, 1 * 3 * 28 * 28);
+
+    // Default fallback
+    const defaultBuf = playgroundModule.generateDeterministicInputBuffer(null);
+    assert.strictEqual(defaultBuf.length, 4);
+});
+
+test('extractRuntimeShapesAndStrides captures runtime shape and stride metadata', () => {
+    // Case 1: Result with shape attribute
+    const resWithShape = new Float32Array([1, 2, 3, 4, 5, 6]);
+    resWithShape.shape = [2, 3];
+    const shapes1 = playgroundModule.extractRuntimeShapesAndStrides(resWithShape);
+    assert.deepStrictEqual(shapes1['out_0'], [2, 3]);
+
+    // Case 2: Using outputMeta shape
+    const resRaw = new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]);
+    const shapes2 = playgroundModule.extractRuntimeShapesAndStrides(resRaw, { shape: [2, 4] });
+    assert.deepStrictEqual(shapes2['out_0'], [2, 4]);
+
+    // Case 3: Flat length fallback
+    const shapes3 = playgroundModule.extractRuntimeShapesAndStrides(new Float32Array(10));
+    assert.deepStrictEqual(shapes3['out_0'], [10]);
+
+    // Case 4: Null result
+    assert.deepStrictEqual(playgroundModule.extractRuntimeShapesAndStrides(null), {});
+});
+
+test('declarative playground workloads manifest validates CNN, MLP, and Transformer blocks', () => {
+    const manifestPath = path.join(__dirname, 'test_manifests', 'playground_workloads.yaml');
+    assert.ok(fs.existsSync(manifestPath), 'playground_workloads.yaml must exist');
+    const content = fs.readFileSync(manifestPath, 'utf8');
+    assert.ok(content.includes('mlp_block'));
+    assert.ok(content.includes('cnn_block'));
+    assert.ok(content.includes('transformer_block'));
+    assert.ok(content.includes('expected_forward_shape'));
+    assert.ok(content.includes('expected_gradient_shapes'));
+});
+
+test('resolveWheelUrls resolves dynamically via config, DOM, fetch, and fallback', async () => {
+    // 1. Global config override
+    const winConfig = {
+        __ML_SWITCHEROO_WHEELS__: ['custom_pkg-2.0.0-py3-none-any.whl', 'https://cdn.example.com/other-1.0.whl']
+    };
+    const urls1 = await playgroundModule.resolveWheelUrls(null, winConfig, './_static/');
+    assert.deepStrictEqual(urls1, [
+        './_static/custom_pkg-2.0.0-py3-none-any.whl',
+        'https://cdn.example.com/other-1.0.whl'
+    ]);
+
+    // 2. Mock DOM data-wheels
+    const mockDocData = {
+        querySelector: (selector) => {
+            if (selector === '[data-wheels]') {
+                return {
+                    dataset: {
+                        wheels: 'ir-0.0.4-py3-none-any.whl, compiler-0.2.0-py3-none-any.whl'
+                    }
+                };
+            }
+            return null;
+        },
+        querySelectorAll: () => []
+    };
+    const urls2 = await playgroundModule.resolveWheelUrls(mockDocData, {}, './_static/');
+    assert.deepStrictEqual(urls2, [
+        './_static/ir-0.0.4-py3-none-any.whl',
+        './_static/compiler-0.2.0-py3-none-any.whl'
+    ]);
+
+    // 3. Mock DOM anchor links
+    const mockDocLinks = {
+        querySelector: () => null,
+        querySelectorAll: (selector) => {
+            if (selector === 'a.pg-wheel-link') {
+                return [
+                    { getAttribute: (attr) => attr === 'href' ? '_static/dynamic_a-1.2.3-py3-none-any.whl' : null },
+                    { getAttribute: (attr) => attr === 'href' ? 'http://ext.org/dynamic_b-4.5.6-py3-none-any.whl' : null }
+                ];
+            }
+            return [];
+        }
+    };
+    const urls3 = await playgroundModule.resolveWheelUrls(mockDocLinks, {}, './_static/');
+    assert.deepStrictEqual(urls3, [
+        './_static/dynamic_a-1.2.3-py3-none-any.whl',
+        'http://ext.org/dynamic_b-4.5.6-py3-none-any.whl'
+    ]);
+
+    // 4. Fetch wheels.json manifest
+    const winFetch = {
+        fetch: async (url) => {
+            if (url === './_static/wheels.json') {
+                return {
+                    ok: true,
+                    json: async () => ({ wheels: ['manifest_pkg-3.1.0-py3-none-any.whl'] })
+                };
+            }
+            return { ok: false };
+        }
+    };
+    const urls4 = await playgroundModule.resolveWheelUrls(null, winFetch, './_static/');
+    assert.deepStrictEqual(urls4, ['./_static/manifest_pkg-3.1.0-py3-none-any.whl']);
+
+    // 5. Default fallback
+    const urls5 = await playgroundModule.resolveWheelUrls(null, {}, './_static/');
+    assert.ok(Array.isArray(urls5) && urls5.length >= 2);
+    assert.ok(urls5.every(u => u.endsWith('.whl')));
 });
 
 const baseTest = test;

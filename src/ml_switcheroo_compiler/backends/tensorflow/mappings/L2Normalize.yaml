@@ -1,2 +1,6 @@
-L2Normalize:
-  target_api: tf.linalg.l2_normalize
+operation: L2Normalize
+backend: tensorflow
+target_api: tf.linalg.l2_normalize
+ast_template: '{out} = tf.linalg.l2_normalize({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

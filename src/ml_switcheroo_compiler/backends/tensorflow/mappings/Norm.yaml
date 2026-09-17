@@ -1,2 +1,6 @@
-Norm:
-  target_api: tf.norm
+operation: Norm
+backend: tensorflow
+target_api: tf.norm
+ast_template: '{out} = tf.norm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

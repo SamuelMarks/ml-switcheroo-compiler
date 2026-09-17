@@ -1,3 +1,6 @@
-Polyval:
-  ast_template: np.polyval
-  target_api: ''
+operation: Polyval
+backend: numpy
+target_api: ''
+ast_template: np.polyval
+kwarg_map: {}
+dtype_overrides: {}

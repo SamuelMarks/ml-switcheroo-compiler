@@ -1,18 +1,18 @@
 operation: Reshape
 description: The Reshape operation.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: x
-    type: array
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: shape
-    type: Tuple[int, Ellipsis]
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: copy
-    type: Optional[bool]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: shape
+  type: Tuple[int, Ellipsis]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: copy
+  type: Optional[bool]
 variants:
   cupy:
     eager: cp.reshape
@@ -40,3 +40,48 @@ variants:
     template: fallback_copy
   llvm_cpp:
     template: fallback_copy
+  edge_wgsl:
+    template: unary
+    expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
+signature:
+  args:
+  - name: x
+    type: array
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: shape
+    type: Tuple[int, Ellipsis]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: copy
+    type: Optional[bool]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: reshape(in0, shape)
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: reshape
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Reshape_vjp
+  jvp_rule_id: Reshape_jvp
+  vjp: null
+  jvp: null

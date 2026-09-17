@@ -1,2 +1,6 @@
-ConvTranspose:
-  target_api: keras_ops.conv_transpose
+operation: ConvTranspose
+backend: keras
+target_api: keras_ops.conv_transpose
+ast_template: '{out} = keras_ops.conv_transpose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

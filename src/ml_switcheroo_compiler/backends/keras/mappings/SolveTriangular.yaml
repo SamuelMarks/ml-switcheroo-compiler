@@ -1,0 +1,6 @@
+operation: SolveTriangular
+backend: keras
+target_api: keras.ops.linalg.solve_triangular
+ast_template: '{out} = keras.ops.linalg.solve_triangular({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

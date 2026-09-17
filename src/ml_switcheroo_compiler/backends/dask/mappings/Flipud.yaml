@@ -1,2 +1,6 @@
-Flipud:
-  target_api: da.flipud
+operation: Flipud
+backend: dask
+target_api: da.flipud
+ast_template: '{out} = da.flipud({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

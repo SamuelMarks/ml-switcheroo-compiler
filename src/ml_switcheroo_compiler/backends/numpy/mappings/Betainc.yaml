@@ -1,3 +1,6 @@
-Betainc:
-  ast_template: getattr(backend_module, 'betainc', None)
-  target_api: ''
+operation: Betainc
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'betainc', None)
+kwarg_map: {}
+dtype_overrides: {}

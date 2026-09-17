@@ -1,3 +1,6 @@
-Atanh:
-  ast_template: np.arctanh
-  target_api: ''
+operation: Atanh
+backend: numpy
+target_api: ''
+ast_template: np.arctanh
+kwarg_map: {}
+dtype_overrides: {}

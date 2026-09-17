@@ -1,2 +1,6 @@
-DynamicStitch:
-  target_api: tf.dynamic_stitch
+operation: DynamicStitch
+backend: tensorflow
+target_api: tf.dynamic_stitch
+ast_template: '{out} = tf.dynamic_stitch({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

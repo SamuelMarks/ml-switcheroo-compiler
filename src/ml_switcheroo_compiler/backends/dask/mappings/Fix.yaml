@@ -1,2 +1,6 @@
-Fix:
-  target_api: da.fix
+operation: Fix
+backend: dask
+target_api: da.fix
+ast_template: '{out} = da.fix({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

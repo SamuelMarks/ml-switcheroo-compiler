@@ -1,2 +1,6 @@
-LogSigmoid:
-  target_api: tf.math.log_sigmoid
+operation: LogSigmoid
+backend: tensorflow
+target_api: tf.math.log_sigmoid
+ast_template: '{out} = tf.math.log_sigmoid({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

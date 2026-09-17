@@ -1,2 +1,6 @@
-Log:
-  target_api: torch.log
+operation: Log
+backend: pytorch
+target_api: torch.log
+ast_template: '{out} = torch.log({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Real:
-  target_api: da.real
+operation: Real
+backend: dask
+target_api: da.real
+ast_template: '{out} = da.real({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

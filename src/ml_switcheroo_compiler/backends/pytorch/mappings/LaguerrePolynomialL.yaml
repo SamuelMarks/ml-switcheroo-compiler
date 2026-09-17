@@ -1,2 +1,6 @@
-LaguerrePolynomialL:
-  target_api: torch.special.laguerre_polynomial_l
+operation: LaguerrePolynomialL
+backend: pytorch
+target_api: torch.special.laguerre_polynomial_l
+ast_template: '{out} = torch.special.laguerre_polynomial_l({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

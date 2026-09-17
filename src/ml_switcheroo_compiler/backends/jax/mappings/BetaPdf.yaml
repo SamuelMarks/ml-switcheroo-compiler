@@ -1,2 +1,6 @@
-BetaPdf:
-  target_api: jax.scipy.stats.beta.pdf
+operation: BetaPdf
+backend: jax
+target_api: jax.scipy.stats.beta.pdf
+ast_template: '{out} = jax.scipy.stats.beta.pdf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

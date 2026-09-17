@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: _torch_tensordot
+operation: Tensordot
+backend: pytorch
+target_api: _torch_tensordot
+ast_template: '{out} = _torch_tensordot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

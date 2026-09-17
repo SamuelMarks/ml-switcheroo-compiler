@@ -1,2 +1,6 @@
-EighTridiagonal:
-  target_api: tf.linalg.eigh_tridiagonal
+operation: EighTridiagonal
+backend: tensorflow
+target_api: tf.linalg.eigh_tridiagonal
+ast_template: '{out} = tf.linalg.eigh_tridiagonal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

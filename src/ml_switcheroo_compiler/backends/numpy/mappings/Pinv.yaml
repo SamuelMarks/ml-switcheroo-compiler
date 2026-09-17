@@ -1,3 +1,6 @@
-Pinv:
-  ast_template: np.linalg.pinv
-  target_api: ''
+operation: Pinv
+backend: numpy
+target_api: ''
+ast_template: np.linalg.pinv
+kwarg_map: {}
+dtype_overrides: {}

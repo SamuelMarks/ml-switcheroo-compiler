@@ -1,2 +1,6 @@
-Floor:
-  target_api: tf.floor
+operation: Floor
+backend: tensorflow
+target_api: tf.floor
+ast_template: '{out} = tf.floor({in0})'
+kwarg_map: {}
+dtype_overrides: {}

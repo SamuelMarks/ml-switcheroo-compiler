@@ -1,4 +1,7 @@
-MelFilterbank:
-  ast_template: np_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate},
-    {lower_edge_hertz}, {upper_edge_hertz})
-  target_api: ''
+operation: MelFilterbank
+backend: numpy
+target_api: ''
+ast_template: np_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate},
+  {lower_edge_hertz}, {upper_edge_hertz})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Cholesky:
-  ast_template: np.linalg.cholesky
-  target_api: ''
+operation: Cholesky
+backend: numpy
+target_api: ''
+ast_template: np.linalg.cholesky
+kwarg_map: {}
+dtype_overrides: {}

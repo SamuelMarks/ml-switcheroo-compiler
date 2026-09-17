@@ -1,2 +1,6 @@
-Repeat:
-  target_api: keras_ops.repeat
+operation: Repeat
+backend: keras
+target_api: keras_ops.repeat
+ast_template: '{out} = keras_ops.repeat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

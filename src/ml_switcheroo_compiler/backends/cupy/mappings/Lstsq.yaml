@@ -1,2 +1,6 @@
-Lstsq:
-  target_api: cp.linalg.lstsq
+operation: Lstsq
+backend: cupy
+target_api: cp.linalg.lstsq
+ast_template: '{out} = cp.linalg.lstsq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

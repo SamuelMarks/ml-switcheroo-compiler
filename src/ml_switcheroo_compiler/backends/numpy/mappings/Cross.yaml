@@ -1,3 +1,6 @@
-Cross:
-  ast_template: np.cross
-  target_api: ''
+operation: Cross
+backend: numpy
+target_api: ''
+ast_template: np.cross
+kwarg_map: {}
+dtype_overrides: {}

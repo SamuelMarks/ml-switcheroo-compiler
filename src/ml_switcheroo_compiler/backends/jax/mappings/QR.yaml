@@ -1,0 +1,6 @@
+operation: QR
+backend: jax
+target_api: jax.numpy.linalg.qr
+ast_template: '{out} = jax.numpy.linalg.qr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

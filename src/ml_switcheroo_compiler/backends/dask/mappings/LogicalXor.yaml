@@ -1,2 +1,6 @@
-LogicalXor:
-  target_api: da.logical_xor
+operation: LogicalXor
+backend: dask
+target_api: da.logical_xor
+ast_template: '{out} = da.logical_xor({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

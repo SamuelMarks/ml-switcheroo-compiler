@@ -1,2 +1,6 @@
-Sqrtm:
-  target_api: tf.linalg.sqrtm
+operation: Sqrtm
+backend: tensorflow
+target_api: tf.linalg.sqrtm
+ast_template: '{out} = tf.linalg.sqrtm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

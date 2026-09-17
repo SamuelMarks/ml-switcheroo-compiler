@@ -1,2 +1,6 @@
-Sigmoid:
-  target_api: '''mx.sigmoid({0})'''
+operation: Sigmoid
+backend: mlx
+target_api: '''mx.sigmoid({0})'''
+ast_template: '{out} = ''mx.sigmoid({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

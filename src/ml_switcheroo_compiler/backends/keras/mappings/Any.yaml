@@ -1,2 +1,6 @@
-Any:
-  target_api: keras_ops.any
+operation: Any
+backend: keras
+target_api: keras_ops.any
+ast_template: '{out} = keras_ops.any({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

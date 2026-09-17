@@ -1,3 +1,6 @@
-Erfinv:
-  ast_template: torch.erfinv({0})
-  target_api: ''
+operation: Erfinv
+backend: pytorch
+target_api: ''
+ast_template: torch.erfinv({0})
+kwarg_map: {}
+dtype_overrides: {}

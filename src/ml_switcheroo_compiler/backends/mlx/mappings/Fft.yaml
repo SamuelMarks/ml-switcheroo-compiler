@@ -1,2 +1,6 @@
-Fft:
-  target_api: '''mx.fft.fft({0})'''
+operation: Fft
+backend: mlx
+target_api: '''mx.fft.fft({0})'''
+ast_template: '{out} = ''mx.fft.fft({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

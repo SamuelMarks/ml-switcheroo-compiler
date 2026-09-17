@@ -1,2 +1,6 @@
-Rfftfreq:
-  target_api: cp.fft.rfftfreq
+operation: Rfftfreq
+backend: cupy
+target_api: cp.fft.rfftfreq
+ast_template: '{out} = cp.fft.rfftfreq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

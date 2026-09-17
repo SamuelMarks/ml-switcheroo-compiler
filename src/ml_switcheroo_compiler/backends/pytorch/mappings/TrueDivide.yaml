@@ -1,3 +1,6 @@
-TrueDivide:
-  ast_template: torch.true_divide({0}, {1})
-  target_api: torch.div
+operation: TrueDivide
+backend: pytorch
+target_api: torch.div
+ast_template: torch.true_divide({0}, {1})
+kwarg_map: {}
+dtype_overrides: {}

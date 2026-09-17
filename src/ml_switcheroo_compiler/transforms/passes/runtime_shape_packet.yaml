@@ -1,0 +1,15 @@
+schema_version: "1.0.0"
+description: "Standardized schema for runtime shape observation packets from browser and edge execution targets."
+required_fields:
+  - packet_id
+  - runtime
+  - graph_name
+  - observations
+
+observation_schema:
+  node_id: "string"
+  shape: "list[int]"
+  dtype: "string"
+  strides: "list[int] (optional)"
+  offset: "int (optional)"
+  byte_length: "int (optional)"

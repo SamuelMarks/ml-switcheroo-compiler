@@ -1,32 +1,86 @@
 operation: GradScaler
 description: Utility for gradient scaling in mixed precision training.
 std_args:
-  - default: 65536.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: init_scale
-    type: float
-  - default: 2.0
-    is_variadic: false
-    kind: positional_or_keyword
-    name: growth_factor
-    type: float
-  - default: 0.5
-    is_variadic: false
-    kind: positional_or_keyword
-    name: backoff_factor
-    type: float
-  - default: 2000
-    is_variadic: false
-    kind: positional_or_keyword
-    name: growth_interval
-    type: int
-  - default: true
-    is_variadic: false
-    kind: positional_or_keyword
-    name: enabled
-    type: bool
+- default: 65536.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: init_scale
+  type: float
+- default: 2.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: growth_factor
+  type: float
+- default: 0.5
+  is_variadic: false
+  kind: positional_or_keyword
+  name: backoff_factor
+  type: float
+- default: 2000
+  is_variadic: false
+  kind: positional_or_keyword
+  name: growth_interval
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: enabled
+  type: bool
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: init_scale
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: growth_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: backoff_factor
+    type: float
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: growth_interval
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: enabled
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - init_scale
+  - growth_factor
+  - backoff_factor
+  - growth_interval
+  - enabled
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: GradScaler_vjp
+  jvp_rule_id: GradScaler_jvp
+  vjp: null
+  jvp: null

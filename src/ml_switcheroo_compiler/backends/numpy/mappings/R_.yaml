@@ -1,3 +1,6 @@
-R_:
-  ast_template: np.r_
-  target_api: ''
+operation: R_
+backend: numpy
+target_api: ''
+ast_template: np.r_
+kwarg_map: {}
+dtype_overrides: {}

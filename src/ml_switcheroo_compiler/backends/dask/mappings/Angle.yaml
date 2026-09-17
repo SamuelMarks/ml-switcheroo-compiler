@@ -1,2 +1,6 @@
-Angle:
-  target_api: da.angle
+operation: Angle
+backend: dask
+target_api: da.angle
+ast_template: '{out} = da.angle({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

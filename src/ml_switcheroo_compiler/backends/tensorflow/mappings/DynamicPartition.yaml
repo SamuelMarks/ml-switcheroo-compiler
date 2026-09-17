@@ -1,2 +1,6 @@
-DynamicPartition:
-  target_api: tf.dynamic_partition
+operation: DynamicPartition
+backend: tensorflow
+target_api: tf.dynamic_partition
+ast_template: '{out} = tf.dynamic_partition({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

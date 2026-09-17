@@ -1,3 +1,6 @@
-Diagonal:
-  ast_template: np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
-  target_api: ''
+operation: Diagonal
+backend: numpy
+target_api: ''
+ast_template: np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+kwarg_map: {}
+dtype_overrides: {}

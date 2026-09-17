@@ -1,2 +1,6 @@
-Polyval:
-  target_api: tf.math.polyval
+operation: Polyval
+backend: tensorflow
+target_api: tf.math.polyval
+ast_template: '{out} = tf.math.polyval({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-GaussianBlur:
-  ast_template: torchvision.transforms.functional.gaussian_blur({0})
-  target_api: ''
+operation: GaussianBlur
+backend: pytorch
+target_api: ''
+ast_template: torchvision.transforms.functional.gaussian_blur({0})
+kwarg_map: {}
+dtype_overrides: {}

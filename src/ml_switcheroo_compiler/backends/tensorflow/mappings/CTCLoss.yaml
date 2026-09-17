@@ -1,2 +1,6 @@
-CtcLoss:
-  target_api: tf.nn.ctc_loss
+operation: CtcLoss
+backend: tensorflow
+target_api: tf.nn.ctc_loss
+ast_template: '{out} = tf.nn.ctc_loss({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

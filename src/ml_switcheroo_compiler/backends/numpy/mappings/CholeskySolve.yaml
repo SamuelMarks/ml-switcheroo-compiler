@@ -1,3 +1,6 @@
-CholeskySolve:
-  ast_template: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
-  target_api: ''
+operation: CholeskySolve
+backend: numpy
+target_api: ''
+ast_template: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
+kwarg_map: {}
+dtype_overrides: {}

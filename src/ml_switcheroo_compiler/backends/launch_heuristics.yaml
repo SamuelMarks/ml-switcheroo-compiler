@@ -1,0 +1,54 @@
+heuristics:
+  elementwise_1d:
+    rule_name: "elementwise_1d"
+    tensor_rank: [1]
+    block_dims: [256, 1, 1]
+    grid_formula_x: "(num_elements + block_x - 1) / block_x"
+    grid_formula_y: "1"
+    grid_formula_z: "1"
+    min_threads_per_sm: 256
+
+  elementwise_2d:
+    rule_name: "elementwise_2d"
+    tensor_rank: [2]
+    block_dims: [16, 16, 1]
+    grid_formula_x: "(width + block_x - 1) / block_x"
+    grid_formula_y: "(height + block_y - 1) / block_y"
+    grid_formula_z: "1"
+    min_threads_per_sm: 256
+
+  elementwise_3d:
+    rule_name: "elementwise_3d"
+    tensor_rank: [3]
+    block_dims: [16, 8, 2]
+    grid_formula_x: "(dim2 + block_x - 1) / block_x"
+    grid_formula_y: "(dim1 + block_y - 1) / block_y"
+    grid_formula_z: "(dim0 + block_z - 1) / block_z"
+    min_threads_per_sm: 256
+
+  elementwise_nd:
+    rule_name: "elementwise_nd"
+    tensor_rank: [4, 5, 6, 7, 8]
+    block_dims: [256, 1, 1]
+    grid_formula_x: "(num_elements + block_x - 1) / block_x"
+    grid_formula_y: "1"
+    grid_formula_z: "1"
+    min_threads_per_sm: 256
+
+  tiled_matmul:
+    rule_name: "tiled_matmul"
+    tensor_rank: [2]
+    block_dims: [16, 16, 1]
+    grid_formula_x: "(n_dim + block_x - 1) / block_x"
+    grid_formula_y: "(m_dim + block_y - 1) / block_y"
+    grid_formula_z: "1"
+    min_threads_per_sm: 256
+
+  conv2d:
+    rule_name: "conv2d"
+    tensor_rank: [4]
+    block_dims: [16, 16, 1]
+    grid_formula_x: "(h_out * w_out + block_x - 1) / block_x"
+    grid_formula_y: "c_out"
+    grid_formula_z: "batch_size"
+    min_threads_per_sm: 256

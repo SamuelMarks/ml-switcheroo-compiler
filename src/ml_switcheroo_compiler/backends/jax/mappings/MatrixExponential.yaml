@@ -1,2 +1,6 @@
-MatrixExponential:
-  target_api: jax.scipy.linalg.expm
+operation: MatrixExponential
+backend: jax
+target_api: jax.scipy.linalg.expm
+ast_template: '{out} = jax.scipy.linalg.expm({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

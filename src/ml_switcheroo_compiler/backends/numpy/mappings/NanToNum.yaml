@@ -1,3 +1,6 @@
-NanToNum:
-  ast_template: np.nan_to_num
-  target_api: ''
+operation: NanToNum
+backend: numpy
+target_api: ''
+ast_template: np.nan_to_num
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-MedianFilter:
-  ast_template: mlx_median_filter({0})
-  target_api: ''
+operation: MedianFilter
+backend: mlx
+target_api: ''
+ast_template: mlx_median_filter({0})
+kwarg_map: {}
+dtype_overrides: {}

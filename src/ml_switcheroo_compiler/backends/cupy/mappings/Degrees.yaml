@@ -1,2 +1,6 @@
-Degrees:
-  target_api: cp.degrees
+operation: Degrees
+backend: cupy
+target_api: cp.degrees
+ast_template: '{out} = cp.degrees({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

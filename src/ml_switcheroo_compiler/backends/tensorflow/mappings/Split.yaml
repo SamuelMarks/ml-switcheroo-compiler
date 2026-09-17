@@ -1,2 +1,6 @@
-Split:
-  target_api: tf.split
+operation: Split
+backend: tensorflow
+target_api: tf.split
+ast_template: '{out} = tf.split({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

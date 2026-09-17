@@ -1,2 +1,6 @@
-ConfusionMatrix:
-  target_api: tf.math.confusion_matrix
+operation: ConfusionMatrix
+backend: tensorflow
+target_api: tf.math.confusion_matrix
+ast_template: '{out} = tf.math.confusion_matrix({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

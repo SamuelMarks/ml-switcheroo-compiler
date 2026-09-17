@@ -1,3 +1,6 @@
-Rfftfreq:
-  custom_code: 'lambda *args, **kwargs: jax.numpy.fft.rfftfreq(*args, **kwargs)'
-  target_api: custom_op
+operation: Rfftfreq
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-LogicalNot:
-  target_api: da.logical_not
+operation: LogicalNot
+backend: dask
+target_api: da.logical_not
+ast_template: '{out} = da.logical_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

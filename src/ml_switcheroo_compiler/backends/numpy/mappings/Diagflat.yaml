@@ -1,2 +1,6 @@
-Diagflat:
-  target_api: np.diagflat
+operation: Diagflat
+backend: numpy
+target_api: np.diagflat
+ast_template: '{out} = np.diagflat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

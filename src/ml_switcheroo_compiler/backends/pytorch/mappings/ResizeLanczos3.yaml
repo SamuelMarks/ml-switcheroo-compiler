@@ -1,3 +1,6 @@
-ResizeLanczos3:
-  ast_template: torch.nn.functional.interpolate({0}, mode='linear')
-  target_api: ''
+operation: ResizeLanczos3
+backend: pytorch
+target_api: ''
+ast_template: torch.nn.functional.interpolate({0}, mode='linear')
+kwarg_map: {}
+dtype_overrides: {}

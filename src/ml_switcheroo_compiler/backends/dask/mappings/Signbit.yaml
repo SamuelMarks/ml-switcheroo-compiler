@@ -1,2 +1,6 @@
-Signbit:
-  target_api: da.signbit
+operation: Signbit
+backend: dask
+target_api: da.signbit
+ast_template: '{out} = da.signbit({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

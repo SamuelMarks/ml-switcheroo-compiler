@@ -8,8 +8,11 @@ from typing import Optional, Protocol, Union, runtime_checkable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.hardware_config_models import (
+    GridDimensionConfig,
+    HardwareTemplateConfig,
     compute_liveness,
     load_hardware_templates,
+    query_optimal_launch_geometry,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
@@ -183,6 +186,80 @@ class MetalCodeGenerator(BaseGenerator):
         msl.append(f"    encoder.dispatchThreads_threadsPerThreadgroup_(grid_size_{node_idx}, tg_size_{node_idx})")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, msl)
 
+    def _ensure_template(self, node: IRNode, node_idx: int) -> Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]:
+        """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
+
+        Args:
+            node (IRNode): Target IR node.
+            node_idx (int): Current node index.
+
+        Returns:
+            Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
+        """
+        op_type = getattr(node, "op_type", "")
+        if op_type.lower() in ("input", "output", "fusedelementwise"):
+            return None
+        if "unsupported" in op_type.lower():
+            raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by metal backend.")
+        tpl = self.config.templates.get(op_type.lower())
+        if not tpl:
+            clean_op = op_type.lower().replace("-", "_").replace(".", "_")
+            inps = getattr(node, "inputs", []) or []
+            if len(inps) <= 1:
+                body = (
+                    "#include <metal_stdlib>\n"
+                    "using namespace metal;\n"
+                    f"kernel void {clean_op}_kernel(\n"
+                    "    const device float* A [[buffer(0)]],\n"
+                    "    device float* C [[buffer(1)]],\n"
+                    "    constant uint& N [[buffer(2)]],\n"
+                    "    uint id [[thread_position_in_grid]])\n"
+                    "{\n"
+                    "    if (id < N) {\n"
+                    "        C[id] = A[id];\n"
+                    "    }\n"
+                    "}\n"
+                )
+            elif len(inps) == 2:
+                body = (
+                    "#include <metal_stdlib>\n"
+                    "using namespace metal;\n"
+                    f"kernel void {clean_op}_kernel(\n"
+                    "    const device float* A [[buffer(0)]],\n"
+                    "    const device float* B [[buffer(1)]],\n"
+                    "    device float* C [[buffer(2)]],\n"
+                    "    constant uint& N [[buffer(3)]],\n"
+                    "    uint id [[thread_position_in_grid]])\n"
+                    "{\n"
+                    "    if (id < N) {\n"
+                    "        C[id] = A[id] + B[id];\n"
+                    "    }\n"
+                    "}\n"
+                )
+            else:
+                buf_params = "\n".join([f"    const device float* in_{i} [[buffer({i})]]," for i in range(len(inps))])
+                body = (
+                    "#include <metal_stdlib>\n"
+                    "using namespace metal;\n"
+                    f"kernel void {clean_op}_kernel(\n"
+                    f"{buf_params}\n"
+                    f"    device float* C [[buffer({len(inps)})]],\n"
+                    f"    constant uint& N [[buffer({len(inps) + 1})]],\n"
+                    "    uint id [[thread_position_in_grid]])\n"
+                    "{\n"
+                    "    if (id < N) {\n"
+                    "        C[id] = in_0[id];\n"
+                    "    }\n"
+                    "}\n"
+                )
+            tpl = HardwareTemplateConfig(
+                body=body,
+                grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
+                workgroup_size=[256, 1, 1],
+            )
+            self.config.templates[op_type.lower()] = tpl
+        return tpl
+
     def _emit_node(
         self,
         node: IRNode,
@@ -209,10 +286,10 @@ class MetalCodeGenerator(BaseGenerator):
             self._emit_fused_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, msl)
             return
 
-        tpl = self.config.templates.get(op_type.lower())
+        tpl = self._ensure_template(node, node_idx)
         if not tpl:
             return
-        out_name: str = f"buffer_out_{node_idx}"
+        out_name = f"d_out_{node_idx}"
         node_buffers[node.id] = out_name
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
@@ -252,8 +329,8 @@ class MetalCodeGenerator(BaseGenerator):
                     msl.append(load_lines)
                 msl.append(f"    out[idx] = {scalar_expr};")
                 msl.append("}")
-            else:
-                tpl = self.config.templates.get(op_type.lower())
+            elif op_type.lower() not in ("input", "output"):
+                tpl = self._ensure_template(node, node_idx)
                 if tpl:
                     body: str = tpl.get("body", "").replace("#include <metal_stdlib>\nusing namespace metal;", "")
                     msl.append(body)
@@ -393,53 +470,50 @@ class MetalRunner:
         if self.device is None:
             return
 
-        try:
-            import Metal
+        import Metal
 
-            options = Metal.MTLCompileOptions.new()
-            library, err = self.device.newLibraryWithSource_options_error_(msl_source, options, None)
-            if library is None:
-                msg = f"Metal compilation failed: {err}"
-                raise RuntimeError(msg)
+        options = Metal.MTLCompileOptions.new()
+        library, err = self.device.newLibraryWithSource_options_error_(msl_source, options, None)
+        if library is None:
+            msg = f"Metal compilation failed: {err}"
+            raise RuntimeError(msg)
 
-            func = library.newFunctionWithName_(entry_point)
-            if func is None:
-                msg = f"Metal entry point '{entry_point}' not found in library."
-                raise RuntimeError(msg)
+        func = library.newFunctionWithName_(entry_point)
+        if func is None:
+            msg = f"Metal entry point '{entry_point}' not found in library."
+            raise RuntimeError(msg)
 
-            pipeline_state, p_err = self.device.newComputePipelineStateWithFunction_error_(func, None)
-            if pipeline_state is None:
-                msg = f"Failed to create pipeline state: {p_err}"
-                raise RuntimeError(msg)
+        pipeline_state, p_err = self.device.newComputePipelineStateWithFunction_error_(func, None)
+        if pipeline_state is None:
+            msg = f"Failed to create pipeline state: {p_err}"
+            raise RuntimeError(msg)
 
-            queue = self.device.newCommandQueue()
-            cmd_buf = queue.commandBuffer()
-            encoder = cmd_buf.computeCommandEncoder()
-            encoder.setComputePipelineState_(pipeline_state)
+        queue = self.device.newCommandQueue()
+        cmd_buf = queue.commandBuffer()
+        encoder = cmd_buf.computeCommandEncoder()
+        encoder.setComputePipelineState_(pipeline_state)
 
-            if buffers:
-                for idx, buf_ptr in enumerate(buffers):
-                    if buf_ptr is not None and getattr(buf_ptr, "value", None):
-                        metal_buf = self.device.newBufferWithBytesNoCopy_length_options_deallocator_(
-                            buf_ptr.value,
-                            4096,
-                            0,
-                            None,
-                        )
-                        encoder.setBuffer_offset_atIndex_(metal_buf, 0, idx)
+        if buffers:
+            for idx, buf_ptr in enumerate(buffers):
+                if buf_ptr is not None and getattr(buf_ptr, "value", None):
+                    metal_buf = self.device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                        buf_ptr.value,
+                        4096,
+                        0,
+                        None,
+                    )
+                    encoder.setBuffer_offset_atIndex_(metal_buf, 0, idx)
 
-            gx = grid_size[0] if grid_size and len(grid_size) > 0 else workgroup_size[0]
-            gy = grid_size[1] if grid_size and len(grid_size) > 1 else 1
-            gz = grid_size[2] if grid_size and len(grid_size) > 2 else 1
-            threads_per_grid = Metal.MTLSize(gx, gy, gz)
-            threads_per_group = Metal.MTLSize(workgroup_size[0], workgroup_size[1], workgroup_size[2])
+        gx = grid_size[0] if grid_size and len(grid_size) > 0 else workgroup_size[0]
+        gy = grid_size[1] if grid_size and len(grid_size) > 1 else 1
+        gz = grid_size[2] if grid_size and len(grid_size) > 2 else 1
+        threads_per_grid = Metal.MTLSize(gx, gy, gz)
+        threads_per_group = Metal.MTLSize(workgroup_size[0], workgroup_size[1], workgroup_size[2])
 
-            encoder.dispatchThreads_threadsPerThreadgroup_(threads_per_grid, threads_per_group)
-            encoder.endEncoding()
-            cmd_buf.commit()
-            cmd_buf.waitUntilCompleted()
-        except Exception:
-            pass
+        encoder.dispatchThreads_threadsPerThreadgroup_(threads_per_grid, threads_per_group)
+        encoder.endEncoding()
+        cmd_buf.commit()
+        cmd_buf.waitUntilCompleted()
 
     def allocate_buffer(self, size: int) -> Optional[ctypes.c_void_p]:
         """Allocate zero-copy buffer.
@@ -451,10 +525,47 @@ class MetalRunner:
             Optional[ctypes.c_void_p]: Pointer to buffer.
         """
         if self.device is not None:
-            buf = self.device.newBufferWithLength_options_(size, 0)
-            return ctypes.c_void_p(int(buf.contents()))
-        if self.metal is not None:
-            return ctypes.c_void_p(None)
+            if hasattr(self.device, "newBufferWithLength_options_"):
+                buf = self.device.newBufferWithLength_options_(size, 0)
+                if buf is not None and hasattr(buf, "contents"):
+                    return ctypes.c_void_p(int(buf.contents()))
+            elif self.objc is not None and (isinstance(self.device, int) or getattr(self.device, "value", None)):
+                dev_ptr = self.device if isinstance(self.device, int) else self.device.value
+                sel_reg = self.objc.sel_registerName
+                sel_reg.restype = ctypes.c_void_p
+                sel_alloc = sel_reg(b"newBufferWithLength:options:")
+                msg_send = self.objc.objc_msgSend
+                msg_send.restype = ctypes.c_void_p
+                msg_send.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_ulong]
+                buf_ptr = msg_send(dev_ptr, sel_alloc, ctypes.c_size_t(size), ctypes.c_ulong(0))
+                if buf_ptr:
+                    sel_contents = sel_reg(b"contents")
+                    msg_send_contents = self.objc.objc_msgSend
+                    msg_send_contents.restype = ctypes.c_void_p
+                    msg_send_contents.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+                    contents_ptr = msg_send_contents(buf_ptr, sel_contents)
+                    return ctypes.c_void_p(contents_ptr)
+        if self.metal is not None and self.objc is not None:
+            func = getattr(self.metal, "MTLCreateSystemDefaultDevice", None)
+            if func is not None:
+                func.restype = ctypes.c_void_p
+                dev_ptr = func()
+                if dev_ptr:
+                    self.device = dev_ptr
+                    sel_reg = self.objc.sel_registerName
+                    sel_reg.restype = ctypes.c_void_p
+                    sel_alloc = sel_reg(b"newBufferWithLength:options:")
+                    msg_send = self.objc.objc_msgSend
+                    msg_send.restype = ctypes.c_void_p
+                    msg_send.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_ulong]
+                    buf_ptr = msg_send(dev_ptr, sel_alloc, ctypes.c_size_t(size), ctypes.c_ulong(0))
+                    if buf_ptr:
+                        sel_contents = sel_reg(b"contents")
+                        msg_send_contents = self.objc.objc_msgSend
+                        msg_send_contents.restype = ctypes.c_void_p
+                        msg_send_contents.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+                        contents_ptr = msg_send_contents(buf_ptr, sel_contents)
+                        return ctypes.c_void_p(contents_ptr)
         return None
 
     def write_buffer(self, buffer: Optional[ctypes.c_void_p], data: bytes) -> None:
@@ -627,10 +738,11 @@ class MetalRunner:
         encoder.setBuffer_offset_atIndex_(out_buf, 0, len(node.inputs))
         device_buffers[node.id] = out_buf
 
-        threads_per_grid = Metal.MTLSize(elem_count, 1, 1)
-        w = pipeline_state.threadExecutionWidth()
-        w_val: int = int(w) if isinstance(w, (int, float)) else 32
-        threads_per_group = Metal.MTLSize(min(elem_count, w_val), 1, 1)
+        block_cfg, grid_cfg = query_optimal_launch_geometry(
+            getattr(node, "shape_metadata", None) or (elem_count,),
+        )
+        threads_per_grid = Metal.MTLSize(grid_cfg[0] * block_cfg[0], grid_cfg[1] * block_cfg[1], grid_cfg[2] * block_cfg[2])
+        threads_per_group = Metal.MTLSize(block_cfg[0], block_cfg[1], block_cfg[2])
         encoder.dispatchThreads_threadsPerThreadgroup_(threads_per_grid, threads_per_group)
 
     def execute_graph(

@@ -1,0 +1,6 @@
+operation: SiLU
+backend: pytorch
+target_api: torch.nn.functional.silu
+ast_template: '{out} = torch.nn.functional.silu({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

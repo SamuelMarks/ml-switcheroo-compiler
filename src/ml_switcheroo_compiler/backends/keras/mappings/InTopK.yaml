@@ -1,2 +1,6 @@
-InTopK:
-  target_api: keras_ops.in_top_k
+operation: InTopK
+backend: keras
+target_api: keras_ops.in_top_k
+ast_template: '{out} = keras_ops.in_top_k({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

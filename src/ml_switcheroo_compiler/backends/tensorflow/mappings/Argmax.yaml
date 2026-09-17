@@ -1,2 +1,6 @@
-Argmax:
-  target_api: tf.argmax
+operation: Argmax
+backend: tensorflow
+target_api: tf.argmax
+ast_template: '{out} = tf.argmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

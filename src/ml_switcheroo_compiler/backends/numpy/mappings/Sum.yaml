@@ -1,3 +1,6 @@
-Sum:
-  ast_template: np.sum
-  target_api: ''
+operation: Sum
+backend: numpy
+target_api: ''
+ast_template: np.sum
+kwarg_map: {}
+dtype_overrides: {}

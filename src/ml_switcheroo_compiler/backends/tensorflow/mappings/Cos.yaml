@@ -1,2 +1,6 @@
-Cos:
-  target_api: tf.cos
+operation: Cos
+backend: tensorflow
+target_api: tf.cos
+ast_template: '{out} = tf.cos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

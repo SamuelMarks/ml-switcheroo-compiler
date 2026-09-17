@@ -1,2 +1,6 @@
-LuSolve:
-  target_api: tf.linalg.lu_solve
+operation: LuSolve
+backend: tensorflow
+target_api: tf.linalg.lu_solve
+ast_template: '{out} = tf.linalg.lu_solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

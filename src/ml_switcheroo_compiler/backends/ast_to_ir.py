@@ -2,6 +2,7 @@
 
 import os
 import uuid
+from collections.abc import Sequence
 from typing import Optional
 
 import libcst as cst
@@ -275,6 +276,41 @@ class ASTToIRVisitor(cst.CSTVisitor):
         else:
             inputs.append("unknown")
 
+    def _parse_call_args(
+        self,
+        args: Sequence[cst.Arg],
+        inputs: list[str],
+        attributes: dict[str, object],
+    ) -> None:
+        """Parse positional, keyword, and varargs call arguments.
+
+        Args:
+            args (Sequence[cst.Arg]): Call arguments sequence.
+            inputs (list[str]): Inputs list to populate.
+            attributes (dict[str, object]): Attributes dictionary to populate.
+        """
+        for arg in args:
+            if arg.star == "*":
+                attributes["has_varargs"] = True
+                self._resolve_call_arg(arg.value, inputs)
+            elif arg.star == "**":
+                attributes["has_varkwargs"] = True
+                self._resolve_call_arg(arg.value, inputs)
+            elif arg.keyword:
+                kw = arg.keyword.value
+                val: Optional[object] = None
+                if isinstance(arg.value, cst.Integer):
+                    val = int(arg.value.value)
+                elif isinstance(arg.value, cst.Float):
+                    val = float(arg.value.value)
+                elif isinstance(arg.value, cst.SimpleString):
+                    val = arg.value.evaluated_value
+                elif isinstance(arg.value, cst.Name):
+                    val = arg.value.value
+                attributes[kw] = val
+            else:
+                self._resolve_call_arg(arg.value, inputs)
+
     def visit_Call(self, node: cst.Call) -> bool:
         """Visit call node to reconstruct IR operations.
 
@@ -284,37 +320,95 @@ class ASTToIRVisitor(cst.CSTVisitor):
         Returns:
             bool: False to stop default child traversal.
         """
-        if isinstance(node.func, (cst.Name, cst.Attribute)):
-            full_name: str = self._get_base_name(node.func)
-            if full_name in _CONFIG.ast_to_ir_ops:
-                op_type: str = _CONFIG.ast_to_ir_ops[full_name]
-                node_id: str = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
-                self.current_id += 1
+        if not isinstance(node.func, (cst.Name, cst.Attribute)):
+            return False
 
-                inputs: list[str] = []
-                attributes: dict[str, object] = {}
+        full_name: str = self._get_base_name(node.func)
+        has_star: bool = any(arg.star in ("*", "**") for arg in node.args)
+        if full_name not in _CONFIG.ast_to_ir_ops and not has_star:
+            return False
 
-                for arg in node.args:
-                    if arg.keyword:
-                        kw = arg.keyword.value
-                        val: Optional[object] = None
-                        if isinstance(arg.value, cst.Integer):
-                            val = int(arg.value.value)
-                        elif isinstance(arg.value, cst.Float):
-                            val = float(arg.value.value)
-                        elif isinstance(arg.value, cst.SimpleString):
-                            val = arg.value.evaluated_value
-                        elif isinstance(arg.value, cst.Name):
-                            val = arg.value.value
-                        attributes[kw] = val
-                    else:
-                        self._resolve_call_arg(arg.value, inputs)
+        op_type: str = _CONFIG.ast_to_ir_ops.get(full_name, "ForeignCall")
+        node_id: str = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
+        self.current_id += 1
 
-                ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=attributes)
-                self.graph.nodes[node_id] = ir_node
-                self.last_node_id = node_id
+        inputs: list[str] = []
+        attributes: dict[str, object] = {}
+        if op_type == "ForeignCall":
+            attributes["callee"] = full_name
 
+        self._parse_call_args(node.args, inputs, attributes)
+
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=attributes)
+        self.graph.nodes[node_id] = ir_node
+        self.last_node_id = node_id
         return False
+
+    def visit_IfExp(self, node: cst.IfExp) -> None:
+        """Visit Python ternary conditional expression to emit Cond IR node.
+
+        Args:
+            node (cst.IfExp): The ternary conditional AST node.
+        """
+        node_id: str = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
+        self.current_id += 1
+
+        inputs: list[str] = []
+        if isinstance(node.test, cst.Name) and node.test.value in self.var_table:
+            inputs.append(self.var_table[node.test.value])
+        else:
+            self.last_node_id = None
+            node.test.visit(self)
+            if self.last_node_id:
+                inputs.append(self.last_node_id)
+
+        if isinstance(node.body, cst.Name) and node.body.value in self.var_table:
+            inputs.append(self.var_table[node.body.value])
+        else:
+            self.last_node_id = None
+            node.body.visit(self)
+            if self.last_node_id:
+                inputs.append(self.last_node_id)
+
+        if isinstance(node.orelse, cst.Name) and node.orelse.value in self.var_table:
+            inputs.append(self.var_table[node.orelse.value])
+        else:
+            self.last_node_id = None
+            node.orelse.visit(self)
+            if self.last_node_id:
+                inputs.append(self.last_node_id)
+
+        ir_node = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes={"is_ternary": True})
+        self.graph.nodes[node_id] = ir_node
+        self.last_node_id = node_id
+
+    def visit_ListComp(self, node: cst.ListComp) -> None:
+        """Visit Python list comprehension to emit Map / Scan IR nodes.
+
+        Args:
+            node (cst.ListComp): The list comprehension AST node.
+        """
+        node_id: str = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
+        self.current_id += 1
+
+        iter_name = ""
+        if isinstance(node.for_in.iter, cst.Name) and node.for_in.iter.value in self.var_table:
+            iter_name = self.var_table[node.for_in.iter.value]
+        else:
+            self.last_node_id = None
+            node.for_in.iter.visit(self)
+            if self.last_node_id:
+                iter_name = self.last_node_id
+
+        inputs = [iter_name] if iter_name else []
+        ir_node = IRNode(
+            id=node_id,
+            op_type="Map",
+            inputs=inputs,
+            attributes={"target_var": getattr(node.for_in.target, "value", "x")},
+        )
+        self.graph.nodes[node_id] = ir_node
+        self.last_node_id = node_id
 
     def visit_If(self, node: cst.If) -> None:
         """Visit Python if statement to emit Cond IR nodes with recursive branch subgraphs.
@@ -534,7 +628,11 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.last_node_id = node_id
 
     def visit_Subscript(self, node: cst.Subscript) -> None:
-        """Visit slicing/indexing."""
+        """Visit slicing, dictionary indexing, and item access.
+
+        Args:
+            node (cst.Subscript): The Subscript AST node.
+        """
         node_id = f"node_{self.current_id}_{uuid.uuid4().hex[:6]}"
         self.current_id += 1
 
@@ -542,7 +640,25 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.value, cst.Name) and node.value.value in self.var_table:
             inputs.append(self.var_table[node.value.value])
 
-        ir_node: IRNode = IRNode(id=node_id, op_type="Slice", inputs=inputs)
+        op_type = "Slice"
+        attributes: dict[str, object] = {}
+
+        if node.slice and len(node.slice) == 1:
+            slice_elem = node.slice[0].slice
+            if isinstance(slice_elem, cst.Index):
+                if isinstance(slice_elem.value, cst.SimpleString):
+                    op_type = "DictGet"
+                    attributes["key"] = slice_elem.value.evaluated_value
+                elif isinstance(slice_elem.value, cst.Integer):
+                    op_type = "GetItem"
+                    attributes["index"] = int(slice_elem.value.value)
+                elif isinstance(slice_elem.value, cst.Name):
+                    op_type = "GetItem"
+                    if slice_elem.value.value in self.var_table:
+                        inputs.append(self.var_table[slice_elem.value.value])
+                    attributes["index_var"] = slice_elem.value.value
+
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=attributes)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 

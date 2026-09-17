@@ -1,2 +1,6 @@
-Subtract:
-  target_api: keras_ops.subtract
+operation: Subtract
+backend: keras
+target_api: keras_ops.subtract
+ast_template: '{out} = keras_ops.subtract({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

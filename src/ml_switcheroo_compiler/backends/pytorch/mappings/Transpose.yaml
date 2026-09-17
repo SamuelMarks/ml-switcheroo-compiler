@@ -1,3 +1,6 @@
-Transpose:
-  ast_template: torch.permute({0}, {axes})' if 'axes' in kwargs else '{0}.t()
-  target_api: torch.transpose
+operation: Transpose
+backend: pytorch
+target_api: torch.transpose
+ast_template: torch.permute({0}, {axes})' if 'axes' in kwargs else '{0}.t()
+kwarg_map: {}
+dtype_overrides: {}

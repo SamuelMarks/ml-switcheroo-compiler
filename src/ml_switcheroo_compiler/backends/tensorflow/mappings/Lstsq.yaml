@@ -1,2 +1,6 @@
-Lstsq:
-  target_api: tf.linalg.lstsq
+operation: Lstsq
+backend: tensorflow
+target_api: tf.linalg.lstsq
+ast_template: '{out} = tf.linalg.lstsq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

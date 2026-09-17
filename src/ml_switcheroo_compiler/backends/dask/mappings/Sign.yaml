@@ -1,2 +1,6 @@
-Sign:
-  target_api: da.sign
+operation: Sign
+backend: dask
+target_api: da.sign
+ast_template: '{out} = da.sign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

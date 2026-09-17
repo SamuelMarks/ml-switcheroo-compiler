@@ -1,3 +1,6 @@
-Ifft2d:
-  ast_template: torch.fft.ifft2({0}, s={s}, dim={axes})
-  target_api: ''
+operation: Ifft2d
+backend: pytorch
+target_api: ''
+ast_template: torch.fft.ifft2({0}, s={s}, dim={axes})
+kwarg_map: {}
+dtype_overrides: {}

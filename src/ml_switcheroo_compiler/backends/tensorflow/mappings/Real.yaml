@@ -1,2 +1,6 @@
-Real:
-  target_api: tf.math.real
+operation: Real
+backend: tensorflow
+target_api: tf.math.real
+ast_template: '{out} = tf.math.real({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Maximum:
-  target_api: cp.maximum
+operation: Maximum
+backend: cupy
+target_api: cp.maximum
+ast_template: '{out} = cp.maximum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

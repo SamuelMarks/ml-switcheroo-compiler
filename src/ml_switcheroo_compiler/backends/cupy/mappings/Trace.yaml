@@ -1,2 +1,6 @@
-Trace:
-  target_api: cp.trace
+operation: Trace
+backend: cupy
+target_api: cp.trace
+ast_template: '{out} = cp.trace({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-UnsortedSegmentMin:
-  target_api: _execute_unsorted_segment_min
+operation: UnsortedSegmentMin
+backend: jax
+target_api: _execute_unsorted_segment_min
+ast_template: '{out} = _execute_unsorted_segment_min({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,19 +1,58 @@
 operation: Equalization
 description: Histogram equalization.
 std_args:
-  - default:
-      - 0
-      - 255
-    is_variadic: false
-    kind: positional_or_keyword
-    name: value_range
-    type: Tuple[float, float]
-  - default: 256
-    is_variadic: false
-    kind: positional_or_keyword
-    name: bins
-    type: int
+- default:
+  - 0
+  - 255
+  is_variadic: false
+  kind: positional_or_keyword
+  name: value_range
+  type: Tuple[float, float]
+- default: 256
+  is_variadic: false
+  kind: positional_or_keyword
+  name: bins
+  type: int
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: value_range
+    type: Tuple[float, float]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: bins
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - value_range
+  - bins
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Equalization_vjp
+  jvp_rule_id: Equalization_jvp
+  vjp: null
+  jvp: null

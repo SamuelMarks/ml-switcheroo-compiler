@@ -1,2 +1,6 @@
-Eigvalsh:
-  target_api: '''mx.linalg.eigvalsh({0})'''
+operation: Eigvalsh
+backend: mlx
+target_api: '''mx.linalg.eigvalsh({0})'''
+ast_template: '{out} = ''mx.linalg.eigvalsh({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

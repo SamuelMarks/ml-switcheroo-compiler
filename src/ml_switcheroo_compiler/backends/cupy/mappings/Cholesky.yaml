@@ -1,2 +1,6 @@
-Cholesky:
-  target_api: cp.linalg.cholesky
+operation: Cholesky
+backend: cupy
+target_api: cp.linalg.cholesky
+ast_template: '{out} = cp.linalg.cholesky({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

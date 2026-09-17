@@ -1,2 +1,6 @@
-Eig:
-  target_api: '''mx.linalg.eig({0})'''
+operation: Eig
+backend: mlx
+target_api: '''mx.linalg.eig({0})'''
+ast_template: '{out} = ''mx.linalg.eig({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Cast:
-  ast_template: getattr({0}, str('{dtype}'))()
-  target_api: ''
+operation: Cast
+backend: pytorch
+target_api: ''
+ast_template: getattr({0}, str('{dtype}'))()
+kwarg_map: {}
+dtype_overrides: {}

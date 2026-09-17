@@ -1,2 +1,6 @@
-Squeeze:
-  target_api: da.squeeze
+operation: Squeeze
+backend: dask
+target_api: da.squeeze
+ast_template: '{out} = da.squeeze({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

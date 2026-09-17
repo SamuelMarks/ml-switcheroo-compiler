@@ -1,0 +1,41 @@
+# WASM Execution Schemas for Linear Memory, Local Variables, and Dispatch Loop Templates
+version: "1.0.0"
+
+memory_layout:
+  page_size_bytes: 65536
+  simd_alignment_bytes: 16
+  load_align: 4
+  store_align: 4
+  initial_pages: 4
+  max_pages: 256
+
+locals:
+  loop_counter: "$i"
+  element_count: "$len"
+  input_ptr_base: "$in"
+  output_ptr_base: "$out"
+
+templates:
+  loop_header: |
+    (local $i i32)
+    (local.set $i (i32.const 0))
+    (block $B
+      (loop $L
+        (br_if $B (i32.ge_u (local.get $i) (local.get $len)))
+
+  loop_footer: |
+    (local.set $i (i32.add (local.get $i) (i32.const 4)))
+    (br $L)
+    )
+    )
+
+  scalar_peeling_header: |
+    (block $RemainderBlock
+      (loop $RemainderLoop
+        (br_if $RemainderBlock (i32.ge_u (local.get $i) (local.get $len)))
+
+  scalar_peeling_footer: |
+    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+    (br $RemainderLoop)
+    )
+    )

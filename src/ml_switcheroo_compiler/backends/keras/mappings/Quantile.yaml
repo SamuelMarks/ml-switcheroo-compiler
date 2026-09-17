@@ -1,2 +1,6 @@
-Quantile:
-  target_api: keras_ops.quantile
+operation: Quantile
+backend: keras
+target_api: keras_ops.quantile
+ast_template: '{out} = keras_ops.quantile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

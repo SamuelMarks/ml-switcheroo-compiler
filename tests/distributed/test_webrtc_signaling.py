@@ -1,3 +1,5 @@
+"""Tests for distributed WebRTC signaling server and store."""
+
 import json
 import time
 from urllib.error import HTTPError
@@ -6,7 +8,8 @@ from urllib.request import Request, urlopen
 from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingServer, _answers, _candidates, _offers
 
 
-def test_webrtc_signaling():
+def test_webrtc_signaling() -> None:
+    """Test WebRTC signaling server lifecycle, routes, HTTP methods, and edge cases."""
     _offers.clear()
     _answers.clear()
     _candidates.clear()
@@ -109,9 +112,70 @@ def test_webrtc_signaling():
             res = json.loads(resp.read().decode())
             assert "answer" not in res
 
+        # Test /health
+        req = Request(f"{base_url}/health")
+        with urlopen(req) as resp:
+            assert resp.status == 200
+            res = json.loads(resp.read().decode())
+            assert res["status"] == "healthy"
+
+        # Test /reset
+        req = Request(f"{base_url}/reset", data=b"{}", method="POST")
+        req.add_header("Content-Length", "2")
+        with urlopen(req) as resp:
+            assert resp.status == 200
+
+        # Test invalid JSON POST
+        req = Request(f"{base_url}/offer", data=b"not-json", method="POST")
+        req.add_header("Content-Length", "8")
+        try:
+            urlopen(req)
+        except HTTPError as e:
+            assert e.code == 400
+
+        # Test POST without peer_id
+        req = Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST")
+        req.add_header("Content-Length", "20")
+        try:
+            urlopen(req)
+        except HTTPError as e:
+            assert e.code == 400
+            err_data = json.loads(e.read().decode())
+            assert err_data["error"] == "Missing peer_id"
+
+        # Test OPTIONS
+        req = Request(f"{base_url}/offer", method="OPTIONS")
+        with urlopen(req) as resp:
+            assert resp.status == 200
+
+        # Test /ws upgrade path
+        req = Request(f"{base_url}/ws")
+        try:
+            with urlopen(req) as resp:
+                assert resp.status in (101, 200)
+        except HTTPError as e:
+            assert e.code == 101
+
+        # Test URLs
+        assert server.get_url() == base_url
+        assert "ws://" in server.get_websocket_url()
+
     finally:
         server.stop()
 
     # test stop when not started
-    s2 = SignalingServer()
+    from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingConfig, SignalingStore
+
+    store = SignalingStore()
+    store.set_offer("p", "off")
+    assert store.get_offer("p") == "off"
+    store.set_answer("p", "ans")
+    assert store.get_answer("p") == "ans"
+    store.add_candidate("p", "cand1")
+    assert store.get_candidates("p") == ["cand1"]
+    store.clear()
+    assert store.get_offer("p") is None
+
+    cfg = SignalingConfig(host="127.0.0.1", port=18081)
+    s2 = SignalingServer(config=cfg)
     s2.stop()

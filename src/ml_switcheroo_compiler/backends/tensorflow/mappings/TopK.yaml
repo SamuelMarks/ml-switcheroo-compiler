@@ -1,2 +1,6 @@
-TopK:
-  target_api: tf.math.top_k
+operation: TopK
+backend: tensorflow
+target_api: tf.math.top_k
+ast_template: '{out} = tf.math.top_k({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

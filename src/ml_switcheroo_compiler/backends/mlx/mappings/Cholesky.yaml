@@ -1,2 +1,6 @@
-Cholesky:
-  target_api: '''mx.linalg.cholesky({0})'''
+operation: Cholesky
+backend: mlx
+target_api: '''mx.linalg.cholesky({0})'''
+ast_template: '{out} = ''mx.linalg.cholesky({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

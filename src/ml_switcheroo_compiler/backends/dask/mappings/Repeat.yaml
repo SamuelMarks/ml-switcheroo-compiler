@@ -1,2 +1,6 @@
-Repeat:
-  target_api: da.repeat
+operation: Repeat
+backend: dask
+target_api: da.repeat
+ast_template: '{out} = da.repeat({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

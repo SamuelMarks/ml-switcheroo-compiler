@@ -1,2 +1,6 @@
-LessEqual:
-  target_api: keras_ops.less_equal
+operation: LessEqual
+backend: keras
+target_api: keras_ops.less_equal
+ast_template: '{out} = keras_ops.less_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

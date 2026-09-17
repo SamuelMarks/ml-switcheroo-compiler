@@ -1,2 +1,6 @@
-Swapaxes:
-  target_api: keras_ops.swapaxes
+operation: Swapaxes
+backend: keras
+target_api: keras_ops.swapaxes
+ast_template: '{out} = keras_ops.swapaxes({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

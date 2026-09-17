@@ -1,2 +1,6 @@
-LogSoftmax:
-  target_api: tf.math.log_softmax
+operation: LogSoftmax
+backend: tensorflow
+target_api: tf.math.log_softmax
+ast_template: '{out} = tf.math.log_softmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

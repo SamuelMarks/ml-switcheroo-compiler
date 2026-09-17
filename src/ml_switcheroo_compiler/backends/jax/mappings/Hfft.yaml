@@ -1,3 +1,6 @@
-Hfft:
-  custom_code: 'lambda *args, **kwargs: jax.numpy.fft.hfft(args[0], **kwargs)'
-  target_api: custom_op
+operation: Hfft
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Diff:
-  target_api: da.diff
+operation: Diff
+backend: dask
+target_api: da.diff
+ast_template: '{out} = da.diff({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

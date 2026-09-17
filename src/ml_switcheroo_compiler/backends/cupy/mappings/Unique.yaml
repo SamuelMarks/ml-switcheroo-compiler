@@ -1,2 +1,6 @@
-Unique:
-  target_api: cp.unique
+operation: Unique
+backend: cupy
+target_api: cp.unique
+ast_template: '{out} = cp.unique({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

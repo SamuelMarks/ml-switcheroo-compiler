@@ -1,2 +1,6 @@
-Rfftfreq:
-  target_api: da.fft.rfftfreq
+operation: Rfftfreq
+backend: dask
+target_api: da.fft.rfftfreq
+ast_template: '{out} = da.fft.rfftfreq({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

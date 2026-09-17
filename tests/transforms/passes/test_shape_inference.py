@@ -1,17 +1,31 @@
 # ruff: noqa: E501
+"""Tests for shape inference pass and dynamic runtime shape learning."""
+
+from typing import Any
+
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.transforms.passes.shape_inference import _determine_node_shape, _infer_constant_shape, _infer_op_shape, _infer_output_shape, _prepare_op_kwargs, shape_inference_pass
+from ml_switcheroo_compiler.transforms.passes.shape_inference import (
+    _determine_node_shape,
+    _infer_constant_shape,
+    _infer_op_shape,
+    _infer_output_shape,
+    _normalize_shape_tuple,
+    _prepare_op_kwargs,
+    shape_inference_pass,
+)
 
 
 def test_infer_constant_shape() -> None:
+    """Verify shape inference for Constant IR nodes."""
     node = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [1.0, 2.0]})
     assert _infer_constant_shape(node, {}) == (2,)
 
 
 def test_infer_output_shape() -> None:
+    """Verify shape inference for Output IR nodes."""
     node1 = IRNode(id="n1", op_type="Output", inputs=["in1"], attributes={})
     assert _infer_output_shape(node1, {"in1": (3, 4)}) == (3, 4)
     node2 = IRNode(id="n2", op_type="Output", inputs=[], attributes={})
@@ -19,6 +33,7 @@ def test_infer_output_shape() -> None:
 
 
 def test_prepare_op_kwargs() -> None:
+    """Verify preparation of keyword arguments for op shape inference."""
     node1 = IRNode(id="n1", op_type="Expand", inputs=[], attributes={"other": 1}, shape_metadata=(1, 2))
     assert _prepare_op_kwargs(node1) == {"other": 1, "shape": (1, 2)}
     node2 = IRNode(id="n2", op_type="BroadcastTo", inputs=[], attributes={}, shape_metadata=(3, 3))
@@ -30,13 +45,17 @@ def test_prepare_op_kwargs() -> None:
 
 
 def test_infer_op_shape() -> None:
+    """Verify shape inference delegation to registered Op classes."""
     import unittest.mock as mock
 
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"], attributes={})
     shapes = {"in1": (1, 2), "in2": (1, 2)}
 
     class MockOp:
-        def infer_shape(self, *args, **kwargs):
+        """Mock op implementation."""
+
+        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+            """Return static shape."""
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
@@ -44,6 +63,7 @@ def test_infer_op_shape() -> None:
 
 
 def test_determine_node_shape() -> None:
+    """Verify node shape determination across Input, Unknown, and Error cases."""
     import unittest.mock as mock
 
     node1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(5, 5))
@@ -53,7 +73,10 @@ def test_determine_node_shape() -> None:
     node3 = IRNode(id="n3", op_type="Add", inputs=["in1", "in2"], attributes={})
 
     class MockOp2:
-        def infer_shape(self, *args, **kwargs):
+        """Mock op that raises error."""
+
+        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+            """Raise error."""
             raise ValueError("boom")
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp2()):
@@ -62,6 +85,7 @@ def test_determine_node_shape() -> None:
 
 
 def test_shape_inference_pass() -> None:
+    """Verify end-to-end topological shape inference pass execution."""
     import unittest.mock as mock
 
     node1 = IRNode(id="in1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2, 2))
@@ -70,7 +94,10 @@ def test_shape_inference_pass() -> None:
     graph = IRGraph(name="test", nodes={"in1": node1, "in2": node2, "add": node3}, outputs=["add"])
 
     class MockOp3:
-        def infer_shape(self, *args, **kwargs):
+        """Mock op for pass execution."""
+
+        def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
+            """Return static shape."""
             return (2, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp3()):
@@ -79,6 +106,7 @@ def test_shape_inference_pass() -> None:
 
 
 def test_determine_node_shape_keyerror_and_not_found() -> None:
+    """Verify fallback when op shape raises KeyError or not found."""
     import unittest.mock as mock
 
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"], attributes={}, shape_metadata=(1, 2))
@@ -97,17 +125,19 @@ def test_determine_node_shape_keyerror_and_not_found() -> None:
             _determine_node_shape(node1, {})
 
 
-def test_shape_inference_keyerror():
+def test_shape_inference_keyerror() -> None:
+    """Verify handling of unknown op types via KeyError fallback."""
     # Unknown op -> KeyError -> returns shape_metadata
     node = IRNode(id="n1", op_type="UnknownOp2", inputs=[], attributes={}, shape_metadata=(10, 20))
     assert _determine_node_shape(node, {}) == (10, 20)
 
 
-def test_shape_inference_valueerror_not_found(monkeypatch):
-    # If something raises ValueError with "Operation ... not found", it returns shape_metadata
+def test_shape_inference_valueerror_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify operation not found ValueError fallback to shape_metadata."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args, **kwargs):
+    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+        """Mock raising not found."""
         raise ValueError("Operation 'Foo' not found")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -116,11 +146,12 @@ def test_shape_inference_valueerror_not_found(monkeypatch):
     assert _determine_node_shape(node, {}) == (30, 40)
 
 
-def test_shape_inference_valueerror_other(monkeypatch):
-    # If something raises ValueError without "Operation not found", raises CompilationError
+def test_shape_inference_valueerror_other(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify unexpected ValueError raises CompilationError."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args, **kwargs):
+    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+        """Mock raising other error."""
         raise ValueError("Some other error")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -130,10 +161,12 @@ def test_shape_inference_valueerror_other(monkeypatch):
         _determine_node_shape(node, {})
 
 
-def test_shape_inference_keyerror_explicit(monkeypatch):
+def test_shape_inference_keyerror_explicit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify explicit KeyError returns shape_metadata."""
     from ml_switcheroo_compiler.transforms.passes import shape_inference
 
-    def mock_infer_op_shape(*args, **kwargs):
+    def mock_infer_op_shape(*args: Any, **kwargs: Any) -> None:
+        """Mock raising KeyError."""
         raise KeyError("foo")
 
     monkeypatch.setattr(shape_inference, "_infer_op_shape", mock_infer_op_shape)
@@ -207,3 +240,219 @@ def test_shape_learning_protocol_models_and_payload() -> None:
     modified = annotate_learned_shapes(graph, payload)
     assert modified is True
     assert graph.nodes["in_node"].shape_metadata == (4, 16)
+
+
+def test_record_runtime_observation_and_packet() -> None:
+    """Verify recording runtime observations with validation, packets, and history."""
+    from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+    from ml_switcheroo_compiler.transforms.passes.config_models import (
+        ObservedNodeShape,
+        RuntimeShapePacket,
+    )
+    from ml_switcheroo_compiler.transforms.passes.shape_inference import (
+        annotate_learned_shapes,
+        get_shape_learning_protocol_config,
+        record_runtime_observation,
+    )
+
+    proto = get_shape_learning_protocol_config()
+    assert proto.protocol_version == "1.0.0"
+
+    node = IRNode(id="n1", op_type="Input", shape_metadata=(4, 8))
+    graph = IRGraph(name="test_obs", nodes={"n1": node}, outputs=["n1"])
+
+    # Valid observation matching current shape
+    record_runtime_observation(graph, "n1", [4, 8], observed_dtype="float32")
+    assert graph.nodes["n1"].shape_metadata == (4, 8)
+    assert hasattr(graph, "annotations")
+    assert len(graph.annotations["learned_shapes_history"]) == 1
+
+    # Missing node raises KeyError
+    with pytest.raises(KeyError, match="not found in computation graph"):
+        record_runtime_observation(graph, "missing_node", [4, 8])
+
+    # Rank mismatch raises ShapeMismatchError
+    with pytest.raises(ShapeMismatchError, match="Rank mismatch"):
+        record_runtime_observation(graph, "n1", [4, 8, 2])
+
+    # Dynamic node can be resolved
+    dynamic_node = IRNode(id="n2", op_type="Input", shape_metadata=(-1, 16))
+    graph.nodes["n2"] = dynamic_node
+    record_runtime_observation(graph, "n2", [2, 16])
+    assert graph.nodes["n2"].shape_metadata == (2, 16)
+
+    # Annotate via RuntimeShapePacket
+    packet = RuntimeShapePacket(
+        packet_id="pkt_001",
+        runtime="webgpu",
+        graph_name="test_obs",
+        observations=[
+            ObservedNodeShape(node_id="n1", shape=[4, 8], dtype="float32"),
+            ObservedNodeShape(node_id="n2", shape=[4, 16], dtype="float32"),
+        ],
+        execution_time_ms=2.5,
+        memory_usage_bytes=4096,
+    )
+    modified = annotate_learned_shapes(graph, packet)
+    assert modified is True
+    assert graph.nodes["n2"].shape_metadata == (4, 16)
+    assert graph.annotations.get("convergence_converged") is True
+
+
+def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
+    """Verify multi-pass shape refinement, downstream propagation, and conflict handling."""
+    from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+    from ml_switcheroo_compiler.ir.shape_system import ShapeTracker
+    from ml_switcheroo_compiler.transforms.passes.config_models import (
+        ObservedNodeShape,
+        RuntimeShapePacket,
+    )
+    from ml_switcheroo_compiler.transforms.passes.shape_inference import (
+        annotate_learned_shapes,
+        record_runtime_observation,
+        shape_inference_pass,
+    )
+
+    # 1. Build graph with dynamic input feeding downstream op
+    inp = IRNode(id="inp", op_type="Input", shape_metadata=(-1, 32))
+    weight = IRNode(id="weight", op_type="Constant", inputs=[], attributes={"value": [1.0] * 32}, shape_metadata=(32,))
+    add_node = IRNode(id="add", op_type="Add", inputs=["inp", "weight"], shape_metadata=None)
+    graph = IRGraph(name="dyn_refine", nodes={"inp": inp, "weight": weight, "add": add_node}, outputs=["add"])
+
+    # First pass: shape_metadata for add is inferred with dynamic shape
+    shape_inference_pass(graph)
+
+    # Runtime observation packet arrives from browser/edge runner
+    packet_pass1 = RuntimeShapePacket(
+        packet_id="cycle_1",
+        runtime="webgpu",
+        graph_name="dyn_refine",
+        observations=[
+            ObservedNodeShape(node_id="inp", shape=[8, 32], dtype="float32"),
+        ],
+    )
+    modified = annotate_learned_shapes(graph, packet_pass1)
+    assert modified is True
+    assert graph.nodes["inp"].shape_metadata == (8, 32)
+    assert graph.annotations["convergence_converged"] is True
+
+    # Multi-pass: second observation with different batch size
+    packet_pass2 = RuntimeShapePacket(
+        packet_id="cycle_2",
+        runtime="webgpu",
+        graph_name="dyn_refine",
+        observations=[
+            ObservedNodeShape(node_id="inp", shape=[16, 32], dtype="float32"),
+        ],
+    )
+    modified2 = annotate_learned_shapes(graph, packet_pass2)
+    assert modified2 is True
+    assert graph.nodes["inp"].shape_metadata == (16, 32)
+
+    # Rank mismatch conflict
+    with pytest.raises(ShapeMismatchError, match="Rank mismatch"):
+        record_runtime_observation(graph, "inp", [16, 32, 1])
+
+    # ShapeTracker telemetry resolution integration
+    telemetry = {"inp": [16, 32], "add": [16, 32]}
+    resolved = ShapeTracker.update_from_feedback(telemetry)
+    assert resolved["inp"] == (16, 32)
+    assert resolved["add"] == (16, 32)
+
+
+def test_shape_inference_annotation_branches() -> None:
+    """Test annotate_learned_shapes when annotations is missing or non-dict, and non-dict shapes."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.transforms.passes.shape_inference import annotate_learned_shapes
+
+    graph = LogicalGraph(name="test_graph")
+    node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
+    graph.nodes[node.id] = node
+    graph.annotations = "invalid_annotations"
+    res1 = annotate_learned_shapes(graph, {"n1": (4, 4)})
+    assert res1 is False
+    assert isinstance(graph.annotations, dict)
+    assert graph.annotations.get("convergence_converged") is True
+    res2 = annotate_learned_shapes(graph, None)
+    assert res2 is False
+
+
+def test_shape_inference_pass_attribute_error_and_none_branches() -> None:
+    """Test shape_inference_pass with unhandled op (None shape) and node raising AttributeError on setting strides."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+
+    class NodeWithAttributeErrorStrides(LogicalNode):
+        """Node whose strides attribute raises AttributeError on set."""
+
+        @property
+        def strides(self) -> tuple[int, ...]:
+            """Return empty strides.
+
+            Returns:
+                tuple[int, ...]: Strides tuple.
+            """
+            return ()
+
+        @strides.setter
+        def strides(self, value: tuple[int, ...]) -> None:
+            """Raise AttributeError on set.
+
+            Args:
+                value (tuple[int, ...]): New strides.
+
+            Raises:
+                AttributeError: Always raised.
+            """
+            raise AttributeError("Read only strides")
+
+    node_none = LogicalNode(id="n_none", op_type="UnknownOpForNoneShape", inputs=[], attributes={}, shape_metadata=None)
+    node_custom = NodeWithAttributeErrorStrides(id="n_custom", op_type="Input", inputs=[], attributes={}, shape_metadata=(2, 3))
+    graph = IRGraph(name="test_attr_err", nodes={"n_none": node_none, "n_custom": node_custom}, outputs=["n_custom"])
+    with patch("ml_switcheroo_compiler.ops.shape_inference.infer_shape", side_effect=[None, (2, 3)]):
+        modified = shape_inference_pass(graph)
+        assert isinstance(modified, bool)
+
+
+def test_normalize_shape_edge_cases() -> None:
+    """Verify edge cases of _normalize_shape_tuple utility."""
+    assert _normalize_shape_tuple(None) is None
+    assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
+    assert _normalize_shape_tuple((4, 5)) == (4, 5)
+    assert _normalize_shape_tuple(["invalid", "str"]) is None
+    assert _normalize_shape_tuple(12345) is None
+    assert _normalize_shape_tuple("not_a_list") is None
+    assert _normalize_shape_tuple([object()]) is None
+
+
+def test_shape_inference_subgraphs() -> None:
+    """Verify shape propagation across subgraph boundary ports."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    sub = LogicalGraph(name="then_sub")
+    sub.inputs = ["sub_in"]
+    sub.nodes["sub_in"] = LogicalNode(id="sub_in", op_type="Input")
+    sub.nodes["sub_add"] = LogicalNode(id="sub_add", op_type="Add", inputs=["sub_in", "sub_in"])
+    sub.outputs = ["sub_add"]
+
+    parent = LogicalGraph(name="parent_graph")
+    parent.inputs = ["x"]
+    parent.nodes["x"] = LogicalNode(id="x", op_type="Input", shape_metadata=(4, 8))
+    parent.nodes["if_node"] = LogicalNode(
+        id="if_node",
+        op_type="If",
+        inputs=["x"],
+        subgraphs={"then_branch": sub},
+    )
+    parent.outputs = ["if_node"]
+
+    modified = shape_inference_pass(parent)
+    assert modified is True
+    assert sub.nodes["sub_in"].shape_metadata == (4, 8)
+    assert sub.nodes["sub_add"].shape_metadata == (4, 8)
+    assert parent.nodes["if_node"].shape_metadata == (4, 8)

@@ -1,2 +1,6 @@
-Cumsum:
-  target_api: torch.cumsum
+operation: Cumsum
+backend: pytorch
+target_api: torch.cumsum
+ast_template: '{out} = torch.cumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

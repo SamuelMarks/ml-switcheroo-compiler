@@ -1,2 +1,6 @@
-Power:
-  target_api: da.power
+operation: Power
+backend: dask
+target_api: da.power
+ast_template: '{out} = da.power({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

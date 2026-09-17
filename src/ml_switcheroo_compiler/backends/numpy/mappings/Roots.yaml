@@ -1,3 +1,6 @@
-Roots:
-  ast_template: np.roots
-  target_api: ''
+operation: Roots
+backend: numpy
+target_api: ''
+ast_template: np.roots
+kwarg_map: {}
+dtype_overrides: {}

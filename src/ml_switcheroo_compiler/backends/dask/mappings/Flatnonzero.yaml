@@ -1,2 +1,6 @@
-Flatnonzero:
-  target_api: da.flatnonzero
+operation: Flatnonzero
+backend: dask
+target_api: da.flatnonzero
+ast_template: '{out} = da.flatnonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

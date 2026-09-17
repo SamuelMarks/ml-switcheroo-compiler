@@ -1,2 +1,6 @@
-SegmentMin:
-  target_api: jax.ops.segment_min
+operation: SegmentMin
+backend: jax
+target_api: jax.ops.segment_min
+ast_template: '{out} = jax.ops.segment_min({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

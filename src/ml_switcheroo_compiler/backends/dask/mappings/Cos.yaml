@@ -1,2 +1,6 @@
-Cos:
-  target_api: da.cos
+operation: Cos
+backend: dask
+target_api: da.cos
+ast_template: '{out} = da.cos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Adjoint:
-  custom_code: 'lambda x, **kwargs: jax.numpy.conj(jax.numpy.transpose(x))'
-  target_api: custom_op
+operation: Adjoint
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Cumprod:
-  custom_code: 'lambda *a, **k: jax.numpy.cumprod(*a, **k)'
-  target_api: custom_op
+operation: Cumprod
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-NonMaxSuppression:
-  ast_template: np_nms({0}, {1}, {max_output_size}, {iou_threshold}, {score_threshold})
-  target_api: ''
+operation: NonMaxSuppression
+backend: numpy
+target_api: ''
+ast_template: np_nms({0}, {1}, {max_output_size}, {iou_threshold}, {score_threshold})
+kwarg_map: {}
+dtype_overrides: {}

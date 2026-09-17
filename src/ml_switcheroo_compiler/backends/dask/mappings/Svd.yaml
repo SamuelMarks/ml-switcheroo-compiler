@@ -1,2 +1,6 @@
-Svd:
-  target_api: da.linalg.svd
+operation: Svd
+backend: dask
+target_api: da.linalg.svd
+ast_template: '{out} = da.linalg.svd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

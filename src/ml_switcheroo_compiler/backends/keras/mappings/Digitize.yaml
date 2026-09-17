@@ -1,2 +1,6 @@
-Digitize:
-  target_api: keras_ops.digitize
+operation: Digitize
+backend: keras
+target_api: keras_ops.digitize
+ast_template: '{out} = keras_ops.digitize({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

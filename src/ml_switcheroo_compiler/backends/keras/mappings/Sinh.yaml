@@ -1,2 +1,6 @@
-Sinh:
-  target_api: keras_ops.sinh
+operation: Sinh
+backend: keras
+target_api: keras_ops.sinh
+ast_template: '{out} = keras_ops.sinh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

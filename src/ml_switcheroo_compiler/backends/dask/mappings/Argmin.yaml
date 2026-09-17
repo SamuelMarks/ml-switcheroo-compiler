@@ -1,2 +1,6 @@
-Argmin:
-  target_api: da.argmin
+operation: Argmin
+backend: dask
+target_api: da.argmin
+ast_template: '{out} = da.argmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

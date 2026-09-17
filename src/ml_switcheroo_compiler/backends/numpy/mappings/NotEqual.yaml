@@ -1,3 +1,6 @@
-NotEqual:
-  ast_template: np.not_equal
-  target_api: ''
+operation: NotEqual
+backend: numpy
+target_api: ''
+ast_template: np.not_equal
+kwarg_map: {}
+dtype_overrides: {}

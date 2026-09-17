@@ -1,2 +1,6 @@
-Cosh:
-  target_api: tf.cosh
+operation: Cosh
+backend: tensorflow
+target_api: tf.cosh
+ast_template: '{out} = tf.cosh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

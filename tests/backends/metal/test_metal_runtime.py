@@ -40,7 +40,7 @@ def test_msl_templates_consolidation() -> None:
         assert "kernel void" in templates[op].body
 
     # Matrix multiplication and vision
-    for op in ("matmul", "batchmatmul", "conv2d", "maxpool2d", "avgpool2d"):
+    for op in ("matmul", "batchmatmul", "conv2d", "depthwise_conv2d", "maxpool2d", "avgpool2d", "multihead_attention"):
         assert op in templates
         assert "kernel void" in templates[op].body
 

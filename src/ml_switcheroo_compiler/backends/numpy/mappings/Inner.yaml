@@ -1,2 +1,6 @@
-Inner:
-  target_api: np.inner
+operation: Inner
+backend: numpy
+target_api: np.inner
+ast_template: '{out} = np.inner({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

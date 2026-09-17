@@ -1,2 +1,6 @@
-Prod:
-  target_api: keras_ops.prod
+operation: Prod
+backend: keras
+target_api: keras_ops.prod
+ast_template: '{out} = keras_ops.prod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

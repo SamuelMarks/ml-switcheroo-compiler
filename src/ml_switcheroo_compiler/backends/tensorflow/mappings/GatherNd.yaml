@@ -1,2 +1,6 @@
-GatherNd:
-  target_api: tf.gather_nd
+operation: GatherNd
+backend: tensorflow
+target_api: tf.gather_nd
+ast_template: '{out} = tf.gather_nd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Square:
-  target_api: tf.square
+operation: Square
+backend: tensorflow
+target_api: tf.square
+ast_template: '{out} = tf.square({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

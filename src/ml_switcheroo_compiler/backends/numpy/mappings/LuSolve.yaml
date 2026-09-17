@@ -1,3 +1,6 @@
-LuSolve:
-  ast_template: getattr(backend_module.linalg, 'lu_solve', None)
-  target_api: ''
+operation: LuSolve
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module.linalg, 'lu_solve', None)
+kwarg_map: {}
+dtype_overrides: {}

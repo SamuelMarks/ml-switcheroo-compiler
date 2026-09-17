@@ -1,2 +1,6 @@
-LuFactor:
-  target_api: '''mx.linalg.lu_factor({0})'''
+operation: LuFactor
+backend: mlx
+target_api: '''mx.linalg.lu_factor({0})'''
+ast_template: '{out} = ''mx.linalg.lu_factor({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

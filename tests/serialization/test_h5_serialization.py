@@ -126,3 +126,23 @@ def test_h5_save_no_branches_taken():
     assert loaded["plain2"] == 42
     if os.path.exists(test_file):
         os.remove(test_file)
+
+
+def test_h5_missing_h5py(monkeypatch):
+    """Test that H5WeightFormat raises ImportError when h5py is None.
+
+    Args:
+        monkeypatch: Pytest monkeypatch fixture.
+    """
+    import numpy as np
+    import pytest
+
+    import ml_switcheroo_compiler.serialization.formats.h5 as h5_mod
+
+    monkeypatch.setattr(h5_mod, "h5py", None)
+    ser = h5_mod.H5WeightFormat()
+    with pytest.raises(ImportError, match="h5py is required for H5 weight loading"):
+        ser.load("dummy.h5")
+
+    with pytest.raises(ImportError, match="h5py is required for H5 weight saving"):
+        ser.save({"a": np.array([1])}, "dummy.h5")

@@ -1,2 +1,6 @@
-Sinh:
-  target_api: tf.sinh
+operation: Sinh
+backend: tensorflow
+target_api: tf.sinh
+ast_template: '{out} = tf.sinh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

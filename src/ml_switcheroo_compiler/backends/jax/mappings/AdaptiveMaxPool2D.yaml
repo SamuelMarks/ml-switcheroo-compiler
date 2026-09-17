@@ -1,2 +1,6 @@
-AdaptiveMaxPool2D:
-  target_api: _execute_adaptive_max_pool
+operation: AdaptiveMaxPool2D
+backend: jax
+target_api: _execute_adaptive_max_pool
+ast_template: '{out} = _execute_adaptive_max_pool({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

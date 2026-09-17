@@ -1,3 +1,6 @@
-Polydiv:
-  ast_template: np.polydiv
-  target_api: ''
+operation: Polydiv
+backend: numpy
+target_api: ''
+ast_template: np.polydiv
+kwarg_map: {}
+dtype_overrides: {}

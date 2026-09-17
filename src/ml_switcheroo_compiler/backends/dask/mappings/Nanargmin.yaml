@@ -1,2 +1,6 @@
-Nanargmin:
-  target_api: da.nanargmin
+operation: Nanargmin
+backend: dask
+target_api: da.nanargmin
+ast_template: '{out} = da.nanargmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

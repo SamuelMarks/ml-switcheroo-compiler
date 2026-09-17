@@ -200,7 +200,8 @@ def _infer_op_dtype(node, dtypes: dict[str, str]) -> bool:
             out_dtype_val = DType.Float32.value
 
     dtypes[node.id] = out_dtype_val
-    if node.attributes.get("dtype") != out_dtype_val:
+    curr_dtype = node.attributes.get("dtype")
+    if curr_dtype != out_dtype_val or type(curr_dtype) is not str:
         node.attributes["dtype"] = out_dtype_val
         return True
 

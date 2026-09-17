@@ -1,2 +1,6 @@
-Convolve:
-  target_api: np.convolve
+operation: Convolve
+backend: numpy
+target_api: np.convolve
+ast_template: '{out} = np.convolve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

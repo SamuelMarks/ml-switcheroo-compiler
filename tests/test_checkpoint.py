@@ -54,8 +54,8 @@ def test_checkpoint_memory_usage():
 
     # In the f_cp block, there should only be a Checkpoint node and Output/Input nodes.
     # While block_f has many Multiply nodes.
-    f_op_types = [n.op_type for n in block_f.nodes]
-    f_cp_op_types = [n.op_type for n in block_f_cp.nodes]
+    f_op_types = [n.op_type for n in (block_f.nodes.values() if isinstance(block_f.nodes, dict) else block_f.nodes)]
+    f_cp_op_types = [n.op_type for n in (block_f_cp.nodes.values() if isinstance(block_f_cp.nodes, dict) else block_f_cp.nodes)]
 
     assert "Checkpoint" not in f_op_types
     assert "Checkpoint" in f_cp_op_types

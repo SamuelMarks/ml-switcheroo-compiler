@@ -1,2 +1,6 @@
-Iscomplex:
-  target_api: da.iscomplex
+operation: Iscomplex
+backend: dask
+target_api: da.iscomplex
+ast_template: '{out} = da.iscomplex({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

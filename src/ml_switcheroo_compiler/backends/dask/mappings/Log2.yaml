@@ -1,2 +1,6 @@
-Log2:
-  target_api: da.log2
+operation: Log2
+backend: dask
+target_api: da.log2
+ast_template: '{out} = da.log2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

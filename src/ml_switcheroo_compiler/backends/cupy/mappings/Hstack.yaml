@@ -1,2 +1,6 @@
-Hstack:
-  target_api: cp.hstack
+operation: Hstack
+backend: cupy
+target_api: cp.hstack
+ast_template: '{out} = cp.hstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

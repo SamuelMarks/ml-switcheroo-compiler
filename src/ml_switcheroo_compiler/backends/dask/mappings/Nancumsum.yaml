@@ -1,2 +1,6 @@
-Nancumsum:
-  target_api: da.nancumsum
+operation: Nancumsum
+backend: dask
+target_api: da.nancumsum
+ast_template: '{out} = da.nancumsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

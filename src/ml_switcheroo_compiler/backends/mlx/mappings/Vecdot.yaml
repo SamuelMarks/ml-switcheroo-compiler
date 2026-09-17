@@ -1,2 +1,6 @@
-Vecdot:
-  target_api: '''mx.sum({0} * {1}, axis={axis})'''
+operation: Vecdot
+backend: mlx
+target_api: '''mx.sum({0} * {1}, axis={axis})'''
+ast_template: '{out} = ''mx.sum({0} * {1}, axis={axis})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

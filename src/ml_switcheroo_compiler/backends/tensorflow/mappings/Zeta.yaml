@@ -1,2 +1,6 @@
-Zeta:
-  target_api: tf.math.zeta
+operation: Zeta
+backend: tensorflow
+target_api: tf.math.zeta
+ast_template: '{out} = tf.math.zeta({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Softsign:
-  target_api: keras_ops.softsign
+operation: Softsign
+backend: keras
+target_api: keras_ops.softsign
+ast_template: '{out} = keras_ops.softsign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

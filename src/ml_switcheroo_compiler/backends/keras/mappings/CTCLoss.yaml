@@ -1,2 +1,6 @@
-CtcLoss:
-  target_api: keras_ops.ctc_loss
+operation: CtcLoss
+backend: keras
+target_api: keras_ops.ctc_loss
+ast_template: '{out} = keras_ops.ctc_loss({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

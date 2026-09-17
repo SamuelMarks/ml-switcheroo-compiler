@@ -1,2 +1,6 @@
-Trace:
-  target_api: da.trace
+operation: Trace
+backend: dask
+target_api: da.trace
+ast_template: '{out} = da.trace({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

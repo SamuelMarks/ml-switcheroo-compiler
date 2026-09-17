@@ -60,6 +60,7 @@ class TranspilerConfig(BaseModel):
     ast_to_ir_ops: dict[str, str] = Field(default_factory=dict)
     ir_to_ast_ops: dict[str, dict[str, list[str]]] = Field(default_factory=dict)
     syntactic_patterns: SyntacticPatternsConfig = Field(default_factory=SyntacticPatternsConfig)
+    import_remappings: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 def _is_callable_op_symbol(symbol: str) -> bool:
@@ -177,6 +178,7 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
     frameworks: dict[str, FrameworkConfig] = data.get("frameworks", {}) or {}
     ast_to_ir_ops: dict[str, str] = dict(data.get("ast_to_ir_ops", {}))
     ir_to_ast_ops: dict[str, dict[str, list[str]]] = dict(data.get("ir_to_ast_ops", {}))
+    import_remappings: dict[str, dict[str, str]] = dict(data.get("import_remappings", {})) if isinstance(data.get("import_remappings"), dict) else {}
     raw_patterns = data.get("syntactic_patterns", {})
     syntactic_patterns: SyntacticPatternsConfig = SyntacticPatternsConfig.model_validate(raw_patterns) if isinstance(raw_patterns, dict) else SyntacticPatternsConfig()
 
@@ -191,6 +193,7 @@ def load_transpiler_config(yaml_path: str) -> TranspilerConfig:
         ast_to_ir_ops=clean_ast_to_ir,
         ir_to_ast_ops=ir_to_ast_ops,
         syntactic_patterns=syntactic_patterns,
+        import_remappings=import_remappings,
     )
 
 
@@ -273,6 +276,10 @@ class CSTRewriteRulesConfig(BaseModel):
         tensor_creation_rewrites (list[CSTRewriteRuleEntry]): Factory creation rewrite rules.
         slice_normalizations (list[CSTRewriteRuleEntry]): Slicing and indexing normalization rules.
         broadcasting_rules (list[BroadcastingRuleEntry]): Explicit broadcasting conversion rules.
+        call_rules (list[CSTRewriteRuleEntry]): Explicit call expression rewrite rules.
+        attribute_rules (list[CSTRewriteRuleEntry]): Attribute property access rewrite rules.
+        import_rules (list[CSTRewriteRuleEntry]): Import statement rewrite rules.
+        function_def_rules (list[CSTRewriteRuleEntry]): Function definition signature rewrite rules.
     """
 
     method_substitutions: list[CSTRewriteRuleEntry] = Field(default_factory=list)
@@ -282,6 +289,10 @@ class CSTRewriteRulesConfig(BaseModel):
     tensor_creation_rewrites: list[CSTRewriteRuleEntry] = Field(default_factory=list)
     slice_normalizations: list[CSTRewriteRuleEntry] = Field(default_factory=list)
     broadcasting_rules: list[BroadcastingRuleEntry] = Field(default_factory=list)
+    call_rules: list[CSTRewriteRuleEntry] = Field(default_factory=list)
+    attribute_rules: list[CSTRewriteRuleEntry] = Field(default_factory=list)
+    import_rules: list[CSTRewriteRuleEntry] = Field(default_factory=list)
+    function_def_rules: list[CSTRewriteRuleEntry] = Field(default_factory=list)
 
 
 class CSTRewriteRulesRootConfig(BaseModel):
@@ -309,3 +320,110 @@ def load_cst_rewrite_rules(path: str | None = None) -> CSTRewriteRulesConfig:
         data = yaml.safe_load(f) or {}
     root = CSTRewriteRulesRootConfig.model_validate(data)
     return root.cst_rewrite_rules
+
+
+class KeywordTransformationSpec(BaseModel):
+    """Specification for keyword renaming transformation across frameworks.
+
+    Attributes:
+        pattern (str): Name identifier for transformation.
+        source_kwarg (str): Source argument keyword name.
+        target_kwarg (str): Target argument keyword name.
+        source_framework (str | None): Source framework.
+        target_framework (str | None): Target framework.
+    """
+
+    pattern: str
+    source_kwarg: str
+    target_kwarg: str
+    source_framework: str | None = None
+    target_framework: str | None = None
+
+
+class ArgumentReorderingSpec(BaseModel):
+    """Specification for argument positional permutations.
+
+    Attributes:
+        op_name (str): Operation identifier.
+        source_framework (str | None): Source framework.
+        target_framework (str | None): Target framework.
+        permutation (list[int]): Index permutation array.
+    """
+
+    op_name: str
+    source_framework: str | None = None
+    target_framework: str | None = None
+    permutation: list[int] = Field(default_factory=list)
+
+
+class DefaultInsertionSpec(BaseModel):
+    """Specification for inserting default keyword arguments.
+
+    Attributes:
+        op_name (str): Operation identifier.
+        target_framework (str | None): Target framework.
+        default_kwargs (dict[str, object]): Keyword arguments to insert if missing.
+    """
+
+    op_name: str
+    target_framework: str | None = None
+    default_kwargs: dict[str, object] = Field(default_factory=dict)
+
+
+class KeywordToPositionalSpec(BaseModel):
+    """Specification for converting keyword arguments to positional slots.
+
+    Attributes:
+        op_name (str): Operation identifier.
+        target_framework (str | None): Target framework.
+        keyword_names (list[str]): Names of keyword arguments to convert.
+        target_positions (list[int]): Corresponding positional argument indices.
+    """
+
+    op_name: str
+    target_framework: str | None = None
+    keyword_names: list[str] = Field(default_factory=list)
+    target_positions: list[int] = Field(default_factory=list)
+
+
+class ArgumentRewritesConfig(BaseModel):
+    """Configuration schema for declarative argument and keyword rewrites.
+
+    Attributes:
+        keyword_transformations (list[KeywordTransformationSpec]): Keyword renames.
+        argument_reorderings (list[ArgumentReorderingSpec]): Argument index permutations.
+        default_insertions (list[DefaultInsertionSpec]): Default keyword injections.
+        keyword_to_positional (list[KeywordToPositionalSpec]): Keyword to positional mappings.
+    """
+
+    keyword_transformations: list[KeywordTransformationSpec] = Field(default_factory=list)
+    argument_reorderings: list[ArgumentReorderingSpec] = Field(default_factory=list)
+    default_insertions: list[DefaultInsertionSpec] = Field(default_factory=list)
+    keyword_to_positional: list[KeywordToPositionalSpec] = Field(default_factory=list)
+
+
+class ArgumentRewritesRootConfig(BaseModel):
+    """Root model for argument_rewrites.yaml.
+
+    Attributes:
+        argument_rewrites (ArgumentRewritesConfig): The rewrites configuration.
+    """
+
+    argument_rewrites: ArgumentRewritesConfig
+
+
+def load_argument_rewrites(path: str | None = None) -> ArgumentRewritesConfig:
+    """Load and validate declarative argument rewrite schemas from YAML.
+
+    Args:
+        path (str | None): Optional path to argument_rewrites.yaml.
+
+    Returns:
+        ArgumentRewritesConfig: Validated argument rewrites configuration.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "argument_rewrites.yaml")
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    root = ArgumentRewritesRootConfig.model_validate(data)
+    return root.argument_rewrites

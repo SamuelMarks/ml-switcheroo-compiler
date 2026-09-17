@@ -1,2 +1,6 @@
-Negative:
-  target_api: keras_ops.negative
+operation: Negative
+backend: keras
+target_api: keras_ops.negative
+ast_template: '{out} = keras_ops.negative({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

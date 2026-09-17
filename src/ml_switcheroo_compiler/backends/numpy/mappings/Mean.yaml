@@ -1,3 +1,6 @@
-Mean:
-  ast_template: np.mean
-  target_api: ''
+operation: Mean
+backend: numpy
+target_api: ''
+ast_template: np.mean
+kwarg_map: {}
+dtype_overrides: {}

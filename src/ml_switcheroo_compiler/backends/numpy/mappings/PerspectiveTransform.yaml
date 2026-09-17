@@ -1,4 +1,7 @@
-PerspectiveTransform:
-  ast_template: np_perspective_transform({0}, {1}, {2}, PerspectiveConfig(interpolation='{interpolation}',
-    fill_value={fill_value}, data_format='{data_format}'))
-  target_api: ''
+operation: PerspectiveTransform
+backend: numpy
+target_api: ''
+ast_template: np_perspective_transform({0}, {1}, {2}, PerspectiveConfig(interpolation='{interpolation}',
+  fill_value={fill_value}, data_format='{data_format}'))
+kwarg_map: {}
+dtype_overrides: {}

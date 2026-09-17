@@ -1,0 +1,6 @@
+operation: Narrow
+backend: pytorch
+target_api: torch.narrow
+ast_template: '{out} = torch.narrow({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

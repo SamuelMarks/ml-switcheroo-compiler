@@ -1,2 +1,6 @@
-Argwhere:
-  target_api: da.argwhere
+operation: Argwhere
+backend: dask
+target_api: da.argwhere
+ast_template: '{out} = da.argwhere({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

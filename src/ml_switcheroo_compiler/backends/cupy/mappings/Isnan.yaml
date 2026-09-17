@@ -1,2 +1,6 @@
-Isnan:
-  target_api: cp.isnan
+operation: Isnan
+backend: cupy
+target_api: cp.isnan
+ast_template: '{out} = cp.isnan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

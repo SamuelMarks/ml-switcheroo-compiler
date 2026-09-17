@@ -1,15 +1,54 @@
 operation: GetBigramIds
 description: Generate bi-gram ids from uni-gram ids.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: ids
-    type: Tensor
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: vocab_size
-    type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: ids
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: vocab_size
+  type: int
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: ids
+    type: Tensor
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: vocab_size
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - ids
+  - vocab_size
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: GetBigramIds_vjp
+  jvp_rule_id: GetBigramIds_jvp
+  vjp: null
+  jvp: null

@@ -363,3 +363,48 @@ def test_runner_availability_via_cupy(monkeypatch: pytest.MonkeyPatch) -> None:
     # ROCm
     monkeypatch.setattr("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy)
     assert ROCmRunner.is_available() is True
+
+
+def test_hardware_emitters_unsupported_op_raises() -> None:
+    """Verify CUDA, ROCm, and Metal emitters raise BackendNotSupportedError on unmapped ops."""
+    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
+    from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
+    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    g = IRGraph(name="test_unsupported")
+    g.nodes["bad_node"] = IRNode(id="bad_node", op_type="TotallyUnsupportedOp123", inputs=[], shape_metadata=[4])
+    g.outputs = ["bad_node"]
+
+    # CUDA
+    cuda_gen = CudaCodeGenerator(g)
+    with pytest.raises(BackendNotSupportedError, match="not supported by cuda backend"):
+        cuda_gen.generate()
+
+    # ROCm
+    rocm_gen = RocmCodeGenerator(g)
+    with pytest.raises(BackendNotSupportedError, match="not supported by rocm backend"):
+        rocm_gen.generate()
+
+    # Metal
+    metal_gen = MetalCodeGenerator(g)
+    with pytest.raises(BackendNotSupportedError, match="not supported by metal backend"):
+        metal_gen.generate()
+
+
+def test_hardware_emitters_multi_output() -> None:
+    """Verify CUDA and ROCm emitters support multi-output kernel launch arguments."""
+    g = IRGraph(name="multi_out_test")
+    g.nodes["inp"] = IRNode(id="inp", op_type="Input", shape_metadata=[4])
+    g.nodes["split"] = IRNode(id="split", op_type="Relu", inputs=["inp"], outputs=["split_0", "split_1"], shape_metadata=[4])
+    g.outputs = ["split_0", "split_1"]
+
+    cuda_gen = CudaCodeGenerator(g)
+    cuda_code = cuda_gen.generate()
+    assert "d_out_0_0" in cuda_code
+    assert "d_out_0_1" in cuda_code
+
+    rocm_gen = RocmCodeGenerator(g)
+    rocm_code = rocm_gen.generate()
+    assert "d_out_0_0" in rocm_code
+    assert "d_out_0_1" in rocm_code

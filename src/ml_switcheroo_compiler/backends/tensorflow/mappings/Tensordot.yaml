@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: tf.tensordot
+operation: Tensordot
+backend: tensorflow
+target_api: tf.tensordot
+ast_template: '{out} = tf.tensordot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

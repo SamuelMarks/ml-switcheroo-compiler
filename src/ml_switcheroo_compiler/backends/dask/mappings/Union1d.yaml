@@ -1,2 +1,6 @@
-Union1d:
-  target_api: da.union1d
+operation: Union1d
+backend: dask
+target_api: da.union1d
+ast_template: '{out} = da.union1d({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

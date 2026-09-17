@@ -1,10 +1,14 @@
-from unittest.mock import patch
+from unittest import mock
+from unittest.mock import MagicMock, patch
 
 import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as provider
 from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
+    _load_templates,
     get_js_orchestration_template,
     get_webgpu_ops,
     get_wgsl_global_bindings,
+    get_wgsl_kernels_config,
+    get_wgsl_op_mapping,
     get_wgsl_template,
 )
 
@@ -64,3 +68,82 @@ def test_wgsl_provider_non_dict_fallback():
 
     # Reset
     provider._WGSL_TEMPLATES = {}
+
+
+def test_wgsl_provider_branches() -> None:
+    """Test wgsl_provider modular template loading, kernels loading, and fallback paths."""
+    import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
+
+    orig_templates = dict(wp._WGSL_TEMPLATES)
+    orig_kernels = dict(wp._WGSL_KERNELS)
+    try:
+        wp._WGSL_KERNELS.clear()
+        k1 = wp._load_kernels()
+        assert isinstance(k1, dict)
+        wp._WGSL_KERNELS.clear()
+        with mock.patch("yaml.safe_load", return_value=[1, 2, 3]):
+            k2 = wp._load_kernels()
+            assert isinstance(k2, dict)
+        wp._WGSL_KERNELS = {"op_mappings": {"Add": {"template": "add_template"}}}
+        assert wp.get_wgsl_op_mapping("Add") == {"template": "add_template"}
+        wp._WGSL_KERNELS = {"op_mappings": {"Bad": "not_a_dict"}}
+        assert wp.get_wgsl_op_mapping("Bad") == {}
+        wp._WGSL_TEMPLATES.clear()
+        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value="not_a_dict"):
+            _load_templates()
+            assert "templates" in wp._WGSL_TEMPLATES
+        wp._WGSL_TEMPLATES.clear()
+        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"templates": None, "bindings": None}):
+            _load_templates()
+            assert isinstance(wp._WGSL_TEMPLATES, dict)
+        wp._WGSL_TEMPLATES.clear()
+        with mock.patch("os.path.exists", return_value=True), mock.patch("builtins.open", mock.mock_open(read_data="[1, 2, 3]")), mock.patch("yaml.safe_load", return_value=[1, 2, 3]):
+            _load_templates()
+            assert isinstance(wp._WGSL_TEMPLATES, dict)
+    finally:
+        wp._WGSL_TEMPLATES = orig_templates
+        wp._WGSL_KERNELS = orig_kernels
+
+
+def test_wgsl_provider_kernels_config_and_global_bindings() -> None:
+    """Test get_wgsl_kernels_config, get_wgsl_template_for_op, and _load_templates global_bindings merge branch.
+
+    Returns:
+        None
+    """
+    cfg = get_wgsl_kernels_config()
+    assert isinstance(cfg, dict)
+    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"op_mappings": {"invalid_op": "not_a_dict"}}):
+        assert get_wgsl_op_mapping("invalid_op") == {}
+    mock_base = {"templates": {}}
+    mock_kernels = {"templates": {"mock_k": {}}, "bindings": {"global_bindings": "// global bindings test"}}
+    import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
+
+    orig_templates = dict(wp._WGSL_TEMPLATES)
+    try:
+        with patch("os.path.exists", return_value=True), patch("builtins.open", MagicMock()), patch("yaml.safe_load", return_value=mock_base):
+            with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value=mock_kernels):
+                wp._WGSL_TEMPLATES = {}
+                _load_templates()
+                assert wp._WGSL_TEMPLATES.get("global_bindings") == "// global bindings test"
+    finally:
+        wp._WGSL_TEMPLATES = orig_templates
+
+
+def test_backends_wgsl_empty_kernels() -> None:
+    """Test get_wgsl_kernels_config with empty dict when file returns empty or non-dict.
+
+    Returns:
+        None
+    """
+    import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
+
+    old_kernels = wp._WGSL_KERNELS
+    try:
+        wp._WGSL_KERNELS = {}
+        with patch("builtins.open", MagicMock()):
+            with patch("yaml.safe_load", return_value="not-a-dict"):
+                conf = wp.get_wgsl_kernels_config()
+                assert conf == {"bindings": {}, "op_mappings": {}, "templates": {}}
+    finally:
+        wp._WGSL_KERNELS = old_kernels

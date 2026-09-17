@@ -1,2 +1,6 @@
-TrueDivide:
-  target_api: da.true_divide
+operation: TrueDivide
+backend: dask
+target_api: da.true_divide
+ast_template: '{out} = da.true_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Square:
-  target_api: da.square
+operation: Square
+backend: dask
+target_api: da.square
+ast_template: '{out} = da.square({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

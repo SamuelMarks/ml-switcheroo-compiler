@@ -1,2 +1,6 @@
-Conj:
-  target_api: cp.conj
+operation: Conj
+backend: cupy
+target_api: cp.conj
+ast_template: '{out} = cp.conj({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

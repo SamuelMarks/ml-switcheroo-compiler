@@ -1,3 +1,6 @@
-Greater:
-  ast_template: np.greater
-  target_api: ''
+operation: Greater
+backend: numpy
+target_api: ''
+ast_template: np.greater
+kwarg_map: {}
+dtype_overrides: {}

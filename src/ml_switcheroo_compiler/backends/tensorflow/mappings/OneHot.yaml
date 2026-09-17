@@ -1,2 +1,6 @@
-OneHot:
-  target_api: tf.one_hot
+operation: OneHot
+backend: tensorflow
+target_api: tf.one_hot
+ast_template: '{out} = tf.one_hot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

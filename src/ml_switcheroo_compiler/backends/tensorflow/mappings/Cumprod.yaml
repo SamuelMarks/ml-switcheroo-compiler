@@ -1,2 +1,6 @@
-Cumprod:
-  target_api: tf.math.cumprod
+operation: Cumprod
+backend: tensorflow
+target_api: tf.math.cumprod
+ast_template: '{out} = tf.math.cumprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

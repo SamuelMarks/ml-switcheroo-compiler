@@ -1,2 +1,6 @@
-Sin:
-  target_api: da.sin
+operation: Sin
+backend: dask
+target_api: da.sin
+ast_template: '{out} = da.sin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Compress:
-  target_api: da.compress
+operation: Compress
+backend: dask
+target_api: da.compress
+ast_template: '{out} = da.compress({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

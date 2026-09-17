@@ -1,2 +1,6 @@
-Isfinite:
-  target_api: da.isfinite
+operation: Isfinite
+backend: dask
+target_api: da.isfinite
+ast_template: '{out} = da.isfinite({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

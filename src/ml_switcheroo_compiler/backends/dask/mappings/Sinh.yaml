@@ -1,2 +1,6 @@
-Sinh:
-  target_api: da.sinh
+operation: Sinh
+backend: dask
+target_api: da.sinh
+ast_template: '{out} = da.sinh({in0})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,11 +1,45 @@
 operation: Synchronize
 description: Synchronize with the given stream.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: stream
-    type: Optional[Any]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stream
+  type: Optional[Any]
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: stream
+    type: Optional[Any]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - stream
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Synchronize_vjp
+  jvp_rule_id: Synchronize_jvp
+  vjp: null
+  jvp: null

@@ -1,2 +1,6 @@
-Roll:
-  target_api: tf.roll
+operation: Roll
+backend: tensorflow
+target_api: tf.roll
+ast_template: '{out} = tf.roll({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

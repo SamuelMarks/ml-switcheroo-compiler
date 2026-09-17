@@ -1,2 +1,6 @@
-Fmax:
-  target_api: cp.fmax
+operation: Fmax
+backend: cupy
+target_api: cp.fmax
+ast_template: '{out} = cp.fmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

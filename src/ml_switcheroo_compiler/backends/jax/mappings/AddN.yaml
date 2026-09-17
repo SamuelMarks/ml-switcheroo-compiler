@@ -1,2 +1,6 @@
-AddN:
-  target_api: _execute_accumulate_n
+operation: AddN
+backend: jax
+target_api: _execute_accumulate_n
+ast_template: '{out} = _execute_accumulate_n({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

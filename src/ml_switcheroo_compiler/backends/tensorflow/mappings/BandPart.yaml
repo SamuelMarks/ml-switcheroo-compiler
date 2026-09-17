@@ -1,2 +1,6 @@
-BandPart:
-  target_api: tf.linalg.band_part
+operation: BandPart
+backend: tensorflow
+target_api: tf.linalg.band_part
+ast_template: '{out} = tf.linalg.band_part({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

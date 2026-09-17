@@ -1,2 +1,6 @@
-BroadcastTo:
-  target_api: keras_ops.broadcast_to
+operation: BroadcastTo
+backend: keras
+target_api: keras_ops.broadcast_to
+ast_template: '{out} = keras_ops.broadcast_to({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

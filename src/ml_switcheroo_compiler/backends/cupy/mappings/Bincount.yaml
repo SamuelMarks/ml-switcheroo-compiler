@@ -1,2 +1,6 @@
-Bincount:
-  target_api: cp.bincount
+operation: Bincount
+backend: cupy
+target_api: cp.bincount
+ast_template: '{out} = cp.bincount({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

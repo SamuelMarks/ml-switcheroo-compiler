@@ -37,6 +37,11 @@ def _node_has_side_effects(node: IRNode) -> bool:
     if node.op_type in SIDE_EFFECT_OPS:
         return True
 
+    for sub in getattr(node, "subgraphs", {}).values():
+        if isinstance(sub, IRGraph):
+            if any(_node_has_side_effects(sn) for sn in sub.nodes.values()):
+                return True
+
     for attr_name in SUBGRAPH_ATTR_KEYS:
         sub = node.attributes.get(attr_name)
         if isinstance(sub, IRGraph):
@@ -67,6 +72,11 @@ def _prune_nested_subgraphs(node: IRNode) -> bool:
         bool: True if any nested subgraph was modified.
     """
     modified = False
+    for sub in getattr(node, "subgraphs", {}).values():
+        if isinstance(sub, IRGraph):
+            sub_mod = dce_pass(sub)
+            if sub_mod:
+                modified = True
     for attr_name in SUBGRAPH_ATTR_KEYS:
         sub = node.attributes.get(attr_name)
         if isinstance(sub, IRGraph):
@@ -111,7 +121,7 @@ def dce_pass(graph: IRGraph) -> bool:
         if _prune_nested_subgraphs(node):
             subgraphs_modified = True
 
-    initial_reachable = set(graph.outputs) | _find_side_effect_nodes(graph)
+    initial_reachable = set(getattr(graph, "outputs", ())) | _find_side_effect_nodes(graph)
     reachable = _build_reachable_set(graph, initial_reachable)
 
     nodes_to_remove: list[str] = []

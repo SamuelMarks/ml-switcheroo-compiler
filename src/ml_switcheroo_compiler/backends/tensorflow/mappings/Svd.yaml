@@ -1,2 +1,6 @@
-Svd:
-  target_api: tf.linalg.svd
+operation: Svd
+backend: tensorflow
+target_api: tf.linalg.svd
+ast_template: '{out} = tf.linalg.svd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

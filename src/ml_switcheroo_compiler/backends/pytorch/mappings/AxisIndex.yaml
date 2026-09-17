@@ -1,3 +1,6 @@
-AxisIndex:
-  custom_code: 'lambda *args, **kwargs: torch.tensor(0)'
-  target_api: custom_op
+operation: AxisIndex
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

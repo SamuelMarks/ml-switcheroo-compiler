@@ -1,3 +1,6 @@
-I0:
-  ast_template: np.i0
-  target_api: ''
+operation: I0
+backend: numpy
+target_api: ''
+ast_template: np.i0
+kwarg_map: {}
+dtype_overrides: {}

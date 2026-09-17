@@ -1,2 +1,6 @@
-Logcumsumexp:
-  target_api: custom_op
+operation: Logcumsumexp
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

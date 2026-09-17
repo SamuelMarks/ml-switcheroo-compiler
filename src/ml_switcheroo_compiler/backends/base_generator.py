@@ -247,13 +247,78 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         val = node.attributes.get("value")
         return repr(val)
 
-    def visit(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
+    def visit_OpNode(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generic visitor for IRNode driven by declarative mapping YAML templates.
+
+        Args:
+            node (IRNode): Target IRNode.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional node attributes and context.
+
+        Returns:
+            str: Generated code line or expression.
+        """
+        backend_name = getattr(self, "backend_name", None) or self.get_fallback_prefix()
+        from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
+
+        op_name = getattr(node, "op_type", "")
+        ast_template = None
+        kwarg_map: dict[str, str | None] = {}
+        target_api = None
+
+        try:
+            schema = load_backend_mappings(backend_name)
+            if op_name in schema.operations:
+                op_mapping = schema.operations[op_name]
+                ast_template = op_mapping.ast_template
+                kwarg_map = dict(op_mapping.kwarg_map or op_mapping.kwarg_translations)
+                target_api = op_mapping.target_api
+        except Exception:
+            pass
+
+        all_attrs: dict[str, object] = dict(getattr(node, "attributes", {}) or {})
+        all_attrs.update(kwargs)
+
+        translated_kwargs: dict[str, object] = {}
+        for k, v in all_attrs.items():
+            if k in kwarg_map:
+                target_k = kwarg_map[k]
+                if target_k is not None:
+                    translated_kwargs[target_k] = v
+            else:
+                translated_kwargs[k] = v
+
+        if ast_template:
+            out_var = str(all_attrs.get("out_var") or "")
+            subs: dict[str, str] = {
+                "out": out_var or self.assign_var_name(getattr(node, "id", "")),
+            }
+            for i, iv in enumerate(input_vars):
+                subs[f"in{i}"] = iv
+            subs["inputs"] = ", ".join(input_vars)
+            for k, v in translated_kwargs.items():
+                subs[k] = str(v)
+
+            result = ast_template
+            for k, val in subs.items():
+                result = result.replace(f"{{{k}}}", str(val))
+            return result
+
+        if target_api:
+            call_args = list(input_vars)
+            kw_pairs = [f"{k}={v}" for k, v in translated_kwargs.items() if not str(k).startswith("_")]
+            call_str = ", ".join(call_args + kw_pairs)
+            return f"{target_api}({call_str})"
+
+        return self.generic_visit(node, input_vars, **kwargs)
+
+    def visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Visit a node and return the formatted code string for the operation.
 
         Args:
             node (IRNode): The node parameter for the operation.
             input_vars (list[str]): The input_vars parameter for the operation.
-            **kwargs: Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
             str: The computed result.
@@ -264,6 +329,11 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             if hasattr(visitor, method_name):
                 method = getattr(visitor, method_name)
                 return method(node, input_vars, **kwargs)
+        if hasattr(self, method_name) and method_name != "visit_OpNode":
+            method = getattr(self, method_name)
+            return method(node, input_vars, **kwargs)
+        if hasattr(self, "visit_OpNode"):
+            return self.visit_OpNode(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
 
     def get_ops_map(self, kwargs) -> dict[str, str]:

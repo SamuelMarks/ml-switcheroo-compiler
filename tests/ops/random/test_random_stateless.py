@@ -25,3 +25,11 @@ def test_random_stateless_missing():
             seed_tensor = create_eager_tensor(np.array([42, 0]))
             res3 = stateless_split(seed_tensor, num=2)
             assert isinstance(res3, Tensor)
+
+
+def test_random_extras() -> None:
+    """Test global generator and stateless rng state creation."""
+    from ml_switcheroo_compiler.ops.random_stateless import create_rng_state, get_global_generator
+
+    assert get_global_generator() is not None
+    assert create_rng_state(0) is not None

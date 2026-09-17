@@ -1,3 +1,6 @@
-Zeros:
-  ast_template: np.zeros
-  target_api: ''
+operation: Zeros
+backend: numpy
+target_api: ''
+ast_template: np.zeros
+kwarg_map: {}
+dtype_overrides: {}

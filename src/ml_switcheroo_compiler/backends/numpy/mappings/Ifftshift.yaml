@@ -1,3 +1,6 @@
-Ifftshift:
-  ast_template: np.fft.ifftshift({0})
-  target_api: ''
+operation: Ifftshift
+backend: numpy
+target_api: ''
+ast_template: np.fft.ifftshift({0})
+kwarg_map: {}
+dtype_overrides: {}

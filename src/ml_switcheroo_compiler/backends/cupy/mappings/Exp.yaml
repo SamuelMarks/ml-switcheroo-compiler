@@ -1,2 +1,6 @@
-Exp:
-  target_api: cp.exp
+operation: Exp
+backend: cupy
+target_api: cp.exp
+ast_template: '{out} = cp.exp({in0})'
+kwarg_map: {}
+dtype_overrides: {}

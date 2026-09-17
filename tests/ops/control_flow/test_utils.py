@@ -59,6 +59,9 @@ def test_control_flow_utils():
         return x
 
     block = _trace_function(my_fn, (t,), "my_block")
+    assert isinstance(block, LogicalGraph)
     assert block.id == "my_block"
+    assert block.name == "my_block"
     assert len(block.inputs) == 1
     assert len(block.outputs) == 1
+    assert block.inputs[0] in block.input_specs

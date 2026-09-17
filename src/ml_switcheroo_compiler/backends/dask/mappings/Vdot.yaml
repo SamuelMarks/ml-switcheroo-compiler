@@ -1,2 +1,6 @@
-Vdot:
-  target_api: da.vdot
+operation: Vdot
+backend: dask
+target_api: da.vdot
+ast_template: '{out} = da.vdot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Pad:
-  target_api: tf.pad
+operation: Pad
+backend: tensorflow
+target_api: tf.pad
+ast_template: '{out} = tf.pad({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

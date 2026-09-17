@@ -1,2 +1,6 @@
-Sign:
-  target_api: tf.sign
+operation: Sign
+backend: tensorflow
+target_api: tf.sign
+ast_template: '{out} = tf.sign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

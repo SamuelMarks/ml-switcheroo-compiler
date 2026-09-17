@@ -1,2 +1,6 @@
-Subtract:
-  target_api: tf.subtract
+operation: Subtract
+backend: tensorflow
+target_api: tf.subtract
+ast_template: '{out} = tf.subtract({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

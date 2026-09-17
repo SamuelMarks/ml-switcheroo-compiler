@@ -1,3 +1,6 @@
-Asin:
-  ast_template: np.arcsin
-  target_api: ''
+operation: Asin
+backend: numpy
+target_api: ''
+ast_template: np.arcsin
+kwarg_map: {}
+dtype_overrides: {}

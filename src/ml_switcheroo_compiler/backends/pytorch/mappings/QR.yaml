@@ -1,0 +1,6 @@
+operation: QR
+backend: pytorch
+target_api: torch.linalg.qr
+ast_template: '{out} = torch.linalg.qr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

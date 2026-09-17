@@ -2,15 +2,54 @@ operation: isdtype
 description: Returns a boolean indicating whether a provided dtype is of a specified
   data type "kind".
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: dtype
-    type: dtype
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: kind
-    type: Union[dtype, str, Tuple[Union[dtype, str], Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: dtype
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kind
+  type: Union[dtype, str, Tuple[Union[dtype, str], Ellipsis]]
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: dtype
+    type: dtype
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: kind
+    type: Union[dtype, str, Tuple[Union[dtype, str], Ellipsis]]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - dtype
+  - kind
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: isdtype_vjp
+  jvp_rule_id: isdtype_jvp
+  vjp: null
+  jvp: null

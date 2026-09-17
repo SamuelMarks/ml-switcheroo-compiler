@@ -1,2 +1,6 @@
-Det:
-  target_api: keras_ops.det
+operation: Det
+backend: keras
+target_api: keras_ops.det
+ast_template: '{out} = keras_ops.det({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

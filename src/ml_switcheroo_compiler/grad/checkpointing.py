@@ -10,7 +10,7 @@ from collections.abc import Callable
 from typing import Optional, Union
 
 import yaml
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
@@ -204,3 +204,205 @@ def recompute_grad(
         Callable[..., object]: The recomputing function.
     """
     return checkpoint(fun, policy=policy)
+
+
+_CACHED_COST_MODEL: Optional[dict[str, object]] = None
+
+
+def load_cost_models(path: Optional[str] = None) -> dict[str, object]:
+    """Load operator compute costs and memory footprints from cost_models.yaml.
+
+    Args:
+        path (Optional[str]): Custom path to cost_models.yaml.
+
+    Returns:
+        dict[str, object]: Parsed cost models dictionary.
+    """
+    global _CACHED_COST_MODEL
+    if _CACHED_COST_MODEL is not None and path is None:
+        return _CACHED_COST_MODEL
+
+    target_path = path or os.path.join(os.path.dirname(__file__), "..", "transforms", "passes", "cost_models.yaml")
+    raw_data: dict[str, object] = {}
+    if os.path.exists(target_path):
+        with open(target_path, encoding="utf-8") as f:
+            raw_data = yaml.safe_load(f) or {}
+    if path is None:
+        _CACHED_COST_MODEL = raw_data
+    return raw_data
+
+
+def _evaluate_node_costs(
+    node: LogicalNode,
+    memory_sizes: dict[str, object],
+    heavy_ops: set[str],
+    light_ops: set[str],
+    heavy_cost: int,
+    light_cost: int,
+    default_cost: int,
+) -> tuple[int, int]:
+    """Compute memory footprint bytes and recomputation FLOP cost for a logical node.
+
+    Args:
+        node (LogicalNode): The IR node.
+        memory_sizes (dict[str, object]): Mapping from dtype string to byte size.
+        heavy_ops (set[str]): Set of compute-heavy operator substrings.
+        light_ops (set[str]): Set of compute-light operator substrings.
+        heavy_cost (int): Base cost of heavy operators.
+        light_cost (int): Base cost of light operators.
+        default_cost (int): Base cost of normal operators.
+
+    Returns:
+        tuple[int, int]: Tuple of (footprint_bytes, flop_cost).
+    """
+    shape = getattr(node, "shape_metadata", None) or ()
+    num_elements = 1
+    for dim in shape:
+        if isinstance(dim, int) and dim > 0:
+            num_elements *= dim
+
+    dtype_str = "float32"
+    if hasattr(node, "attributes") and "dtype" in node.attributes:
+        dtype_str = str(node.attributes["dtype"])
+    dtype_size = int(memory_sizes.get(dtype_str, 4)) if isinstance(memory_sizes, dict) else 4
+    footprint_bytes = num_elements * dtype_size
+
+    op_name = node.op_type
+    if any(h in op_name for h in heavy_ops):
+        base_flop = heavy_cost
+    elif any(light_op in op_name for light_op in light_ops):
+        base_flop = light_cost
+    else:
+        base_flop = default_cost
+    flop_cost = base_flop * max(1, num_elements)
+
+    return footprint_bytes, flop_cost
+
+
+def _solve_01_knapsack_dp(
+    cap: int,
+    weights: list[int],
+    values: list[int],
+) -> set[int]:
+    """Solve 0/1 knapsack using dynamic programming to find retained item indices.
+
+    Args:
+        cap (int): Weight capacity.
+        weights (list[int]): Item weights.
+        values (list[int]): Item values.
+
+    Returns:
+        set[int]: Indices of retained items.
+    """
+    num_items = len(weights)
+    max_cells = 2000
+    scale = (cap + max_cells - 1) // max_cells if cap > max_cells else 1
+    scaled_cap = cap // scale
+    scaled_weights = [max(1, w // scale) for w in weights]
+
+    dp = [0] * (scaled_cap + 1)
+    keep = [[False] * (scaled_cap + 1) for _ in range(num_items)]
+
+    for i in range(num_items):
+        w = scaled_weights[i]
+        v = values[i]
+        for c in range(scaled_cap, w - 1, -1):
+            if dp[c - w] + v > dp[c]:
+                dp[c] = dp[c - w] + v
+                keep[i][c] = True
+
+    curr_c = scaled_cap
+    retained_indices: set[int] = set()
+    for i in range(num_items - 1, -1, -1):
+        if keep[i][curr_c]:
+            retained_indices.add(i)
+            curr_c -= scaled_weights[i]
+    return retained_indices
+
+
+def knapsack_memory_scheduler(
+    graph: LogicalGraph,
+    memory_budget_bytes: int,
+    cost_model: Optional[dict[str, object]] = None,
+) -> list[str]:
+    """Solve dynamic 0/1 knapsack problem to find optimal checkpoint cut-points minimizing recomputation FLOPs.
+
+    Given a peak activation memory budget M_bytes, nodes retained in forward memory
+    are chosen to maximize saved recomputation FLOPs subject to memory footprint <= M_bytes.
+    All nodes not chosen to be retained in forward memory are marked for rematerialization.
+
+    Args:
+        graph (LogicalGraph): Computation graph to analyze and transform.
+        memory_budget_bytes (int): Maximum peak activation memory in bytes.
+        cost_model (Optional[dict[str, object]]): Preloaded cost model dictionary.
+
+    Returns:
+        list[str]: Node IDs designated for checkpointing/rematerialization.
+    """
+    cm = cost_model or load_cost_models()
+    memory_sizes = cm.get("memory_sizes", {}) if isinstance(cm, dict) else {}
+    compute_costs = cm.get("compute_costs", {}) if isinstance(cm, dict) else {}
+
+    heavy_ops = set(compute_costs.get("heavy_ops", ["Conv", "MatMul"])) if isinstance(compute_costs, dict) else {"Conv", "MatMul"}
+    light_ops = set(compute_costs.get("light_ops", ["Add", "Sub"])) if isinstance(compute_costs, dict) else {"Add", "Sub"}
+    heavy_cost = int(compute_costs.get("heavy_cost", 1000)) if isinstance(compute_costs, dict) else 1000
+    light_cost = int(compute_costs.get("light_cost", 10)) if isinstance(compute_costs, dict) else 10
+    default_cost = int(compute_costs.get("default_cost", 50)) if isinstance(compute_costs, dict) else 50
+
+    cfg = load_rematerialization_rules()
+    target_ops = set(cfg.target_ops)
+    high_cost_ops = set(cfg.high_cost_ops)
+
+    candidates: list[str] = []
+    weights: list[int] = []
+    values: list[int] = []
+
+    fixed_memory = 0
+    total_activation_bytes = 0
+
+    for nid, node in graph.nodes.items():
+        if node.op_type in ("Input", "Constant", "Checkpoint"):
+            continue
+
+        footprint, flop_cost = _evaluate_node_costs(node, memory_sizes, heavy_ops, light_ops, heavy_cost, light_cost, default_cost)
+        total_activation_bytes += footprint
+
+        if node.op_type in high_cost_ops or (target_ops and node.op_type not in target_ops):
+            fixed_memory += footprint
+            continue
+
+        candidates.append(nid)
+        weights.append(footprint)
+        values.append(flop_cost)
+
+    if total_activation_bytes <= memory_budget_bytes or not candidates:
+        return []
+
+    cap = max(0, memory_budget_bytes - fixed_memory)
+    retained_indices = _solve_01_knapsack_dp(cap, weights, values)
+
+    checkpointed_nodes: list[str] = []
+    for i, nid in enumerate(candidates):
+        if i not in retained_indices:
+            node = graph.nodes[nid]
+            node.attributes["checkpoint"] = True
+            node.attributes["rematerialize"] = True
+            checkpointed_nodes.append(nid)
+
+    return checkpointed_nodes
+
+
+def solve_memory_budget_and_insert_checkpoints(
+    graph: LogicalGraph,
+    memory_budget_bytes: int,
+) -> list[str]:
+    """Identify peak memory activation nodes and mark them for checkpointing within a memory budget.
+
+    Args:
+        graph (LogicalGraph): Computation graph to analyze and transform.
+        memory_budget_bytes (int): Maximum allowable peak activation memory in bytes.
+
+    Returns:
+        list[str]: Node IDs designated for checkpointing/rematerialization.
+    """
+    return knapsack_memory_scheduler(graph, memory_budget_bytes)

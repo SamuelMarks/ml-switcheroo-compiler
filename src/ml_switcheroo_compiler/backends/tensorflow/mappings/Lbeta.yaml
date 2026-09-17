@@ -1,2 +1,6 @@
-Lbeta:
-  target_api: tf.math.lbeta
+operation: Lbeta
+backend: tensorflow
+target_api: tf.math.lbeta
+ast_template: '{out} = tf.math.lbeta({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

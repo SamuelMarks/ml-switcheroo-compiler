@@ -1,2 +1,6 @@
-Select:
-  target_api: cp.select
+operation: Select
+backend: cupy
+target_api: cp.select
+ast_template: '{out} = cp.select({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

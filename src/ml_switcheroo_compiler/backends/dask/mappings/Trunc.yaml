@@ -1,2 +1,6 @@
-Trunc:
-  target_api: da.trunc
+operation: Trunc
+backend: dask
+target_api: da.trunc
+ast_template: '{out} = da.trunc({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

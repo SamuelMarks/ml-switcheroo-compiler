@@ -1,3 +1,6 @@
-Sort:
-  ast_template: torch.sort({0}, dim={dimension})
-  target_api: ''
+operation: Sort
+backend: pytorch
+target_api: ''
+ast_template: torch.sort({0}, dim={dimension})
+kwarg_map: {}
+dtype_overrides: {}

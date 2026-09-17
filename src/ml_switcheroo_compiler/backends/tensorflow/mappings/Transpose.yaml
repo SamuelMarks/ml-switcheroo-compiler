@@ -1,2 +1,6 @@
-Transpose:
-  target_api: tf.transpose
+operation: Transpose
+backend: tensorflow
+target_api: tf.transpose
+ast_template: '{out} = tf.transpose({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

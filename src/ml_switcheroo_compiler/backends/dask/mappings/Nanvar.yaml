@@ -1,2 +1,6 @@
-Nanvar:
-  target_api: da.nanvar
+operation: Nanvar
+backend: dask
+target_api: da.nanvar
+ast_template: '{out} = da.nanvar({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

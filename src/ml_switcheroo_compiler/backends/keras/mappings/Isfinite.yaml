@@ -1,2 +1,6 @@
-Isfinite:
-  target_api: keras_ops.isfinite
+operation: Isfinite
+backend: keras
+target_api: keras_ops.isfinite
+ast_template: '{out} = keras_ops.isfinite({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

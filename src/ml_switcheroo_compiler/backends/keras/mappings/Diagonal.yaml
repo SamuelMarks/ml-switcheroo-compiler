@@ -1,2 +1,6 @@
-Diagonal:
-  target_api: keras_ops.diagonal
+operation: Diagonal
+backend: keras
+target_api: keras_ops.diagonal
+ast_template: '{out} = keras_ops.diagonal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

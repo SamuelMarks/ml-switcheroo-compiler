@@ -176,3 +176,17 @@ def test_graph_scheduling_simulate_peak_memory_external_input():
     pass_sched = GraphSchedulingPass()
     mem = pass_sched.calculate_peak_memory(g, ["n0"])
     assert mem > 0
+
+
+def test_graph_scheduling_stream_preservation_and_assignment() -> None:
+    """Verify stream preservation and assignment across passes."""
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input", stream="custom_stream_0")
+    n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
+    graph.nodes = {"n1": n1, "n2": n2}
+
+    graph_scheduling_pass(graph)
+    assert graph.nodes["n1"].stream == "custom_stream_0"
+    assert graph.nodes["n2"].stream == "custom_stream_0"

@@ -1,4 +1,6 @@
-Append:
-  custom_code: 'lambda arr, values, axis=None, **kwargs: torch.cat([arr, values],
-    dim=axis) if axis is not None else torch.cat([arr.flatten(), values.flatten()])'
-  target_api: custom_op
+operation: Append
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

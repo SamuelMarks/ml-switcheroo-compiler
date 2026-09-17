@@ -1,2 +1,6 @@
-Block:
-  target_api: da.block
+operation: Block
+backend: dask
+target_api: da.block
+ast_template: '{out} = da.block({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

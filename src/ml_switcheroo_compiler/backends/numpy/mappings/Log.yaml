@@ -1,3 +1,6 @@
-Log:
-  ast_template: np.log
-  target_api: ''
+operation: Log
+backend: numpy
+target_api: ''
+ast_template: np.log
+kwarg_map: {}
+dtype_overrides: {}

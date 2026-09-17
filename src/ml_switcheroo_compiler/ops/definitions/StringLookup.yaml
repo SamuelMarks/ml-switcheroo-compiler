@@ -1,60 +1,139 @@
 operation: StringLookup
 description: A preprocessing layer that maps strings to (possibly encoded) indices.
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: max_tokens
-    type: int
-  - default: 1
-    is_variadic: false
-    kind: positional_or_keyword
-    name: num_oov_indices
-    type: int
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: mask_token
-    type: str
-  - default: '[UNK]'
-    is_variadic: false
-    kind: positional_or_keyword
-    name: oov_token
-    type: str
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: vocabulary
-    type: List[str]
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: invert
-    type: bool
-  - default: int
-    is_variadic: false
-    kind: positional_or_keyword
-    name: output_mode
-    options:
-      - int
-      - one_hot
-      - multi_hot
-      - count
-      - tf_idf
-    type: str
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: pad_to_max_tokens
-    type: bool
-  - default: false
-    is_variadic: false
-    kind: positional_or_keyword
-    name: sparse
-    type: bool
-  - default: utf-8
-    is_variadic: false
-    kind: positional_or_keyword
-    name: encoding
-    type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: max_tokens
+  type: int
+- default: 1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: num_oov_indices
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mask_token
+  type: str
+- default: '[UNK]'
+  is_variadic: false
+  kind: positional_or_keyword
+  name: oov_token
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: vocabulary
+  type: List[str]
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: invert
+  type: bool
+- default: int
+  is_variadic: false
+  kind: positional_or_keyword
+  name: output_mode
+  options:
+  - int
+  - one_hot
+  - multi_hot
+  - count
+  - tf_idf
+  type: str
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: pad_to_max_tokens
+  type: bool
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: sparse
+  type: bool
+- default: utf-8
+  is_variadic: false
+  kind: positional_or_keyword
+  name: encoding
+  type: str
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: max_tokens
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: num_oov_indices
+    type: int
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: mask_token
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: oov_token
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: vocabulary
+    type: List[str]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: invert
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: output_mode
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: pad_to_max_tokens
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: sparse
+    type: bool
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: encoding
+    type: str
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - max_tokens
+  - num_oov_indices
+  - mask_token
+  - oov_token
+  - vocabulary
+  - invert
+  - output_mode
+  - pad_to_max_tokens
+  - sparse
+  - encoding
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: StringLookup_vjp
+  jvp_rule_id: StringLookup_jvp
+  vjp: null
+  jvp: null

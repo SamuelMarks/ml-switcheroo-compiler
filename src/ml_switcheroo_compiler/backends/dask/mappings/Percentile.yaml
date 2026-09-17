@@ -1,2 +1,6 @@
-Percentile:
-  target_api: da.percentile
+operation: Percentile
+backend: dask
+target_api: da.percentile
+ast_template: '{out} = da.percentile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

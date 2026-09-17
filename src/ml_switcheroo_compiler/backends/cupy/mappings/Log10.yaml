@@ -1,2 +1,6 @@
-Log10:
-  target_api: cp.log10
+operation: Log10
+backend: cupy
+target_api: cp.log10
+ast_template: '{out} = cp.log10({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

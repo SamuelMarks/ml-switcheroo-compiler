@@ -1,23 +1,277 @@
-operation: Normalization
-description: A preprocessing layer that normalizes continuous features.
-std_args:
-- default: -1
-  is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mean
-  type: float
-- is_variadic: false
-  kind: positional_or_keyword
-  name: variance
-  type: float
-variants:
-  edge_wasm_simd:
-    template: conv_pool_1d_flat
-    math_op: '* 1.0f'
-  llvm_cpp:
-    template: unary
-    scalar_expr: in0_val
+BatchNorm:
+  autodiff:
+    vjp_rule_id: BatchNorm_vjp
+    jvp_rule_id: BatchNorm_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The BatchNorm operation.
+  domain: normalization
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: BatchNorm
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: BatchNormalization
+    edge_stablehlo:
+      opcode: stablehlo.batch_norm_inference
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    edge_wgsl:
+      expr: buf_in0_f32[idx]
+      template: unary
+    jax: {}
+    keras: {}
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+GroupNorm:
+  autodiff:
+    vjp_rule_id: GroupNorm_vjp
+    jvp_rule_id: GroupNorm_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Applies Group Normalization.
+  domain: normalization
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: GroupNorm
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    edge_wgsl:
+      expr: buf_in0_f32[idx]
+      template: unary
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+InstanceNorm:
+  autodiff:
+    vjp_rule_id: InstanceNorm_vjp
+    jvp_rule_id: InstanceNorm_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: 'Auto-discovered via Consensus (Score: 2.0)'
+  domain: normalization
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: InstanceNorm
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+LayerNorm:
+  autodiff:
+    vjp_rule_id: LayerNorm_vjp
+    jvp_rule_id: LayerNorm_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Applies Layer Normalization.
+  domain: normalization
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: LayerNorm
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    edge_wgsl:
+      expr: buf_in0_f32[idx]
+      template: unary
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+RMSNorm:
+  autodiff:
+    vjp_rule_id: RMSNorm_vjp
+    jvp_rule_id: RMSNorm_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: Applies Root Mean Square Normalization.
+  domain: normalization
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: RMSNorm
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_wasm_simd:
+      math_op: '* 1.0f'
+      template: conv_pool_1d_flat
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

@@ -1,0 +1,6 @@
+operation: LogMatrixDeterminant
+backend: tensorflow
+target_api: tf.linalg.logdet
+ast_template: '{out} = tf.linalg.logdet({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-LogicalNot:
-  target_api: tf.logical_not
+operation: LogicalNot
+backend: tensorflow
+target_api: tf.logical_not
+ast_template: '{out} = tf.logical_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

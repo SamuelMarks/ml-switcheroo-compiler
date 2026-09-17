@@ -1,26 +1,56 @@
 operation: do_matmul
 description: Compute a non-ragged matmul for a single output block.
 std_args:
-  - a_gmem
-  - b_gmem
-  - out_gmem
-  - grid_indices
-  - wg_axis
-  - collective_axes
-  - local_index
-  - config
-  - group_info
-  - a_smem
-  - b_smem
-  - acc_tmem
-  - acc_smem
-  - a_tma_barrier
-  - b_tma_barrier
-  - store_done_barrier
-  - mma_done_barrier
-  - consumed_barrier
+- a_gmem
+- b_gmem
+- out_gmem
+- grid_indices
+- wg_axis
+- collective_axes
+- local_index
+- config
+- group_info
+- a_smem
+- b_smem
+- acc_tmem
+- acc_smem
+- a_tma_barrier
+- b_tma_barrier
+- store_done_barrier
+- mma_done_barrier
+- consumed_barrier
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: do_matmul_vjp
+  jvp_rule_id: do_matmul_jvp
+  vjp: null
+  jvp: null

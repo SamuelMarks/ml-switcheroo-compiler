@@ -20,9 +20,13 @@ class KwargTranslation(BaseModel):
 class OpMappingSchema(BaseModel):
     """Schema defining mapping rules for a single operation."""
 
-    target_api: str
+    operation: Optional[str] = None
+    backend: Optional[str] = None
+    target_api: str = ""
     is_method: bool = False
+    kwarg_map: dict[str, Optional[str]] = Field(default_factory=dict)
     kwarg_translations: dict[str, str] = Field(default_factory=dict)
+    dtype_overrides: dict[str, str] = Field(default_factory=dict)
     default_kwargs: dict[str, object] = Field(default_factory=dict)
     supported_dtypes: Optional[list[str]] = None
     ast_template: Optional[str] = None
@@ -50,11 +54,14 @@ def _read_and_merge(path: str, target_dict: dict[str, object]) -> None:
     with open(path, encoding="utf-8") as f:
         data: dict[str, object] = yaml.safe_load(f) or {}
     if isinstance(data, dict):
-        ops = data.get("operations")
-        if isinstance(ops, dict):
-            target_dict.update(ops)
+        if "operation" in data and isinstance(data["operation"], str):
+            target_dict[data["operation"]] = data
         else:
-            target_dict.update(data)
+            ops = data.get("operations")
+            if isinstance(ops, dict):
+                target_dict.update(ops)
+            else:
+                target_dict.update(data)
 
 
 def _load_yaml_dir(yaml_dir: str, target_dict: dict[str, object]) -> None:

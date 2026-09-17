@@ -1,2 +1,6 @@
-SegmentSum:
-  target_api: jax.ops.segment_sum
+operation: SegmentSum
+backend: jax
+target_api: jax.ops.segment_sum
+ast_template: '{out} = jax.ops.segment_sum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

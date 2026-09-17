@@ -1,3 +1,6 @@
-Polysub:
-  ast_template: np.polysub
-  target_api: ''
+operation: Polysub
+backend: numpy
+target_api: ''
+ast_template: np.polysub
+kwarg_map: {}
+dtype_overrides: {}

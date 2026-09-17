@@ -1,14 +1,44 @@
 operation: emit_tf_embedded_graph_custom_call
 description: Emits a custom call referencing a tf.Graph embedding of the TF function.
 std_args:
-  - ctx
-  - concrete_function_flat_tf
-  - operands
-  - has_side_effects
-  - ordered
-  - output_avals
+- ctx
+- concrete_function_flat_tf
+- operands
+- has_side_effects
+- ordered
+- output_avals
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: emit_tf_embedded_graph_custom_call_vjp
+  jvp_rule_id: emit_tf_embedded_graph_custom_call_jvp
+  vjp: null
+  jvp: null

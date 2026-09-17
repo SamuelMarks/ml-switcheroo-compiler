@@ -1,2 +1,6 @@
-Nanmedian:
-  target_api: cp.nanmedian
+operation: Nanmedian
+backend: cupy
+target_api: cp.nanmedian
+ast_template: '{out} = cp.nanmedian({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

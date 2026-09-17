@@ -1,2 +1,6 @@
-Fmin:
-  target_api: cp.fmin
+operation: Fmin
+backend: cupy
+target_api: cp.fmin
+ast_template: '{out} = cp.fmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

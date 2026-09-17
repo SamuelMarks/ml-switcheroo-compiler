@@ -1,2 +1,6 @@
-Isreal:
-  target_api: cp.isreal
+operation: Isreal
+backend: cupy
+target_api: cp.isreal
+ast_template: '{out} = cp.isreal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

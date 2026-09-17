@@ -1,2 +1,6 @@
-Irfftnd:
-  target_api: '''mx.fft.irfftn({0})'''
+operation: Irfftnd
+backend: mlx
+target_api: '''mx.fft.irfftn({0})'''
+ast_template: '{out} = ''mx.fft.irfftn({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

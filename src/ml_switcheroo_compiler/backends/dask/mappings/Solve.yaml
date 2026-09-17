@@ -1,2 +1,6 @@
-Solve:
-  target_api: da.linalg.solve
+operation: Solve
+backend: dask
+target_api: da.linalg.solve
+ast_template: '{out} = da.linalg.solve({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

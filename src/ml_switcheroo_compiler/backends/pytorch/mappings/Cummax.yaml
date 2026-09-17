@@ -1,0 +1,6 @@
+operation: Cummax
+backend: pytorch
+target_api: torch.cummax
+ast_template: '{out} = torch.cummax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-All:
-  ast_template: torch.all({0}, dim={axis}, keepdim={keepdims})
-  target_api: ''
+operation: All
+backend: pytorch
+target_api: ''
+ast_template: torch.all({0}, dim={axis}, keepdim={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

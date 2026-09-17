@@ -1,2 +1,6 @@
-Eigvalsh:
-  target_api: tf.linalg.eigvalsh
+operation: Eigvalsh
+backend: tensorflow
+target_api: tf.linalg.eigvalsh
+ast_template: '{out} = tf.linalg.eigvalsh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

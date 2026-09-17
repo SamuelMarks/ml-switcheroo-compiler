@@ -1,11 +1,41 @@
 operation: global_array_to_host_local_array
 description: Converts a global `jax.Array` to a host local `jax.Array`.
 std_args:
-  - global_inputs
-  - global_mesh
-  - pspecs
+- global_inputs
+- global_mesh
+- pspecs
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: global_array_to_host_local_array_vjp
+  jvp_rule_id: global_array_to_host_local_array_jvp
+  vjp: null
+  jvp: null

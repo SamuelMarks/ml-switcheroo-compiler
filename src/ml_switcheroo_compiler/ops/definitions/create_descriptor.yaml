@@ -1,15 +1,45 @@
 operation: create_descriptor
 description: The class representing a Python function.
 std_args:
-  - ref
-  - swizzle
-  - group_size
-  - logical_k_major
-  - large_tile
-  - mma_bytewidth_k
-  - split_const
+- ref
+- swizzle
+- group_size
+- logical_k_major
+- large_tile
+- mma_bytewidth_k
+- split_const
 type: function
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: create_descriptor_vjp
+  jvp_rule_id: create_descriptor_jvp
+  vjp: null
+  jvp: null

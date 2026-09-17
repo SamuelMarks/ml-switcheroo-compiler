@@ -1,3 +1,6 @@
-KaiserWindow:
-  ast_template: torch.kaiser_window({window_length}, periodic={periodic}, beta={beta})
-  target_api: ''
+operation: KaiserWindow
+backend: pytorch
+target_api: ''
+ast_template: torch.kaiser_window({window_length}, periodic={periodic}, beta={beta})
+kwarg_map: {}
+dtype_overrides: {}

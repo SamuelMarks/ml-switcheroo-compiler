@@ -1,2 +1,6 @@
-Remainder:
-  target_api: da.remainder
+operation: Remainder
+backend: dask
+target_api: da.remainder
+ast_template: '{out} = da.remainder({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

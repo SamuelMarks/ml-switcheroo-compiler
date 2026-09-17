@@ -1,2 +1,6 @@
-ShiftedChebyshevPolynomialV:
-  target_api: torch.special.shifted_chebyshev_polynomial_v
+operation: ShiftedChebyshevPolynomialV
+backend: pytorch
+target_api: torch.special.shifted_chebyshev_polynomial_v
+ast_template: '{out} = torch.special.shifted_chebyshev_polynomial_v({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Istft:
-  ast_template: mlx_istft({0})
-  target_api: ''
+operation: Istft
+backend: mlx
+target_api: ''
+ast_template: mlx_istft({0})
+kwarg_map: {}
+dtype_overrides: {}

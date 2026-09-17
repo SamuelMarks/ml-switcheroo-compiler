@@ -1,3 +1,6 @@
-ConvTransposeShapeTuple:
-  ast_template: ()
-  target_api: ''
+operation: ConvTransposeShapeTuple
+backend: numpy
+target_api: ''
+ast_template: ()
+kwarg_map: {}
+dtype_overrides: {}

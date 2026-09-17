@@ -1,2 +1,6 @@
-Tile:
-  target_api: da.tile
+operation: Tile
+backend: dask
+target_api: da.tile
+ast_template: '{out} = da.tile({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

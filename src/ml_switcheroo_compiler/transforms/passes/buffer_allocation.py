@@ -406,6 +406,17 @@ class BufferAllocationPass:
         for node in sorted_nodes:
             size_val = _get_node_byte_size(node)
             if isinstance(size_val, str):
+                # Handle symbolic/dynamic batch dimensions using stride multipliers
+                stride_mult = 1
+                shape = getattr(node, "shape_metadata", None) or getattr(node, "shape", None) or node.attributes.get("shape")
+                if shape and isinstance(shape, (list, tuple)) and len(shape) > 1:
+                    dims = [int(d) for d in shape[1:] if isinstance(d, (int, float))]
+                    mult = 1
+                    for d in dims:
+                        mult *= int(d)
+                    stride_mult = mult * 4
+                node.attributes["stride_multiplier"] = stride_mult
+                node.attributes["dynamic_batch"] = True
                 continue
 
             size = int(size_val)

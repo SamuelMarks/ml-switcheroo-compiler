@@ -1,0 +1,122 @@
+# Declarative mapping of compiler backends to static framework snapshot targets
+version: "1.0.0"
+targets:
+  pytorch:
+    framework: "torch"
+    snapshot_glob: "torch_v*.json"
+    status: "available"
+    canonical_roots:
+      - "torch"
+      - "pytorch"
+      - "torchaudio"
+      - "torchvision"
+  jax:
+    framework: "jax"
+    snapshot_glob: "jax_v*.json"
+    status: "available"
+    canonical_roots:
+      - "jax"
+      - "jax.numpy"
+      - "jax.lax"
+      - "jax.nn"
+      - "jnp"
+  mlx:
+    framework: "mlx"
+    snapshot_glob: "mlx_v*.json"
+    status: "available"
+    canonical_roots:
+      - "mlx"
+      - "mlx.core"
+      - "mlx.nn"
+      - "mx"
+  tensorflow:
+    framework: "tensorflow"
+    snapshot_glob: "tensorflow_v*.json"
+    status: "available"
+    canonical_roots:
+      - "tensorflow"
+      - "tf"
+  keras:
+    framework: "keras"
+    snapshot_glob: "keras_v*.json"
+    status: "available"
+    canonical_roots:
+      - "keras"
+      - "keras.ops"
+      - "keras_ops"
+  numpy:
+    framework: "numpy"
+    snapshot_glob: "numpy_v*.json"
+    status: "available"
+    canonical_roots:
+      - "numpy"
+      - "np"
+  cupy:
+    framework: "cupy"
+    snapshot_glob: "cupy_v*.json"
+    status: "available"
+    canonical_roots:
+      - "cupy"
+      - "cp"
+  dask:
+    framework: "dask"
+    snapshot_glob: "dask_v*.json"
+    status: "available"
+    canonical_roots:
+      - "dask"
+      - "dask.array"
+      - "da"
+  edge_stablehlo:
+    framework: "stablehlo"
+    snapshot_glob: "stablehlo_v*.json"
+    status: "available"
+    canonical_roots:
+      - "stablehlo"
+  edge_mlir:
+    framework: "mlir"
+    snapshot_glob: "mlir_v*.json"
+    status: "available"
+    canonical_roots:
+      - "mlir"
+  cuda:
+    framework: "cuda"
+    snapshot_glob: "nvidia_sass_v*.json"
+    framework_file: "nvidia_ptx_exhaustive.json"
+    status: "available"
+    canonical_roots:
+      - "cuda"
+      - "ptx"
+      - "sass"
+  rocm:
+    framework: "rocm"
+    snapshot_glob: "amd_rdna_v*.json"
+    framework_file: "amd_rdna_exhaustive.json"
+    status: "available"
+    canonical_roots:
+      - "rocm"
+      - "hip"
+      - "rdna"
+  edge_onnx:
+    framework: "onnx"
+    snapshot_glob: "onnx_v*.json"
+    status: "missing_upstream"
+    fallback_schema: "synthetic"
+    canonical_roots:
+      - "onnx"
+      - "ai.onnx"
+  webgpu:
+    framework: "webgpu"
+    snapshot_glob: "webgpu_v*.json"
+    status: "missing_upstream"
+    fallback_schema: "synthetic"
+    canonical_roots:
+      - "webgpu"
+      - "wgsl"
+  metal:
+    framework: "metal"
+    snapshot_glob: "metal_v*.json"
+    status: "missing_upstream"
+    fallback_schema: "synthetic"
+    canonical_roots:
+      - "metal"
+      - "msl"

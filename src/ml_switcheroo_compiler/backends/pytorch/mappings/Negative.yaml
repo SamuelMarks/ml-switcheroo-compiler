@@ -1,2 +1,6 @@
-Negative:
-  target_api: torch.neg
+operation: Negative
+backend: pytorch
+target_api: torch.neg
+ast_template: '{out} = torch.neg({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

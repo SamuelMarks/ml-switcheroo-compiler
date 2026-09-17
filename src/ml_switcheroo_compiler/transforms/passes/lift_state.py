@@ -4,7 +4,9 @@
 import typing
 from collections.abc import Iterable
 
-from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 StateValue = typing.Union[int, float, str, bool, list, tuple, dict, None]
 
@@ -50,27 +52,27 @@ def unflatten_state_dict(flat_state: dict[str, StateValue]) -> dict[str, typing.
     return nested
 
 
-def _get_nodes(block: typing.Union[IRGraph, IRBlock]) -> Iterable[IRNode]:
+def _get_nodes(block: LogicalGraph) -> Iterable[LogicalNode]:
     """Evaluate _get_nodes operation.
 
     Args:
-        block (typing.Union[IRGraph, IRBlock]): The block parameter.
+        block (LogicalGraph): The block parameter.
 
     Returns:
-            Iterable[IRNode]: Result.
+            Iterable[LogicalNode]: Result.
     """
-    nodes: typing.Union[list[IRNode], dict[str, IRNode]] = getattr(block, "nodes", [])
+    nodes: typing.Union[list[LogicalNode], dict[str, LogicalNode]] = getattr(block, "nodes", {})
     if isinstance(nodes, dict):
         return nodes.values()
     return nodes
 
 
-def _lift_node(node: IRNode, block: typing.Union[IRGraph, IRBlock]) -> bool:
+def _lift_node(node: LogicalNode, block: LogicalGraph) -> bool:
     """Evaluate _lift_node operation.
 
     Args:
-        node (IRNode): The node parameter.
-        block (typing.Union[IRGraph, IRBlock]): The block parameter.
+        node (LogicalNode): The node parameter.
+        block (LogicalGraph): The block parameter.
 
     Returns:
         bool: Result.
@@ -96,11 +98,11 @@ def _lift_node(node: IRNode, block: typing.Union[IRGraph, IRBlock]) -> bool:
     return False
 
 
-def _lift_block_ir(block: typing.Union[IRGraph, IRBlock]) -> bool:
+def _lift_block_ir(block: LogicalGraph) -> bool:
     """Evaluate _lift_block_ir operation.
 
     Args:
-        block (typing.Union[IRGraph, IRBlock]): The block parameter.
+        block (LogicalGraph): The block parameter.
 
     Returns:
         bool: Result.
@@ -108,9 +110,11 @@ def _lift_block_ir(block: typing.Union[IRGraph, IRBlock]) -> bool:
     mod: bool = False
     for node in _get_nodes(block):
         mod = _lift_node(node, block) or mod
+        for sub in getattr(node, "subgraphs", {}).values():
+            mod = _lift_block_ir(sub) or mod
         for attr_val in node.attributes.values():
             if hasattr(attr_val, "nodes"):
-                mod = _lift_block_ir(typing.cast(typing.Union[IRGraph, IRBlock], attr_val)) or mod
+                mod = _lift_block_ir(typing.cast(LogicalGraph, attr_val)) or mod
     return mod
 
 

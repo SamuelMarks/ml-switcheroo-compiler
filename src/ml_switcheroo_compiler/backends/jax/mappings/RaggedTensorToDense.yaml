@@ -1,2 +1,6 @@
-RaggedTensorToDense:
-  target_api: _execute_ragged_tensor_to_dense
+operation: RaggedTensorToDense
+backend: jax
+target_api: _execute_ragged_tensor_to_dense
+ast_template: '{out} = _execute_ragged_tensor_to_dense({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Collapse:
-  ast_template: np.reshape({0}, (-1,) + {0}.shape[{1}:])
-  target_api: ''
+operation: Collapse
+backend: numpy
+target_api: ''
+ast_template: np.reshape({0}, (-1,) + {0}.shape[{1}:])
+kwarg_map: {}
+dtype_overrides: {}

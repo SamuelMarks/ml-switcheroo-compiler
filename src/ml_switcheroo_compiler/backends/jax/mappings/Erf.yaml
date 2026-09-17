@@ -1,2 +1,6 @@
-Erf:
-  target_api: jax.scipy.special.erf
+operation: Erf
+backend: jax
+target_api: jax.scipy.special.erf
+ast_template: '{out} = jax.scipy.special.erf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

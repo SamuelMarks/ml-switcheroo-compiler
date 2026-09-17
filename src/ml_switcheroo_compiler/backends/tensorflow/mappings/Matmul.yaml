@@ -1,2 +1,6 @@
-Matmul:
-  target_api: tf.matmul
+operation: Matmul
+backend: tensorflow
+target_api: tf.matmul
+ast_template: '{out} = tf.matmul({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

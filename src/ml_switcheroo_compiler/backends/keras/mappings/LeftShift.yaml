@@ -1,2 +1,6 @@
-LeftShift:
-  target_api: keras_ops.left_shift
+operation: LeftShift
+backend: keras
+target_api: keras_ops.left_shift
+ast_template: '{out} = keras_ops.left_shift({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

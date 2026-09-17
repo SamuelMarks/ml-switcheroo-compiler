@@ -271,7 +271,7 @@ def _scan_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
-    if body is not None and hasattr(body, "inputs") and hasattr(body, "outputs"):
+    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
         body_grad = grad(body, body.inputs, body.outputs[0] if body.outputs else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_scan"
         adj_node = IRNode(
@@ -309,7 +309,7 @@ def _while_loop_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
     cond = node.attributes.get("cond", node.attributes.get("cond_graph"))
-    if body is not None and hasattr(body, "inputs") and hasattr(body, "outputs"):
+    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
         body_grad = grad(body, body.inputs, body.outputs[0] if body.outputs else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_while"
         adj_node = IRNode(
@@ -434,7 +434,7 @@ def _while_loop_jvp(graph: IRGraph, node, tangents) -> str:
     from ml_switcheroo_compiler.transforms.autodiff import jvp
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
-    if body is not None and hasattr(body, "inputs") and hasattr(body, "outputs"):
+    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
         primals = list(node.inputs)
         tangent_ids = list(tangents)
         body_jvp = jvp(body, primals, tangent_ids, body.outputs)
@@ -491,7 +491,7 @@ def _scan_jvp(graph: IRGraph, node, tangents) -> str:
         return ""
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
-    if body is not None and hasattr(body, "inputs") and hasattr(body, "outputs"):
+    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
         primals = list(node.inputs)
         tangent_ids = list(tangents)
         body_jvp = jvp(body, primals, tangent_ids, body.outputs)
@@ -575,7 +575,23 @@ def custom_vjp_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
 
     from ml_switcheroo_ir import LogicalNode
 
-    bwd_fn = node.attributes["bwd_fn"]
+    bwd_subgraph = getattr(node, "subgraphs", {}).get("bwd") or node.attributes.get("bwd_graph") or node.attributes.get("custom_backward_subgraph")
+    if bwd_subgraph is not None and hasattr(bwd_subgraph, "nodes") and hasattr(bwd_subgraph, "inputs"):
+        id_map: dict[str, str] = {}
+        if bwd_subgraph.inputs:
+            id_map[bwd_subgraph.inputs[0]] = cotangent
+            for i, inp_id in enumerate(bwd_subgraph.inputs[1:]):
+                if i < len(node.inputs):
+                    id_map[inp_id] = node.inputs[i]
+        nodes_list = bwd_subgraph.nodes.values() if isinstance(bwd_subgraph.nodes, dict) else bwd_subgraph.nodes
+        for n in nodes_list:
+            if n.id in id_map:
+                continue
+            id_map[n.id] = f"cvjp_inlined_{uuid.uuid4().hex[:6]}"
+        _inline_subgraph(graph, bwd_subgraph, node, id_map)
+        return tuple(id_map.get(out_id, out_id) for out_id in bwd_subgraph.outputs)
+
+    bwd_fn = node.attributes.get("bwd_fn")
 
     bwd_node_id = f"cvjp_bwd_{uuid.uuid4().hex[:6]}"
     bwd_node = LogicalNode(
@@ -619,8 +635,24 @@ def custom_jvp_jvp(graph: IRGraph, node: Any, tangents: Any) -> Any:
 
     from ml_switcheroo_ir import LogicalNode
 
-    jvp_rule = node.attributes.get("jvp_rule")
     tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+
+    jvp_subgraph = getattr(node, "subgraphs", {}).get("jvp") or node.attributes.get("jvp_graph") or node.attributes.get("custom_forward_subgraph")
+    if jvp_subgraph is not None and hasattr(jvp_subgraph, "nodes") and hasattr(jvp_subgraph, "inputs"):
+        id_map: dict[str, str] = {}
+        combined_inputs = list(node.inputs) + tangents_list
+        for i, sub_inp in enumerate(jvp_subgraph.inputs):
+            if i < len(combined_inputs):
+                id_map[sub_inp] = combined_inputs[i]
+        nodes_list = jvp_subgraph.nodes.values() if isinstance(jvp_subgraph.nodes, dict) else jvp_subgraph.nodes
+        for n in nodes_list:
+            if n.id in id_map:
+                continue
+            id_map[n.id] = f"cjvp_inlined_{uuid.uuid4().hex[:6]}"
+        _inline_subgraph(graph, jvp_subgraph, node, id_map)
+        return id_map.get(jvp_subgraph.outputs[0], jvp_subgraph.outputs[0]) if jvp_subgraph.outputs else tangents_list[0]
+
+    jvp_rule = node.attributes.get("jvp_rule")
 
     call_id = f"cjvp_call_{uuid.uuid4().hex[:6]}"
     call_node = LogicalNode(
@@ -691,3 +723,98 @@ def custom_jvp_vjp(graph: IRGraph, node: Any, cotangent: str) -> Any:
         return tuple(adjoints)
 
     return tuple(cotangent for _ in node.inputs)
+
+
+@register_vjp("GetItem")
+def getitem_vjp(graph: IRGraph, node: Any, cotangent: str) -> tuple[Any, ...]:
+    """VJP for GetItem indexing operation.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (Any): GetItem node.
+        cotangent (str): Upstream cotangent node ID.
+
+    Returns:
+        tuple[Any, ...]: Adjoint for input array.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    inp_id = node.inputs[0] if node.inputs else ""
+    key = node.attributes.get("key", 0)
+
+    zero_in_id = f"zero_in_{uuid.uuid4().hex[:6]}"
+    graph.nodes[zero_in_id] = LogicalNode(
+        id=zero_in_id,
+        op_type="ZerosLike",
+        inputs=[inp_id] if inp_id else [],
+        shape_metadata=getattr(graph.nodes.get(inp_id), "shape_metadata", ()),
+    )
+
+    put_id = f"index_put_{uuid.uuid4().hex[:6]}"
+    graph.nodes[put_id] = LogicalNode(
+        id=put_id,
+        op_type="IndexPut",
+        inputs=[zero_in_id, cotangent],
+        attributes={"key": key},
+        shape_metadata=getattr(graph.nodes.get(inp_id), "shape_metadata", ()),
+    )
+    return (put_id,)
+
+
+@register_jvp("IndexPut")
+def index_put_jvp(graph: IRGraph, node: Any, tangents: Any) -> str:
+    """JVP for IndexPut operation.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (Any): IndexPut node.
+        tangents (Any): Tangent identifiers.
+
+    Returns:
+        str: Tangent node ID.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+    t_target = tangents_list[0] if len(tangents_list) > 0 else "0"
+    t_val = tangents_list[1] if len(tangents_list) > 1 else "0"
+    out_id = f"index_put_tan_{uuid.uuid4().hex[:6]}"
+    graph.nodes[out_id] = LogicalNode(
+        id=out_id,
+        op_type="IndexPut",
+        inputs=[t_target, t_val],
+        attributes=dict(getattr(node, "attributes", {}) or {}),
+        shape_metadata=getattr(node, "shape_metadata", ()),
+    )
+    return out_id
+
+
+@register_jvp("ZerosLike")
+def zeros_like_jvp(graph: IRGraph, node: Any, tangents: Any) -> str:
+    """JVP for ZerosLike operation.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (Any): ZerosLike node.
+        tangents (Any): Tangent identifiers.
+
+    Returns:
+        str: Tangent node ID.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    zero_id = f"zeros_like_tan_{uuid.uuid4().hex[:6]}"
+    graph.nodes[zero_id] = LogicalNode(
+        id=zero_id,
+        op_type="ZerosLike",
+        inputs=list(node.inputs),
+        attributes=dict(getattr(node, "attributes", {}) or {}),
+        shape_metadata=getattr(node, "shape_metadata", ()),
+    )
+    return zero_id

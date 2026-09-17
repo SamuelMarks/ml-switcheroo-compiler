@@ -1,3 +1,6 @@
-Max:
-  ast_template: torch.max({0}, dim={axis}, keepdim={keepdims})
-  target_api: torch.max
+operation: Max
+backend: pytorch
+target_api: torch.max
+ast_template: torch.max({0}, dim={axis}, keepdim={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

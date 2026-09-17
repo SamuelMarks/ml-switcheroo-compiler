@@ -1,2 +1,6 @@
-StopGradient:
-  target_api: '''mx.stop_gradient({0})'''
+operation: StopGradient
+backend: mlx
+target_api: '''mx.stop_gradient({0})'''
+ast_template: '{out} = ''mx.stop_gradient({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

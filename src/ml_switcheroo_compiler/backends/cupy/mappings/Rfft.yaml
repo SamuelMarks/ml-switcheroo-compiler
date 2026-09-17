@@ -1,2 +1,6 @@
-Rfft:
-  target_api: cp.fft.rfft
+operation: Rfft
+backend: cupy
+target_api: cp.fft.rfft
+ast_template: '{out} = cp.fft.rfft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

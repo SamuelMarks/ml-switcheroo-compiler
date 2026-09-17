@@ -1,2 +1,6 @@
-Copysign:
-  target_api: da.copysign
+operation: Copysign
+backend: dask
+target_api: da.copysign
+ast_template: '{out} = da.copysign({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

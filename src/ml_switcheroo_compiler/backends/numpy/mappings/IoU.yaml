@@ -1,3 +1,6 @@
-IoU:
-  ast_template: np_iou({0}, {1}, '{bounding_box_format}')
-  target_api: ''
+operation: IoU
+backend: numpy
+target_api: ''
+ast_template: np_iou({0}, {1}, '{bounding_box_format}')
+kwarg_map: {}
+dtype_overrides: {}

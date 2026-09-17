@@ -1,2 +1,6 @@
-Dropout:
-  target_api: tf.nn.dropout
+operation: Dropout
+backend: tensorflow
+target_api: tf.nn.dropout
+ast_template: '{out} = tf.nn.dropout({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

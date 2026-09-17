@@ -1,2 +1,6 @@
-Asinh:
-  target_api: tf.asinh
+operation: Asinh
+backend: tensorflow
+target_api: tf.asinh
+ast_template: '{out} = tf.asinh({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

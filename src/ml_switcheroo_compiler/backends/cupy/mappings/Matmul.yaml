@@ -1,2 +1,6 @@
-Matmul:
-  target_api: cp.matmul
+operation: Matmul
+backend: cupy
+target_api: cp.matmul
+ast_template: '{out} = cp.matmul({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

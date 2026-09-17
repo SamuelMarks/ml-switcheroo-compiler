@@ -1,2 +1,6 @@
-SegmentProd:
-  target_api: jax.ops.segment_prod
+operation: SegmentProd
+backend: jax
+target_api: jax.ops.segment_prod
+ast_template: '{out} = jax.ops.segment_prod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

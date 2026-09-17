@@ -1,2 +1,6 @@
-ReciprocalNoNan:
-  target_api: tf.math.reciprocal_no_nan
+operation: ReciprocalNoNan
+backend: tensorflow
+target_api: tf.math.reciprocal_no_nan
+ast_template: '{out} = tf.math.reciprocal_no_nan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

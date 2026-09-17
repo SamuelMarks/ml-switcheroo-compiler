@@ -1,2 +1,6 @@
-Average:
-  target_api: keras_ops.average
+operation: Average
+backend: keras
+target_api: keras_ops.average
+ast_template: '{out} = keras_ops.average({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

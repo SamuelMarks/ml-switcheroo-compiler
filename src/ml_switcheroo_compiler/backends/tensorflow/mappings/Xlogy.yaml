@@ -1,2 +1,6 @@
-Xlogy:
-  target_api: tf.math.xlogy
+operation: Xlogy
+backend: tensorflow
+target_api: tf.math.xlogy
+ast_template: '{out} = tf.math.xlogy({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

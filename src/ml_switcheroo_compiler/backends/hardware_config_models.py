@@ -4,7 +4,7 @@ import os
 from typing import Optional, Union
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -59,7 +59,9 @@ class HardwareTemplateConfig(BaseModel):
     workgroup_size: list[int] = Field(default_factory=lambda: [256, 1, 1])
     grid_calc: Optional[GridDimensionConfig] = None
     parameters: Optional[list[KernelParameterConfig]] = None
-    shared_memory_bytes: int = 0
+    shared_memory_bytes: Union[int, str] = 0
+    header: Optional[str] = None
+    epilogue: Optional[str] = None
     type_mappings: dict[str, str] = Field(default_factory=dict)
 
     def get(
@@ -598,3 +600,321 @@ def load_hardware_execution_schema(path: Optional[str] = None) -> HardwareExecut
     with open(path, encoding="utf-8") as f:
         raw_data = yaml.safe_load(f)
     return HardwareExecutionSchema.model_validate(raw_data)
+
+
+class KernelTemplateModel(BaseModel):
+    """Unified declarative kernel template model for hardware accelerators (CUDA, ROCm, Metal).
+
+    Attributes:
+        opcode (str): The operation opcode name.
+        workgroup_dims (list[int]): Workgroup or thread block dimensions [x, y, z].
+        thread_indexing_formula (str): Expression or logic for calculating thread index.
+        memory_layout_requirements (list[str]): Memory layout constraints.
+        body (str): Unified arithmetic kernel body / code template.
+        cuda_body (Optional[str]): CUDA-specialized arithmetic kernel body.
+        rocm_body (Optional[str]): ROCm/HIP-specialized arithmetic kernel body.
+        metal_body (Optional[str]): Metal Shading Language (MSL) kernel body.
+        parameters (list[KernelParameterConfig]): Explicit parameter signature list.
+        shared_memory_bytes (int): Allocated shared memory size in bytes.
+    """
+
+    opcode: str = Field(description="Operation opcode name")
+    workgroup_dims: list[int] = Field(default_factory=lambda: [256, 1, 1], description="Workgroup dimensions [x, y, z]")
+    thread_indexing_formula: str = Field(
+        default="int idx = blockIdx.x * blockDim.x + threadIdx.x;",
+        description="Thread indexing formula",
+    )
+    memory_layout_requirements: list[str] = Field(
+        default_factory=lambda: ["contiguous"],
+        description="Memory layout constraints",
+    )
+    body: str = Field(default="", description="Unified arithmetic kernel body")
+    cuda_body: Optional[str] = Field(default=None, description="CUDA-specialized kernel body")
+    rocm_body: Optional[str] = Field(default=None, description="ROCm-specialized kernel body")
+    metal_body: Optional[str] = Field(default=None, description="Metal-specialized kernel body")
+    parameters: list[KernelParameterConfig] = Field(
+        default_factory=list,
+        description="Kernel parameter configurations",
+    )
+    shared_memory_bytes: int = Field(default=0, description="Shared memory bytes required")
+    model_config = ConfigDict(extra="allow")
+
+
+class KernelTemplatesManifestModel(BaseModel):
+    """Declarative manifest containing unified kernel templates across operations.
+
+    Attributes:
+        kernel_templates (dict[str, KernelTemplateModel]): Mapping from opcode to unified template model.
+    """
+
+    kernel_templates: dict[str, KernelTemplateModel] = Field(
+        default_factory=dict,
+        description="Mapping from opcode to unified kernel template model",
+    )
+    model_config = ConfigDict(extra="allow")
+
+
+def load_kernel_templates_manifest(path: Optional[str] = None) -> KernelTemplatesManifestModel:
+    """Load unified kernel templates manifest from YAML configuration.
+
+    Args:
+        path (Optional[str]): Path to kernel_templates.yaml file. Defaults to bundled YAML.
+
+    Returns:
+        KernelTemplatesManifestModel: Validated kernel templates manifest.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "kernel_templates.yaml")
+    with open(path, encoding="utf-8") as f:
+        raw_data = yaml.safe_load(f) or {}
+    return KernelTemplatesManifestModel.model_validate(raw_data)
+
+
+class HardwareCapabilityQuery(BaseModel):
+    """Hardware capability constraints for dynamic launch configuration selection.
+
+    Attributes:
+        max_threads_per_block (int): Maximum threads supported in a thread block.
+        max_shared_memory_per_sm (int): Maximum shared memory in bytes per SM / compute unit.
+        warp_size (int): Execution sub-group / warp size (e.g. 32 for CUDA, 64 for ROCm, 32 for Metal).
+        max_block_dim (list[int]): Maximum block dimensions [x, y, z].
+        max_grid_dim (list[int]): Maximum grid dimensions [x, y, z].
+    """
+
+    max_threads_per_block: int = Field(default=1024, description="Max threads per block")
+    max_shared_memory_per_sm: int = Field(default=65536, description="Max shared memory per SM in bytes")
+    warp_size: int = Field(default=32, description="Execution warp/wavefront size")
+    max_block_dim: list[int] = Field(default_factory=lambda: [1024, 1024, 64], description="Max block dimensions")
+    max_grid_dim: list[int] = Field(default_factory=lambda: [2147483647, 65535, 65535], description="Max grid dimensions")
+    model_config = ConfigDict(extra="allow")
+
+
+class LaunchHeuristicRuleModel(BaseModel):
+    """Declarative heuristic rule for calculating launch geometry based on tensor rank and size.
+
+    Attributes:
+        rule_name (str): Unique heuristic identifier.
+        tensor_rank (list[int]): Target ranks matching this rule.
+        block_dims (list[int]): Workgroup/block dimensions [x, y, z].
+        grid_formula_x (str): Calculation formula for grid x.
+        grid_formula_y (str): Calculation formula for grid y.
+        grid_formula_z (str): Calculation formula for grid z.
+        min_threads_per_sm (int): Minimum occupancy threshold.
+    """
+
+    rule_name: str = Field(description="Unique rule name")
+    tensor_rank: list[int] = Field(default_factory=lambda: [1], description="Tensor ranks matching this rule")
+    block_dims: list[int] = Field(default_factory=lambda: [256, 1, 1], description="Block dimensions")
+    grid_formula_x: str = Field(default="(num_elements + block_x - 1) / block_x", description="grid.x formula")
+    grid_formula_y: str = Field(default="1", description="grid.y formula")
+    grid_formula_z: str = Field(default="1", description="grid.z formula")
+    min_threads_per_sm: int = Field(default=128, description="Minimum threads per SM")
+    model_config = ConfigDict(extra="allow")
+
+
+class LaunchHeuristicsManifestModel(BaseModel):
+    """Declarative manifest containing launch geometry heuristics.
+
+    Attributes:
+        heuristics (dict[str, LaunchHeuristicRuleModel]): Mapping from rule key to heuristic model.
+    """
+
+    heuristics: dict[str, LaunchHeuristicRuleModel] = Field(
+        default_factory=dict,
+        description="Mapping from heuristic name to rule model",
+    )
+    model_config = ConfigDict(extra="allow")
+
+
+def load_launch_heuristics(path: Optional[str] = None) -> LaunchHeuristicsManifestModel:
+    """Load launch geometry heuristics rulebook from YAML configuration.
+
+    Args:
+        path (Optional[str]): Path to launch_heuristics.yaml file. Defaults to bundled YAML.
+
+    Returns:
+        LaunchHeuristicsManifestModel: Validated launch heuristics manifest.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "launch_heuristics.yaml")
+    with open(path, encoding="utf-8") as f:
+        raw_data = yaml.safe_load(f) or {}
+    return LaunchHeuristicsManifestModel.model_validate(raw_data)
+
+
+def query_optimal_launch_geometry(
+    shape: Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None],
+    hardware_caps: Optional[HardwareCapabilityQuery] = None,
+    heuristics_path: Optional[str] = None,
+) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+    """Query dynamic hardware capabilities and evaluate launch heuristics rulebook.
+
+    Args:
+        shape (Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None]): Tensor shape.
+        hardware_caps (Optional[HardwareCapabilityQuery]): Dynamic hardware capability limits.
+        heuristics_path (Optional[str]): Optional custom path to heuristics YAML.
+
+    Returns:
+        tuple[tuple[int, int, int], tuple[int, int, int]]: ((block_x, block_y, block_z), (grid_x, grid_y, grid_z)).
+    """
+    caps = hardware_caps or HardwareCapabilityQuery()
+    return calculate_hardware_launch_config(
+        shape=shape,
+        max_threads_per_block=caps.max_threads_per_block,
+        max_block_dim=(caps.max_block_dim[0], caps.max_block_dim[1], caps.max_block_dim[2]),
+        max_grid_dim=(caps.max_grid_dim[0], caps.max_grid_dim[1], caps.max_grid_dim[2]),
+    )
+
+
+class MemoryLayoutRuleModel(BaseModel):
+    """Declarative specification of a memory layout format and stride transformation equations.
+
+    Attributes:
+        layout_name (str): Identifier of the memory layout.
+        dimension_order (list[int]): Dimension permutation order relative to canonical logical shape.
+        stride_formula (str): Description or formula for computing dimension strides.
+        is_contiguous (bool): Flag indicating whether the layout is densely packed in memory.
+    """
+
+    layout_name: str = Field(description="Memory layout format identifier")
+    dimension_order: list[int] = Field(default_factory=list, description="Dimension permutation order")
+    stride_formula: str = Field(default="row_major", description="Stride formula description")
+    is_contiguous: bool = Field(default=True, description="Whether layout is contiguous")
+    model_config = ConfigDict(extra="allow")
+
+
+class MemoryLayoutsManifestModel(BaseModel):
+    """Declarative manifest containing memory layout definitions and transformation rules.
+
+    Attributes:
+        layouts (dict[str, MemoryLayoutRuleModel]): Mapping of layout names to layout specifications.
+        transformations (dict[str, list[int]]): Mapping of transformation pairs to permutation orders.
+    """
+
+    layouts: dict[str, MemoryLayoutRuleModel] = Field(
+        default_factory=dict,
+        description="Supported memory layout models",
+    )
+    transformations: dict[str, list[int]] = Field(
+        default_factory=dict,
+        description="Layout permutation transformation mapping",
+    )
+    model_config = ConfigDict(extra="allow")
+
+
+def load_memory_layouts(path: Optional[str] = None) -> MemoryLayoutsManifestModel:
+    """Load memory layout transformation rulebook from YAML configuration.
+
+    Args:
+        path (Optional[str]): Path to memory_layouts.yaml file. Defaults to bundled YAML.
+
+    Returns:
+        MemoryLayoutsManifestModel: Validated memory layouts manifest.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "memory_layouts.yaml")
+    with open(path, encoding="utf-8") as f:
+        raw_data = yaml.safe_load(f) or {}
+    return MemoryLayoutsManifestModel.model_validate(raw_data)
+
+
+class DeviceTileSizesModel(BaseModel):
+    """Dynamic tile size configuration for 1D, 2D, and 3D kernel dispatch.
+
+    Attributes:
+        tile_1d (int): 1D tile dimension.
+        tile_2d (list[int]): 2D tile dimensions [x, y].
+        tile_3d (list[int]): 3D tile dimensions [x, y, z].
+    """
+
+    tile_1d: int = 256
+    tile_2d: list[int] = Field(default_factory=lambda: [16, 16])
+    tile_3d: list[int] = Field(default_factory=lambda: [8, 8, 4])
+    model_config = ConfigDict(extra="allow")
+
+
+class HardwareDeviceProfileModel(BaseModel):
+    """Declarative execution limits and architecture characteristics for a hardware target.
+
+    Attributes:
+        architecture (str): Identifier of the accelerator or compute architecture.
+        warp_size (Optional[int]): Execution unit thread width (32 for CUDA, 64 for ROCm, 32 for Metal).
+        wavefront_size (Optional[int]): Wavefront size for AMD ROCm architectures.
+        simdgroup_size (Optional[int]): SIMDgroup size for Apple Metal architectures.
+        max_threads_per_block (int): Maximum threads per block or workgroup.
+        max_threads_per_threadgroup (Optional[int]): Maximum threads per threadgroup for Metal.
+        max_block_dim (list[int]): Maximum dimension sizes per block/workgroup [x, y, z].
+        max_threadgroup_dim (Optional[list[int]]): Maximum dimension sizes per threadgroup for Metal.
+        max_grid_dim (list[int]): Maximum grid dimension sizes [x, y, z].
+        shared_memory_limit_bytes (int): Maximum shared memory in bytes per block/workgroup.
+        threadgroup_memory_limit_bytes (Optional[int]): Maximum threadgroup memory in bytes for Metal.
+        max_shared_memory_per_multiprocessor (Optional[int]): Total shared memory capacity per SM.
+        max_threads_per_multiprocessor (Optional[int]): Total thread capacity per SM.
+        vector_width (Optional[int]): SIMD vector width for CPU/LLVM targets.
+        max_threads (Optional[int]): Maximum parallel thread count for CPU targets.
+        openmp_chunk_size (Optional[int]): Default OpenMP chunk scheduling size.
+        dynamic_tile_sizes (DeviceTileSizesModel): Dynamic dispatch tile dimensions.
+    """
+
+    architecture: str
+    warp_size: Optional[int] = None
+    wavefront_size: Optional[int] = None
+    simdgroup_size: Optional[int] = None
+    max_threads_per_block: int = Field(default=1024)
+    max_threads_per_threadgroup: Optional[int] = None
+    max_block_dim: list[int] = Field(default_factory=lambda: [1024, 1024, 64])
+    max_threadgroup_dim: Optional[list[int]] = None
+    max_grid_dim: list[int] = Field(default_factory=lambda: [2147483647, 65535, 65535])
+    shared_memory_limit_bytes: int = Field(default=49152)
+    threadgroup_memory_limit_bytes: Optional[int] = None
+    max_shared_memory_per_multiprocessor: Optional[int] = None
+    max_threads_per_multiprocessor: Optional[int] = None
+    vector_width: Optional[int] = None
+    max_threads: Optional[int] = None
+    openmp_chunk_size: Optional[int] = None
+    dynamic_tile_sizes: DeviceTileSizesModel = Field(default_factory=DeviceTileSizesModel)
+    model_config = ConfigDict(extra="allow")
+
+    @property
+    def execution_unit_size(self) -> int:
+        """Return the fundamental SIMD execution unit size (warp, wavefront, or simdgroup).
+
+        Returns:
+            int: Thread group execution lockstep width.
+        """
+        if self.wavefront_size is not None:
+            return self.wavefront_size
+        if self.warp_size is not None:
+            return self.warp_size
+        if self.simdgroup_size is not None:
+            return self.simdgroup_size
+        return 32
+
+
+class HardwareDeviceProfilesManifestModel(BaseModel):
+    """Manifest containing all hardware target device execution profiles.
+
+    Attributes:
+        version (str): Profile schema version.
+        profiles (dict[str, HardwareDeviceProfileModel]): Map of backend name to profile model.
+    """
+
+    version: str = "1.0.0"
+    profiles: dict[str, HardwareDeviceProfileModel] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+
+def load_hardware_device_profiles(path: Optional[str] = None) -> HardwareDeviceProfilesManifestModel:
+    """Load hardware target execution profiles and limits from YAML configuration.
+
+    Args:
+        path (Optional[str]): Custom path to hardware_device_profiles.yaml.
+
+    Returns:
+        HardwareDeviceProfilesManifestModel: Validated hardware device profiles manifest.
+    """
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "hardware_device_profiles.yaml")
+    with open(path, encoding="utf-8") as f:
+        raw_data = yaml.safe_load(f) or {}
+    return HardwareDeviceProfilesManifestModel.model_validate(raw_data)

@@ -1,2 +1,6 @@
-TrueDivide:
-  target_api: cp.true_divide
+operation: TrueDivide
+backend: cupy
+target_api: cp.true_divide
+ast_template: '{out} = cp.true_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

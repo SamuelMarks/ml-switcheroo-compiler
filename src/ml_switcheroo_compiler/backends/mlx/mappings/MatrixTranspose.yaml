@@ -1,2 +1,6 @@
-MatrixTranspose:
-  target_api: '''mx.swapaxes({0}, -1, -2)'''
+operation: MatrixTranspose
+backend: mlx
+target_api: '''mx.swapaxes({0}, -1, -2)'''
+ast_template: '{out} = ''mx.swapaxes({0}, -1, -2)''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

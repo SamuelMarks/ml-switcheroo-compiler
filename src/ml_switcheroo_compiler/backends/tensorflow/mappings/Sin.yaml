@@ -1,2 +1,6 @@
-Sin:
-  target_api: tf.sin
+operation: Sin
+backend: tensorflow
+target_api: tf.sin
+ast_template: '{out} = tf.sin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

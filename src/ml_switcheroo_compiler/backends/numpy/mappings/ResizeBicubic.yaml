@@ -1,3 +1,6 @@
-ResizeBicubic:
-  ast_template: np_resize({0}, {size}, 'bicubic', {align_corners})
-  target_api: ''
+operation: ResizeBicubic
+backend: numpy
+target_api: ''
+ast_template: np_resize({0}, {size}, 'bicubic', {align_corners})
+kwarg_map: {}
+dtype_overrides: {}

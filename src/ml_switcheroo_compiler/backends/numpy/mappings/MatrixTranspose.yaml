@@ -1,3 +1,6 @@
-MatrixTranspose:
-  ast_template: np.swapaxes({0}, -1, -2)
-  target_api: ''
+operation: MatrixTranspose
+backend: numpy
+target_api: ''
+ast_template: np.swapaxes({0}, -1, -2)
+kwarg_map: {}
+dtype_overrides: {}

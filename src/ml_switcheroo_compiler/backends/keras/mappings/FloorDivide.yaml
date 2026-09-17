@@ -1,2 +1,6 @@
-FloorDivide:
-  target_api: keras_ops.floor_divide
+operation: FloorDivide
+backend: keras
+target_api: keras_ops.floor_divide
+ast_template: '{out} = keras_ops.floor_divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

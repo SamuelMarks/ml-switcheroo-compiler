@@ -1,2 +1,6 @@
-GreaterEqual:
-  target_api: tf.greater_equal
+operation: GreaterEqual
+backend: tensorflow
+target_api: tf.greater_equal
+ast_template: '{out} = tf.greater_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

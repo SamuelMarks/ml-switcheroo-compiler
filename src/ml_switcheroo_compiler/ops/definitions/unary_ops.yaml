@@ -1,0 +1,1584 @@
+Abs:
+  autodiff:
+    vjp_rule_id: Abs_vjp
+    jvp_rule_id: Abs_jvp
+    vjp:
+    - Multiply($cotangent, Sign($input[0]))
+    jvp: Multiply($tangent[0], Sign($input[0]))
+  broadcast_semantics: numpy
+  description: The Abs operation.
+  domain: unary
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: true
+  operation: Abs
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.abs
+    dask:
+      eager: da.abs
+    edge_onnx:
+      generator: Abs
+    edge_stablehlo:
+      generator: stablehlo.abs
+    edge_wasm_simd:
+      scalar_expr: std::abs(in0_val)
+      simd_expr: wasm_f32x4_abs(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: abs(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.abs
+    keras:
+      eager: keras_ops.abs
+    llvm_cpp:
+      scalar_expr: std::abs(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.abs
+    numpy:
+      eager: numpy.abs
+    pytorch:
+      eager: torch.abs
+    tensorflow:
+      eager: tf.abs
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: true
+    identity_value: null
+    absorbing_value: null
+Acos:
+  autodiff:
+    vjp_rule_id: Acos_vjp
+    jvp_rule_id: Acos_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Acos operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Acos
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      generator: cp.arccos
+    dask:
+      generator: da.arccos
+    edge_onnx:
+      generator: Acos
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: acos(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.arccos
+    keras:
+      eager: keras_ops.acos
+    llvm_cpp:
+      scalar_expr: std::acos(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.acos
+    numpy:
+      generator: np.arccos
+    pytorch:
+      eager: torch.acos
+    tensorflow:
+      eager: tf.acos
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Asin:
+  autodiff:
+    vjp_rule_id: Asin_vjp
+    jvp_rule_id: Asin_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Asin operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Asin
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      generator: cp.arcsin
+    dask:
+      generator: da.arcsin
+    edge_onnx:
+      generator: Asin
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: asin(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.arcsin
+    keras:
+      eager: keras_ops.asin
+    llvm_cpp:
+      scalar_expr: std::asin(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.asin
+    numpy:
+      generator: np.arcsin
+    pytorch:
+      eager: torch.asin
+    tensorflow:
+      eager: tf.asin
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Atan:
+  autodiff:
+    vjp_rule_id: Atan_vjp
+    jvp_rule_id: Atan_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Atan operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Atan
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      generator: cp.arctan
+    dask:
+      generator: da.arctan
+    edge_onnx:
+      generator: Atan
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: atan(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.arctan
+    keras:
+      eager: keras_ops.atan
+    llvm_cpp:
+      scalar_expr: std::atan(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.atan
+    numpy:
+      generator: np.arctan
+    pytorch:
+      eager: torch.atan
+    tensorflow:
+      eager: tf.atan
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Ceil:
+  autodiff:
+    vjp_rule_id: Ceil_vjp
+    jvp_rule_id: Ceil_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Ceil operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: true
+  operation: Ceil
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.ceil
+    dask:
+      eager: da.ceil
+    edge_onnx:
+      generator: Ceil
+    edge_stablehlo:
+      generator: stablehlo.ceil
+    edge_wasm_simd:
+      scalar_expr: std::ceil(in0_val)
+      simd_expr: wasm_f32x4_ceil(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: ceil(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.ceil
+    llvm_cpp:
+      scalar_expr: std::ceil(in0_val)
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.math.ceil
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: true
+    identity_value: null
+    absorbing_value: null
+Cos:
+  autodiff:
+    vjp_rule_id: Cos_vjp
+    jvp_rule_id: Cos_jvp
+    vjp:
+    - Multiply($cotangent, Negative(Sin($input[0])))
+    jvp: Multiply($tangent[0], Negative(Sin($input[0])))
+  broadcast_semantics: numpy
+  description: The Cos operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Cos
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.cos
+      generator: cp.cos
+    dask:
+      eager: da.cos
+      generator: da.cos
+    edge_onnx:
+      generator: Cos
+    edge_stablehlo:
+      generator: stablehlo.cosine
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: cos(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.cos
+    llvm_cpp:
+      scalar_expr: std::cos(in0_val)
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.cos
+    pytorch: {}
+    tensorflow:
+      eager: tf.cos
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Cosh:
+  autodiff:
+    vjp_rule_id: Cosh_vjp
+    jvp_rule_id: Cosh_jvp
+    vjp:
+    - Multiply($cotangent, Sinh($input[0]))
+    jvp: Multiply($tangent[0], Sinh($input[0]))
+  broadcast_semantics: numpy
+  description: The Cosh operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Cosh
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.cosh
+    dask:
+      eager: da.cosh
+    edge_onnx:
+      generator: Cosh
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: cosh(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.cosh
+    llvm_cpp:
+      scalar_expr: std::cosh(in0_val)
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.cosh
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Erf:
+  autodiff:
+    vjp_rule_id: Erf_vjp
+    jvp_rule_id: Erf_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Erf operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Erf
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    edge_onnx:
+      generator: Erf
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    keras:
+      eager: keras_ops.erf
+    llvm_cpp:
+      scalar_expr: std::erf(in0_val)
+      template: unary
+    tensorflow:
+      eager: tf.math.erf
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Exp:
+  autodiff:
+    vjp_rule_id: Exp_vjp
+    jvp_rule_id: Exp_jvp
+    vjp:
+    - Multiply($cotangent, Exp($input[0]))
+    jvp: Multiply($tangent[0], Exp($input[0]))
+  broadcast_semantics: numpy
+  description: The Exp operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Exp
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.exp
+      generator: cp.exp
+    dask:
+      eager: da.exp
+      generator: da.exp
+    edge_onnx:
+      generator: Exp
+    edge_stablehlo:
+      generator: stablehlo.exponential
+    edge_wasm_simd:
+      scalar_expr: std::exp(in0_val)
+      simd_expr: _wasm_exp(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: exp(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.exp
+    llvm_cpp:
+      scalar_expr: std::exp(in0_val)
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.exp
+    pytorch: {}
+    tensorflow:
+      eager: tf.exp
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Floor:
+  autodiff:
+    vjp_rule_id: Floor_vjp
+    jvp_rule_id: Floor_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Floor operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: true
+  operation: Floor
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.floor
+    dask:
+      eager: da.floor
+    edge_onnx:
+      generator: Floor
+    edge_stablehlo:
+      generator: stablehlo.floor
+    edge_wasm_simd:
+      scalar_expr: std::floor(in0_val)
+      simd_expr: wasm_f32x4_floor(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: floor(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.floor
+    keras:
+      eager: keras_ops.floor
+    llvm_cpp:
+      scalar_expr: std::floor(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.floor
+    numpy:
+      eager: numpy.floor
+    pytorch:
+      eager: torch.floor
+    tensorflow:
+      eager: tf.floor
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: true
+    identity_value: null
+    absorbing_value: null
+Log:
+  autodiff:
+    vjp_rule_id: Log_vjp
+    jvp_rule_id: Log_jvp
+    vjp:
+    - Multiply($cotangent, TrueDivide(Constant(1.0), $input[0]))
+    jvp: Multiply($tangent[0], TrueDivide(Constant(1.0), $input[0]))
+  broadcast_semantics: numpy
+  description: The Log operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Log
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.log
+      generator: cp.log
+    dask:
+      eager: da.log
+      generator: da.log
+    edge_onnx:
+      generator: Log
+    edge_stablehlo:
+      generator: stablehlo.log
+    edge_wasm_simd:
+      scalar_expr: std::log(in0_val)
+      simd_expr: _wasm_log(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: log(buf_in0_f32[in0_offset])
+      template: unary
+    keras:
+      eager: keras_ops.log
+    llvm_cpp:
+      scalar_expr: std::log(in0_val)
+      template: unary
+    numpy:
+      generator: np.log
+    tensorflow:
+      eager: tf.math.log
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Log10:
+  autodiff:
+    vjp_rule_id: Log10_vjp
+    jvp_rule_id: Log10_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Log10 operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Log10
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.log10
+    dask:
+      eager: da.log10
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: log(buf_in0_f32[in0_offset]) / log(10.0)
+      template: unary
+    jax:
+      eager: jax.numpy.log10
+    keras:
+      eager: keras_ops.log10
+    llvm_cpp:
+      scalar_expr: std::log10(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.log10
+    numpy:
+      eager: numpy.log10
+    pytorch:
+      eager: torch.log10
+    tensorflow:
+      eager: tf.log10
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Log2:
+  autodiff:
+    vjp_rule_id: Log2_vjp
+    jvp_rule_id: Log2_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Log2 operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Log2
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.log2
+    dask:
+      eager: da.log2
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: log2(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.log2
+    keras:
+      eager: keras_ops.log2
+    llvm_cpp:
+      scalar_expr: std::log2(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.log2
+    numpy:
+      eager: numpy.log2
+    pytorch:
+      eager: torch.log2
+    tensorflow:
+      eager: tf.log2
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Neg:
+  autodiff:
+    vjp_rule_id: Neg_vjp
+    jvp_rule_id: Neg_jvp
+    vjp:
+    - Negative($cotangent)
+    jvp: Negative($tangent[0])
+  broadcast_semantics: numpy
+  description: The Neg operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Neg
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_onnx:
+      generator: Neg
+    edge_stablehlo:
+      generator: stablehlo.negate
+    edge_wasm_simd:
+      scalar_expr: -in0_val
+      simd_expr: wasm_f32x4_neg(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: -buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras: {}
+    llvm_cpp:
+      scalar_expr: -in0_val
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Round:
+  autodiff:
+    vjp_rule_id: Round_vjp
+    jvp_rule_id: Round_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Round operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: true
+  operation: Round
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.round
+    dask:
+      eager: da.round
+    edge_onnx:
+      generator: Round
+    edge_stablehlo:
+      generator: stablehlo.round_nearest_afz
+    edge_wasm_simd:
+      scalar_expr: std::round(in0_val)
+      simd_expr: wasm_f32x4_nearest(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: round(buf_in0_f32[in0_offset])
+      template: unary
+    keras:
+      eager: keras_ops.round
+    llvm_cpp:
+      scalar_expr: std::round(in0_val)
+      template: unary
+    tensorflow:
+      eager: tf.round
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: true
+    identity_value: null
+    absorbing_value: null
+Rsqrt:
+  autodiff:
+    vjp_rule_id: Rsqrt_vjp
+    jvp_rule_id: Rsqrt_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Rsqrt operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Rsqrt
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_stablehlo:
+      opcode: stablehlo.rsqrt
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: inverseSqrt(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.rsqrt
+    llvm_cpp:
+      scalar_expr: 1.0f / std::sqrt(in0_val)
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.math.rsqrt
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sign:
+  autodiff:
+    vjp_rule_id: Sign_vjp
+    jvp_rule_id: Sign_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Sign operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sign
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.sign
+    dask:
+      eager: da.sign
+    edge_onnx:
+      generator: Sign
+    edge_stablehlo:
+      opcode: stablehlo.sign
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: sign(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.sign
+    llvm_cpp:
+      scalar_expr: (in0_val > 0) - (in0_val < 0)
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.sign
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sin:
+  autodiff:
+    vjp_rule_id: Sin_vjp
+    jvp_rule_id: Sin_jvp
+    vjp:
+    - Multiply($cotangent, Cos($input[0]))
+    jvp: Multiply($tangent[0], Cos($input[0]))
+  broadcast_semantics: numpy
+  description: The Sin operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sin
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.sin
+      generator: cp.sin
+    dask:
+      eager: da.sin
+      generator: da.sin
+    edge_onnx:
+      generator: Sin
+    edge_stablehlo:
+      generator: stablehlo.sine
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: sin(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.sin
+    llvm_cpp:
+      scalar_expr: std::sin(in0_val)
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.sin
+    pytorch: {}
+    tensorflow:
+      eager: tf.sin
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sinh:
+  autodiff:
+    vjp_rule_id: Sinh_vjp
+    jvp_rule_id: Sinh_jvp
+    vjp:
+    - Multiply($cotangent, Cosh($input[0]))
+    jvp: Multiply($tangent[0], Cosh($input[0]))
+  broadcast_semantics: numpy
+  description: The Sinh operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sinh
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.sinh
+    dask:
+      eager: da.sinh
+    edge_onnx:
+      generator: Sinh
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: sinh(buf_in0_f32[in0_offset])
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.sinh
+    llvm_cpp:
+      scalar_expr: std::sinh(in0_val)
+      template: unary
+    mlx: {}
+    numpy: {}
+    pytorch: {}
+    tensorflow:
+      eager: tf.sinh
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Sqrt:
+  autodiff:
+    vjp_rule_id: Sqrt_vjp
+    jvp_rule_id: Sqrt_jvp
+    vjp:
+    - Multiply($cotangent, TrueDivide(Constant(0.5), Sqrt($input[0])))
+    jvp: Multiply($tangent[0], TrueDivide(Constant(0.5), Sqrt($input[0])))
+  broadcast_semantics: numpy
+  description: The Sqrt operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Sqrt
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.sqrt
+    dask:
+      eager: da.sqrt
+    edge_onnx:
+      generator: Sqrt
+    edge_stablehlo:
+      generator: stablehlo.sqrt
+    edge_wasm_simd:
+      scalar_expr: std::sqrt(in0_val)
+      simd_expr: wasm_f32x4_sqrt(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: sqrt(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.sqrt
+    keras:
+      eager: keras_ops.sqrt
+    llvm_cpp:
+      scalar_expr: std::sqrt(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.sqrt
+    numpy:
+      eager: numpy.sqrt
+    pytorch:
+      eager: torch.sqrt
+    tensorflow:
+      eager: tf.sqrt
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Tan:
+  autodiff:
+    vjp_rule_id: Tan_vjp
+    jvp_rule_id: Tan_jvp
+    vjp:
+    - Multiply($cotangent, TrueDivide(Constant(1.0), Multiply(Cos($input[0]), Cos($input[0]))))
+    jvp: Multiply($tangent[0], TrueDivide(Constant(1.0), Multiply(Cos($input[0]),
+      Cos($input[0]))))
+  broadcast_semantics: numpy
+  description: The Tan operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Tan
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.tan
+    dask:
+      eager: da.tan
+    edge_onnx:
+      generator: Tan
+    edge_stablehlo:
+      generator: stablehlo.tan
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: tan(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.tan
+    keras:
+      eager: keras_ops.tan
+    llvm_cpp:
+      scalar_expr: std::tan(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.tan
+    numpy:
+      eager: numpy.tan
+    pytorch:
+      eager: torch.tan
+    tensorflow:
+      eager: tf.tan
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+Tanh:
+  autodiff:
+    vjp_rule_id: Tanh_vjp
+    jvp_rule_id: Tanh_jvp
+    vjp:
+    - Multiply($cotangent, Subtract(Constant(1.0), Multiply(Tanh($input[0]), Tanh($input[0]))))
+    jvp: Multiply($tangent[0], Subtract(Constant(1.0), Multiply(Tanh($input[0]), Tanh($input[0]))))
+  broadcast_semantics: numpy
+  description: The Tanh operation.
+  domain: unary
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: Tanh
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.tanh
+    dask:
+      eager: da.tanh
+    edge_onnx:
+      generator: Tanh
+    edge_stablehlo:
+      generator: stablehlo.tanh
+    edge_wasm_simd:
+      scalar_expr: std::tanh(in0_val)
+      simd_expr: std::tanh(in0_val)
+      template: unary
+    edge_wgsl:
+      expr: tanh(buf_in0_f32[in0_offset])
+      template: unary
+    jax:
+      eager: jax.numpy.tanh
+    keras:
+      eager: keras_ops.tanh
+    llvm_cpp:
+      scalar_expr: std::tanh(in0_val)
+      template: unary
+    mlx:
+      eager: mlx.core.tanh
+    numpy:
+      eager: numpy.tanh
+    pytorch:
+      eager: torch.tanh
+    tensorflow:
+      eager: tf.tanh
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: elementwise
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

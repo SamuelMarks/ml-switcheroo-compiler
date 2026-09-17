@@ -1,2 +1,6 @@
-LogicalOr:
-  target_api: keras_ops.logical_or
+operation: LogicalOr
+backend: keras
+target_api: keras_ops.logical_or
+ast_template: '{out} = keras_ops.logical_or({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

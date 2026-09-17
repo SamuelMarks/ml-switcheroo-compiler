@@ -1,2 +1,6 @@
-Reciprocal:
-  target_api: tf.math.reciprocal
+operation: Reciprocal
+backend: tensorflow
+target_api: tf.math.reciprocal
+ast_template: '{out} = tf.math.reciprocal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

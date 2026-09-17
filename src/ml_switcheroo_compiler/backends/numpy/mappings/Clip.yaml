@@ -1,3 +1,6 @@
-Clip:
-  ast_template: np.clip({0}, a_min={a_min}, a_max={a_max})
-  target_api: ''
+operation: Clip
+backend: numpy
+target_api: ''
+ast_template: np.clip({0}, a_min={a_min}, a_max={a_max})
+kwarg_map: {}
+dtype_overrides: {}

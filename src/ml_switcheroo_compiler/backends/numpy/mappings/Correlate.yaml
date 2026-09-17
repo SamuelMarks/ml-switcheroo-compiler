@@ -1,2 +1,6 @@
-Correlate:
-  target_api: np.correlate
+operation: Correlate
+backend: numpy
+target_api: np.correlate
+ast_template: '{out} = np.correlate({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

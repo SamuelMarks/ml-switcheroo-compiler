@@ -1,2 +1,6 @@
-Roll:
-  target_api: da.roll
+operation: Roll
+backend: dask
+target_api: da.roll
+ast_template: '{out} = da.roll({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

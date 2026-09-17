@@ -1,2 +1,6 @@
-BesselI0e:
-  target_api: torch.special.i0e
+operation: BesselI0e
+backend: pytorch
+target_api: torch.special.i0e
+ast_template: '{out} = torch.special.i0e({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

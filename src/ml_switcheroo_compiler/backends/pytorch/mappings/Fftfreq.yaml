@@ -1,3 +1,6 @@
-Fftfreq:
-  custom_code: 'lambda *args, **kwargs: torch.fft.fftfreq(*args, **kwargs)'
-  target_api: custom_op
+operation: Fftfreq
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Resize:
-  ast_template: torch.nn.functional.interpolate({0}, size={size}, mode={method}, antialias={antialias})
-  target_api: ''
+operation: Resize
+backend: pytorch
+target_api: ''
+ast_template: torch.nn.functional.interpolate({0}, size={size}, mode={method}, antialias={antialias})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,11 +1,45 @@
 operation: ShortStorage
 description: Storage for int16 tensors.
 std_args:
-  - is_variadic: true
-    kind: positional_or_keyword
-    name: args
-    type: Any
+- is_variadic: true
+  kind: positional_or_keyword
+  name: args
+  type: Any
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: args
+    type: Any
+    is_variadic: true
+    kind: positional_or_keyword
+  input_tensors:
+  - args
+  output_tensors:
+  - out
+  has_variadic_args: true
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: in0
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: ShortStorage_vjp
+  jvp_rule_id: ShortStorage_jvp
+  vjp: null
+  jvp: null

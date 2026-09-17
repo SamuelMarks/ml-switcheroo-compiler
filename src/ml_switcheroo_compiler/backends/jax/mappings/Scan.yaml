@@ -1,0 +1,6 @@
+operation: Scan
+backend: jax
+target_api: jax.lax.scan
+ast_template: '{out} = jax.lax.scan({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

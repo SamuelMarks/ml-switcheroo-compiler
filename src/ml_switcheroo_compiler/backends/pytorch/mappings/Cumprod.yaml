@@ -1,2 +1,6 @@
-Cumprod:
-  target_api: torch.cumprod
+operation: Cumprod
+backend: pytorch
+target_api: torch.cumprod
+ast_template: '{out} = torch.cumprod({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

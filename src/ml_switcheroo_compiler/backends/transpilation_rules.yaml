@@ -1,3 +1,28 @@
+import_remappings:
+  jax:
+    torch: "jax"
+    torch.nn: "flax.linen"
+    torch.nn.functional: "jax.nn"
+    numpy: "jax.numpy"
+  pytorch:
+    jax: "torch"
+    jax.numpy: "torch"
+    flax.linen: "torch.nn"
+    jax.nn: "torch.nn.functional"
+    numpy: "torch"
+  mlx:
+    torch: "mlx.core"
+    torch.nn: "mlx.nn"
+    numpy: "mlx.core"
+  keras:
+    torch: "keras.ops"
+    torch.nn: "keras.layers"
+    numpy: "keras.ops"
+  numpy:
+    torch: "numpy"
+    jax.numpy: "numpy"
+    mlx.core: "numpy"
+
 frameworks:
   jax:
     target_module: jax

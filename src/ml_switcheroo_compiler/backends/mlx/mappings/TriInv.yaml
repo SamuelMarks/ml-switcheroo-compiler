@@ -1,2 +1,6 @@
-TriInv:
-  target_api: '''mx.linalg.inv({0})'''
+operation: TriInv
+backend: mlx
+target_api: '''mx.linalg.inv({0})'''
+ast_template: '{out} = ''mx.linalg.inv({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-BitwiseNot:
-  target_api: da.bitwise_not
+operation: BitwiseNot
+backend: dask
+target_api: da.bitwise_not
+ast_template: '{out} = da.bitwise_not({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

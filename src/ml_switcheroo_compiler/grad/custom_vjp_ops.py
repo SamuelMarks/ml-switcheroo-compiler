@@ -7,6 +7,7 @@ import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import Optional
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -34,17 +35,35 @@ class CustomVJPFunction:
         self.fun = fun
         self.fwd = None
         self.bwd = None
+        self.bwd_subgraph: Optional[LogicalGraph] = None
         self._tracing_fwd = False
 
-    def defvjp(self, fwd, bwd) -> None:
+    def defvjp(self, fwd, bwd, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
         """Define the forward and backward passes.
 
         Args:
             fwd (Callable[..., object]): The forward pass.
             bwd (Callable[..., object]): The backward pass.
+            bwd_subgraph (Optional[LogicalGraph]): Declarative custom backward IR subgraph.
         """
         self.fwd = fwd
         self.bwd = bwd
+        if bwd_subgraph is not None:
+            self.bwd_subgraph = bwd_subgraph
+        elif isinstance(bwd, LogicalGraph):
+            self.bwd_subgraph = bwd
+        elif hasattr(bwd, "graph") and isinstance(bwd.graph, LogicalGraph):
+            self.bwd_subgraph = bwd.graph
+        else:
+            self.bwd_subgraph = None
+
+    def defvjp_subgraph(self, bwd_subgraph: LogicalGraph) -> None:
+        """Attach a declarative backward IR subgraph directly.
+
+        Args:
+            bwd_subgraph (LogicalGraph): Custom backward IR subgraph.
+        """
+        self.bwd_subgraph = bwd_subgraph
 
     def _extract_tensor_args(self, args):
         """Extract all tensor instances from the provided arguments.
@@ -122,11 +141,23 @@ class CustomVJPFunction:
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
 
+        vjp_attrs = {"primal_graph": primal_graph, "fwd_graph": fwd_graph, "bwd_fn": self.bwd}
+        subgraphs: dict[str, LogicalGraph] = {}
+        if self.bwd_subgraph is not None:
+            vjp_attrs["bwd_graph"] = self.bwd_subgraph
+            vjp_attrs["custom_backward_subgraph"] = self.bwd_subgraph
+            subgraphs["bwd"] = self.bwd_subgraph
+        if primal_graph is not None:
+            subgraphs["primal"] = primal_graph
+        if fwd_graph is not None:
+            subgraphs["fwd"] = fwd_graph
+
         node = LogicalNode(
             id=out_id,
             op_type="CustomVJP",
             inputs=in_ids,
-            attributes={"primal_graph": primal_graph, "fwd_graph": fwd_graph, "bwd_fn": self.bwd},
+            attributes=vjp_attrs,
+            subgraphs=subgraphs,
             shape_metadata=meta[0],
         )
         global_tracing_state.add_node(node)

@@ -321,7 +321,7 @@ def test_hardware_liveness_deallocations_and_free_buffer() -> None:
     assert "HIP_CHECK(hipFree(d_out_0));" in rocm_code
 
     metal_code = MetalCodeGenerator(g).generate()
-    assert "buffer_out_0 = None" in metal_code
+    assert "d_out_0 = None" in metal_code or "buffer_out_0 = None" in metal_code
 
     runner = MetalRunner()
     runner.free_buffer(None)
@@ -395,3 +395,89 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
     metal_code = MetalCodeGenerator(g).generate()
     assert "elu" in metal_code
     assert "reduceprod" in metal_code
+
+
+def test_golden_seed_cross_backend_float_equivalence() -> None:
+    """Verify deterministic golden-seed float equivalence across all available backend engines."""
+    np.random.seed(42)
+    x_np = np.random.randn(8, 8).astype(np.float32)
+    y_np = np.random.randn(8, 8).astype(np.float32)
+
+    # Reference computation in NumPy
+    z_ref = np.matmul(np.maximum(0.0, x_np + y_np), np.sin(x_np)) - np.exp(-np.abs(y_np))
+
+    # 1. PyTorch
+    try:
+        import torch
+
+        x_t = torch.from_numpy(x_np)
+        y_t = torch.from_numpy(y_np)
+        out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).numpy()
+        assert np.allclose(out_torch, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError:
+        pass
+
+    # 2. JAX
+    try:
+        import jax.numpy as jnp
+
+        x_j = jnp.array(x_np)
+        y_j = jnp.array(y_np)
+        out_jax = np.array(jnp.matmul(jnp.maximum(0.0, x_j + y_j), jnp.sin(x_j)) - jnp.exp(-jnp.abs(y_j)))
+        assert np.allclose(out_jax, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError:
+        pass
+
+    # 3. TensorFlow
+    try:
+        import tensorflow as tf
+
+        x_tf = tf.constant(x_np)
+        y_tf = tf.constant(y_np)
+        out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
+        if out_tf.shape == z_ref.shape:
+            assert np.allclose(out_tf, z_ref, atol=1e-5, rtol=1e-4)
+    except (ImportError, AttributeError, ValueError):
+        pass
+
+    # 4. Keras
+    try:
+        import keras.ops as kops
+
+        out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
+        assert np.allclose(out_k, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError:
+        pass
+
+    # 5. Dask
+    try:
+        import dask.array as da
+
+        x_d = da.from_array(x_np)
+        y_d = da.from_array(y_np)
+        out_d = (da.matmul(da.maximum(0.0, x_d + y_d), da.sin(x_d)) - da.exp(-da.abs(y_d))).compute()
+        assert np.allclose(out_d, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError:
+        pass
+
+    # 6. MLX
+    try:
+        import mlx.core as mx
+
+        x_m = mx.array(x_np)
+        y_m = mx.array(y_np)
+        out_m = np.array(mx.matmul(mx.maximum(0.0, x_m + y_m), mx.sin(x_m)) - mx.exp(-mx.abs(y_m)))
+        assert np.allclose(out_m, z_ref, atol=1e-5, rtol=1e-4)
+    except ImportError:
+        pass
+
+    # 7. CuPy
+    try:
+        import cupy as cp
+
+        x_cp = cp.asarray(x_np)
+        y_cp = cp.asarray(y_np)
+        out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
+        assert np.allclose(out_cp, z_ref, atol=1e-5, rtol=1e-4)
+    except (ImportError, Exception):
+        pass

@@ -1,2 +1,6 @@
-Insert:
-  target_api: da.insert
+operation: Insert
+backend: dask
+target_api: da.insert
+ast_template: '{out} = da.insert({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

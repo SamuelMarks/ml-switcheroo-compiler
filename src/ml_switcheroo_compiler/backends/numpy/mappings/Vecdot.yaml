@@ -1,3 +1,6 @@
-Vecdot:
-  ast_template: np.sum({0} * {1}, axis={axis})
-  target_api: ''
+operation: Vecdot
+backend: numpy
+target_api: ''
+ast_template: np.sum({0} * {1}, axis={axis})
+kwarg_map: {}
+dtype_overrides: {}

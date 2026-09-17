@@ -611,3 +611,110 @@ def test_base_generator_compile_aot():
     base_inst = BaseGenerator(g)
     with pytest.raises(NotImplementedError, match="AOT compilation is not implemented"):
         base_inst.compile_aot(g)
+
+
+def test_base_generator_visit_and_visit_opnode() -> None:
+    """Test visit_OpNode declarative mapping, ast_template, target_api, and visit dispatch."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRNode
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    g = IRGraph()
+    bg = BaseGenerator(g)
+
+    # 1. target_api call string path with kwarg translations (e.g. Argmin in cupy: dim -> axis)
+    cupy_bg = BaseGenerator(g)
+    cupy_bg.backend_name = "cupy"
+    argmin_node = IRNode(
+        id="n1",
+        op_type="Argmin",
+        attributes={"dim": 0, "keepdim": True, "_internal_attr": "hidden"},
+    )
+    argmin_res = cupy_bg.visit_OpNode(argmin_node, ["x"])
+    assert "cupy.argmin" in argmin_res
+    assert "x" in argmin_res
+    assert "axis=0" in argmin_res
+    assert "keepdim=True" in argmin_res
+    assert "_internal_attr" not in argmin_res
+
+    # 2. ast_template substitution path (e.g. Atan2 in pytorch)
+    torch_bg = BaseGenerator(g)
+    torch_bg.backend_name = "pytorch"
+    atan2_node = IRNode(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
+    atan2_res = torch_bg.visit_OpNode(atan2_node, ["in_x", "in_y"])
+    assert "out_val = torch.atan2(in_x, in_y)" in atan2_res
+
+    # ast_template with default out variable name from node.id
+    atan2_node_default_out = IRNode(id="atan2_id", op_type="Atan2")
+    atan2_res_default = torch_bg.visit_OpNode(atan2_node_default_out, ["in_x", "in_y"])
+    assert "tensor_0 = torch.atan2(in_x, in_y)" in atan2_res_default
+
+    # 3. target_k is None branch (dropped kwarg)
+    mock_op = MagicMock()
+    mock_op.ast_template = None
+    mock_op.kwarg_map = {"drop_me": None}
+    mock_op.target_api = "np.dropped"
+    mock_schema = MagicMock()
+    mock_schema.operations = {"DroppedOp": mock_op}
+
+    with patch(
+        "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
+        return_value=mock_schema,
+    ):
+        drop_node = IRNode(id="n_drop", op_type="DroppedOp", attributes={"drop_me": 123})
+        drop_res = bg.visit_OpNode(drop_node, ["in_val"])
+        assert drop_res == "np.dropped(in_val)"
+
+    # 4. Exception in load_backend_mappings falling back to generic_visit
+    bad_bg = BaseGenerator(g)
+    with patch(
+        "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
+        side_effect=RuntimeError("disk error"),
+    ):
+        unknown_node = IRNode(id="n3", op_type="Add")
+        fallback_res = bad_bg.visit_OpNode(unknown_node, ["arg1", "arg2"])
+        assert "np.add(arg1, arg2)" in fallback_res
+
+    # 5. Target op not in schema operations falling back to generic_visit
+    unmapped_node = IRNode(id="n4", op_type="CustomOpNotInSchema")
+    unmapped_res = bg.visit_OpNode(unmapped_node, ["arg0"])
+    assert "customopnotinschema" in unmapped_res.lower()
+
+    # 6. visit dispatch: visitor in self.visitors
+    class CustomVisitor:
+        def visit_VisitorOp(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+            return f"visitor_handled({', '.join(input_vars)})"
+
+    bg.visitors = [CustomVisitor()]
+    v_node = IRNode(id="n5", op_type="VisitorOp")
+    assert bg.visit(v_node, ["v1", "v2"]) == "visitor_handled(v1, v2)"
+
+    # 7. visit dispatch: method on self (subclass)
+    class CustomGenerator(BaseGenerator):
+        def visit_SubclassOp(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+            return f"subclass_handled({', '.join(input_vars)})"
+
+    cg = CustomGenerator(g)
+    cg.visitors = []
+    s_node = IRNode(id="n6", op_type="SubclassOp")
+    assert cg.visit(s_node, ["s1"]) == "subclass_handled(s1)"
+
+    # 8. visit dispatch: generic_visit fallback and visit_OpNode dispatch
+    bg_clean = BaseGenerator(g)
+    bg_clean.visitors = []
+    fallback_node = IRNode(id="n_fallback", op_type="NonexistentOpFallback")
+    assert bg_clean.visit(fallback_node, ["x"]) == "np.nonexistentopfallback(x)"
+
+    # 9. visit dispatch: generic_visit when visit_OpNode is removed
+    class NoOpNodeGenerator(BaseGenerator):
+        pass
+
+    saved_opnode = BaseGenerator.visit_OpNode
+    delattr(BaseGenerator, "visit_OpNode")
+    try:
+        nog = NoOpNodeGenerator(g)
+        g_node = IRNode(id="n7", op_type="GenericOp")
+        assert nog.visit(g_node, ["g1"]) == "np.genericop(g1)"
+    finally:
+        BaseGenerator.visit_OpNode = saved_opnode

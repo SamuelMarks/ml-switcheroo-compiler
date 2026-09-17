@@ -1,2 +1,6 @@
-Hstack:
-  target_api: da.hstack
+operation: Hstack
+backend: dask
+target_api: da.hstack
+ast_template: '{out} = da.hstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

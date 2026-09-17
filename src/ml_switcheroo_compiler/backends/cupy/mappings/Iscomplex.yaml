@@ -1,2 +1,6 @@
-Iscomplex:
-  target_api: cp.iscomplex
+operation: Iscomplex
+backend: cupy
+target_api: cp.iscomplex
+ast_template: '{out} = cp.iscomplex({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Logaddexp2:
-  target_api: da.logaddexp2
+operation: Logaddexp2
+backend: dask
+target_api: da.logaddexp2
+ast_template: '{out} = da.logaddexp2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

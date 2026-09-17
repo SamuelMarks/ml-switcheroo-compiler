@@ -1,2 +1,6 @@
-GreaterEqual:
-  target_api: keras_ops.greater_equal
+operation: GreaterEqual
+backend: keras
+target_api: keras_ops.greater_equal
+ast_template: '{out} = keras_ops.greater_equal({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

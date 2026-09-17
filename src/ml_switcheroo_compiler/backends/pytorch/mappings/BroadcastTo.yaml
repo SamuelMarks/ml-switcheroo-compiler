@@ -1,3 +1,6 @@
-BroadcastTo:
-  ast_template: '{0}.expand({shape})'
-  target_api: ''
+operation: BroadcastTo
+backend: pytorch
+target_api: ''
+ast_template: '{0}.expand({shape})'
+kwarg_map: {}
+dtype_overrides: {}

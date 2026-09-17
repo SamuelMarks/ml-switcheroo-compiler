@@ -1,2 +1,6 @@
-Irfft:
-  target_api: keras_ops.irfft
+operation: Irfft
+backend: keras
+target_api: keras_ops.irfft
+ast_template: '{out} = keras_ops.irfft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

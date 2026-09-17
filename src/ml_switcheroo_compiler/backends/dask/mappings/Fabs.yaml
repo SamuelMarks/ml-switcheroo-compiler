@@ -1,2 +1,6 @@
-Fabs:
-  target_api: da.fabs
+operation: Fabs
+backend: dask
+target_api: da.fabs
+ast_template: '{out} = da.fabs({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

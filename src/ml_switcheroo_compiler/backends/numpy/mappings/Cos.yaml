@@ -1,3 +1,6 @@
-Cos:
-  ast_template: np.cos
-  target_api: ''
+operation: Cos
+backend: numpy
+target_api: ''
+ast_template: np.cos
+kwarg_map: {}
+dtype_overrides: {}

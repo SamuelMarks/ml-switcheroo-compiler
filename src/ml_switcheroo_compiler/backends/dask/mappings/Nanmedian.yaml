@@ -1,2 +1,6 @@
-Nanmedian:
-  target_api: da.nanmedian
+operation: Nanmedian
+backend: dask
+target_api: da.nanmedian
+ast_template: '{out} = da.nanmedian({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

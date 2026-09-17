@@ -7,19 +7,63 @@ description: "Samples from a two-parameter Weibull distribution.\n\nExample:\n\n
   \ or Tensor): Concentration parameter of distribution (k/shape).\n    validate_args\
   \ (bool, optional): Whether to validate arguments. Default: None."
 std_args:
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: scale
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: concentration
-    type: Any
-  - is_variadic: false
-    kind: positional_or_keyword
-    name: validate_args
-    type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: scale
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: concentration
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: validate_args
+  type: Any
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args:
+  - name: scale
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: concentration
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: validate_args
+    type: Any
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - scale
+  - concentration
+  - validate_args
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: Weibull_vjp
+  jvp_rule_id: Weibull_jvp
+  vjp: null
+  jvp: null

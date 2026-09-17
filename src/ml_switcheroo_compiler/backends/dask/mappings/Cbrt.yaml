@@ -1,2 +1,6 @@
-Cbrt:
-  target_api: da.cbrt
+operation: Cbrt
+backend: dask
+target_api: da.cbrt
+ast_template: '{out} = da.cbrt({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

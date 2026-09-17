@@ -1,3 +1,6 @@
-RgbToYiq:
-  ast_template: '{0}'
-  target_api: ''
+operation: RgbToYiq
+backend: pytorch
+target_api: ''
+ast_template: '{0}'
+kwarg_map: {}
+dtype_overrides: {}

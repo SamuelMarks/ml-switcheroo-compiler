@@ -1,2 +1,6 @@
-CountNonzero:
-  target_api: da.count_nonzero
+operation: CountNonzero
+backend: dask
+target_api: da.count_nonzero
+ast_template: '{out} = da.count_nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

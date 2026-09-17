@@ -1,2 +1,6 @@
-Zeta:
-  target_api: jax.scipy.special.zeta
+operation: Zeta
+backend: jax
+target_api: jax.scipy.special.zeta
+ast_template: '{out} = jax.scipy.special.zeta({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

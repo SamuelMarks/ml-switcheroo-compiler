@@ -1,0 +1,6 @@
+operation: Cond
+backend: jax
+target_api: jax.lax.cond
+ast_template: '{out} = jax.lax.cond({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

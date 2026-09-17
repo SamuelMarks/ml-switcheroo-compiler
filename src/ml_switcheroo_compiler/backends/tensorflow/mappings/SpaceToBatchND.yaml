@@ -1,2 +1,6 @@
-SpaceToBatchND:
-  target_api: tf.space_to_batch_nd
+operation: SpaceToBatchND
+backend: tensorflow
+target_api: tf.space_to_batch_nd
+ast_template: '{out} = tf.space_to_batch_nd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

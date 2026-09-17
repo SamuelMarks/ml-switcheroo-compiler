@@ -1,2 +1,6 @@
-Acos:
-  target_api: torch.acos
+operation: Acos
+backend: pytorch
+target_api: torch.acos
+ast_template: '{out} = torch.acos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

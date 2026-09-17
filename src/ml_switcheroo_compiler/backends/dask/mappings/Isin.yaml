@@ -1,2 +1,6 @@
-Isin:
-  target_api: da.isin
+operation: Isin
+backend: dask
+target_api: da.isin
+ast_template: '{out} = da.isin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

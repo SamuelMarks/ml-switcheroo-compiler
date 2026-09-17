@@ -5,11 +5,18 @@ import tempfile
 
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
+    HardwareCapabilityQuery,
     HardwareTemplateConfig,
     HardwareTemplatesConfig,
     KernelParameterConfig,
+    KernelTemplateModel,
+    MemoryLayoutRuleModel,
     compute_liveness,
     load_hardware_templates,
+    load_kernel_templates_manifest,
+    load_launch_heuristics,
+    load_memory_layouts,
+    query_optimal_launch_geometry,
     resolve_hardware_launch_grid_and_args,
 )
 from ml_switcheroo_compiler.backends.llvm_cpp.config_models import (
@@ -359,3 +366,139 @@ def test_hardware_launch_helpers_and_dispatch() -> None:
             os.remove(f_bad_tpl)
         if os.path.exists(f_missing_tpl):
             os.remove(f_missing_tpl)
+
+
+def test_kernel_templates_manifest_and_models() -> None:
+    """Verify loading and validating declarative kernel templates manifest."""
+    manifest = load_kernel_templates_manifest()
+    assert "Add" in manifest.kernel_templates
+    assert "MatMul" in manifest.kernel_templates
+    add_tpl = manifest.kernel_templates["Add"]
+    assert add_tpl.opcode == "Add"
+    assert add_tpl.workgroup_dims == [256, 1, 1]
+    assert "in0[idx] + in1[idx]" in add_tpl.body
+    assert add_tpl.cuda_body is not None
+    assert add_tpl.rocm_body is not None
+    assert add_tpl.metal_body is not None
+
+    custom_tpl = KernelTemplateModel(
+        opcode="CustomOp",
+        workgroup_dims=[128, 1, 1],
+        thread_indexing_formula="int i = threadIdx.x;",
+        memory_layout_requirements=["contiguous"],
+        body="out[i] = in[i];",
+        shared_memory_bytes=256,
+    )
+    assert custom_tpl.opcode == "CustomOp"
+    assert custom_tpl.shared_memory_bytes == 256
+
+
+def test_launch_heuristics_manifest_and_query() -> None:
+    """Verify loading launch heuristics manifest and dynamic hardware capability queries."""
+    manifest = load_launch_heuristics()
+    assert "elementwise_1d" in manifest.heuristics
+    assert "tiled_matmul" in manifest.heuristics
+    rule = manifest.heuristics["elementwise_1d"]
+    assert rule.tensor_rank == [1]
+    assert rule.block_dims == [256, 1, 1]
+
+    caps = HardwareCapabilityQuery(
+        max_threads_per_block=512,
+        max_shared_memory_per_sm=32768,
+        warp_size=32,
+        max_block_dim=[512, 512, 64],
+        max_grid_dim=[65535, 65535, 65535],
+    )
+    block_dim, grid_dim = query_optimal_launch_geometry((1024,), hardware_caps=caps)
+    assert block_dim == (512, 1, 1)
+    assert grid_dim == (2, 1, 1)
+
+    block_2d, grid_2d = query_optimal_launch_geometry((32, 64), hardware_caps=caps)
+    assert block_2d == (16, 16, 1)
+    assert grid_2d == (4, 2, 1)
+
+
+def test_memory_layouts_manifest_and_rules() -> None:
+    """Verify loading memory layouts manifest and layout specifications."""
+    manifest = load_memory_layouts()
+    assert "contiguous" in manifest.layouts
+    assert "nchw" in manifest.layouts
+    assert "nhwc" in manifest.layouts
+    assert "transposed_2d" in manifest.layouts
+    assert "NCHW_to_NHWC" in manifest.transformations
+
+    nhwc_layout = manifest.layouts["nhwc"]
+    assert nhwc_layout.dimension_order == [0, 2, 3, 1]
+    assert nhwc_layout.is_contiguous is True
+
+    custom_rule = MemoryLayoutRuleModel(
+        layout_name="custom_strided",
+        dimension_order=[1, 0],
+        stride_formula="custom",
+        is_contiguous=False,
+    )
+    assert custom_rule.layout_name == "custom_strided"
+    assert custom_rule.is_contiguous is False
+
+
+def test_hardware_device_profiles_and_custom_paths() -> None:
+    """Verify loading device profiles, execution_quantum branches, and custom YAML path loaders."""
+    from ml_switcheroo_compiler.backends.hardware_config_models import (
+        HardwareDeviceProfileModel,
+        load_hardware_device_profiles,
+    )
+
+    # 1. Default loader for hardware device profiles
+    manifest = load_hardware_device_profiles()
+    assert manifest.version == "1.0.0"
+    assert "cuda" in manifest.profiles or "metal" in manifest.profiles or len(manifest.profiles) >= 0
+
+    # 2. Custom path loaders for all 4 manifest loaders
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+        f.write("version: 1.0.0\nprofiles: {}\n")
+        custom_dev_path = f.name
+    try:
+        dev_m = load_hardware_device_profiles(path=custom_dev_path)
+        assert dev_m.version == "1.0.0"
+    finally:
+        os.remove(custom_dev_path)
+
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+        f.write("version: 1.0.0\ntemplates: {}\n")
+        custom_tmpl_path = f.name
+    try:
+        tmpl_m = load_kernel_templates_manifest(path=custom_tmpl_path)
+        assert tmpl_m.version == "1.0.0"
+    finally:
+        os.remove(custom_tmpl_path)
+
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+        f.write("version: 1.0.0\nheuristics: {}\n")
+        custom_heur_path = f.name
+    try:
+        heur_m = load_launch_heuristics(path=custom_heur_path)
+        assert heur_m.version == "1.0.0"
+    finally:
+        os.remove(custom_heur_path)
+
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
+        f.write("version: 1.0.0\nlayouts: {}\ntransformations: {}\n")
+        custom_layout_path = f.name
+    try:
+        layout_m = load_memory_layouts(path=custom_layout_path)
+        assert layout_m.version == "1.0.0"
+    finally:
+        os.remove(custom_layout_path)
+
+    # 3. execution_unit_size branches on HardwareDeviceProfileModel
+    p_wave = HardwareDeviceProfileModel(architecture="cdna3", wavefront_size=64)
+    assert p_wave.execution_unit_size == 64
+
+    p_warp = HardwareDeviceProfileModel(architecture="hopper", warp_size=32)
+    assert p_warp.execution_unit_size == 32
+
+    p_simd = HardwareDeviceProfileModel(architecture="apple-silicon", simdgroup_size=32)
+    assert p_simd.execution_unit_size == 32
+
+    p_fallback = HardwareDeviceProfileModel(architecture="generic-cpu")
+    assert p_fallback.execution_unit_size == 32

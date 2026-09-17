@@ -22,3 +22,50 @@ variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+  edge_wgsl:
+    template: unary
+    expr: buf_in0_f32[in0_offset]
+signature:
+  args:
+  - name: kernel_size
+    type: Union[int, Tuple[int, int, int]]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: stride
+    type: Union[int, Tuple[int, int, int]]
+    is_variadic: false
+    kind: positional_or_keyword
+  - name: padding
+    type: Union[int, Tuple[int, int, int]]
+    is_variadic: false
+    kind: positional_or_keyword
+  input_tensors:
+  - kernel_size
+  - stride
+  - padding
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: pool3d(N, C, D, H, W) -> (N, C, D_out, H_out, W_out)
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: pooling
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: AvgPool3D_vjp
+  jvp_rule_id: AvgPool3D_jvp
+  vjp: null
+  jvp: null

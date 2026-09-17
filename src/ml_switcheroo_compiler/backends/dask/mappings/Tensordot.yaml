@@ -1,2 +1,6 @@
-Tensordot:
-  target_api: da.tensordot
+operation: Tensordot
+backend: dask
+target_api: da.tensordot
+ast_template: '{out} = da.tensordot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

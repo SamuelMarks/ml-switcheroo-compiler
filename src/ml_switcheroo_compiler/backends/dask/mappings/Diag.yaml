@@ -1,2 +1,6 @@
-Diag:
-  target_api: da.diag
+operation: Diag
+backend: dask
+target_api: da.diag
+ast_template: '{out} = da.diag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

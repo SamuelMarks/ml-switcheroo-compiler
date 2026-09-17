@@ -1,2 +1,6 @@
-MatrixNorm:
-  target_api: '''mx.linalg.norm({0}, keepdims={keepdims})'''
+operation: MatrixNorm
+backend: mlx
+target_api: '''mx.linalg.norm({0}, keepdims={keepdims})'''
+ast_template: '{out} = ''mx.linalg.norm({0}, keepdims={keepdims})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

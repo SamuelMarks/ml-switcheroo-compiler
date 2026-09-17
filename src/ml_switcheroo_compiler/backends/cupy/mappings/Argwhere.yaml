@@ -1,2 +1,6 @@
-Argwhere:
-  target_api: cp.argwhere
+operation: Argwhere
+backend: cupy
+target_api: cp.argwhere
+ast_template: '{out} = cp.argwhere({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

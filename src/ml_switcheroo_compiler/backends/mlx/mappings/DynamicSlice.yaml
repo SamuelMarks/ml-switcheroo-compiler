@@ -1,2 +1,6 @@
-DynamicSlice:
-  target_api: '''{0}.dynamic_slice({1}, {2})'''
+operation: DynamicSlice
+backend: mlx
+target_api: '''{0}.dynamic_slice({1}, {2})'''
+ast_template: '{out} = ''{0}.dynamic_slice({1}, {2})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Min:
-  target_api: keras_ops.min
+operation: Min
+backend: keras
+target_api: keras_ops.min
+ast_template: '{out} = keras_ops.min({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,4 +1,6 @@
-AssignVariable:
-  ast_template: '{0}'
-  custom_code: 'lambda ref, value, **kwargs: value'
-  target_api: custom_op
+operation: AssignVariable
+backend: pytorch
+target_api: custom_op
+ast_template: '{0}'
+kwarg_map: {}
+dtype_overrides: {}

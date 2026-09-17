@@ -1,3 +1,6 @@
-Reshape:
-  ast_template: np.reshape
-  target_api: ''
+operation: Reshape
+backend: numpy
+target_api: ''
+ast_template: np.reshape
+kwarg_map: {}
+dtype_overrides: {}

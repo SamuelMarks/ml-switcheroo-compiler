@@ -38,14 +38,14 @@ def test_webrtc_collectives_config_validation() -> None:
 def test_webrtc_broadcast_emission() -> None:
     """Test emission of Broadcast JavaScript WebRTC templates."""
     op_code = emit_webrtc_op("Broadcast", "buf_input_0", "bc_node_1")
-    assert "waitForBroadcast" in op_code
+    assert "window.__ml_collective.broadcast" in op_code
     assert "bc_node_1" in op_code
 
     # Test all collective types in emit_webrtc_op
-    assert "waitForReduce" in emit_webrtc_op("AllReduce", "buf_0", "ar_1")
-    assert "waitForGather" in emit_webrtc_op("AllGather", "buf_0", "ag_1")
-    assert "waitForAllToAll" in emit_webrtc_op("AllToAll", "buf_0", "a2a_1")
-    assert "waitForReduceScatter" in emit_webrtc_op("ReduceScatter", "buf_0", "rs_1")
+    assert "window.__ml_collective.allReduce" in emit_webrtc_op("AllReduce", "buf_0", "ar_1")
+    assert "window.__ml_collective.allGather" in emit_webrtc_op("AllGather", "buf_0", "ag_1")
+    assert "window.__ml_collective.allToAll" in emit_webrtc_op("AllToAll", "buf_0", "a2a_1")
+    assert "window.__ml_collective.reduceScatter" in emit_webrtc_op("ReduceScatter", "buf_0", "rs_1")
     assert emit_webrtc_op("UnknownOp", "buf_0", "unk_1") == ""
 
     init_code = emit_webrtc_init()

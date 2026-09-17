@@ -1,2 +1,6 @@
-Schur:
-  target_api: jax.scipy.linalg.schur
+operation: Schur
+backend: jax
+target_api: jax.scipy.linalg.schur
+ast_template: '{out} = jax.scipy.linalg.schur({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

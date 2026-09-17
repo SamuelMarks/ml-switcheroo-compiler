@@ -62,3 +62,69 @@ def test_dce_no_op():
 
     assert dce_pass(graph) is False
     assert len(graph.nodes) == 2
+
+
+def test_dce_pass_no_outputs_attribute() -> None:
+    """Test DCE pass on a graph object without an outputs attribute."""
+    from ml_switcheroo_ir import LogicalNode
+
+    class MockGraphWithoutOutputs:
+        """Mock graph missing outputs attribute."""
+
+        def __init__(self) -> None:
+            """Initialize mock graph."""
+            self.nodes: dict[str, LogicalNode] = {}
+
+    mock_graph = MockGraphWithoutOutputs()
+    res = dce_pass(mock_graph)
+    assert res is False
+
+
+def test_dce_nested_subgraphs() -> None:
+    """Test DCE pass with nested subgraphs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    subgraph = LogicalGraph(name="sub", outputs=["used_in_sub"])
+    sub_used = LogicalNode(id="used_in_sub", op_type="Constant", attributes={"value": 1.0})
+    sub_unused = LogicalNode(id="unused_in_sub", op_type="Constant", attributes={"value": 2.0})
+    subgraph.nodes = {"used_in_sub": sub_used, "unused_in_sub": sub_unused}
+    parent = LogicalGraph(name="parent", outputs=["cond_node"])
+    cond_node = LogicalNode(id="cond_node", op_type="Cond", attributes={"subgraph": subgraph})
+    parent.nodes = {"cond_node": cond_node}
+    res = dce_pass(parent)
+    assert res is True
+    assert "unused_in_sub" not in subgraph.nodes
+
+
+def test_dce_outputs_branches() -> None:
+    """Test DCE pass when outputs are unchanged and when dead outputs are pruned."""
+    from ml_switcheroo_ir import LogicalNode
+
+    node = LogicalNode(id="in_0", op_type="Input")
+    graph1 = IRGraph(name="dce_unmodified", nodes={"in_0": node}, outputs=["in_0"])
+    res1 = dce_pass(graph1)
+    assert res1 is False
+    graph2 = IRGraph(name="dce_modified", nodes={"in_0": node}, outputs=["in_0", "dead_out"])
+    res2 = dce_pass(graph2)
+    assert res2 is True
+    assert graph2.outputs == ["in_0"]
+
+
+def test_dce_node_subgraphs() -> None:
+    """Test DCE pass recursively cleans up dead code inside node.subgraphs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    subgraph = LogicalGraph(name="then_branch", outputs=["live"])
+    subgraph.nodes["live"] = LogicalNode(id="live", op_type="Constant", attributes={"value": 1.0})
+    subgraph.nodes["dead"] = LogicalNode(id="dead", op_type="Constant", attributes={"value": 2.0})
+
+    parent = LogicalGraph(name="parent", outputs=["if_node"])
+    parent.nodes["if_node"] = LogicalNode(
+        id="if_node",
+        op_type="If",
+        subgraphs={"then_branch": subgraph},
+    )
+
+    assert dce_pass(parent) is True
+    assert "dead" not in subgraph.nodes
+    assert "live" in subgraph.nodes

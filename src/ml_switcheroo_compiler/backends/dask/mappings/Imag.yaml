@@ -1,2 +1,6 @@
-Imag:
-  target_api: da.imag
+operation: Imag
+backend: dask
+target_api: da.imag
+ast_template: '{out} = da.imag({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

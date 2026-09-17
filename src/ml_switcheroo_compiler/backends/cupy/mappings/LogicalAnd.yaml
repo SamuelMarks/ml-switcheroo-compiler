@@ -1,2 +1,6 @@
-LogicalAnd:
-  target_api: cp.logical_and
+operation: LogicalAnd
+backend: cupy
+target_api: cp.logical_and
+ast_template: '{out} = cp.logical_and({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

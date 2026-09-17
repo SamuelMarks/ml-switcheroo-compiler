@@ -1,2 +1,6 @@
-Inv:
-  target_api: tf.linalg.inv
+operation: Inv
+backend: tensorflow
+target_api: tf.linalg.inv
+ast_template: '{out} = tf.linalg.inv({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

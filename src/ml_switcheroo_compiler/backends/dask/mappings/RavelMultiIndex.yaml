@@ -1,2 +1,6 @@
-RavelMultiIndex:
-  target_api: da.ravel_multi_index
+operation: RavelMultiIndex
+backend: dask
+target_api: da.ravel_multi_index
+ast_template: '{out} = da.ravel_multi_index({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

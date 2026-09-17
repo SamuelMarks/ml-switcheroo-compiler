@@ -48,31 +48,31 @@ templates:
     }});
 
   allgather_emit: |
-    // Trigger WebRTC AllGather
+    // Trigger WebRTC AllGather via client-side collective protocol
     const localData = {local_tensor_data};
     dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
-    await waitForGather('{op_id}');
+    await window.__ml_collective.allGather('{op_id}', localData);
 
   allreduce_emit: |
-    // Trigger WebRTC AllReduce
+    // Trigger WebRTC AllReduce via client-side collective protocol
     const localData = {local_tensor_data};
     dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
-    await waitForReduce('{op_id}');
+    await window.__ml_collective.allReduce('{op_id}', localData);
 
   alltoall_emit: |
-    // Trigger WebRTC AllToAll
+    // Trigger WebRTC AllToAll via client-side collective protocol
     const localData = {local_tensor_data};
     dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
-    await waitForAllToAll('{op_id}');
+    await window.__ml_collective.allToAll('{op_id}', localData);
 
   reducescatter_emit: |
-    // Trigger WebRTC ReduceScatter
+    // Trigger WebRTC ReduceScatter via client-side collective protocol
     const localData = {local_tensor_data};
     dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
-    await waitForReduceScatter('{op_id}');
+    await window.__ml_collective.reduceScatter('{op_id}', localData);
 
   broadcast_emit: |
-    // Trigger WebRTC Broadcast
+    // Trigger WebRTC Broadcast via client-side collective protocol
     const localData = {local_tensor_data};
     dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
-    await waitForBroadcast('{op_id}');
+    await window.__ml_collective.broadcast('{op_id}', localData);

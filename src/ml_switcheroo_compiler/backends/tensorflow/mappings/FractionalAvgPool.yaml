@@ -1,2 +1,6 @@
-FractionalAvgPool:
-  target_api: tf.nn.fractional_avg_pool
+operation: FractionalAvgPool
+backend: tensorflow
+target_api: tf.nn.fractional_avg_pool
+ast_template: '{out} = tf.nn.fractional_avg_pool({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

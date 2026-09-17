@@ -1,2 +1,6 @@
-SegmentMax:
-  target_api: jax.ops.segment_max
+operation: SegmentMax
+backend: jax
+target_api: jax.ops.segment_max
+ast_template: '{out} = jax.ops.segment_max({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-HardSwish:
-  custom_code: 'lambda x: torch.nn.functional.hardswish(x)'
-  target_api: custom_op
+operation: HardSwish
+backend: pytorch
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

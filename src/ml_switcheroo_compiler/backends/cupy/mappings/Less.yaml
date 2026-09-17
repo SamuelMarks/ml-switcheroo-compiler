@@ -1,2 +1,6 @@
-Less:
-  target_api: cp.less
+operation: Less
+backend: cupy
+target_api: cp.less
+ast_template: '{out} = cp.less({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

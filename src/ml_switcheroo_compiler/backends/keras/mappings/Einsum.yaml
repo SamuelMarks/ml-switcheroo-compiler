@@ -1,2 +1,6 @@
-Einsum:
-  target_api: keras_ops.einsum
+operation: Einsum
+backend: keras
+target_api: keras_ops.einsum
+ast_template: '{out} = keras_ops.einsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

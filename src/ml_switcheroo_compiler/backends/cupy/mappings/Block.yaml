@@ -1,2 +1,6 @@
-Block:
-  target_api: cp.block
+operation: Block
+backend: cupy
+target_api: cp.block
+ast_template: '{out} = cp.block({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

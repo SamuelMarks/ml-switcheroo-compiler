@@ -1,2 +1,6 @@
-Fft2:
-  target_api: keras_ops.fft2
+operation: Fft2
+backend: keras
+target_api: keras_ops.fft2
+ast_template: '{out} = keras_ops.fft2({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

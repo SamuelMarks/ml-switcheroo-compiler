@@ -1,3 +1,6 @@
-HannWindow:
-  ast_template: torch.hann_window({window_length}, periodic={periodic})
-  target_api: ''
+operation: HannWindow
+backend: pytorch
+target_api: ''
+ast_template: torch.hann_window({window_length}, periodic={periodic})
+kwarg_map: {}
+dtype_overrides: {}

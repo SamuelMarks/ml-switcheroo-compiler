@@ -1,2 +1,6 @@
-Hypot:
-  target_api: da.hypot
+operation: Hypot
+backend: dask
+target_api: da.hypot
+ast_template: '{out} = da.hypot({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

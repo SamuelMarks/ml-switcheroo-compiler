@@ -1,2 +1,6 @@
-SobolSample:
-  target_api: tf.math.sobol_sample
+operation: SobolSample
+backend: tensorflow
+target_api: tf.math.sobol_sample
+ast_template: '{out} = tf.math.sobol_sample({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

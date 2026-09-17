@@ -1,3 +1,6 @@
-Sigmoid:
-  ast_template: getattr(backend_module, 'expit', None)({0})
-  target_api: ''
+operation: Sigmoid
+backend: numpy
+target_api: ''
+ast_template: getattr(backend_module, 'expit', None)({0})
+kwarg_map: {}
+dtype_overrides: {}

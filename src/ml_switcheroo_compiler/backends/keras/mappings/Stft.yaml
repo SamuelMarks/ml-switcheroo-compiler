@@ -1,2 +1,6 @@
-Stft:
-  target_api: keras_ops.stft
+operation: Stft
+backend: keras
+target_api: keras_ops.stft
+ast_template: '{out} = keras_ops.stft({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

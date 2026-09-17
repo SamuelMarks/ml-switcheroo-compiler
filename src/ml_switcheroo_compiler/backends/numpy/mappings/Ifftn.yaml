@@ -1,3 +1,6 @@
-Ifftn:
-  ast_template: np.fft.ifftn
-  target_api: ''
+operation: Ifftn
+backend: numpy
+target_api: ''
+ast_template: np.fft.ifftn
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,16 +1,46 @@
 operation: GroupInfo
 description: Information regarding the group being processed in a block.
 std_args:
-  - self
-  - group_id
-  - block
-  - block_start
-  - actual_start
-  - actual_end
-  - start_within_block
-  - actual_size
+- self
+- group_id
+- block
+- block_start
+- actual_start
+- actual_end
+- start_within_block
+- actual_size
 type: class
 variants:
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+signature:
+  args: []
+  input_tensors:
+  - x
+  output_tensors:
+  - out
+  has_variadic_args: false
+  has_variadic_kwargs: false
+  keyword_constraints: {}
+  keyword_defaults: {}
+dtype_rules:
+  promotion_matrix: standard
+  allowed_input_dtypes:
+  - all
+  output_dtype_inference: promote(in0, in1)
+shape_signature:
+  pattern: in0
+  symbolic_expression: '[*shape] -> [*shape]'
+  category: unary
+invariants:
+  is_commutative: false
+  is_associative: false
+  is_idempotent: false
+  identity_value: null
+  absorbing_value: null
+autodiff:
+  vjp_rule_id: GroupInfo_vjp
+  jvp_rule_id: GroupInfo_jvp
+  vjp: null
+  jvp: null

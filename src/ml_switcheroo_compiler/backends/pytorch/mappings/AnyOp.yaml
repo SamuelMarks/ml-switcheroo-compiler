@@ -1,3 +1,6 @@
-AnyOp:
-  ast_template: torch.any({0}, dim={axis}, keepdim={keepdims})
-  target_api: ''
+operation: AnyOp
+backend: pytorch
+target_api: ''
+ast_template: torch.any({0}, dim={axis}, keepdim={keepdims})
+kwarg_map: {}
+dtype_overrides: {}

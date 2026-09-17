@@ -1,2 +1,6 @@
-Signbit:
-  target_api: keras_ops.signbit
+operation: Signbit
+backend: keras
+target_api: keras_ops.signbit
+ast_template: '{out} = keras_ops.signbit({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

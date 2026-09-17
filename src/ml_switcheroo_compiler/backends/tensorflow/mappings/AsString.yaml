@@ -1,2 +1,6 @@
-AsString:
-  target_api: tf.as_string
+operation: AsString
+backend: tensorflow
+target_api: tf.as_string
+ast_template: '{out} = tf.as_string({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Subtract:
-  target_api: da.subtract
+operation: Subtract
+backend: dask
+target_api: da.subtract
+ast_template: '{out} = da.subtract({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

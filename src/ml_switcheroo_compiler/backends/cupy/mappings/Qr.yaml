@@ -1,2 +1,6 @@
-Qr:
-  target_api: cp.linalg.qr
+operation: Qr
+backend: cupy
+target_api: cp.linalg.qr
+ast_template: '{out} = cp.linalg.qr({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

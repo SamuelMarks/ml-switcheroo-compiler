@@ -1,2 +1,6 @@
-Nonzero:
-  target_api: da.nonzero
+operation: Nonzero
+backend: dask
+target_api: da.nonzero
+ast_template: '{out} = da.nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

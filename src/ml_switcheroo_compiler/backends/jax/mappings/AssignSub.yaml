@@ -1,3 +1,6 @@
-AssignSub:
-  custom_code: 'lambda ref, value, **kwargs: ref - value'
-  target_api: custom_op
+operation: AssignSub
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

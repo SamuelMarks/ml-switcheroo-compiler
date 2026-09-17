@@ -1,2 +1,6 @@
-Einsum:
-  target_api: da.einsum
+operation: Einsum
+backend: dask
+target_api: da.einsum
+ast_template: '{out} = da.einsum({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Histogramdd:
-  ast_template: np.histogramdd
-  target_api: ''
+operation: Histogramdd
+backend: numpy
+target_api: ''
+ast_template: np.histogramdd
+kwarg_map: {}
+dtype_overrides: {}

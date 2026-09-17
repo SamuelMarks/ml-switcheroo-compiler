@@ -1,2 +1,6 @@
-Equal:
-  target_api: tf.equal
+operation: Equal
+backend: tensorflow
+target_api: tf.equal
+ast_template: '{out} = tf.equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

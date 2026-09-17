@@ -171,3 +171,21 @@ def test_lift_module_state_and_functionalize() -> None:
 
     params4, g4 = lift_module_state(SlotsModule())
     assert params4 == {}
+
+
+def test_lift_state_subgraphs() -> None:
+    """Verify lifting state inside node.subgraphs."""
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    sub = LogicalGraph(name="sub")
+    sub.nodes["r1"] = LogicalNode(id="r1", op_type="ReadVariable", inputs=[])
+    sub.nodes["a1"] = LogicalNode(id="a1", op_type="AssignVariable", inputs=["v1", "v2"])
+
+    parent = LogicalGraph(name="parent")
+    parent.nodes["if1"] = LogicalNode(id="if1", op_type="If", subgraphs={"then_branch": sub})
+
+    res = lift_state_pass(parent)
+    assert res is True
+    assert sub.nodes["r1"].op_type == "Input"
+    assert sub.nodes["a1"].op_type == "Output"
+    assert "a1" in sub.outputs

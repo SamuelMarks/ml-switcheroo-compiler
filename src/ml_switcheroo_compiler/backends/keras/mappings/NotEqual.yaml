@@ -1,2 +1,6 @@
-NotEqual:
-  target_api: keras_ops.not_equal
+operation: NotEqual
+backend: keras
+target_api: keras_ops.not_equal
+ast_template: '{out} = keras_ops.not_equal({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Lstsq:
-  ast_template: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
-  target_api: ''
+operation: Lstsq
+backend: numpy
+target_api: ''
+ast_template: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Fftshift:
-  custom_code: 'lambda *args, **kwargs: jax.numpy.fft.fftshift(args[0], **kwargs)'
-  target_api: custom_op
+operation: Fftshift
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

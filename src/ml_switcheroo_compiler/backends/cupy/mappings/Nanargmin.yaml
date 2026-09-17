@@ -1,2 +1,6 @@
-Nanargmin:
-  target_api: cp.nanargmin
+operation: Nanargmin
+backend: cupy
+target_api: cp.nanargmin
+ast_template: '{out} = cp.nanargmin({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

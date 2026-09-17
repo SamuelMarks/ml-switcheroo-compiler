@@ -1,3 +1,6 @@
-Fft:
-  ast_template: np.fft.fft
-  target_api: ''
+operation: Fft
+backend: numpy
+target_api: ''
+ast_template: np.fft.fft
+kwarg_map: {}
+dtype_overrides: {}

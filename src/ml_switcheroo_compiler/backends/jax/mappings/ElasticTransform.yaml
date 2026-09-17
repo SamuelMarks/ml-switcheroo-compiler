@@ -1,3 +1,6 @@
-ElasticTransform:
-  ast_template: jax_elastic_transform({0}, {1})
-  target_api: ''
+operation: ElasticTransform
+backend: jax
+target_api: ''
+ast_template: jax_elastic_transform({0}, {1})
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Where:
-  target_api: keras_ops.where
+operation: Where
+backend: keras
+target_api: keras_ops.where
+ast_template: '{out} = keras_ops.where({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

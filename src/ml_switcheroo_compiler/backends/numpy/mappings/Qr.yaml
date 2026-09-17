@@ -1,3 +1,6 @@
-Qr:
-  ast_template: np.linalg.qr
-  target_api: ''
+operation: Qr
+backend: numpy
+target_api: ''
+ast_template: np.linalg.qr
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Bincount:
-  ast_template: np.bincount
-  target_api: ''
+operation: Bincount
+backend: numpy
+target_api: ''
+ast_template: np.bincount
+kwarg_map: {}
+dtype_overrides: {}

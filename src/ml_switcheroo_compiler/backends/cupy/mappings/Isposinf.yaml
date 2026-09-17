@@ -1,2 +1,6 @@
-Isposinf:
-  target_api: cp.isposinf
+operation: Isposinf
+backend: cupy
+target_api: cp.isposinf
+ast_template: '{out} = cp.isposinf({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

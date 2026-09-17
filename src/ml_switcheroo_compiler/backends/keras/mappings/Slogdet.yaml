@@ -1,2 +1,6 @@
-Slogdet:
-  target_api: keras_ops.slogdet
+operation: Slogdet
+backend: keras
+target_api: keras_ops.slogdet
+ast_template: '{out} = keras_ops.slogdet({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

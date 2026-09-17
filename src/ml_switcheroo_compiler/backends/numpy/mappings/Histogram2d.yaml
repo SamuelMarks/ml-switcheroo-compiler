@@ -1,3 +1,6 @@
-Histogram2d:
-  ast_template: np.histogram2d
-  target_api: ''
+operation: Histogram2d
+backend: numpy
+target_api: ''
+ast_template: np.histogram2d
+kwarg_map: {}
+dtype_overrides: {}

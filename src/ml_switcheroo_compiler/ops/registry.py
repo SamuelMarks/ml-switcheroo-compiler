@@ -16,21 +16,20 @@ _UTIL_REGISTRY = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
-    """_load_yaml_registry function.
+    """Load the declarative ops registry into memory without runtime parsing overhead.
 
     Args:
-        force (Any): The force parameter.
+        force (bool): Whether to force reloading the registry.
 
     Returns:
-        Any: Result.
+        None: Populates _YAML_REGISTRY in-place.
     """
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
-        from ml_switcheroo_compiler.ops.config_models import OpsRegistry
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         _YAML_REGISTRY.clear()
-        _YAML_REGISTRY.update(OpsRegistry(root=OPS_REGISTRY).model_dump())
+        _YAML_REGISTRY.update(OPS_REGISTRY)
 
 
 def register_op(name: str):
@@ -107,12 +106,18 @@ def get_op(op_name: str) -> type:
         # Create dynamic OpDef class from yaml
         op_data = _YAML_REGISTRY[op_name]
 
-        # Build dynamic class
+        # Build dynamic class purely from declarative schema data
         class DynamicOpDef(OpDef):
-            """DynamicOpDef class."""
+            """DynamicOpDef class synthesized declaratively."""
 
             op_type = op_name
             op_name_class = op_name
+            signature = op_data.get("signature")
+            dtype_rules = op_data.get("dtype_rules")
+            shape_signature = op_data.get("shape_signature")
+            invariants = op_data.get("invariants")
+            autodiff = op_data.get("autodiff")
+            variants = op_data.get("variants")
             # attach data
             _yaml_data = op_data
 

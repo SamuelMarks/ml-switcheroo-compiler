@@ -1,2 +1,6 @@
-Less:
-  target_api: keras_ops.less
+operation: Less
+backend: keras
+target_api: keras_ops.less
+ast_template: '{out} = keras_ops.less({in0}, {in1})'
+kwarg_map: {}
+dtype_overrides: {}

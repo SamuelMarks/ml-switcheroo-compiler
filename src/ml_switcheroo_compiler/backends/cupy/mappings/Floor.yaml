@@ -1,2 +1,6 @@
-Floor:
-  target_api: cp.floor
+operation: Floor
+backend: cupy
+target_api: cp.floor
+ast_template: '{out} = cp.floor({in0})'
+kwarg_map: {}
+dtype_overrides: {}

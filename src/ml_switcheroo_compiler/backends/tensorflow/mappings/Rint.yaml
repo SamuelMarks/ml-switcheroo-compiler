@@ -1,2 +1,6 @@
-Rint:
-  target_api: tf.math.rint
+operation: Rint
+backend: tensorflow
+target_api: tf.math.rint
+ast_template: '{out} = tf.math.rint({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

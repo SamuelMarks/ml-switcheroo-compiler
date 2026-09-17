@@ -1,3 +1,6 @@
-Adjoint:
-  target_api: ''
-  ast_template: mx.swapaxes(mx.conjugate({0}), -1, -2)
+operation: Adjoint
+backend: mlx
+target_api: ''
+ast_template: mx.swapaxes(mx.conjugate({0}), -1, -2)
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,0 +1,58 @@
+tiled_matmul:
+  template_name: "matmul_tiled_wgsl"
+  description: "2D tiled matrix multiplication with workgroup shared memory caching for WebGPU WGSL."
+  tile_sizes:
+    tile_m: 16
+    tile_n: 16
+    tile_k: 16
+  workgroup_size: [16, 16, 1]
+  shared_memory:
+    tile_a: "var<workgroup> tile_a: array<array<f32, 16>, 16>;"
+    tile_b: "var<workgroup> tile_b: array<array<f32, 16>, 16>;"
+  kernel_template: |
+    const TILE_M: u32 = {tile_m}u;
+    const TILE_N: u32 = {tile_n}u;
+    const TILE_K: u32 = {tile_k}u;
+
+    var<workgroup> tile_a: array<array<f32, {tile_k}>, {tile_m}>;
+    var<workgroup> tile_b: array<array<f32, {tile_n}>, {tile_k}>;
+
+    @compute @workgroup_size({tile_m}, {tile_n}, 1)
+    fn compute_matmul_tiled(
+        @builtin(global_invocation_id) global_id: vec3<u32>,
+        @builtin(local_invocation_id) local_id: vec3<u32>,
+        @builtin(workgroup_id) group_id: vec3<u32>
+    ) {
+        let row: u32 = group_id.y * TILE_M + local_id.y;
+        let col: u32 = group_id.x * TILE_N + local_id.x;
+        var acc: f32 = 0.0;
+
+        let num_tiles: u32 = ({dim_k}u + TILE_K - 1u) / TILE_K;
+        for (var t: u32 = 0u; t < num_tiles; t = t + 1u) {
+            let a_col: u32 = t * TILE_K + local_id.x;
+            if (row < {dim_m}u && a_col < {dim_k}u) {
+                tile_a[local_id.y][local_id.x] = buf_in0[row * {dim_k}u + a_col];
+            } else {
+                tile_a[local_id.y][local_id.x] = 0.0;
+            }
+
+            let b_row: u32 = t * TILE_K + local_id.y;
+            if (b_row < {dim_k}u && col < {dim_n}u) {
+                tile_b[local_id.y][local_id.x] = buf_in1[b_row * {dim_n}u + col];
+            } else {
+                tile_b[local_id.y][local_id.x] = 0.0;
+            }
+
+            workgroupBarrier();
+
+            for (var k: u32 = 0u; k < TILE_K; k = k + 1u) {
+                acc = acc + tile_a[local_id.y][k] * tile_b[k][local_id.x];
+            }
+
+            workgroupBarrier();
+        }
+
+        if (row < {dim_m}u && col < {dim_n}u) {
+            buf_out[row * {dim_n}u + col] = acc;
+        }
+    }

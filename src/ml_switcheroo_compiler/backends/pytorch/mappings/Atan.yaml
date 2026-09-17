@@ -1,2 +1,6 @@
-Atan:
-  target_api: torch.atan
+operation: Atan
+backend: pytorch
+target_api: torch.atan
+ast_template: '{out} = torch.atan({in0})'
+kwarg_map: {}
+dtype_overrides: {}

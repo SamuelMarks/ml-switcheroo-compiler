@@ -1,2 +1,6 @@
-Ndtri:
-  target_api: tf.math.ndtri
+operation: Ndtri
+backend: tensorflow
+target_api: tf.math.ndtri
+ast_template: '{out} = tf.math.ndtri({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

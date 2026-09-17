@@ -1,2 +1,6 @@
-SquaredDifference:
-  target_api: tf.math.squared_difference
+operation: SquaredDifference
+backend: tensorflow
+target_api: tf.math.squared_difference
+ast_template: '{out} = tf.math.squared_difference({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

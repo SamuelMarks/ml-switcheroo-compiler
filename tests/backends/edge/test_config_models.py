@@ -142,3 +142,59 @@ def test_onnx_and_stablehlo_config_models():
     assert sh_schema.types["float32"] == "f32"
     assert sh_schema.op_mapping["Add"] == "stablehlo.add"
     assert "dot_general" in sh_schema.lowering_rules
+
+
+def test_edge_webrtc_collectives_config_explicit_path() -> None:
+    """Test load_webrtc_collectives with an explicit path argument."""
+    import os
+
+    import ml_switcheroo_compiler.backends.edge.config_models as cm
+    from ml_switcheroo_compiler.backends.edge.config_models import load_webrtc_collectives
+
+    real_path = os.path.join(os.path.dirname(cm.__file__), "webrtc_collectives.yaml")
+    cfg = load_webrtc_collectives(path=real_path)
+    assert cfg is not None
+
+
+def test_bindgroup_schemas_config() -> None:
+    """Test loading and validating bindgroup_schemas.yaml."""
+    from ml_switcheroo_compiler.backends.edge.config_models import BindGroupSchemasConfig, load_bindgroup_schemas
+    from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import generate_dynamic_bindgroup_declarations, get_bindgroup_schemas
+
+    cfg = load_bindgroup_schemas()
+    assert isinstance(cfg, BindGroupSchemasConfig)
+    assert cfg.memory_alignment.min_storage_buffer_offset_alignment == 256
+    assert cfg.bindgroup_rules.max_storage_buffers_per_shader_stage == 8
+    assert cfg.naming_conventions.single_output_name == "buf_out_{dtype}"
+
+    dumped = get_bindgroup_schemas()
+    assert "memory_alignment" in dumped
+
+    # Dynamic declarations test
+    decl = generate_dynamic_bindgroup_declarations(num_inputs=5, num_outputs=2)
+    assert "@binding(0) var<storage, read> buf_in0_f32" in decl
+    assert "@binding(3) var<storage, read_write> buf_out_f32" in decl
+    assert "@binding(4) var<storage, read> buf_in3_f32" in decl
+    assert "@binding(5) var<storage, read> buf_in4_f32" in decl
+    assert "@binding(6) var<storage, read_write> buf_out1_f32" in decl
+
+    decl_unary = generate_dynamic_bindgroup_declarations(num_inputs=1, num_outputs=1)
+    assert "@binding(0) var<storage, read> buf_in0_f32" in decl_unary
+    assert "@binding(1) var<storage, read> buf_in1_f32" in decl_unary
+    assert "@binding(3) var<storage, read_write> buf_out_f32" in decl_unary
+
+
+def test_dtype_emulation_config() -> None:
+    """Test loading and validating dtype_emulation.yaml."""
+    from ml_switcheroo_compiler.backends.edge.config_models import DtypeEmulationConfig, load_dtype_emulation_config
+    from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_dtype_emulation_config
+
+    cfg = load_dtype_emulation_config()
+    assert isinstance(cfg, DtypeEmulationConfig)
+    assert "float64" in cfg.emulation_types
+    assert cfg.emulation_types["float64"].wgsl_type == "vec2<f32>"
+    assert "two_sum" in cfg.emulation_ops
+    assert "df64_add" in cfg.emulation_ops
+
+    dumped = get_dtype_emulation_config()
+    assert "emulation_types" in dumped

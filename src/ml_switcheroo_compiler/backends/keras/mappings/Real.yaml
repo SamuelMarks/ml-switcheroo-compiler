@@ -1,2 +1,6 @@
-Real:
-  target_api: keras_ops.real
+operation: Real
+backend: keras
+target_api: keras_ops.real
+ast_template: '{out} = keras_ops.real({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

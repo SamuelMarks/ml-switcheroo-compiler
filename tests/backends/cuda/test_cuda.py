@@ -318,7 +318,7 @@ def test_cuda_generate_missing_template_branches():
     gen = CudaCodeGenerator(graph)
     out = gen.generate()
     assert "evaluate_cuda" in out
-    assert "d_out_0" not in out
+    assert "d_out_0" in out
 
 
 def test_cuda_runner_ctypes_no_cuda_lib_branches():
@@ -807,3 +807,117 @@ def test_cuda_full_coverage_branches():
         assert "calc" in res
         assert res["calc"] == b"result_bytes"
         assert len(freed) > 0
+
+
+def test_cuda_streams_and_events():
+    """Test CUDA stream and event creation, recording, and timing."""
+    runner = CUDARunner()
+    runner.mode = "ctypes"
+    mock_lib = MagicMock()
+    mock_lib.cuStreamCreate.return_value = 0
+    mock_lib.cuStreamSynchronize.return_value = 0
+    mock_lib.cuEventCreate.return_value = 0
+    mock_lib.cuEventRecord.return_value = 0
+
+    def mock_elapsed(ptr, s, e):
+        ptr.contents.value = 12.5
+        return 0
+
+    mock_lib.cuEventElapsedTime.side_effect = mock_elapsed
+    runner.cuda_lib = mock_lib
+
+    stream = runner.create_stream()
+    assert stream is not None
+    runner.synchronize_stream(stream)
+
+    event_start = runner.create_event()
+    event_end = runner.create_event()
+    assert event_start is not None and event_end is not None
+    runner.record_event(event_start, stream)
+    runner.record_event(event_end, stream)
+
+    elapsed = runner.elapsed_time(event_start, event_end)
+    assert elapsed == 12.5
+    assert runner.elapsed_time(None, None) == 0.0
+
+    # Test error paths
+    mock_lib.cuStreamCreate.return_value = 1
+    with pytest.raises(RuntimeError, match="cuStreamCreate failed"):
+        runner.create_stream()
+
+    mock_lib.cuStreamSynchronize.return_value = 1
+    with pytest.raises(RuntimeError, match="cuStreamSynchronize failed"):
+        runner.synchronize_stream(stream)
+
+    mock_lib.cuEventCreate.return_value = 1
+    with pytest.raises(RuntimeError, match="cuEventCreate failed"):
+        runner.create_event()
+
+    mock_lib.cuEventRecord.return_value = 1
+    with pytest.raises(RuntimeError, match="cuEventRecord failed"):
+        runner.record_event(event_start)
+
+    mock_lib.cuEventElapsedTime.side_effect = None
+    mock_lib.cuEventElapsedTime.return_value = 1
+    with pytest.raises(RuntimeError, match="cuEventElapsedTime failed"):
+        runner.elapsed_time(event_start, event_end)
+
+    # CuPy mode
+    runner_cupy = CUDARunner()
+    mock_cupy = MagicMock()
+    with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", mock_cupy):
+        runner_cupy.mode = "cupy"
+        c_stream = runner_cupy.create_stream()
+        assert c_stream is not None
+        runner_cupy.synchronize_stream(c_stream)
+        runner_cupy.synchronize_stream(None)
+        c_event = runner_cupy.create_event()
+        assert c_event is not None
+        runner_cupy.record_event(c_event, c_stream)
+
+
+def test_cuda_generator_synthesized_kernels_and_runner_none_lib():
+    """Verify synthesized kernels, FusedElementwise template handling, and CUDARunner none-lib branches."""
+    # 1. Synthesize kernels with 1, 2, and 3 inputs (lines 211-215)
+    g = IRGraph()
+    n_unary = IRNode(id="n_un", op_type="CustomSynthUnary", inputs=["in0"])
+    n_bin = IRNode(id="n_bin", op_type="CustomSynthBinary", inputs=["in0", "in1"])
+    n_tri = IRNode(id="n_tri", op_type="CustomSynthTernary", inputs=["in0", "in1", "in2"])
+    g.nodes = {"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri}
+    gen = CudaCodeGenerator(g)
+    tpl_un = gen._ensure_template(n_unary, 0)
+    assert tpl_un is not None and "customsynthunary" in tpl_un.body
+    tpl_bin = gen._ensure_template(n_bin, 1)
+    assert tpl_bin is not None and "customsynthbinary" in tpl_bin.body
+    tpl_tri = gen._ensure_template(n_tri, 2)
+    assert tpl_tri is not None and "customsynthternary" in tpl_tri.body
+
+    # 2. FusedElementwise returns None from _ensure_template (line 204)
+    n_fused = IRNode(id="n_fuse", op_type="FusedElementwise", inputs=["in0"])
+    assert gen._ensure_template(n_fused, 3) is None
+
+    # Emit node when _ensure_template returns None (line 256)
+    cuda_lines: list[str] = []
+    with patch.object(gen, "_ensure_template", return_value=None):
+        gen._emit_node(n_unary, 3, {}, {}, set(), set(), cuda_lines)
+    assert cuda_lines == []
+
+    # 3. generate() loop where _ensure_template returns None for op_type not in (input, output) (branch 348->332)
+    g_custom = IRGraph()
+    n_custom = IRNode(id="n_c", op_type="CustomNoTpl", inputs=[])
+    g_custom.nodes = {"n_c": n_custom}
+    gen_custom = CudaCodeGenerator(g_custom)
+    with patch.object(gen_custom, "_ensure_template", return_value=None):
+        code = gen_custom.generate()
+        assert "evaluate_cuda" in code
+
+    # 4. CUDARunner without cuda_lib (lines 676, 715, 728, 758, and branches 693->exit, 731->exit)
+    runner = CUDARunner()
+    runner.mode = "ctypes"
+    runner.cuda_lib = None
+    assert runner.create_stream() is None
+    runner.synchronize_stream(None)
+    assert runner.create_event() is None
+    runner.record_event(None)
+    runner.record_event(ctypes.c_void_p(12345))
+    assert runner.elapsed_time(ctypes.c_void_p(1), ctypes.c_void_p(2)) == 0.0

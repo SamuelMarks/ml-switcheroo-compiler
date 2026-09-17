@@ -1,2 +1,6 @@
-CountNonzero:
-  target_api: tf.math.count_nonzero
+operation: CountNonzero
+backend: tensorflow
+target_api: tf.math.count_nonzero
+ast_template: '{out} = tf.math.count_nonzero({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,2 +1,6 @@
-Nanstd:
-  target_api: da.nanstd
+operation: Nanstd
+backend: dask
+target_api: da.nanstd
+ast_template: '{out} = da.nanstd({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

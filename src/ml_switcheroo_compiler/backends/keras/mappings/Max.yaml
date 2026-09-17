@@ -1,2 +1,6 @@
-Max:
-  target_api: keras_ops.max
+operation: Max
+backend: keras
+target_api: keras_ops.max
+ast_template: '{out} = keras_ops.max({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

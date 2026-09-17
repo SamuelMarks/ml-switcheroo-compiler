@@ -1,2 +1,6 @@
-Std:
-  target_api: da.std
+operation: Std
+backend: dask
+target_api: da.std
+ast_template: '{out} = da.std({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

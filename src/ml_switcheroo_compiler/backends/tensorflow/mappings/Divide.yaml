@@ -1,2 +1,6 @@
-Divide:
-  target_api: tf.divide
+operation: Divide
+backend: tensorflow
+target_api: tf.divide
+ast_template: '{out} = tf.divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

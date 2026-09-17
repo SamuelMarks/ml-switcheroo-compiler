@@ -1,2 +1,6 @@
-Ifftshift:
-  target_api: '''mx.fft.ifftshift({0})'''
+operation: Ifftshift
+backend: mlx
+target_api: '''mx.fft.ifftshift({0})'''
+ast_template: '{out} = ''mx.fft.ifftshift({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

@@ -1,3 +1,6 @@
-Slogdet:
-  ast_template: np.linalg.slogdet
-  target_api: ''
+operation: Slogdet
+backend: numpy
+target_api: ''
+ast_template: np.linalg.slogdet
+kwarg_map: {}
+dtype_overrides: {}

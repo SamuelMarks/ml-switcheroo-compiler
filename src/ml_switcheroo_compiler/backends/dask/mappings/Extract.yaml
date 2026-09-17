@@ -1,2 +1,6 @@
-Extract:
-  target_api: da.extract
+operation: Extract
+backend: dask
+target_api: da.extract
+ast_template: '{out} = da.extract({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

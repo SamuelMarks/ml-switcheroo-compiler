@@ -1,2 +1,6 @@
-Pinv:
-  target_api: '''mx.linalg.pinv({0})'''
+operation: Pinv
+backend: mlx
+target_api: '''mx.linalg.pinv({0})'''
+ast_template: '{out} = ''mx.linalg.pinv({0})''({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

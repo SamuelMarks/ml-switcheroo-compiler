@@ -1,2 +1,6 @@
-Vstack:
-  target_api: cp.vstack
+operation: Vstack
+backend: cupy
+target_api: cp.vstack
+ast_template: '{out} = cp.vstack({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

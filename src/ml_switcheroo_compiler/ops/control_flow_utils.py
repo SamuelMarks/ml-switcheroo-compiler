@@ -16,10 +16,10 @@ intermediate representation (IR) graph for compilation
 import uuid
 from typing import Any, Callable
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir.types import TensorSpec
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRBlock
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
@@ -51,6 +51,8 @@ def _wrap_proxy_inputs(args, subgraph):
             )
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
+            if hasattr(subgraph, "input_specs"):
+                subgraph.input_specs[in_id] = TensorSpec(shape=arg.shape, dtype=arg.dtype)
             proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
             proxy.concrete_value = arg.data
             proxy_tensor = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
@@ -91,12 +93,12 @@ def _get_tensor_ids(obj) -> list[str]:
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out, subgraph: IRBlock) -> str:
+def _process_trace_outputs(out: Any, subgraph: LogicalGraph) -> str:
     """Evaluate _process_trace_outputs operation.
 
     Args:
         out (Any): The out parameter.
-        subgraph (IRBlock): The subgraph parameter.
+        subgraph (LogicalGraph): The subgraph parameter.
 
     Returns:
         str: Result.
@@ -110,11 +112,12 @@ def _process_trace_outputs(out, subgraph: IRBlock) -> str:
         shape_metadata=(),
     )
     subgraph.nodes[out_node.id] = out_node
+    subgraph.outputs = [out_node.id]
     return out_node.id
 
 
-def _trace_function(func, args: tuple[Tensor, ...], name: str) -> IRBlock:
-    """Trace a Python function's execution into an IRBlock.
+def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: str) -> LogicalGraph:
+    """Trace a Python function's execution into a LogicalGraph.
 
     Args:
         func (Callable): The func parameter.
@@ -122,7 +125,7 @@ def _trace_function(func, args: tuple[Tensor, ...], name: str) -> IRBlock:
         name (str): The name parameter.
 
     Returns:
-        IRBlock: Result.
+        LogicalGraph: Result.
     """
     from ml_switcheroo_compiler.core.config import config as compiler_config
 
@@ -135,6 +138,7 @@ def _trace_function(func, args: tuple[Tensor, ...], name: str) -> IRBlock:
 
     subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
+    subgraph.inputs = input_ids
 
     try:
         out = func(*proxy_args)
@@ -145,9 +149,6 @@ def _trace_function(func, args: tuple[Tensor, ...], name: str) -> IRBlock:
         global_tracing_state.is_tracing = is_tracing
         compiler_config.eager_mode = prev_eager
 
-    return IRBlock(
-        id=name,
-        nodes=list(subgraph.nodes.values()),
-        inputs=input_ids,
-        outputs=[out_node_id],
-    )
+    subgraph.id = name
+    subgraph.outputs = [out_node_id]
+    return subgraph

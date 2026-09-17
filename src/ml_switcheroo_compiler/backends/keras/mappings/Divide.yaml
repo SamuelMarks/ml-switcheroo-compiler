@@ -1,2 +1,6 @@
-Divide:
-  target_api: keras_ops.divide
+operation: Divide
+backend: keras
+target_api: keras_ops.divide
+ast_template: '{out} = keras_ops.divide({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

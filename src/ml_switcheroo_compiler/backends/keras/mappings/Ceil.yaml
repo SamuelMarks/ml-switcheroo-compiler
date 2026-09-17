@@ -1,2 +1,6 @@
-Ceil:
-  target_api: keras_ops.ceil
+operation: Ceil
+backend: keras
+target_api: keras_ops.ceil
+ast_template: '{out} = keras_ops.ceil({in0})'
+kwarg_map: {}
+dtype_overrides: {}

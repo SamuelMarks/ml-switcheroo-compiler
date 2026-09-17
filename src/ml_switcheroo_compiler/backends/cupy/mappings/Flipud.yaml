@@ -1,2 +1,6 @@
-Flipud:
-  target_api: cp.flipud
+operation: Flipud
+backend: cupy
+target_api: cp.flipud
+ast_template: '{out} = cp.flipud({inputs})'
+kwarg_map: {}
+dtype_overrides: {}

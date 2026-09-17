@@ -1,0 +1,425 @@
+FFT:
+  autodiff:
+    vjp_rule_id: FFT_vjp
+    jvp_rule_id: FFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Fft operation.
+  domain: signal
+  input_tensors: &id001
+  - x
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: FFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.fft
+    dask:
+      eager: da.fft
+    edge_stablehlo:
+      opcode: stablehlo.fft
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax: {}
+    keras:
+      eager: keras_ops.fft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx: {}
+    numpy:
+      generator: np.fft.fft
+    pytorch: {}
+    tensorflow: {}
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+IFFT:
+  autodiff:
+    vjp_rule_id: IFFT_vjp
+    jvp_rule_id: IFFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Ifft operation.
+  domain: signal
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: IFFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.fft.ifft
+    dask:
+      eager: da.fft.ifft
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.ifft
+    keras:
+      eager: keras_ops.ifft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.ifft
+    numpy:
+      generator: np.fft.ifft
+    pytorch:
+      generator: torch.fft.ifft({0}, n={n}, dim={axis})
+    tensorflow:
+      eager: tf.ifft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+IRFFT:
+  autodiff:
+    vjp_rule_id: IRFFT_vjp
+    jvp_rule_id: IRFFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Irfft operation.
+  domain: signal
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: IRFFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.fft.irfft
+    dask:
+      eager: da.fft.irfft
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.irfft
+    keras:
+      eager: keras_ops.irfft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.irfft
+    numpy:
+      eager: numpy.irfft
+    pytorch:
+      generator: torch.fft.irfft({0}, n={n}, dim={axis})
+    tensorflow:
+      eager: tf.irfft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+ISTFT:
+  autodiff:
+    vjp_rule_id: ISTFT_vjp
+    jvp_rule_id: ISTFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Istft operation.
+  domain: signal
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: ISTFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)
+      template: binary
+    jax:
+      eager: jax.numpy.istft
+    keras:
+      eager: keras_ops.istft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.istft
+    numpy:
+      eager: numpy.istft
+    pytorch:
+      generator: torch.istft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length},
+        window={window}, center={center}, normalized={normalized}, onesided={onesided},
+        length={length}, return_complex={return_complex})
+    tensorflow:
+      eager: tf.istft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+RFFT:
+  autodiff:
+    vjp_rule_id: RFFT_vjp
+    jvp_rule_id: RFFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Rfft operation.
+  domain: signal
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: RFFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy:
+      eager: cp.fft.rfft
+    dask:
+      eager: da.fft.rfft
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.rfft
+    keras:
+      eager: keras_ops.rfft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.rfft
+    numpy:
+      generator: np.fft.rfft
+    pytorch:
+      eager: torch.rfft
+    tensorflow:
+      eager: tf.rfft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null
+STFT:
+  autodiff:
+    vjp_rule_id: STFT_vjp
+    jvp_rule_id: STFT_jvp
+    vjp: null
+    jvp: null
+  broadcast_semantics: numpy
+  description: The Stft operation.
+  domain: signal
+  input_tensors: *id001
+  math_semantics:
+    differentiable: true
+    is_associative: false
+    is_commutative: false
+    is_idempotent: false
+  operation: STFT
+  output_tensors:
+  - out
+  signature:
+    args: []
+    input_tensors:
+    - x
+    output_tensors:
+    - out
+    has_variadic_args: false
+    has_variadic_kwargs: false
+    keyword_constraints: {}
+    keyword_defaults: {}
+  type_promotion: standard
+  variants:
+    cupy: {}
+    dask: {}
+    edge_wasm_simd:
+      scalar_expr: in0_val
+      simd_expr: in0_val
+      template: unary
+    edge_wgsl:
+      expr: buf_in0_f32[in0_offset]
+      template: unary
+    jax:
+      eager: jax.numpy.stft
+    keras:
+      eager: keras_ops.stft
+    llvm_cpp:
+      scalar_expr: in0_val
+      template: unary
+    mlx:
+      eager: mlx.core.stft
+    numpy:
+      eager: numpy.stft
+    pytorch:
+      generator: torch.stft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length},
+        window={window}, center={center}, normalized={normalized}, onesided={onesided},
+        return_complex={return_complex})
+    tensorflow:
+      eager: tf.stft
+  dtype_rules:
+    promotion_matrix: standard
+    allowed_input_dtypes:
+    - all
+    output_dtype_inference: in0
+  shape_signature:
+    pattern: in0
+    symbolic_expression: '[*shape] -> [*shape]'
+    category: unary
+  invariants:
+    is_commutative: false
+    is_associative: false
+    is_idempotent: false
+    identity_value: null
+    absorbing_value: null

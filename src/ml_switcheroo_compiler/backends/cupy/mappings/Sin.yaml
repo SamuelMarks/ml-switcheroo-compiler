@@ -1,2 +1,6 @@
-Sin:
-  target_api: cp.sin
+operation: Sin
+backend: cupy
+target_api: cp.sin
+ast_template: '{out} = cp.sin({in0})'
+kwarg_map: {}
+dtype_overrides: {}

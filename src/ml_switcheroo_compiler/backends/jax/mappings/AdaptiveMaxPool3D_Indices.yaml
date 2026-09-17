@@ -1,4 +1,6 @@
-AdaptiveMaxPool3D_Indices:
-  custom_code: 'lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs),
-    _execute_adaptive_max_pool(*args, **kwargs))'
-  target_api: custom_op
+operation: AdaptiveMaxPool3D_Indices
+backend: jax
+target_api: custom_op
+ast_template: '{out} = {in0}'
+kwarg_map: {}
+dtype_overrides: {}

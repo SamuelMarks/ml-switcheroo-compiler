@@ -1,2 +1,6 @@
-Cos:
-  target_api: torch.cos
+operation: Cos
+backend: pytorch
+target_api: torch.cos
+ast_template: '{out} = torch.cos({in0})'
+kwarg_map: {}
+dtype_overrides: {}

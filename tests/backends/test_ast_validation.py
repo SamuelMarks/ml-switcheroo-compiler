@@ -5,6 +5,7 @@ def test_ast_control_flow():
     code = """
 x = torch.zeros(10)
 y = torch.ones(10)
+s = x[0:5]
 if x[0] > 0:
     z = x + y
 while x[1] < 10:

@@ -1,2 +1,6 @@
-Softmax:
-  target_api: tf.math.softmax
+operation: Softmax
+backend: tensorflow
+target_api: tf.math.softmax
+ast_template: '{out} = tf.math.softmax({inputs})'
+kwarg_map: {}
+dtype_overrides: {}
