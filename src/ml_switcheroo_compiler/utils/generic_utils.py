@@ -15,7 +15,7 @@ import time
 import typing
 import urllib.request
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ml_switcheroo_compiler.core import config
@@ -52,9 +52,9 @@ class CacheConfig:
 class GetFileConfig:
     """GetFile configuration."""
 
-    hash_config: HashConfig = HashConfig()
-    archive_config: ArchiveConfig = ArchiveConfig()
-    cache_config: CacheConfig = CacheConfig()
+    hash_config: HashConfig = field(default_factory=HashConfig)
+    archive_config: ArchiveConfig = field(default_factory=ArchiveConfig)
+    cache_config: CacheConfig = field(default_factory=CacheConfig)
 
 
 @dataclass

@@ -5,7 +5,7 @@ from .common_ops import _emit_signal_node
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Signal processing operations."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -34,7 +34,6 @@ class Welch(OpDef):
 
 
 @dataclass
-@dataclass
 class WindowConfig:
     """Configuration class for window config."""
 
@@ -60,8 +59,8 @@ class FilterState:
 class WelchConfig:
     """Configuration class for welch config."""
 
-    window_config: WindowConfig = WindowConfig()
-    filter_state: FilterState = FilterState()
+    window_config: WindowConfig = field(default_factory=WindowConfig)
+    filter_state: FilterState = field(default_factory=FilterState)
 
 
 def welch(

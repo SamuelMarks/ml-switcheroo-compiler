@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 
@@ -71,10 +71,10 @@ class DataLoaderConfig:
 class DatasetConfig:
     """Dataset configuration options."""
 
-    batch_config: BatchConfig = BatchConfig()
-    io_config: IOConfig = IOConfig()
-    augmentation: DataAugmentationConfig = DataAugmentationConfig()
-    loader: DataLoaderConfig = DataLoaderConfig()
+    batch_config: BatchConfig = field(default_factory=BatchConfig)
+    io_config: IOConfig = field(default_factory=IOConfig)
+    augmentation: DataAugmentationConfig = field(default_factory=DataAugmentationConfig)
+    loader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
 
 
 if TYPE_CHECKING:
