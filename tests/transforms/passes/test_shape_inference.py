@@ -456,3 +456,72 @@ def test_shape_inference_subgraphs() -> None:
     assert sub.nodes["sub_in"].shape_metadata == (4, 8)
     assert sub.nodes["sub_add"].shape_metadata == (4, 8)
     assert parent.nodes["if_node"].shape_metadata == (4, 8)
+
+
+def test_shape_inference_subgraph_branches_exhaustive() -> None:
+    """Test all branches in shape_inference_pass subgraph handling.
+
+    Covers:
+    - subgraphs without nodes / inputs attributes
+    - parent_inp not in shapes or shapes[parent_inp] is None
+    - inp_id not in sub.nodes
+    - shape_inference_pass(sub) returns False
+    - out_shape is None and inferring out_shape from sub.outputs
+    - sub without outputs or empty outputs or sub.outputs[0] not in sub.nodes
+    - sub.outputs[0] with None or valid shape_metadata
+    """
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    # 1. Subgraph with no outputs, subgraph not a graph, etc.
+    empty_sub = LogicalGraph(name="empty_sub")
+    empty_sub.inputs = ["missing_in"]
+    # missing_in not in empty_sub.nodes
+
+    sub_no_out = LogicalGraph(name="sub_no_out")
+    sub_no_out.inputs = ["in_p"]
+    sub_no_out.nodes["in_p"] = LogicalNode(id="in_p", op_type="Input")
+    sub_no_out.outputs = []  # empty outputs
+
+    sub_missing_out_node = LogicalGraph(name="sub_missing_out")
+    sub_missing_out_node.outputs = ["nonexistent_out_id"]
+
+    sub_none_out_shape = LogicalGraph(name="sub_none_shape")
+    sub_none_out_shape.outputs = ["out_n"]
+    sub_none_out_shape.nodes["out_n"] = LogicalNode(id="out_n", op_type="Identity", shape_metadata=None)
+
+    sub_valid = LogicalGraph(name="sub_valid")
+    sub_valid.outputs = ["out_valid"]
+    sub_valid.nodes["out_valid"] = LogicalNode(id="out_valid", op_type="Identity", shape_metadata=(5, 6))
+
+    parent = LogicalGraph(name="parent")
+    # parent input with None shape and with concrete shape
+    parent.inputs = ["none_input", "untracked_input", "concrete_input"]
+    parent.nodes["none_input"] = LogicalNode(id="none_input", op_type="Input", shape_metadata=None)
+    parent.nodes["concrete_input"] = LogicalNode(id="concrete_input", op_type="Input", shape_metadata=(2, 3))
+
+    # empty_sub has sub.inputs = ["missing_in"]. Wire parent input "concrete_input" to it.
+    # parent_inp is "concrete_input" (which is in shapes and not None),
+    # but "missing_in" is NOT in empty_sub.nodes. This tests branch 176 -> 174 (the False branch of `if inp_id in sub.nodes`).
+    # sub_no_out has sub.inputs = ["in_p"]. Wire parent input "none_input" (in shapes, but shapes[parent_inp] is None) and
+    # "unknown_parent_inp" (not in shapes) to hit the False branch of `if parent_inp in shapes and shapes[parent_inp] is not None:` (175 -> 174).
+    sub_no_out.inputs = ["in_p", "in_p2"]
+
+    # Node with non-graph subgraph, empty_sub, sub_no_out, sub_missing_out_node, sub_none_out_shape, sub_valid
+    parent.nodes["complex_node"] = LogicalNode(
+        id="complex_node",
+        op_type="UnknownCustomOp",
+        inputs=["concrete_input", "none_input", "untracked_input"],
+        subgraphs={
+            "not_graph": "plain_string_attr",  # not having nodes/inputs
+            "empty_sub": empty_sub,
+            "sub_no_out": sub_no_out,
+            "sub_missing_out": sub_missing_out_node,
+            "sub_none": sub_none_out_shape,
+            "sub_valid": sub_valid,
+        },
+    )
+    parent.outputs = ["complex_node"]
+
+    modified = shape_inference_pass(parent)
+    assert modified is True
+    assert parent.nodes["complex_node"].shape_metadata == (5, 6)

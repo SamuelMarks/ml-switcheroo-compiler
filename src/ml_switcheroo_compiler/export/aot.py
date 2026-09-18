@@ -75,8 +75,20 @@ def _prepare_proxy_args(args):
         if hasattr(a, "shape") and hasattr(a, "dtype"):
             arg_id = f"arg_{i}"
             shape = getattr(a, "shape", ())
-            proxy = ProxyTensor(id=arg_id, shape=shape, dtype=str(getattr(a, "dtype", "")))
-            dtype = getattr(a, "dtype", DType.Float32)
+            raw_dt = getattr(a, "dtype", DType.Float32)
+            if isinstance(raw_dt, DType):
+                dtype = raw_dt
+                dt_str = raw_dt.value
+            else:
+                dt_str = getattr(raw_dt, "value", str(raw_dt))
+                if dt_str.startswith("DType."):
+                    dt_str = dt_str.split(".", 1)[1]
+                if dt_str in DType._value2member_map_:
+                    dtype = DType(dt_str)
+                else:
+                    dtype = DType.Float32
+                    dt_str = "float32"
+            proxy = ProxyTensor(id=arg_id, shape=shape, dtype=dt_str)
             device = getattr(a, "device", "cpu")
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
             TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)

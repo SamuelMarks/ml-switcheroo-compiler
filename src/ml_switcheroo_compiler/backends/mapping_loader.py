@@ -262,7 +262,11 @@ def dispatch_eager_op(
     if func is None or not callable(func):
         raise BackendNotSupportedError(f"Operation '{op_type}' target API '{op_spec.target_api}' could not be resolved for {backend_name}.")
 
-    kwarg_trans = getattr(op_spec, "kwarg_translations", {}) or {}
+    kwarg_trans: dict[str, str] = dict(getattr(op_spec, "kwarg_translations", {}) or {})
+    kwarg_map: dict[str, Optional[str]] = getattr(op_spec, "kwarg_map", {}) or {}
+    for src_k, dst_k in kwarg_map.items():
+        if dst_k and src_k not in kwarg_trans:
+            kwarg_trans[src_k] = dst_k
     translated_kwargs = translate_kwargs(kwarg_trans, kwargs)
     default_kwargs = getattr(op_spec, "default_kwargs", {}) or {}
     for def_k, def_v in default_kwargs.items():

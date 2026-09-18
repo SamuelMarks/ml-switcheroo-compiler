@@ -147,3 +147,26 @@ def test_backends_wgsl_empty_kernels() -> None:
                 assert conf == {"bindings": {}, "op_mappings": {}, "templates": {}}
     finally:
         wp._WGSL_KERNELS = old_kernels
+
+
+def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
+    """Test get_wgsl_grounding_schema when json file is missing and validate_wgsl_statement branches."""
+    from unittest import mock
+
+    import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
+
+    # 1. get_wgsl_grounding_schema when schema_path does not exist
+    wp._WGSL_GROUNDING_SCHEMA = None
+    with mock.patch("os.path.exists", return_value=False):
+        schema = wp.get_wgsl_grounding_schema()
+        assert schema == {"ops": []}
+
+    # Reset cache
+    wp._WGSL_GROUNDING_SCHEMA = None
+
+    # 2. validate_wgsl_statement where ops is not a list (or op_entry is not a dict)
+    with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_grounding_schema", return_value={"ops": "not_a_list"}):
+        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None):
+            with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": "not_a_dict"}):
+                res = wp.validate_wgsl_statement("non_existent_op")
+                assert res is False

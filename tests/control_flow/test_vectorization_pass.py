@@ -292,3 +292,79 @@ def test_vectorization_exhaustive_branches():
     outer_oob.outputs = ["vmap_oob"]
     opt_oob = vectorization_pass(outer_oob)
     assert "vmap_oob" in opt_oob.nodes
+
+    # Case where body_graph is NOT IRGraph (e.g., custom object or LogicalGraph) with nodes as list or dict
+    class MockGraphNodesList:
+        """Mock graph representation with nodes as a list."""
+
+        def __init__(self, inputs: list[str], outputs: list[str], nodes: list[IRNode]) -> None:
+            """Initialize MockGraphNodesList.
+
+            Args:
+                inputs: List of input node IDs.
+                outputs: List of output node IDs.
+                nodes: List of nodes.
+            """
+            self.id = "mock_list_body"
+            self.inputs = inputs
+            self.outputs = outputs
+            self.nodes = nodes
+
+    b_in_node = IRNode(id="b_in_list", op_type="Input", inputs=[], shape_metadata=(1,))
+    b_out_node = IRNode(id="b_add_list", op_type="Add", inputs=["b_in_list", "b_in_list"], shape_metadata=(1,))
+    mock_body_list = MockGraphNodesList(inputs=["b_in_list"], outputs=["b_add_list"], nodes=[b_in_node, b_out_node])
+
+    outer_list = IRGraph(name="outer_list")
+    outer_list.inputs = ["x_list"]
+    outer_list.nodes["x_list"] = IRNode(id="x_list", op_type="Input", inputs=[], shape_metadata=(3,))
+    outer_list.nodes["vmap_list"] = IRNode(
+        id="vmap_list",
+        op_type="Vmap",
+        inputs=["x_list"],
+        attributes={"body": mock_body_list, "in_axes": 0, "out_axes": 0},
+    )
+    outer_list.outputs = ["vmap_list"]
+    opt_list = vectorization_pass(outer_list)
+    assert "vmap_list" in opt_list.nodes
+
+    # Mock body graph with nodes as dict (and mixed non-IRNode node)
+    class MockGraphNodesDict:
+        """Mock graph representation with nodes as a dictionary."""
+
+        def __init__(self, inputs: list[str], outputs: list[str], nodes: dict[str, object]) -> None:
+            """Initialize MockGraphNodesDict.
+
+            Args:
+                inputs: List of input node IDs.
+                outputs: List of output node IDs.
+                nodes: Dictionary mapping IDs to node objects.
+            """
+            self.id = "mock_dict_body"
+            self.inputs = inputs
+            self.outputs = outputs
+            self.nodes = nodes
+
+    from ml_switcheroo_ir import LogicalNode
+
+    pure_logical_node = LogicalNode(id="b_add_dict", op_type="Add", inputs=["b_in_dict", "b_in_dict"], shape_metadata=(1,))
+    mock_body_dict = MockGraphNodesDict(
+        inputs=["b_in_dict"],
+        outputs=["b_add_dict"],
+        nodes={
+            "b_in_dict": IRNode(id="b_in_dict", op_type="Input", inputs=[], shape_metadata=(1,)),
+            "b_add_dict": pure_logical_node,
+        },
+    )
+
+    outer_dict = IRGraph(name="outer_dict")
+    outer_dict.inputs = ["x_dict"]
+    outer_dict.nodes["x_dict"] = IRNode(id="x_dict", op_type="Input", inputs=[], shape_metadata=(3,))
+    outer_dict.nodes["vmap_dict"] = IRNode(
+        id="vmap_dict",
+        op_type="Vmap",
+        inputs=["x_dict"],
+        attributes={"body": mock_body_dict, "in_axes": 0, "out_axes": 0},
+    )
+    outer_dict.outputs = ["vmap_dict"]
+    opt_dict = vectorization_pass(outer_dict)
+    assert "vmap_dict" in opt_dict.nodes

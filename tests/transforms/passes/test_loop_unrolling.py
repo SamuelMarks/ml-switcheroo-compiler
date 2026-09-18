@@ -160,3 +160,45 @@ def test_loop_unrolling_extra_coverage():
     g.nodes["n4"] = n4
 
     loop_unrolling_pass(g)
+
+
+def test_loop_unrolling_clone_logical_node_and_non_irnode() -> None:
+    """Test clone_subgraph with plain LogicalNode and unroll_loops with non-IRNode nodes."""
+    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_compiler.transforms.passes.loop_unrolling import clone_subgraph, unroll_loops
+
+    class MockNonIRNode:
+        """Mock node class that does not inherit from IRNode."""
+
+        def __init__(self, id: str, op_type: str, inputs: list[str]) -> None:
+            """Initialize MockNonIRNode instance.
+
+            Args:
+                id: Node ID.
+                op_type: Operator type.
+                inputs: Node inputs.
+            """
+            self.id = id
+            self.op_type = op_type
+            self.inputs = inputs
+            self.attributes: dict[str, object] = {}
+            self.domain = ""
+            self.version = 1
+            self.shape_metadata = None
+            self.source_ast_ref = None
+            self.sharding = None
+
+    # 1. clone_subgraph when nodes_to_clone contains a non-IRNode object
+    pure_node = MockNonIRNode(id="ln1", op_type="Add", inputs=[])
+    sub_g = IRGraph(name="sub_g")
+    sub_g.nodes["ln1"] = pure_node  # type: ignore[assignment]
+    id_map: dict[str, str] = {}
+    cloned = clone_subgraph(sub_g, prefix="step_0", id_map=id_map)
+    assert len(cloned) == 1
+    assert cloned[0].id == "step_0_ln1"
+
+    # 2. unroll_loops when graph contains non-IRNode object
+    g = IRGraph(name="test_g")
+    g.nodes["plain_node"] = MockNonIRNode(id="plain_node", op_type="Identity", inputs=[])  # type: ignore[assignment]
+    res = unroll_loops(g)
+    assert "plain_node" in res.nodes

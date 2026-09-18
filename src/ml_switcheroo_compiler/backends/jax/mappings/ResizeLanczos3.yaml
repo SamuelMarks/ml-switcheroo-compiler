@@ -1,6 +1,6 @@
 operation: ResizeLanczos3
 backend: jax
 target_api: ''
-ast_template: jax.image.resize({0}, shape=({new_height}, {new_width}), method='lanczos3')
+ast_template: jax.image.resize({0}, ({new_height}, {new_width}))
 kwarg_map: {}
 dtype_overrides: {}

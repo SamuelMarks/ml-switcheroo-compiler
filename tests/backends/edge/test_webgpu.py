@@ -945,3 +945,34 @@ def test_wgsl_grounding_schema_validation() -> None:
     assert validate_wgsl_statement("storageStore") is True
     assert validate_wgsl_statement("add") is True
     assert validate_wgsl_statement("non_existent_fake_wgsl_op") is False
+
+
+def test_webgpu_multi_outputs_attribute_and_empty_nodes() -> None:
+    """Verify WebGPU generation when node has attributes['outputs'] and when graph has no nodes."""
+    # 1. Node with attributes['outputs'] as list
+    graph = IRGraph(name="test_multi_out_attr")
+    in_node = IRNode(id="in_0", op_type="Input", inputs=[])
+    in_node.shape_metadata = [2, 2]
+    add_node = IRNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])
+    add_node.shape_metadata = [2, 2]
+    add_node.outputs = None  # type: ignore[assignment]
+    add_node.attributes = {}
+    graph.nodes["in_0"] = in_node
+    graph.nodes["add_0"] = add_node
+    graph.sorted_nodes = [in_node, add_node]
+    graph.inputs = ["in_0"]
+    graph.outputs = ["add_0"]
+
+    gen = WebGPUCodeGenerator(graph, [])
+    js_code = gen.generate()
+    assert "add_0" in js_code or "buf_arena_" in js_code
+
+    # 2. Graph with empty sorted_nodes
+    empty_graph = IRGraph(name="empty_graph")
+    empty_graph.nodes = {}
+    empty_graph.sorted_nodes = []
+    empty_graph.inputs = []
+    empty_graph.outputs = []
+    gen_empty = WebGPUCodeGenerator(empty_graph, [])
+    js_empty = gen_empty.generate()
+    assert "@group(0)" in js_empty

@@ -229,11 +229,14 @@ class ASTToIRVisitor(cst.CSTVisitor):
 
         return False
 
-    def visit_Return(self, node: cst.Return) -> None:
+    def visit_Return(self, node: cst.Return) -> bool:
         """Visit return statement to capture graph outputs.
 
         Args:
             node (cst.Return): Return statement node.
+
+        Returns:
+            bool: False to halt duplicate child traversal in visitor.
         """
         self.last_node_id = None
         if isinstance(node.value, cst.Name) and node.value.value in self.var_table:
@@ -243,6 +246,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             node.value.visit(self)
             if self.last_node_id:
                 self.graph.outputs.append(self.last_node_id)
+        return False
 
     def _resolve_call_arg(self, arg_val: cst.BaseExpression, inputs: list[str]) -> None:
         """Resolve a single positional call argument into inputs list.

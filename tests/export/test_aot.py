@@ -237,6 +237,28 @@ def test_aot_no_func_wrapper():
     assert c(t1) == "fallback_empty"
 
 
+def test_aot_custom_dtype_string_prefix() -> None:
+    """Test _prepare_proxy_args with an input object whose dtype is a string starting with DType."""
+
+    class CustomArray:
+        def __init__(self, dt: str) -> None:
+            self.shape = (2, 3)
+            self.dtype = dt
+
+    def f(x: object) -> object:
+        return x
+
+    c = compile_function(f, backend="numpy")
+    res1 = c(CustomArray("DType.float32"))
+    assert res1 is not None
+
+    res2 = c(CustomArray("float32"))
+    assert res2 is not None
+
+    res3 = c(CustomArray("unknown_custom_dtype"))
+    assert res3 is not None
+
+
 def test_aot_no_func_wrapper_tensor():
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 

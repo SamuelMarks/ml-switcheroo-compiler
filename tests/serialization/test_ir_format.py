@@ -136,6 +136,53 @@ def test_ir_format_serialization_edge_branches() -> None:
     assert g_empty_yaml.name == "graph"
     assert len(g_empty_nodes.nodes) == 0
 
+    # 5. Test initializers with primitive types and custom object fallback, subgraphs without nodes, and invalid subgraph in deserialization
+    class CustomInitValue:
+        def __str__(self) -> str:
+            return "custom_str_repr"
+
+    g_init_edge = IRGraph(name="init_edge")
+    g_init_edge.initializers = {
+        "int_val": 123,
+        "custom_obj": CustomInitValue(),
+    }
+    # Node with subgraphs containing non-graph item
+    n_with_bad_sub = IRNode(
+        id="n_bad_sub",
+        op_type="CustomOp",
+        subgraphs={"invalid_sub": "not_a_subgraph_with_nodes"},  # type: ignore[dict-item]
+    )
+    g_init_edge.nodes["n_bad_sub"] = n_with_bad_sub
+    g_init_edge.inputs = None  # type: ignore[assignment]  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
+
+    init_edge_data = _build_serialization_dict(g_init_edge)
+    assert init_edge_data["initializers"]["int_val"] == 123
+    assert init_edge_data["initializers"]["custom_obj"] == "custom_str_repr"
+    assert "invalid_sub" not in init_edge_data["nodes"]["n_bad_sub"].get("subgraphs", {})
+
+    # Deserialization with node containing invalid non-dict sub_data or non-dict subgraphs field
+    raw_bad_sub_data: dict[str, object] = {
+        "name": "g_bad_sub",
+        "inputs": "not_a_list",
+        "initializers": "not_a_dict",
+        "nodes": {
+            "node_sub": {
+                "op_type": "Identity",
+                "subgraphs": {
+                    "bad_sub_1": "string_not_dict",
+                },
+            },
+            "node_sub_not_dict": {
+                "op_type": "Identity",
+                "subgraphs": "not_a_dict_subgraph_field",
+            },
+        },
+    }
+    g_parsed_bad_sub = _parse_serialization_dict(raw_bad_sub_data)
+    assert "node_sub" in g_parsed_bad_sub.nodes
+    assert len(g_parsed_bad_sub.nodes["node_sub"].subgraphs) == 0
+    assert "node_sub_not_dict" in g_parsed_bad_sub.nodes
+
 
 def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
     """Test bidirectional shape learning and SymInt dynamic bounds resolution."""

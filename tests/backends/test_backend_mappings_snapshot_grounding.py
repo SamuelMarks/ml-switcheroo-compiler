@@ -116,3 +116,12 @@ def test_validate_parameter_contract_raise_on_error() -> None:
         engine.validate_parameter_contract("pytorch", "torch.matmul", 10, ["fake_kw"], raise_on_error=True)
 
     assert "Too many positional arguments" in str(exc_info.value)
+
+
+def test_all_backend_mappings_zero_parameter_hallucinations() -> None:
+    """Validate that 100% of all backend mapping files have zero parameter hallucinations."""
+    from scripts.validate_parameters import validate_backend_mappings_parameters
+
+    engine: SnapshotGroundingEngine = SnapshotGroundingEngine()
+    errors: list[str] = validate_backend_mappings_parameters(engine)
+    assert not errors, "Detected parameter hallucinations in backend mappings:\n" + "\n".join(errors)

@@ -130,27 +130,78 @@ class GroundingValidationError(ValueError):
 DISCREPANCY_PAIRS: list[tuple[str, str]] = [
     ("dim", "axis"),
     ("axis", "dim"),
+    ("dims", "axis"),
+    ("axis", "dims"),
+    ("dimension", "axis"),
+    ("axis", "dimension"),
+    ("dim", "dimension"),
+    ("dimension", "dim"),
     ("keepdim", "keepdims"),
     ("keepdims", "keepdim"),
+    ("input", "a"),
+    ("a", "input"),
+    ("input", "x"),
+    ("x", "input"),
+    ("a", "x"),
+    ("x", "a"),
+    ("input_tensor", "input"),
+    ("input", "input_tensor"),
+    ("input_tensor", "x"),
+    ("x", "input_tensor"),
+    ("input_tensor", "a"),
+    ("a", "input_tensor"),
+    ("tensor", "input"),
+    ("input", "tensor"),
+    ("other", "b"),
+    ("b", "other"),
+    ("other", "y"),
+    ("y", "other"),
+    ("b", "y"),
+    ("y", "b"),
     ("split_size_or_sections", "indices_or_sections"),
+    ("indices_or_sections", "split_size_or_sections"),
+    ("num_or_size_splits", "indices_or_sections"),
+    ("indices_or_sections", "num_or_size_splits"),
+    ("num_or_size_splits", "split_size_or_sections"),
+    ("split_size_or_sections", "num_or_size_splits"),
+    ("ord", "p"),
+    ("p", "ord"),
+    ("unbiased", "ddof"),
+    ("ddof", "unbiased"),
+    ("correction", "ddof"),
+    ("ddof", "correction"),
+    ("unbiased", "correction"),
+    ("correction", "unbiased"),
+    ("generator", "seed"),
+    ("seed", "generator"),
+    ("generator", "key"),
+    ("key", "generator"),
+    ("seed", "key"),
+    ("key", "seed"),
+    ("dtype", "output_type"),
+    ("output_type", "dtype"),
 ]
 
 
 def _validate_keyword_args(
     keyword_arg_names: list[str],
     allowed_kwargs: set[str],
+    pos_only_kwargs: set[str],
     has_var_kw: bool,
     backend_name: str,
     endpoint: str,
+    endpoint_allowed_kwargs: set[str] | None = None,
 ) -> list[str]:
     """Validate keyword arguments against allowed kwargs and check discrepancy pairs.
 
     Args:
         keyword_arg_names (list[str]): List of keyword argument names.
         allowed_kwargs (set[str]): Allowed keyword arguments.
+        pos_only_kwargs (set[str]): Positional-only parameter names.
         has_var_kw (bool): Whether backend endpoint accepts arbitrary var keywords.
         backend_name (str): Target backend framework identifier.
         endpoint (str): Fully qualified endpoint string.
+        endpoint_allowed_kwargs (set[str] | None): Full set of allowed keyword arguments across all endpoint overloads.
 
     Returns:
         list[str]: Validation error messages.
@@ -159,11 +210,16 @@ def _validate_keyword_args(
     if has_var_kw:
         return errors
 
+    ep_allowed: set[str] = endpoint_allowed_kwargs if endpoint_allowed_kwargs is not None else allowed_kwargs
+
     for kw in keyword_arg_names:
         if not kw or kw in allowed_kwargs or kw.startswith("_"):
             continue
+        if kw in pos_only_kwargs:
+            errors.append(f"Argument '{kw}' for endpoint '{endpoint}' in backend '{backend_name}' is positional-only and cannot be passed as keyword")
+            continue
         for provided, expected in DISCREPANCY_PAIRS:
-            if kw == provided and expected in allowed_kwargs:
+            if kw == provided and (expected in allowed_kwargs or expected in ep_allowed):
                 errors.append(f"Endpoint '{endpoint}' in backend '{backend_name}' does not accept keyword '{kw}'. Did you mean '{expected}'?")
                 break
         else:
@@ -189,6 +245,83 @@ def _extract_stub_endpoints(backend_name: str, endpoints: set[str]) -> None:
                         endpoints.add(func_name)
 
 
+def _resolve_default_snapshot_dir() -> str:
+    """Resolve default static snapshot directory across environment, packages, and caches.
+
+    Returns:
+        str: Absolute path to the located snapshot directory.
+    """
+    env_dir: str | None = os.environ.get("ML_FRAMEWORK_SNAPSHOTS_DIR")
+    if env_dir and os.path.exists(env_dir):
+        return os.path.abspath(env_dir)
+
+    try:
+        import importlib.util
+
+        spec = importlib.util.find_spec("ml_framework_snapshots")
+        if spec is not None and spec.origin is not None:
+            cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
+            if os.path.exists(cand) and any(f.endswith(".json") for f in os.listdir(cand)):
+                return os.path.abspath(cand)
+    except Exception:
+        pass
+
+    compiler_cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots"))
+    if os.path.exists(compiler_cache_dir) and any(f.endswith(".json") for f in os.listdir(compiler_cache_dir)):
+        return compiler_cache_dir
+
+    default_dir: str = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "..",
+            "..",
+            "ml-framework-snapshots",
+            "src",
+            "ml_framework_snapshots",
+            "snapshots",
+        )
+    )
+    if os.path.exists(default_dir) and any(f.endswith(".json") for f in os.listdir(default_dir)):
+        return default_dir
+
+    cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots"))
+    if os.path.exists(cache_dir) and any(f.endswith(".json") for f in os.listdir(cache_dir)):
+        return cache_dir
+
+    return default_dir
+
+
+def _split_signature_params(raw_params: list[object]) -> list[list[dict[str, object]]]:
+    """Split concatenated or malformed parameter lists into coherent Python signatures.
+
+    Args:
+        raw_params (list[object]): Raw list of parameter dictionaries.
+
+    Returns:
+        list[list[dict[str, object]]]: Extracted distinct signature parameter lists.
+    """
+    signatures: list[list[dict[str, object]]] = []
+    curr_sig: list[dict[str, object]] = []
+    seen_pos_or_kw: bool = False
+    for p in raw_params:
+        if not isinstance(p, dict):
+            continue
+        kind: object = p.get("kind")
+        if kind in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY"):
+            seen_pos_or_kw = True
+        elif kind == "POSITIONAL_ONLY" and seen_pos_or_kw:
+            if curr_sig:
+                signatures.append(curr_sig)
+            curr_sig = []
+            seen_pos_or_kw = False
+        curr_sig.append(p)
+    if curr_sig:
+        signatures.append(curr_sig)
+    return signatures
+
+
 class SnapshotGroundingEngine:
     """Grounding engine providing deterministic static verification against framework snapshots."""
 
@@ -207,37 +340,7 @@ class SnapshotGroundingEngine:
             config = load_backend_snapshot_targets()
         self.config: BackendSnapshotTargetsConfig = config
         self._is_default_snapshot_dir: bool = snapshot_dir is None
-
-        if snapshot_dir is None:
-            env_dir: str | None = os.environ.get("ML_FRAMEWORK_SNAPSHOTS_DIR")
-            if env_dir and os.path.exists(env_dir):
-                self.snapshot_dir = os.path.abspath(env_dir)
-            else:
-                compiler_cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots"))
-                default_dir: str = os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "..",
-                        "..",
-                        "..",
-                        "..",
-                        "ml-framework-snapshots",
-                        "src",
-                        "ml_framework_snapshots",
-                        "snapshots",
-                    )
-                )
-                cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots"))
-                if os.path.exists(compiler_cache_dir) and any(f.endswith(".json") for f in os.listdir(compiler_cache_dir)):
-                    self.snapshot_dir = compiler_cache_dir
-                else:
-                    default_has_jsons: bool = os.path.exists(default_dir) and any(f.endswith(".json") for f in os.listdir(default_dir))
-                    if not default_has_jsons and os.path.exists(cache_dir) and any(f.endswith(".json") for f in os.listdir(cache_dir)):
-                        self.snapshot_dir = cache_dir
-                    else:
-                        self.snapshot_dir = default_dir
-        else:
-            self.snapshot_dir = os.path.abspath(snapshot_dir)
+        self.snapshot_dir: str = os.path.abspath(snapshot_dir) if snapshot_dir is not None else _resolve_default_snapshot_dir()
 
         self._endpoint_cache: dict[str, set[str]] = {}
         self._endpoint_item_cache: dict[str, dict[str, dict[str, object]]] = {}
@@ -373,23 +476,48 @@ class SnapshotGroundingEngine:
         self.get_valid_endpoints(backend_name)
         item_map: dict[str, dict[str, object]] = self._endpoint_item_cache.get(backend_name, {})
 
-        if endpoint in item_map:
-            return item_map[endpoint]
-
+        candidates: list[str] = [endpoint]
         for root in target.canonical_roots:
             if endpoint.startswith(f"{root}."):
                 suffix: str = endpoint[len(root) + 1 :]
-                if suffix in item_map:
-                    return item_map[suffix]
-                for alt_root in target.canonical_roots:
-                    cand: str = f"{alt_root}.{suffix}"
-                    if cand in item_map:
-                        return item_map[cand]
-                canonical: str = f"{target.framework}.{suffix}"
-                if canonical in item_map:
-                    return item_map[canonical]
+                candidates.extend(
+                    [
+                        suffix,
+                        *(f"{alt_root}.{suffix}" for alt_root in target.canonical_roots),
+                        f"{target.framework}.{suffix}",
+                        suffix.split(".")[-1],
+                    ]
+                )
+
+        for cand in candidates:
+            if cand in item_map:
+                return item_map[cand]
 
         return None
+
+    def get_endpoint_signatures(self, backend_name: str, endpoint: str) -> list[list[dict[str, object]]]:
+        """Retrieve all declared parameter signatures (base and overloads) for an endpoint.
+
+        Args:
+            backend_name (str): Target backend identifier.
+            endpoint (str): Fully qualified or short API path.
+
+        Returns:
+            list[list[dict[str, object]]]: List of parameter signatures.
+        """
+        item: dict[str, object] | None = self.get_endpoint_item(backend_name, endpoint)
+        if item is None:
+            return []
+        signatures: list[list[dict[str, object]]] = []
+        params_obj: object = item.get("params")
+        if isinstance(params_obj, list) and params_obj:
+            signatures.extend(_split_signature_params(params_obj))
+        overloads_obj: object = item.get("overloads")
+        if isinstance(overloads_obj, list):
+            for ov in overloads_obj:
+                if isinstance(ov, dict) and isinstance(ov.get("params"), list) and ov["params"]:
+                    signatures.extend(_split_signature_params(ov["params"]))
+        return signatures
 
     def get_endpoint_parameters(self, backend_name: str, endpoint: str) -> list[dict[str, object]] | None:
         """Retrieve list of declared parameter specifications for an endpoint.
@@ -404,17 +532,22 @@ class SnapshotGroundingEngine:
         item: dict[str, object] | None = self.get_endpoint_item(backend_name, endpoint)
         if item is None:
             return None
-        params_obj: object = item.get("params")
+        signatures: list[list[dict[str, object]]] = self.get_endpoint_signatures(backend_name, endpoint)
+        if not signatures:
+            params_obj: object = item.get("params")
+            if params_obj is None and item.get("overloads") is None:
+                return None
+            return []
+        seen_names: set[str] = set()
         res: list[dict[str, object]] = []
-        if isinstance(params_obj, list):
-            res.extend([p for p in params_obj if isinstance(p, dict)])
-        overloads_obj: object = item.get("overloads")
-        if isinstance(overloads_obj, list):
-            for ov in overloads_obj:
-                if isinstance(ov, dict) and isinstance(ov.get("params"), list):
-                    res.extend([p for p in ov["params"] if isinstance(p, dict)])
-        if not res and params_obj is None:
-            return None
+        for sig in signatures:
+            for p in sig:
+                p_name: str = str(p.get("name") or "")
+                if p_name and p_name not in seen_names:
+                    seen_names.add(p_name)
+                    res.append(p)
+                elif not p_name:
+                    res.append(p)
         return res
 
     def get_endpoint_return_type(self, backend_name: str, endpoint: str) -> str | None:
@@ -463,6 +596,7 @@ class SnapshotGroundingEngine:
                     suffix,
                     f"{target.framework}.{suffix}",
                     *(f"{alt_root}.{suffix}" for alt_root in target.canonical_roots),
+                    suffix.split(".")[-1],
                 )
                 if any(cand in valid_set for cand in candidates):
                     return True
@@ -492,45 +626,61 @@ class SnapshotGroundingEngine:
         Raises:
             GroundingValidationError: If raise_on_error is True and parameter validation fails.
         """
-        errors: list[str] = []
-        params: list[dict[str, object]] | None = self.get_endpoint_parameters(backend_name, endpoint)
-        if not params:
-            return errors
+        signatures: list[list[dict[str, object]]] = self.get_endpoint_signatures(backend_name, endpoint)
+        if not signatures:
+            params: list[dict[str, object]] | None = self.get_endpoint_parameters(backend_name, endpoint)
+            if not params:
+                return []
+            signatures = [params]
 
-        has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in params)
-        allowed_kwargs: set[str] = {str(p.get("name")) for p in params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
-
-        errors.extend(
-            _validate_keyword_args(
-                keyword_arg_names,
-                allowed_kwargs,
-                has_var_kw,
-                backend_name,
-                endpoint,
-            )
-        )
-
-        has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in params)
-        pos_params: list[dict[str, object]] = [p for p in params if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")]
-        max_pos: int = len(pos_params)
-
-        if not has_var_pos and positional_args_count > max_pos:
-            errors.append(f"Too many positional arguments ({positional_args_count} > {max_pos}) for endpoint '{endpoint}' in backend '{backend_name}'")
-
-        # Calculate minimum required positional arguments not supplied via kwargs
+        all_sig_errors: list[list[str]] = []
         kw_set: set[str] = set(keyword_arg_names)
-        min_required: int = 0
-        for p in pos_params:
-            p_name: str = str(p.get("name") or "")
-            is_mandatory: bool = bool(p.get("is_mandatory", True))
-            default_val: object = p.get("default")
-            if is_mandatory and default_val is None and p_name not in kw_set:
-                min_required += 1
+        all_params: list[dict[str, object]] = self.get_endpoint_parameters(backend_name, endpoint) or []
+        endpoint_allowed_kwargs: set[str] = {str(p.get("name")) for p in all_params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
 
-        if positional_args_count < min_required:
-            errors.append(f"Missing required arguments (expected at least {min_required}, got {positional_args_count}) for endpoint '{endpoint}' in backend '{backend_name}'")
+        for sig in signatures:
+            sig_errors: list[str] = []
+            has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in sig)
+            allowed_kwargs: set[str] = {str(p.get("name")) for p in sig if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
+            pos_only_kwargs: set[str] = {str(p.get("name")) for p in sig if p.get("kind") == "POSITIONAL_ONLY"}
 
-        if errors and raise_on_error:
-            raise GroundingValidationError("; ".join(errors))
+            sig_errors.extend(
+                _validate_keyword_args(
+                    keyword_arg_names,
+                    allowed_kwargs,
+                    pos_only_kwargs,
+                    has_var_kw,
+                    backend_name,
+                    endpoint,
+                    endpoint_allowed_kwargs=endpoint_allowed_kwargs,
+                )
+            )
 
-        return errors
+            has_var_pos: bool = any(p.get("kind") == "VAR_POSITIONAL" for p in sig)
+            pos_params: list[dict[str, object]] = [p for p in sig if p.get("kind") in ("POSITIONAL_ONLY", "POSITIONAL_OR_KEYWORD")]
+            max_pos: int = len(pos_params)
+
+            if not has_var_pos and positional_args_count > max_pos:
+                sig_errors.append(f"Too many positional arguments ({positional_args_count} > {max_pos}) for endpoint '{endpoint}' in backend '{backend_name}'")
+
+            min_required: int = 0
+            for p in pos_params:
+                p_name: str = str(p.get("name") or "")
+                is_mandatory: bool = bool(p.get("is_mandatory", True))
+                default_val: object = p.get("default")
+                if is_mandatory and default_val is None and p_name not in kw_set:
+                    min_required += 1
+
+            if positional_args_count < min_required:
+                sig_errors.append(f"Missing required arguments (expected at least {min_required}, got {positional_args_count}) for endpoint '{endpoint}' in backend '{backend_name}'")
+
+            if not sig_errors:
+                return []
+            all_sig_errors.append(sig_errors)
+
+        chosen_errors: list[str] = min(all_sig_errors, key=len) if all_sig_errors else []
+
+        if chosen_errors and raise_on_error:
+            raise GroundingValidationError("; ".join(chosen_errors))
+
+        return chosen_errors

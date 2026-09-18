@@ -445,3 +445,74 @@ def test_constant_folding_subgraphs() -> None:
     res = constant_folding_pass(parent)
     assert res is True
     assert subgraph.nodes["add_res"].op_type == "Constant"
+
+
+def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
+    """Test constant folding pass traversing subgraphs in node.attributes, BackendRegistry fallback, and re-raising unhandled exception."""
+    from unittest import mock
+
+    import pytest
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
+
+    # 1. Attribute subgraph
+    subgraph = LogicalGraph(name="body", outputs=["add_res"])
+    c1 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 10.0})
+    c2 = LogicalNode(id="c2", op_type="Constant", attributes={"value": 20.0})
+    add_node = LogicalNode(id="add_res", op_type="Add", inputs=["c1", "c2"])
+    subgraph.nodes = {"c1": c1, "c2": c2, "add_res": add_node}
+
+    parent = LogicalGraph(name="parent", outputs=["while_node"])
+    parent.nodes["while_node"] = LogicalNode(
+        id="while_node",
+        op_type="While",
+        attributes={"body_graph": subgraph},
+    )
+
+    res = constant_folding_pass(parent)
+    assert res is True
+    assert subgraph.nodes["add_res"].op_type == "Constant"
+
+    # 2. BackendRegistry lookup succeeds and fails when get_active_backend() is None
+    g2 = LogicalGraph(name="g2", outputs=["c1"])
+    g2.nodes = {"c1": LogicalNode(id="c1", op_type="Constant", attributes={"value": 1.0})}
+    with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend", return_value=None):
+        with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding.BackendRegistry.get", side_effect=Exception("No numpy")):
+            assert constant_folding_pass(g2) is False
+
+    # 3. Subgraphs/attributes that do NOT modify anything or are non-LogicalGraph
+    subgraph_unmodified = LogicalGraph(name="unmod", outputs=["c1"])
+    subgraph_unmodified.nodes = {"c1": LogicalNode(id="c1", op_type="Constant", attributes={"value": 1.0})}
+    g_unmod = LogicalGraph(name="g_unmod", outputs=["sub_node"])
+    g_unmod.nodes = {
+        "sub_node": LogicalNode(
+            id="sub_node",
+            op_type="CustomOp",
+            attributes={"scalar_val": 42, "child_g": subgraph_unmodified},
+            subgraphs={"sub1": subgraph_unmodified, "non_graph": "not_a_graph"},
+        )
+    }
+    assert constant_folding_pass(g_unmod) is False
+
+    # 4. Unhandled Exception re-raised
+    g3 = LogicalGraph(name="g3", outputs=["err_node"])
+    c3 = LogicalNode(id="c3", op_type="Constant", attributes={"value": 1.0})
+    err_node = LogicalNode(id="err_node", op_type="Add", inputs=["c3"])
+    g3.nodes = {"c3": c3, "err_node": err_node}
+
+    def raise_custom(*args: object, **kwargs: object) -> None:
+        """Raise an unhandled KeyError to test exception propagation.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+
+        Raises:
+            KeyError: Always raised.
+        """
+        raise KeyError("Fatal unhandled error")
+
+    with mock.patch("ml_switcheroo_compiler.transforms.passes.constant_folding._evaluate_constant_node", side_effect=raise_custom):
+        with pytest.raises(KeyError, match="Fatal unhandled error"):
+            constant_folding_pass(g3)

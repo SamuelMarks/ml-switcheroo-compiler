@@ -83,6 +83,12 @@ repos:
     language: system
     files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     pass_filenames: false
+  - id: validate-parameters
+    name: Validate Zero Hallucinated Parameters
+    entry: python3 scripts/validate_parameters.py
+    language: system
+    files: ^src/ml_switcheroo_compiler/(backends|ops)/.*\.(py|yaml)$
+    pass_filenames: false
   - id: validate-rules
     name: Validate Rule 4 (N-to-M utility)
     entry: python3 scripts/validate_rules.py
