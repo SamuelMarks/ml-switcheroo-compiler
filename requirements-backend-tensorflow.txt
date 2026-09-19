@@ -1,0 +1,2 @@
+tensorflow-cpu; sys_platform == "linux" or sys_platform == "win32"
+tensorflow; sys_platform == "darwin"

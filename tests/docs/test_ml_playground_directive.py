@@ -4,6 +4,10 @@ import os
 import sys
 from unittest import mock
 
+import pytest
+
+pytest.importorskip("docutils")
+
 from docutils import nodes  # type: ignore[import-untyped]
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../docs")))

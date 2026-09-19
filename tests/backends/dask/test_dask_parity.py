@@ -1,7 +1,9 @@
 """Parity, chunk-aware shape propagation, and lazy task graph tests for Dask backend."""
 
-import dask.array as da
 import pytest
+
+pytest.importorskip("dask")
+import dask.array as da
 
 from ml_switcheroo_compiler.backends.dask.eager import (
     _verify_dask_task_graph,

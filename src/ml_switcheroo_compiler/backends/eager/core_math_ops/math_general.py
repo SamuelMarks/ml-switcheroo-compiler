@@ -1028,12 +1028,13 @@ def _np_trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns:
             object: Result.
     """
-    func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapezoid", None))
+    func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.trapz(*args, **kwargs)
+    trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+    return trapz_fn(*args, **kwargs)
 
 
 @global_eager_registry.register("TrapezoidalIntegral")
@@ -1048,12 +1049,13 @@ def _np_trapezoidalintegral(backend_module: Any, *args: Any, **kwargs: Any) -> A
     Returns:
             object: Result.
     """
-    func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoidalintegral", None))
+    func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None)))
     if func is not None:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.trapz(*args, **kwargs)
+    trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+    return trapz_fn(*args, **kwargs)
 
 
 @global_eager_registry.register("Variance")

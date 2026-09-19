@@ -2,6 +2,8 @@ from unittest.mock import patch
 
 import pytest
 
+pytest.importorskip("dask")
+
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.dask.types import array, asarray, item, zeros

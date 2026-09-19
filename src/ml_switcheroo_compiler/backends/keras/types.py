@@ -3,7 +3,10 @@
 
 from typing import Optional
 
-import keras.ops as kops
+try:
+    import keras.ops as kops
+except Exception:
+    kops = None
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,

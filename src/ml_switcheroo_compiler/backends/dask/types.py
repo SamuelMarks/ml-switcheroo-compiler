@@ -3,7 +3,10 @@
 
 from typing import Optional
 
-import dask.array as da
+try:
+    import dask.array as da
+except ImportError:
+    da = None
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> object:

@@ -3,8 +3,10 @@
 
 from unittest.mock import MagicMock, patch
 
-import mlx.core as mx
 import pytest
+
+pytest.importorskip("mlx")
+import mlx.core as mx
 
 from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 

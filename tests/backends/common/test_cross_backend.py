@@ -1,5 +1,8 @@
 # ruff: noqa: E501
-import keras.ops as kops
+try:
+    import keras.ops as kops
+except Exception:
+    kops = None
 
 from ml_switcheroo_compiler.backends.keras.eager import execute_op
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator

@@ -214,9 +214,10 @@ def _np_trapezoidal_integral(backend_module, y, **kwargs):
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
     axis = kwargs.get("axis", -1)
+    trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
     if x is not None:
-        return np.trapz(y, x=x, axis=axis)
-    return np.trapz(y, dx=dx, axis=axis)
+        return trapz_fn(y, x=x, axis=axis)
+    return trapz_fn(y, dx=dx, axis=axis)
 
 
 @numpy_eager_registry.register("ConfusionMatrix")

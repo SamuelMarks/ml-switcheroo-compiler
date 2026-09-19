@@ -89,7 +89,8 @@ def _np_modified_bessel_i1(backend_module, *args, **kwargs):
         t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(x_ex * np.cos(t)) * np.cos(t)
-        return (1.0 / np.pi) * np.trapz(integrand, x=t, axis=-1)
+        trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+        return (1.0 / np.pi) * trapz_fn(integrand, x=t, axis=-1)
     return sc.i1(x)
 
 
@@ -116,7 +117,8 @@ def _np_modified_bessel_k0(backend_module, *args, **kwargs):
         t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t))
-        return np.trapz(integrand, x=t, axis=-1)
+        trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+        return trapz_fn(integrand, x=t, axis=-1)
     return sc.k0(x)
 
 
@@ -143,5 +145,6 @@ def _np_modified_bessel_k1(backend_module, *args, **kwargs):
         t = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t)) * np.cosh(t)
-        return np.trapz(integrand, x=t, axis=-1)
+        trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+        return trapz_fn(integrand, x=t, axis=-1)
     return sc.k1(x)

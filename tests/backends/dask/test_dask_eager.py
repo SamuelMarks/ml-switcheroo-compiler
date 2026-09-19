@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytest.importorskip("dask")
+
 import ml_switcheroo_compiler.backends.dask.eager as dask_eager
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError

@@ -1,4 +1,7 @@
 # ruff: noqa
+import pytest
+
+pytest.importorskip("mlx")
 from ml_switcheroo_compiler.backends.mlx.mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXOpRegistryMixin, MLXShapeOpsVisitor, MLXVisionVisitor
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 

@@ -1,4 +1,7 @@
 # ruff: noqa
+import pytest
+
+pytest.importorskip("tensorflow")
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 import tensorflow as tf
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op

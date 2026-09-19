@@ -1,8 +1,10 @@
 """Fuzzing higher-order derivatives."""
 
+import pytest
+
+pytest.importorskip("hypothesis")
 import hypothesis.strategies as st
 import numpy as np
-import pytest
 from hypothesis import given, settings
 
 import ml_switcheroo_compiler.ops as ops

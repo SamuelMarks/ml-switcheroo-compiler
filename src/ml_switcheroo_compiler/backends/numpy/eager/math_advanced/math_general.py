@@ -76,7 +76,8 @@ def _np_trapz(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Returns: np.ndarray: The computed result.
     """
-    return np.trapz(np.asarray(args[0]), *args[1:], **kwargs)
+    trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+    return trapz_fn(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("Uint")
@@ -469,7 +470,11 @@ def _np_trapz_(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Returns: np.ndarray: The computed result.
     """
-    return backend_module.trapz(*args, **kwargs)
+    trapz_fn = getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None))
+    if trapz_fn is not None:
+        return trapz_fn(*args, **kwargs)
+    trapz_fn = getattr(np, "trapezoid", getattr(np, "trapz", None))
+    return trapz_fn(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Callable")

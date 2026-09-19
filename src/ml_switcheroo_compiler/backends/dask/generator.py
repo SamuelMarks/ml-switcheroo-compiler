@@ -1,7 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dask code generator and eager execution backend."""
 
-import dask.array as da
+try:
+    import dask.array as da
+except ImportError:
+    da = None
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors

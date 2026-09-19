@@ -1,5 +1,9 @@
 """Test mlx coverage."""
 
+import pytest
+
+pytest.importorskip("mlx")
+
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
 

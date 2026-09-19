@@ -1,5 +1,8 @@
 """Fuzzing and equivalence tests for higher-order derivatives and Hessian-vector products."""
 
+import pytest
+
+pytest.importorskip("hypothesis")
 import hypothesis.strategies as st
 import numpy as np
 from hypothesis import given, settings

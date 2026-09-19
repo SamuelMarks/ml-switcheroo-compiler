@@ -3838,9 +3838,9 @@ def test_missing_lines():
     red._np_approx_max_k(b, [1.0, 2.0, 3.0], 2)
 
 
-test_reductions()
-
-test_missing_lines()
+if __name__ == "__main__":
+    test_reductions()
+    test_missing_lines()
 
 
 def test_math_fft_return_none():

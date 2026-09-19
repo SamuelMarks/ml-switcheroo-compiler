@@ -4,6 +4,9 @@ import os
 import struct
 import tempfile
 
+import pytest
+
+pytest.importorskip("onnx")
 import onnx
 
 from ml_switcheroo_compiler.backends.edge.onnx import (

@@ -50,11 +50,13 @@ flowchart TD
         JX[JAX API]
         KR[Keras API]
         MLX_F[MLX API]
+        TF_F[TensorFlow API]
+        PT ~~~ JX ~~~ KR ~~~ MLX_F ~~~ TF_F
     end
 
     subgraph Compiler ["ml-switcheroo-compiler"]
-        CST[CST Transpiler / LibCST]
         TR[Tracer & AD Engine]
+        CST[CST Transpiler / LibCST]
         IR[Unified IR: LogicalGraph]
         EVAL[IR Interpreter / Evaluator]
         PM[PassManager Pipeline O0 - O3]
@@ -66,38 +68,63 @@ flowchart TD
 
     subgraph Backends ["Emitters & Targets"]
         subgraph S2S ["AST & Framework Backends"]
-            PY[PyTorch / JAX / MLX / Keras / TF / NumPy]
-            CUPY_B[CuPy / Dask / Sparse / Numba]
+            GEN_S2S[Python & AST Generators]
+            PT_B[PyTorch]
+            JX_B[JAX]
+            MLX_B[MLX]
+            KR_B[Keras]
+            TF_B[TensorFlow]
+            NP_B[NumPy]
+            CP_B[CuPy]
+            DK_B[Dask]
+            SP_B[Sparse]
+            NB_B[Numba]
+
+            GEN_S2S --> PT_B & JX_B & MLX_B & KR_B & TF_B
+            GEN_S2S --> NP_B & CP_B & DK_B & SP_B & NB_B
+            PT_B ~~~ NP_B
+            JX_B ~~~ CP_B
+            MLX_B ~~~ DK_B
+            KR_B ~~~ SP_B
+            TF_B ~~~ NB_B
         end
+
         subgraph Hardware ["Hardware Accelerators"]
+            GEN_HW[Hardware Kernel Compilers]
             CUDA_B[CUDA / PTX]
             ROCM_B[ROCm / HIP]
             METAL_B[Metal / MSL]
             LLVM_B[LLVM / C++]
+
+            GEN_HW --> CUDA_B & ROCM_B
+            GEN_HW --> METAL_B & LLVM_B
+            CUDA_B ~~~ METAL_B
+            ROCM_B ~~~ LLVM_B
         end
+
         subgraph Edge ["Direct-to-Edge & Web Native"]
-            WG[WebGPU / WGSL]
-            WA[WASM SIMD]
-            WEBGL_B[WebGL 2.0]
-            EXPORTS[ONNX / StableHLO]
-            WEBRTC_B[WebRTC Distributed Mesh]
+            GEN_EDGE[Edge & Browser Emitters]
+            WG_B[WebGPU / WGSL]
+            WA_B[WASM SIMD]
+            GL_B[WebGL 2.0]
+            ONNX_B[ONNX]
+            SHLO_B[StableHLO]
+            RTC_B[WebRTC Distributed Mesh]
+
+            GEN_EDGE --> WG_B & WA_B & GL_B
+            GEN_EDGE --> ONNX_B & SHLO_B & RTC_B
+            WG_B ~~~ ONNX_B
+            WA_B ~~~ SHLO_B
+            GL_B ~~~ RTC_B
         end
     end
 
-    PT & JX & KR & MLX_F -.->|Direct Code Translation| CST
-    CST -.->|Transpiled Source| PY
-    PT & JX & KR & MLX_F -->|Proxy Tensors| TR
-    PM -->|Optimized IR| PY
-    PM -->|Optimized IR| CUPY_B
-    PM -->|Optimized IR| CUDA_B
-    PM -->|Optimized IR| ROCM_B
-    PM -->|Optimized IR| METAL_B
-    PM -->|Optimized IR| LLVM_B
-    PM -->|Optimized IR| WG
-    PM -->|Optimized IR| WA
-    PM -->|Optimized IR| WEBGL_B
-    PM -->|Optimized IR| EXPORTS
-    PM -->|Optimized IR| WEBRTC_B
+    PT & JX & KR & MLX_F & TF_F -.->|Direct Code Translation| CST
+    PT & JX & KR & MLX_F & TF_F -->|Proxy Tensors| TR
+    CST -.->|Transpiled Source| GEN_S2S
+    PM -->|Optimized IR| GEN_S2S
+    PM -->|Optimized IR| GEN_HW
+    PM -->|Optimized IR| GEN_EDGE
 ```
 
 - **Unified IR:** A strict, framework-agnostic intermediate representation (`LogicalGraph` / `LogicalNode`) defining precise shape semantics (learned via live forward/backward passes), mathematical primitives, control flow, and state management.
