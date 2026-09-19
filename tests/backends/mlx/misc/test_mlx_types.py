@@ -2,7 +2,7 @@
 
 import pytest
 
-pytest.importorskip("mlx")
+pytest.importorskip("mlx.core")
 
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
@@ -46,8 +46,8 @@ def test_mlx_init_import_error(monkeypatch):
         return importlib.util._find_spec(name, package)
 
     monkeypatch.setattr(importlib.util, "find_spec", mock_find_spec)
-
-    import pytest
+    monkeypatch.delitem(sys.modules, "pytest", raising=False)
+    monkeypatch.delitem(sys.modules, "sphinx", raising=False)
 
     with pytest.raises(ImportError, match="requires the 'mlx' library to be installed"):
         importlib.import_module("ml_switcheroo_compiler.backends.mlx")

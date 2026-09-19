@@ -6,7 +6,10 @@ from __future__ import annotations
 """Backend utilities."""
 import builtins
 
-import mlx.core as mx
+try:
+    import mlx.core as mx
+except ImportError:
+    mx = None
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, mlx_eager_registry
 

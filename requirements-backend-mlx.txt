@@ -1,1 +1,1 @@
-mlx
+mlx; sys_platform == "darwin"

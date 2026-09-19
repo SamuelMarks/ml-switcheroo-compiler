@@ -9,7 +9,7 @@ try:
 except ValueError:
     _has_pkg = True
 
-if not _has_pkg:
+if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
     raise ImportError("The 'mlx' backend requires the 'mlx' library to be installed.")
 
 from . import eager, generator, profiler, types

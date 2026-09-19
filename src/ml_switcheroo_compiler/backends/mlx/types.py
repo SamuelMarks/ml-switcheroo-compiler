@@ -3,7 +3,10 @@
 
 from typing import Optional
 
-import mlx.core as mx
+try:
+    import mlx.core as mx
+except ImportError:
+    mx = None
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,

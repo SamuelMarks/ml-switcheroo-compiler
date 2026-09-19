@@ -1,6 +1,6 @@
 import pytest
 
-pytest.importorskip("mlx")
+pytest.importorskip("mlx.core")
 import mlx.core as mx
 
 from ml_switcheroo_compiler.backends.mlx.eager import (
