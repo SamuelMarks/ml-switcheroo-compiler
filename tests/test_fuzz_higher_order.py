@@ -22,6 +22,8 @@ from ml_switcheroo_compiler.grad import hvp
 )
 def test_higher_order_equivalence(backend_name, val1):
     """Test higher-order equivalence."""
+    if backend_name == "mlx":
+        pytest.importorskip("mlx.core")
     from ml_switcheroo_compiler.core.config import config
 
     prev = config.backend

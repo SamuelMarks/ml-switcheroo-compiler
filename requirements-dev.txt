@@ -1,7 +1,11 @@
 pytest
 pytest-cov
+pytest-mock
+pytest-asyncio
+mypy
 pre-commit
 radon>=6.0.0
 hypothesis
 docutils
-ml-framework-snapshots @ git+https://github.com/SamuelMarks/ml-framework-snapshots.git@master
+Pillow
+ml-framework-snapshots @ https://github.com/SamuelMarks/ml-framework-snapshots/releases/download/v0.0.2/ml_framework_snapshots-0.0.2-py3-none-any.whl

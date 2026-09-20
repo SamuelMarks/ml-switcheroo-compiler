@@ -129,6 +129,7 @@ BACKEND_ALLOWED: dict[str, set[str]] = {
     "common": {"scipy"},
     "numba": {"numba"},
     "sparse": {"sparse", "scipy"},
+    "metal": {"Metal"},
 }
 
 FORBIDDEN_UPWARD_PREFIXES: tuple[str, ...] = ("zero_", "zero_zoo", "zero")

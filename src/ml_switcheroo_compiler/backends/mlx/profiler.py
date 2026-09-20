@@ -162,7 +162,10 @@ class MLXProfiler:
 
         code: str = MLXCodeGenerator(graph).generate()
         ns: dict[str, object] = {}
-        exec(code, ns)
+        try:
+            exec(code, ns)
+        except (ImportError, ModuleNotFoundError):
+            return None
         model_cls = ns.get("CompiledModel")
         if model_cls is not None and callable(model_cls):
             model_inst = model_cls()

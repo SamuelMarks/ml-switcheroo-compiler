@@ -316,7 +316,7 @@ def test_runner_execute_graph_input_types() -> None:
     mock_lib.cuModuleGetFunction.return_value = 0
     mock_lib.cuLaunchKernel.return_value = 0
     mock_lib.cuCtxSynchronize.return_value = 0
-    with patch("ctypes.util.find_library", return_value="libcuda.so"), patch("ctypes.cdll.LoadLibrary", return_value=mock_lib):
+    with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", None), patch("ctypes.util.find_library", return_value="libcuda.so"), patch("ctypes.cdll.LoadLibrary", return_value=mock_lib):
         c_runner = CUDARunner()
         with patch.object(c_runner, "compile_cuda_to_ptx", return_value="// PTX"):
             res_bytes = c_runner.execute_graph(graph, {"a": raw_bytes})

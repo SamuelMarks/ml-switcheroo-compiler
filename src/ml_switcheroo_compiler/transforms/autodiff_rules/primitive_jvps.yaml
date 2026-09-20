@@ -71,6 +71,14 @@ Positive:
   jvp: $tangent[0]
   description: Element-wise positive/identity tangent propagation.
 
+Identity:
+  jvp: $tangent[0]
+  description: Element-wise identity tangent propagation.
+
+identity:
+  jvp: $tangent[0]
+  description: Element-wise identity tangent propagation (lowercase).
+
 Abs:
   jvp: Mul($tangent[0], Sign($input[0]))
   description: Element-wise absolute value tangent propagation.

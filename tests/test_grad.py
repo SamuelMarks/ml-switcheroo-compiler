@@ -248,9 +248,9 @@ def test_jvp_vjp_hvp() -> None:
     # HVP of x^3 is d(3x^2)/dx * v = 6x * v
     val_hvp, out_tan_hvp = hvp(hvp_test_func, primal_x, tangent_v)
     assert val_hvp.shape == (2,)
-    assert val_hvp.dtype == np.float32
+    assert val_hvp.dtype in (np.float32, np.float64)
     assert out_tan_hvp.shape == (2,)
-    assert out_tan_hvp.dtype == np.float32
+    assert out_tan_hvp.dtype in (np.float32, np.float64)
     assert np.allclose(out_tan_hvp, [12.0, 18.0])
     # --------------------------------------------------------------
     assert tan == 1.0

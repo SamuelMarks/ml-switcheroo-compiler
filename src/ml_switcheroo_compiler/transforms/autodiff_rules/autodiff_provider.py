@@ -363,15 +363,20 @@ def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[st
     if os.path.exists(rule_file):
         with open(rule_file) as f:
             data = yaml.safe_load(f) or {}
-            if isinstance(data, dict) and op_type in data:
-                return data[op_type]
+            if isinstance(data, dict):
+                for candidate in (op_type, op_type.lower(), op_type.capitalize()):
+                    if candidate in data:
+                        return data[candidate]
 
-    yaml_path = os.path.join(os.path.dirname(__file__), "rules", f"{op_type}.yaml")
-    if os.path.exists(yaml_path):
-        with open(yaml_path) as f:
-            data = yaml.safe_load(f) or {}
-            if isinstance(data, dict) and op_type in data:
-                return data[op_type]
+    for candidate in (op_type, op_type.lower(), op_type.capitalize()):
+        yaml_path = os.path.join(os.path.dirname(__file__), "rules", f"{candidate}.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                data = yaml.safe_load(f) or {}
+                if isinstance(data, dict):
+                    for name in (op_type, op_type.lower(), op_type.capitalize()):
+                        if name in data:
+                            return data[name]
 
     manifest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "autodiff_rules.yaml"))
     if os.path.exists(manifest_path):

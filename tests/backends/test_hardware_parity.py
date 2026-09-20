@@ -108,6 +108,8 @@ def test_metal_native_execution_parity() -> None:
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
     """Verify CUDA driver initialization or graceful skip."""
+    if not CUDARunner.is_available():
+        pytest.skip("CUDA device/driver not available on host system")
     runner = CUDARunner()
     if runner.mode == "cupy":
         buf = runner.allocate_buffer(1024)
@@ -121,6 +123,8 @@ def test_cuda_driver_presence_or_graceful_skip() -> None:
 
 def test_rocm_driver_presence_or_graceful_skip() -> None:
     """Verify ROCm driver initialization or graceful skip."""
+    if not ROCmRunner.is_available():
+        pytest.skip("ROCm device/driver not available on host system")
     runner = ROCmRunner()
     if runner.mode == "cupy":
         buf = runner.allocate_buffer(1024)
@@ -188,6 +192,7 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
 
 def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     """Verify numerical parity across native backends compared to NumPy references."""
+    pytest.importorskip("mlx.core")
     import jax.numpy as jnp
     import mlx.core as mx
     import torch

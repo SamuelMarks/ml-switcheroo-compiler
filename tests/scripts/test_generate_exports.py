@@ -13,12 +13,12 @@ import scripts.generate_exports as ge
 def test_get_exports_from_submodule() -> None:
     """Test retrieving exports from a submodule."""
     # Test valid import
-    with patch("importlib.import_module") as mock_import:
+    with patch("scripts.generate_exports.importlib.import_module") as mock_import:
         mock_import.return_value.__all__ = ["A", "B"]
         assert ge._get_exports_from_submodule("foo") == ["A", "B"]
 
     # Test import without __all__
-    with patch("importlib.import_module") as mock_import:
+    with patch("scripts.generate_exports.importlib.import_module") as mock_import:
 
         class MockMod:
             """Mock module."""
@@ -37,7 +37,7 @@ def test_get_exports_from_submodule() -> None:
         assert ge._get_exports_from_submodule("foo") == ["func", "visible"]
 
     # Test import error
-    with patch("importlib.import_module", side_effect=ImportError("mock error")):
+    with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError("mock error")):
         assert ge._get_exports_from_submodule("foo") == []
 
 
@@ -128,7 +128,7 @@ def test_process_file_import_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
     monkeypatch.setattr("os.path.abspath", fake_abspath)
 
-    with patch("importlib.import_module", side_effect=Exception):
+    with patch("scripts.generate_exports.importlib.import_module", side_effect=Exception):
         ge.process_file(str(f))
 
 
@@ -173,7 +173,7 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
             with patch("subprocess.run"):
                 ge.process_file(str(f))
@@ -202,7 +202,7 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         y = 2
         _z = 3
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -228,7 +228,7 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -253,7 +253,7 @@ def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.Mon
 
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -277,7 +277,7 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         __all__ = None
         x = 1
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -301,7 +301,7 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         __all__ = ["x"]
         x = 1
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -326,7 +326,7 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             # Ensure it hits the return line
             ge.process_file(str(f))
@@ -346,7 +346,7 @@ def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
         __all__ = 123  # Not a list, tuple, or set
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -380,7 +380,7 @@ def test_process_file_no_py_extension(tmp_path: Path, monkeypatch: pytest.Monkey
     f = src / "test_no_ext"
     f.write_text("x = 1\n")
 
-    with patch("importlib.import_module", side_effect=ImportError):
+    with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError):
         ge.process_file(str(f))
 
 
@@ -392,7 +392,7 @@ def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     class MockMod:
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -430,7 +430,7 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
                 with builtins.open(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run", side_effect=mock_subprocess_run):
             ge.process_file(str(f))
 
@@ -445,7 +445,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
     class MockMod:
         __all__ = ["x", "z"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
     src = setup_mock_src(tmp_path, monkeypatch)
@@ -455,7 +455,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
     class MockMod:
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -479,7 +479,7 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
                 n.end_lineno = None
         return nodes
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             with patch("ast.walk", side_effect=mock_walk):
                 ge.process_file(str(f))
@@ -493,7 +493,7 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
     class MockMod:
         __all__ = ["x", "y"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -534,7 +534,7 @@ def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     class MockMod:
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 
@@ -549,7 +549,7 @@ def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     class MockMod:
         __all__ = ["x"]
 
-    with patch("importlib.import_module", return_value=MockMod()):
+    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
         with patch("subprocess.run"):
             ge.process_file(str(f))
 

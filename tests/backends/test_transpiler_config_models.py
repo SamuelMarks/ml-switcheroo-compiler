@@ -88,6 +88,8 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
     (rules_dir / "broken.yaml").write_text(":\nbroken yaml")
 
     real_join = os.path.join
+    real_isdir = os.path.isdir
+    real_listdir = os.listdir
 
     def mock_join(*args: str) -> str:
         if "rules" in args:
@@ -96,15 +98,30 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
             return str(rules_dir / args[-1])
         return real_join(*args)
 
-    with patch("os.path.isdir", return_value=True), patch("os.listdir", return_value=["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]), patch("os.path.join", side_effect=mock_join):
+    def mock_isdir(path: str) -> bool:
+        if str(rules_dir) in str(path) or str(path).endswith("rules"):
+            return True
+        return real_isdir(path)
+
+    def mock_listdir(path: str) -> list[str]:
+        if str(rules_dir) in str(path) or str(path).endswith("rules"):
+            return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
+        return real_listdir(path)
+
+    with patch("os.path.isdir", side_effect=mock_isdir), patch("os.listdir", side_effect=mock_listdir), patch("os.path.join", side_effect=mock_join):
         cfg = load_transpiler_config(str(cfg_file))
         assert "torch.mul" in cfg.ast_to_ir_ops
         assert "torch.sin" in cfg.ast_to_ir_ops
         assert "Mul" in cfg.ir_to_ast_ops
         assert "Cos" in cfg.ir_to_ast_ops
 
+    def mock_isdir_false(path: str) -> bool:
+        if str(rules_dir) in str(path) or "rules" in str(path):
+            return False
+        return real_isdir(path)
+
     # Test when rules_dir does not exist (branch 98->114)
-    with patch("os.path.isdir", return_value=False):
+    with patch("os.path.isdir", side_effect=mock_isdir_false):
         cfg_no_dir = load_transpiler_config(str(cfg_file))
         assert cfg_no_dir.frameworks == {}
 

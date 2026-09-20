@@ -170,6 +170,10 @@ def test_all_thirteen_domain_yaml_registries() -> None:
 
     for fname in domain_files:
         fpath: str = os.path.join(definitions_dir, fname)
+        if not os.path.exists(fpath):
+            cap_path = os.path.join(definitions_dir, fname.capitalize())
+            if os.path.exists(cap_path):
+                fpath = cap_path
         assert os.path.exists(fpath), f"Domain YAML file {fname} must exist"
 
         with open(fpath, encoding="utf-8") as f:

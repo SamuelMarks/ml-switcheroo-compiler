@@ -30,11 +30,6 @@ def test_onnx_generate_mocked():
         out = generator.generate()
         assert "add_1" in out
 
-        # export_onnx raises BackendNotSupportedError
-        with patch("onnx.checker.check_model") as mock_check:
-            if False:
-                pass
-
 
 def test_onnx_proto_type():
     graph = IRGraph()
@@ -192,9 +187,9 @@ def test_onnx_export_and_missing():
 
     mock_onnx = MockOnnx()
 
-    with patch.dict("sys.modules", {"onnx": mock_onnx}):
-        with patch("importlib.import_module", return_value=mock_onnx):
-            with patch("builtins.open", create=True) as mock_open:
+    with patch("builtins.open", create=True) as mock_open:
+        with patch.dict("sys.modules", {"onnx": mock_onnx}):
+            with patch("importlib.import_module", return_value=mock_onnx):
                 generator.export_onnx("test.onnx")
                 mock_open.assert_called_with("test.onnx", "wb")
 

@@ -403,8 +403,16 @@ def test_mlx_relu_and_zeros_and_reduce_scatter_coverage():
     # 1. _mlx_relu with mlx.nn present
     mock_nn = MagicMock()
     mock_nn.relu.return_value = "relu_out"
-    with patch.dict(sys.modules, {"mlx.nn": mock_nn}):
-        assert eager._mlx_relu(mock_mx, "x") == "relu_out"
+    orig_pkg_nn = getattr(mock_pkg, "nn", None)
+    mock_pkg.nn = mock_nn
+    try:
+        with patch.dict(sys.modules, {"mlx.nn": mock_nn}):
+            assert eager._mlx_relu(mock_mx, "x") == "relu_out"
+    finally:
+        if orig_pkg_nn is not None:
+            mock_pkg.nn = orig_pkg_nn
+        elif hasattr(mock_pkg, "nn"):
+            delattr(mock_pkg, "nn")
 
     # 2. _mlx_relu fallback to maximum
     with patch.dict(sys.modules, {"mlx.nn": None}):

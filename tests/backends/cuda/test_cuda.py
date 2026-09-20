@@ -573,6 +573,7 @@ def test_cuda_additional_branches():
     runner_exec.compile_cuda_to_ptx = lambda src: "ptx"
     runner_exec.load_and_dispatch = lambda *args, **kwargs: None
     runner_exec.allocate_buffer = lambda size: None
+    runner_exec.synchronize = lambda: None
     g = IRGraph()
     g.outputs = ["out_0"]
     runner_exec.execute_graph(g, {"barr": bytearray(b"\x00\x00\x00\x00")})

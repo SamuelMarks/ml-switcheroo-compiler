@@ -191,14 +191,21 @@ def test_nccl_driver_bindings() -> None:
     """Test NCCLDriver bindings."""
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
+    driver_unavail = NCCLDriver(lib_path="nonexistent_nccl_library.so")
+    # Driver safely raises BackendNotSupportedError on host without libnccl
+    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
+        driver_unavail.all_reduce(0, 0, 10)
+    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
+        driver_unavail.all_gather(0, 0, 10)
+    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
+        driver_unavail.broadcast(0, 0, 10)
+
     driver = NCCLDriver()
-    # Driver safely raises BackendNotSupportedError on non-CUDA host without libnccl
-    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
-        driver.all_reduce(0, 0, 10)
-    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
-        driver.all_gather(0, 0, 10)
-    with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
-        driver.broadcast(0, 0, 10)
+    if not driver.is_available():
+        with pytest.raises(BackendNotSupportedError, match="NCCL library is not available"):
+            driver.all_reduce(0, 0, 10)
+    else:
+        assert driver.nccl_lib is not None
 
 
 def test_spmd_sharding_propagation_yaml() -> None:

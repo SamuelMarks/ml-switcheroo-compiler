@@ -80,9 +80,10 @@ def test_cupy_eager_dispatch_native() -> None:
 
 def test_cupy_eager_unavailable() -> None:
     """Test that BackendNotSupportedError is raised when CuPy is unavailable."""
-    with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-        with pytest.raises(BackendNotSupportedError, match="CuPy is not installed"):
-            execute_op(None, "Add", 1, 2)
+    with patch.dict(sys.modules, {"cupy": None}):
+        with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
+            with pytest.raises(BackendNotSupportedError, match="CuPy is not installed"):
+                execute_op(None, "Add", 1, 2)
 
 
 def test_cupy_eager_reductions_and_kwarg_mapping() -> None:

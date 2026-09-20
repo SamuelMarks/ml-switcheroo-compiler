@@ -83,11 +83,11 @@ def test_nth_order_grad_callable() -> None:
 
         first_deriv = nth_order_grad(cubic, n=1)
         res1 = first_deriv(x)
-        assert np.isclose(float(getattr(res1, "data", res1)), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(getattr(res1, "data", res1)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         second_deriv = nth_order_grad(cubic, n=2)
         res2 = second_deriv(x)
-        assert np.isclose(float(getattr(res2, "data", res2)), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(getattr(res2, "data", res2)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         with pytest.raises(ValueError, match="Derivative order n must be >= 1"):
             nth_order_grad(cubic, n=0)

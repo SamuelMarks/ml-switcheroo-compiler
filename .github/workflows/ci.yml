@@ -29,7 +29,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install --upgrade setuptools wheel
-        python3 -m pip install ruff pytest pytest-cov build radon pylint
+        python3 -m pip install ruff pytest pytest-cov build radon pylint pytest-mock pytest-asyncio mypy Pillow
         python3 -m pip install -e ./ml-switcheroo-ir
         if [ -f "pyproject.toml" ]; then python3 -m pip install -e . || true; fi
         for req in requirements*.txt; do python3 -m pip install -r "$req" || true; done
@@ -50,7 +50,7 @@ jobs:
         radon cc src/ -a --total-average | grep "Average complexity: A"
 
     - name: Duplicate Code Check
-      run: pylint src/ml_switcheroo_compiler --disable=all --enable=duplicate-code
+      run: for d in src/ml_switcheroo_compiler/*/; do pylint "$d" --disable=all --enable=duplicate-code || exit 1; done
 
     - name: Validate Backend Mappings
       run: python3 scripts/validate_backend_mappings.py

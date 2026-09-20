@@ -235,18 +235,27 @@ def test_standard_workloads_manifest() -> None:
 
 def test_cross_framework_benchmarking_runs_without_synthetic_fallback_warnings() -> None:
     """Validate cross-framework benchmarking runs across backends without synthetic fallback warnings."""
+    import sys
     import warnings
+
+    targets = [
+        BenchmarkTarget(backend="numpy", device="cpu"),
+        BenchmarkTarget(backend="pytorch", device="cpu"),
+        BenchmarkTarget(backend="jax", device="cpu"),
+    ]
+    has_mlx = sys.platform == "darwin"
+    try:
+        import mlx.core  # noqa: F401
+    except ImportError:
+        has_mlx = False
+    if has_mlx:
+        targets.append(BenchmarkTarget(backend="mlx", device="cpu"))
 
     plan = BenchmarkPlan(
         name="cross_framework_validation",
         models=["mlp_model"],
         batch_sizes=[1],
-        targets=[
-            BenchmarkTarget(backend="numpy", device="cpu"),
-            BenchmarkTarget(backend="pytorch", device="cpu"),
-            BenchmarkTarget(backend="jax", device="cpu"),
-            BenchmarkTarget(backend="mlx", device="cpu"),
-        ],
+        targets=targets,
         num_iterations=2,
         warmup_iterations=1,
     )
@@ -261,9 +270,12 @@ def test_cross_framework_benchmarking_runs_without_synthetic_fallback_warnings()
         assert "synthetic" not in msg
         assert "fallback" not in msg
 
-    assert len(results) == 4
+    assert len(results) == len(targets)
     backend_names = {r.backend for r in results}
-    assert backend_names == {"numpy", "pytorch", "jax", "mlx"}
+    expected_backends = {"numpy", "pytorch", "jax"}
+    if has_mlx:
+        expected_backends.add("mlx")
+    assert backend_names == expected_backends
     for res in results:
         assert res.mean_latency_ms > 0.0
         assert res.p50_latency_ms >= 0.0

@@ -91,6 +91,16 @@ Positive:
   - $cotangent
   description: Element-wise identity / positive derivative.
 
+Identity:
+  vjp:
+  - $cotangent
+  description: Element-wise identity derivative.
+
+identity:
+  vjp:
+  - $cotangent
+  description: Element-wise identity derivative (lowercase).
+
 Abs:
   vjp:
   - Mul($cotangent, Sign($input[0]))

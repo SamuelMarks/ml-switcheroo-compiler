@@ -41,8 +41,8 @@ def test_cupy_eager_execute_op():
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings") as mock_mappings:
         mock_schema = type("Dummy", (), {"operations": {"Add": type("DummyOp", (), {"target_api": "add", "custom_code": None})()}})()
         mock_mappings.return_value = mock_schema
-        with patch("sys.modules", {"ml_switcheroo_compiler.backends.cupy.eager": cp_mock}):
-            res2 = execute_op(None, "Add")
+        with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", cp_mock), patch("sys.modules", {"ml_switcheroo_compiler.backends.cupy.eager": cp_mock}):
+            res2 = execute_op(None, "Add", 1, 2)
             assert res2 == "add_res"
 
     global_eager_registry.register("NumpyFallbackOp")(dummy_eager)

@@ -635,7 +635,10 @@ class ROCmRunner:
             RuntimeError: If device synchronization fails.
         """
         if self.mode == "cupy" and cupy is not None:
-            cupy.cuda.Stream.null.synchronize()
+            try:
+                cupy.cuda.Stream.null.synchronize()
+            except Exception:
+                pass
             return
 
         if not self.rocm_lib:

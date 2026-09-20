@@ -160,7 +160,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
             raise ValueError("Signature failed")
         return real_sig(obj)
 
-    with patch("importlib.import_module", return_value=fake_mod):
+    with patch("scripts.generate_stubs.importlib.import_module", return_value=fake_mod):
         with patch("inspect.signature", side_effect=smart_sig):
             count_live = gs._generate_stubs_from_live_module("fake_fw", "dummy", str(out_file))
             assert count_live >= 5
