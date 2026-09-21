@@ -970,7 +970,10 @@ class WebGPUCodeGenerator(BaseGenerator):
         in_channels: int = in0_shape[1] if len(in0_shape) == 4 else 1
         in_width: int = in0_shape[3] if len(in0_shape) == 4 else 1
 
-        stride_h, stride_w = node.attributes.get("strides", (1, 1))
+        raw_strides = node.attributes.get("strides", (1, 1))
+        stride_val = raw_strides if isinstance(raw_strides, (list, tuple)) else (1, 1)
+        stride_h: int = int(stride_val[0])
+        stride_w: int = int(stride_val[1])
         filter_h: int = in1_shape[2] if len(in1_shape) >= 4 else 1
         filter_w: int = in1_shape[3] if len(in1_shape) >= 4 else 1
 
