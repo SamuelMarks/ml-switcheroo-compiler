@@ -246,6 +246,7 @@ def test_rocm_additional_coverage():
 
     # 2. execute_graph with bytearray data and missing output
     runner = ROCmRunner()
+    runner.mode = "ctypes"
     mock_hip = MagicMock()
     mock_hip.hipMalloc.return_value = 0
     mock_hip.hipMemcpy.return_value = 0

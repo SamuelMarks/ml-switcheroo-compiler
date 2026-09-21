@@ -626,6 +626,19 @@ def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: object, mon
     monkeypatch.undo()
     dummy_sdir = str(tmp_path / "explicit_default")
     os.makedirs(dummy_sdir, exist_ok=True)
+    fake_cache_dir = str(tmp_path / "fake_cache_snapshots")
+    os.makedirs(fake_cache_dir, exist_ok=True)
+    with open(os.path.join(fake_cache_dir, "torch_v1.0.json"), "w") as f:
+        f.write("{}")
+
+    real_expanduser = os.path.expanduser
+
+    def mock_expanduser(path: str) -> str:
+        if ".cache" in path:
+            return fake_cache_dir
+        return real_expanduser(path)
+
+    monkeypatch.setattr(os.path, "expanduser", mock_expanduser)
     engine_dirs = SnapshotGroundingEngine(snapshot_dir=dummy_sdir)
     engine_dirs._is_default_snapshot_dir = True
     path = engine_dirs.get_snapshot_path("pytorch")

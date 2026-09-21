@@ -380,7 +380,7 @@ class ROCmRunner:
         self.rocm_lib: Optional[ctypes.CDLL] = None
         self._ctx: Optional[ctypes.c_void_p] = None
 
-        if cupy is not None:
+        if cupy is not None and getattr(getattr(cupy, "cuda", None), "is_hip", False):
             self.mode = "cupy"
         else:
             self.mode = "ctypes"

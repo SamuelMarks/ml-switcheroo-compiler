@@ -9,4 +9,4 @@ def test_mypy():
         pytest.skip("mypy executable not found")
 
     res = subprocess.run(["mypy", "src/ml_switcheroo_compiler/"], capture_output=True, text=True)
-    assert res.returncode == 0
+    assert res.returncode == 0, f"mypy failure:\n{res.stdout}\n{res.stderr}"

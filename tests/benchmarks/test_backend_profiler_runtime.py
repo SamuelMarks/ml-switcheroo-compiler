@@ -405,3 +405,51 @@ def test_cupy_profiler_runtime():
     mock_cp_bare.cuda = MagicMock(spec=[])
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mock_cp_bare):
         profiler._sync()
+
+    # 7. _is_cupy_available branches
+    from ml_switcheroo_compiler.backends.cupy.profiler import _is_cupy_available
+
+    class CustomMod:
+        """Dummy module container for non-MagicMock availability testing."""
+
+        pass
+
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", None):
+        assert _is_cupy_available() is False
+
+    mod_no_cuda = CustomMod()
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_no_cuda):
+        assert _is_cupy_available() is True
+
+    mod_cuda_unavail = CustomMod()
+    mod_cuda_unavail.cuda = CustomMod()
+    mod_cuda_unavail.cuda.is_available = lambda: False
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_unavail):
+        assert _is_cupy_available() is False
+
+    mod_cuda_avail = CustomMod()
+    mod_cuda_avail.cuda = CustomMod()
+    mod_cuda_avail.cuda.is_available = lambda: True
+    mod_cuda_avail.cuda.runtime = CustomMod()
+    mod_cuda_avail.cuda.runtime.getDeviceCount = lambda: 1
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_avail):
+        assert _is_cupy_available() is True
+
+    mod_cuda_zero = CustomMod()
+    mod_cuda_zero.cuda = CustomMod()
+    mod_cuda_zero.cuda.is_available = lambda: True
+    mod_cuda_zero.cuda.runtime = CustomMod()
+    mod_cuda_zero.cuda.runtime.getDeviceCount = lambda: 0
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_zero):
+        assert _is_cupy_available() is False
+
+    mod_cuda_err = CustomMod()
+    mod_cuda_err.cuda = CustomMod()
+
+    def _raise_cuda_error() -> int:
+        raise RuntimeError("boom")
+
+    mod_cuda_err.cuda.runtime = CustomMod()
+    mod_cuda_err.cuda.runtime.getDeviceCount = _raise_cuda_error
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_err):
+        assert _is_cupy_available() is False

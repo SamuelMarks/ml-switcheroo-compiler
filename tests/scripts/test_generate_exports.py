@@ -1,13 +1,35 @@
 """Tests for the generate_exports script."""
 
 import builtins
+import importlib
 import os
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
 
 import scripts.generate_exports as ge
+
+_real_import = importlib.import_module
+
+
+def _mock_mod_import(mod_obj: object) -> Callable[..., object]:
+    """Create a mock importlib.import_module side-effect targeting test modules.
+
+    Args:
+        mod_obj (object): Object to return when user/test module is imported.
+
+    Returns:
+        Callable[..., object]: Mock import side-effect function.
+    """
+
+    def _imp(name: str, *args: object, **kwargs: object) -> object:
+        if name in ("subprocess", "scripts", "scripts.generate_exports", "ast", "os", "sys", "tempfile", "builtins"):
+            return _real_import(name, *args, **kwargs)
+        return mod_obj
+
+    return _imp
 
 
 def test_get_exports_from_submodule() -> None:
@@ -173,10 +195,9 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
-            with patch("subprocess.run"):
-                ge.process_file(str(f))
+    with patch("subprocess.run"), patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
+            ge.process_file(str(f))
 
     content = f.read_text()
     assert "__all__ =" in content
@@ -202,8 +223,8 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         y = 2
         _z = 3
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()
@@ -228,8 +249,8 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()
@@ -253,8 +274,8 @@ def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.Mon
 
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert f.read_text() == "x = 1\n__all__ = ['x']"
@@ -277,8 +298,8 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         __all__ = None
         x = 1
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert f.read_text() == "x = 1\n"
@@ -301,8 +322,8 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         __all__ = ["x"]
         x = 1
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()
@@ -326,8 +347,8 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             # Ensure it hits the return line
             ge.process_file(str(f))
 
@@ -346,8 +367,8 @@ def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
 
         __all__ = 123  # Not a list, tuple, or set
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert f.read_text() == "x = 1\n\n__all__ = [\n]\n"
@@ -392,8 +413,8 @@ def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     class MockMod:
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()
@@ -430,8 +451,8 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
                 with builtins.open(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run", side_effect=mock_subprocess_run):
+    with patch("subprocess.run", side_effect=mock_subprocess_run):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert f.read_text() == original_source
@@ -445,8 +466,8 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
     class MockMod:
         __all__ = ["x", "z"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_empty_all.py"
@@ -455,8 +476,8 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
     class MockMod:
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert "x = 1\n\n__all__ = [\n" in f.read_text()
@@ -479,9 +500,9 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
                 n.end_lineno = None
         return nodes
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
-            with patch("ast.walk", side_effect=mock_walk):
+    with patch("subprocess.run"):
+        with patch("ast.walk", side_effect=mock_walk):
+            with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
                 ge.process_file(str(f))
 
 
@@ -493,8 +514,8 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
     class MockMod:
         __all__ = ["x", "y"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()
@@ -534,8 +555,8 @@ def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     class MockMod:
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     assert f.read_text() == "x = 1\n__all__ = ('x',)"
@@ -549,8 +570,8 @@ def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     class MockMod:
         __all__ = ["x"]
 
-    with patch("scripts.generate_exports.importlib.import_module", return_value=MockMod()):
-        with patch("subprocess.run"):
+    with patch("subprocess.run"):
+        with patch("scripts.generate_exports.importlib.import_module", side_effect=_mock_mod_import(MockMod())):
             ge.process_file(str(f))
 
     content = f.read_text()

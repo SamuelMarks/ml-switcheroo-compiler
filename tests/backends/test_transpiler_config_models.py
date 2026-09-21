@@ -90,21 +90,22 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
     real_join = os.path.join
     real_isdir = os.path.isdir
     real_listdir = os.listdir
+    rules_dir_str = str(rules_dir)
 
     def mock_join(*args: str) -> str:
         if "rules" in args:
             if args[-1] == "rules":
-                return str(rules_dir)
-            return str(rules_dir / args[-1])
+                return rules_dir_str
+            return real_join(rules_dir_str, args[-1])
         return real_join(*args)
 
     def mock_isdir(path: str) -> bool:
-        if str(rules_dir) in str(path) or str(path).endswith("rules"):
+        if rules_dir_str in str(path) or str(path).endswith("rules"):
             return True
         return real_isdir(path)
 
     def mock_listdir(path: str) -> list[str]:
-        if str(rules_dir) in str(path) or str(path).endswith("rules"):
+        if rules_dir_str in str(path) or str(path).endswith("rules"):
             return ["ignored.txt", "valid.yaml", "only_ast.yaml", "only_ir.yaml", "non_dict.yaml", "broken.yaml"]
         return real_listdir(path)
 
@@ -116,7 +117,7 @@ def test_load_transpiler_config_rules_dir(tmp_path: Path) -> None:
         assert "Cos" in cfg.ir_to_ast_ops
 
     def mock_isdir_false(path: str) -> bool:
-        if str(rules_dir) in str(path) or "rules" in str(path):
+        if rules_dir_str in str(path) or "rules" in str(path):
             return False
         return real_isdir(path)
 

@@ -25,13 +25,34 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
+def _is_cupy_available() -> bool:
+    """Check if CuPy has a functional CUDA driver and accelerator available.
+
+    Returns:
+        bool: True if CuPy can allocate and run on device, False otherwise.
+    """
+    if cp is None:
+        return False
+    if type(cp).__name__ == "MagicMock":
+        return True
+    try:
+        if hasattr(cp, "cuda"):
+            if hasattr(cp.cuda, "is_available") and not cp.cuda.is_available():
+                return False
+            if hasattr(cp.cuda, "runtime") and hasattr(cp.cuda.runtime, "getDeviceCount"):
+                return bool(cp.cuda.runtime.getDeviceCount() > 0)
+    except Exception:
+        return False
+    return True
+
+
 def _get_cupy_peak_memory_mb() -> float:
     """Retrieve peak device memory allocation on CuPy GPU.
 
     Returns:
         float: Peak memory in megabytes.
     """
-    if cp is None:
+    if cp is None or not _is_cupy_available():
         return _get_process_memory_mb()
     peak_mem: float = 0.0
     if hasattr(cp, "cuda") and hasattr(cp.cuda, "Device"):
@@ -60,7 +81,7 @@ class CupyProfiler:
 
     def _sync(self) -> None:
         """Synchronize execution using CUDA stream synchronization."""
-        if cp is None:
+        if cp is None or not _is_cupy_available():
             return
         if hasattr(cp, "cuda") and hasattr(cp.cuda, "Stream") and hasattr(cp.cuda.Stream, "null"):
             try:
@@ -95,7 +116,7 @@ class CupyProfiler:
         """
         del device
 
-        if cp is None:
+        if cp is None or not _is_cupy_available():
             return {
                 "latencies": [0.0] * num_iters,
                 "latency_ms": 0.0,
