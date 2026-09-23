@@ -53,7 +53,12 @@ def asarray(cls: type, data: object) -> object:
     Returns:
         object: The array tensor.
     """
-    return generic_asarray(kops, data)
+    del cls
+    if hasattr(kops, "convert_to_tensor"):
+        return kops.convert_to_tensor(data)
+    if hasattr(kops, "asarray"):
+        return kops.asarray(data)
+    return generic_array(kops, data)
 
 
 def item(cls: type, data: object) -> float:

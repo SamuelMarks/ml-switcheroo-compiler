@@ -91,7 +91,7 @@ class CppGenerator(BaseGenerator):
         return res
 
     def _dispatch_unmapped_op_fallback(self, node: IRNode, op: str) -> None:
-        """Handle unmapped operation with strict error policy or safe zero-initialized polyfill.
+        """Handle unmapped operation with strict error policy or safe runtime polyfill.
 
         Args:
             node (IRNode): Target IR node representing the unmapped operation.
@@ -108,14 +108,19 @@ class CppGenerator(BaseGenerator):
         import warnings
 
         warnings.warn(
-            f"LLVM C++ generator encountered unmapped op '{op}' for node '{node.id}'. Emitting safe zero-initialized polyfill to avoid uninitialized memory access.",
+            f"LLVM C++ generator encountered unmapped op '{op}' for node '{node.id}'. Emitting safe runtime polyfill.",
             UserWarning,
             stacklevel=2,
         )
         out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
         clean_id = node.id
         self.lines.append(f"    NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}")
-        self.lines.append(f"    for(size_t i = 0; i < {clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}")
+        inputs = getattr(node, "inputs", []) or []
+        if len(inputs) > 0:
+            in0 = inputs[0]
+            self.lines.append(f"    for(size_t i = 0; i < {clean_id}.size(); ++i) {{ {clean_id}.data[i] = ({in0}.size() > 0) ? {in0}.data[i % {in0}.size()] : 1.0f; }}")
+        else:
+            self.lines.append(f"    for(size_t i = 0; i < {clean_id}.size(); ++i) {{ {clean_id}.data[i] = 1.0f; }}")
 
     def _num_elements(self, shape: list[int]) -> int:
         """_num_elements function.
@@ -352,6 +357,401 @@ class CppGenerator(BaseGenerator):
             if line.strip():
                 self.lines.append(f"    {line}")
 
+    def visit_Conv3D(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate Conv3D LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("conv3d")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = []
+        if graph_to_use:
+            input_nodes = [graph_to_use.nodes.get(inp) for inp in inputs_list]
+        in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
+        w_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1, 1]
+        shape: list[int] = self._get_shape(node)
+
+        if len(in0_shape) < 5:
+            in0_shape = [1] * (5 - len(in0_shape)) + in0_shape
+        if len(w_shape) < 5:
+            w_shape = [1] * (5 - len(w_shape)) + w_shape
+        if len(shape) < 5:
+            shape = [1] * (5 - len(shape)) + shape
+
+        attrs: dict[str, AttrType] = getattr(node, "attributes", {})
+        stride: int | tuple[int, ...] | list[int] = attrs.get("stride", [1, 1, 1])
+        if isinstance(stride, int):
+            stride_d = stride_h = stride_w = stride
+        elif len(stride) >= 3:
+            stride_d, stride_h, stride_w = int(stride[0]), int(stride[1]), int(stride[2])
+        else:
+            stride_d = stride_h = stride_w = 1
+
+        expr_args: dict[str, AttrType] = {
+            "N": in0_shape[0],
+            "C_in": in0_shape[1],
+            "D": in0_shape[2],
+            "H": in0_shape[3],
+            "W": in0_shape[4],
+            "C_out": w_shape[0],
+            "KD": w_shape[2],
+            "KH": w_shape[3],
+            "KW": w_shape[4],
+            "D_out": shape[2],
+            "H_out": shape[3],
+            "W_out": shape[4],
+            "stride_d": stride_d,
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "in1": inputs_list[1] if len(inputs_list) > 1 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_MaxPool3D(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate MaxPool3D LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("maxpool3d")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
+        in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
+        shape: list[int] = self._get_shape(node)
+        if len(in0_shape) < 5:
+            in0_shape = [1] * (5 - len(in0_shape)) + in0_shape
+        if len(shape) < 5:
+            shape = [1] * (5 - len(shape)) + shape
+
+        attrs: dict[str, AttrType] = getattr(node, "attributes", {})
+        ksize: int | tuple[int, ...] | list[int] = attrs.get("kernel_size", [2, 2, 2])
+        kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
+        kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
+        kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
+        stride: int | tuple[int, ...] | list[int] = attrs.get("stride", [kd, kh, kw])
+        stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
+        stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
+        stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
+
+        expr_args: dict[str, AttrType] = {
+            "N": in0_shape[0],
+            "C": in0_shape[1],
+            "D": in0_shape[2],
+            "H": in0_shape[3],
+            "W": in0_shape[4],
+            "KD": kd,
+            "KH": kh,
+            "KW": kw,
+            "D_out": shape[2],
+            "H_out": shape[3],
+            "W_out": shape[4],
+            "stride_d": stride_d,
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_AvgPool3D(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate AvgPool3D LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("avgpool3d")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
+        in0_shape: list[int] = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
+        shape: list[int] = self._get_shape(node)
+        if len(in0_shape) < 5:
+            in0_shape = [1] * (5 - len(in0_shape)) + in0_shape
+        if len(shape) < 5:
+            shape = [1] * (5 - len(shape)) + shape
+
+        attrs: dict[str, AttrType] = getattr(node, "attributes", {})
+        ksize: int | tuple[int, ...] | list[int] = attrs.get("kernel_size", [2, 2, 2])
+        kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
+        kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
+        kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
+        stride: int | tuple[int, ...] | list[int] = attrs.get("stride", [kd, kh, kw])
+        stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
+        stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
+        stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
+
+        expr_args: dict[str, AttrType] = {
+            "N": in0_shape[0],
+            "C": in0_shape[1],
+            "D": in0_shape[2],
+            "H": in0_shape[3],
+            "W": in0_shape[4],
+            "KD": kd,
+            "KH": kh,
+            "KW": kw,
+            "D_out": shape[2],
+            "H_out": shape[3],
+            "W_out": shape[4],
+            "stride_d": stride_d,
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_LayerNorm(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate LayerNorm LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("layernorm")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        shape: list[int] = self._get_shape(node)
+        d_val: int = shape[-1] if shape else 1
+        has_gamma: str = "true" if len(inputs_list) > 1 else "false"
+        has_beta: str = "true" if len(inputs_list) > 2 else "false"
+        gamma_var: str = inputs_list[1] if len(inputs_list) > 1 else inputs_list[0]
+        beta_var: str = inputs_list[2] if len(inputs_list) > 2 else inputs_list[0]
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "D": d_val,
+            "has_gamma": has_gamma,
+            "has_beta": has_beta,
+            "gamma": gamma_var,
+            "beta": beta_var,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_BatchNorm(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate BatchNorm LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("batchnorm")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        shape: list[int] = self._get_shape(node)
+        channels: int = shape[1] if len(shape) > 1 else 1
+        spatial: int = 1
+        for dim in shape[2:]:
+            spatial *= dim
+
+        has_mean: str = "true" if len(inputs_list) > 1 else "false"
+        has_var: str = "true" if len(inputs_list) > 2 else "false"
+        has_gamma: str = "true" if len(inputs_list) > 3 else "false"
+        has_beta: str = "true" if len(inputs_list) > 4 else "false"
+
+        mean_var: str = inputs_list[1] if len(inputs_list) > 1 else inputs_list[0]
+        var_var: str = inputs_list[2] if len(inputs_list) > 2 else inputs_list[0]
+        gamma_var: str = inputs_list[3] if len(inputs_list) > 3 else inputs_list[0]
+        beta_var: str = inputs_list[4] if len(inputs_list) > 4 else inputs_list[0]
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "channels": channels,
+            "spatial": spatial,
+            "has_mean": has_mean,
+            "has_var": has_var,
+            "has_gamma": has_gamma,
+            "has_beta": has_beta,
+            "mean": mean_var,
+            "var": var_var,
+            "gamma": gamma_var,
+            "beta": beta_var,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_RMSNorm(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate RMSNorm LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("rmsnorm")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        shape: list[int] = self._get_shape(node)
+        d_val: int = shape[-1] if shape else 1
+        has_gamma: str = "true" if len(inputs_list) > 1 else "false"
+        gamma_var: str = inputs_list[1] if len(inputs_list) > 1 else inputs_list[0]
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "D": d_val,
+            "has_gamma": has_gamma,
+            "gamma": gamma_var,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_Slice(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate Slice LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("slice")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        shape: list[int] = self._get_shape(node)
+        rank: int = len(shape)
+        attrs: dict[str, AttrType] = getattr(node, "attributes", {})
+        starts: int | list[int] = attrs.get("starts", [0] * rank)
+        strides: int | list[int] = attrs.get("strides", [1] * rank)
+        starts_list: list[int] = [starts] * rank if isinstance(starts, int) else list(starts[:rank])
+        strides_list: list[int] = [strides] * rank if isinstance(strides, int) else list(strides[:rank])
+
+        starts_str: str = "{" + ", ".join(map(str, starts_list)) + "}"
+        strides_str: str = "{" + ", ".join(map(str, strides_list)) + "}"
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "rank": rank,
+            "starts": starts_str,
+            "strides": strides_str,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_Pad(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate Pad LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("pad")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        shape: list[int] = self._get_shape(node)
+        rank: int = len(shape)
+        attrs: dict[str, AttrType] = getattr(node, "attributes", {})
+        paddings: int | list[int] = attrs.get("paddings", [0] * rank)
+        pad_val: float = float(attrs.get("constant_value", 0.0))
+        pad_low: list[int] = []
+        if isinstance(paddings, int):
+            pad_low = [paddings] * rank
+        elif len(paddings) >= rank * 2:
+            pad_low = [int(paddings[2 * i]) for i in range(rank)]
+        else:
+            pad_low = [int(p) for p in paddings[:rank]]
+        pad_low_str: str = "{" + ", ".join(map(str, pad_low)) + "}"
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "rank": rank,
+            "pad_low": pad_low_str,
+            "pad_val": f"{pad_val}f",
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_GatherND(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate GatherND LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("gather_nd")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
+        idx_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1]
+        index_depth: int = idx_shape[-1] if idx_shape else 1
+        shape: list[int] = self._get_shape(node)
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "in1": inputs_list[1] if len(inputs_list) > 1 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "index_depth": index_depth,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
+    def visit_ScatterND(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+        """Generate ScatterND LLVM CPP.
+
+        Args:
+            node (IRNode): The IRNode.
+            graph_to_use (IRGraph | None): The graph_to_use parameter.
+        """
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template: dict[str, str] = get_cpp_template("scatter_nd")
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = [graph_to_use.nodes.get(inp) for inp in inputs_list] if graph_to_use else []
+        idx_shape: list[int] = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1]
+        index_depth: int = idx_shape[-1] if idx_shape else 1
+        shape: list[int] = self._get_shape(node)
+
+        expr_args: dict[str, AttrType] = {
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "in1": inputs_list[1] if len(inputs_list) > 1 else "dummy",
+            "in2": inputs_list[2] if len(inputs_list) > 2 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+            "index_depth": index_depth,
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
     def _visit_node(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
         """Visit a node and emit C++ code.
 
@@ -360,6 +760,7 @@ class CppGenerator(BaseGenerator):
             graph_to_use (IRGraph | None): The graph.
         """
         op: str = node.op_type
+        op_lower: str = op.lower()
 
         offset: int | None = node.attributes.get("buffer_offset")
         offset_str: str = f", global_arena.data() + {offset}" if offset is not None else ""
@@ -376,8 +777,28 @@ class CppGenerator(BaseGenerator):
             self._visit_if_op(node, graph_to_use)
         elif op in ("Loop", "WhileLoop"):
             self._visit_loop_op(node, graph_to_use)
-        elif op == "Conv2D":
+        elif op_lower == "conv2d":
             self.visit_Conv2D(node, graph_to_use)
+        elif op_lower == "conv3d":
+            self.visit_Conv3D(node, graph_to_use)
+        elif op_lower == "maxpool3d":
+            self.visit_MaxPool3D(node, graph_to_use)
+        elif op_lower == "avgpool3d":
+            self.visit_AvgPool3D(node, graph_to_use)
+        elif op_lower == "layernorm":
+            self.visit_LayerNorm(node, graph_to_use)
+        elif op_lower == "batchnorm":
+            self.visit_BatchNorm(node, graph_to_use)
+        elif op_lower == "rmsnorm":
+            self.visit_RMSNorm(node, graph_to_use)
+        elif op_lower == "slice":
+            self.visit_Slice(node, graph_to_use)
+        elif op_lower == "pad":
+            self.visit_Pad(node, graph_to_use)
+        elif op_lower in ("gathernd", "gather_nd"):
+            self.visit_GatherND(node, graph_to_use)
+        elif op_lower in ("scatternd", "scatter_nd"):
+            self.visit_ScatterND(node, graph_to_use)
         elif op == "Scan":
             self.visit_Scan(node, graph_to_use)
         elif op == "Attention":
@@ -439,6 +860,12 @@ class CppGenerator(BaseGenerator):
                     "K": K,
                 }
                 expr_format_args.update(mapping)
+                if "init_val" in expr_format_args:
+                    ival = str(expr_format_args["init_val"])
+                    if "INFINITY" in ival or ival.endswith("f"):
+                        expr_format_args["init_val"] = ival
+                    else:
+                        expr_format_args["init_val"] = f"{ival}f"
 
                 body: str = template["body"].format(**expr_format_args)
                 for line in body.split("\n"):

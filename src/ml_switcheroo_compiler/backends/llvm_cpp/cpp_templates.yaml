@@ -35,7 +35,7 @@ templates:
       #endif\n"
   reduction:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0)\
-      \ {{\n    float res = {init_val}f;\n    #pragma omp simd\n    for(size_t i=0;\
+      \ {{\n    float res = {init_val};\n    #pragma omp simd\n    for(size_t i=0;\
       \ i<{in0}.size(); ++i) {{\n        float val = {in0}.data[i];\n        res =\
       \ {scalar_expr};\n    }}\n    {clean_id}.data[0] = {final_combine};\n}}\n"
   fallback_copy:
@@ -118,9 +118,11 @@ templates:
       \ ? (sum_val / count) : 0.0f;\n            }}\n        }}\n    }}\n}}\n"
   batchnorm:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
-      \ i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = ({in0}.data[i]\
-      \ - {mean}.data[i % {channels}]) / std::sqrt({var}.data[i % {channels}] + 1e-5f)\
-      \ * {gamma}.data[i % {channels}] + {beta}.data[i % {channels}];\n}}\n"
+      \ i=0; i<{clean_id}.size(); ++i) {{\n    int c = (i / {spatial}) % {channels};\n\
+      \    float m = {has_mean} ? {mean}.data[c] : 0.0f;\n    float v = {has_var}\
+      \ ? {var}.data[c] : 1.0f;\n    float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n\
+      \    float b = {has_beta} ? {beta}.data[c] : 0.0f;\n    {clean_id}.data[i] =\
+      \ (({in0}.data[i] - m) / std::sqrt(v + 1e-5f)) * g + b;\n}}\n"
   layernorm:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
       \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float mean = 0.0f;\n    #pragma\
@@ -129,8 +131,116 @@ templates:
       \ reduction(+:var)\n    for (int j = 0; j < {D}; ++j) {{\n        float diff\
       \ = {in0}.data[r * {D} + j] - mean;\n        var += diff * diff;\n    }}\n \
       \   var /= {D};\n    float inv_std = 1.0f / std::sqrt(var + 1e-5f);\n    #pragma\
-      \ omp simd\n    for (int j = 0; j < {D}; ++j) {{\n        {clean_id}.data[r\
-      \ * {D} + j] = ({in0}.data[r * {D} + j] - mean) * inv_std;\n    }}\n}}\n"
+      \ omp simd\n    for (int j = 0; j < {D}; ++j) {{\n        float g = {has_gamma}\
+      \ ? {gamma}.data[j] : 1.0f;\n        float b = {has_beta} ? {beta}.data[j] :\
+      \ 0.0f;\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r * {D} + j] - mean)\
+      \ * inv_std * g + b;\n    }}\n}}\n"
+  rmsnorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float sum_sq = 0.0f;\n   \
+      \ #pragma omp simd reduction(+:sum_sq)\n    for (int j = 0; j < {D}; ++j) {{\
+      \ float x = {in0}.data[r * {D} + j]; sum_sq += x * x; }}\n    float rms = 1.0f\
+      \ / std::sqrt(sum_sq / {D} + 1e-5f);\n    #pragma omp simd\n    for (int j =\
+      \ 0; j < {D}; ++j) {{\n        float g = {has_gamma} ? {gamma}.data[j] : 1.0f;\n\
+      \        {clean_id}.data[r * {D} + j] = {in0}.data[r * {D} + j] * rms * g;\n\
+      \    }}\n}}\n"
+  conv3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C_out}; ++oc) {{\n\
+      \        for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
+      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
+      \ ++ox) {{\n                    float sum = 0.0f;\n                    for\
+      \ (int ic = 0; ic < {C_in}; ++ic) {{\n                        for (int kd =\
+      \ 0; kd < {KD}; ++kd) {{\n                            for (int fy = 0; fy <\
+      \ {KH}; ++fy) {{\n                                #pragma omp simd reduction(+:sum)\n\
+      \                                for (int fx = 0; fx < {KW}; ++fx) {{\n    \
+      \                                int in_d = od * {stride_d} + kd;\n        \
+      \                            int in_y = oy * {stride_h} + fy;\n            \
+      \                        int in_x = ox * {stride_w} + fx;\n                \
+      \                    if (in_d < {D} && in_y < {H} && in_x < {W}) {{\n      \
+      \                                  int in_idx = ((((b * {C_in} + ic) * {D} +\
+      \ in_d) * {H} + in_y) * {W}) + in_x;\n                                     \
+      \   int w_idx = ((((oc * {C_in} + ic) * {KD} + kd) * {KH} + fy) * {KW}) + fx;\n\
+      \                                        sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
+      \                                    }}\n                                }}\n\
+      \                            }}\n                        }}\n              \
+      \      }}\n                    {clean_id}.data[out_idx++] = sum;\n         \
+      \       }}\n            }}\n        }}\n    }}\n}}\n"
+  maxpool3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n \
+      \       for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
+      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
+      \ ++ox) {{\n                    float max_val = -1e38f;\n                 \
+      \   for (int kd = 0; kd < {KD}; ++kd) {{\n                        for (int fy\
+      \ = 0; fy < {KH}; ++fy) {{\n                            #pragma omp simd reduction(max:max_val)\n\
+      \                            for (int fx = 0; fx < {KW}; ++fx) {{\n        \
+      \                        int in_d = od * {stride_d} + kd;\n                \
+      \                int in_y = oy * {stride_h} + fy;\n                        \
+      \        int in_x = ox * {stride_w} + fx;\n                                if\
+      \ (in_d < {D} && in_y < {H} && in_x < {W}) {{\n                            \
+      \        int in_idx = ((((b * {C} + oc) * {D} + in_d) * {H} + in_y) * {W}) +\
+      \ in_x;\n                                    max_val = std::max(max_val, {in0}.data[in_idx]);\n\
+      \                                }}\n                            }}\n      \
+      \                  }}\n                    }}\n                    {clean_id}.data[out_idx++]\
+      \ = max_val;\n                }}\n            }}\n        }}\n    }}\n}}\n"
+  avgpool3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n \
+      \       for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
+      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
+      \ ++ox) {{\n                    float sum_val = 0.0f;\n                   \
+      \ int count = 0;\n                    for (int kd = 0; kd < {KD}; ++kd) {{\n\
+      \                        for (int fy = 0; fy < {KH}; ++fy) {{\n             \
+      \               for (int fx = 0; fx < {KW}; ++fx) {{\n                     \
+      \           int in_d = od * {stride_d} + kd;\n                             \
+      \   int in_y = oy * {stride_h} + fy;\n                                int in_x\
+      \ = ox * {stride_w} + fx;\n                                if (in_d < {D} &&\
+      \ in_y < {H} && in_x < {W}) {{\n                                    int in_idx\
+      \ = ((((b * {C} + oc) * {D} + in_d) * {H} + in_y) * {W}) + in_x;\n         \
+      \                           sum_val += {in0}.data[in_idx];\n               \
+      \                     count++;\n                                }}\n        \
+      \                    }}\n                        }}\n                    }}\n\
+      \                    {clean_id}.data[out_idx++] = (count > 0) ? (sum_val / count)\
+      \ : 0.0f;\n                }}\n            }}\n        }}\n    }}\n}}\n"
+  slice:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
+      \ 0);\nstd::vector<int> starts_{clean_id} = {starts};\nstd::vector<int> strides_{clean_id}\
+      \ = {strides};\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    std::vector<int>\
+      \ in_idx_{clean_id}({rank}, 0);\n    for(int d = 0; d < {rank}; ++d) {{\n \
+      \       in_idx_{clean_id}[d] = starts_{clean_id}[d] + out_idx_{clean_id}[d]\
+      \ * strides_{clean_id}[d];\n    }}\n    {clean_id}.data[i] = {in0}.get(in_idx_{clean_id});\n\
+      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
+      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
+      \ = 0;\n    }}\n}}\n"
+  pad:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
+      \ 0);\nstd::vector<int> pad_low_{clean_id} = {pad_low};\nfor(size_t i=0; i<{clean_id}.size();\
+      \ ++i) {{\n    bool is_pad = false;\n    std::vector<int> in_idx_{clean_id}({rank},\
+      \ 0);\n    for(int d = 0; d < {rank}; ++d) {{\n        int coord = out_idx_{clean_id}[d]\
+      \ - pad_low_{clean_id}[d];\n        if (coord < 0 || coord >= {in0}.shape[d])\
+      \ {{ is_pad = true; break; }}\n        in_idx_{clean_id}[d] = coord;\n    }}\n\
+      \    {clean_id}.data[i] = is_pad ? {pad_val} : {in0}.get(in_idx_{clean_id});\n\
+      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
+      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
+      \ = 0;\n    }}\n}}\n"
+  gather_nd:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint num_slices = {in1}.size()\
+      \ / {index_depth};\nint slice_size = {clean_id}.size() / (num_slices > 0 ? num_slices\
+      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int src_offset = 0;\n\
+      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
+      \ * {index_depth} + k];\n        src_offset += idx_k * {in0}.strides[k];\n \
+      \   }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[s\
+      \ * slice_size + j] = {in0}.data[src_offset + j];\n    }}\n}}\n"
+  scatter_nd:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::memcpy({clean_id}.data.data(),\
+      \ {in0}.data.data(), {in0}.size() * sizeof(float));\nint num_slices = {in1}.size()\
+      \ / {index_depth};\nint slice_size = {in2}.size() / (num_slices > 0 ? num_slices\
+      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int dst_offset = 0;\n\
+      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
+      \ * {index_depth} + k];\n        dst_offset += idx_k * {clean_id}.strides[k];\n\
+      \    }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[dst_offset\
+      \ + j] = {in2}.data[s * slice_size + j];\n    }}\n}}\n"
   softmax:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
       \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
@@ -387,11 +497,53 @@ operations:
   bitwise_not:
     template: unary
     scalar_expr: (float)(~(int)in0_val)
+  lgamma:
+    template: unary
+    scalar_expr: std::lgamma(in0_val)
+  digamma:
+    template: unary
+    scalar_expr: digamma(in0_val)
+  bessel:
+    template: unary
+    scalar_expr: bessel_j0(in0_val)
+  bessel_j0:
+    template: unary
+    scalar_expr: bessel_j0(in0_val)
+  bessel_j1:
+    template: unary
+    scalar_expr: bessel_j1(in0_val)
+  bessel_i0:
+    template: unary
+    scalar_expr: bessel_i0(in0_val)
+  bessel_i1:
+    template: unary
+    scalar_expr: bessel_i1(in0_val)
 prelude: "#include <iostream>\n#include <vector>\n#include <cmath>\n#include <numeric>\n\
   #include <algorithm>\n#include <cassert>\n#include <cstdlib>\n#include <cstring>\n\
-  #include <memory>\n#ifdef USE_BLAS\n#include <cblas.h>\n#endif\n\ntemplate<typename\
-  \ T, size_t Alignment = 64>\nstruct AlignedBuffer {\n    T* ptr = nullptr;\n   \
-  \ size_t num_bytes = 0;\n\n    AlignedBuffer(size_t bytes) : num_bytes(bytes) {\n\
+  #include <memory>\n#ifdef USE_BLAS\n#include <cblas.h>\n#endif\n\ninline float digamma(float\
+  \ x) {\n    if (x <= 0.0f && x == std::floor(x)) return 0.0f;\n    float result =\
+  \ 0.0f;\n    if (x < 0.0f) {\n        result = -3.141592653589793f / std::tan(3.141592653589793f\
+  \ * x);\n        x = 1.0f - x;\n    }\n    while (x < 7.0f) {\n        result -=\
+  \ 1.0f / x;\n        x += 1.0f;\n    }\n    float x_inv = 1.0f / x;\n    float x_inv2\
+  \ = x_inv * x_inv;\n    result += std::log(x) - 0.5f * x_inv - x_inv2 * (1.0f / 12.0f\
+  \ - x_inv2 * (1.0f / 120.0f - x_inv2 / 252.0f));\n    return result;\n}\n\ninline float bessel_j0(float x) {\n    return (float)::j0((double)x);\n}\n\ninline\
+  \ float bessel_j1(float x) {\n    return (float)::j1((double)x);\n}\n\ninline float\
+  \ bessel_i0(float x) {\n    float ax = std::abs(x);\n    if (ax < 3.75f) {\n \
+  \       float y = (x / 3.75f) * (x / 3.75f);\n        return 1.0f + y * (3.5156229f\
+  \ + y * (3.0899424f + y * (1.2067492f + y * (0.2659732f + y * (0.0360768f + y\
+  \ * 0.0045813f)))));\n    } else {\n        float y = 3.75f / ax;\n        return\
+  \ (std::exp(ax) / std::sqrt(ax)) * (0.39894228f + y * (0.01328592f + y * (0.00225319f\
+  \ + y * (-0.00157565f + y * (0.00916281f + y * (-0.02057706f + y * (0.02635537f\
+  \ + y * (-0.01647633f + y * 0.00392377f))))))));\n    }\n}\n\ninline float bessel_i1(float\
+  \ x) {\n    float ax = std::abs(x);\n    float ans;\n    if (ax < 3.75f) {\n \
+  \       float y = (x / 3.75f) * (x / 3.75f);\n        ans = ax * (0.5f + y * (0.87890594f\
+  \ + y * (0.51498869f + y * (0.15084934f + y * (0.02658733f + y * (0.00301532f\
+  \ + y * 0.00032411f))))));\n    } else {\n        float y = 3.75f / ax;\n     \
+  \   ans = (std::exp(ax) / std::sqrt(ax)) * (0.39894228f + y * (-0.03988024f + y\
+  \ * (-0.00362018f + y * (0.00163801f + y * (-0.01031555f + y * (0.02282967f +\
+  \ y * (-0.02895312f + y * (0.01787654f + y * -0.00420059f))))))));\n    }\n \
+  \   return (x < 0.0f) ? -ans : ans;\n}\n\ntemplate<typename T, size_t Alignment\
+  \ = 64>\nstruct AlignedBuffer {\n    T* ptr = nullptr;\n    size_t num_bytes = 0;\n\n    AlignedBuffer(size_t bytes) : num_bytes(bytes) {\n\
   \        size_t aligned_bytes = (bytes + Alignment - 1) & ~(Alignment - 1);\n  \
   \      if (aligned_bytes == 0) aligned_bytes = Alignment;\n#if defined(_MSC_VER)\n\
   \        ptr = static_cast<T*>(_aligned_malloc(aligned_bytes, Alignment));\n#elif\

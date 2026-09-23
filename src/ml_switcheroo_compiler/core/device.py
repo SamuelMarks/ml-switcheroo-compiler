@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -35,7 +37,7 @@ class Device:
 class Stream:
     """Provide a stream for running operations on a given device."""
 
-    def __init__(self, device: "Device | None" = None) -> None:
+    def __init__(self, device: Device | None = None) -> None:
         """Initialize Stream.
 
         Args:
@@ -47,7 +49,7 @@ class Stream:
 class StreamContext:
     """Provide a context manager for setting the current device and stream."""
 
-    def __init__(self, stream: "Stream") -> None:
+    def __init__(self, stream: Stream) -> None:
         """Initialize StreamContext.
 
         Args:
@@ -55,7 +57,7 @@ class StreamContext:
         """
         self.stream = stream
 
-    def __enter__(self) -> "StreamContext":
+    def __enter__(self) -> StreamContext:
         """Enter the context manager.
 
         Returns:
@@ -100,7 +102,7 @@ class FunctionExporter:
         self.args = args
         self.kwargs = kwargs
 
-    def __enter__(self) -> "FunctionExporter":
+    def __enter__(self) -> FunctionExporter:
         """Enter the context manager.
 
         Returns:
@@ -120,12 +122,12 @@ class FunctionExporter:
         self.kwargs = {}
 
 
-def export_function(*args, **kwargs) -> None:
-    """Export an MLX function.
+def export_function(*args: object, **kwargs: object) -> None:
+    """Export a computational trace or function for unified persistence.
 
     Args:
-        args (object): Positional arguments.
-        kwargs (object): Keyword arguments.
+        *args (object): Positional arguments.
+        **kwargs (object): Keyword arguments.
 
     Raises:
         BackendNotSupportedError: If the backend does not support exporting.
@@ -140,24 +142,24 @@ def export_function(*args, **kwargs) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
-def exporter(*args, **kwargs) -> FunctionExporter:
+def exporter(*args: object, **kwargs: object) -> FunctionExporter:
     """Make a callable object to export multiple traces of a function to a file.
 
     Args:
-        args (object): args
-        kwargs (object): kwargs
+        *args (object): Positional arguments.
+        **kwargs (object): Keyword arguments.
 
     Returns:
-        FunctionExporter: The exporter
+        FunctionExporter: The exporter context manager.
     """
     return FunctionExporter(*args, **kwargs)
 
 
-def get_logical_devices(device_type=None) -> list[Device]:
+def get_logical_devices(device_type: str | None = None) -> list[Device]:
     """Get logical devices for the current backend.
 
     Args:
-        device_type (str): The type of device to filter by.
+        device_type (str | None): The type of device to filter by.
 
     Returns:
         list[Device]: A list of logical devices.
@@ -174,11 +176,11 @@ def get_logical_devices(device_type=None) -> list[Device]:
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
 
 
-def get_physical_devices(device_type=None) -> list[Device]:
+def get_physical_devices(device_type: str | None = None) -> list[Device]:
     """Get physical devices for the current backend.
 
     Args:
-        device_type (str): The type of device to filter by.
+        device_type (str | None): The type of device to filter by.
 
     Returns:
         list[Device]: A list of physical devices.
@@ -195,11 +197,11 @@ def get_physical_devices(device_type=None) -> list[Device]:
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
 
 
-def get_memory_info(device=None) -> dict[str, int]:
+def get_memory_info(device: str | None = None) -> dict[str, int]:
     """Get memory statistics tracking (allocation bytes, peak usage).
 
     Args:
-        device (str): The device to get info for.
+        device (str | None): The device to get info for.
 
     Returns:
         dict[str, int]: Memory statistics dictionary.

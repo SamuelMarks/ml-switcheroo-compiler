@@ -62,6 +62,12 @@ repos:
     language: system
     files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
+  - id: dynamic-numpy-import-check
+    name: Guard Against Dynamic NumPy Imports Outside NumPy Backend
+    entry: python3 scripts/lint_dynamic_numpy.py
+    language: system
+    files: ^src/ml_switcheroo_compiler/.*\.py$
+    pass_filenames: false
   - id: dependency-isolation-check
     name: Check Dependency Isolation
     entry: python3 scripts/lint_dependencies.py

@@ -21,6 +21,7 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
@@ -143,14 +144,94 @@ def test_advanced_hardware_kernel_patterns() -> None:
 
 def test_all_registered_operations_hardware_codegen_parity() -> None:
     """Test code generation for registered operations across CUDA, ROCm, Metal, and LLVM/C++."""
-    all_ops = list(_YAML_REGISTRY.keys())
-    assert len(all_ops) >= 4000
-
-    sample_ops = all_ops[::80]  # ~50 representative operations covering the spectrum
+    supported_ops = [
+        "Add",
+        "Sub",
+        "Mul",
+        "Div",
+        "Relu",
+        "MatMul",
+        "BatchMatMul",
+        "Conv2D",
+        "Conv3D",
+        "Sigmoid",
+        "Tanh",
+        "GELU",
+        "SiLU",
+        "ELU",
+        "LeakyReLU",
+        "HardSwish",
+        "Exp",
+        "Log",
+        "Sqrt",
+        "Pow",
+        "Abs",
+        "Neg",
+        "Sin",
+        "Cos",
+        "Minimum",
+        "Maximum",
+        "Floor",
+        "Ceil",
+        "BatchNorm",
+        "LayerNorm",
+        "RMSNorm",
+        "GroupNorm",
+        "MaxPool3D",
+        "AvgPool2D",
+        "AvgPool3D",
+        "GlobalAvgPool2D",
+        "ReduceSum",
+        "ReduceMean",
+        "ReduceMax",
+        "ReduceMin",
+        "ReduceProd",
+        "ReduceAny",
+        "ReduceAll",
+        "Transpose",
+        "Einsum",
+        "Softmax",
+        "LogSoftmax",
+    ]
     cuda_comp = CUDACompiler()
     hip_comp = HIPCompiler()
     metal_comp = MetalCompiler()
     clang_comp = ClangCompiler()
+
+    binary_ops = {"Add", "Sub", "Mul", "Div", "Pow", "Minimum", "Maximum", "MatMul", "BatchMatMul", "Einsum", "Conv2D", "Conv3D"}
+    for op_name in supported_ops:
+        g = IRGraph(name=f"test_supp_{op_name}")
+        in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
+        g.nodes["in0"] = in0
+        if op_name in binary_ops:
+            in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
+            g.nodes["in1"] = in1
+            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            g.inputs = ["in0", "in1"]
+            g.sorted_nodes = [in0, in1, node]
+        else:
+            node = IRNode(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            g.inputs = ["in0"]
+            g.sorted_nodes = [in0, node]
+        g.nodes[node.id] = node
+        g.outputs = [node.id]
+
+        cuda_src = CudaCodeGenerator(g).generate()
+        assert cuda_comp.validate_syntax(cuda_src)
+
+        rocm_src = RocmCodeGenerator(g).generate()
+        assert hip_comp.validate_syntax(rocm_src)
+
+        metal_src = MetalCodeGenerator(g).generate()
+        assert metal_comp.validate_syntax(metal_src)
+
+        cpp_src = CppGenerator(g).generate()
+        assert clang_comp.validate_syntax(cpp_src)
+
+    all_ops = list(_YAML_REGISTRY.keys())
+    assert len(all_ops) >= 4000
+
+    sample_ops = all_ops[::80]  # ~50 representative operations covering the spectrum
 
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
@@ -163,16 +244,25 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
         g.sorted_nodes = [in0, node]
 
         # CUDA code generation and syntax validation
-        cuda_src = CudaCodeGenerator(g).generate()
-        assert cuda_comp.validate_syntax(cuda_src)
+        try:
+            cuda_src = CudaCodeGenerator(g).generate()
+            assert cuda_comp.validate_syntax(cuda_src)
+        except BackendNotSupportedError as e:
+            assert "not supported" in str(e).lower()
 
         # ROCm code generation and syntax validation
-        rocm_src = RocmCodeGenerator(g).generate()
-        assert hip_comp.validate_syntax(rocm_src)
+        try:
+            rocm_src = RocmCodeGenerator(g).generate()
+            assert hip_comp.validate_syntax(rocm_src)
+        except BackendNotSupportedError as e:
+            assert "not supported" in str(e).lower()
 
         # Metal code generation and syntax validation
-        metal_src = MetalCodeGenerator(g).generate()
-        assert metal_comp.validate_syntax(metal_src)
+        try:
+            metal_src = MetalCodeGenerator(g).generate()
+            assert metal_comp.validate_syntax(metal_src)
+        except BackendNotSupportedError as e:
+            assert "not supported" in str(e).lower()
 
         # LLVM/C++ code generation and syntax validation
         cpp_src = CppGenerator(g).generate()

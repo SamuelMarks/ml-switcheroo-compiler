@@ -112,7 +112,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
     n_invalid_meta = IRNode(
         id="n_invalid",
         op_type="Input",
-        shape_metadata=123,  # type: ignore[arg-type]
+        shape_metadata=123,
     )
 
     graph.nodes = {"n1": n1, "n2": n2, "n3": n3, "n_invalid": n_invalid_meta}
@@ -240,3 +240,36 @@ def test_matmul_shapes_errors_and_branches() -> None:
 
     # 3D @ 1D (len(shape_a) > 2, len(shape_b) == 1) -> branch 1845->1848
     assert matmul_shape((2, 4, 3), (3,)) == (2, 4)
+
+
+def test_symnode_eval_fallback_and_polynomial() -> None:
+    """Test Polynomial.eval and SymNode.eval fallback evaluation."""
+    from ml_switcheroo_compiler.ir.shape_system import Polynomial, SymNode
+
+    # Test Polynomial eval directly
+    p = Polynomial()
+    p.terms[(("x", 2),)] = 3
+    p.terms[(("y", 1),)] = 5
+    p.terms[()] = 7
+    # 3 * x^2 + 5 * y + 7 with x=2, y=3: 3*4 + 5*3 + 7 = 12 + 15 + 7 = 34
+    res = p.eval({"x": 2, "y": 3})
+    assert res == 34
+
+    with pytest.raises(KeyError, match="Variable 'y' not bound"):
+        p.eval({"x": 2})
+
+    # Test SymNode fallback evaluation via to_polynomial
+    class PolySymNode(SymNode):
+        def to_polynomial(self) -> Polynomial:
+            return p
+
+    node = PolySymNode()
+    assert node.eval({"x": 2, "y": 3}) == 34
+
+    # Test SymNode without polynomial raising NotImplementedError
+    class BareSymNode(SymNode):
+        pass
+
+    bare = BareSymNode()
+    with pytest.raises(NotImplementedError, match="Evaluation not implemented"):
+        bare.eval({"x": 1})

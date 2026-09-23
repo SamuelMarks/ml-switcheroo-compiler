@@ -19,7 +19,7 @@ class NumbaGenerator(PythonStringGenerator):
         self,
         graph: IRGraph,
         fastmath: bool = True,
-        parallel: bool = False,
+        parallel: bool = True,
         nogil: bool = False,
         emit_safe_fallback: bool = True,
     ) -> None:
@@ -296,4 +296,162 @@ class NumbaGenerator(PythonStringGenerator):
             self.indent_level -= 1
             return out_var
         self.add_line(f"{out_var} = np.min({in_var})")
+        return out_var
+
+    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel matrix multiplication with nb.prange or standard np.matmul.
+
+        Args:
+            node (IRNode): MatMul IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        a_var = input_vars[0] if len(input_vars) > 0 else "a"
+        b_var = input_vars[1] if len(input_vars) > 1 else "b"
+        if self.parallel:
+            self.add_line(f"{out_var} = np.zeros(({a_var}.shape[0], {b_var}.shape[1]), dtype={a_var}.dtype)")
+            self.add_line(f"for _i in nb.prange({a_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line(f"for _j in range({b_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"for _k in range({a_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}[_i, _j] += {a_var}[_i, _k] * {b_var}[_k, _j]")
+            self.indent_level -= 3
+            return out_var
+        self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
+        return out_var
+
+    def visit_BatchMatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel batched matrix multiplication with nb.prange across outer batch.
+
+        Args:
+            node (IRNode): BatchMatMul IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        a_var = input_vars[0] if len(input_vars) > 0 else "a"
+        b_var = input_vars[1] if len(input_vars) > 1 else "b"
+        if self.parallel:
+            self.add_line(f"{out_var} = np.zeros(({a_var}.shape[0], {a_var}.shape[1], {b_var}.shape[2]), dtype={a_var}.dtype)")
+            self.add_line(f"for _b in nb.prange({a_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line(f"for _i in nb.prange({a_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"for _j in range({b_var}.shape[2]):")
+            self.indent_level += 1
+            self.add_line(f"for _k in range({a_var}.shape[2]):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}[_b, _i, _j] += {a_var}[_b, _i, _k] * {b_var}[_b, _k, _j]")
+            self.indent_level -= 4
+            return out_var
+        self.add_line(f"{out_var} = np.matmul({a_var}, {b_var})")
+        return out_var
+
+    def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel 2D convolution with nb.prange across batch and spatial height.
+
+        Args:
+            node (IRNode): Conv2D IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        x_var = input_vars[0] if len(input_vars) > 0 else "x"
+        w_var = input_vars[1] if len(input_vars) > 1 else "w"
+        if self.parallel:
+            self.add_line(f"_h_out = {x_var}.shape[2] - {w_var}.shape[2] + 1")
+            self.add_line(f"_w_out = {x_var}.shape[3] - {w_var}.shape[3] + 1")
+            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {w_var}.shape[0], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line("for _h in nb.prange(_h_out):")
+            self.indent_level += 1
+            self.add_line("for _w in range(_w_out):")
+            self.indent_level += 1
+            self.add_line(f"for _oc in range({w_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line(f"for _ic in range({x_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"for _kh in range({w_var}.shape[2]):")
+            self.indent_level += 1
+            self.add_line(f"for _kw in range({w_var}.shape[3]):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}[_b, _oc, _h, _w] += {x_var}[_b, _ic, _h + _kh, _w + _kw] * {w_var}[_oc, _ic, _kh, _kw]")
+            self.indent_level -= 7
+            return out_var
+        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {w_var}.shape[0], {x_var}.shape[2] - {w_var}.shape[2] + 1, {x_var}.shape[3] - {w_var}.shape[3] + 1), dtype={x_var}.dtype)")
+        return out_var
+
+    def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel 2D max pooling with nb.prange across batch and spatial height.
+
+        Args:
+            node (IRNode): MaxPool2D IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        x_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"_h_out = {x_var}.shape[2] // 2")
+            self.add_line(f"_w_out = {x_var}.shape[3] // 2")
+            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line("for _h in nb.prange(_h_out):")
+            self.indent_level += 1
+            self.add_line("for _w in range(_w_out):")
+            self.indent_level += 1
+            self.add_line(f"for _c in range({x_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}[_b, _c, _h, _w] = max({x_var}[_b, _c, _h * 2, _w * 2], {x_var}[_b, _c, _h * 2 + 1, _w * 2], {x_var}[_b, _c, _h * 2, _w * 2 + 1], {x_var}[_b, _c, _h * 2 + 1, _w * 2 + 1])")
+            self.indent_level -= 4
+            return out_var
+        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
+        return out_var
+
+    def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel 2D average pooling with nb.prange across batch and spatial height.
+
+        Args:
+            node (IRNode): AvgPool2D IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        x_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"_h_out = {x_var}.shape[2] // 2")
+            self.add_line(f"_w_out = {x_var}.shape[3] // 2")
+            self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], _h_out, _w_out), dtype={x_var}.dtype)")
+            self.add_line(f"for _b in nb.prange({x_var}.shape[0]):")
+            self.indent_level += 1
+            self.add_line("for _h in nb.prange(_h_out):")
+            self.indent_level += 1
+            self.add_line("for _w in range(_w_out):")
+            self.indent_level += 1
+            self.add_line(f"for _c in range({x_var}.shape[1]):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}[_b, _c, _h, _w] = ({x_var}[_b, _c, _h * 2, _w * 2] + {x_var}[_b, _c, _h * 2 + 1, _w * 2] + {x_var}[_b, _c, _h * 2, _w * 2 + 1] + {x_var}[_b, _c, _h * 2 + 1, _w * 2 + 1]) / 4.0")
+            self.indent_level -= 4
+            return out_var
+        self.add_line(f"{out_var} = np.zeros(({x_var}.shape[0], {x_var}.shape[1], {x_var}.shape[2] // 2, {x_var}.shape[3] // 2), dtype={x_var}.dtype)")
         return out_var

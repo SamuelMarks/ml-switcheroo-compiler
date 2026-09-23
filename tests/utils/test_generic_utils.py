@@ -24,10 +24,7 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     deserialize_keras_Any,
     disable_interactive_logging,
     enable_interactive_logging,
-    get_custom_Anys,
     get_file,
-    get_registered_Any,
-    get_registered_name,
     is_interactive_logging_enabled,
     is_keras_tensor,
     register_keras_serializable,
@@ -158,12 +155,9 @@ def test_utility_functions():
 
     assert deserialize_keras_Any() is None
 
-    disable_interactive_logging()
     enable_interactive_logging()
-
-    assert get_custom_Anys() == {}
-    assert get_registered_name() == ""
-    assert get_registered_Any() is None
+    assert is_interactive_logging_enabled()
+    disable_interactive_logging()
     assert not is_interactive_logging_enabled()
     assert not is_keras_tensor()
     assert serialize_keras_Any() is None
@@ -187,7 +181,7 @@ from ml_switcheroo_compiler.utils.generic_utils import (
 
 
 def test_generic_utils_stubs() -> None:
-    """Test generic utils stubs."""
+    """Test generic utils stubs and ecosystem utilities."""
     FeatureSpace()
     Config()
     PyDataset()
@@ -199,3 +193,180 @@ def test_generic_utils_stubs() -> None:
     @register_keras_serializable()
     class A:
         pass
+
+
+def test_custom_object_scope_and_serialization() -> None:
+    """Test functional custom_object_scope and serialization/deserialization."""
+    from ml_switcheroo_compiler.utils.generic_utils import (
+        deserialize_keras_object,
+        get_custom_objects,
+        get_registered_object,
+        serialize_keras_object,
+    )
+
+    class CustomDense:
+        def __init__(self, units: int = 32) -> None:
+            self.units = units
+
+        def get_config(self) -> dict[str, int]:
+            return {"units": self.units}
+
+        @classmethod
+        def from_config(cls, config: dict[str, int]) -> "CustomDense":
+            return cls(**config)
+
+    # Scoped registration
+    with custom_object_scope({"CustomDense": CustomDense}):
+        assert "CustomDense" in get_custom_objects()
+        assert get_registered_object("CustomDense") is CustomDense
+
+        layer = CustomDense(units=64)
+        serialized = serialize_keras_object(layer)
+        assert serialized is not None
+        assert serialized["class_name"] == "CustomDense"
+        assert serialized["config"] == {"units": 64}
+
+        deserialized = deserialize_keras_object(serialized)
+        assert isinstance(deserialized, CustomDense)
+        assert deserialized.units == 64
+
+    # Restored outside scope
+    assert "CustomDense" not in get_custom_objects()
+
+    # Pass custom_objects explicitly to deserialize
+    deserialized_explicit = deserialize_keras_object(serialized, custom_objects={"CustomDense": CustomDense})
+    assert isinstance(deserialized_explicit, CustomDense)
+    assert deserialized_explicit.units == 64
+
+    # Class without from_config (uses cls(**config))
+    class SimpleLayer:
+        def __init__(self, val: int = 0) -> None:
+            self.val = val
+
+    deserialized_simple = deserialize_keras_object(
+        {"class_name": "SimpleLayer", "config": {"val": 10}},
+        custom_objects={"SimpleLayer": SimpleLayer},
+    )
+    assert isinstance(deserialized_simple, SimpleLayer)
+    assert deserialized_simple.val == 10
+
+    # Config not a dict
+    cfg_not_dict = {"class_name": "SimpleLayer", "config": "invalid"}
+    assert deserialize_keras_object(cfg_not_dict, custom_objects={"SimpleLayer": SimpleLayer}) == cfg_not_dict
+
+    # Registered name and object lookups
+    from ml_switcheroo_compiler.utils.generic_utils import (
+        get_registered_name,
+    )
+
+    @register_keras_serializable(package="TestPkg", name="NamedCustomLayer")
+    class NamedCustomLayer:
+        pass
+
+    assert get_registered_name(NamedCustomLayer) == "NamedCustomLayer"
+    assert get_registered_name(None) == ""
+    assert get_registered_name(lambda x: x) == "<lambda>"
+    assert get_registered_name(123) == "int"
+
+    assert get_registered_object(None) is None
+    assert get_registered_object("") is None
+    assert get_registered_object("NamedCustomLayer") is NamedCustomLayer
+    assert get_registered_object("nonexistent_obj_123") is None
+
+    # Fallbacks
+    assert deserialize_keras_object(None) is None
+    assert deserialize_keras_object(123) == 123
+    assert deserialize_keras_object({"unknown": "dict"}) == {"unknown": "dict"}
+    assert deserialize_keras_object({"class_name": 123}) == {"class_name": 123}
+    assert deserialize_keras_object({"class_name": "UnregisteredClass"}) == {"class_name": "UnregisteredClass"}
+    assert serialize_keras_object(None) is None
+
+
+def test_is_keras_tensor_and_dtype() -> None:
+    """Test is_keras_tensor type checking and standardize_dtype normalization."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    class FakeKerasHistory:
+        _keras_history = ("layer", 0, 0)
+
+    class FakeKerasFlag:
+        is_keras_tensor = True
+
+    class DummyObj:
+        pass
+
+    assert is_keras_tensor(FakeKerasHistory())
+    assert is_keras_tensor(FakeKerasFlag())
+
+    t = Tensor([1, 2], TensorConfig((2,), "float32", "cpu"))
+    assert is_keras_tensor(t)
+
+    assert not is_keras_tensor(DummyObj())
+    assert not is_keras_tensor(123)
+    assert not is_keras_tensor()
+
+    # standardize_dtype
+    import numpy as np
+
+    assert standardize_dtype(np.float32) == "float32"
+    assert standardize_dtype(float) == "float32"
+    assert standardize_dtype(int) == "int32"
+    assert standardize_dtype(bool) == "bool"
+    assert standardize_dtype(np.dtype("complex128")) == "complex128"
+    assert standardize_dtype("DOUBLE") == "float64"
+    assert standardize_dtype("int64") == "int64"
+    assert standardize_dtype("bool") == "bool"
+    assert standardize_dtype("int") == "int32"
+    assert standardize_dtype("custom_string_dtype") == "custom_string_dtype"
+    assert standardize_dtype(None) is None
+    assert standardize_dtype() is None
+
+
+def test_bounding_boxes_conversions() -> None:
+    """Test bounding_boxes coordinate format conversions and validations."""
+    import numpy as np
+
+    # xyxy <-> xywh
+    xyxy_boxes = np.array([[10.0, 20.0, 50.0, 80.0]], dtype=np.float32)
+    xywh_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xywh")
+    np.testing.assert_allclose(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
+
+    # Custom target fallback and custom source validation
+    with mock.patch.object(bounding_boxes, "SUPPORTED_FORMATS", ("xyxy", "custom")):
+        res_custom = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="custom")
+        np.testing.assert_allclose(res_custom, xyxy_boxes)
+        with pytest.raises(ValueError, match="Unrecognized source format"):
+            bounding_boxes.convert_format(xyxy_boxes, source="custom", target="xyxy")
+
+    # xywh -> center_xywh
+    center_boxes = bounding_boxes.convert_format(xywh_boxes, source="xywh", target="center_xywh")
+    np.testing.assert_allclose(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
+
+    # center_xywh -> yxyx
+    yxyx_boxes = bounding_boxes.convert_format(center_boxes, source="center_xywh", target="yxyx")
+    np.testing.assert_allclose(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
+
+    # yxyx -> rel_xyxy
+    rel_boxes = bounding_boxes.convert_format(yxyx_boxes, source="yxyx", target="rel_xyxy", image_shape=(100, 200))
+    np.testing.assert_allclose(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
+
+    # rel_xyxy -> xyxy
+    back_to_xyxy = bounding_boxes.convert_format(rel_boxes, source="rel_xyxy", target="xyxy", image_shape=(100, 200))
+    np.testing.assert_allclose(back_to_xyxy, xyxy_boxes)
+
+    # Identity conversion
+    same_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xyxy")
+    np.testing.assert_allclose(same_boxes, xyxy_boxes)
+
+    # Validations
+    with pytest.raises(ValueError, match="Unsupported bounding box format"):
+        bounding_boxes.convert_format(xyxy_boxes, source="invalid", target="xyxy")
+
+    with pytest.raises(ValueError, match="Bounding boxes must have 4 coordinates"):
+        bounding_boxes.convert_format(np.array([1.0, 2.0, 3.0]), source="xyxy", target="xywh")
+
+    with pytest.raises(ValueError, match="image_shape .* is required"):
+        bounding_boxes.convert_format(rel_boxes, source="rel_xyxy", target="xyxy")
+
+    with pytest.raises(ValueError, match="image_shape .* is required"):
+        bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="rel_xyxy")

@@ -470,6 +470,31 @@ def test_profiler_linux_memory_branches():
         assert tf_mem() > 0.0
 
 
+def test_numba_and_sparse_profiler_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test fallback to None when numba or sparse cannot be imported in profilers.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest fixture for monkeypatching.
+    """
+    import importlib
+
+    import ml_switcheroo_compiler.backends.numba.profiler as numba_prof
+    import ml_switcheroo_compiler.backends.sparse.profiler as sparse_prof
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "numba", None)
+        importlib.reload(numba_prof)
+        assert numba_prof.numba is None
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "sparse", None)
+        importlib.reload(sparse_prof)
+        assert sparse_prof.sparse is None
+
+    importlib.reload(numba_prof)
+    importlib.reload(sparse_prof)
+
+
 def test_orchestrator_isolated_error_conditions():
     """Test out-of-process isolation timeout, empty queue, and worker failure."""
     plan = BenchmarkPlan(
@@ -689,6 +714,8 @@ def test_numba_profiler_branches() -> None:
     assert len(profiler._prepare_inputs(graph, inputs1)) == 1
     inputs2 = {"other_key": arr}
     assert len(profiler._prepare_inputs(graph, inputs2)) == 1
+    inputs_list = {"in_0": [1.0, 2.0]}
+    assert len(profiler._prepare_inputs(graph, inputs_list)) == 1
     mock_code = "def evaluate(inputs):\n    return inputs[0]\n"
     with patch.dict("sys.modules", {"numba": MagicMock()}):
         with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value=mock_code):
@@ -699,6 +726,9 @@ def test_numba_profiler_branches() -> None:
         with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="x = 1\n"):
             fn_invalid = profiler._compile_graph(graph)
             assert fn_invalid is None
+        with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile error")):
+            res_fail = profiler.profile_graph(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert len(res_fail["latencies"]) == 2
         res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
         assert len(res_empty["latencies"]) == 2
 
@@ -732,16 +762,28 @@ def test_sparse_profiler_branches() -> None:
         def from_numpy(cls, arr: np.ndarray) -> "MockCOO":
             return cls(arr)
 
+    class AddCOO(MockCOO):
+        """COO class with __add__."""
+
+        def __add__(self, other: object) -> "AddCOO":
+            return self
+
     mock_sparse_module = MagicMock()
     mock_sparse_module.COO = MockCOO
     mock_sparse_module.GCXS = MockCOO
     with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", mock_sparse_module):
-        inputs1 = {"in_0": arr1, "in_1": MockCOO(arr2)}
+        inputs1 = {"in_0": AddCOO(arr1), "in_1": AddCOO(arr2)}
         prep1 = profiler._prepare_inputs(graph, inputs1)
         assert len(prep1) == 2
         inputs2 = {"other_0": arr1, "other_1": arr2}
         prep2 = profiler._prepare_inputs(graph, inputs2)
         assert len(prep2) == 2
+        inputs_list = {"in_0": [1.0, 2.0]}
+        prep3 = profiler._prepare_inputs(graph, inputs_list)
+        assert len(prep3) == 1
+        with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", None):
+            prep_no_sp = profiler._prepare_inputs(graph, inputs_list)
+            assert len(prep_no_sp) == 1
         mock_code = "def evaluate(inputs):\n    return inputs[0]\n"
         with patch.dict("sys.modules", {"sparse": mock_sparse_module}):
             with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value=mock_code):
@@ -757,12 +799,12 @@ def test_sparse_profiler_branches() -> None:
         with patch.object(profiler, "_compile_graph", return_value=None):
             res_multi = profiler.profile_graph(graph, inputs1, num_iters=2, warmup_iters=1)
             assert len(res_multi["latencies"]) == 2
-
-            class SimpleCOO(MockCOO):
-                """COO class without __add__."""
-
-            res_no_add = profiler.profile_graph(graph, {"in_0": SimpleCOO(arr1), "in_1": SimpleCOO(arr2)}, num_iters=1, warmup_iters=1)
+            inputs_no_add = {"in_0": MockCOO(arr1), "in_1": MockCOO(arr2)}
+            res_no_add = profiler.profile_graph(graph, inputs_no_add, num_iters=1, warmup_iters=1)
             assert len(res_no_add["latencies"]) == 1
+        with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile error")):
+            res_err = profiler.profile_graph(graph, inputs1, num_iters=2, warmup_iters=1)
+            assert len(res_err["latencies"]) == 2
 
 
 def test_dask_profiler_branches() -> None:

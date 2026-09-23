@@ -281,3 +281,34 @@ def test_webgl_generator_conv2d_shape_branches() -> None:
     graph_sym.outputs = ["sym_add"]
     gen_sym = WebGLCodeGenerator(graph_sym)
     assert gen_sym.generate() is not None
+
+
+def test_webgl_new_operator_templates() -> None:
+    """Verify code emission for newly added linear algebra, activation, and control operations."""
+    ops_to_test = [
+        ("bmm", "BatchedMatMul", ["in_a", "in_b"], (2, 16, 16)),
+        ("dot_node", "Dot", ["in_a", "in_b"], (1,)),
+        ("outer_node", "Outer", ["in_a", "in_b"], (16, 16)),
+        ("prelu_node", "PReLU", ["in_a", "in_b"], (16, 16)),
+        ("trelu_node", "ThresholdedReLU", ["in_a"], (16, 16)),
+        ("hsig_node", "HardSigmoid", ["in_a"], (16, 16)),
+        ("l1p_node", "Log1p", ["in_a"], (16, 16)),
+        ("expm1_node", "Expm1", ["in_a"], (16, 16)),
+        ("scan_node", "Scan", ["in_a"], (16, 16)),
+        ("cond_node", "Cond", ["in_a", "in_b", "in_c"], (16, 16)),
+    ]
+
+    for nid, op, inps, shape in ops_to_test:
+        graph = IRGraph(name=f"test_{op}")
+        graph.nodes = {
+            "in_a": IRNode(id="in_a", op_type="Input", shape_metadata=(16, 16)),
+            "in_b": IRNode(id="in_b", op_type="Input", shape_metadata=(16, 16)),
+            "in_c": IRNode(id="in_c", op_type="Input", shape_metadata=(16, 16)),
+            nid: IRNode(id=nid, op_type=op, inputs=inps, shape_metadata=shape),
+        }
+        graph.outputs = [nid]
+        gen = WebGLCodeGenerator(graph)
+        out = gen.generate()
+        assert f"shader_{nid}" in out
+        bundle = gen._compile_aot_impl(graph)
+        assert nid in bundle["shaders"]

@@ -38,9 +38,11 @@ def array(cls: type, data: object, dtype: Optional[object] = None) -> object:
         dtype: Dtype.
 
     Returns:
-            object: Result.
+        object: Result.
     """
-    return generic_array(mx, data, dtype)
+    del cls
+    actual_dtype = getattr(mx, dtype) if isinstance(dtype, str) and hasattr(mx, dtype) else dtype
+    return generic_array(mx, data, actual_dtype)
 
 
 def asarray(cls: type, data: object) -> object:

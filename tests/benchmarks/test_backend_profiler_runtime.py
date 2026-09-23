@@ -435,6 +435,12 @@ def test_cupy_profiler_runtime():
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_avail):
         assert _is_cupy_available() is True
 
+    mod_cuda_no_runtime = CustomMod()
+    mod_cuda_no_runtime.cuda = CustomMod()
+    mod_cuda_no_runtime.cuda.is_available = lambda: True
+    with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_no_runtime):
+        assert _is_cupy_available() is True
+
     mod_cuda_zero = CustomMod()
     mod_cuda_zero.cuda = CustomMod()
     mod_cuda_zero.cuda.is_available = lambda: True

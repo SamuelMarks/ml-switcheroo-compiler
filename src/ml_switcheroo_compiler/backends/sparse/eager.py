@@ -6,7 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.backends.sparse import kernels
+from ml_switcheroo_compiler.backends.sparse import kernels, types
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -27,6 +27,19 @@ _DIRECT_OPS = {
     "Reshape": kernels.coo_reshape,
     "Dot": kernels.coo_dot,
     "MatMul": kernels.coo_matmat,
+    "spmm": kernels.spmm,
+    "spgemm": kernels.spgemm,
+    "dense_spmm": kernels.dense_spmm,
+    "csr_add": kernels.csr_add,
+    "csc_add": kernels.csc_add,
+    "sparse_mask": kernels.sparse_mask,
+    "sparse_conv2d_mask": kernels.sparse_conv2d_mask,
+    "coo_to_csr": types.coo_to_csr,
+    "coo_to_csc": types.coo_to_csc,
+    "csr_to_coo": types.csr_to_coo,
+    "csr_to_csc": types.csr_to_csc,
+    "csc_to_coo": types.csc_to_coo,
+    "csc_to_csr": types.csc_to_csr,
     "SparseCooTensor": lambda indices, values, shape: COOTensor(indices=indices, values=values, shape=shape),
 }
 

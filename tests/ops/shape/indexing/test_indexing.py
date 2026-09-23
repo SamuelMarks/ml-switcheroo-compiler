@@ -247,3 +247,63 @@ def test_indexing_exact_shapes(mocker) -> None:
     flat_idx = MockTensor((15,))
     unravelled = UnravelIndex().infer_shape(flat_idx, [3, 5])
     assert unravelled == ((15,), (15,))
+
+
+def test_indexing_edge_cases(mocker) -> None:
+    """Test edge cases and fallback branches in shape indexing operations.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.indexing._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    # 1. gather_nd with empty shape (fallback to in_shape)
+    t_empty = Tensor(None, TensorConfig((), "float32", "cpu"))
+    t_idx_empty = Tensor(None, TensorConfig((), "int32", "cpu"))
+    gather_nd(t_empty, t_idx_empty)
+    assert captured_shapes["GatherNd"] == ()
+
+    # 2. take with out-of-bounds axis (both positive and negative)
+    t_src = Tensor(None, TensorConfig((2, 3), "float32", "cpu"))
+    t_idx = Tensor(None, TensorConfig((1,), "int32", "cpu"))
+    take(t_src, t_idx, axis=10)
+    assert captured_shapes["Take"] == (2, 3)
+    take(t_src, t_idx, axis=-10)
+    assert captured_shapes["Take"] == (2, 3)
+
+    # 3. where with broadcasting error fallback
+    c_incompat = Tensor(None, TensorConfig((2,), "bool", "cpu"))
+    a_incompat = Tensor(None, TensorConfig((3,), "float32", "cpu"))
+    where(c_incompat, a_incompat, a_incompat)
+    assert captured_shapes["Where"] == (3,)
+
+    # where with broadcasting error fallback when i_shape is empty
+    a_empty = Tensor(None, TensorConfig((), "float32", "cpu"))
+    where(c_incompat, a_empty, a_empty)
+    assert captured_shapes["Where"] == (2,)
+
+    # 4. DynamicStitch infer_shape variations (indices, data)
+    stitch = DynamicStitch()
+    # len(d_shape) >= len(idx_shape)
+    res1 = stitch.infer_shape([MockTensor((2,))], [MockTensor((2, 3, 4))])
+    assert res1 == (None, 3, 4)
+    # len(d_shape) < len(idx_shape)
+    res2 = stitch.infer_shape([MockTensor((2, 3, 4))], [MockTensor((2,))])
+    assert res2 == (None,)
+    # elements without shape attribute
+    assert stitch.infer_shape([1], [1]) == ()
+
+    # 5. ExtractVolumePatches SAME padding and non-5D input
+    evp = ExtractVolumePatches()
+    vol_in = MockTensor((1, 10, 10, 10, 3))
+    res_same = evp.infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 2, 2, 2, 1], "SAME")
+    assert res_same == (1, 5, 5, 5, 81)
+    res_non_5d = evp.infer_shape(MockTensor((1, 10, 10, 3)), [1, 3, 3, 1], [1, 1, 1, 1], "VALID")
+    assert res_non_5d == ()

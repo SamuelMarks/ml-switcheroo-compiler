@@ -70,6 +70,13 @@ class SparseGenerator(PythonStringGenerator):
             "Reshape": "sp_kernels.coo_reshape({0}, {shape})",
             "Dot": "sp_kernels.coo_dot({0}, {1})",
             "MatMul": "sp_kernels.coo_matmat({0}, {1})",
+            "spmm": "sp_kernels.spmm({0}, {1})",
+            "spgemm": "sp_kernels.spgemm({0}, {1})",
+            "dense_spmm": "sp_kernels.dense_spmm({0}, {1})",
+            "csr_add": "sp_kernels.csr_add({0}, {1})",
+            "csc_add": "sp_kernels.csc_add({0}, {1})",
+            "sparse_mask": "sp_kernels.sparse_mask({0}, {1})",
+            "sparse_conv2d_mask": "sp_kernels.sparse_conv2d_mask({0}, {1}, {2})",
         }
 
     def generate(self) -> str:

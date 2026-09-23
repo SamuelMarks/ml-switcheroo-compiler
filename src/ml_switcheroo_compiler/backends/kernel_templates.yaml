@@ -7,7 +7,7 @@ kernel_templates:
     body: "out[idx] = in0[idx] + in1[idx];"
     cuda_body: "__global__ void add_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] + in1[idx]; }"
     rocm_body: "__global__ void add_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] + in1[idx]; }"
-    metal_body: "kernel void add_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] + in1[idx]; }"
+    metal_body: "kernel void add_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = in0[idx] + in1[idx]; }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -33,7 +33,7 @@ kernel_templates:
     body: "out[idx] = in0[idx] - in1[idx];"
     cuda_body: "__global__ void sub_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
     rocm_body: "__global__ void sub_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
-    metal_body: "kernel void sub_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] - in1[idx]; }"
+    metal_body: "kernel void sub_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -58,8 +58,8 @@ kernel_templates:
     memory_layout_requirements: ["contiguous"]
     body: "out[idx] = in0[idx] * in1[idx];"
     cuda_body: "__global__ void mul_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] * in1[idx]; }"
-    rocm_body: "__global__ void mul_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] - in1[idx]; }"
-    metal_body: "kernel void mul_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] * in1[idx]; }"
+    rocm_body: "__global__ void mul_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] * in1[idx]; }"
+    metal_body: "kernel void mul_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = in0[idx] * in1[idx]; }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -85,7 +85,7 @@ kernel_templates:
     body: "out[idx] = in0[idx] / in1[idx];"
     cuda_body: "__global__ void div_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] / in1[idx]; }"
     rocm_body: "__global__ void div_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] / in1[idx]; }"
-    metal_body: "kernel void div_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], uint idx [[thread_position_in_grid]]) { out[idx] = in0[idx] / in1[idx]; }"
+    metal_body: "kernel void div_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = in0[idx] / in1[idx]; }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -111,7 +111,7 @@ kernel_templates:
     body: "out[idx] = in0[idx] > 0.0f ? in0[idx] : 0.0f;"
     cuda_body: "__global__ void relu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = fmaxf(0.0f, in0[idx]); }"
     rocm_body: "__global__ void relu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = fmaxf(0.0f, in0[idx]); }"
-    metal_body: "kernel void relu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], uint idx [[thread_position_in_grid]]) { out[idx] = max(0.0f, in0[idx]); }"
+    metal_body: "kernel void relu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = max(0.0f, in0[idx]); }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -166,6 +166,9 @@ kernel_templates:
     thread_indexing_formula: "int b = blockIdx.z; int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x;"
     memory_layout_requirements: ["contiguous", "row-major"]
     body: "float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[b * M * K + row * K + k] * B[b * K * N + k * N + col]; C[b * M * N + row * N + col] = sum;"
+    cuda_body: "__global__ void batchmatmul_kernel(const float* A, const float* B, float* C, int B_sz, int M, int N, int K) { int b = blockIdx.z; int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x; if (b < B_sz && row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[b * M * K + row * K + k] * B[b * K * N + k * N + col]; C[b * M * N + row * N + col] = sum; } }"
+    rocm_body: "__global__ void batchmatmul_kernel(const float* A, const float* B, float* C, int B_sz, int M, int N, int K) { int b = hipBlockIdx_z; int row = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y; int col = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < B_sz && row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[b * M * K + row * K + k] * B[b * K * N + k * N + col]; C[b * M * N + row * N + col] = sum; } }"
+    metal_body: "kernel void batchmatmul_kernel(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]], device float* C [[buffer(2)]], constant uint4& dims [[buffer(3)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint row = gid.y; uint col = gid.x; uint B_sz = dims.x; uint M = dims.y; uint N = dims.z; uint K = dims.w; if (b < B_sz && row < M && col < N) { float sum = 0.0f; for (uint k = 0; k < K; ++k) sum += A[b * M * K + row * K + k] * B[b * K * N + k * N + col]; C[b * M * N + row * N + col] = sum; } }"
     parameters:
       - name: "A"
         param_type: "pointer"
@@ -202,6 +205,9 @@ kernel_templates:
     thread_indexing_formula: "int b = blockIdx.z; int oc = blockIdx.y; int hw = blockIdx.x * blockDim.x + threadIdx.x;"
     memory_layout_requirements: ["contiguous", "nchw"]
     body: "float sum = 0.0f; /* 2D spatial convolution */"
+    cuda_body: "__global__ void conv2d_kernel(const float* X, const float* W, float* Y, int N, int C_in, int H, int W_in, int C_out, int KH, int KW, int H_out, int W_out) { int b = blockIdx.z; int oc = blockIdx.y; int hw = blockIdx.x * blockDim.x + threadIdx.x; if (b < N && oc < C_out && hw < H_out * W_out) { int oh = hw / W_out; int ow = hw % W_out; float sum = 0.0f; for (int ic = 0; ic < C_in; ++ic) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int ih = oh + kh; int iw = ow + kw; if (ih < H && iw < W_in) { sum += X[((b * C_in + ic) * H + ih) * W_in + iw] * W[((oc * C_in + ic) * KH + kh) * KW + kw]; } } } } Y[((b * C_out + oc) * H_out + oh) * W_out + ow] = sum; } }"
+    rocm_body: "__global__ void conv2d_kernel(const float* X, const float* W, float* Y, int N, int C_in, int H, int W_in, int C_out, int KH, int KW, int H_out, int W_out) { int b = hipBlockIdx_z; int oc = hipBlockIdx_y; int hw = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < N && oc < C_out && hw < H_out * W_out) { int oh = hw / W_out; int ow = hw % W_out; float sum = 0.0f; for (int ic = 0; ic < C_in; ++ic) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int ih = oh + kh; int iw = ow + kw; if (ih < H && iw < W_in) { sum += X[((b * C_in + ic) * H + ih) * W_in + iw] * W[((oc * C_in + ic) * KH + kh) * KW + kw]; } } } } Y[((b * C_out + oc) * H_out + oh) * W_out + ow] = sum; } }"
+    metal_body: "kernel void conv2d_kernel(device const float* X [[buffer(0)]], device const float* W [[buffer(1)]], device float* Y [[buffer(2)]], constant uint4& dims0 [[buffer(3)]], constant uint4& dims1 [[buffer(4)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint oc = gid.y; uint hw = gid.x; uint N = dims0.x; uint C_in = dims0.y; uint H = dims0.z; uint W_in = dims0.w; uint C_out = dims1.x; uint KH = dims1.y; uint KW = dims1.z; uint W_out = dims1.w; uint H_out = H - KH + 1; if (b < N && oc < C_out && hw < H_out * W_out) { uint oh = hw / W_out; uint ow = hw % W_out; float sum = 0.0f; for (uint ic = 0; ic < C_in; ++ic) { for (uint kh = 0; kh < KH; ++kh) { for (uint kw = 0; kw < KW; ++kw) { uint ih = oh + kh; uint iw = ow + kw; if (ih < H && iw < W_in) { sum += X[((b * C_in + ic) * H + ih) * W_in + iw] * W[((oc * C_in + ic) * KH + kh) * KW + kw]; } } } } Y[((b * C_out + oc) * H_out + oh) * W_out + ow] = sum; } }"
     parameters:
       - name: "x"
         param_type: "pointer"
@@ -222,6 +228,9 @@ kernel_templates:
     thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
     memory_layout_requirements: ["contiguous"]
     body: "atomicAdd(out, in0[idx]);"
+    cuda_body: "__global__ void reducesum_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { atomicAdd(out, in0[idx]); } }"
+    rocm_body: "__global__ void reducesum_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { atomicAdd(out, in0[idx]); } }"
+    metal_body: "kernel void reducesum_kernel(device const float* in0 [[buffer(0)]], device atomic_float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { atomic_fetch_add_explicit(out, in0[idx], memory_order_relaxed); } }"
     parameters:
       - name: "in0"
         param_type: "pointer"
@@ -234,3 +243,887 @@ kernel_templates:
       - name: "n"
         param_type: "int"
         source: "num_elements"
+
+  # Non-linear activations
+  Sigmoid:
+    opcode: "Sigmoid"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = 1.0f / (1.0f + expf(-in0[idx]));"
+    cuda_body: "__global__ void sigmoid_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = 1.0f / (1.0f + expf(-in0[idx])); }"
+    rocm_body: "__global__ void sigmoid_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = 1.0f / (1.0f + expf(-in0[idx])); }"
+    metal_body: "kernel void sigmoid_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = 1.0f / (1.0f + exp(-in0[idx])); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Tanh:
+    opcode: "Tanh"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = tanhf(in0[idx]);"
+    cuda_body: "__global__ void tanh_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = tanhf(in0[idx]); }"
+    rocm_body: "__global__ void tanh_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = tanhf(in0[idx]); }"
+    metal_body: "kernel void tanh_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = tanh(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  GELU:
+    opcode: "GELU"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = 0.5f * in0[idx] * (1.0f + tanhf(0.79788456f * (in0[idx] + 0.044715f * in0[idx] * in0[idx] * in0[idx])));"
+    cuda_body: "__global__ void gelu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { float x = in0[idx]; out[idx] = 0.5f * x * (1.0f + tanhf(0.79788456f * (x + 0.044715f * x * x * x))); } }"
+    rocm_body: "__global__ void gelu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { float x = in0[idx]; out[idx] = 0.5f * x * (1.0f + tanhf(0.79788456f * (x + 0.044715f * x * x * x))); } }"
+    metal_body: "kernel void gelu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { float x = in0[idx]; out[idx] = 0.5f * x * (1.0f + tanh(0.79788456f * (x + 0.044715f * x * x * x))); } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  SiLU:
+    opcode: "SiLU"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] / (1.0f + expf(-in0[idx]));"
+    cuda_body: "__global__ void silu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = in0[idx] / (1.0f + expf(-in0[idx])); }"
+    rocm_body: "__global__ void silu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = in0[idx] / (1.0f + expf(-in0[idx])); }"
+    metal_body: "kernel void silu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = in0[idx] / (1.0f + exp(-in0[idx])); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ELU:
+    opcode: "ELU"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] > 0.0f ? in0[idx] : (expf(in0[idx]) - 1.0f);"
+    cuda_body: "__global__ void elu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (expf(x) - 1.0f); } }"
+    rocm_body: "__global__ void elu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (expf(x) - 1.0f); } }"
+    metal_body: "kernel void elu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (exp(x) - 1.0f); } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  LeakyReLU:
+    opcode: "LeakyReLU"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] > 0.0f ? in0[idx] : (0.01f * in0[idx]);"
+    cuda_body: "__global__ void leakyrelu_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (0.01f * x); } }"
+    rocm_body: "__global__ void leakyrelu_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (0.01f * x); } }"
+    metal_body: "kernel void leakyrelu_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { float x = in0[idx]; out[idx] = x > 0.0f ? x : (0.01f * x); } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  HardSwish:
+    opcode: "HardSwish"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = in0[idx] * fminf(fmaxf(in0[idx] + 3.0f, 0.0f), 6.0f) / 6.0f;"
+    cuda_body: "__global__ void hardswish_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { float x = in0[idx]; out[idx] = x * fminf(fmaxf(x + 3.0f, 0.0f), 6.0f) / 6.0f; } }"
+    rocm_body: "__global__ void hardswish_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { float x = in0[idx]; out[idx] = x * fminf(fmaxf(x + 3.0f, 0.0f), 6.0f) / 6.0f; } }"
+    metal_body: "kernel void hardswish_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { float x = in0[idx]; out[idx] = x * min(max(x + 3.0f, 0.0f), 6.0f) / 6.0f; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  # Elementwise unary & binary math
+  Exp:
+    opcode: "Exp"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = expf(in0[idx]);"
+    cuda_body: "__global__ void exp_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = expf(in0[idx]); }"
+    rocm_body: "__global__ void exp_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = expf(in0[idx]); }"
+    metal_body: "kernel void exp_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = exp(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Log:
+    opcode: "Log"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = logf(in0[idx]);"
+    cuda_body: "__global__ void log_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = logf(in0[idx]); }"
+    rocm_body: "__global__ void log_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = logf(in0[idx]); }"
+    metal_body: "kernel void log_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = log(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Sqrt:
+    opcode: "Sqrt"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = sqrtf(in0[idx]);"
+    cuda_body: "__global__ void sqrt_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = sqrtf(in0[idx]); }"
+    rocm_body: "__global__ void sqrt_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = sqrtf(in0[idx]); }"
+    metal_body: "kernel void sqrt_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = sqrt(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Pow:
+    opcode: "Pow"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = powf(in0[idx], in1[idx]);"
+    cuda_body: "__global__ void pow_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = powf(in0[idx], in1[idx]); }"
+    rocm_body: "__global__ void pow_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = powf(in0[idx], in1[idx]); }"
+    metal_body: "kernel void pow_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = pow(in0[idx], in1[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Abs:
+    opcode: "Abs"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = fabsf(in0[idx]);"
+    cuda_body: "__global__ void abs_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = fabsf(in0[idx]); }"
+    rocm_body: "__global__ void abs_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = fabsf(in0[idx]); }"
+    metal_body: "kernel void abs_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = abs(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Neg:
+    opcode: "Neg"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = -in0[idx];"
+    cuda_body: "__global__ void neg_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = -in0[idx]; }"
+    rocm_body: "__global__ void neg_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = -in0[idx]; }"
+    metal_body: "kernel void neg_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = -in0[idx]; }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Sin:
+    opcode: "Sin"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = sinf(in0[idx]);"
+    cuda_body: "__global__ void sin_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = sinf(in0[idx]); }"
+    rocm_body: "__global__ void sin_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = sinf(in0[idx]); }"
+    metal_body: "kernel void sin_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = sin(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Cos:
+    opcode: "Cos"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = cosf(in0[idx]);"
+    cuda_body: "__global__ void cos_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = cosf(in0[idx]); }"
+    rocm_body: "__global__ void cos_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = cosf(in0[idx]); }"
+    metal_body: "kernel void cos_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = cos(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Minimum:
+    opcode: "Minimum"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = fminf(in0[idx], in1[idx]);"
+    cuda_body: "__global__ void minimum_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = fminf(in0[idx], in1[idx]); }"
+    rocm_body: "__global__ void minimum_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = fminf(in0[idx], in1[idx]); }"
+    metal_body: "kernel void minimum_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = min(in0[idx], in1[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Maximum:
+    opcode: "Maximum"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = fmaxf(in0[idx], in1[idx]);"
+    cuda_body: "__global__ void maximum_kernel(const float* in0, const float* in1, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = fmaxf(in0[idx], in1[idx]); }"
+    rocm_body: "__global__ void maximum_kernel(const float* in0, const float* in1, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = fmaxf(in0[idx], in1[idx]); }"
+    metal_body: "kernel void maximum_kernel(device const float* in0 [[buffer(0)]], device const float* in1 [[buffer(1)]], device float* out [[buffer(2)]], constant uint& n [[buffer(3)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = max(in0[idx], in1[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "in1"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Floor:
+    opcode: "Floor"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = floorf(in0[idx]);"
+    cuda_body: "__global__ void floor_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = floorf(in0[idx]); }"
+    rocm_body: "__global__ void floor_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = floorf(in0[idx]); }"
+    metal_body: "kernel void floor_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = floor(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  Ceil:
+    opcode: "Ceil"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[idx] = ceilf(in0[idx]);"
+    cuda_body: "__global__ void ceil_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) out[idx] = ceilf(in0[idx]); }"
+    rocm_body: "__global__ void ceil_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) out[idx] = ceilf(in0[idx]); }"
+    metal_body: "kernel void ceil_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) out[idx] = ceil(in0[idx]); }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  # Normalizations
+  BatchNorm:
+    opcode: "BatchNorm"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "nchw"]
+    body: "/* Batch normalization across channels */"
+    cuda_body: "__global__ void batchnorm_kernel(const float* X, const float* mean, const float* var, const float* gamma, const float* beta, float* Y, int N, int C, int spatial, float eps) { int idx = blockIdx.x * blockDim.x + threadIdx.x; int total = N * C * spatial; if (idx < total) { int c = (idx / spatial) % C; float m = mean[c]; float v = var[c]; float g = gamma ? gamma[c] : 1.0f; float b = beta ? beta[c] : 0.0f; Y[idx] = g * (X[idx] - m) * rsqrtf(v + eps) + b; } }"
+    rocm_body: "__global__ void batchnorm_kernel(const float* X, const float* mean, const float* var, const float* gamma, const float* beta, float* Y, int N, int C, int spatial, float eps) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; int total = N * C * spatial; if (idx < total) { int c = (idx / spatial) % C; float m = mean[c]; float v = var[c]; float g = gamma ? gamma[c] : 1.0f; float b = beta ? beta[c] : 0.0f; Y[idx] = g * (X[idx] - m) * rsqrtf(v + eps) + b; } }"
+    metal_body: "kernel void batchnorm_kernel(device const float* X [[buffer(0)]], device const float* mean [[buffer(1)]], device const float* var [[buffer(2)]], device const float* gamma [[buffer(3)]], device const float* beta [[buffer(4)]], device float* Y [[buffer(5)]], constant uint4& dims [[buffer(6)]], uint idx [[thread_position_in_grid]]) { uint total = dims.x * dims.y * dims.z; if (idx < total) { uint c = (idx / dims.z) % dims.y; float m = mean[c]; float v = var[c]; float g = gamma[c]; float b = beta[c]; Y[idx] = g * (X[idx] - m) * rsqrt(v + 1e-5f) + b; } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "mean"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "var"
+        param_type: "pointer"
+        source: "input"
+        source_index: 2
+      - name: "gamma"
+        param_type: "pointer"
+        source: "input"
+        source_index: 3
+      - name: "beta"
+        param_type: "pointer"
+        source: "input"
+        source_index: 4
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  LayerNorm:
+    opcode: "LayerNorm"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int row = blockIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "/* Layer normalization across feature dimensions */"
+    cuda_body: "__global__ void layernorm_kernel(const float* X, const float* gamma, const float* beta, float* Y, int rows, int cols, float eps) { int row = blockIdx.x; if (row < rows) { float mean = 0.0f; for (int i = 0; i < cols; ++i) mean += X[row * cols + i]; mean /= (float)cols; float var = 0.0f; for (int i = 0; i < cols; ++i) { float d = X[row * cols + i] - mean; var += d * d; } var /= (float)cols; float inv_std = rsqrtf(var + eps); for (int i = 0; i < cols; ++i) { float g = gamma ? gamma[i] : 1.0f; float b = beta ? beta[i] : 0.0f; Y[row * cols + i] = g * (X[row * cols + i] - mean) * inv_std + b; } } }"
+    rocm_body: "__global__ void layernorm_kernel(const float* X, const float* gamma, const float* beta, float* Y, int rows, int cols, float eps) { int row = hipBlockIdx_x; if (row < rows) { float mean = 0.0f; for (int i = 0; i < cols; ++i) mean += X[row * cols + i]; mean /= (float)cols; float var = 0.0f; for (int i = 0; i < cols; ++i) { float d = X[row * cols + i] - mean; var += d * d; } var /= (float)cols; float inv_std = rsqrtf(var + eps); for (int i = 0; i < cols; ++i) { float g = gamma ? gamma[i] : 1.0f; float b = beta ? beta[i] : 0.0f; Y[row * cols + i] = g * (X[row * cols + i] - mean) * inv_std + b; } } }"
+    metal_body: "kernel void layernorm_kernel(device const float* X [[buffer(0)]], device const float* gamma [[buffer(1)]], device const float* beta [[buffer(2)]], device float* Y [[buffer(3)]], constant uint2& dims [[buffer(4)]], uint row [[thread_position_in_grid]]) { if (row < dims.x) { uint cols = dims.y; float mean = 0.0f; for (uint i = 0; i < cols; ++i) mean += X[row * cols + i]; mean /= float(cols); float var = 0.0f; for (uint i = 0; i < cols; ++i) { float d = X[row * cols + i] - mean; var += d * d; } var /= float(cols); float inv_std = rsqrt(var + 1e-5f); for (uint i = 0; i < cols; ++i) { float g = gamma[i]; float b = beta[i]; Y[row * cols + i] = g * (X[row * cols + i] - mean) * inv_std + b; } } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "gamma"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "beta"
+        param_type: "pointer"
+        source: "input"
+        source_index: 2
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  RMSNorm:
+    opcode: "RMSNorm"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int row = blockIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "/* Root Mean Square normalization */"
+    cuda_body: "__global__ void rmsnorm_kernel(const float* X, const float* gamma, float* Y, int rows, int cols, float eps) { int row = blockIdx.x; if (row < rows) { float sum_sq = 0.0f; for (int i = 0; i < cols; ++i) { float x = X[row * cols + i]; sum_sq += x * x; } float rms = rsqrtf(sum_sq / (float)cols + eps); for (int i = 0; i < cols; ++i) { float g = gamma ? gamma[i] : 1.0f; Y[row * cols + i] = g * X[row * cols + i] * rms; } } }"
+    rocm_body: "__global__ void rmsnorm_kernel(const float* X, const float* gamma, float* Y, int rows, int cols, float eps) { int row = hipBlockIdx_x; if (row < rows) { float sum_sq = 0.0f; for (int i = 0; i < cols; ++i) { float x = X[row * cols + i]; sum_sq += x * x; } float rms = rsqrtf(sum_sq / (float)cols + eps); for (int i = 0; i < cols; ++i) { float g = gamma ? gamma[i] : 1.0f; Y[row * cols + i] = g * X[row * cols + i] * rms; } } }"
+    metal_body: "kernel void rmsnorm_kernel(device const float* X [[buffer(0)]], device const float* gamma [[buffer(1)]], device float* Y [[buffer(2)]], constant uint2& dims [[buffer(3)]], uint row [[thread_position_in_grid]]) { if (row < dims.x) { uint cols = dims.y; float sum_sq = 0.0f; for (uint i = 0; i < cols; ++i) { float x = X[row * cols + i]; sum_sq += x * x; } float rms = rsqrt(sum_sq / float(cols) + 1e-5f); for (uint i = 0; i < cols; ++i) { float g = gamma[i]; Y[row * cols + i] = g * X[row * cols + i] * rms; } } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "gamma"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  GroupNorm:
+    opcode: "GroupNorm"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int ng = blockIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Group normalization across channel groups */"
+    cuda_body: "__global__ void groupnorm_kernel(const float* X, const float* gamma, const float* beta, float* Y, int N, int G, int C_per_G, int spatial, float eps) { int ng = blockIdx.x; if (ng < N * G) { int group_size = C_per_G * spatial; int base = ng * group_size; float mean = 0.0f; for (int i = 0; i < group_size; ++i) mean += X[base + i]; mean /= (float)group_size; float var = 0.0f; for (int i = 0; i < group_size; ++i) { float d = X[base + i] - mean; var += d * d; } var /= (float)group_size; float inv_std = rsqrtf(var + eps); for (int i = 0; i < group_size; ++i) { int c = (ng % G) * C_per_G + (i / spatial); float g = gamma ? gamma[c] : 1.0f; float b = beta ? beta[c] : 0.0f; Y[base + i] = g * (X[base + i] - mean) * inv_std + b; } } }"
+    rocm_body: "__global__ void groupnorm_kernel(const float* X, const float* gamma, const float* beta, float* Y, int N, int G, int C_per_G, int spatial, float eps) { int ng = hipBlockIdx_x; if (ng < N * G) { int group_size = C_per_G * spatial; int base = ng * group_size; float mean = 0.0f; for (int i = 0; i < group_size; ++i) mean += X[base + i]; mean /= (float)group_size; float var = 0.0f; for (int i = 0; i < group_size; ++i) { float d = X[base + i] - mean; var += d * d; } var /= (float)group_size; float inv_std = rsqrtf(var + eps); for (int i = 0; i < group_size; ++i) { int c = (ng % G) * C_per_G + (i / spatial); float g = gamma ? gamma[c] : 1.0f; float b = beta ? beta[c] : 0.0f; Y[base + i] = g * (X[base + i] - mean) * inv_std + b; } } }"
+    metal_body: "kernel void groupnorm_kernel(device const float* X [[buffer(0)]], device const float* gamma [[buffer(1)]], device const float* beta [[buffer(2)]], device float* Y [[buffer(3)]], constant uint4& dims [[buffer(4)]], uint ng [[thread_position_in_grid]]) { if (ng < dims.x * dims.y) { uint group_size = dims.z * dims.w; uint base = ng * group_size; float mean = 0.0f; for (uint i = 0; i < group_size; ++i) mean += X[base + i]; mean /= float(group_size); float var = 0.0f; for (uint i = 0; i < group_size; ++i) { float d = X[base + i] - mean; var += d * d; } var /= float(group_size); float inv_std = rsqrt(var + 1e-5f); for (uint i = 0; i < group_size; ++i) { uint c = (ng % dims.y) * dims.z + (i / dims.w); float g = gamma[c]; float b = beta[c]; Y[base + i] = g * (X[base + i] - mean) * inv_std + b; } } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "gamma"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "beta"
+        param_type: "pointer"
+        source: "input"
+        source_index: 2
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  # Spatial poolings
+  MaxPool3D:
+    opcode: "MaxPool3D"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int c = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* 3D max pooling */"
+    cuda_body: "__global__ void maxpool3d_kernel(const float* X, float* Y, int N, int C, int D, int H, int W, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = blockIdx.z; int c = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x; if (b < N && c < C && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float max_val = -1e38f; for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int id = od + kd; int ih = oh + kh; int iw = ow + kw; if (id < D && ih < H && iw < W) { float val = X[(((b * C + c) * D + id) * H + ih) * W + iw]; if (val > max_val) max_val = val; } } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = max_val; } }"
+    rocm_body: "__global__ void maxpool3d_kernel(const float* X, float* Y, int N, int C, int D, int H, int W, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = hipBlockIdx_z; int c = hipBlockIdx_y; int dhw = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < N && c < C && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float max_val = -1e38f; for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int id = od + kd; int ih = oh + kh; int iw = ow + kw; if (id < D && ih < H && iw < W) { float val = X[(((b * C + c) * D + id) * H + ih) * W + iw]; if (val > max_val) max_val = val; } } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = max_val; } }"
+    metal_body: "kernel void maxpool3d_kernel(device const float* X [[buffer(0)]], device float* Y [[buffer(1)]], constant uint4& dims0 [[buffer(2)]], constant uint4& dims1 [[buffer(3)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint c = gid.y; uint dhw = gid.x; uint N = dims0.x; uint C = dims0.y; uint D = dims0.z; uint H = dims0.w; uint W = dims1.x; uint KD = dims1.y; uint KH = dims1.z; uint KW = dims1.w; uint D_out = D - KD + 1; uint H_out = H - KH + 1; uint W_out = W - KW + 1; if (b < N && c < C && dhw < D_out * H_out * W_out) { uint od = dhw / (H_out * W_out); uint rem = dhw % (H_out * W_out); uint oh = rem / W_out; uint ow = rem % W_out; float max_val = -1e38f; for (uint kd = 0; kd < KD; ++kd) { for (uint kh = 0; kh < KH; ++kh) { for (uint kw = 0; kw < KW; ++kw) { uint id = od + kd; uint ih = oh + kh; uint iw = ow + kw; if (id < D && ih < H && iw < W) { float val = X[(((b * C + c) * D + id) * H + ih) * W + iw]; if (val > max_val) max_val = val; } } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = max_val; } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  AvgPool2D:
+    opcode: "AvgPool2D"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int c = blockIdx.y; int hw = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "nchw"]
+    body: "/* 2D average pooling */"
+    cuda_body: "__global__ void avgpool2d_kernel(const float* X, float* Y, int N, int C, int H, int W, int KH, int KW, int H_out, int W_out) { int b = blockIdx.z; int c = blockIdx.y; int hw = blockIdx.x * blockDim.x + threadIdx.x; if (b < N && c < C && hw < H_out * W_out) { int oh = hw / W_out; int ow = hw % W_out; float sum = 0.0f; for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { sum += X[((b * C + c) * H + (oh + kh)) * W + (ow + kw)]; } } Y[((b * C + c) * H_out + oh) * W_out + ow] = sum / (float)(KH * KW); } }"
+    rocm_body: "__global__ void avgpool2d_kernel(const float* X, float* Y, int N, int C, int H, int W, int KH, int KW, int H_out, int W_out) { int b = hipBlockIdx_z; int c = hipBlockIdx_y; int hw = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < N && c < C && hw < H_out * W_out) { int oh = hw / W_out; int ow = hw % W_out; float sum = 0.0f; for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { sum += X[((b * C + c) * H + (oh + kh)) * W + (ow + kw)]; } } Y[((b * C + c) * H_out + oh) * W_out + ow] = sum / (float)(KH * KW); } }"
+    metal_body: "kernel void avgpool2d_kernel(device const float* X [[buffer(0)]], device float* Y [[buffer(1)]], constant uint4& dims0 [[buffer(2)]], constant uint4& dims1 [[buffer(3)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint c = gid.y; uint hw = gid.x; uint N = dims0.x; uint C = dims0.y; uint H = dims0.z; uint W = dims0.w; uint KH = dims1.x; uint KW = dims1.y; uint H_out = dims1.z; uint W_out = dims1.w; if (b < N && c < C && hw < H_out * W_out) { uint oh = hw / W_out; uint ow = hw % W_out; float sum = 0.0f; for (uint kh = 0; kh < KH; ++kh) { for (uint kw = 0; kw < KW; ++kw) { sum += X[((b * C + c) * H + (oh + kh)) * W + (ow + kw)]; } } Y[((b * C + c) * H_out + oh) * W_out + ow] = sum / float(KH * KW); } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  AvgPool3D:
+    opcode: "AvgPool3D"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int c = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* 3D average pooling */"
+    cuda_body: "__global__ void avgpool3d_kernel(const float* X, float* Y, int N, int C, int D, int H, int W, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = blockIdx.z; int c = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x; if (b < N && c < C && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float sum = 0.0f; for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { sum += X[(((b * C + c) * D + (od + kd)) * H + (oh + kh)) * W + (ow + kw)]; } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = sum / (float)(KD * KH * KW); } }"
+    rocm_body: "__global__ void avgpool3d_kernel(const float* X, float* Y, int N, int C, int D, int H, int W, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = hipBlockIdx_z; int c = hipBlockIdx_y; int dhw = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < N && c < C && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float sum = 0.0f; for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { sum += X[(((b * C + c) * D + (od + kd)) * H + (oh + kh)) * W + (ow + kw)]; } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = sum / (float)(KD * KH * KW); } }"
+    metal_body: "kernel void avgpool3d_kernel(device const float* X [[buffer(0)]], device float* Y [[buffer(1)]], constant uint4& dims0 [[buffer(2)]], constant uint4& dims1 [[buffer(3)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint c = gid.y; uint dhw = gid.x; uint N = dims0.x; uint C = dims0.y; uint D = dims0.z; uint H = dims0.w; uint W = dims1.x; uint KD = dims1.y; uint KH = dims1.z; uint KW = dims1.w; uint D_out = D - KD + 1; uint H_out = H - KH + 1; uint W_out = W - KW + 1; if (b < N && c < C && dhw < D_out * H_out * W_out) { uint od = dhw / (H_out * W_out); uint rem = dhw % (H_out * W_out); uint oh = rem / W_out; uint ow = rem % W_out; float sum = 0.0f; for (uint kd = 0; kd < KD; ++kd) { for (uint kh = 0; kh < KH; ++kh) { for (uint kw = 0; kw < KW; ++kw) { sum += X[(((b * C + c) * D + (od + kd)) * H + (oh + kh)) * W + (ow + kw)]; } } } Y[(((b * C + c) * D_out + od) * H_out + oh) * W_out + ow] = sum / float(KD * KH * KW); } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  GlobalAvgPool2D:
+    opcode: "GlobalAvgPool2D"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous", "nchw"]
+    body: "/* Global 2D average pooling over spatial dimensions H x W */"
+    cuda_body: "__global__ void globalavgpool2d_kernel(const float* X, float* Y, int N, int C, int H, int W) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < N * C) { int b = idx / C; int c = idx % C; float sum = 0.0f; int hw = H * W; int base = (b * C + c) * hw; for (int i = 0; i < hw; ++i) { sum += X[base + i]; } Y[idx] = sum / (float)hw; } }"
+    rocm_body: "__global__ void globalavgpool2d_kernel(const float* X, float* Y, int N, int C, int H, int W) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < N * C) { int b = idx / C; int c = idx % C; float sum = 0.0f; int hw = H * W; int base = (b * C + c) * hw; for (int i = 0; i < hw; ++i) { sum += X[base + i]; } Y[idx] = sum / (float)hw; } }"
+    metal_body: "kernel void globalavgpool2d_kernel(device const float* X [[buffer(0)]], device float* Y [[buffer(1)]], constant uint4& dims [[buffer(2)]], uint idx [[thread_position_in_grid]]) { uint N = dims.x; uint C = dims.y; uint H = dims.z; uint W = dims.w; if (idx < N * C) { uint b = idx / C; uint c = idx % C; float sum = 0.0f; uint hw = H * W; uint base = (b * C + c) * hw; for (uint i = 0; i < hw; ++i) { sum += X[base + i]; } Y[idx] = sum / float(hw); } }"
+    parameters:
+      - name: "X"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "Y"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  # 3D Convolutions
+  Conv3D:
+    opcode: "Conv3D"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int b = blockIdx.z; int oc = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* 3D spatial convolution */"
+    cuda_body: "__global__ void conv3d_kernel(const float* X, const float* W, float* Y, int N, int C_in, int D, int H, int W_in, int C_out, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = blockIdx.z; int oc = blockIdx.y; int dhw = blockIdx.x * blockDim.x + threadIdx.x; if (b < N && oc < C_out && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float sum = 0.0f; for (int ic = 0; ic < C_in; ++ic) { for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int id = od + kd; int ih = oh + kh; int iw = ow + kw; if (id < D && ih < H && iw < W_in) { sum += X[(((b * C_in + ic) * D + id) * H + ih) * W_in + iw] * W[(((oc * C_in + ic) * KD + kd) * KH + kh) * KW + kw]; } } } } } Y[(((b * C_out + oc) * D_out + od) * H_out + oh) * W_out + ow] = sum; } }"
+    rocm_body: "__global__ void conv3d_kernel(const float* X, const float* W, float* Y, int N, int C_in, int D, int H, int W_in, int C_out, int KD, int KH, int KW, int D_out, int H_out, int W_out) { int b = hipBlockIdx_z; int oc = hipBlockIdx_y; int dhw = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (b < N && oc < C_out && dhw < D_out * H_out * W_out) { int od = dhw / (H_out * W_out); int rem = dhw % (H_out * W_out); int oh = rem / W_out; int ow = rem % W_out; float sum = 0.0f; for (int ic = 0; ic < C_in; ++ic) { for (int kd = 0; kd < KD; ++kd) { for (int kh = 0; kh < KH; ++kh) { for (int kw = 0; kw < KW; ++kw) { int id = od + kd; int ih = oh + kh; int iw = ow + kw; if (id < D && ih < H && iw < W_in) { sum += X[(((b * C_in + ic) * D + id) * H + ih) * W_in + iw] * W[(((oc * C_in + ic) * KD + kd) * KH + kh) * KW + kw]; } } } } } Y[(((b * C_out + oc) * D_out + od) * H_out + oh) * W_out + ow] = sum; } }"
+    metal_body: "kernel void conv3d_kernel(device const float* X [[buffer(0)]], device const float* W [[buffer(1)]], device float* Y [[buffer(2)]], constant uint4& dims0 [[buffer(3)]], constant uint4& dims1 [[buffer(4)]], constant uint4& dims2 [[buffer(5)]], uint3 gid [[thread_position_in_grid]]) { uint b = gid.z; uint oc = gid.y; uint dhw = gid.x; uint N = dims0.x; uint C_in = dims0.y; uint D = dims0.z; uint H = dims0.w; uint W_in = dims1.x; uint C_out = dims1.y; uint KD = dims1.z; uint KH = dims1.w; uint KW = dims2.x; uint D_out = dims2.y; uint H_out = dims2.z; uint W_out = dims2.w; if (b < N && oc < C_out && dhw < D_out * H_out * W_out) { uint od = dhw / (H_out * W_out); uint rem = dhw % (H_out * W_out); uint oh = rem / W_out; uint ow = rem % W_out; float sum = 0.0f; for (uint ic = 0; ic < C_in; ++ic) { for (uint kd = 0; kd < KD; ++kd) { for (uint kh = 0; kh < KH; ++kh) { for (uint kw = 0; kw < KW; ++kw) { uint id = od + kd; uint ih = oh + kh; uint iw = ow + kw; if (id < D && ih < H && iw < W_in) { sum += X[(((b * C_in + ic) * D + id) * H + ih) * W_in + iw] * W[(((oc * C_in + ic) * KD + kd) * KH + kh) * KW + kw]; } } } } } Y[(((b * C_out + oc) * D_out + od) * H_out + oh) * W_out + ow] = sum; } }"
+    parameters:
+      - name: "x"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "w"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  # Reductions
+  ReduceMean:
+    opcode: "ReduceMean"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "atomicAdd(out, in0[idx] / (float)n);"
+    cuda_body: "__global__ void reducemean_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx < n) { atomicAdd(out, in0[idx] / (float)n); } }"
+    rocm_body: "__global__ void reducemean_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx < n) { atomicAdd(out, in0[idx] / (float)n); } }"
+    metal_body: "kernel void reducemean_kernel(device const float* in0 [[buffer(0)]], device atomic_float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx < n) { atomic_fetch_add_explicit(out, in0[idx] / float(n), memory_order_relaxed); } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ReduceMax:
+    opcode: "ReduceMax"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Reduction maximum */"
+    cuda_body: "__global__ void reducemax_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx == 0) { float m = in0[0]; for (int i = 1; i < n; ++i) { if (in0[i] > m) m = in0[i]; } *out = m; } }"
+    rocm_body: "__global__ void reducemax_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx == 0) { float m = in0[0]; for (int i = 1; i < n; ++i) { if (in0[i] > m) m = in0[i]; } *out = m; } }"
+    metal_body: "kernel void reducemax_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx == 0) { float m = in0[0]; for (uint i = 1; i < n; ++i) { if (in0[i] > m) m = in0[i]; } *out = m; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ReduceMin:
+    opcode: "ReduceMin"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Reduction minimum */"
+    cuda_body: "__global__ void reducemin_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx == 0) { float m = in0[0]; for (int i = 1; i < n; ++i) { if (in0[i] < m) m = in0[i]; } *out = m; } }"
+    rocm_body: "__global__ void reducemin_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx == 0) { float m = in0[0]; for (int i = 1; i < n; ++i) { if (in0[i] < m) m = in0[i]; } *out = m; } }"
+    metal_body: "kernel void reducemin_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx == 0) { float m = in0[0]; for (uint i = 1; i < n; ++i) { if (in0[i] < m) m = in0[i]; } *out = m; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ReduceProd:
+    opcode: "ReduceProd"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Reduction product */"
+    cuda_body: "__global__ void reduceprod_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx == 0) { float p = 1.0f; for (int i = 0; i < n; ++i) p *= in0[i]; *out = p; } }"
+    rocm_body: "__global__ void reduceprod_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx == 0) { float p = 1.0f; for (int i = 0; i < n; ++i) p *= in0[i]; *out = p; } }"
+    metal_body: "kernel void reduceprod_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx == 0) { float p = 1.0f; for (uint i = 0; i < n; ++i) p *= in0[i]; *out = p; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ReduceAny:
+    opcode: "ReduceAny"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Reduction logical any */"
+    cuda_body: "__global__ void reduceany_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx == 0) { float res = 0.0f; for (int i = 0; i < n; ++i) { if (in0[i] != 0.0f) { res = 1.0f; break; } } *out = res; } }"
+    rocm_body: "__global__ void reduceany_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx == 0) { float res = 0.0f; for (int i = 0; i < n; ++i) { if (in0[i] != 0.0f) { res = 1.0f; break; } } *out = res; } }"
+    metal_body: "kernel void reduceany_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx == 0) { float res = 0.0f; for (uint i = 0; i < n; ++i) { if (in0[i] != 0.0f) { res = 1.0f; break; } } *out = res; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  ReduceAll:
+    opcode: "ReduceAll"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int idx = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Reduction logical all */"
+    cuda_body: "__global__ void reduceall_kernel(const float* in0, float* out, int n) { int idx = blockIdx.x * blockDim.x + threadIdx.x; if (idx == 0) { float res = 1.0f; for (int i = 0; i < n; ++i) { if (in0[i] == 0.0f) { res = 0.0f; break; } } *out = res; } }"
+    rocm_body: "__global__ void reduceall_kernel(const float* in0, float* out, int n) { int idx = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (idx == 0) { float res = 1.0f; for (int i = 0; i < n; ++i) { if (in0[i] == 0.0f) { res = 0.0f; break; } } *out = res; } }"
+    metal_body: "kernel void reduceall_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint& n [[buffer(2)]], uint idx [[thread_position_in_grid]]) { if (idx == 0) { float res = 1.0f; for (uint i = 0; i < n; ++i) { if (in0[i] == 0.0f) { res = 0.0f; break; } } *out = res; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "n"
+        param_type: "int"
+        source: "num_elements"
+
+  # Matrix decompositions & Linear Algebra
+  Transpose:
+    opcode: "Transpose"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "out[col * rows + row] = in0[row * cols + col];"
+    cuda_body: "__global__ void transpose_kernel(const float* in0, float* out, int rows, int cols) { int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x; if (row < rows && col < cols) { out[col * rows + row] = in0[row * cols + col]; } }"
+    rocm_body: "__global__ void transpose_kernel(const float* in0, float* out, int rows, int cols) { int row = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y; int col = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (row < rows && col < cols) { out[col * rows + row] = in0[row * cols + col]; } }"
+    metal_body: "kernel void transpose_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint2& dims [[buffer(2)]], uint2 gid [[thread_position_in_grid]]) { uint row = gid.y; uint col = gid.x; uint rows = dims.x; uint cols = dims.y; if (row < rows && col < cols) { out[col * rows + row] = in0[row * cols + col]; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "rows"
+        param_type: "int"
+        source: "shape"
+        source_key: "rows"
+      - name: "cols"
+        param_type: "int"
+        source: "shape"
+        source_key: "cols"
+
+  Einsum:
+    opcode: "Einsum"
+    workgroup_dims: [16, 16, 1]
+    thread_indexing_formula: "int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x;"
+    memory_layout_requirements: ["contiguous"]
+    body: "/* Generalized tensor contraction */"
+    cuda_body: "__global__ void einsum_kernel(const float* A, const float* B, float* C, int M, int N, int K) { int row = blockIdx.y * blockDim.y + threadIdx.y; int col = blockIdx.x * blockDim.x + threadIdx.x; if (row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    rocm_body: "__global__ void einsum_kernel(const float* A, const float* B, float* C, int M, int N, int K) { int row = hipBlockIdx_y * hipBlockDim_y + hipThreadIdx_y; int col = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x; if (row < M && col < N) { float sum = 0.0f; for (int k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    metal_body: "kernel void einsum_kernel(device const float* A [[buffer(0)]], device const float* B [[buffer(1)]], device float* C [[buffer(2)]], constant uint4& dims [[buffer(3)]], uint2 gid [[thread_position_in_grid]]) { uint row = gid.y; uint col = gid.x; uint M = dims.x; uint N = dims.y; uint K = dims.z; if (row < M && col < N) { float sum = 0.0f; for (uint k = 0; k < K; ++k) sum += A[row * K + k] * B[k * N + col]; C[row * N + col] = sum; } }"
+    parameters:
+      - name: "A"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "B"
+        param_type: "pointer"
+        source: "input"
+        source_index: 1
+      - name: "C"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+
+  Softmax:
+    opcode: "Softmax"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int row = blockIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "/* Numerically stable softmax along inner dimension */"
+    cuda_body: "__global__ void softmax_kernel(const float* in0, float* out, int rows, int cols) { int row = blockIdx.x; if (row < rows) { float max_val = in0[row * cols]; for (int c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (int c = 0; c < cols; ++c) sum_exp += expf(in0[row * cols + c] - max_val); for (int c = 0; c < cols; ++c) out[row * cols + c] = expf(in0[row * cols + c] - max_val) / sum_exp; } }"
+    rocm_body: "__global__ void softmax_kernel(const float* in0, float* out, int rows, int cols) { int row = hipBlockIdx_x; if (row < rows) { float max_val = in0[row * cols]; for (int c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (int c = 0; c < cols; ++c) sum_exp += expf(in0[row * cols + c] - max_val); for (int c = 0; c < cols; ++c) out[row * cols + c] = expf(in0[row * cols + c] - max_val) / sum_exp; } }"
+    metal_body: "kernel void softmax_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint2& dims [[buffer(2)]], uint row [[thread_position_in_grid]]) { if (row < dims.x) { uint cols = dims.y; float max_val = in0[row * cols]; for (uint c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (uint c = 0; c < cols; ++c) sum_exp += exp(in0[row * cols + c] - max_val); for (uint c = 0; c < cols; ++c) out[row * cols + c] = exp(in0[row * cols + c] - max_val) / sum_exp; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "rows"
+        param_type: "int"
+        source: "shape"
+        source_key: "rows"
+      - name: "cols"
+        param_type: "int"
+        source: "shape"
+        source_key: "cols"
+
+  LogSoftmax:
+    opcode: "LogSoftmax"
+    workgroup_dims: [256, 1, 1]
+    thread_indexing_formula: "int row = blockIdx.x;"
+    memory_layout_requirements: ["contiguous", "row-major"]
+    body: "/* Numerically stable log-softmax along inner dimension */"
+    cuda_body: "__global__ void logsoftmax_kernel(const float* in0, float* out, int rows, int cols) { int row = blockIdx.x; if (row < rows) { float max_val = in0[row * cols]; for (int c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (int c = 0; c < cols; ++c) sum_exp += expf(in0[row * cols + c] - max_val); float log_sum = logf(sum_exp); for (int c = 0; c < cols; ++c) out[row * cols + c] = (in0[row * cols + c] - max_val) - log_sum; } }"
+    rocm_body: "__global__ void logsoftmax_kernel(const float* in0, float* out, int rows, int cols) { int row = hipBlockIdx_x; if (row < rows) { float max_val = in0[row * cols]; for (int c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (int c = 0; c < cols; ++c) sum_exp += expf(in0[row * cols + c] - max_val); float log_sum = logf(sum_exp); for (int c = 0; c < cols; ++c) out[row * cols + c] = (in0[row * cols + c] - max_val) - log_sum; } }"
+    metal_body: "kernel void logsoftmax_kernel(device const float* in0 [[buffer(0)]], device float* out [[buffer(1)]], constant uint2& dims [[buffer(2)]], uint row [[thread_position_in_grid]]) { if (row < dims.x) { uint cols = dims.y; float max_val = in0[row * cols]; for (uint c = 1; c < cols; ++c) { float v = in0[row * cols + c]; if (v > max_val) max_val = v; } float sum_exp = 0.0f; for (uint c = 0; c < cols; ++c) sum_exp += exp(in0[row * cols + c] - max_val); float log_sum = log(sum_exp); for (uint c = 0; c < cols; ++c) out[row * cols + c] = (in0[row * cols + c] - max_val) - log_sum; } }"
+    parameters:
+      - name: "in0"
+        param_type: "pointer"
+        source: "input"
+        source_index: 0
+      - name: "out"
+        param_type: "pointer"
+        source: "output"
+        source_index: 0
+      - name: "rows"
+        param_type: "int"
+        source: "shape"
+        source_key: "rows"
+      - name: "cols"
+        param_type: "int"
+        source: "shape"
+        source_key: "cols"

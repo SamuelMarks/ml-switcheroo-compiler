@@ -304,6 +304,9 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
         with patch("builtins.open", mock_open(read_data=yaml.dump({"OpRuleFile": {"vjp": ["cot_rf"]}}))):
             assert _load_rule_from_yaml_files("OpRuleFile", "vjp") == {"vjp": ["cot_rf"]}
             assert _load_rule_from_yaml_files("MissingInRuleFile", "vjp") is None
+        # Non-dict data in rule_file (branch 366->371)
+        with patch("builtins.open", mock_open(read_data=yaml.dump("scalar_string_not_dict"))):
+            assert _load_rule_from_yaml_files("OpRuleFile", "vjp") is None
 
     # 2. yaml_path: rules/{op_type}.yaml exists, but op not in data (branch 381->388)
     def exists_rules_op(path: str) -> bool:
@@ -314,6 +317,9 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
         with patch("builtins.open", mock_open(read_data=yaml.dump({"OpRulesDir": {"vjp": ["cot_rd"]}}))):
             assert _load_rule_from_yaml_files("OpRulesDir", "vjp") == {"vjp": ["cot_rd"]}
             assert _load_rule_from_yaml_files("MissingInRulesDir", "vjp") is None
+        # Non-dict data in rules directory file (branch 376->371)
+        with patch("builtins.open", mock_open(read_data=yaml.dump(["list", "not", "dict"]))):
+            assert _load_rule_from_yaml_files("OpRulesDir", "vjp") is None
 
     # 3. manifest_path: ../autodiff_rules.yaml (including non-dict rule_entry branch 385->382)
     def exists_manifest(path: str) -> bool:

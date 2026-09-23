@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pathlib
+
 import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -14,7 +16,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
     OpMappingSchema,
     dispatch_eager_op,
 )
-from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.custom_vjp_ops import CustomVJPFunction
 from ml_switcheroo_compiler.interpreter.evaluator import _prepare_node_kwargs
@@ -409,3 +411,362 @@ def test_llvm_cpp_validate_mlir_import_error_and_visit_in0(monkeypatch: pytest.M
     gen: cpp_gen.CppGenerator = cpp_gen.CppGenerator(graph=graph)
     gen._visit_node(n, graph)
     assert any("out1" in line for line in gen.lines)
+
+
+def test_device_clear_cache_with_backend_support(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test clear_cache when active backend implements clear_cache."""
+    from ml_switcheroo_compiler.core.device import clear_cache
+
+    class BackendWithCache:
+        """Mock backend supporting clear_cache."""
+
+        called: bool = False
+
+        @classmethod
+        def clear_cache(cls) -> None:
+            """Record cache clearance call."""
+            cls.called = True
+
+    with monkeypatch.context() as m:
+        m.setattr("ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: BackendWithCache)
+        clear_cache()
+        assert BackendWithCache.called
+
+
+def test_diagnostics_debugging_dump_info(tmp_path: pathlib.Path) -> None:
+    """Test enable_dump_debug_info creates directory."""
+    from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
+
+    dump_dir = tmp_path / "debug_dump"
+    enable_dump_debug_info(str(dump_dir), tensor_debug_mode="FULL_TENSOR", circular_buffer_size=1000)
+    assert dump_dir.exists()
+
+
+def test_diagnostics_summary_encode_image_1channel() -> None:
+    """Test encode_image handles 3D tensors with single trailing channel."""
+    from ml_switcheroo_compiler.diagnostics.summary import encode_image
+
+    arr = np.ones((8, 8, 1), dtype=np.float32)
+    png_bytes = encode_image(arr)
+    assert isinstance(png_bytes, bytes)
+    assert png_bytes.startswith(b"\x89PNG")
+
+
+def test_conv_ops_convolve_infer_shape_custom_mode() -> None:
+    """Test Convolve.infer_shape with unmapped custom mode and invalid input."""
+    from ml_switcheroo_compiler.ops.linalg.conv_ops import Convolve
+
+    class DummyArray:
+        """Dummy array container with shape."""
+
+        shape = (10,)
+
+    res = Convolve().infer_shape(DummyArray(), DummyArray(), mode="unknown")
+    assert res == (19,)
+
+    assert Convolve().infer_shape(None, None) == ()
+
+
+def test_time_distributed_infer_shape_valid() -> None:
+    """Test TimeDistributed.infer_shape when inner operation returns shape, rank < 2, and eager func."""
+    from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
+
+    class DummyInput:
+        """Dummy tensor with batch and feature dimensions."""
+
+        shape = (2, 5, 8, 16)
+        dtype = "float32"
+
+    class FakeOp:
+        """Mock inner operation returning shaped tensor."""
+
+        def infer_shape(self, inp: DummyInput, **kwargs: object) -> tuple[int, ...]:
+            """Infer output shape from input."""
+            return (inp.shape[0], 64)
+
+    class FakeOpEmpty:
+        """Mock inner operation returning empty shape."""
+
+        def infer_shape(self, inp: object, **kwargs: object) -> tuple[int, ...]:
+            """Infer empty shape."""
+            return ()
+
+    td = TimeDistributed()
+    with pytest.MonkeyPatch().context() as m:
+        m.setattr("ml_switcheroo_compiler.ops.nn.time_distributed.get_op", lambda name: FakeOp)
+        assert td.infer_shape(DummyInput(), wrapped_op_name="Fake") == (2, 5, 64)
+
+        m.setattr("ml_switcheroo_compiler.ops.nn.time_distributed.get_op", lambda name: FakeOpEmpty)
+        assert td.infer_shape(DummyInput(), wrapped_op_name="FakeEmpty") == (2, 5, 8, 16)
+
+        m.setattr(
+            "ml_switcheroo_compiler.ops.nn.time_distributed.get_op",
+            lambda name: (_ for _ in ()).throw(RuntimeError("error")),
+        )
+        assert td.infer_shape(DummyInput(), wrapped_op_name="FakeErr") == (2, 5, 8, 16)
+
+    class Dummy1D:
+        """Dummy 1D input."""
+
+        shape = (5,)
+
+    assert TimeDistributed().infer_shape(Dummy1D()) == (5,)
+    assert TimeDistributed().infer_shape(DummyInput()) == (2, 5, 8, 16)
+
+    t_in = Tensor(np.ones((2, 3, 4)), TensorConfig((2, 3, 4), "float32", "cpu"))
+    with ConfigContext(eager_mode=False):
+        global_tracing_state.start_tracing(LogicalGraph())
+        try:
+            res_traced = time_distributed(t_in, wrapped_op_name="Dense")
+            assert res_traced is not None
+        finally:
+            global_tracing_state.stop_tracing()
+
+
+def test_shape_joining_concatenate_rank0() -> None:
+    """Test concatenate on rank-0 tensors outside eager mode."""
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.shape.joining import concatenate
+
+    with ConfigContext(eager_mode=False):
+        t1 = Tensor(np.array(1.0), TensorConfig((), "float32", "cpu"))
+        t2 = Tensor(np.array(2.0), TensorConfig((), "float32", "cpu"))
+        res = concatenate([t1, t2], axis=0)
+        assert res.shape == ()
+
+
+def test_shape_splitting_unstack_rank0() -> None:
+    """Test unstack on rank-0 tensor outside eager mode."""
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.shape.splitting import unstack
+
+    with ConfigContext(eager_mode=False):
+        t = Tensor(np.array(42.0), TensorConfig((), "float32", "cpu"))
+        res = unstack(t, axis=0)
+        assert len(res) == 1
+        assert res[0].shape == ()
+
+
+def test_shape_slicing_branches() -> None:
+    """Test slice outside eager mode with negative step, negative end, and out of bounds axis."""
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.shape.slicing import slice as slice_op
+
+    with ConfigContext(eager_mode=False):
+        t = Tensor(np.ones((10, 20)), TensorConfig((10, 20), "float32", "cpu"))
+        # Negative step (s < 0)
+        res_rev = slice_op(t, axis=0, start=8, end=2, step=-2)
+        assert res_rev.shape == (3, 20)
+
+        # Negative end (en < 0 and end is not None)
+        res_neg_end = slice_op(t, axis=1, start=2, end=-4, step=1)
+        assert res_neg_end.shape == (10, 14)
+
+        # Positive end (en >= 0 and end is not None) -> hits branch 60 -> 63
+        res_pos_end = slice_op(t, axis=1, start=2, end=5, step=1)
+        assert res_pos_end.shape == (10, 3)
+
+        # None end (end is None)
+        res_none_end = slice_op(t, axis=1, start=2, end=None, step=1)
+        assert res_none_end.shape == (10, 18)
+
+        # Out of bounds axis (norm_axis >= rank)
+        res_oob = slice_op(t, axis=5, start=0, end=5, step=1)
+        assert res_oob.shape == (10, 20)
+
+
+def test_backend_types_import_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test ImportError branches and normal operation in backend types modules."""
+    import importlib
+    import sys
+
+    import ml_switcheroo_compiler.backends.dask.types as dask_types
+    import ml_switcheroo_compiler.backends.keras.types as keras_types
+    import ml_switcheroo_compiler.backends.mlx.types as mlx_types
+
+    # Normal types functions
+    assert dask_types.zeros(type, (2, 2)) is not None
+    assert dask_types.array(type, [1, 2], dtype="float32") is not None
+    assert dask_types.array(type, [1, 2]) is not None
+    assert dask_types.asarray(type, [1, 2]) is not None
+    assert np.isclose(dask_types.item(type, np.array(5.0)), 5.0)
+
+    assert keras_types.zeros(type, (2, 2)) is not None
+    assert keras_types.array(type, [1, 2], dtype="float32") is not None
+    assert keras_types.array(type, [1, 2]) is not None
+    assert keras_types.asarray(type, [1, 2]) is not None
+    assert np.isclose(keras_types.item(type, np.array(5.0)), 5.0)
+
+    assert mlx_types.zeros(type, (2, 2)) is not None
+    assert mlx_types.array(type, [1, 2], dtype="float32") is not None
+    assert mlx_types.array(type, [1, 2]) is not None
+    assert mlx_types.asarray(type, [1, 2]) is not None
+    assert np.isclose(mlx_types.item(type, np.array(5.0)), 5.0)
+
+    # Keras asarray branches
+    mock_kops_asarray = type("MockKops", (), {"asarray": staticmethod(lambda d: "asarray_res")})()
+    with monkeypatch.context() as m:
+        m.setattr(keras_types, "kops", mock_kops_asarray)
+        assert keras_types.asarray(type, [1, 2]) == "asarray_res"
+
+    mock_kops_none = type("MockKops", (), {"array": staticmethod(lambda d, dtype=None: "array_res")})()
+    with monkeypatch.context() as m:
+        m.setattr(keras_types, "kops", mock_kops_none)
+        assert keras_types.asarray(type, [1, 2]) == "array_res"
+
+    # MLX asarray branch
+    mock_mx_asarray = type("MockMX", (), {"asarray": staticmethod(lambda d: "mx_asarray_res")})()
+    with monkeypatch.context() as m:
+        m.setattr(mlx_types, "mx", mock_mx_asarray)
+        assert mlx_types.asarray(type, [1, 2]) == "mx_asarray_res"
+
+    # Dask types fallback
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "dask", None)
+        m.setitem(sys.modules, "dask.array", None)
+        importlib.reload(dask_types)
+        assert dask_types.da is None
+
+    # Keras types fallback
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "keras", None)
+        m.setitem(sys.modules, "keras.ops", None)
+        importlib.reload(keras_types)
+        assert keras_types.kops is None
+
+    # MLX types fallback
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "mlx", None)
+        m.setitem(sys.modules, "mlx.core", None)
+        importlib.reload(mlx_types)
+        assert mlx_types.mx is None
+
+    # Reload originals cleanly
+    importlib.reload(dask_types)
+    importlib.reload(keras_types)
+    importlib.reload(mlx_types)
+
+
+def test_pyarrow_compute_types_and_eager_coverage() -> None:
+    """Test pyarrow_compute to_table default names, unsupported fallback, and eager error handling."""
+    import pyarrow as pa
+
+    import ml_switcheroo_compiler.backends.pyarrow_compute as pa_pkg
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    # 1. to_table without names (default names branch)
+    c1 = pa.array([1, 2])
+    tbl = pa_pkg.to_table([c1])
+    assert tbl.column_names == ["f0"]
+
+    # 2. to_table with unsupported type (falls through to return actual_data)
+    assert pa_pkg.to_table("unsupported_string") == "unsupported_string"
+
+    # 3. eager.execute_op when pc_mod direct fn raises exception
+    with pytest.raises(BackendNotSupportedError, match="Failed executing pyarrow.compute"):
+        pa_pkg.execute_op("Add", "not_an_arrow_array", "invalid")
+
+    # 4. eager.execute_op when pc_mod mapped fn (e.g. Where -> if_else) raises exception (lines 194-196)
+    with pytest.raises(BackendNotSupportedError, match="Failed executing pyarrow.compute.if_else"):
+        pa_pkg.execute_op("Where", "invalid", "inputs")
+
+
+def test_awkward_eager_and_types_full_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test full coverage of remaining awkward eager and types fallback branches.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    import importlib
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    import ml_switcheroo_compiler.backends.awkward.eager as ak_eager
+    import ml_switcheroo_compiler.backends.awkward.types as ak_types
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    # 1. eager Tensor unwrap (lines 20-21)
+    t = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
+    assert np.allclose(ak_eager.execute_op("Add", t, t), [2.0, 4.0])
+
+    # 2. eager ak_mod is None fallback (lines 143-144, branch 149->158)
+    with patch.dict(sys.modules, {"awkward": None}):
+        assert np.allclose(ak_eager.execute_op("Add", np.array([1.0]), np.array([2.0])), [3.0])
+
+    # 3. types _get_ak_module fallback (lines 17-18)
+    orig_import = importlib.import_module
+
+    def mock_import(name: str) -> object:
+        if name == "awkward":
+            raise ImportError("no awkward")
+        return orig_import(name)
+
+    with patch("importlib.import_module", side_effect=mock_import):
+        mod = ak_types._get_ak_module()
+        assert getattr(mod, "__name__", "") == "numpy"
+
+    # 4. types zeros fallback without Array (line 37, branch 35->37)
+    mock_ak_no_arr = MagicMock(spec=[])
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        z = ak_types.zeros((2, 2))
+        assert isinstance(z, np.ndarray)
+
+    # 5. types array and ragged_array without Array and with ValueError (lines 62-63, 113-114, branch 54->59)
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        with patch("numpy.array", side_effect=[ValueError("ragged"), np.array([1], dtype=object)]):
+            a = ak_types.array([[1], [2, 3]])
+            assert a.dtype == object
+
+        with patch("numpy.array", side_effect=[ValueError("ragged"), np.array([1], dtype=object)]):
+            ra = ak_types.ragged_array([[1], [2, 3]])
+            assert ra.dtype == object
+
+    # 6. types asarray fallback (lines 81-84, branch 78->83)
+    mock_ak_err = MagicMock()
+    mock_ak_err.Array.side_effect = RuntimeError("fail")
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_err):
+        as_arr = ak_types.asarray([1, 2])
+        assert isinstance(as_arr, np.ndarray)
+
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        as_arr2 = ak_types.asarray([1, 2])
+        assert isinstance(as_arr2, np.ndarray)
+
+    # 7. types record_array return actual_data (line 137, branch 136->137)
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        assert ak_types.record_array("non_mapping_str") == "non_mapping_str"
+    # types record_array with non-mapping and ak_mod with Array (line 137)
+    assert ak_types.record_array([1, 2]) is not None
+
+    # 8. types with_field return actual_base (line 223, branch 219->223)
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        assert ak_types.with_field("non_dict_str", where="x") == "non_dict_str"
+
+    # 9. types unzip return (actual_data,) (line 246, branch 244->246)
+    with patch.object(ak_types, "_get_ak_module", return_value=mock_ak_no_arr):
+        assert ak_types.unzip("non_dict_str") == ("non_dict_str",)
+
+    # 10. types item with actual_data.item() (line 268) and 1D list from to_list (line 265)
+    class MockScalar:
+        """Mock scalar container with item method."""
+
+        def item(self) -> float:
+            return 42.0
+
+    assert ak_types.item(MockScalar()) == 42.0
+
+    class Mock1DList:
+        """Mock container returning 1D list from to_list."""
+
+        def to_list(self) -> list[float]:
+            return [9.5]
+
+    assert ak_types.item(Mock1DList()) == 9.5
+
+    class Mock2DList:
+        """Mock container returning 2D list from to_list."""
+
+        def to_list(self) -> list[list[float]]:
+            return [[14.5]]
+
+    assert ak_types.item(Mock2DList()) == 14.5

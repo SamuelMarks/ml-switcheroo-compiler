@@ -105,11 +105,6 @@ def _load_pyarrow_compute() -> None:
     import ml_switcheroo_compiler.backends.pyarrow_compute  # noqa: F401
 
 
-def _load_bohrium() -> None:
-    """Load the Bohrium backend."""
-    import ml_switcheroo_compiler.backends.bohrium  # noqa: F401
-
-
 _LOADERS = {
     "numpy": _load_numpy,
     "pytorch": _load_pytorch,
@@ -132,7 +127,6 @@ _LOADERS = {
     "dpnp": _load_dpnp,
     "awkward": _load_awkward,
     "pyarrow_compute": _load_pyarrow_compute,
-    "bohrium": _load_bohrium,
 }
 
 BackendName = Literal[
@@ -161,7 +155,6 @@ BackendName = Literal[
     "dpnp",
     "awkward",
     "pyarrow_compute",
-    "bohrium",
 ]
 
 
@@ -192,7 +185,6 @@ class BackendRegistry:
         "dpnp": "ml_switcheroo_compiler.backends.dpnp",
         "awkward": "ml_switcheroo_compiler.backends.awkward",
         "pyarrow_compute": "ml_switcheroo_compiler.backends.pyarrow_compute",
-        "bohrium": "ml_switcheroo_compiler.backends.bohrium",
     }
 
     @classmethod

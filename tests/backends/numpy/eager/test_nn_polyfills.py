@@ -57,6 +57,14 @@ def test_ctc_beam_search_decoder_extend_path():
     sparse, log_probs = _np_ctc_beam_search_decoder(np, np.zeros((0, 0, 4)), np.array([]), beam_width=2)
     assert len(sparse) == 3
 
+    # Multi-path test
+    sparse_multi, log_probs_multi = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=3)
+    assert len(sparse_multi) == 3
+    assert log_probs_multi.shape == (2, 3)
+    for sp in sparse_multi:
+        assert len(sp) == 3
+        assert sp[2][0] == 2
+
 
 def test_ctc_unique_labels():
     labels = np.array([1, 1, 2, 3, 2])

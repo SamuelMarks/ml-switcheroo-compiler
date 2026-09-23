@@ -502,3 +502,163 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
 
     p_fallback = HardwareDeviceProfileModel(architecture="generic-cpu")
     assert p_fallback.execution_unit_size == 32
+
+
+def test_hardware_config_models_100_coverage() -> None:
+    """Verify Conv3D launch, pool launch, row-wise launch, unified templates merge, get_template, and shared memory validation."""
+    from unittest.mock import patch
+
+    import pytest
+
+    from ml_switcheroo_compiler.backends.hardware_config_models import (
+        HardwareDeviceProfileModel,
+        HardwareDeviceProfilesManifestModel,
+        _merge_unified_kernel_templates,
+        load_hardware_templates,
+        load_kernel_templates_manifest,
+        resolve_hardware_launch_grid_and_args,
+        validate_and_bound_shared_memory,
+    )
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    tpl = HardwareTemplateConfig(body="kernel", workgroup_size=[256, 1, 1])
+
+    # 1. Conv3D launch resolution
+    in_c3d_0 = IRNode("c3d_in0", "Input", shape_metadata=(2, 3, 4, 8, 8))
+    in_c3d_1 = IRNode("c3d_in1", "Input", shape_metadata=(16, 3, 2, 3, 3))
+    out_c3d = IRNode("c3d_out", "Conv3D", inputs=["c3d_in0", "c3d_in1"], shape_metadata=(2, 16, 3, 6, 6))
+    g.nodes = {"c3d_in0": in_c3d_0, "c3d_in1": in_c3d_1, "c3d_out": out_c3d}
+    grid_c3d, args_c3d = resolve_hardware_launch_grid_and_args(out_c3d, tpl, {"c3d_in0": "in0", "c3d_in1": "in1"}, "out_buf", 1728, 0, g)
+    assert grid_c3d[1] == "16"
+    assert grid_c3d[2] == "2"
+    assert len(args_c3d) == 15
+
+    # Conv3D with missing/empty inputs and shapes
+    empty_c3d = IRNode("empty_c3d", "Conv3D", inputs=[], shape_metadata=())
+    grid_empty_c3d, _ = resolve_hardware_launch_grid_and_args(empty_c3d, tpl, {}, "out_buf", 1, 0, g)
+    assert grid_empty_c3d == ("(1 * 1 * 1 + block_0.x - 1) / block_0.x", "1", "1")
+
+    # 2. Pool 3D launch resolution
+    in_p3d = IRNode("p3d_in", "Input", shape_metadata=(2, 3, 4, 8, 8))
+    out_p3d = IRNode("p3d_out", "MaxPool3D", inputs=["p3d_in"], shape_metadata=(2, 3, 2, 4, 4), attributes={"kernel_size": [2, 2, 2]})
+    g.nodes.update({"p3d_in": in_p3d, "p3d_out": out_p3d})
+    grid_p3d, args_p3d = resolve_hardware_launch_grid_and_args(out_p3d, tpl, {"p3d_in": "in_p"}, "out_buf", 192, 1, g)
+    assert grid_p3d == ("(2 * 4 * 4 + block_1.x - 1) / block_1.x", "3", "2")
+    assert len(args_p3d) == 13
+
+    # 3. Pool 2D launch resolution
+    in_p2d = IRNode("p2d_in", "Input", shape_metadata=(2, 3, 8, 8))
+    out_p2d = IRNode("p2d_out", "AvgPool2D", inputs=["p2d_in"], shape_metadata=(2, 3, 4, 4), attributes={"kernel_size": (2, 2)})
+    g.nodes.update({"p2d_in": in_p2d, "p2d_out": out_p2d})
+    grid_p2d, args_p2d = resolve_hardware_launch_grid_and_args(out_p2d, tpl, {"p2d_in": "in_p"}, "out_buf", 96, 2, g)
+    assert grid_p2d == ("(4 * 4 + block_2.x - 1) / block_2.x", "3", "2")
+    assert len(args_p2d) == 10
+
+    # Pool 2D with empty attributes and missing shapes
+    empty_p = IRNode("empty_p", "MaxPool2D", inputs=[], shape_metadata=(), attributes={})
+    grid_ep, _ = resolve_hardware_launch_grid_and_args(empty_p, tpl, {}, "out_buf", 1, 3, g)
+    assert grid_ep == ("(1 * 1 + block_3.x - 1) / block_3.x", "1", "1")
+
+    # 4. Row-wise args: normalization (LayerNorm) and reduction (ReduceSum)
+    in_norm = IRNode("norm_in", "Input", shape_metadata=(4, 16))
+    out_norm = IRNode("norm_out", "LayerNorm", inputs=["norm_in"], shape_metadata=(4, 16), attributes={"epsilon": 1e-4})
+    g.nodes.update({"norm_in": in_norm, "norm_out": out_norm})
+    grid_norm, args_norm = resolve_hardware_launch_grid_and_args(out_norm, tpl, {"norm_in": "in_norm"}, "out_norm", 64, 4, g)
+    assert grid_norm == ("4", "1", "1")
+    assert args_norm[-1] == "0.0001"
+
+    out_soft = IRNode("soft_out", "Softmax", inputs=["norm_in"], shape_metadata=(4, 16))
+    g.nodes["soft_out"] = out_soft
+    grid_soft, args_soft = resolve_hardware_launch_grid_and_args(out_soft, tpl, {"norm_in": "in_norm"}, "out_soft", 64, 5, g)
+    assert grid_soft == ("4", "1", "1")
+    assert args_soft[-2:] == ["4", "16"]
+
+    # 5. _merge_unified_kernel_templates for cuda, rocm, and metal
+    cfg_cuda = HardwareTemplatesConfig(
+        templates={
+            "dummy_op": HardwareTemplateConfig(body="void f() { C[id] = A[id]; }"),
+            "existing_real": HardwareTemplateConfig(body="void custom() { /* real */ }"),
+        }
+    )
+    _merge_unified_kernel_templates(cfg_cuda, "cuda")
+    assert "relu" in cfg_cuda.templates
+    assert "dummy_op" in cfg_cuda.templates
+
+    cfg_rocm = HardwareTemplatesConfig(
+        templates={
+            "dummy_op2": HardwareTemplateConfig(body="void f() { C[id] = A[id] + B[id]; }"),
+        }
+    )
+    _merge_unified_kernel_templates(cfg_rocm, "rocm")
+    assert "relu" in cfg_rocm.templates
+
+    cfg_metal = HardwareTemplatesConfig(
+        templates={
+            "dummy_metal": HardwareTemplateConfig(body="void f() { output[idx] = input[idx]; }"),
+        }
+    )
+    _merge_unified_kernel_templates(cfg_metal, "metal")
+    assert "relu" in cfg_metal.templates
+
+    # _merge_unified_kernel_templates with an empty template body to cover line 202 (continue)
+    from ml_switcheroo_compiler.backends.hardware_config_models import (
+        KernelTemplateModel,
+        KernelTemplatesManifestModel,
+    )
+
+    dummy_manifest = KernelTemplatesManifestModel(
+        kernel_templates={
+            "no_body_op": KernelTemplateModel(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
+            "with_body_op": KernelTemplateModel(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
+        }
+    )
+    cfg_empty_body = HardwareTemplatesConfig(templates={})
+    with patch("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", return_value=dummy_manifest):
+        _merge_unified_kernel_templates(cfg_empty_body, "cuda")
+    assert "with_body_op" in cfg_empty_body.templates
+    assert "no_body_op" not in cfg_empty_body.templates
+
+    # _merge_unified_kernel_templates when load_kernel_templates_manifest raises
+    with patch("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=RuntimeError("fail")):
+        _merge_unified_kernel_templates(cfg_cuda, "cuda")
+
+    # load_hardware_templates with backend param
+    import os
+
+    cuda_dir = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cuda", "templates")
+    cuda_file = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "cuda", "cuda_templates.yaml")
+    loaded_cuda = load_hardware_templates(cuda_dir, cuda_file, backend="cuda")
+    assert "relu" in loaded_cuda.templates
+
+    # 6. KernelTemplatesManifestModel.get_template
+    manifest_tmpl = load_kernel_templates_manifest()
+    found_tmpl = manifest_tmpl.get_template("Relu")
+    assert found_tmpl is not None
+    assert manifest_tmpl.get_template("NonExistentOp") is None
+
+    # 7. validate_and_bound_shared_memory
+    with pytest.raises(ValueError, match="cannot be negative"):
+        validate_and_bound_shared_memory(-1, "cuda")
+
+    # valid with default manifest
+    assert validate_and_bound_shared_memory(1024, "cuda") == 1024
+
+    # unknown backend
+    assert validate_and_bound_shared_memory(1024, "unknown_backend") == 1024
+
+    # exceeds limit
+    with pytest.raises(ValueError, match="exceeds device limit"):
+        validate_and_bound_shared_memory(100_000_000, "cuda")
+
+    # threadgroup_memory_limit_bytes and fallback limit
+    custom_prof_manifest = HardwareDeviceProfilesManifestModel(
+        profiles={
+            "custom_metal": HardwareDeviceProfileModel(architecture="apple", threadgroup_memory_limit_bytes=32768),
+            "custom_default": HardwareDeviceProfileModel(architecture="generic"),
+        }
+    )
+    assert validate_and_bound_shared_memory(4096, "custom_metal", manifest=custom_prof_manifest) == 4096
+    assert validate_and_bound_shared_memory(4096, "custom_default", manifest=custom_prof_manifest) == 4096
+    with pytest.raises(ValueError, match="exceeds device limit"):
+        validate_and_bound_shared_memory(65536, "custom_metal", manifest=custom_prof_manifest)

@@ -348,6 +348,29 @@ class Polynomial:
         """
         return f"Polynomial({self.canonical_str()})"
 
+    def eval(self, env: dict[str, int]) -> int:
+        """Evaluate polynomial expression given variable bindings.
+
+        Args:
+            env (dict[str, int]): Variable assignment dictionary.
+
+        Returns:
+            int: Evaluated integer result.
+
+        Raises:
+            KeyError: If a variable in the polynomial is not in env.
+        """
+        total = 0
+        for mon, coeff in self.terms.items():
+            term_val = coeff
+            for var, power in mon:
+                if var not in env:
+                    msg = f"Variable '{var}' not bound in environment."
+                    raise KeyError(msg)
+                term_val *= env[var] ** power
+            total += term_val
+        return total
+
 
 class SymNode:
     """Base class for all symbolic expression tree nodes."""
@@ -408,8 +431,16 @@ class SymNode:
 
         Returns:
             int: Evaluated integer result.
+
+        Raises:
+            KeyError: If an unbound variable is encountered.
+            NotImplementedError: If node cannot be evaluated.
         """
-        raise NotImplementedError
+        poly = self.to_polynomial()
+        if poly is not None:
+            return poly.eval(env)
+        msg = f"Evaluation not implemented for node of type {type(self).__name__}"
+        raise NotImplementedError(msg)
 
     def free_vars(self) -> set[str]:
         """Return set of free variable names in expression.

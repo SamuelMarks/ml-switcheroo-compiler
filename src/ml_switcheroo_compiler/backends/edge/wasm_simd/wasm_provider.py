@@ -41,17 +41,23 @@ def load_yaml_dir(dir_name: str) -> dict[str, Union[dict[str, dict[str, str]], d
 
 
 def get_wasm_template(template_name: str) -> dict[str, str]:
-    """Get template."""
+    """Get template.
+
+    Args:
+        template_name (str): Name of the template.
+
+    Returns:
+        dict[str, str]: Template dictionary mapping string keys to string values.
+    """
     global _WASM_TEMPLATES
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml_dir("wasm_templates")
 
     templates: Union[dict[str, dict[str, str]], dict[str, str], list[str]] = _WASM_TEMPLATES.get("templates", {})
     if isinstance(templates, dict):
-        res = templates.get(template_name, {})
+        res = templates.get(template_name)
         if not res:
-            print(f"DEBUG_PROVIDER: template_name={template_name}, type(templates)={type(templates)}, keys={list(templates.keys())[:10]}")
-
+            res = next((v for k, v in templates.items() if k.lower() == template_name.lower()), {})
         if isinstance(res, dict):
             return {str(k): str(v) for k, v in res.items()}
     return {}

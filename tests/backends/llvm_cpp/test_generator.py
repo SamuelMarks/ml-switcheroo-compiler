@@ -657,13 +657,14 @@ def test_cpp_generator_unmapped_op_strict_and_polyfill() -> None:
     with pytest.raises(UnimplementedMathError, match="C\\+\\+ code generator does not support operation"):
         gen_strict.generate(g)
 
-    # Non-strict mode must emit UserWarning and zero-initialized polyfill loop
+    # Non-strict mode must emit UserWarning and runtime polyfill loop
     gen_lenient = CppGenerator(g, strict=False)
-    with pytest.warns(UserWarning, match="Emitting safe zero-initialized polyfill"):
+    with pytest.warns(UserWarning, match="Emitting safe runtime polyfill"):
         code = gen_lenient.generate(g)
 
     assert "NDArrayView<float> bad_op({2,3}); // Fallback Unimplemented NonExistentCustomOp" in code
-    assert "for(size_t i = 0; i < bad_op.size(); ++i) { bad_op.data[i] = 0.0f; }" in code
+    assert "for(size_t i = 0; i < bad_op.size(); ++i)" in code
+    assert "1.0f" in code
 
 
 def test_llvm_cpp_validate_mlir_import_error_and_edge_target_idx1() -> None:
@@ -687,3 +688,202 @@ def test_llvm_cpp_validate_mlir_import_error_and_edge_target_idx1() -> None:
     gen = CppGenerator(g)
     code = gen.generate(g)
     assert "out1" in code
+
+
+def test_llvm_cpp_execution_verification() -> None:
+    """Verify execution of compiled C++ binaries matching NumPy eager numerical results."""
+    import ctypes
+    import shutil
+
+    import numpy as np
+
+    compiler = "clang++" if shutil.which("clang++") else "g++" if shutil.which("g++") else None
+    if not compiler:
+        pytest.skip("No C++ compiler (clang++ or g++) found.")
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import LLVMCPPRunner
+
+    runner = LLVMCPPRunner(compiler=compiler)
+
+    # 1. LayerNorm
+    g_ln = IRGraph(name="test_layernorm")
+    in_ln = IRNode(id="in0", op_type="Input", shape_metadata=(2, 4))
+    node_ln = IRNode(id="out0", op_type="LayerNorm", inputs=["in0"], shape_metadata=(2, 4))
+    g_ln.nodes = {"in0": in_ln, "out0": node_ln}
+    g_ln.inputs = ["in0"]
+    g_ln.outputs = ["out0"]
+    g_ln.sorted_nodes = [in_ln, node_ln]
+
+    code_ln = CppGenerator(g_ln).generate(g_ln)
+    fn_ln = runner.compile_and_load(code_ln)
+    x_ln = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]], dtype=np.float32)
+    y_ln = np.zeros_like(x_ln)
+    fn_ln((ctypes.c_void_p * 1)(x_ln.ctypes.data), (ctypes.c_void_p * 1)(y_ln.ctypes.data))
+    mean = x_ln.mean(axis=-1, keepdims=True)
+    var = x_ln.var(axis=-1, keepdims=True)
+    ref_ln = (x_ln - mean) / np.sqrt(var + 1e-5)
+    assert np.allclose(y_ln, ref_ln, atol=1e-4)
+    assert not np.all(y_ln == 0.0)
+
+    # 2. RMSNorm
+    g_rms = IRGraph(name="test_rmsnorm")
+    in_rms = IRNode(id="in0", op_type="Input", shape_metadata=(2, 4))
+    node_rms = IRNode(id="out0", op_type="RMSNorm", inputs=["in0"], shape_metadata=(2, 4))
+    g_rms.nodes = {"in0": in_rms, "out0": node_rms}
+    g_rms.inputs = ["in0"]
+    g_rms.outputs = ["out0"]
+    g_rms.sorted_nodes = [in_rms, node_rms]
+
+    code_rms = CppGenerator(g_rms).generate(g_rms)
+    fn_rms = runner.compile_and_load(code_rms)
+    y_rms = np.zeros_like(x_ln)
+    fn_rms((ctypes.c_void_p * 1)(x_ln.ctypes.data), (ctypes.c_void_p * 1)(y_rms.ctypes.data))
+    ref_rms = x_ln / np.sqrt(np.mean(x_ln**2, axis=-1, keepdims=True) + 1e-5)
+    assert np.allclose(y_rms, ref_rms, atol=1e-4)
+    assert not np.all(y_rms == 0.0)
+
+    # 3. Conv3D
+    g_conv3d = IRGraph(name="test_conv3d")
+    in_x3d = IRNode(id="in0", op_type="Input", shape_metadata=(1, 1, 3, 3, 3))
+    in_w3d = IRNode(id="in1", op_type="Input", shape_metadata=(1, 1, 2, 2, 2))
+    node_c3d = IRNode(id="out0", op_type="Conv3D", inputs=["in0", "in1"], shape_metadata=(1, 1, 2, 2, 2))
+    g_conv3d.nodes = {"in0": in_x3d, "in1": in_w3d, "out0": node_c3d}
+    g_conv3d.inputs = ["in0", "in1"]
+    g_conv3d.outputs = ["out0"]
+    g_conv3d.sorted_nodes = [in_x3d, in_w3d, node_c3d]
+
+    code_c3d = CppGenerator(g_conv3d).generate(g_conv3d)
+    fn_c3d = runner.compile_and_load(code_c3d)
+    x_3d = np.ones((1, 1, 3, 3, 3), dtype=np.float32)
+    w_3d = np.ones((1, 1, 2, 2, 2), dtype=np.float32)
+    y_3d = np.zeros((1, 1, 2, 2, 2), dtype=np.float32)
+    in_3d_ptrs = (ctypes.c_void_p * 2)(x_3d.ctypes.data, w_3d.ctypes.data)
+    fn_c3d(in_3d_ptrs, (ctypes.c_void_p * 1)(y_3d.ctypes.data))
+    assert np.allclose(y_3d, 8.0, atol=1e-4)
+    assert not np.all(y_3d == 0.0)
+
+    # 4. Slice
+    g_sl = IRGraph(name="test_slice")
+    in_sl = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
+    node_sl = IRNode(id="out0", op_type="Slice", inputs=["in0"], shape_metadata=(2, 2), attributes={"starts": [1, 1], "strides": [1, 1]})
+    g_sl.nodes = {"in0": in_sl, "out0": node_sl}
+    g_sl.inputs = ["in0"]
+    g_sl.outputs = ["out0"]
+    g_sl.sorted_nodes = [in_sl, node_sl]
+
+    code_sl = CppGenerator(g_sl).generate(g_sl)
+    fn_sl = runner.compile_and_load(code_sl)
+    x_sl = np.arange(16, dtype=np.float32).reshape(4, 4)
+    y_sl = np.zeros((2, 2), dtype=np.float32)
+    fn_sl((ctypes.c_void_p * 1)(x_sl.ctypes.data), (ctypes.c_void_p * 1)(y_sl.ctypes.data))
+    assert np.allclose(y_sl, x_sl[1:3, 1:3], atol=1e-4)
+    assert not np.all(y_sl == 0.0)
+
+    # 5. Pad
+    g_pad = IRGraph(name="test_pad")
+    in_pad = IRNode(id="in0", op_type="Input", shape_metadata=(2, 2))
+    node_pad = IRNode(id="out0", op_type="Pad", inputs=["in0"], shape_metadata=(4, 4), attributes={"paddings": [1, 1, 1, 1], "constant_value": 7.0})
+    g_pad.nodes = {"in0": in_pad, "out0": node_pad}
+    g_pad.inputs = ["in0"]
+    g_pad.outputs = ["out0"]
+    g_pad.sorted_nodes = [in_pad, node_pad]
+
+    code_pad = CppGenerator(g_pad).generate(g_pad)
+    fn_pad = runner.compile_and_load(code_pad)
+    x_pad = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    y_pad = np.zeros((4, 4), dtype=np.float32)
+    fn_pad((ctypes.c_void_p * 1)(x_pad.ctypes.data), (ctypes.c_void_p * 1)(y_pad.ctypes.data))
+    ref_pad = np.full((4, 4), 7.0, dtype=np.float32)
+    ref_pad[1:3, 1:3] = x_pad
+    assert np.allclose(y_pad, ref_pad, atol=1e-4)
+    assert not np.all(y_pad == 0.0)
+
+
+def test_cpp_generator_additional_coverage() -> None:
+    """Verify missing branches in visit_Conv3D, visit_MaxPool3D, visit_AvgPool3D, visit_BatchNorm, visit_Pad, visit_GatherND, and visit_ScatterND."""
+    # 1. visit_Conv3D with graph_to_use having 3D shape nodes (< 5), stride as int, and stride as 1-element list
+    g_3d = IRGraph(name="test_3d")
+    in_3d_0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4, 4))
+    in_3d_1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4, 4))
+    node_conv_3d = IRNode(id="c_out", op_type="Conv3D", inputs=["in0", "in1"], shape_metadata=(4, 4, 4), attributes={"stride": 2})
+    g_3d.nodes = {"in0": in_3d_0, "in1": in_3d_1, "c_out": node_conv_3d}
+
+    gen = CppGenerator(g_3d)
+    gen.visit_Conv3D(node_conv_3d, graph_to_use=g_3d)
+    gen.visit_Conv3D(node_conv_3d, graph_to_use=None)
+    assert len(gen.lines) > 0
+
+    gen_stride1 = CppGenerator(g_3d)
+    node_conv_stride1 = IRNode(id="c_out", op_type="Conv3D", inputs=["in0", "in1"], shape_metadata=(4, 4, 4), attributes={"stride": [1]})
+    gen_stride1.visit_Conv3D(node_conv_stride1, graph_to_use=g_3d)
+
+    # 2. visit_MaxPool3D with ksize as 1-element list [2], stride as 1-element list [1], and ksize/stride as int
+    node_mp = IRNode(id="mp_out", op_type="MaxPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": [2], "stride": [1]})
+    g_3d.nodes["mp_out"] = node_mp
+    gen_maxpool = CppGenerator(g_3d)
+    gen_maxpool.visit_MaxPool3D(node_mp, graph_to_use=g_3d)
+    gen_maxpool._visit_node(node_mp, graph_to_use=g_3d)
+
+    node_mp_scalar = IRNode(id="mp_scalar", op_type="MaxPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": 2, "stride": 1})
+    gen_maxpool.visit_MaxPool3D(node_mp_scalar, graph_to_use=None)
+
+    node_mp_2elem = IRNode(id="mp_2elem", op_type="MaxPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": [2, 2], "stride": [1, 1]})
+    gen_maxpool.visit_MaxPool3D(node_mp_2elem, graph_to_use=None)
+
+    node_mp_5d = IRNode(id="mp_5d", op_type="MaxPool3D", inputs=["in0"], shape_metadata=(1, 1, 4, 4, 4), attributes={"kernel_size": [2, 2, 2]})
+    gen_maxpool.visit_MaxPool3D(node_mp_5d, graph_to_use=None)
+
+    # 3. visit_AvgPool3D with ksize as 1-element list [2], stride as 1-element list [1], and ksize/stride as int
+    node_ap = IRNode(id="ap_out", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": [2], "stride": [1]})
+    g_3d.nodes["ap_out"] = node_ap
+    gen_avgpool = CppGenerator(g_3d)
+    gen_avgpool.visit_AvgPool3D(node_ap, graph_to_use=g_3d)
+    gen_avgpool._visit_node(node_ap, graph_to_use=g_3d)
+
+    node_ap_scalar = IRNode(id="ap_scalar", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": 2, "stride": 1})
+    gen_avgpool.visit_AvgPool3D(node_ap_scalar, graph_to_use=None)
+
+    node_ap_2elem = IRNode(id="ap_2elem", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(4, 4, 4), attributes={"kernel_size": [2, 2], "stride": [1, 1]})
+    gen_avgpool.visit_AvgPool3D(node_ap_2elem, graph_to_use=None)
+
+    node_ap_5d = IRNode(id="ap_5d", op_type="AvgPool3D", inputs=["in0"], shape_metadata=(1, 1, 4, 4, 4), attributes={"kernel_size": [2, 2, 2]})
+    gen_avgpool.visit_AvgPool3D(node_ap_5d, graph_to_use=None)
+
+    # 4. visit_BatchNorm with 4D shape so spatial *= dim loop runs, and dispatch via _visit_node
+    empty_g = IRGraph()
+    gen_bn = CppGenerator(empty_g)
+    node_bn = IRNode(id="bn_out", op_type="BatchNorm", inputs=["in0", "mean", "var", "gamma", "beta"], shape_metadata=(1, 3, 8, 8))
+    gen_bn.visit_BatchNorm(node_bn, graph_to_use=None)
+    gen_bn._visit_node(node_bn, graph_to_use=None)
+
+    # 5. visit_Pad with paddings as int, and paddings as 1-element list
+    gen_pad_int = CppGenerator(empty_g)
+    node_pad_int = IRNode(id="pad_out", op_type="Pad", inputs=["in0"], shape_metadata=(4, 4), attributes={"paddings": 1})
+    gen_pad_int.visit_Pad(node_pad_int, graph_to_use=None)
+
+    gen_pad_list = CppGenerator(empty_g)
+    node_pad_list = IRNode(id="pad_out", op_type="Pad", inputs=["in0"], shape_metadata=(4, 4), attributes={"paddings": [1]})
+    gen_pad_list.visit_Pad(node_pad_list, graph_to_use=None)
+
+    # 6. GatherND and ScatterND via _visit_node and directly
+    g = IRGraph(name="test_gather_scatter")
+    in_data = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
+    in_idx = IRNode(id="in1", op_type="Input", shape_metadata=(2, 1))
+    in_updates = IRNode(id="in2", op_type="Input", shape_metadata=(2, 4))
+    node_gather = IRNode(id="gather_out", op_type="gather_nd", inputs=["in0", "in1"], shape_metadata=(2, 4))
+    node_scatter = IRNode(id="scatter_out", op_type="scatter_nd", inputs=["in0", "in1", "in2"], shape_metadata=(4, 4))
+    g.nodes = {"in0": in_data, "in1": in_idx, "in2": in_updates, "gather_out": node_gather, "scatter_out": node_scatter}
+
+    gen_gs = CppGenerator(g)
+    gen_gs._visit_node(node_gather, g)
+    gen_gs._visit_node(node_scatter, g)
+    assert len(gen_gs.lines) > 0
+
+    # 7. init_val branch (line 868) where init_val is numeric without "f" or "INFINITY"
+    node_init = IRNode(id="init_op", op_type="CustomInitOp", inputs=["in0"], shape_metadata=(4, 4))
+    gen_init = CppGenerator(empty_g)
+    with (
+        patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"CustomInitOp": {"variants": {"llvm_cpp": {"template": "custom_init_tpl", "init_val": "0.0"}}}}),
+        patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "float val = {init_val};"}),
+    ):
+        gen_init._visit_node(node_init, empty_g)

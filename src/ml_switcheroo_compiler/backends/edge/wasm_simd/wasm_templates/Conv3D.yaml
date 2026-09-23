@@ -1,5 +1,75 @@
 Conv3D:
-  body: "\n// WASM SIMD Conv3D\nfor (size_t z = 0; z < {out_d}; ++z) {\n    for (size_t\
-    \ y = 0; y < {out_h}; ++y) {\n        for (size_t x = 0; x < {out_w}; ++x) {\n\
-    \            buf_out_f32[z * {out_h} * {out_w} + y * {out_w} + x] = 0.0f; // placeholder\n\
-    \        }\n    }\n}\n"
+  body: |
+    // SIMD Conv3D (Standard)
+    int B = {B};
+    int out_channels = {out_channels};
+    int out_depth = {out_depth};
+    int out_height = {out_height};
+    int out_width = {out_width};
+    int in_channels = {in_channels};
+    int in_depth = {in_depth};
+    int in_height = {in_height};
+    int in_width = {in_width};
+    int filter_d = {filter_d};
+    int filter_h = {filter_h};
+    int filter_w = {filter_w};
+    int stride_d = {stride_d};
+    int stride_h = {stride_h};
+    int stride_w = {stride_w};
+    int pad_d = {pad_d};
+    int pad_h = {pad_h};
+    int pad_w = {pad_w};
+    int dilation_d = {dilation_d};
+    int dilation_h = {dilation_h};
+    int dilation_w = {dilation_w};
+
+    for (int b = 0; b < B; ++b) {{
+        for (int oc = 0; oc < out_channels; ++oc) {{
+            for (int od = 0; od < out_depth; ++od) {{
+                for (int oh = 0; oh < out_height; ++oh) {{
+                    for (int ow = 0; ow < out_width; ++ow) {{
+                        float acc = 0.0f;
+                        for (int ic = 0; ic < in_channels; ++ic) {{
+                            for (int fd = 0; fd < filter_d; ++fd) {{
+                                int id = od * stride_d + fd * dilation_d - pad_d;
+                                if (id < 0 || id >= in_depth) continue;
+                                for (int fh = 0; fh < filter_h; ++fh) {{
+                                    int ih = oh * stride_h + fh * dilation_h - pad_h;
+                                    if (ih < 0 || ih >= in_height) continue;
+                                    int fw = 0;
+                                    #if defined(__wasm_simd128__)
+                                    v128_t acc_vec = wasm_f32x4_splat(0.0f);
+                                    for (; fw + 4 <= filter_w; fw += 4) {{
+                                        int iw0 = ow * stride_w + (fw + 0) * dilation_w - pad_w;
+                                        int iw1 = ow * stride_w + (fw + 1) * dilation_w - pad_w;
+                                        int iw2 = ow * stride_w + (fw + 2) * dilation_w - pad_w;
+                                        int iw3 = ow * stride_w + (fw + 3) * dilation_w - pad_w;
+                                        float iv0 = (iw0 >= 0 && iw0 < in_width) ? buf_{in0}[(((b * in_channels + ic) * in_depth + id) * in_height + ih) * in_width + iw0] : 0.0f;
+                                        float iv1 = (iw1 >= 0 && iw1 < in_width) ? buf_{in0}[(((b * in_channels + ic) * in_depth + id) * in_height + ih) * in_width + iw1] : 0.0f;
+                                        float iv2 = (iw2 >= 0 && iw2 < in_width) ? buf_{in0}[(((b * in_channels + ic) * in_depth + id) * in_height + ih) * in_width + iw2] : 0.0f;
+                                        float iv3 = (iw3 >= 0 && iw3 < in_width) ? buf_{in0}[(((b * in_channels + ic) * in_depth + id) * in_height + ih) * in_width + iw3] : 0.0f;
+                                        v128_t in_vec = wasm_f32x4_make(iv0, iv1, iv2, iv3);
+                                        int w_idx = ((((oc * in_channels + ic) * filter_d + fd) * filter_h + fh) * filter_w) + fw;
+                                        v128_t w_vec = wasm_v128_load(&buf_{in1}[w_idx]);
+                                        acc_vec = wasm_f32x4_add(acc_vec, wasm_f32x4_mul(in_vec, w_vec));
+                                    }}
+                                    acc += wasm_f32x4_extract_lane(acc_vec, 0) + wasm_f32x4_extract_lane(acc_vec, 1) + wasm_f32x4_extract_lane(acc_vec, 2) + wasm_f32x4_extract_lane(acc_vec, 3);
+                                    #endif
+                                    for (; fw < filter_w; ++fw) {{
+                                        int iw = ow * stride_w + fw * dilation_w - pad_w;
+                                        if (iw >= 0 && iw < in_width) {{
+                                            int in_idx = (((b * in_channels + ic) * in_depth + id) * in_height + ih) * in_width + iw;
+                                            int w_idx = ((((oc * in_channels + ic) * filter_d + fd) * filter_h + fh) * filter_w) + fw;
+                                            acc += buf_{in0}[in_idx] * buf_{in1}[w_idx];
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }}
+                        int out_idx = (((b * out_channels + oc) * out_depth + od) * out_height + oh) * out_width + ow;
+                        buf_{clean_id}[out_idx] = acc;
+                    }}
+                }}
+            }}
+        }}
+    }}

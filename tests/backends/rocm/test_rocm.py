@@ -95,17 +95,15 @@ def test_rocm_init_yaml_edge_cases(monkeypatch):
 
 
 def test_rocm_generate_missing_template_branches():
-    """Test generate with op_type missing from templates and with graph inputs."""
+    """Test generate with op_type missing from templates raises BackendNotSupportedError."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
     graph.nodes = {
-        "unmapped_op": IRNode(id="unmapped_op", op_type="NonExistentOp", inputs=["in_0"]),
+        "unmapped_op": IRNode(id="unmapped_op", op_type="UnsupportedCustomOp", inputs=["in_0"]),
     }
     gen = RocmCodeGenerator(graph)
-    out = gen.generate()
-    assert "evaluate_rocm" in out
-    assert "d_out_0" in out
-    assert "outputs[0]" not in out
+    with pytest.raises(BackendNotSupportedError, match="not supported"):
+        gen.generate()
 
 
 def test_rocm_runner_ctypes_no_rocm_lib_branches():
@@ -327,6 +325,9 @@ def test_rocm_additional_coverage():
         runner_sync.mode = "cupy"
         runner_sync.synchronize()
         mock_cupy.cuda.Stream.null.synchronize.assert_called_once()
+        # CuPy sync exception (covers lines 640-641)
+        mock_cupy.cuda.Stream.null.synchronize.side_effect = RuntimeError("sync err")
+        runner_sync.synchronize()
 
     runner_sync.mode = "ctypes"
     runner_sync.rocm_lib = None
@@ -349,7 +350,7 @@ def test_rocm_additional_coverage():
     mock_hip_lib.hipModuleLoad.return_value = 0
     mock_hip_lib.hipModuleGetFunction.return_value = 0
     mock_hip_lib.hipModuleLaunchKernel.return_value = 0
-    unmapped_node = IRNode("unmapped", "UnmappedUnknownOp")
+    unmapped_node = IRNode("unmapped", "UnsupportedUnknownOp")
     gen_rocm = RocmCodeGenerator(IRGraph())
     runner_sync._dispatch_compute_node(unmapped_node, 0, gen_rocm, None, {})
 
@@ -365,7 +366,8 @@ def test_rocm_additional_coverage():
     g_unmapped = IRGraph()
     g_unmapped.nodes = {"unmapped": unmapped_node}
     with patch.object(runner_sync, "compile_hip_to_code", return_value=b"CO"):
-        runner_sync.execute_graph(g_unmapped, {})
+        with pytest.raises(BackendNotSupportedError, match="not supported"):
+            runner_sync.execute_graph(g_unmapped, {})
 
 
 def test_rocm_full_coverage_branches():
@@ -520,30 +522,54 @@ def test_rocm_emitter_branches() -> None:
 
 
 def test_rocm_synthesized_kernels_and_fused_elementwise() -> None:
-    """Verify synthesized kernels for 1, 2, and 3 inputs, and FusedElementwise template handling."""
-    # 1. Synthesize kernels with 1, 2, and 3 inputs (lines 113-117)
+    """Verify BackendNotSupportedError for unknown ops, and FusedElementwise template handling."""
+    # 1. Synthesize kernels for unary, binary, and ternary unknown operations
     g = IRGraph()
     n_unary = IRNode(id="n_un", op_type="CustomSynthUnary", inputs=["in0"])
     n_bin = IRNode(id="n_bin", op_type="CustomSynthBinary", inputs=["in0", "in1"])
     n_tri = IRNode(id="n_tri", op_type="CustomSynthTernary", inputs=["in0", "in1", "in2"])
     g.nodes = {"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri}
     gen = RocmCodeGenerator(g)
-    tpl_un = gen._ensure_template(n_unary, 0)
-    assert tpl_un is not None and "customsynthunary" in tpl_un.body
-    tpl_bin = gen._ensure_template(n_bin, 1)
-    assert tpl_bin is not None and "customsynthbinary" in tpl_bin.body
-    tpl_tri = gen._ensure_template(n_tri, 2)
-    assert tpl_tri is not None and "customsynthternary" in tpl_tri.body
 
-    # 2. FusedElementwise node returns None from _ensure_template
+    tpl_unary = gen._ensure_template(n_unary, 0)
+    assert tpl_unary is not None
+    assert "customsynthunary_kernel" in tpl_unary.body
+
+    tpl_bin = gen._ensure_template(n_bin, 1)
+    assert tpl_bin is not None
+    assert "customsynthbinary_kernel" in tpl_bin.body
+
+    tpl_tri = gen._ensure_template(n_tri, 2)
+    assert tpl_tri is not None
+    assert "customsynthternary_kernel" in tpl_tri.body
+
+    # Unsupported operation raises BackendNotSupportedError
+    n_unsup = IRNode(id="n_unsup", op_type="UnsupportedCustomOp", inputs=["in0"])
+    with pytest.raises(BackendNotSupportedError, match="not supported"):
+        gen._ensure_template(n_unsup, 3)
+
+    # 2. Input, Output, and FusedElementwise nodes return None from _ensure_template
+    n_in = IRNode(id="n_in", op_type="Input", inputs=[])
+    n_out = IRNode(id="n_out", op_type="Output", inputs=[])
     n_fused = IRNode(id="n_fuse", op_type="FusedElementwise", inputs=["in0"])
-    assert gen._ensure_template(n_fused, 3) is None
+    assert gen._ensure_template(n_in, 4) is None
+    assert gen._ensure_template(n_out, 5) is None
+    assert gen._ensure_template(n_fused, 6) is None
 
     # Emit node when _ensure_template returns None (line 169)
     hip_lines: list[str] = []
     with patch.object(gen, "_ensure_template", return_value=None):
         gen._emit_node(n_unary, 3, {}, {}, set(), set(), hip_lines)
     assert hip_lines == []
+
+    # _allocate_node_outputs with multiple outputs (covers lines 175-183)
+    node_multi = IRNode(id="multi_out", op_type="Split", inputs=["in0"])
+    node_multi.outputs = ["out0", "out1"]
+    multi_lines: list[str] = []
+    out_str = gen._allocate_node_outputs(node_multi, 1, {}, 1024, multi_lines)
+    assert "d_out_1_0" in out_str
+    assert any("d_out_1_0" in l for l in multi_lines)
+    assert any("d_out_1_1" in l for l in multi_lines)
 
     # 3. generate() loop where _ensure_template returns None for op_type not in (input, output) (branch 243->227)
     g_custom = IRGraph()

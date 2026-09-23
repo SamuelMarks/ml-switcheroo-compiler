@@ -642,17 +642,17 @@ templates:
     body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
       \ sampler2D B;\nuniform sampler2D C;\nuniform int seq_len;\nuniform int head_dim;\n\
       out vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n\
-      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim || i\
-      \ >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n \
-      \   float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
-      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n    \
-      \    for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
-      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n     \
-      \   score *= scale;\n        if (score > max_score) max_score = score;\n  \
-      \  }\n    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0;\
-      \ j < seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0;\
-      \ kd < head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r\
-      \ * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
+      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim ||\
+      \ i >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n\
+      \    float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
+      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n     \
+      \   for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
+      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n      \
+      \  score *= scale;\n        if (score > max_score) max_score = score;\n    }\n\
+      \    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0; j <\
+      \ seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0; kd <\
+      \ head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r *\
+      \ texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
       \ * scale - max_score);\n        sum_exp += weight;\n        out_val += weight\
       \ * texelFetch(C, ivec2(d, j), 0).r;\n    }\n    if (sum_exp > 0.0) out_val\
       \ /= sum_exp;\n    fragColor = vec4(out_val, 0.0, 0.0, 0.0);\n}\n"
@@ -669,17 +669,17 @@ templates:
     body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
       \ sampler2D B;\nuniform sampler2D C;\nuniform int seq_len;\nuniform int head_dim;\n\
       out vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n\
-      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim || i\
-      \ >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n \
-      \   float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
-      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n    \
-      \    for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
-      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n     \
-      \   score *= scale;\n        if (score > max_score) max_score = score;\n  \
-      \  }\n    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0;\
-      \ j < seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0;\
-      \ kd < head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r\
-      \ * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
+      \    int d = outCoord.x;\n    int i = outCoord.y;\n    if (d >= head_dim ||\
+      \ i >= seq_len) {\n        fragColor = vec4(0.0);\n        return;\n    }\n\
+      \    float scale = 1.0 / sqrt(float(head_dim));\n    float max_score = -1.0e30;\n\
+      \    for (int j = 0; j < seq_len; ++j) {\n        float score = 0.0;\n     \
+      \   for (int kd = 0; kd < head_dim; ++kd) {\n            score += texelFetch(A,\
+      \ ivec2(kd, i), 0).r * texelFetch(B, ivec2(kd, j), 0).r;\n        }\n      \
+      \  score *= scale;\n        if (score > max_score) max_score = score;\n    }\n\
+      \    float sum_exp = 0.0;\n    float out_val = 0.0;\n    for (int j = 0; j <\
+      \ seq_len; ++j) {\n        float score = 0.0;\n        for (int kd = 0; kd <\
+      \ head_dim; ++kd) {\n            score += texelFetch(A, ivec2(kd, i), 0).r *\
+      \ texelFetch(B, ivec2(kd, j), 0).r;\n        }\n        float weight = exp(score\
       \ * scale - max_score);\n        sum_exp += weight;\n        out_val += weight\
       \ * texelFetch(C, ivec2(d, j), 0).r;\n    }\n    if (sum_exp > 0.0) out_val\
       \ /= sum_exp;\n    fragColor = vec4(out_val, 0.0, 0.0, 0.0);\n}\n"
@@ -692,6 +692,99 @@ templates:
       gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''head_dim''), {width});
 
       '
+  batchedmatmul: &id001
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform int M;\nuniform int N;\nuniform int K;\nuniform int\
+      \ batch_size;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n\
+      \    int row = outCoord.y;\n    int col = outCoord.x;\n    float sum = 0.0;\n\
+      \    for (int i = 0; i < K; ++i) {\n        float a = texelFetch(A, ivec2(i,\
+      \ row), 0).r;\n        float b = texelFetch(B, ivec2(col, i), 0).r;\n      \
+      \  sum += a * b;\n    }\n    fragColor = vec4(sum, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - M
+    - N
+    - K
+    - batch_size
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''M''), {height});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''N''), {width});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''K''), {k_dim});
+
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''batch_size''), 1);
+
+      '
+  batched_matmul: *id001
+  dot:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform int length;\nout vec4 fragColor;\nvoid main() {\n  \
+      \  float sum = 0.0;\n    for (int i = 0; i < length; ++i) {\n        float a\
+      \ = texelFetch(A, ivec2(i, 0), 0).r;\n        float b = texelFetch(B, ivec2(i,\
+      \ 0), 0).r;\n        sum += a * b;\n    }\n    fragColor = vec4(sum, 0.0, 0.0,\
+      \ 0.0);\n}\n"
+    uniforms:
+    - length
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''length''),
+      {k_dim});
+
+      '
+  outer:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nout vec4 fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n\
+      \    float a = texelFetch(A, ivec2(coord.y, 0), 0).r;\n    float b = texelFetch(B,\
+      \ ivec2(coord.x, 0), 0).r;\n    fragColor = vec4(a * b, 0.0, 0.0, 0.0);\n}\n"
+  prelu:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nout vec4 fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n\
+      \    float a = texelFetch(A, coord, 0).r;\n    float alpha = texelFetch(B, coord,\
+      \ 0).r;\n    fragColor = vec4(a >= 0.0 ? a : a * alpha, 0.0, 0.0, 0.0);\n}\n"
+  thresholdedrelu: &id002
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ float theta;\nout vec4 fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n\
+      \    float a = texelFetch(A, coord, 0).r;\n    fragColor = vec4(a > theta ?\
+      \ a : 0.0, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - theta
+    custom_setup: 'gl.uniform1f(gl.getUniformLocation(prog_{clean_id}, ''theta''),
+      1.0);
+
+      '
+  thresholded_relu: *id002
+  hardsigmoid: &id003
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nout vec4\
+      \ fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n   \
+      \ float a = texelFetch(A, coord, 0).r;\n    fragColor = vec4(clamp(a * 0.2 +\
+      \ 0.5, 0.0, 1.0), 0.0, 0.0, 0.0);\n}\n"
+  hard_sigmoid: *id003
+  log1p:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nout vec4\
+      \ fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n   \
+      \ float a = texelFetch(A, coord, 0).r;\n    fragColor = vec4(log(1.0 + a), 0.0,\
+      \ 0.0, 0.0);\n}\n"
+  expm1:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nout vec4\
+      \ fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n   \
+      \ float a = texelFetch(A, coord, 0).r;\n    fragColor = vec4(exp(a) - 1.0, 0.0,\
+      \ 0.0, 0.0);\n}\n"
+  scan:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ int length;\nout vec4 fragColor;\nvoid main() {\n    ivec2 coord = ivec2(gl_FragCoord.xy);\n\
+      \    float acc = 0.0;\n    for (int i = 0; i <= coord.x; ++i) {\n        acc\
+      \ += texelFetch(A, ivec2(i, coord.y), 0).r;\n    }\n    fragColor = vec4(acc,\
+      \ 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - length
+    custom_setup: 'gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, ''length''),
+      {width});
+
+      '
+  cond:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
+      \ sampler2D B;\nuniform sampler2D C;\nout vec4 fragColor;\nvoid main() {\n \
+      \   ivec2 coord = ivec2(gl_FragCoord.xy);\n    float pred = texelFetch(A, coord,\
+      \ 0).r;\n    float then_val = texelFetch(B, coord, 0).r;\n    float else_val\
+      \ = texelFetch(C, coord, 0).r;\n    fragColor = vec4(pred != 0.0 ? then_val\
+      \ : else_val, 0.0, 0.0, 0.0);\n}\n"
 texture_packing:
   internal_format: R32F
   format: RED
@@ -700,6 +793,8 @@ texture_packing:
   viewport_width: 32
   viewport_height: 32
   channels: 1
+  vector_packing_rgba: true
+  elements_per_texel: 4
 js_orchestration:
   init: 'const canvas = document.createElement(''canvas'');
 

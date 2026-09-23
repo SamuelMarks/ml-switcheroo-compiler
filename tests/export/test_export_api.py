@@ -2,6 +2,7 @@ import os
 import tempfile
 from unittest import mock
 
+import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.export.export_api import ExportArchive
@@ -59,8 +60,8 @@ def test_get_tf_op():
 
 def test_build_signature_def_no_graph():
     archive = ExportArchive()
-    sig = archive._build_signature_def("test_sig")
-    assert sig is not None
+    with pytest.raises(ValueError, match="Exporting SignatureDef requires an explicit IRGraph"):
+        archive._build_signature_def("test_sig")
 
 
 def test_build_signature_def_with_graph():
@@ -114,18 +115,34 @@ def test_build_graph_def_with_graph():
 
 def test_build_saved_model():
     archive = ExportArchive()
+    graph = LogicalGraph()
+    input_node = LogicalNode(id="n1", op_type="Input")
+    input_node.inputs = []
+    output_node = LogicalNode(id="n2", op_type="Add")
+    output_node.inputs = ["n1"]
+    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.outputs = ["n2"]
+
     archive.add_endpoint("test", lambda: None)
-    saved_model = archive._build_saved_model()
+    saved_model = archive._build_saved_model(graph)
     assert isinstance(saved_model, bytes)
 
 
 def test_write_out():
     archive = ExportArchive()
+    graph = LogicalGraph()
+    input_node = LogicalNode(id="n1", op_type="Input")
+    input_node.inputs = []
+    output_node = LogicalNode(id="n2", op_type="Add")
+    output_node.inputs = ["n1"]
+    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.outputs = ["n2"]
+
     archive.add_endpoint("test", lambda: None)
     archive.add_variable_collection("vars", [1, 2, 3])
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        archive.write_out(tmpdir)
+        archive.write_out(tmpdir, graph=graph)
         assert os.path.exists(os.path.join(tmpdir, "saved_model.pb"))
         assert os.path.exists(os.path.join(tmpdir, "variables", "variables.data-00000-of-00001"))
         assert os.path.exists(os.path.join(tmpdir, "variables", "variables.index"))

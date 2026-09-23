@@ -976,3 +976,90 @@ def test_webgpu_multi_outputs_attribute_and_empty_nodes() -> None:
     gen_empty = WebGPUCodeGenerator(empty_graph, [])
     js_empty = gen_empty.generate()
     assert "@group(0)" in js_empty
+
+
+def test_webgpu_spatial_3d_and_depthwise_ops() -> None:
+    """Verify WGSL code generation for Conv3D, DepthwiseConv2D, MaxPool3D, and AvgPool3D."""
+    # 1. Conv3D
+    graph_conv3d = IRGraph(name="test_conv3d")
+    in_x = IRNode(id="in_x", op_type="Input", inputs=[])
+    in_x.shape_metadata = [1, 2, 4, 8, 8]
+    in_w = IRNode(id="in_w", op_type="Input", inputs=[])
+    in_w.shape_metadata = [4, 2, 2, 3, 3]
+    c3d = IRNode(id="c3d", op_type="Conv3D", inputs=["in_x", "in_w"])
+    c3d.shape_metadata = [1, 4, 3, 6, 6]
+    c3d.attributes = {"strides": (1, 1, 1)}
+    graph_conv3d.nodes = {"in_x": in_x, "in_w": in_w, "c3d": c3d}
+    graph_conv3d.sorted_nodes = [in_x, in_w, c3d]
+    graph_conv3d.inputs = ["in_x", "in_w"]
+    graph_conv3d.outputs = ["c3d"]
+
+    gen_c3d = WebGPUCodeGenerator(graph_conv3d, [])
+    code_c3d = gen_c3d.generate()
+    assert "compute_c3d" in code_c3d
+    assert "workgroup_size(8, 8, 4)" in code_c3d
+
+    # 2. DepthwiseConv2D
+    graph_dw = IRGraph(name="test_dw_conv2d")
+    dw_x = IRNode(id="dw_x", op_type="Input", inputs=[])
+    dw_x.shape_metadata = [1, 4, 16, 16]
+    dw_w = IRNode(id="dw_w", op_type="Input", inputs=[])
+    dw_w.shape_metadata = [3, 3]
+    dw_op = IRNode(id="dw_op", op_type="DepthwiseConv2D", inputs=["dw_x", "dw_w"])
+    dw_op.shape_metadata = [1, 4, 14, 14]
+    dw_op.attributes = {"strides": (1, 1)}
+    graph_dw.nodes = {"dw_x": dw_x, "dw_w": dw_w, "dw_op": dw_op}
+    graph_dw.sorted_nodes = [dw_x, dw_w, dw_op]
+    graph_dw.inputs = ["dw_x", "dw_w"]
+    graph_dw.outputs = ["dw_op"]
+
+    gen_dw = WebGPUCodeGenerator(graph_dw, [])
+    code_dw = gen_dw.generate()
+    assert "compute_dw_op" in code_dw
+
+    # 3. MaxPool3D
+    graph_mp3d = IRGraph(name="test_mp3d")
+    mp_x = IRNode(id="mp_x", op_type="Input", inputs=[])
+    mp_x.shape_metadata = [1, 2, 4, 8, 8]
+    mp3d_op = IRNode(id="mp3d_op", op_type="MaxPool3D", inputs=["mp_x"])
+    mp3d_op.shape_metadata = [1, 2, 2, 4, 4]
+    mp3d_op.attributes = {"strides": (2, 2, 2), "window": (2, 2, 2)}
+    graph_mp3d.nodes = {"mp_x": mp_x, "mp3d_op": mp3d_op}
+    graph_mp3d.sorted_nodes = [mp_x, mp3d_op]
+    graph_mp3d.inputs = ["mp_x"]
+    graph_mp3d.outputs = ["mp3d_op"]
+
+    gen_mp3d = WebGPUCodeGenerator(graph_mp3d, [])
+    code_mp3d = gen_mp3d.generate()
+    assert "compute_mp3d_op" in code_mp3d
+
+    # 4. AvgPool3D
+    graph_ap3d = IRGraph(name="test_ap3d")
+    ap_x = IRNode(id="ap_x", op_type="Input", inputs=[])
+    ap_x.shape_metadata = [1, 2, 4, 8, 8]
+    ap3d_op = IRNode(id="ap3d_op", op_type="AvgPool3D", inputs=["ap_x"])
+    ap3d_op.shape_metadata = [1, 2, 2, 4, 4]
+    ap3d_op.attributes = {"strides": (2, 2, 2), "window": (2, 2, 2)}
+    graph_ap3d.nodes = {"ap_x": ap_x, "ap3d_op": ap3d_op}
+    graph_ap3d.sorted_nodes = [ap_x, ap3d_op]
+    graph_ap3d.inputs = ["ap_x"]
+    graph_ap3d.outputs = ["ap3d_op"]
+
+    gen_ap3d = WebGPUCodeGenerator(graph_ap3d, [])
+    code_ap3d = gen_ap3d.generate()
+    assert "compute_ap3d_op" in code_ap3d
+
+
+def test_webgpu_custom_strides_and_non_contiguous() -> None:
+    """Verify custom memory strides handling in WebGPUCodeGenerator."""
+    graph = IRGraph(name="test_strides")
+    node = IRNode(id="stride_node", op_type="Input", inputs=[])
+    node.shape_metadata = [4, 8]
+    node.attributes = {"strides": [16, 2]}
+    graph.nodes = {"stride_node": node}
+    graph.sorted_nodes = [node]
+
+    gen = WebGPUCodeGenerator(graph, [])
+    shape, strides = gen._get_shape_and_strides(node)
+    assert shape == [4, 8]
+    assert strides == [16, 2]

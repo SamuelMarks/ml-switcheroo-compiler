@@ -267,3 +267,19 @@ def test_ir_to_ast_missing_branches() -> None:
     stmt_no_var = _emit_foreign_statement(foreign_no_var)
     assert stmt_no_var is not None
     assert isinstance(stmt_no_var.body[0], cst.Expr)
+
+
+def test_emit_ir_to_class_outputs_in_var_map_or_missing() -> None:
+    """Test emit_ir_to_class when output id is already in var_map or missing from graph nodes."""
+    from ml_switcheroo_compiler.backends.ir_to_ast import emit_ir_to_class
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph = IRGraph()
+    # Node with var_name is included in var_map by _build_var_map
+    graph.nodes["n0"] = IRNode(id="n0", op_type="Add", inputs=["a", "b"], attributes={"var_name": "result"})
+    # outputs contains "n0" (already in var_map) and "nonexistent" (not in nodes)
+    graph.outputs = ["n0", "nonexistent"]
+    cls_def = emit_ir_to_class(graph, "pytorch", "OutputModel")
+    code = cst.Module(body=[cls_def]).code
+    assert "result = torch.add(a, b)" in code
+    assert "return nonexistent" in code

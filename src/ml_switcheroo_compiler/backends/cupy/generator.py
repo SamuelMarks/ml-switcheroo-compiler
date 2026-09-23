@@ -70,12 +70,8 @@ class CupyGenerator(PythonStringGenerator):
         Returns:
             object: Callable execution wrapper.
         """
-        import importlib
-
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
-        numpy_mod = importlib.import_module("numpy")
 
         def forward_fn(*fn_args: object) -> object:
             """Evaluate the graph with CuPy arrays.
@@ -91,7 +87,7 @@ class CupyGenerator(PythonStringGenerator):
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
-                    inputs[inp_node.id] = numpy_mod.asarray(arg_val.data if isinstance(arg_val, Tensor) else arg_val)
+                    inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:

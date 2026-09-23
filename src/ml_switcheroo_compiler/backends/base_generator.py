@@ -5,7 +5,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Union
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.device import Device
 
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
@@ -420,6 +423,75 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             str: The keepdims keyword.
         """
         return "keepdims"
+
+    @classmethod
+    def get_logical_devices(cls, device_type: str | None = None) -> list[Device]:
+        """Discover logical devices available for this backend.
+
+        Args:
+            device_type (str | None): Optional device type filter (e.g., 'cpu', 'gpu', 'webgpu').
+
+        Returns:
+            list[Device]: Available logical devices.
+        """
+        from ml_switcheroo_compiler.core.device import Device, DeviceType
+
+        devices: list[Device] = [Device(DeviceType.CPU, 0)]
+        cls_name = cls.__name__.lower()
+        if "webgpu" in cls_name or "wgsl" in cls_name:
+            devices.append(Device(DeviceType.WEBGPU, 0))
+        elif "cuda" in cls_name or "gpu" in cls_name or "rocm" in cls_name or "metal" in cls_name:
+            devices.append(Device(DeviceType.GPU, 0))
+
+        if device_type is not None:
+            dtype_lower = str(device_type).lower()
+            return [d for d in devices if d.device_type.value == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
+        return devices
+
+    @classmethod
+    def get_physical_devices(cls, device_type: str | None = None) -> list[Device]:
+        """Discover physical hardware accelerators available for this backend.
+
+        Args:
+            device_type (str | None): Optional device type filter.
+
+        Returns:
+            list[Device]: Available physical devices.
+        """
+        return cls.get_logical_devices(device_type)
+
+    @classmethod
+    def get_memory_info(cls, device: str | None = None) -> dict[str, int]:
+        """Retrieve memory allocation statistics for the specified device.
+
+        Args:
+            device (str | None): Optional target device identifier.
+
+        Returns:
+            dict[str, int]: Dictionary containing 'current' and 'peak' memory in bytes.
+        """
+        del device
+        return {"current": 0, "peak": 0}
+
+    @classmethod
+    def initialize_distributed(cls, *args: object, **kwargs: object) -> None:
+        """Initialize distributed execution context for multi-device operations.
+
+        Args:
+            *args (object): Distributed initialization parameters.
+            **kwargs (object): Additional distributed execution options.
+        """
+        del args, kwargs
+
+    @classmethod
+    def export_function(cls, *args: object, **kwargs: object) -> None:
+        """Export a computational graph or trace for unified persistence.
+
+        Args:
+            *args (object): Export arguments.
+            **kwargs (object): Export configuration parameters.
+        """
+        del args, kwargs
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs) -> str:
         """Fallback visit method for operations not explicitly handled.

@@ -150,24 +150,71 @@ class HardwareTemplatesConfig(BaseModel):
         return out
 
 
-def load_hardware_templates(yaml_dir: str, yaml_path: str) -> HardwareTemplatesConfig:
+def load_hardware_templates(yaml_dir: str, yaml_path: str, backend: Optional[str] = None) -> HardwareTemplatesConfig:
     """Load hardware template configurations from a directory or single YAML file.
 
     Args:
         yaml_dir (str): Directory containing op-specific YAML files.
         yaml_path (str): Fallback path to a monolithic YAML template file.
+        backend (Optional[str]): Optional backend identifier to merge unified templates.
 
     Returns:
         HardwareTemplatesConfig: Aggregated templates configuration.
     """
     cfg = HardwareTemplatesConfig(templates={})
+    has_local = False
     if os.path.exists(yaml_path):
         _load_yaml_file_into_config(yaml_path, cfg, is_dir=False)
+        has_local = True
     if os.path.isdir(yaml_dir):
         for filename in sorted(os.listdir(yaml_dir)):
             if filename.endswith(".yaml"):
                 _load_yaml_file_into_config(os.path.join(yaml_dir, filename), cfg, is_dir=True)
+                has_local = True
+    if backend is not None and has_local:
+        _merge_unified_kernel_templates(cfg, backend)
     return cfg
+
+
+def _merge_unified_kernel_templates(cfg: HardwareTemplatesConfig, backend: str) -> None:
+    """Merge unified kernel templates from kernel_templates.yaml into backend templates.
+
+    Args:
+        cfg (HardwareTemplatesConfig): Target hardware templates configuration.
+        backend (str): Accelerator backend ('cuda', 'rocm', 'metal').
+    """
+    try:
+        manifest = load_kernel_templates_manifest()
+    except Exception:
+        return
+    b_lower = backend.lower()
+    if b_lower == "cuda":
+        type_map = {"float32": "float", "float16": "__half", "bfloat16": "__nv_bfloat16", "int32": "int", "int64": "long long", "bool": "bool"}
+    elif b_lower == "rocm":
+        type_map = {"float32": "float", "float16": "__half", "bfloat16": "__hip_bfloat16", "int32": "int", "int64": "long long", "bool": "bool"}
+    else:
+        type_map = {"float32": "float", "float16": "half", "bfloat16": "bfloat", "int32": "int", "int64": "long", "bool": "bool"}
+    grid_c = GridDimensionConfig(x="({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1")
+    for opcode, tmpl in manifest.kernel_templates.items():
+        op_key = opcode.lower()
+        body = tmpl.cuda_body if b_lower == "cuda" else tmpl.rocm_body if b_lower == "rocm" else tmpl.metal_body
+        if not body:
+            continue
+        existing = cfg.templates.get(op_key)
+        is_dummy = False
+        if existing and hasattr(existing, "body"):
+            ex_body = getattr(existing, "body", "")
+            if "C[id] = A[id];" in ex_body or "C[id] = A[id] + B[id];" in ex_body or "output[idx] = input[idx];" in ex_body:
+                is_dummy = True
+        if existing is None or is_dummy:
+            cfg.templates[op_key] = HardwareTemplateConfig(
+                body=body,
+                workgroup_size=tmpl.workgroup_dims,
+                grid_calc=grid_c,
+                type_mappings=type_map,
+                parameters=tmpl.parameters,
+                shared_memory_bytes=tmpl.shared_memory_bytes,
+            )
 
 
 def _load_yaml_file_into_config(file_path: str, cfg: HardwareTemplatesConfig, is_dir: bool = True) -> None:
@@ -328,6 +375,183 @@ def _resolve_batchmatmul_args(
     return (grid_x, grid_y, grid_z), launch_args
 
 
+def _resolve_conv3d_args(
+    node: IRNode,
+    node_buffers: dict[str, str],
+    out_name: str,
+    node_idx: int,
+    graph: IRGraph,
+) -> tuple[tuple[str, str, str], list[str]]:
+    """Resolve 3D grid and arguments for Conv3D.
+
+    Args:
+        node (IRNode): Conv3D node.
+        node_buffers (dict[str, str]): Variable map for allocated device buffers.
+        out_name (str): Output buffer name.
+        node_idx (int): Unique node index.
+        graph (IRGraph): IR graph context.
+
+    Returns:
+        tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
+    """
+    in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
+    in1_node = graph.nodes.get(node.inputs[1]) if len(node.inputs) > 1 else None
+    in0_shape = getattr(in0_node, "shape_metadata", None) or (1, 1, 1, 1, 1)
+    in1_shape = getattr(in1_node, "shape_metadata", None) or (1, 1, 1, 1, 1)
+    out_shape = getattr(node, "shape_metadata", None) or (1, 1, 1, 1, 1)
+    n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
+    c_in = in0_shape[1] if len(in0_shape) > 1 else 1
+    d_dim = in0_shape[2] if len(in0_shape) > 2 else 1
+    h_dim = in0_shape[3] if len(in0_shape) > 3 else 1
+    w_in = in0_shape[4] if len(in0_shape) > 4 else 1
+    c_out = out_shape[1] if len(out_shape) > 1 else 1
+    k_d = in1_shape[2] if len(in1_shape) > 2 else 1
+    k_h = in1_shape[3] if len(in1_shape) > 3 else 1
+    k_w = in1_shape[4] if len(in1_shape) > 4 else 1
+    d_out = out_shape[2] if len(out_shape) > 2 else 1
+    h_out = out_shape[3] if len(out_shape) > 3 else 1
+    w_out = out_shape[4] if len(out_shape) > 4 else 1
+
+    grid_x = f"({d_out} * {h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
+    grid_y = str(c_out)
+    grid_z = str(n_dim)
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
+    launch_args = in_args + [
+        out_name,
+        str(n_dim),
+        str(c_in),
+        str(d_dim),
+        str(h_dim),
+        str(w_in),
+        str(c_out),
+        str(k_d),
+        str(k_h),
+        str(k_w),
+        str(d_out),
+        str(h_out),
+        str(w_out),
+    ]
+    return (grid_x, grid_y, grid_z), launch_args
+
+
+def _resolve_pool_args(
+    node: IRNode,
+    node_buffers: dict[str, str],
+    out_name: str,
+    node_idx: int,
+    graph: IRGraph,
+) -> tuple[tuple[str, str, str], list[str]]:
+    """Resolve 3D grid and arguments for 2D and 3D spatial pooling.
+
+    Args:
+        node (IRNode): Pooling node.
+        node_buffers (dict[str, str]): Variable map for allocated device buffers.
+        out_name (str): Output buffer name.
+        node_idx (int): Unique node index.
+        graph (IRGraph): IR graph context.
+
+    Returns:
+        tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
+    """
+    op_type = getattr(node, "op_type", "").lower()
+    in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
+    in0_shape = getattr(in0_node, "shape_metadata", None) or (1, 1, 1, 1)
+    out_shape = getattr(node, "shape_metadata", None) or in0_shape
+    n_dim = in0_shape[0] if len(in0_shape) > 0 else 1
+    c_dim = in0_shape[1] if len(in0_shape) > 1 else 1
+
+    if "3d" in op_type:
+        d_dim = in0_shape[2] if len(in0_shape) > 2 else 1
+        h_dim = in0_shape[3] if len(in0_shape) > 3 else 1
+        w_in = in0_shape[4] if len(in0_shape) > 4 else 1
+        d_out = out_shape[2] if len(out_shape) > 2 else 1
+        h_out = out_shape[3] if len(out_shape) > 3 else 1
+        w_out = out_shape[4] if len(out_shape) > 4 else 1
+        kd = node.attributes.get("kernel_size", [2, 2, 2])[0] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+        kh = node.attributes.get("kernel_size", [2, 2, 2])[1] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+        kw = node.attributes.get("kernel_size", [2, 2, 2])[2] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+        grid_x = f"({d_out} * {h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
+        grid_y = str(c_dim)
+        grid_z = str(n_dim)
+        in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
+        launch_args = in_args + [
+            out_name,
+            str(n_dim),
+            str(c_dim),
+            str(d_dim),
+            str(h_dim),
+            str(w_in),
+            str(kd),
+            str(kh),
+            str(kw),
+            str(d_out),
+            str(h_out),
+            str(w_out),
+        ]
+        return (grid_x, grid_y, grid_z), launch_args
+
+    h_dim = in0_shape[2] if len(in0_shape) > 2 else 1
+    w_in = in0_shape[3] if len(in0_shape) > 3 else 1
+    h_out = out_shape[2] if len(out_shape) > 2 else 1
+    w_out = out_shape[3] if len(out_shape) > 3 else 1
+    kh = node.attributes.get("kernel_size", [2, 2])[0] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+    kw = node.attributes.get("kernel_size", [2, 2])[1] if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else 2
+    grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
+    grid_y = str(c_dim)
+    grid_z = str(n_dim)
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
+    launch_args = in_args + [
+        out_name,
+        str(n_dim),
+        str(c_dim),
+        str(h_dim),
+        str(w_in),
+        str(kh),
+        str(kw),
+        str(h_out),
+        str(w_out),
+    ]
+    return (grid_x, grid_y, grid_z), launch_args
+
+
+def _resolve_row_wise_args(
+    node: IRNode,
+    node_buffers: dict[str, str],
+    out_name: str,
+    node_idx: int,
+    graph: IRGraph,
+) -> tuple[tuple[str, str, str], list[str]]:
+    """Resolve grid and arguments for row-wise reduction and normalization operations.
+
+    Args:
+        node (IRNode): Row-wise op node.
+        node_buffers (dict[str, str]): Device buffer variable map.
+        out_name (str): Destination buffer name.
+        node_idx (int): Node index.
+        graph (IRGraph): Context graph.
+
+    Returns:
+        tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
+    """
+    in0_node = graph.nodes.get(node.inputs[0]) if node.inputs else None
+    in0_shape = getattr(in0_node, "shape_metadata", None) or (1, 1)
+    cols = in0_shape[-1] if len(in0_shape) >= 1 else 1
+    rows = 1
+    for d in in0_shape[:-1]:
+        rows *= int(d)
+    grid_x = str(rows)
+    grid_y = "1"
+    grid_z = "1"
+    in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
+    op_type = getattr(node, "op_type", "").lower()
+    if op_type in ("layernorm", "rmsnorm", "groupnorm"):
+        eps = str(getattr(node, "attributes", {}).get("epsilon", 1e-5))
+        launch_args = in_args + [out_name, str(rows), str(cols), eps]
+    else:
+        launch_args = in_args + [out_name, str(rows), str(cols)]
+    return (grid_x, grid_y, grid_z), launch_args
+
+
 def resolve_hardware_launch_grid_and_args(
     node: IRNode,
     tpl: HardwareTemplateConfig,
@@ -352,21 +576,25 @@ def resolve_hardware_launch_grid_and_args(
         tuple[tuple[str, str, str], list[str]]: ((grid_x, grid_y, grid_z), launch_args).
     """
     op_type_lower = getattr(node, "op_type", "").lower()
-
-    if op_type_lower == "conv2d":
-        return _resolve_conv2d_args(node, node_buffers, out_name, node_idx, graph)
-
-    if op_type_lower in ("matmul", "dot"):
-        return _resolve_matmul_args(node, node_buffers, out_name, node_idx, graph)
-
-    if op_type_lower == "batchmatmul":
-        return _resolve_batchmatmul_args(node, node_buffers, out_name, node_idx, graph)
-
-    if op_type_lower == "fusedelementwise":
-        grid_x = f"({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x"
-        in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
-        launch_args = in_args + [out_name, str(num_elements)]
-        return (grid_x, "1", "1"), launch_args
+    dispatch_map = {
+        "conv2d": _resolve_conv2d_args,
+        "conv3d": _resolve_conv3d_args,
+        "matmul": _resolve_matmul_args,
+        "dot": _resolve_matmul_args,
+        "batchmatmul": _resolve_batchmatmul_args,
+        "avgpool2d": _resolve_pool_args,
+        "maxpool2d": _resolve_pool_args,
+        "avgpool3d": _resolve_pool_args,
+        "maxpool3d": _resolve_pool_args,
+        "layernorm": _resolve_row_wise_args,
+        "rmsnorm": _resolve_row_wise_args,
+        "groupnorm": _resolve_row_wise_args,
+        "softmax": _resolve_row_wise_args,
+        "logsoftmax": _resolve_row_wise_args,
+    }
+    handler = dispatch_map.get(op_type_lower)
+    if handler is not None:
+        return handler(node, node_buffers, out_name, node_idx, graph)
 
     grid_x = f"({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x"
     in_args = [node_buffers.get(inp, "inputs[0]") for inp in getattr(node, "inputs", [])]
@@ -653,6 +881,21 @@ class KernelTemplatesManifestModel(BaseModel):
     )
     model_config = ConfigDict(extra="allow")
 
+    def get_template(self, op_type: str) -> Optional[KernelTemplateModel]:
+        """Look up kernel template by opcode name case-insensitively.
+
+        Args:
+            op_type (str): Operation opcode.
+
+        Returns:
+            Optional[KernelTemplateModel]: Matched kernel template model or None.
+        """
+        clean = op_type.lower().replace("_", "").replace("-", "").replace(".", "")
+        for k, v in self.kernel_templates.items():
+            if k.lower().replace("_", "").replace("-", "").replace(".", "") == clean:
+                return v
+        return None
+
 
 def load_kernel_templates_manifest(path: Optional[str] = None) -> KernelTemplatesManifestModel:
     """Load unified kernel templates manifest from YAML configuration.
@@ -918,3 +1161,34 @@ def load_hardware_device_profiles(path: Optional[str] = None) -> HardwareDeviceP
     with open(path, encoding="utf-8") as f:
         raw_data = yaml.safe_load(f) or {}
     return HardwareDeviceProfilesManifestModel.model_validate(raw_data)
+
+
+def validate_and_bound_shared_memory(
+    requested_bytes: int,
+    backend: str = "cuda",
+    manifest: Optional[HardwareDeviceProfilesManifestModel] = None,
+) -> int:
+    """Validate and bound shared memory allocations according to architecture profiles.
+
+    Args:
+        requested_bytes (int): Requested shared memory size in bytes.
+        backend (str): Accelerator backend ('cuda', 'rocm', 'metal', 'llvm_cpp').
+        manifest (Optional[HardwareDeviceProfilesManifestModel]): Optional manifest instance.
+
+    Returns:
+        int: Validated bounded shared memory size in bytes.
+
+    Raises:
+        ValueError: If requested shared memory exceeds maximum hardware limit or is negative.
+    """
+    if requested_bytes < 0:
+        raise ValueError(f"Shared memory allocation cannot be negative: {requested_bytes}")
+    if manifest is None:
+        manifest = load_hardware_device_profiles()
+    profile = manifest.profiles.get(backend.lower())
+    if not profile:
+        return requested_bytes
+    limit = getattr(profile, "shared_memory_limit_bytes", None) or getattr(profile, "threadgroup_memory_limit_bytes", None) or 65536
+    if requested_bytes > limit:
+        raise ValueError(f"Requested shared memory ({requested_bytes} bytes) exceeds device limit of {limit} bytes for backend '{backend}'.")
+    return requested_bytes

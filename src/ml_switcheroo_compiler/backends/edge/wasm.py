@@ -235,6 +235,122 @@ class WasmCodeGenerator(BaseGenerator):
         for line in lines:
             self.add_line(line)
 
+    def visit_Conv3D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Conv3D WASM SIMD.
+
+        Args:
+            node (IRNode): The IR node representing Conv3D.
+            op_type (str): The operation type name.
+            clean_id (str): Sanitized identifier string for output buffer.
+            inputs (list[str]): Input identifiers.
+            shape (list[int]): Target output shape dimensions.
+            nelem (int): Total number of output elements.
+        """
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+
+        template: dict[str, str] = get_wasm_template("Conv3D")
+
+        inputs_list: list[str] = getattr(node, "inputs", [])
+        input_nodes: list[WasmAttrType] = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs_list]
+        in0_shape: list[int] = getattr(input_nodes[0], "shape_metadata", [1, 1, 1, 1, 1]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1, 1]
+        w_shape: list[int] = getattr(input_nodes[1], "shape_metadata", [1, 1, 1, 1, 1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1, 1]
+
+        if not in0_shape:
+            in0_shape = [1, 1, 1, 1, 1]
+        elif isinstance(in0_shape, (int, float)):
+            in0_shape = [1, 1, 1, 1, int(in0_shape)]
+        else:
+            in0_shape = list(in0_shape)
+        if len(in0_shape) < 5:
+            in0_shape = [1] * (5 - len(in0_shape)) + in0_shape
+
+        if not w_shape:
+            w_shape = [1, 1, 1, 1, 1]
+        elif isinstance(w_shape, (int, float)):
+            w_shape = [1, 1, 1, 1, int(w_shape)]
+        else:
+            w_shape = list(w_shape)
+        if len(w_shape) < 5:
+            w_shape = [1] * (5 - len(w_shape)) + w_shape
+
+        if not shape:
+            shape = [1, 1, 1, 1, 1]
+        elif isinstance(shape, (int, float)):
+            shape = [1, 1, 1, 1, int(shape)]
+        else:
+            shape = list(shape)
+        if len(shape) < 5:
+            shape = [1] * (5 - len(shape)) + shape
+
+        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {}) or {}
+        stride: WasmAttrType = attrs.get("stride", attrs.get("strides", 1))
+        if isinstance(stride, (tuple, list)):
+            if len(stride) == 3:
+                stride_d, stride_h, stride_w = int(stride[0]), int(stride[1]), int(stride[2])
+            elif len(stride) == 2:
+                stride_d, stride_h, stride_w = 1, int(stride[0]), int(stride[1])
+            else:
+                s_val = int(stride[0]) if stride else 1
+                stride_d = stride_h = stride_w = s_val
+        else:
+            stride_d = stride_h = stride_w = int(stride)
+
+        pad: WasmAttrType = attrs.get("padding", attrs.get("pad", 0))
+        if isinstance(pad, (tuple, list)):
+            if len(pad) == 3:
+                pad_d, pad_h, pad_w = int(pad[0]), int(pad[1]), int(pad[2])
+            elif len(pad) == 2:
+                pad_d, pad_h, pad_w = 0, int(pad[0]), int(pad[1])
+            else:
+                p_val = int(pad[0]) if pad else 0
+                pad_d = pad_h = pad_w = p_val
+        elif isinstance(pad, str) and pad.upper() == "SAME":
+            pad_d = max(0, (shape[2] - 1) * stride_d + w_shape[2] - in0_shape[2]) // 2
+            pad_h = max(0, (shape[3] - 1) * stride_h + w_shape[3] - in0_shape[3]) // 2
+            pad_w = max(0, (shape[4] - 1) * stride_w + w_shape[4] - in0_shape[4]) // 2
+        else:
+            pad_d = pad_h = pad_w = int(pad) if isinstance(pad, (int, float)) else 0
+
+        dilation: WasmAttrType = attrs.get("dilation", attrs.get("dilations", 1))
+        if isinstance(dilation, (tuple, list)):
+            if len(dilation) == 3:
+                dilation_d, dilation_h, dilation_w = int(dilation[0]), int(dilation[1]), int(dilation[2])
+            else:
+                d_val = int(dilation[0]) if dilation else 1
+                dilation_d = dilation_h = dilation_w = d_val
+        else:
+            dilation_d = dilation_h = dilation_w = int(dilation)
+
+        expr_args: dict[str, WasmAttrType] = {
+            "B": shape[0],
+            "out_channels": shape[1],
+            "out_depth": shape[2],
+            "out_height": shape[3],
+            "out_width": shape[4],
+            "in_channels": in0_shape[1],
+            "in_depth": in0_shape[2],
+            "in_height": in0_shape[3],
+            "in_width": in0_shape[4],
+            "filter_d": w_shape[2],
+            "filter_h": w_shape[3],
+            "filter_w": w_shape[4],
+            "stride_d": stride_d,
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "pad_d": pad_d,
+            "pad_h": pad_h,
+            "pad_w": pad_w,
+            "dilation_d": dilation_d,
+            "dilation_h": dilation_h,
+            "dilation_w": dilation_w,
+            "clean_id": clean_id,
+            "in0": inputs[0] if len(inputs) > 0 else "dummy",
+            "in1": inputs[1] if len(inputs) > 1 else "dummy",
+        }
+        body: str = template["body"].format(**expr_args)
+        for line in body.split("\n"):
+            self.add_line(f"    {line}")
+
     def visit_AllReduce(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Emit WebRTC AllReduce."""
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op

@@ -6,6 +6,139 @@ import importlib
 
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
+# Comprehensive mapping of standard IR operations to pyarrow.compute functions
+ARROW_COMPUTE_OP_MAP: dict[str, str] = {
+    # Elementwise binary arithmetic
+    "add": "add",
+    "sub": "subtract",
+    "subtract": "subtract",
+    "mul": "multiply",
+    "multiply": "multiply",
+    "div": "divide",
+    "divide": "divide",
+    "truedivide": "divide",
+    "pow": "power",
+    "power": "power",
+    "minimum": "min_element_wise",
+    "min2": "min_element_wise",
+    "maximum": "max_element_wise",
+    "max2": "max_element_wise",
+    # Elementwise unary arithmetic
+    "neg": "negate",
+    "negative": "negate",
+    "negate": "negate",
+    "abs": "abs",
+    "absolute": "abs",
+    "sign": "sign",
+    "sqrt": "sqrt",
+    "exp": "exp",
+    "log": "ln",
+    "ln": "ln",
+    "log10": "log10",
+    "log2": "log2",
+    "log1p": "log1p",
+    "expm1": "expm1",
+    "floor": "floor",
+    "ceil": "ceil",
+    "ceiling": "ceil",
+    "round": "round",
+    "trunc": "trunc",
+    "truncate": "trunc",
+    # Trigonometry & Hyperbolic
+    "sin": "sin",
+    "cos": "cos",
+    "tan": "tan",
+    "asin": "asin",
+    "arcsin": "asin",
+    "acos": "acos",
+    "arccos": "acos",
+    "atan": "atan",
+    "arctan": "atan",
+    "atan2": "atan2",
+    "arctan2": "atan2",
+    "sinh": "sinh",
+    "cosh": "cosh",
+    "tanh": "tanh",
+    "asinh": "asinh",
+    "arcsinh": "asinh",
+    "acosh": "acosh",
+    "arccosh": "acosh",
+    "atanh": "atanh",
+    "arctanh": "atanh",
+    # Comparisons
+    "equal": "equal",
+    "eq": "equal",
+    "notequal": "not_equal",
+    "ne": "not_equal",
+    "greater": "greater",
+    "gt": "greater",
+    "greaterequal": "greater_equal",
+    "ge": "greater_equal",
+    "less": "less",
+    "lt": "less",
+    "lessequal": "less_equal",
+    "le": "less_equal",
+    # Logical & Bitwise
+    "and": "and_",
+    "logicaland": "and_",
+    "bitwiseand": "bit_wise_and",
+    "or": "or_",
+    "logicalor": "or_",
+    "bitwiseor": "bit_wise_or",
+    "xor": "xor",
+    "logicalxor": "xor",
+    "bitwisexor": "bit_wise_xor",
+    "not": "invert",
+    "logicalnot": "invert",
+    "invert": "invert",
+    "bitwisenot": "bit_wise_not",
+    # Reductions
+    "sum": "sum",
+    "mean": "mean",
+    "min": "min",
+    "max": "max",
+    "all": "all",
+    "any": "any",
+    "std": "stddev",
+    "stddev": "stddev",
+    "var": "variance",
+    "variance": "variance",
+    "count": "count",
+    # Cumulative
+    "cumsum": "cumulative_sum",
+    "cumulativesum": "cumulative_sum",
+    "cumprod": "cumulative_prod",
+    "cumulativeprod": "cumulative_prod",
+    "cummax": "cumulative_max",
+    "cumulativemax": "cumulative_max",
+    "cummin": "cumulative_min",
+    "cumulativemin": "cumulative_min",
+    # Predicates & Selection
+    "isnan": "is_nan",
+    "isinf": "is_inf",
+    "isfinite": "is_finite",
+    "isnull": "is_null",
+    "isvalid": "is_valid",
+    "where": "if_else",
+    "ifelse": "if_else",
+    "select": "if_else",
+    "cast": "cast",
+}
+
+
+def _unwrap_arg(arg: object) -> object:
+    """Unwrap Tensor into underlying array or scalar.
+
+    Args:
+        arg (object): Input argument to unwrap.
+
+    Returns:
+        object: Unwrapped raw data.
+    """
+    if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
+        return arg.data
+    return arg
+
 
 def execute_op(
     cls_or_op: object,
@@ -25,56 +158,42 @@ def execute_op(
         object: Evaluated Arrow array or scalar.
 
     Raises:
-        BackendNotSupportedError: When the operation cannot be resolved.
+        BackendNotSupportedError: When the operation cannot be resolved or executed.
     """
     if isinstance(cls_or_op, type):
         op_type = str(op_type_or_first)
-        actual_args = args
+        raw_args = args
     else:
         op_type = str(cls_or_op)
-        actual_args = (op_type_or_first,) + args if op_type_or_first is not None else args
+        raw_args = (op_type_or_first,) + args if op_type_or_first is not None else args
 
     try:
         pc_mod = importlib.import_module("pyarrow.compute")
-    except Exception:
-        pc_mod = None
+    except Exception as exc:
+        msg = f"pyarrow.compute is required for PyArrow Compute backend execution: {exc}"
+        raise BackendNotSupportedError(msg) from exc
 
+    actual_args = tuple(_unwrap_arg(a) for a in raw_args)
     fn_name = op_type.lower()
-    if pc_mod is not None and hasattr(pc_mod, fn_name):
-        return getattr(pc_mod, fn_name)(*actual_args, **kwargs)
 
-    # Common Arrow Compute name mappings
-    pc_map = {
-        "add": "add",
-        "sub": "subtract",
-        "mul": "multiply",
-        "div": "divide",
-        "sum": "sum",
-        "mean": "mean",
-        "min": "min",
-        "max": "max",
-        "equal": "equal",
-        "greater": "greater",
-        "less": "less",
-    }
-    target = pc_map.get(fn_name)
-    if pc_mod is not None and target and hasattr(pc_mod, target):
-        return getattr(pc_mod, target)(*actual_args, **kwargs)
+    # 1. Direct function lookup on pyarrow.compute
+    if hasattr(pc_mod, fn_name):
+        compute_fn = getattr(pc_mod, fn_name)
+        try:
+            return compute_fn(*actual_args, **kwargs)
+        except Exception as exc:
+            msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
+            raise BackendNotSupportedError(msg) from exc
 
-    # Fallback to NumPy
-    numpy_mod = importlib.import_module("numpy")
-    if hasattr(numpy_mod, fn_name):
-        return getattr(numpy_mod, fn_name)(*actual_args, **kwargs)
+    # 2. Lookup in standard operation mapping
+    target_name = ARROW_COMPUTE_OP_MAP.get(fn_name)
+    if target_name and hasattr(pc_mod, target_name):
+        compute_fn = getattr(pc_mod, target_name)
+        try:
+            return compute_fn(*actual_args, **kwargs)
+        except Exception as exc:
+            msg = f"Failed executing pyarrow.compute.{target_name}: {exc}"
+            raise BackendNotSupportedError(msg) from exc
 
-    alias_map = {
-        "neg": "negative",
-        "sub": "subtract",
-        "mul": "multiply",
-        "div": "divide",
-        "truedivide": "true_divide",
-    }
-    target_np = alias_map.get(fn_name)
-    if target_np and hasattr(numpy_mod, target_np):
-        return getattr(numpy_mod, target_np)(*actual_args, **kwargs)
-
-    raise BackendNotSupportedError(f"Operation '{op_type}' not supported in PyArrow Compute backend.")
+    msg = f"Operation '{op_type}' not supported in PyArrow Compute backend."
+    raise BackendNotSupportedError(msg)

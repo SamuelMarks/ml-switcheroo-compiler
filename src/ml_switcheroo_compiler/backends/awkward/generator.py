@@ -44,6 +44,64 @@ class AwkwardGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
+    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+        """Retrieve operation formatting templates for Awkward operations.
+
+        Args:
+            kwargs (dict[str, object]): Keyword arguments passed to the visitor.
+
+        Returns:
+            dict[str, str]: Map from op_type to formatting template.
+        """
+        del kwargs
+        return {
+            # Jagged reductions
+            "Sum": "ak.sum({0})",
+            "Mean": "ak.mean({0})",
+            "Min": "ak.min({0})",
+            "Max": "ak.max({0})",
+            "Prod": "ak.prod({0})",
+            "All": "ak.all({0})",
+            "Any": "ak.any({0})",
+            "Std": "ak.std({0})",
+            "Var": "ak.var({0})",
+            "Count": "ak.count({0})",
+            "Ptp": "ak.ptp({0})",
+            "ArgMin": "ak.argmin({0})",
+            "ArgMax": "ak.argmax({0})",
+            # Variable-length flattening and structure
+            "Flatten": "ak.flatten({0})",
+            "Unflatten": "ak.unflatten({0}, {1})",
+            "Num": "ak.num({0})",
+            "PadNone": "ak.pad_none({0}, {1})",
+            "FillNone": "ak.fill_none({0}, {1})",
+            "DropNone": "ak.drop_none({0})",
+            "Cartesian": "ak.cartesian({0})",
+            "Combinations": "ak.combinations({0}, {1})",
+            "Concatenate": "ak.concatenate({0})",
+            "Where": "ak.where({0}, {1}, {2})",
+            # Nested record transformations
+            "Zip": "ak.zip({0})",
+            "Unzip": "ak.unzip({0})",
+            "WithField": "ak.with_field({0}, {1}, {2})",
+            "Fields": "ak.fields({0})",
+            "ToRegular": "ak.to_regular({0})",
+            "FromRegular": "ak.from_regular({0})",
+            # Elementwise operations
+            "Add": "({0} + {1})",
+            "Sub": "({0} - {1})",
+            "Subtract": "({0} - {1})",
+            "Mul": "({0} * {1})",
+            "Multiply": "({0} * {1})",
+            "Div": "({0} / {1})",
+            "Divide": "({0} / {1})",
+            "TrueDivide": "({0} / {1})",
+            "Pow": "({0} ** {1})",
+            "Power": "({0} ** {1})",
+            "Neg": "(-{0})",
+            "Abs": "abs({0})",
+        }
+
     def generate(self) -> str:
         """Generate the complete Awkward script.
 

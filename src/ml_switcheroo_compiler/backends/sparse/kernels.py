@@ -5,7 +5,11 @@ from typing import Optional, Union
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
+from ml_switcheroo_compiler.backends.sparse.types import (
+    COOTensor,
+    CSCTensor,
+    CSRTensor,
+)
 
 
 def coo_sum_duplicates(
@@ -641,22 +645,10 @@ def spgemm(
     if k1 != k2:
         raise ValueError(f"Shape mismatch for SpGEMM: {csr_a.shape} vs {csr_b.shape}")
 
-    dense_res = np.zeros((m, n), dtype=csr_a.dtype)
-    for r in range(m):
-        start_a = csr_a.indptr[r]
-        end_a = csr_a.indptr[r + 1]
-        for idx_a in range(start_a, end_a):
-            col_a = csr_a.indices[idx_a]
-            val_a = csr_a.data[idx_a]
-
-            start_b = csr_b.indptr[col_a]
-            end_b = csr_b.indptr[col_a + 1]
-            for idx_b in range(start_b, end_b):
-                col_b = csr_b.indices[idx_b]
-                val_b = csr_b.data[idx_b]
-                dense_res[r, col_b] += val_a * val_b
-
-    return CSRTensor.from_dense(dense_res)
+    coo_res = coo_matmat(csr_a.to_coo(), csr_b.to_coo())
+    if isinstance(coo_res, COOTensor):
+        return coo_res.to_csr()
+    return CSRTensor.from_dense(coo_res)
 
 
 def spmm_grad(
@@ -735,3 +727,198 @@ def spgemm_grad(
     grad_b_csr = CSRTensor.from_dense(dense_grad_b * (csr_b.to_dense() != 0))
 
     return grad_a_csr, grad_b_csr
+
+
+def dense_spmm(
+    dense_mat: np.ndarray,
+    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor, np.ndarray],
+) -> np.ndarray:
+    """Perform dense-sparse matrix multiplication: out = dense_mat @ sparse_mat.
+
+    Args:
+        dense_mat (np.ndarray): Left dense matrix operand.
+        sparse_mat (Union[CSRTensor, CSCTensor, COOTensor, np.ndarray]): Right sparse matrix operand.
+
+    Returns:
+        np.ndarray: Evaluated dense matrix product.
+    """
+    d_arr = np.asarray(dense_mat)
+    if isinstance(sparse_mat, (CSRTensor, CSCTensor, COOTensor)):
+        s_coo = sparse_mat if isinstance(sparse_mat, COOTensor) else sparse_mat.to_coo()
+        s_t = coo_transpose(s_coo)
+        d_t = d_arr.T
+        res_t = spmm(s_t, d_t)
+        return res_t.T
+    return np.matmul(d_arr, sparse_mat)
+
+
+def csr_add(a: CSRTensor, b: CSRTensor) -> CSRTensor:
+    """Perform element-wise addition of two CSR matrices without dense materialization.
+
+    Args:
+        a (CSRTensor): First CSR operand.
+        b (CSRTensor): Second CSR operand.
+
+    Returns:
+        CSRTensor: Resulting CSR matrix.
+
+    Raises:
+        ValueError: If matrix shapes do not match.
+    """
+    if a.shape != b.shape:
+        msg = f"Shape mismatch for CSR addition: {a.shape} vs {b.shape}"
+        raise ValueError(msg)
+    if a.nnz == 0:
+        return b
+    if b.nnz == 0:
+        return a
+    coo_res = coo_add(a.to_coo(), b.to_coo())
+    if isinstance(coo_res, COOTensor):
+        return coo_res.to_csr()
+    return CSRTensor.from_dense(coo_res)
+
+
+def csc_add(a: CSCTensor, b: CSCTensor) -> CSCTensor:
+    """Perform element-wise addition of two CSC matrices without dense materialization.
+
+    Args:
+        a (CSCTensor): First CSC operand.
+        b (CSCTensor): Second CSC operand.
+
+    Returns:
+        CSCTensor: Resulting CSC matrix.
+
+    Raises:
+        ValueError: If matrix shapes do not match.
+    """
+    if a.shape != b.shape:
+        msg = f"Shape mismatch for CSC addition: {a.shape} vs {b.shape}"
+        raise ValueError(msg)
+    if a.nnz == 0:
+        return b
+    if b.nnz == 0:
+        return a
+    coo_res = coo_add(a.to_coo(), b.to_coo())
+    if isinstance(coo_res, COOTensor):
+        return coo_res.to_csc()
+    return CSCTensor.from_dense(coo_res)
+
+
+def sparse_mask(
+    tensor: Union[COOTensor, np.ndarray],
+    mask: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+) -> COOTensor:
+    """Filter a dense or sparse tensor using a sparse boolean/coordinate mask.
+
+    Args:
+        tensor (Union[COOTensor, np.ndarray]): Input data tensor.
+        mask (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Mask tensor specifying
+            retained coordinates.
+
+    Returns:
+        COOTensor: Filtered sparse COO tensor with non-zero values only where mask is non-zero.
+    """
+    t_dense = tensor.to_dense() if isinstance(tensor, COOTensor) else np.asarray(tensor)
+    m_dense = mask.to_dense() if hasattr(mask, "to_dense") else np.asarray(mask)
+    filtered = np.where(m_dense != 0, t_dense, 0)
+    return COOTensor.from_dense(filtered)
+
+
+def _prepare_conv2d_tensors(
+    x: Union[COOTensor, np.ndarray],
+    weight: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Normalize input and weight dimensions to 4D tensors for convolution.
+
+    Args:
+        x (Union[COOTensor, np.ndarray]): Input tensor.
+        weight (np.ndarray): Convolution filter weights.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: 4D input array and 4D weight array.
+    """
+    x_dense = x.to_dense() if isinstance(x, COOTensor) else np.asarray(x)
+    while x_dense.ndim < 4:
+        x_dense = x_dense[None, :]
+
+    w_arr = np.asarray(weight)
+    while w_arr.ndim < 4:
+        w_arr = w_arr[None, :] if w_arr.ndim == 3 else w_arr[None, None, :]
+    return x_dense, w_arr
+
+
+def _apply_sparse_mask(
+    dense_out: np.ndarray,
+    mask: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+) -> COOTensor:
+    """Filter evaluated dense convolution activations by an expanded sparse mask.
+
+    Args:
+        dense_out (np.ndarray): Dense convolution outputs.
+        mask (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Target sparse mask.
+
+    Returns:
+        COOTensor: Filtered sparse COO tensor.
+    """
+    mask_coo = mask if isinstance(mask, COOTensor) else (mask.to_coo() if hasattr(mask, "to_coo") else COOTensor.from_dense(np.asarray(mask)))
+    mask_dense = mask_coo.to_dense() != 0
+    while mask_dense.ndim < dense_out.ndim:
+        mask_dense = mask_dense[None, :]
+    mask_broadcast = np.broadcast_to(mask_dense, dense_out.shape)
+    masked_out = np.where(mask_broadcast, dense_out, 0)
+    return COOTensor.from_dense(masked_out)
+
+
+def sparse_conv2d_mask(
+    x: Union[COOTensor, np.ndarray],
+    weight: np.ndarray,
+    mask: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+    stride: tuple[int, int] = (1, 1),
+    padding: tuple[int, int] = (0, 0),
+) -> COOTensor:
+    """Perform 2D convolution and filter results using a sparse mask.
+
+    Only locations where the spatial mask is non-zero are retained in the
+    resulting sparse COO tensor.
+
+    Args:
+        x (Union[COOTensor, np.ndarray]): Input tensor of shape (N, C_in, H, W) or (H, W).
+        weight (np.ndarray): Convolution kernel weights of shape (C_out, C_in, K_h, K_w).
+        mask (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Binary or coordinate mask
+            specifying active output locations.
+        stride (tuple[int, int]): Stride along height and width. Defaults to (1, 1).
+        padding (tuple[int, int]): Zero-padding added to height and width. Defaults to (0, 0).
+
+    Returns:
+        COOTensor: Output sparse COO tensor containing evaluated convolution activations
+            strictly at masked locations.
+    """
+    x_dense, w_arr = _prepare_conv2d_tensors(x, weight)
+    n_batch, c_in, h_in, w_in = x_dense.shape
+    c_out, _, k_h, k_w = w_arr.shape
+    s_h, s_w = stride
+    p_h, p_w = padding
+
+    h_out = (h_in + 2 * p_h - k_h) // s_h + 1
+    w_out = (w_in + 2 * p_w - k_w) // s_w + 1
+
+    if p_h > 0 or p_w > 0:
+        x_padded = np.zeros((n_batch, c_in, h_in + 2 * p_h, w_in + 2 * p_w), dtype=x_dense.dtype)
+        x_padded[:, :, p_h : p_h + h_in, p_w : p_w + w_in] = x_dense
+    else:
+        x_padded = x_dense
+
+    out_dense = np.zeros((n_batch, c_out, h_out, w_out), dtype=np.promote_types(x_dense.dtype, w_arr.dtype))
+
+    for b in range(n_batch):
+        for o in range(c_out):
+            for i in range(h_out):
+                h_start = i * s_h
+                h_end = h_start + k_h
+                for j in range(w_out):
+                    w_start = j * s_w
+                    w_end = w_start + k_w
+                    window = x_padded[b, :, h_start:h_end, w_start:w_end]
+                    out_dense[b, o, i, j] = np.sum(window * w_arr[o])
+
+    return _apply_sparse_mask(out_dense, mask)

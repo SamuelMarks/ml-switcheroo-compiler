@@ -116,20 +116,20 @@ class COOTensor:
         )
 
     def to_csr(self) -> "CSRTensor":
-        """Convert this COOTensor to a CSRTensor.
+        """Convert this COOTensor directly to a CSRTensor without dense materialization.
 
         Returns:
             CSRTensor: Equivalent CSR representation.
         """
-        return CSRTensor.from_dense(self.to_dense())
+        return coo_to_csr(self)
 
     def to_csc(self) -> "CSCTensor":
-        """Convert this COOTensor to a CSCTensor.
+        """Convert this COOTensor directly to a CSCTensor without dense materialization.
 
         Returns:
             CSCTensor: Equivalent CSC representation.
         """
-        return CSCTensor.from_dense(self.to_dense())
+        return coo_to_csc(self)
 
     def __repr__(self) -> str:
         """Get string representation of the COOTensor.
@@ -205,7 +205,7 @@ class CSRTensor:
 
     @classmethod
     def from_coo(cls, coo: COOTensor) -> "CSRTensor":
-        """Construct a CSRTensor from a COOTensor.
+        """Construct a CSRTensor directly from a COOTensor without dense materialization.
 
         Args:
             coo (COOTensor): Source COO tensor.
@@ -213,7 +213,7 @@ class CSRTensor:
         Returns:
             CSRTensor: Equivalent CSR representation.
         """
-        return cls.from_dense(coo.to_dense())
+        return coo_to_csr(coo)
 
     def to_dense(self) -> np.ndarray:
         """Convert this CSRTensor into a dense 2D NumPy array.
@@ -231,26 +231,20 @@ class CSRTensor:
         return dense
 
     def to_coo(self) -> COOTensor:
-        """Convert this CSRTensor to a COOTensor.
+        """Convert this CSRTensor directly to a COOTensor without dense materialization.
 
         Returns:
             COOTensor: Equivalent COO representation.
         """
-        nrows, _ = self.shape
-        row_indices = []
-        for r in range(nrows):
-            count = self.indptr[r + 1] - self.indptr[r]
-            row_indices.extend([r] * count)
-        coords = np.vstack([np.array(row_indices, dtype=np.int64), self.indices]) if self.nnz > 0 else np.empty((2, 0), dtype=np.int64)
-        return COOTensor(indices=coords, values=self.data, shape=self.shape)
+        return csr_to_coo(self)
 
     def to_csc(self) -> "CSCTensor":
-        """Convert this CSRTensor to a CSCTensor.
+        """Convert this CSRTensor directly to a CSCTensor without dense materialization.
 
         Returns:
             CSCTensor: Equivalent CSC representation.
         """
-        return CSCTensor.from_dense(self.to_dense())
+        return csr_to_csc(self)
 
     def __repr__(self) -> str:
         """Get string representation of the CSRTensor.
@@ -326,7 +320,7 @@ class CSCTensor:
 
     @classmethod
     def from_coo(cls, coo: COOTensor) -> "CSCTensor":
-        """Construct a CSCTensor from a COOTensor.
+        """Construct a CSCTensor directly from a COOTensor without dense materialization.
 
         Args:
             coo (COOTensor): Source COO tensor.
@@ -334,7 +328,7 @@ class CSCTensor:
         Returns:
             CSCTensor: Equivalent CSC representation.
         """
-        return cls.from_dense(coo.to_dense())
+        return coo_to_csc(coo)
 
     def to_dense(self) -> np.ndarray:
         """Convert this CSCTensor into a dense 2D NumPy array.
@@ -352,26 +346,20 @@ class CSCTensor:
         return dense
 
     def to_coo(self) -> COOTensor:
-        """Convert this CSCTensor to a COOTensor.
+        """Convert this CSCTensor directly to a COOTensor without dense materialization.
 
         Returns:
             COOTensor: Equivalent COO representation.
         """
-        _, ncols = self.shape
-        col_indices = []
-        for c in range(ncols):
-            count = self.indptr[c + 1] - self.indptr[c]
-            col_indices.extend([c] * count)
-        coords = np.vstack([self.indices, np.array(col_indices, dtype=np.int64)]) if self.nnz > 0 else np.empty((2, 0), dtype=np.int64)
-        return COOTensor(indices=coords, values=self.data, shape=self.shape)
+        return csc_to_coo(self)
 
     def to_csr(self) -> CSRTensor:
-        """Convert this CSCTensor to a CSRTensor.
+        """Convert this CSCTensor directly to a CSRTensor without dense materialization.
 
         Returns:
             CSRTensor: Equivalent CSR representation.
         """
-        return CSRTensor.from_dense(self.to_dense())
+        return csc_to_csr(self)
 
     def __repr__(self) -> str:
         """Get string representation of the CSCTensor.
@@ -380,6 +368,146 @@ class CSCTensor:
             str: Representation string.
         """
         return f"<CSCTensor shape={self.shape} nnz={self.nnz} dtype={self.dtype}>"
+
+
+def coo_to_csr(coo: COOTensor) -> CSRTensor:
+    """Convert a 2D COOTensor directly to a CSRTensor without dense materialization.
+
+    Args:
+        coo (COOTensor): Source sparse COO tensor.
+
+    Returns:
+        CSRTensor: Equivalent CSR representation.
+
+    Raises:
+        ValueError: If coo is not a 2D tensor.
+    """
+    if coo.ndim != 2:
+        msg = f"CSR conversion requires 2D tensor, got shape {coo.shape}"
+        raise ValueError(msg)
+    nrows, ncols = coo.shape
+    if coo.nnz == 0:
+        return CSRTensor(
+            data=np.empty((0,), dtype=coo.dtype),
+            indices=np.empty((0,), dtype=np.int64),
+            indptr=np.zeros(nrows + 1, dtype=np.int64),
+            shape=(nrows, ncols),
+        )
+    rows = coo.indices[0]
+    cols = coo.indices[1]
+    order = np.lexsort((cols, rows))
+    sorted_rows = rows[order]
+    sorted_cols = cols[order]
+    sorted_data = coo.values[order]
+
+    counts = np.bincount(sorted_rows, minlength=nrows)
+    indptr = np.zeros(nrows + 1, dtype=np.int64)
+    indptr[1:] = np.cumsum(counts)
+
+    return CSRTensor(
+        data=sorted_data,
+        indices=sorted_cols,
+        indptr=indptr,
+        shape=(nrows, ncols),
+    )
+
+
+def coo_to_csc(coo: COOTensor) -> CSCTensor:
+    """Convert a 2D COOTensor directly to a CSCTensor without dense materialization.
+
+    Args:
+        coo (COOTensor): Source sparse COO tensor.
+
+    Returns:
+        CSCTensor: Equivalent CSC representation.
+
+    Raises:
+        ValueError: If coo is not a 2D tensor.
+    """
+    if coo.ndim != 2:
+        msg = f"CSC conversion requires 2D tensor, got shape {coo.shape}"
+        raise ValueError(msg)
+    nrows, ncols = coo.shape
+    if coo.nnz == 0:
+        return CSCTensor(
+            data=np.empty((0,), dtype=coo.dtype),
+            indices=np.empty((0,), dtype=np.int64),
+            indptr=np.zeros(ncols + 1, dtype=np.int64),
+            shape=(nrows, ncols),
+        )
+    rows = coo.indices[0]
+    cols = coo.indices[1]
+    order = np.lexsort((rows, cols))
+    sorted_rows = rows[order]
+    sorted_cols = cols[order]
+    sorted_data = coo.values[order]
+
+    counts = np.bincount(sorted_cols, minlength=ncols)
+    indptr = np.zeros(ncols + 1, dtype=np.int64)
+    indptr[1:] = np.cumsum(counts)
+
+    return CSCTensor(
+        data=sorted_data,
+        indices=sorted_rows,
+        indptr=indptr,
+        shape=(nrows, ncols),
+    )
+
+
+def csr_to_coo(csr: CSRTensor) -> COOTensor:
+    """Convert a CSRTensor directly to a COOTensor without dense materialization.
+
+    Args:
+        csr (CSRTensor): Source sparse CSR tensor.
+
+    Returns:
+        COOTensor: Equivalent COO representation.
+    """
+    nrows, _ = csr.shape
+    diffs = np.diff(csr.indptr)
+    row_indices = np.repeat(np.arange(nrows, dtype=np.int64), diffs) if csr.nnz > 0 else np.empty((0,), dtype=np.int64)
+    coords = np.vstack([row_indices, csr.indices]) if csr.nnz > 0 else np.empty((2, 0), dtype=np.int64)
+    return COOTensor(indices=coords, values=csr.data.copy(), shape=csr.shape)
+
+
+def csr_to_csc(csr: CSRTensor) -> CSCTensor:
+    """Convert a CSRTensor directly to a CSCTensor without dense materialization.
+
+    Args:
+        csr (CSRTensor): Source sparse CSR tensor.
+
+    Returns:
+        CSCTensor: Equivalent CSC representation.
+    """
+    return coo_to_csc(csr_to_coo(csr))
+
+
+def csc_to_coo(csc: CSCTensor) -> COOTensor:
+    """Convert a CSCTensor directly to a COOTensor without dense materialization.
+
+    Args:
+        csc (CSCTensor): Source sparse CSC tensor.
+
+    Returns:
+        COOTensor: Equivalent COO representation.
+    """
+    _, ncols = csc.shape
+    diffs = np.diff(csc.indptr)
+    col_indices = np.repeat(np.arange(ncols, dtype=np.int64), diffs) if csc.nnz > 0 else np.empty((0,), dtype=np.int64)
+    coords = np.vstack([csc.indices, col_indices]) if csc.nnz > 0 else np.empty((2, 0), dtype=np.int64)
+    return COOTensor(indices=coords, values=csc.data.copy(), shape=csc.shape)
+
+
+def csc_to_csr(csc: CSCTensor) -> CSRTensor:
+    """Convert a CSCTensor directly to a CSRTensor without dense materialization.
+
+    Args:
+        csc (CSCTensor): Source sparse CSC tensor.
+
+    Returns:
+        CSRTensor: Equivalent CSR representation.
+    """
+    return coo_to_csr(csc_to_coo(csc))
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> COOTensor:

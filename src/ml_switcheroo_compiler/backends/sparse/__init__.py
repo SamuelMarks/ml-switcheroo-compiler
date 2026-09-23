@@ -14,8 +14,32 @@ if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
 from . import eager, generator, kernels, types
 from .eager import execute_op
 from .generator import SparseGenerator
-from .kernels import spgemm, spgemm_grad, spmm, spmm_grad
-from .types import COOTensor, CSCTensor, CSRTensor, array, asarray, item, zeros
+from .kernels import (
+    csc_add,
+    csr_add,
+    dense_spmm,
+    sparse_conv2d_mask,
+    sparse_mask,
+    spgemm,
+    spgemm_grad,
+    spmm,
+    spmm_grad,
+)
+from .types import (
+    COOTensor,
+    CSCTensor,
+    CSRTensor,
+    array,
+    asarray,
+    coo_to_csc,
+    coo_to_csr,
+    csc_to_coo,
+    csc_to_csr,
+    csr_to_coo,
+    csr_to_csc,
+    item,
+    zeros,
+)
 
 SparseGenerator.zeros = classmethod(zeros)
 SparseGenerator.array = classmethod(array)
@@ -30,11 +54,22 @@ __all__ = [
     "SparseGenerator",
     "array",
     "asarray",
+    "coo_to_csc",
+    "coo_to_csr",
+    "csc_add",
+    "csc_to_coo",
+    "csc_to_csr",
+    "csr_add",
+    "csr_to_csc",
+    "csr_to_coo",
+    "dense_spmm",
     "eager",
     "execute_op",
     "generator",
     "item",
     "kernels",
+    "sparse_conv2d_mask",
+    "sparse_mask",
     "spgemm",
     "spgemm_grad",
     "spmm",

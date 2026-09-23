@@ -144,3 +144,43 @@ def test_mlx_ragged_tensor_to_dense() -> None:
     arr: mx.array = mx.array([1.0, 2.0])
     res_dense: mx.array = _mlx_ragged_tensor_to_dense(mx, arr)
     assert res_dense is arr
+
+    # 4. Test object with values and row_splits attributes (branch 149->150)
+    class RaggedContainer:
+        """Container holding values and row_splits."""
+
+        def __init__(self, values: mx.array, row_splits: mx.array) -> None:
+            self.values = values
+            self.row_splits = row_splits
+
+    r_obj = RaggedContainer(
+        values=mx.array([10.0, 20.0, 30.0, 40.0]),
+        row_splits=mx.array([0, 1, 4]),
+    )
+    dense_obj = _mlx_ragged_tensor_to_dense(mx, r_obj, default_value=-1.0)
+    assert dense_obj.shape == (2, 3)
+
+    # 5. Test empty rows branch (branch 173->175)
+    r_empty: dict[str, mx.array] = {"values": mx.array([], dtype=mx.float32), "row_splits": mx.array([0])}
+    dense_empty = _mlx_ragged_tensor_to_dense(mx, r_empty)
+    assert dense_empty.shape == (0, 0)
+
+
+def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test fallback to None when mlx.core cannot be imported in eager.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    import importlib
+    import sys
+
+    import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "mlx.core", None)
+        importlib.reload(mx_eager)
+        assert mx_eager.mx is None
+
+    importlib.reload(mx_eager)
+    assert mx_eager.mx is not None

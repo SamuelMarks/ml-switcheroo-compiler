@@ -339,38 +339,6 @@ class Config:
         self.kwargs = kwargs
 
 
-class CustomObjectScope:
-    """Scope for custom Anys."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
-
-        Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-    def __enter__(self) -> CustomObjectScope:
-        """Enter.
-
-        Returns:
-        CustomObjectScope: Result.
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Exit.
-
-        Args:
-            exc_type (Any): The exc_type parameter.
-            exc_val (Any): The exc_val parameter.
-            exc_tb (Any): The exc_tb parameter.
-        """
-        _ = None
-
-
 class PyDataset:
     """PyDataset utility class."""
 
@@ -399,186 +367,411 @@ class Sequence:
         self.kwargs = kwargs
 
 
-def clear_session(*args, **kwargs) -> None:
-    """Clear the Keras session.
+_GLOBAL_CUSTOM_OBJECTS: dict[str, object] = {}
+_REGISTERED_NAMES: dict[object, str] = {}
+
+
+class CustomObjectScope:
+    """Context manager for temporary registration of custom objects."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize CustomObjectScope with dictionary or kwargs of custom objects.
+
+        Args:
+            *args (object): Mapping dictionary of custom objects.
+            **kwargs (object): Key-value pairs of custom objects.
+        """
+        self.custom_objects: dict[str, object] = {}
+        if args and isinstance(args[0], dict):
+            self.custom_objects.update(args[0])
+        self.custom_objects.update(kwargs)
+        self.backup: dict[str, object] = {}
+
+    def __enter__(self) -> CustomObjectScope:
+        """Enter scope and merge custom objects into global registry.
+
+        Returns:
+            CustomObjectScope: The active scope context manager.
+        """
+        self.backup = _GLOBAL_CUSTOM_OBJECTS.copy()
+        _GLOBAL_CUSTOM_OBJECTS.update(self.custom_objects)
+        return self
+
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        """Exit scope and restore previous global custom object state.
+
+        Args:
+            exc_type (object): Exception type.
+            exc_val (object): Exception value.
+            exc_tb (object): Exception traceback.
+        """
+        _GLOBAL_CUSTOM_OBJECTS.clear()
+        _GLOBAL_CUSTOM_OBJECTS.update(self.backup)
+
+
+def custom_object_scope(*args: object, **kwargs: object) -> CustomObjectScope:
+    """Create a functional custom object scope context manager.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-    """
-    config.clear_cache()
-
-
-def custom_Any_scope(*args, **kwargs):
-    """Create a custom Any scope.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args (object): Mapping dictionary of custom objects.
+        **kwargs (object): Custom objects key-value pairs.
 
     Returns:
-        The scope.
+        CustomObjectScope: The context manager instance.
     """
     return CustomObjectScope(*args, **kwargs)
 
 
-def deserialize_keras_Any(*args, **kwargs):
-    """Deserialize a Keras Any.
+custom_Any_scope = custom_object_scope
 
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+
+def get_custom_objects() -> dict[str, object]:
+    """Retrieve the global registry of custom objects.
 
     Returns:
-        The deserialized Any.
+        dict[str, object]: Dictionary of registered custom objects.
     """
+    return _GLOBAL_CUSTOM_OBJECTS
+
+
+get_custom_Anys = get_custom_objects
+
+
+def get_registered_name(obj: object = None) -> str:
+    """Get the registered serializable name of a class or function.
+
+    Args:
+        obj (object): Target class or function.
+
+    Returns:
+        str: Registered name string or empty string.
+    """
+    if obj is None:
+        return ""
+    if obj in _REGISTERED_NAMES:
+        return _REGISTERED_NAMES[obj]
+    if hasattr(obj, "__name__"):
+        return str(obj.__name__)
+    return str(type(obj).__name__)
+
+
+def get_registered_object(name: str | None = None, custom_objects: dict[str, object] | None = None) -> object | None:
+    """Retrieve registered object by name from custom objects or global registry.
+
+    Args:
+        name (str | None): Identifier name of the object.
+        custom_objects (dict[str, object] | None): Optional custom objects to search first.
+
+    Returns:
+        object | None: Found class/function or None.
+    """
+    if not name:
+        return None
+    if custom_objects and name in custom_objects:
+        return custom_objects[name]
+    if name in _GLOBAL_CUSTOM_OBJECTS:
+        return _GLOBAL_CUSTOM_OBJECTS[name]
     return None
 
 
-def disable_interactive_logging(*args, **kwargs) -> None:
-    """Disable interactive logging.
+get_registered_Any = get_registered_object
+
+
+def register_keras_serializable(package: str = "Custom", name: str | None = None) -> typing.Callable[[object], object]:
+    """Register a class or function as Keras serializable.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-    """
-    config._state.env.interactive_logging = False
-
-
-def enable_interactive_logging(*args, **kwargs) -> None:
-    """Enable interactive logging.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-    """
-    config._state.env.interactive_logging = True
-
-
-def get_custom_Anys(*args, **kwargs):
-    """Get custom Anys.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        package (str): Package namespace name. Defaults to "Custom".
+        name (str | None): Optional explicit registration name.
 
     Returns:
-        A dictionary of custom Anys.
-    """
-    return {}
-
-
-def get_registered_name(*args, **kwargs) -> str:
-    """Get registered name.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-
-    Returns:
-        The registered name.
-    """
-    return ""
-
-
-def get_registered_Any(*args, **kwargs):
-    """Get registered Any.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-
-    Returns:
-        The registered Any.
-    """
-    return None
-
-
-def is_interactive_logging_enabled(*args, **kwargs) -> bool:
-    """Check if interactive logging is enabled.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-
-    Returns:
-        Whether interactive logging is enabled.
-    """
-    return False
-
-
-def is_keras_tensor(*args, **kwargs) -> bool:
-    """Check if an Any is a Keras tensor.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-
-    Returns:
-        Whether the Any is a Keras tensor.
-    """
-    return False
-
-
-def register_keras_serializable(*args, **kwargs):
-    """Register an Any with Keras serialization.
-
-    Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
-
-    Returns:
-        The decorator.
+        typing.Callable[[object], object]: Class/function decorator.
     """
 
-    def decorator(cls):
+    def decorator(cls_or_fn: object) -> object:
         """Register the annotated class in the keras registry.
 
         Args:
-            cls (Any): The class to register.
+            cls_or_fn (object): The class or function to register.
 
-        Returns: Tensor: The original class.
+        Returns:
+            object: The original class or function.
         """
-        return cls
+        registered_name = name or getattr(cls_or_fn, "__name__", str(cls_or_fn))
+        full_name = f"{package}>{registered_name}" if package else registered_name
+        _GLOBAL_CUSTOM_OBJECTS[registered_name] = cls_or_fn
+        _GLOBAL_CUSTOM_OBJECTS[full_name] = cls_or_fn
+        _REGISTERED_NAMES[cls_or_fn] = registered_name
+        return cls_or_fn
 
     return decorator
 
 
-def serialize_keras_Any(*args, **kwargs):
-    """Serialize a Keras Any.
+def serialize_keras_object(obj: object = None) -> dict[str, object] | None:
+    """Serialize a Keras object or layer into a configuration dictionary.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        obj (object): Object to serialize.
 
     Returns:
-        The serialized Any.
+        dict[str, object] | None: Serialized dictionary or None.
     """
-    return None
+    if obj is None:
+        return None
+    cls_name = get_registered_name(obj.__class__)
+    cfg: dict[str, object] = obj.get_config() if hasattr(obj, "get_config") else {}
+    return {
+        "class_name": cls_name,
+        "config": cfg,
+        "module": getattr(obj.__class__, "__module__", ""),
+        "registered_name": cls_name,
+    }
 
 
-def standardize_dtype(*args, **kwargs):
-    """Standardize a dtype.
+serialize_keras_Any = serialize_keras_object
+
+
+def deserialize_keras_object(
+    identifier: object = None,
+    custom_objects: dict[str, object] | None = None,
+) -> object:
+    """Deserialize a Keras configuration dictionary back into an object instance.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        identifier (object): Serialized config dict or object.
+        custom_objects (dict[str, object] | None): Optional custom objects map.
 
     Returns:
-        The standardized dtype.
+        object: Deserialized object instance.
     """
-    return args[0] if args else None
+    if identifier is None or not isinstance(identifier, dict):
+        return identifier
+    class_name = identifier.get("class_name")
+    if not isinstance(class_name, str):
+        return identifier
+    config_dict = identifier.get("config", {})
+    cls_obj = get_registered_object(class_name, custom_objects)
+    if cls_obj is not None and isinstance(cls_obj, type):
+        if hasattr(cls_obj, "from_config") and isinstance(config_dict, dict):
+            return cls_obj.from_config(config_dict)
+        if isinstance(config_dict, dict):
+            return cls_obj(**config_dict)
+    return identifier
+
+
+deserialize_keras_Any = deserialize_keras_object
+
+
+def clear_session(*args: object, **kwargs: object) -> None:
+    """Clear the Keras session.
+
+    Args:
+        *args (object): Arguments.
+        **kwargs (object): Keyword arguments.
+    """
+    del args, kwargs
+    config.clear_cache()
+
+
+def disable_interactive_logging(*args: object, **kwargs: object) -> None:
+    """Disable interactive logging.
+
+    Args:
+        *args (object): Arguments.
+        **kwargs (object): Keyword arguments.
+    """
+    del args, kwargs
+    config._state.env.interactive_logging = False
+
+
+def enable_interactive_logging(*args: object, **kwargs: object) -> None:
+    """Enable interactive logging.
+
+    Args:
+        *args (object): Arguments.
+        **kwargs (object): Keyword arguments.
+    """
+    del args, kwargs
+    config._state.env.interactive_logging = True
+
+
+def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
+    """Check if interactive logging is enabled.
+
+    Args:
+        *args (object): Arguments.
+        **kwargs (object): Keyword arguments.
+
+    Returns:
+        bool: Whether interactive logging is enabled.
+    """
+    del args, kwargs
+    return getattr(config._state.env, "interactive_logging", False)
+
+
+def is_keras_tensor(*args: object, **kwargs: object) -> bool:
+    """Check if an object is a Keras tensor or compiler symbolic tensor.
+
+    Args:
+        *args (object): Target object to check.
+        **kwargs (object): Keyword arguments.
+
+    Returns:
+        bool: Whether the object is recognized as a Keras/symbolic tensor.
+    """
+    del kwargs
+    if not args:
+        return False
+    x = args[0]
+    if hasattr(x, "_keras_history") or getattr(x, "is_keras_tensor", False):
+        return True
+    type_name = type(x).__name__
+    return type_name in ("KerasTensor", "Tensor", "SymbolicTensor")
+
+
+def standardize_dtype(*args: object, **kwargs: object) -> str | None:
+    """Standardize a data type specification into its canonical lowercase string name.
+
+    Args:
+        *args (object): Data type object or string name.
+        **kwargs (object): Keyword arguments.
+
+    Returns:
+        str | None: Canonical dtype string (e.g. 'float32', 'int64', 'bool') or None.
+    """
+    del kwargs
+    if not args:
+        return None
+    dtype = args[0]
+    if dtype is None:
+        return None
+    if hasattr(dtype, "name"):
+        return str(dtype.name).lower()
+    val_str = str(dtype).lower()
+    if val_str.startswith("<class '") and val_str.endswith("'>"):
+        val_str = val_str[8:-2]
+    if "numpy." in val_str:
+        val_str = val_str.split("numpy.")[-1]
+    if val_str in ("float", "float32", "f4"):
+        return "float32"
+    if val_str in ("double", "float64", "f8"):
+        return "float64"
+    if val_str in ("int", "int32", "i4"):
+        return "int32"
+    if val_str in ("int64", "i8"):
+        return "int64"
+    if val_str in ("bool", "?"):
+        return "bool"
+    return val_str
 
 
 class bounding_boxes:
-    """Bounding boxes utilities namespace."""
+    """Bounding boxes utility class supporting coordinate format conversions and validations."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """Initialize.
+    SUPPORTED_FORMATS: tuple[str, ...] = ("xyxy", "xywh", "yxyx", "center_xywh", "rel_xyxy")
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize bounding boxes utility context.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
         """
         self.args = args
         self.kwargs = kwargs
+
+    @classmethod
+    def validate_format(cls, box_format: str) -> None:
+        """Validate if bounding box format is supported.
+
+        Args:
+            box_format (str): Bounding box format string.
+
+        Raises:
+            ValueError: If box format is not supported.
+        """
+        if str(box_format).lower() not in cls.SUPPORTED_FORMATS:
+            msg = f"Unsupported bounding box format '{box_format}'. Expected one of {cls.SUPPORTED_FORMATS}"
+            raise ValueError(msg)
+
+    @classmethod
+    def convert_format(
+        cls,
+        boxes: object,
+        source: str,
+        target: str,
+        image_shape: tuple[int, int] | None = None,
+    ) -> object:
+        """Convert bounding boxes between coordinate formats.
+
+        Args:
+            boxes (object): Bounding box coordinates array or sequence of shape (..., 4).
+            source (str): Source format name ('xyxy', 'xywh', 'center_xywh', etc.).
+            target (str): Target format name ('xyxy', 'xywh', 'center_xywh', etc.).
+            image_shape (tuple[int, int] | None): Optional (height, width) for relative coordinate scaling.
+
+        Returns:
+            object: Converted bounding boxes array.
+
+        Raises:
+            ValueError: If box shape or format is invalid.
+        """
+        import numpy as np
+
+        cls.validate_format(source)
+        cls.validate_format(target)
+
+        arr = np.asarray(boxes, dtype=np.float32)
+        if arr.shape[-1] != 4:
+            msg = f"Bounding boxes must have 4 coordinates in last dimension, got shape {arr.shape}"
+            raise ValueError(msg)
+
+        src_lower = source.lower()
+        tgt_lower = target.lower()
+        if src_lower == tgt_lower:
+            return arr
+
+        if src_lower == "xyxy":
+            x1, y1, x2, y2 = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+        elif src_lower == "xywh":
+            x1, y1, w, h = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+            x2, y2 = x1 + w, y1 + h
+        elif src_lower == "center_xywh":
+            cx, cy, w, h = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+            x1, y1 = cx - w / 2.0, cy - h / 2.0
+            x2, y2 = cx + w / 2.0, cy + h / 2.0
+        elif src_lower == "yxyx":
+            y1, x1, y2, x2 = arr[..., 0], arr[..., 1], arr[..., 2], arr[..., 3]
+        elif src_lower == "rel_xyxy":
+            if image_shape is None:
+                msg = "image_shape (height, width) is required to convert from relative bounding box format."
+                raise ValueError(msg)
+            h_img, w_img = image_shape
+            x1 = arr[..., 0] * w_img
+            y1 = arr[..., 1] * h_img
+            x2 = arr[..., 2] * w_img
+            y2 = arr[..., 3] * h_img
+        else:
+            msg = f"Unrecognized source format '{source}'"
+            raise ValueError(msg)
+
+        if tgt_lower == "xyxy":
+            return np.stack([x1, y1, x2, y2], axis=-1)
+        if tgt_lower == "xywh":
+            return np.stack([x1, y1, x2 - x1, y2 - y1], axis=-1)
+        if tgt_lower == "center_xywh":
+            cx = (x1 + x2) / 2.0
+            cy = (y1 + y2) / 2.0
+            w = x2 - x1
+            h = y2 - y1
+            return np.stack([cx, cy, w, h], axis=-1)
+        if tgt_lower == "yxyx":
+            return np.stack([y1, x1, y2, x2], axis=-1)
+        if tgt_lower == "rel_xyxy":
+            if image_shape is None:
+                msg = "image_shape (height, width) is required to convert to relative bounding box format."
+                raise ValueError(msg)
+            h_img, w_img = image_shape
+            return np.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1)
+
+        return arr

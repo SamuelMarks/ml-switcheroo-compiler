@@ -940,7 +940,6 @@ class ONNXCodeGenerator(BaseGenerator):
 
             from ml_switcheroo_compiler.core.tensor import Tensor
 
-            numpy_mod = importlib.import_module("numpy")
             ort = importlib.import_module("onnxruntime")
 
             session = ort.InferenceSession(model_bytes)
@@ -961,20 +960,16 @@ class ONNXCodeGenerator(BaseGenerator):
                     if i < len(w_args):
                         arg_val = w_args[i]
                         raw = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                        input_feed[inp_node.id] = numpy_mod.asarray(raw)
+                        input_feed[inp_node.id] = raw
                 for k, v in w_kwargs.items():
                     raw_kw = v.data if isinstance(v, Tensor) else v
-                    input_feed[k] = numpy_mod.asarray(raw_kw)
+                    input_feed[k] = raw_kw
                 return session.run(None, input_feed)
 
             return onnx_runtime_runner
         except Exception:
-            import importlib
-
             from ml_switcheroo_compiler.core.tensor import Tensor
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
-            numpy_mod = importlib.import_module("numpy")
 
             def fallback_runner(*w_args: object, **w_kwargs: object) -> object:
                 """Execute graph via interpreter evaluator fallback.
@@ -992,10 +987,10 @@ class ONNXCodeGenerator(BaseGenerator):
                     if i < len(w_args):
                         arg_val = w_args[i]
                         raw = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                        inputs[inp_node.id] = numpy_mod.asarray(raw)
+                        inputs[inp_node.id] = raw
                 for k, v in w_kwargs.items():
                     raw_kw = v.data if isinstance(v, Tensor) else v
-                    inputs[k] = numpy_mod.asarray(raw_kw)
+                    inputs[k] = raw_kw
                 evaluated = evaluate_graph(graph, inputs=inputs)
                 if hasattr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:

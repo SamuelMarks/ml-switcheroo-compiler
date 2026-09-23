@@ -133,8 +133,7 @@ def _np_ctc_beam_search_decoder(backend_module, inputs, sequence_length, **kwarg
     num_classes = arr.shape[2]
     blank = num_classes - 1
 
-    decoded = []
-    log_probs = []
+    best_paths_by_batch: list[list[tuple[tuple[int, ...], tuple[float, float]]]] = []
 
     for b in range(batch_size):
         T = seq_len[b]
@@ -151,31 +150,36 @@ def _np_ctc_beam_search_decoder(backend_module, inputs, sequence_length, **kwarg
 
             beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, beam_width)
 
-        # Select top paths
+        # Select sorted paths for this batch
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
+        best_paths_by_batch.append(best_paths)
 
-        # for a simple fallback, we just take top_paths=1 for now.
-        best_path = best_paths[0][0] if best_paths else ()
-        best_prob = np.logaddexp(best_paths[0][1][0], best_paths[0][1][1]) if best_paths else 0.0
+    sparse_list: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
+    log_probs_matrix = np.zeros((batch_size, top_paths), dtype=np.float32)
 
-        decoded.append(best_path)
-        log_probs.append(best_prob)
+    for p in range(top_paths):
+        indices_p: list[list[int]] = []
+        values_p: list[int] = []
+        max_len = 0
+        for b in range(batch_size):
+            paths_b = best_paths_by_batch[b]
+            seq = paths_b[p][0] if p < len(paths_b) else ()
+            prob = np.logaddexp(paths_b[p][1][0], paths_b[p][1][1]) if p < len(paths_b) else -float("inf")
+            log_probs_matrix[b, p] = float(prob)
+            if len(seq) > max_len:
+                max_len = len(seq)
+            for t, val in enumerate(seq):
+                indices_p.append([b, t])
+                values_p.append(val)
 
-    indices = []
-    values = []
-    for b, seq in enumerate(decoded):
-        for t, val in enumerate(seq):
-            indices.append([b, t])
-            values.append(val)
+        ind_arr = np.array(indices_p, dtype=np.int64) if indices_p else np.zeros((0, 2), dtype=np.int64)
+        val_arr = np.array(values_p, dtype=np.int64)
+        shape_arr = np.array([batch_size, max_len], dtype=np.int64)
+        sparse_list.append((ind_arr, val_arr, shape_arr))
 
-    if len(indices) == 0:
-        indices = np.zeros((0, 2), dtype=np.int64)
-
-    sparse = (np.array(indices, dtype=np.int64), np.array(values, dtype=np.int64), np.array([batch_size, max((len(s) for s in decoded), default=0)], dtype=np.int64))
-
-    # Usually it returns a list of sparse tensors if top_paths > 1, but we return a tuple containing the sparse tensor
-    # depending on TF spec. We just return a tuple (sparse_tensor, log_probs)
-    return sparse, np.array(log_probs, dtype=np.float32)
+    if top_paths == 1:
+        return sparse_list[0], log_probs_matrix[:, 0]
+    return sparse_list, log_probs_matrix
 
 
 @numpy_eager_registry.register("CtcUniqueLabels")

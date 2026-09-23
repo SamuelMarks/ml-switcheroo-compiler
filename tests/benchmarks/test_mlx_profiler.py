@@ -280,6 +280,10 @@ def test_mlx_profiler_compile_and_execute() -> None:
             with pytest.raises(TypeError, match="Failed to generate valid CompiledModel"):
                 profiler.profile_graph(g_ops, {"x": [1.0, 2.0]})
 
+    # None return when generator produces code with missing module import
+    with patch("ml_switcheroo_compiler.backends.mlx.generator.MLXCodeGenerator.generate", return_value="import non_existent_pkg_12345"):
+        assert profiler._compile_model(g_ops) is None
+
     # Profile graph without ops and empty inputs
     g_empty = IRGraph()
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):

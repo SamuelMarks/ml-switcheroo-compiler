@@ -28,3 +28,24 @@ templates:
       \ k = k + 1u) {{\n        acc = acc + tile_a[local_row][k] * tile_b[k][local_col];\n\
       \    }}\n\n    workgroupBarrier();\n}}\n\nif (row < M && col < N) {{\n    buf_out_f32[row\
       \ * N + col] = acc;\n}}\n"
+  batched_tiled_matmul:
+    workgroup_size:
+    - 16
+    - 16
+    - 1
+    body: "const TILE_SIZE: u32 = 16u;\nvar<workgroup> tile_a: array<array<f32, 16>,\
+      \ 16>;\nvar<workgroup> tile_b: array<array<f32, 16>, 16>;\n\nlet col = global_id.x;\n\
+      let row = global_id.y;\nlet batch = global_id.z;\nlet local_col = local_id.x;\n\
+      let local_row = local_id.y;\nlet N = {N}u;\nlet M = {M}u;\nlet K = {K}u;\n\n\
+      var acc: f32 = 0.0;\nlet num_tiles = (K + TILE_SIZE - 1u) / TILE_SIZE;\nlet\
+      \ batch_offset_a = batch * M * K;\nlet batch_offset_b = batch * K * N;\nlet\
+      \ batch_offset_out = batch * M * N;\n\nfor (var t: u32 = 0u; t < num_tiles;\
+      \ t = t + 1u) {\n    let a_col = t * TILE_SIZE + local_col;\n    let b_row =\
+      \ t * TILE_SIZE + local_row;\n\n    if (row < M && a_col < K) {\n        tile_a[local_row][local_col]\
+      \ = buf_in0_f32[batch_offset_a + row * K + a_col];\n    } else {\n        tile_a[local_row][local_col]\
+      \ = 0.0;\n    }\n\n    if (b_row < K && col < N) {\n        tile_b[local_row][local_col]\
+      \ = buf_in1_f32[batch_offset_b + b_row * N + col];\n    } else {\n        tile_b[local_row][local_col]\
+      \ = 0.0;\n    }\n\n    workgroupBarrier();\n\n    for (var k: u32 = 0u; k <\
+      \ TILE_SIZE; k = k + 1u) {\n        acc = acc + tile_a[local_row][k] * tile_b[k][local_col];\n\
+      \    }\n\n    workgroupBarrier();\n}\n\nif (row < M && col < N) {\n    buf_out_f32[batch_offset_out\
+      \ + row * N + col] = acc;\n}\n"

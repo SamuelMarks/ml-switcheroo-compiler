@@ -74,45 +74,37 @@ class ExportArchive:
         sig = ProtobufWriter()
         sig.add_string(3, name)  # method_name
 
-        if graph is not None:
-            # Dynamically build inputs
-            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
-            for i, node in enumerate(input_nodes):
-                inp_tensor = ProtobufWriter()
-                inp_tensor.add_string(1, node.id)  # name
-                inp_tensor.add_varint(2, self._get_tf_dtype(getattr(node, "dtype", "float32")))  # dtype
-                # Note: Adding shape TensorShapeProto would go here (field 3)
+        if graph is None:
+            msg = "Exporting SignatureDef requires an explicit IRGraph or valid schema declaration."
+            raise ValueError(msg)
 
-                inp_map = ProtobufWriter()
-                inp_map.add_string(1, f"input_{i}")  # Logical name
-                inp_map.add_message(2, inp_tensor)
-                sig.add_message(1, inp_map)  # inputs
-
-            # Dynamically build outputs
-            if hasattr(graph, "outputs") and graph.outputs:
-                for i, out_id in enumerate(graph.outputs):
-                    out_node = graph.nodes.get(out_id)
-                    dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
-
-                    out_tensor = ProtobufWriter()
-                    out_tensor.add_string(1, out_id)  # name
-                    out_tensor.add_varint(2, self._get_tf_dtype(dtype))  # dtype
-
-                    out_map = ProtobufWriter()
-                    out_map.add_string(1, f"output_{i}")  # Logical name
-                    out_map.add_message(2, out_tensor)
-                    sig.add_message(2, out_map)  # outputs
-        else:
-            # Dummy fallback if no graph provided
+        # Dynamically build inputs
+        input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
+        for i, node in enumerate(input_nodes):
             inp_tensor = ProtobufWriter()
-            inp_tensor.add_string(1, "input")
-            inp_tensor.add_varint(2, 1)  # DT_FLOAT
+            inp_tensor.add_string(1, node.id)  # name
+            inp_tensor.add_varint(2, self._get_tf_dtype(getattr(node, "dtype", "float32")))  # dtype
+            # Note: Adding shape TensorShapeProto would go here (field 3)
 
             inp_map = ProtobufWriter()
-            inp_map.add_string(1, "x")
+            inp_map.add_string(1, f"input_{i}")  # Logical name
             inp_map.add_message(2, inp_tensor)
+            sig.add_message(1, inp_map)  # inputs
 
-            sig.add_message(1, inp_map)
+        # Dynamically build outputs
+        if hasattr(graph, "outputs") and graph.outputs:
+            for i, out_id in enumerate(graph.outputs):
+                out_node = graph.nodes.get(out_id)
+                dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
+
+                out_tensor = ProtobufWriter()
+                out_tensor.add_string(1, out_id)  # name
+                out_tensor.add_varint(2, self._get_tf_dtype(dtype))  # dtype
+
+                out_map = ProtobufWriter()
+                out_map.add_string(1, f"output_{i}")  # Logical name
+                out_map.add_message(2, out_tensor)
+                sig.add_message(2, out_map)  # outputs
 
         return sig
 

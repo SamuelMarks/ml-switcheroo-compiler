@@ -162,6 +162,14 @@ def global_wasm_mock():
                 body = "Dummy Pool/Conv"
             elif template_name == "mock_template_UnknownOp":
                 body = "Unimplemented UnknownOp"
+            elif template_name in ("Conv3D", "conv3d"):
+                from pathlib import Path
+
+                import yaml
+
+                path = Path(__file__).parent.parent.parent.parent / "src" / "ml_switcheroo_compiler" / "backends" / "edge" / "wasm_simd" / "wasm_templates" / "Conv3D.yaml"
+                with open(path) as f:
+                    return yaml.safe_load(f)["Conv3D"]
             return {"body": body}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
@@ -934,3 +942,140 @@ def test_wasm_shape_telemetry():
     # Test applying telemetry back
     gen.apply_shape_telemetry({"mul0": [4, 8]})
     assert n_mul.shape_metadata == (4, 8)
+
+
+def test_wasm_conv3d_generation() -> None:
+    """Test WASM SIMD Conv3D code generation with full parameter coverage."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph = IRGraph()
+    n_in = IRNode("in0", "Input", inputs=[], shape_metadata=[1, 2, 4, 8, 8])
+    n_w = IRNode("w0", "Input", inputs=[], shape_metadata=[4, 2, 3, 3, 3])
+    n_conv = IRNode(
+        "conv3d_0",
+        "Conv3D",
+        inputs=["in0", "w0"],
+        shape_metadata=[1, 4, 4, 8, 8],
+        attributes={"strides": (1, 1, 1), "padding": "SAME", "dilations": (1, 1, 1)},
+    )
+    graph.nodes["in0"] = n_in
+    graph.nodes["w0"] = n_w
+    graph.nodes["conv3d_0"] = n_conv
+    graph.inputs = ["in0", "w0"]
+    graph.outputs = ["conv3d_0"]
+
+    gen = WasmCodeGenerator(graph)
+    code = gen.generate()
+    assert "SIMD Conv3D (Standard)" in code
+    assert "int filter_d = 3;" in code
+    assert "int filter_h = 3;" in code
+    assert "int filter_w = 3;" in code
+    assert "buf_conv3d_0[out_idx] = acc;" in code
+
+
+def test_wasm_conv3d_branches_coverage() -> None:
+    """Test WASM Conv3D with scalar and 2-tuple padding, strides, dilations, and non-5D shapes."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    graph = IRGraph()
+    n_in_scalar = IRNode("in_scalar", "Input", inputs=[], shape_metadata=4)
+    n_in_empty = IRNode("in_empty", "Input", inputs=[], shape_metadata=[])
+    n_in_3d = IRNode("in_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
+    n_w_empty = IRNode("w_empty", "Input", inputs=[], shape_metadata=[])
+    n_w_scalar = IRNode("w_scalar", "Input", inputs=[], shape_metadata=3)
+    n_w_3d = IRNode("w_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
+
+    graph.nodes["in_scalar"] = n_in_scalar
+    graph.nodes["in_empty"] = n_in_empty
+    graph.nodes["in_3d"] = n_in_3d
+    graph.nodes["w_empty"] = n_w_empty
+    graph.nodes["w_scalar"] = n_w_scalar
+    graph.nodes["w_3d"] = n_w_3d
+
+    gen = WasmCodeGenerator(graph)
+
+    # Test Conv3D with 3D in0_shape (< 5), 3D w_shape (< 5), 3D shape (< 5), and padding="VALID"
+    node_c0 = IRNode(
+        "conv3d_3d",
+        "Conv3D",
+        inputs=["in_3d", "w_3d"],
+        shape_metadata=[2, 3, 4],
+        attributes={"stride": 1, "padding": "VALID", "dilation": 2},
+    )
+    gen.visit_Conv3D(node_c0, "Conv3D", "conv3d_3d", ["in_3d", "w_3d"], [2, 3, 4], 24)
+
+    # Test Conv3D with empty in0_shape and empty w_shape and empty shape
+    node_c1 = IRNode(
+        "conv3d_empty",
+        "Conv3D",
+        inputs=["in_empty", "w_empty"],
+        shape_metadata=[],
+        attributes={"stride": 1, "padding": "SAME", "dilation": 1},
+    )
+    gen.visit_Conv3D(node_c1, "Conv3D", "conv3d_empty", ["in_empty", "w_empty"], [], 1)
+
+    # Test Conv3D with scalar in0_shape, scalar w_shape, and scalar shape
+    node_c2 = IRNode(
+        "conv3d_scalar",
+        "Conv3D",
+        inputs=["in_scalar", "w_scalar"],
+        shape_metadata=8,
+        attributes={"stride": (2, 2, 2), "padding": (1, 1, 1), "dilation": (1, 1, 1)},
+    )
+    gen.visit_Conv3D(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
+
+    # Test Conv3D with 2-element stride and padding
+    node_c3 = IRNode(
+        "conv3d_2elem",
+        "Conv3D",
+        inputs=["in_scalar", "w_scalar"],
+        shape_metadata=[1, 1, 4, 4, 4],
+        attributes={"stride": (2, 2), "padding": (1, 1), "dilation": 1},
+    )
+    gen.visit_Conv3D(node_c3, "Conv3D", "conv3d_2elem", ["in_scalar", "w_scalar"], [1, 1, 4, 4, 4], 64)
+
+    # Test Conv3D with 1-element list stride and padding
+    node_c4 = IRNode(
+        "conv3d_1elem",
+        "Conv3D",
+        inputs=["in_scalar", "w_scalar"],
+        shape_metadata=[1, 1, 4, 4, 4],
+        attributes={"stride": [1], "padding": [0], "dilation": [1]},
+    )
+    gen.visit_Conv3D(node_c4, "Conv3D", "conv3d_1elem", ["in_scalar", "w_scalar"], [1, 1, 4, 4, 4], 64)
+
+
+def test_wasm_scan_body_graph_and_blank_lines() -> None:
+    """Verify WASM scan with body_graph and template emission with blank lines."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    sub_graph = IRGraph(name="sub")
+    sub_node = IRNode("sub_in", "Input", inputs=[], shape_metadata=[2, 2])
+    sub_graph.nodes["sub_in"] = sub_node
+    sub_graph.inputs = ["sub_in"]
+    sub_graph.outputs = ["sub_in"]
+
+    main_graph = IRGraph(name="main")
+    in_node = IRNode("in0", "Input", inputs=[], shape_metadata=[2, 2])
+    main_graph.nodes["in0"] = in_node
+    main_graph.inputs = ["in0"]
+
+    gen = WasmCodeGenerator(main_graph)
+
+    # visit_Scan with body_graph
+    scan_node = IRNode("scan_0", "Scan", inputs=["in0"], attributes={"body_graph": sub_graph})
+    gen.visit_Scan(scan_node, "Scan", "scan_0", ["in0"], [2, 2], 4)
+
+    # _generate_op with template having blank lines to cover line.strip() branch
+    with (
+        patch.dict("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"CustomOp": {"variants": {"edge_wasm_simd": {"template": "custom_tpl"}}}}),
+        patch(
+            "ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template",
+            return_value={"body": "line_one;\n\nline_two;\n  \nline_three;"},
+        ),
+    ):
+        dummy_node = IRNode("custom_op_0", "CustomOp", inputs=["in0"])
+        gen._generate_op(dummy_node, "CustomOp", "custom_op_0", ["in0"], [2, 2], 4)

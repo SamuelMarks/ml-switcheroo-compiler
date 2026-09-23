@@ -44,6 +44,76 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
+    def get_ops_map(self, kwargs: dict[str, object]) -> dict[str, str]:
+        """Retrieve operation formatting templates for PyArrow Compute operations.
+
+        Args:
+            kwargs (dict[str, object]): Keyword arguments passed to the visitor.
+
+        Returns:
+            dict[str, str]: Map from op_type to formatting template.
+        """
+        del kwargs
+        return {
+            "Add": "pc.add({0}, {1})",
+            "Sub": "pc.subtract({0}, {1})",
+            "Subtract": "pc.subtract({0}, {1})",
+            "Mul": "pc.multiply({0}, {1})",
+            "Multiply": "pc.multiply({0}, {1})",
+            "Div": "pc.divide({0}, {1})",
+            "Divide": "pc.divide({0}, {1})",
+            "TrueDivide": "pc.divide({0}, {1})",
+            "Pow": "pc.power({0}, {1})",
+            "Power": "pc.power({0}, {1})",
+            "Neg": "pc.negate({0})",
+            "Negative": "pc.negate({0})",
+            "Abs": "pc.abs({0})",
+            "Absolute": "pc.abs({0})",
+            "Sign": "pc.sign({0})",
+            "Sqrt": "pc.sqrt({0})",
+            "Exp": "pc.exp({0})",
+            "Log": "pc.ln({0})",
+            "Ln": "pc.ln({0})",
+            "Log10": "pc.log10({0})",
+            "Log2": "pc.log2({0})",
+            "Log1p": "pc.log1p({0})",
+            "Expm1": "pc.expm1({0})",
+            "Floor": "pc.floor({0})",
+            "Ceil": "pc.ceil({0})",
+            "Round": "pc.round({0})",
+            "Trunc": "pc.trunc({0})",
+            "Sin": "pc.sin({0})",
+            "Cos": "pc.cos({0})",
+            "Tan": "pc.tan({0})",
+            "Asin": "pc.asin({0})",
+            "Acos": "pc.acos({0})",
+            "Atan": "pc.atan({0})",
+            "Atan2": "pc.atan2({0}, {1})",
+            "Equal": "pc.equal({0}, {1})",
+            "NotEqual": "pc.not_equal({0}, {1})",
+            "Greater": "pc.greater({0}, {1})",
+            "GreaterEqual": "pc.greater_equal({0}, {1})",
+            "Less": "pc.less({0}, {1})",
+            "LessEqual": "pc.less_equal({0}, {1})",
+            "And": "pc.and_({0}, {1})",
+            "Or": "pc.or_({0}, {1})",
+            "Xor": "pc.xor({0}, {1})",
+            "Not": "pc.invert({0})",
+            "Minimum": "pc.min_element_wise({0}, {1})",
+            "Maximum": "pc.max_element_wise({0}, {1})",
+            "Sum": "pc.sum({0})",
+            "Mean": "pc.mean({0})",
+            "Min": "pc.min({0})",
+            "Max": "pc.max({0})",
+            "All": "pc.all({0})",
+            "Any": "pc.any({0})",
+            "Std": "pc.stddev({0})",
+            "Var": "pc.variance({0})",
+            "Count": "pc.count({0})",
+            "Where": "pc.if_else({0}, {1}, {2})",
+            "Cast": "pc.cast({0}, {1})",
+        }
+
     def generate(self) -> str:
         """Generate the complete Arrow Compute script.
 

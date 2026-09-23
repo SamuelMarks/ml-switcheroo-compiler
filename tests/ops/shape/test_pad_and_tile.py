@@ -61,13 +61,33 @@ def test_tile_repeat_triu_tril_exact_shapes(mocker) -> None:
     shape_misc.tile(t, reps=(3, 2, 4))
     assert captured_shapes["Tile"] == (3, 4, 12)
 
+    # 2b. Tile with fewer reps than rank
+    shape_misc.tile(t, reps=2)
+    assert captured_shapes["Tile"] == (2, 6)
+
     # 3. Repeat along specific axis
     shape_misc.repeat(t, repeats=3, axis=1)
     assert captured_shapes["Repeat"] == (2, 9)
 
+    # 3b. Repeat along axis with sequence repeats
+    shape_misc.repeat(t, repeats=[2, 3], axis=0)
+    assert captured_shapes["Repeat"] == (5, 3)
+
+    # 3c. Repeat along axis with non-int/non-sequence repeats
+    shape_misc.repeat(t, repeats=None, axis=0)  # type: ignore[arg-type]
+    assert captured_shapes["Repeat"] == (2, 3)
+
     # 4. Repeat with axis=None (flattened)
     shape_misc.repeat(t, repeats=2, axis=None)
     assert captured_shapes["Repeat"] == (12,)
+
+    # 4b. Repeat with axis=None and sequence repeats
+    shape_misc.repeat(t, repeats=[1, 2, 3], axis=None)
+    assert captured_shapes["Repeat"] == (6,)
+
+    # 4c. Repeat with axis=None and non-int/non-sequence repeats
+    shape_misc.repeat(t, repeats=None, axis=None)  # type: ignore[arg-type]
+    assert captured_shapes["Repeat"] == (6,)
 
     # 5. Triu and Tril preserve shape
     shape_misc.triu(t, diagonal=0)
