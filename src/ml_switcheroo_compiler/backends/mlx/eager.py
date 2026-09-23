@@ -113,16 +113,67 @@ def _mlx_relu(backend_module, x, *args, **kwargs):
 
 
 @mlx_eager_registry.register("RaggedTensorToDense")
-def _mlx_ragged_tensor_to_dense(backend_module, rt_input, **kwargs):
-    """Convert a ragged tensor to dense using MLX (stubbed).
+def _mlx_ragged_tensor_to_dense(backend_module, rt_input, default_value=None, **kwargs):
+    """Convert a ragged tensor representation to a dense padded array using MLX.
 
     Args:
         backend_module (object): The MLX backend module.
-        rt_input (object): The input ragged tensor.
-        **kwargs (object): Keyword arguments.
+        rt_input (object): The input ragged tensor, sequence of arrays, or dict.
+        default_value (object): The value used to pad the ragged dimensions.
+        **kwargs (object): Additional keyword arguments.
 
-    Returns: mx.array: The input tensor unchanged.
+    Returns:
+        object: Dense padded array.
     """
+    if isinstance(rt_input, (list, tuple)) and len(rt_input) > 0 and hasattr(rt_input[0], "shape"):
+        max_len = max(x.shape[0] if len(x.shape) > 0 else 1 for x in rt_input)
+        pad_val = default_value if default_value is not None else 0.0
+        padded = []
+        for x in rt_input:
+            cur_len = x.shape[0] if len(x.shape) > 0 else 1
+            if cur_len < max_len:
+                diff = max_len - cur_len
+                pad_shape = (diff,) + tuple(x.shape[1:]) if len(x.shape) > 1 else (diff,)
+                pad_arr = backend_module.full(pad_shape, pad_val, dtype=getattr(x, "dtype", backend_module.float32))
+                padded_x = backend_module.concatenate([x, pad_arr], axis=0)
+            else:
+                padded_x = x
+            padded.append(padded_x)
+        return backend_module.stack(padded, axis=0)
+
+    values = None
+    row_splits = None
+    if isinstance(rt_input, dict) and "values" in rt_input and "row_splits" in rt_input:
+        values = rt_input["values"]
+        row_splits = rt_input["row_splits"]
+    elif hasattr(rt_input, "values") and hasattr(rt_input, "row_splits"):
+        values = rt_input.values
+        row_splits = rt_input.row_splits
+
+    if values is not None and row_splits is not None:
+        num_rows = len(row_splits) - 1
+        splits_list = [int(s.item() if hasattr(s, "item") else s) for s in row_splits]
+        diffs = [splits_list[i + 1] - splits_list[i] for i in range(num_rows)]
+        max_len = max(diffs) if diffs else 0
+        pad_val = default_value if default_value is not None else 0.0
+        feature_shape = tuple(values.shape[1:]) if len(values.shape) > 1 else ()
+        dense_shape = (num_rows, max_len) + feature_shape
+        dense_tensor = backend_module.full(dense_shape, pad_val, dtype=getattr(values, "dtype", backend_module.float32))
+        rows = []
+        for i in range(num_rows):
+            start = splits_list[i]
+            end = splits_list[i + 1]
+            length = end - start
+            row_val = values[start:end]
+            if length < max_len:
+                pad_shape = (max_len - length,) + feature_shape
+                pad_arr = backend_module.full(pad_shape, pad_val, dtype=getattr(values, "dtype", backend_module.float32))
+                row_val = backend_module.concatenate([row_val, pad_arr], axis=0)
+            rows.append(row_val)
+        if rows:
+            return backend_module.stack(rows, axis=0)
+        return dense_tensor
+
     return rt_input
 
 

@@ -82,7 +82,7 @@ def test_unstack(mocker):
     mock_item.dtype = "float32"
     mock_item.device = "cpu"
     mock_builder.emit_tracing_node.return_value = mock_item
-    assert len(unstack(t, 0)) == 1
+    assert len(unstack(t, 0)) == 6
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.splitting.get_active_backend").return_value
     mock_backend.execute_op.return_value = [MockTensor((4,)) for _ in range(6)]
@@ -90,6 +90,44 @@ def test_unstack(mocker):
     res = unstack(t, 0)
     assert len(res) == 6
     assert res[0].config.shape == (4,)
+
+
+def test_unstack_exact_shape_deduction(mocker) -> None:
+    """Verify that unstack deduces exact shapes across different axes in graph mode.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured: list[tuple[str, tuple[int, ...]]] = []
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured.append((op_name, shape))
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.splitting._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t = Tensor(None, TensorConfig((3, 5, 7), "float32", "cpu"))
+
+    # Unstack along axis 0: 3 slices of shape (5, 7)
+    res0 = unstack(t, axis=0)
+    assert len(res0) == 3
+    assert len(captured) == 3
+    assert all(shape == (5, 7) for _, shape in captured)
+
+    # Unstack along axis 1: 5 slices of shape (3, 7)
+    captured.clear()
+    res1 = unstack(t, axis=1)
+    assert len(res1) == 5
+    assert len(captured) == 5
+    assert all(shape == (3, 7) for _, shape in captured)
+
+    # Unstack along negative axis -1: 7 slices of shape (3, 5)
+    captured.clear()
+    res2 = unstack(t, axis=-1)
+    assert len(res2) == 7
+    assert len(captured) == 7
+    assert all(shape == (3, 5) for _, shape in captured)
 
 
 def test_array_split(mocker):

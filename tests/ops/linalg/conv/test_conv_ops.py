@@ -65,3 +65,22 @@ def test_conv_ops_infer_shape():
     assert op7.infer_shape(lhs, rhs, strides=2, padding="VALID") == (1, 9, 9, 2)
     assert op7.infer_shape(lhs, rhs, strides=2, padding="SAME") == (1, 8, 8, 2)
     assert op7.infer_shape(lhs, rhs, strides=(2, 2), padding="VALID") == (1, 9, 9, 2)
+
+
+def test_conv_exact_shape_deduction() -> None:
+    """Verify exact output shape calculation for ConvGeneralDilated and Convolve."""
+    # 1. Test 2D ConvGeneralDilated (NCHW lhs, OIHW rhs)
+    op = ConvGeneralDilated()
+    lhs = DummyTensor((2, 3, 32, 32))
+    rhs = DummyTensor((16, 3, 3, 3))
+    cfg = ConvConfig(window_strides=[2, 2], padding=[(1, 1), (1, 1)])
+    # Spatial formula: (32 + 2 - 3) // 2 + 1 = 31 // 2 + 1 = 16
+    assert op.infer_shape(lhs, rhs, cfg) == (2, 16, 16, 16)
+
+    # 2. Test 1D Convolve modes
+    conv1d = Convolve()
+    a = DummyTensor((10,))
+    v = DummyTensor((4,))
+    assert conv1d.infer_shape(a, v, mode="full") == (13,)
+    assert conv1d.infer_shape(a, v, mode="same") == (10,)
+    assert conv1d.infer_shape(a, v, mode="valid") == (7,)

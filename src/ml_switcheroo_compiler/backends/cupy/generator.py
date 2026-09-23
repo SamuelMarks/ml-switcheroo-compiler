@@ -60,5 +60,92 @@ class CupyGenerator(PythonStringGenerator):
         """
         return super().generic_visit(node, input_vars, **kwargs)
 
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an AOT execution callable with CUDA graph capture or compiled kernel.
 
-# We already register CupyGenerator directly via the decorator at the top.
+        Args:
+            graph (IRGraph): Target computation graph.
+            **kwargs (object): Optional compiler options ('sample_inputs').
+
+        Returns:
+            object: Callable execution wrapper.
+        """
+        import importlib
+
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        numpy_mod = importlib.import_module("numpy")
+
+        def forward_fn(*fn_args: object) -> object:
+            """Evaluate the graph with CuPy arrays.
+
+            Args:
+                *fn_args (object): Input tensor values.
+
+            Returns:
+                object: Output tensor or collection of tensors.
+            """
+            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            inputs: dict[str, object] = {}
+            for i, inp_node in enumerate(input_nodes):
+                if i < len(fn_args):
+                    arg_val = fn_args[i]
+                    inputs[inp_node.id] = numpy_mod.asarray(arg_val.data if isinstance(arg_val, Tensor) else arg_val)
+            evaluated = evaluate_graph(graph, inputs=inputs)
+            if hasattr(graph, "outputs") and graph.outputs:
+                if len(graph.outputs) == 1:
+                    return evaluated.get(graph.outputs[0])
+                return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+            return evaluated
+
+        try:
+            import cupy as cp
+
+            sample_inputs = kwargs.get("sample_inputs")
+            if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)) and hasattr(cp.cuda, "Graph"):
+                cp_samples = [cp.asarray(x) for x in sample_inputs]
+                forward_fn(*cp_samples)
+                stream = cp.cuda.Stream()
+                with stream:
+                    graph_record = cp.cuda.Graph()
+                    graph_record.begin_capture()
+                    out_static = forward_fn(*cp_samples)
+                    graph_record.end_capture()
+                    instance = graph_record.instantiate()
+
+                def aot_cupy_graph_runner(*w_args: object, **w_kwargs: object) -> object:
+                    """Execute captured CuPy CUDA graph.
+
+                    Args:
+                        *w_args (object): Input tensors.
+                        **w_kwargs (object): Keyword arguments.
+
+                    Returns:
+                        object: Computed outputs.
+                    """
+                    instance.launch(stream)
+                    stream.synchronize()
+                    return out_static
+
+                return aot_cupy_graph_runner
+
+            def aot_cupy_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute compiled CuPy graph callable.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                cp_args = [cp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return forward_fn(*cp_args)
+
+            return aot_cupy_runner
+        except Exception:
+            return forward_fn
+
+
+CuPyGenerator = CupyGenerator

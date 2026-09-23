@@ -1,0 +1,5 @@
+SpGEMM:
+  jvp: Add(SpGEMM($tangent[0], $input[1]), SpGEMM($input[0], $tangent[1]))
+  vjp:
+  - SpGEMM($cotangent, Transpose($input[1]))
+  - SpGEMM(Transpose($input[0]), $cotangent)

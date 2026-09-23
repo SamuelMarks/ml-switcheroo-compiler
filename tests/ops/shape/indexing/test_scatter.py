@@ -108,3 +108,41 @@ def test_tensor_scatter_add(mocker):
     mock_backend.execute_op.return_value = "res"
     mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
     assert tensor_scatter_add(t, idx, src).config.shape == (2, 3)
+
+
+def test_scatter_exact_shape_deduction(mocker) -> None:
+    """Verify that scatter and tensor_scatter operations deduce exact shapes in graph mode.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.scatter._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t = Tensor(None, TensorConfig((4, 5, 6), "float32", "cpu"))
+    idx = Tensor(None, TensorConfig((2, 5, 6), "int32", "cpu"))
+    src = Tensor(None, TensorConfig((2, 5, 6), "float32", "cpu"))
+
+    scatter(t, axis=0, index=idx, src=src)
+    assert captured_shapes["Scatter"] == (4, 5, 6)
+
+    scatter_add(t, axis=0, index=idx, src=src)
+    assert captured_shapes["ScatterAdd"] == (4, 5, 6)
+
+    tensor_scatter_update(t, idx, src)
+    assert captured_shapes["TensorScatterUpdate"] == (4, 5, 6)
+
+    tensor_scatter_max(t, idx, src)
+    assert captured_shapes["TensorScatterMax"] == (4, 5, 6)
+
+    tensor_scatter_min(t, idx, src)
+    assert captured_shapes["TensorScatterMin"] == (4, 5, 6)
+
+    tensor_scatter_add(t, idx, src)
+    assert captured_shapes["TensorScatterAdd"] == (4, 5, 6)

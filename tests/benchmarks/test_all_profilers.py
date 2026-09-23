@@ -71,6 +71,29 @@ def test_tf_profiler_memory():
     with patch("ml_switcheroo_compiler.backends.tensorflow.profiler.tf", mock_tf):
         assert _get_tf_peak_memory_mb() > 0.0
 
+    mock_tf_no_gpu = MagicMock()
+    mock_tf_no_gpu.config.list_physical_devices.return_value = []
+    with patch("ml_switcheroo_compiler.backends.tensorflow.profiler.tf", mock_tf_no_gpu):
+        assert _get_tf_peak_memory_mb() > 0.0
+
+    mock_tf_zero = MagicMock()
+    mock_tf_zero.config.list_physical_devices.return_value = ["GPU:0"]
+    mock_tf_zero.config.experimental.get_memory_info.return_value = {"peak": 0, "current": 0}
+    with patch("ml_switcheroo_compiler.backends.tensorflow.profiler.tf", mock_tf_zero):
+        assert _get_tf_peak_memory_mb() > 0.0
+
+    import importlib
+
+    import ml_switcheroo_compiler.backends.tensorflow.profiler as tf_prof
+
+    with patch.dict("sys.modules", {"tensorflow": None}):
+        importlib.reload(tf_prof)
+        assert tf_prof.tf is None
+    importlib.reload(tf_prof)
+
+    with patch.object(tf_prof.sys, "platform", "linux"):
+        assert tf_prof._get_process_memory_mb() > 0.0
+
 
 def test_tf_sync_result():
     """Test TensorFlow result synchronization across containers."""
@@ -748,6 +771,10 @@ def test_dask_profiler_branches() -> None:
     Returns:
         None
     """
+    import importlib
+
+    import ml_switcheroo_compiler.backends.dask.profiler as dask_prof
+
     profiler = DaskProfiler()
     graph = IRGraph(name="dask_test")
     node_in1 = LogicalNode(id="in_0", op_type="Input")
@@ -775,14 +802,36 @@ def test_dask_profiler_branches() -> None:
     mock_da.compute.return_value = arr
     _sync_dask_result(mock_da)
     mock_da.compute.assert_called_once()
+    assert isinstance(dask_prof._sync_dask_result({"a": mock_da}), dict)
+    assert isinstance(dask_prof._sync_dask_result([mock_da, (mock_da,)]), list)
     mock_err_da = MagicMock()
     mock_err_da.compute.side_effect = RuntimeError("compute fail")
     _sync_dask_result(mock_err_da)
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=2, warmup_iters=1)
     assert len(res_empty["latencies"]) == 2
+    with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile failed")):
+        res_comp_err = profiler.profile_graph(graph, {"in_0": arr, "in_1": arr}, num_iters=2, warmup_iters=1)
+        assert len(res_comp_err["latencies"]) == 2
     with patch.object(profiler, "_compile_graph", return_value=None):
         res_fb = profiler.profile_graph(graph, {"in_0": arr, "in_1": arr}, num_iters=2, warmup_iters=1)
         assert len(res_fb["latencies"]) == 2
+
+    with patch.dict("sys.modules", {"dask.array": None}):
+        importlib.reload(dask_prof)
+        assert dask_prof.da is None
+    importlib.reload(dask_prof)
+
+    with patch.object(dask_prof.sys, "platform", "linux"):
+        assert dask_prof._get_process_memory_mb() > 0.0
+
+    mock_err_da = MagicMock()
+    mock_err_da.compute.side_effect = RuntimeError("compute fail")
+    assert dask_prof._sync_dask_result(mock_err_da) is mock_err_da
+
+    class NonCallableCompute:
+        compute = "not_callable"
+
+    assert dask_prof._sync_dask_result(NonCallableCompute()) is not None
 
 
 def test_keras_profiler_additional_branches() -> None:
@@ -816,6 +865,49 @@ def test_keras_profiler_additional_branches() -> None:
     mock_val.numpy.side_effect = RuntimeError("numpy fail")
     with patch("ml_switcheroo_compiler.backends.keras.profiler.keras", None):
         _sync_keras_result(mock_val)
+
+    import importlib
+
+    import ml_switcheroo_compiler.backends.keras.profiler as k_prof
+
+    with patch.dict("sys.modules", {"keras": None}):
+        importlib.reload(k_prof)
+        assert k_prof.keras is None
+    importlib.reload(k_prof)
+
+    with patch.object(k_prof.sys, "platform", "linux"):
+        assert k_prof._get_process_memory_mb() > 0.0
+
+    mock_torch_cuda = MagicMock()
+    mock_torch_cuda.cuda.is_available.return_value = True
+    mock_torch_cuda.cuda.max_memory_allocated.return_value = 1024 * 1024 * 32
+    with patch.dict(sys.modules, {"torch": mock_torch_cuda}):
+        with patch.object(k_prof, "keras", MagicMock(backend=MagicMock())):
+            assert k_prof._get_keras_peak_memory_mb() == 32.0
+
+    mock_torch_err = MagicMock()
+    mock_torch_err.cuda.is_available.return_value = True
+    mock_torch_err.cuda.max_memory_allocated.side_effect = RuntimeError("cuda fail")
+    with patch.dict(sys.modules, {"torch": mock_torch_err}):
+        with patch.object(k_prof, "keras", MagicMock(backend=MagicMock())):
+            assert k_prof._get_keras_peak_memory_mb() > 0.0
+
+    mock_tf_mod = MagicMock()
+    mock_tf_mod.config.experimental.get_memory_info.return_value = {"peak": 0}
+    with patch.dict(sys.modules, {"torch": None, "tensorflow": mock_tf_mod}):
+        with patch.object(k_prof, "keras", MagicMock(backend=MagicMock())):
+            assert k_prof._get_keras_peak_memory_mb() > 0.0
+
+    step_fn_multi = profiler._build_step_fn(True, lambda inps: inps[0], [arr, arr])
+    assert step_fn_multi() is not None
+
+    with patch.object(profiler, "_compile_model", side_effect=RuntimeError("compile fail")):
+        n_add = LogicalNode(id="add_0", op_type="Add", inputs=["in_0", "in_0"])
+        graph_err = IRGraph()
+        graph_err.nodes = {"in_0": node, "add_0": n_add}
+        graph_err.inputs = ["in_0"]
+        res_comp_err = profiler.profile_graph(graph_err, {"in_0": arr}, num_iters=2, warmup_iters=1)
+        assert len(res_comp_err["latencies"]) == 2
 
 
 def test_tensorflow_profiler_additional_branches() -> None:

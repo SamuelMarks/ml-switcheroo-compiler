@@ -682,16 +682,15 @@ templates:
     - 1
     - 1
   sum:
-    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void sum(\n   \
-      \ const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]],\n    constant uint& N [[buffer(2)]])\n\
-      {\n    // Very naive global sum for placeholder\n    if (id == 0) {\n      \
-      \  float s = 0.0;\n        for (uint i = 0; i < N; ++i) {\n            s +=\
-      \ A[i];\n        }\n        C[0] = s;\n    }\n}\n"
+    body: "#include <metal_stdlib>\nusing namespace metal;\n\n// Multi-stage parallel tree reduction kernel using SIMD intrinsics and threadgroup shared memory\nkernel void sum(\n    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n    constant uint& N [[buffer(2)]],\n    uint gid [[thread_position_in_grid]],\n    uint tid [[thread_position_in_threadgroup]],\n    uint tg_id [[threadgroup_position_in_grid]],\n    uint tg_size [[threads_per_threadgroup]],\n    uint num_tgs [[threadgroups_per_grid]],\n    ushort simd_lane [[thread_index_in_simdgroup]],\n    ushort simd_id [[simdgroup_index_in_threadgroup]])\n{\n    // Threadgroup shared memory buffer for inter-simdgroup reduction\n    threadgroup float shared_simd[32];\n\n    // 1. Grid-stride accumulation loop across input elements\n    float local_sum = 0.0f;\n    uint total_threads = tg_size * num_tgs;\n    for (uint i = gid; i < N; i += total_threads) {\n        local_sum += A[i];\n    }\n\n    // 2. Hardware SIMD-group parallel tree reduction\n    float simd_reduced = simd_sum(local_sum);\n\n    // 3. Store per-simdgroup sum into threadgroup shared memory\n    if (simd_lane == 0) {\n        shared_simd[simd_id] = simd_reduced;\n    }\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\n    // 4. Threadgroup master simdgroup accumulates partial sums\n    if (simd_id == 0) {\n        uint num_simdgroups = (tg_size + 31) / 32;\n        float warp_val = (simd_lane < num_simdgroups) ? shared_simd[simd_lane] : 0.0f;\n        float tg_total = simd_sum(warp_val);\n        if (simd_lane == 0) {\n            C[tg_id] = tg_total;\n        }\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({num_elements} + 255) / 256
+      y: '1'
+      z: '1'
   tanh:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void tanh_kernel(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\

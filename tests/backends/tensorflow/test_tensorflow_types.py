@@ -1,12 +1,10 @@
 """Tests for tensorflow types module."""
 
 import sys
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-mock_tf = MagicMock()
-sys.modules["tensorflow"] = mock_tf
-
-from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
+with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
+    from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
 
 
 def test_tf_types() -> None:

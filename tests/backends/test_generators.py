@@ -916,6 +916,7 @@ def test_pytorch_generator_send_recv() -> None:
 
 def test_jax_generator_send_recv() -> None:
     """Test JAX Send/Recv generation."""
+    import ast
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
     from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
@@ -933,10 +934,17 @@ def test_jax_generator_send_recv() -> None:
     out_send = JaxDistributedVisitor.visit_Send(gen, n_send, ["in_var"])
     assert out_send == ""
     assert any("# JAX Send to 2" in line for line in gen.code)
+    assert any("token = jax.lax.send(in_var, token, channel=2)" in line for line in gen.code)
 
     out_recv = JaxDistributedVisitor.visit_Recv(gen, n_recv, [])
     assert out_recv == "v_n_recv"
-    assert any("v_n_recv = jnp.zeros([4, 4], dtype=jnp.float32) # JAX Recv from 3" in line for line in gen.code)
+    assert any("v_n_recv, token = jax.lax.recv(token, channel=3, shape=(4, 4), dtype=jnp.float32)" in line for line in gen.code)
+    assert any("token = jax.lax.create_token()" in line for line in gen.code)
+
+    # Verify generated syntax is valid Python AST
+    module_code = "\n".join(["def pipeline_stage(in_var):"] + gen.code + ["    return v_n_recv"])
+    parsed_ast = ast.parse(module_code)
+    assert parsed_ast is not None
 
 
 def test_nn_primitives_emission_cross_backend() -> None:

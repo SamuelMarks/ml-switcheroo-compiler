@@ -54,8 +54,7 @@ def gather(input: Tensor, axis: int, index: Tensor):
         )
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    out_shape = index.shape if getattr(index, "shape", None) else inputs[0].shape
     return _emit_shape_node(
         "Gather",
         inputs,
@@ -85,8 +84,13 @@ def gather_nd(input: Tensor, indices: Tensor):
         )
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, indices]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    in_shape = getattr(input, "shape", ())
+    idx_shape = getattr(indices, "shape", ())
+    if in_shape and idx_shape:
+        last_dim = int(idx_shape[-1])
+        out_shape = idx_shape[:-1] + in_shape[last_dim:]
+    else:
+        out_shape = in_shape
     return _emit_shape_node(
         "GatherNd",
         inputs,
@@ -117,8 +121,17 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None):
         )
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, indices]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    in_shape = getattr(input, "shape", ())
+    idx_shape = getattr(indices, "shape", ())
+    if axis is None:
+        out_shape = idx_shape
+    else:
+        rank = len(in_shape)
+        norm_axis = axis if axis >= 0 else axis + rank
+        if 0 <= norm_axis < rank:
+            out_shape = in_shape[:norm_axis] + idx_shape + in_shape[norm_axis + 1 :]
+        else:
+            out_shape = in_shape
     return _emit_shape_node(
         "Take",
         inputs,
@@ -199,8 +212,15 @@ def where(condition: Tensor, input: Tensor, other: Tensor):
         )
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [condition, input, other]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    from ml_switcheroo_compiler.ops.shape_inference import broadcast_shapes
+
+    c_shape = getattr(condition, "shape", ())
+    i_shape = getattr(input, "shape", ())
+    o_shape = getattr(other, "shape", ())
+    try:
+        out_shape = broadcast_shapes(c_shape, i_shape, o_shape)
+    except Exception:
+        out_shape = i_shape or c_shape
     return _emit_shape_node(
         "Where",
         inputs,
@@ -322,10 +342,15 @@ class DynamicPartition(OpDef):
             num_partitions (int): The total number of output partitions.
             **kwargs (Any): Additional keyword arguments.
 
-        Returns: Tensor: An empty tuple representing a placeholder shape for multiple outputs.
+        Returns:
+            tuple[tuple[int | None, ...], ...]: A tuple of shapes, one per partition.
         """
-        # returns list of tensors, hard to represent simply here
-        return ()
+        if data is None or partitions is None or not hasattr(data, "shape"):
+            return ()
+        data_shape = getattr(data, "shape", ())
+        part_shape = getattr(partitions, "shape", ())
+        extra_shape = data_shape[len(part_shape) :] if len(data_shape) >= len(part_shape) else ()
+        return tuple((None, *extra_shape) for _ in range(num_partitions))
 
 
 @register_op("DynamicStitch")
@@ -342,8 +367,18 @@ class DynamicStitch(OpDef):
             data (Any): The data tensor.
             **kwargs (Any): Additional keyword arguments.
 
-        Returns: Tensor: An empty tuple representing a placeholder shape.
+        Returns:
+            tuple[int | None, ...]: Inferred output shape.
         """
+        if indices is None or data is None:
+            return ()
+        data_list = data if isinstance(data, (list, tuple)) else [data]
+        indices_list = indices if isinstance(indices, (list, tuple)) else [indices]
+        if data_list and hasattr(data_list[0], "shape") and indices_list and hasattr(indices_list[0], "shape"):
+            d_shape = data_list[0].shape
+            idx_shape = indices_list[0].shape
+            extra_shape = d_shape[len(idx_shape) :] if len(d_shape) >= len(idx_shape) else ()
+            return (None, *extra_shape)
         return ()
 
 
@@ -377,14 +412,35 @@ class ExtractVolumePatches(OpDef):
         """Infers the output shape for the extract volume patches operation.
 
         Args:
-            input (Any): The input tensor.
+            input (Any): The input tensor of shape (batch, d, h, w, c).
             ksizes (list[int]): The size of the sliding window.
             strides (list[int]): How far the centers of two consecutive patches are in the input.
             padding (str): The type of padding algorithm to use.
             **kwargs (Any): Additional keyword arguments.
 
-        Returns: Tensor: An empty tuple representing a placeholder shape.
+        Returns:
+            tuple[int, ...]: The inferred volume patches output shape.
         """
+        if input is None or not hasattr(input, "shape"):
+            return ()
+        in_shape = getattr(input, "shape", ())
+        if len(in_shape) == 5:
+            b, d, h, w, c = in_shape
+            kd = ksizes[1] if len(ksizes) > 1 else 1
+            kh = ksizes[2] if len(ksizes) > 2 else 1
+            kw = ksizes[3] if len(ksizes) > 3 else 1
+            sd = strides[1] if len(strides) > 1 else 1
+            sh = strides[2] if len(strides) > 2 else 1
+            sw = strides[3] if len(strides) > 3 else 1
+            if padding.upper() == "SAME":
+                out_d = (d + sd - 1) // sd
+                out_h = (h + sh - 1) // sh
+                out_w = (w + sw - 1) // sw
+            else:
+                out_d = max(0, (d - kd) // sd + 1)
+                out_h = max(0, (h - kh) // sh + 1)
+                out_w = max(0, (w - kw) // sw + 1)
+            return (b, out_d, out_h, out_w, c * kd * kh * kw)
         return ()
 
 
@@ -402,10 +458,15 @@ class UnravelIndex(OpDef):
             dims (Any): The dimensions tensor.
             **kwargs (Any): Additional keyword arguments.
 
-        Returns: Tensor: An empty tuple representing a placeholder shape for multiple outputs.
+        Returns:
+            tuple[tuple[int, ...], ...]: Tuple of shapes matching indices.shape for each dimension.
         """
-        # unravel_index returns a tuple of tensors
-        return ()
+        if indices is None or dims is None or not hasattr(indices, "shape"):
+            return ()
+        idx_shape = getattr(indices, "shape", ())
+        dims_val = getattr(dims, "data", dims)
+        num_dims = len(dims_val) if isinstance(dims_val, (list, tuple)) else (getattr(dims, "shape", (1,))[0] if getattr(dims, "shape", None) else 1)
+        return tuple(idx_shape for _ in range(num_dims))
 
 
 @register_op("DynamicSliceInDim")

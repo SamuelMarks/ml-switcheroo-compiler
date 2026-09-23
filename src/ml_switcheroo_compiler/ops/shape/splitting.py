@@ -188,16 +188,24 @@ def unstack(input, axis: int = 0):
         input_device = getattr(input, "device", config.default_device)
         return tuple(Tensor(d, TensorConfig(d.shape, input_dtype, input_device)) for d in datas)
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
-    return (
+    base_shape = inputs[0].shape if len(inputs) > 0 else ()
+    rank = len(base_shape)
+    norm_axis = axis if axis >= 0 else axis + rank
+    if rank > 0 and 0 <= norm_axis < rank:
+        n_slices = int(base_shape[norm_axis])
+        out_shape = base_shape[:norm_axis] + base_shape[norm_axis + 1 :]
+    else:
+        n_slices = 1
+        out_shape = ()
+    return tuple(
         _emit_shape_node(
             "Unstack",
             inputs,
-            {},
+            {"axis": axis, "index": i},
             out_shape,
             inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-        ),
+        )
+        for i in range(n_slices)
     )
 
 

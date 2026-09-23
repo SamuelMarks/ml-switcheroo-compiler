@@ -1,4 +1,5 @@
-Spmm:
-  jvp: ZerosLike($tangent[0])
+SpMM:
+  jvp: Add(SpMM($tangent[0], $input[1]), SpMM($input[0], $tangent[1]))
   vjp:
-  - ZerosLike($cotangent)
+  - SpMM($cotangent, Transpose($input[1]))
+  - SpMM(Transpose($input[0]), $cotangent)

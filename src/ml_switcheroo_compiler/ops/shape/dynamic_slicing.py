@@ -45,8 +45,9 @@ def dynamic_slice(
         data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, *start_indices]
-    # shape calculation placeholder
-    out_shape = tuple(slice_sizes)
+    if len(input.shape) > 0 and len(slice_sizes) != len(input.shape):
+        raise ValueError(f"slice_sizes length ({len(slice_sizes)}) must match operand rank ({len(input.shape)})")
+    out_shape = tuple(int(s) for s in slice_sizes)
     return _emit_shape_node(
         "DynamicSlice",
         inputs,

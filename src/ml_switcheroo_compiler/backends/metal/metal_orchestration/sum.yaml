@@ -1,16 +1,56 @@
 sum:
-  body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void sum(\n    const\
-    \ device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n    uint\
-    \ id [[thread_position_in_grid]],\n    constant uint& N [[buffer(2)]])\n{\n  \
-    \  // Very naive global sum for placeholder\n    if (id == 0) {\n        float\
-    \ s = 0.0;\n        for (uint i = 0; i < N; ++i) {\n            s += A[i];\n \
-    \       }\n        C[0] = s;\n    }\n}\n"
+  body: "#include <metal_stdlib>
+using namespace metal;
+
+// Multi-stage parallel tree reduction kernel using SIMD intrinsics and threadgroup shared memory
+kernel void sum(
+    const device float* A [[buffer(0)]],
+    device float* C [[buffer(1)]],
+    constant uint& N [[buffer(2)]],
+    uint gid [[thread_position_in_grid]],
+    uint tid [[thread_position_in_threadgroup]],
+    uint tg_id [[threadgroup_position_in_grid]],
+    uint tg_size [[threads_per_threadgroup]],
+    uint num_tgs [[threadgroups_per_grid]],
+    ushort simd_lane [[thread_index_in_simdgroup]],
+    ushort simd_id [[simdgroup_index_in_threadgroup]])
+{
+    // Threadgroup shared memory buffer for inter-simdgroup reduction
+    threadgroup float shared_simd[32];
+
+    // 1. Grid-stride accumulation loop across input elements
+    float local_sum = 0.0f;
+    uint total_threads = tg_size * num_tgs;
+    for (uint i = gid; i < N; i += total_threads) {
+        local_sum += A[i];
+    }
+
+    // 2. Hardware SIMD-group parallel tree reduction
+    float simd_reduced = simd_sum(local_sum);
+
+    // 3. Store per-simdgroup sum into threadgroup shared memory
+    if (simd_lane == 0) {
+        shared_simd[simd_id] = simd_reduced;
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+
+    // 4. Threadgroup master simdgroup accumulates partial sums
+    if (simd_id == 0) {
+        uint num_simdgroups = (tg_size + 31) / 32;
+        float warp_val = (simd_lane < num_simdgroups) ? shared_simd[simd_lane] : 0.0f;
+        float tg_total = simd_sum(warp_val);
+        if (simd_lane == 0) {
+            C[tg_id] = tg_total;
+        }
+    }
+}
+"
   workgroup_size:
   - 256
   - 1
   - 1
   grid_calc:
-    x: '{num_elements}'
+    x: '({num_elements} + 255) / 256'
     y: '1'
     z: '1'
   type_mappings:

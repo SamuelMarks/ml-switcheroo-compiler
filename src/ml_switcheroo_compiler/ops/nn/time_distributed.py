@@ -15,18 +15,38 @@ class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
     def infer_shape(self, x, **kwargs):
-        """Infer the output shape for the infer_shape operation.
+        """Infer the output shape for the TimeDistributed operation.
 
         Args:
-        x (Any): The x parameter.
-        **kwargs (Any): Keyword args.
+            x (Any): Input tensor with shape (batch, time, *features).
+            **kwargs (Any): Additional keyword arguments, optionally containing 'wrapped_op_name'.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output shape preserving batch and time dimensions.
         """
-        # Note: True shape inference depends on the wrapped op.
-        # This is a placeholder since the IR maps it to an identity or reshapes.
-        return x.shape
+        x_shape = getattr(x, "shape", ())
+        if len(x_shape) < 2:
+            return x_shape
+        batch, time_dim = x_shape[0], x_shape[1]
+        feature_shape = x_shape[2:]
+        wrapped_op_name = kwargs.get("wrapped_op_name", None)
+        if wrapped_op_name:
+            try:
+                inner_op = get_op(wrapped_op_name)()
+
+                class _InnerDummy:
+                    """Dummy placeholder tensor representation for inner shape deduction."""
+
+                    shape = (batch * time_dim, *feature_shape)
+                    dtype = getattr(x, "dtype", None)
+
+                inner_kwargs = {k: v for k, v in kwargs.items() if k != "wrapped_op_name"}
+                inner_out_shape = inner_op.infer_shape(_InnerDummy(), **inner_kwargs)
+                if inner_out_shape and len(inner_out_shape) >= 1:
+                    return (batch, time_dim, *inner_out_shape[1:])
+            except Exception:
+                pass
+        return x_shape
 
 
 @dispatch_eager("TimeDistributed")

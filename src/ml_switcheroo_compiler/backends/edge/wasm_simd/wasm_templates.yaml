@@ -2641,10 +2641,6 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
-  ExportToDot:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
   Exporter:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\

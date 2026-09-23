@@ -149,3 +149,37 @@ def test_reductions_frontend_brute():
             _emit_reduction_node("Test", [t_dummy], {}, (2,), "float32")
     finally:
         global_tracing_state.is_tracing = False
+
+
+def test_segment_exact_shapes(mocker) -> None:
+    """Verify that segmented reduction ops calculate exact shapes in graph mode.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_segment._emit_reduction_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    data_2d = Tensor(None, TensorConfig((10, 8), "float32", "cpu"))
+    seg_ids = Tensor(None, TensorConfig((10,), "int32", "cpu"))
+
+    segment_sum(data_2d, seg_ids, num_segments=4)
+    assert captured_shapes["SegmentSum"] == (4, 8)
+
+    segment_mean(data_2d, seg_ids, num_segments=4)
+    assert captured_shapes["SegmentMean"] == (4, 8)
+
+    segment_max(data_2d, seg_ids, num_segments=4)
+    assert captured_shapes["SegmentMax"] == (4, 8)
+
+    segment_min(data_2d, seg_ids, num_segments=4)
+    assert captured_shapes["SegmentMin"] == (4, 8)
+
+    segment_prod(data_2d, seg_ids, num_segments=4)
+    assert captured_shapes["SegmentProd"] == (4, 8)

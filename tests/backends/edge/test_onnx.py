@@ -733,3 +733,67 @@ def test_onnx_remaining_serialization_branches():
     gen_sub = ONNXCodeGenerator(g_sub)
     res_sub = gen_sub.serialize_model_to_bytes()
     assert len(res_sub) > 0
+
+
+def test_onnx_aot_compilation_and_runner() -> None:
+    """Verify ONNX AOT compilation runner and interpreter fallback execution."""
+    import numpy as np
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    # 1. Normal ONNXRuntime execution path
+    g = IRGraph()
+    n_x = IRNode(id="x", op_type="Input", shape_metadata=[2, 2], attributes={"dtype": "float32"})
+    n_y = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=[2, 2], attributes={"dtype": "float32"})
+    g.inputs = ["x"]
+    g.outputs = ["y"]
+    g.nodes = {"x": n_x, "y": n_y}
+
+    gen = ONNXCodeGenerator(g)
+    runner = gen.compile_aot(g, dynamic_axes={"x": {0: "batch"}}, opset_version=18)
+    assert callable(runner)
+
+    inp_data = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
+    cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
+    # Test positional Tensor argument
+    res1 = runner(Tensor(inp_data, cfg_2x2))
+    assert isinstance(res1, list)
+    np.testing.assert_allclose(res1[0], np.maximum(inp_data, 0.0))
+
+    # Test keyword argument
+    res2 = runner(x=inp_data)
+    assert isinstance(res2, list)
+    np.testing.assert_allclose(res2[0], np.maximum(inp_data, 0.0))
+
+    # 2. Fallback interpreter runner path
+    g_multi = IRGraph()
+    n_a = IRNode(id="a", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
+    n_b = IRNode(id="b", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
+    n_add = IRNode(id="out_add", op_type="Add", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"})
+    n_sub = IRNode(id="out_sub", op_type="Sub", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"})
+    g_multi.inputs = ["a", "b"]
+    g_multi.outputs = ["out_add", "out_sub"]
+    g_multi.nodes = {"a": n_a, "b": n_b, "out_add": n_add, "out_sub": n_sub}
+
+    gen_multi = ONNXCodeGenerator(g_multi)
+    # Force exception inside try block to activate fallback_runner
+    with patch("onnxruntime.InferenceSession", side_effect=RuntimeError("Forced ORT error")):
+        fb_runner = gen_multi.compile_aot(g_multi, dynamic_axes=None)
+
+    # Call fallback_runner with 1 positional arg and 1 kwarg (covers i >= len(w_args) and kwarg Tensor)
+    a_val = np.array([1.0, 2.0], dtype=np.float32)
+    b_val = np.array([3.0, 4.0], dtype=np.float32)
+    cfg_2 = TensorConfig(shape=[2], dtype="float32", device="cpu")
+    fb_res_multi = fb_runner(Tensor(a_val, cfg_2), b=Tensor(b_val, cfg_2))
+    assert isinstance(fb_res_multi, tuple)
+    assert len(fb_res_multi) == 2
+
+    # Single output branch
+    g_multi.outputs = ["out_add"]
+    fb_res_single = fb_runner(a_val, b=b_val)
+    np.testing.assert_allclose(fb_res_single, a_val + b_val)
+
+    # No outputs branch
+    g_multi.outputs = []
+    fb_res_dict = fb_runner(a_val, b=b_val)
+    assert isinstance(fb_res_dict, dict)

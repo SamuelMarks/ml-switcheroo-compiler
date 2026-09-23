@@ -41,6 +41,11 @@ from ml_switcheroo_compiler.transforms.passes.state_lowering import (
     StateLoweringPass,
     state_lowering_pass,
 )
+from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import (
+    OFFLINE_DIAGNOSTIC_OPS,
+    export_graph_to_dot_string,
+    strip_offline_diagnostic_nodes_pass,
+)
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import type_promotion_explicitizer_pass
 from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization_pass
 
@@ -73,6 +78,7 @@ __all__ = [
     "spmd_partitioning_pass",
     "StateLoweringPass",
     "state_lowering_pass",
+    "strip_offline_diagnostic_nodes_pass",
     "type_promotion_explicitizer_pass",
     "vectorization_pass",
 ]

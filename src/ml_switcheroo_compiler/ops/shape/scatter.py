@@ -36,7 +36,7 @@ def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor):
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index, src]
     attributes = {"axis": axis}
-    # shape calculation placeholder
+    # Output shape matches the target tensor being scattered into
     out_shape = inputs[0].shape
     return _emit_shape_node(
         "Scatter",
@@ -91,7 +91,7 @@ def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor):
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index, src]
     attributes = {"axis": axis}
-    # shape calculation placeholder
+    # Output shape matches the target tensor being scattered into
     out_shape = inputs[0].shape
     return _emit_shape_node(
         "ScatterAdd",
@@ -121,7 +121,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor):
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
-    # shape calculation placeholder
+    # Output shape matches the base tensor being updated
     out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterUpdate",
@@ -151,7 +151,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor):
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
-    # shape calculation placeholder
+    # Output shape matches the base tensor being updated
     out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterMax",
@@ -181,7 +181,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor):
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
-    # shape calculation placeholder
+    # Output shape matches the base tensor being updated
     out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterMin",
@@ -211,7 +211,7 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor):
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
     inputs = [tensor, indices, updates]
-    # shape calculation placeholder
+    # Output shape matches the base tensor being updated
     out_shape = tensor.shape
     return _emit_shape_node(
         "TensorScatterAdd",

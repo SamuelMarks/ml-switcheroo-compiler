@@ -90,6 +90,33 @@ class CppGenerator(BaseGenerator):
             res.append(int(s))
         return res
 
+    def _dispatch_unmapped_op_fallback(self, node: IRNode, op: str) -> None:
+        """Handle unmapped operation with strict error policy or safe zero-initialized polyfill.
+
+        Args:
+            node (IRNode): Target IR node representing the unmapped operation.
+            op (str): Operation identifier name.
+
+        Raises:
+            UnimplementedMathError: When strict mode is enabled.
+        """
+        if self.strict:
+            from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
+            raise UnimplementedMathError(f"C++ code generator does not support operation: {op}")
+
+        import warnings
+
+        warnings.warn(
+            f"LLVM C++ generator encountered unmapped op '{op}' for node '{node.id}'. Emitting safe zero-initialized polyfill to avoid uninitialized memory access.",
+            UserWarning,
+            stacklevel=2,
+        )
+        out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
+        clean_id = node.id
+        self.lines.append(f"    NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}")
+        self.lines.append(f"    for(size_t i = 0; i < {clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}")
+
     def _num_elements(self, shape: list[int]) -> int:
         """_num_elements function.
 
@@ -374,12 +401,7 @@ class CppGenerator(BaseGenerator):
                 mapping["scalar_expr"] = decl_op.scalar_expr
 
             if not mapping:
-                if self.strict:
-                    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-                    raise UnimplementedMathError(f"C++ code generator does not support operation: {op}")
-                out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-                self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}); // Fallback Unimplemented {op}")
+                self._dispatch_unmapped_op_fallback(node, op)
             else:
                 template: dict[str, str] = get_cpp_template(mapping["template"])
 
@@ -552,3 +574,6 @@ class LLVMCPPRunner:
             return "Execution successful"
 
         return executable
+
+
+LLVMCPPGenerator = CppGenerator

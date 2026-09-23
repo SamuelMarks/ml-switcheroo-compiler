@@ -42,8 +42,13 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0):
             ),
         )
     inputs = list(tensors)
-    # shape calculation placeholder
-    out_shape = tuple(sum(t.shape[i] for t in tensors) if i == axis else tensors[0].shape[i] for i in range(len(tensors[0].shape)))
+    base_shape = inputs[0].shape if len(inputs) > 0 else ()
+    rank = len(base_shape)
+    norm_axis = axis if axis >= 0 else axis + rank
+    if rank > 0:
+        out_shape = tuple(sum(t.shape[norm_axis] for t in tensors) if i == norm_axis else base_shape[i] for i in range(rank))
+    else:
+        out_shape = ()
     return _emit_shape_node(
         "Concatenate",
         inputs,
@@ -85,8 +90,11 @@ def stack(tensors: Sequence[Tensor], axis: int = 0):
             ),
         )
     inputs = list(tensors)
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    base_shape = inputs[0].shape if len(inputs) > 0 else ()
+    rank = len(base_shape) + 1
+    norm_axis = axis if axis >= 0 else axis + rank
+    norm_axis = max(0, min(norm_axis, rank - 1))
+    out_shape = base_shape[:norm_axis] + (len(inputs),) + base_shape[norm_axis:]
 
     try:
         dt = DType(DType(out_dtype_str))

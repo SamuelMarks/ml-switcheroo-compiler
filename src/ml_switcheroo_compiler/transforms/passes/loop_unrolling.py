@@ -201,16 +201,3 @@ def loop_unrolling_pass(graph: IRGraph) -> IRGraph:
         IRGraph: The optimized IR graph with loops unrolled.
     """
     return unroll_loops(graph)
-
-
-def _get_initial_constants(*args: object, **kwargs: object) -> list[object]:
-    """Get initial constants stub.
-
-    Args:
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-        list[object]: Empty list.
-    """
-    return []

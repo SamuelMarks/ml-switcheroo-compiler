@@ -32,38 +32,76 @@ class JaxDistributedVisitor:
         """Get code list from the generator."""
         return getattr(self.generator, "code", [])
 
-    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
-        """Send tensor.
+    @staticmethod
+    def _extract_code_lines(target: object) -> list[str]:
+        """Obtain mutable target code list from visitor or generator.
 
         Args:
-            node (IRNode): The IR node.
-            input_vars (list[str]): Input variables.
-            **kwargs: Additional attributes.
+            target (object): Generator or visitor instance.
 
         Returns:
-            str: JAX code for send via host callback.
+            list[str]: Mutable code lines list.
         """
-        dst: int = int(getattr(node, "attributes", {}).get("dst_rank", 0))
-        self.code.append(f"    # JAX Send to {dst} (via host_callback or explicit MPI bridge)")
+        if hasattr(target, "code") and isinstance(target.code, list):
+            return target.code
+        if hasattr(target, "generator") and hasattr(target.generator, "code"):
+            gen_code = target.generator.code
+            if isinstance(gen_code, list):
+                return gen_code
+        return []
+
+    def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
+        """Generate JAX code for sending a tensor via token-passing pipeline communication.
+
+        Args:
+            node (IRNode): The IR node representing the Send operation.
+            input_vars (list[str]): Input variable names to send.
+            **kwargs (Any): Additional attributes and parameters.
+
+        Returns:
+            str: Empty string as send is a statement emitted directly into generator code.
+        """
+        code_lines = JaxDistributedVisitor._extract_code_lines(self)
+        if not any("jax.lax.create_token()" in line for line in code_lines):
+            code_lines.append("    token = jax.lax.create_token()")
+
+        dst: int = int(getattr(node, "attributes", {}).get("dst_rank", getattr(node, "attributes", {}).get("target_stage", 0)))
+        channel: int = int(getattr(node, "attributes", {}).get("channel", getattr(node, "attributes", {}).get("tag", dst)))
+        in_var = input_vars[0] if input_vars else "x"
+        code_lines.append(f"    # JAX Send to {dst} (via host_callback or token-passing lax.send on channel {channel})")
+        code_lines.append(f"    token = jax.lax.send({in_var}, token, channel={channel})")
         return ""
 
     def visit_Recv(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:
-        """Receive tensor.
+        """Generate JAX code for receiving a tensor via token-passing pipeline communication.
 
         Args:
-            node (IRNode): The IR node.
-            input_vars (list[str]): Input variables.
-            **kwargs: Additional attributes.
+            node (IRNode): The IR node representing the Recv operation.
+            input_vars (list[str]): Input variable names (tokens or dependencies).
+            **kwargs (Any): Additional attributes and parameters.
 
         Returns:
-            str: JAX code for recv via host callback.
+            str: The name of the variable storing the received tensor.
         """
-        src: int = int(getattr(node, "attributes", {}).get("src_rank", 0))
-        shape: tuple[int, ...] = tuple(int(x) for x in getattr(node, "shape_metadata", []) or [])
-        dtype: str = "jnp." + str(getattr(node, "attributes", {}).get("dtype", "float32")).lower()
-        nid: str = getattr(node, "id", "")
+        code_lines = JaxDistributedVisitor._extract_code_lines(self)
+        if not any("jax.lax.create_token()" in line for line in code_lines):
+            code_lines.append("    token = jax.lax.create_token()")
+
+        src: int = int(getattr(node, "attributes", {}).get("src_rank", getattr(node, "attributes", {}).get("source_stage", 0)))
+        channel: int = int(getattr(node, "attributes", {}).get("channel", getattr(node, "attributes", {}).get("tag", src)))
+
+        raw_shape = getattr(node, "shape_metadata", None)
+        if raw_shape is None:
+            raw_shape = getattr(node, "attributes", {}).get("shape", ())
+        shape: tuple[object, ...] = tuple(raw_shape) if isinstance(raw_shape, (list, tuple)) else (raw_shape,)
+
+        raw_dtype = str(getattr(node, "attributes", {}).get("dtype", getattr(node, "dtype", "float32"))).lower()
+        clean_dtype = raw_dtype if raw_dtype.startswith("jnp.") else f"jnp.{raw_dtype}"
+
+        nid: str = getattr(node, "id", "recv")
         res_var: str = f"v_{nid.replace('-', '_')}"
-        self.code.append(f"    {res_var} = jnp.zeros({list(shape)}, dtype={dtype}) # JAX Recv from {src} placeholder")
+        code_lines.append(f"    # JAX Recv from {src} (via token-passing lax.recv on channel {channel})")
+        code_lines.append(f"    {res_var}, token = jax.lax.recv(token, channel={channel}, shape={shape}, dtype={clean_dtype})")
         return res_var
 
     def visit_AllGather(self, node: IRNode, input_vars: list[str], **kwargs: "Any") -> str:

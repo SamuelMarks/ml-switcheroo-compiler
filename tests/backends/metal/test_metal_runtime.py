@@ -118,3 +118,139 @@ def test_metal_runner_ctypes_buffer_and_execution() -> None:
         assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
         assert mock_cmd.commit.called
         assert mock_cmd.waitUntilCompleted.called
+
+
+def test_metal_reduce_sum_parallel_tree_reduction() -> None:
+    """Verify MetalRunner.reduce_sum with SIMD and multi-pass parallel tree reduction."""
+    runner = MetalRunner()
+
+    # Empty array
+    assert runner.reduce_sum(np.array([], dtype=np.float32)) == 0.0
+
+    # Single element
+    assert runner.reduce_sum(np.array([42.5], dtype=np.float32)) == 42.5
+
+    # Small array (N = 10^3)
+    arr_1e3 = np.ones(1000, dtype=np.float32) * 1.5
+    res_1e3 = runner.reduce_sum(arr_1e3)
+    assert np.isclose(res_1e3, float(np.sum(arr_1e3)), rtol=1e-5)
+
+    # Medium array (N = 10^5)
+    arr_1e5 = np.linspace(0.0, 10.0, 100000, dtype=np.float32)
+    res_1e5 = runner.reduce_sum(arr_1e5)
+    assert np.isclose(res_1e5, float(np.sum(arr_1e5)), rtol=1e-4)
+
+    # Large array (N = 10^6 - 10^7)
+    arr_large = np.ones(1000000, dtype=np.float32)
+    res_large = runner.reduce_sum(arr_large)
+    assert np.isclose(res_large, float(np.sum(arr_large)), rtol=1e-4)
+
+
+def test_metal_reduce_sum_mock_multipass_dispatch() -> None:
+    """Test Metal multi-pass execution loop with mocked PyObjC Metal pipeline."""
+    import ctypes
+
+    runner = MetalRunner()
+    mock_metal = MagicMock()
+    mock_dev = MagicMock()
+    mock_lib = MagicMock()
+    mock_func = MagicMock()
+    mock_pipe = MagicMock()
+    mock_queue = MagicMock()
+    mock_cmd = MagicMock()
+    mock_enc = MagicMock()
+
+    mock_metal.MTLCreateSystemDefaultDevice.return_value = mock_dev
+    mock_dev.newLibraryWithSource_options_error_.return_value = (mock_lib, None)
+    mock_lib.newFunctionWithName_.return_value = mock_func
+    mock_dev.newComputePipelineStateWithFunction_error_.return_value = (mock_pipe, None)
+    mock_dev.newCommandQueue.return_value = mock_queue
+    mock_queue.commandBuffer.return_value = mock_cmd
+    mock_cmd.computeCommandEncoder.return_value = mock_enc
+
+    # Output buffer containing scalar 500.0
+    out_val = (ctypes.c_float * 1)(500.0)
+    mock_out_buf = MagicMock()
+    mock_out_buf.contents.return_value = ctypes.addressof(out_val)
+    mock_dev.newBufferWithLength_options_.return_value = mock_out_buf
+
+    with patch.dict(sys.modules, {"Metal": mock_metal}):
+        with patch.object(runner, "is_available", return_value=True):
+            runner.device = mock_dev
+            arr = np.ones(256, dtype=np.float32)
+            val = runner._execute_metal_reduction_passes(arr, fallback=0.0)
+            assert val == 500.0
+            assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
+
+
+def test_metal_generator_unsupported_op_error() -> None:
+    """Verify MetalCodeGenerator raises BackendNotSupportedError on unsupported op_type."""
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    g = IRGraph()
+    bad_node = IRNode(id="n_bad", op_type="UnsupportedMetalOp", inputs=[])
+    g.nodes = {"n_bad": bad_node}
+    gen = MetalCodeGenerator(g)
+    with pytest.raises(BackendNotSupportedError, match="not supported by metal backend"):
+        gen.generate()
+
+
+def test_metal_reduction_fallbacks_and_multipass() -> None:
+    """Verify MetalRunner reduction fallbacks on library/func/pipeline failure, multi-pass dispatch, and exceptions."""
+    import ctypes
+
+    runner = MetalRunner()
+    mock_metal = MagicMock()
+    mock_dev = MagicMock()
+    mock_lib = MagicMock()
+    mock_func = MagicMock()
+    mock_pipe = MagicMock()
+    mock_queue = MagicMock()
+    mock_cmd = MagicMock()
+    mock_enc = MagicMock()
+
+    mock_metal.MTLCreateSystemDefaultDevice.return_value = mock_dev
+    mock_dev.newCommandQueue.return_value = mock_queue
+    mock_queue.commandBuffer.return_value = mock_cmd
+    mock_cmd.computeCommandEncoder.return_value = mock_enc
+
+    out_val = (ctypes.c_float * 1)(42.0)
+    mock_out_buf = MagicMock()
+    mock_out_buf.contents.return_value = ctypes.addressof(out_val)
+    mock_dev.newBufferWithLength_options_.return_value = mock_out_buf
+
+    with patch.dict(sys.modules, {"Metal": mock_metal}):
+        runner.device = mock_dev
+
+        # 1. library is None (line 859)
+        mock_dev.newLibraryWithSource_options_error_.return_value = (None, "error")
+        res1 = runner._execute_metal_reduction_passes(np.ones(10, dtype=np.float32), fallback=99.0)
+        assert res1 == 99.0
+
+        # 2. func is None (line 863)
+        mock_dev.newLibraryWithSource_options_error_.return_value = (mock_lib, None)
+        mock_lib.newFunctionWithName_.return_value = None
+        res2 = runner._execute_metal_reduction_passes(np.ones(10, dtype=np.float32), fallback=88.0)
+        assert res2 == 88.0
+
+        # 3. pipeline_state is None (line 867)
+        mock_lib.newFunctionWithName_.return_value = mock_func
+        mock_dev.newComputePipelineStateWithFunction_error_.return_value = (None, "error")
+        res3 = runner._execute_metal_reduction_passes(np.ones(10, dtype=np.float32), fallback=77.0)
+        assert res3 == 77.0
+
+        # 4. Multi-pass loop (lines 911-912: num_tgs > 1 on pass 1, then num_tgs == 1 on pass 2)
+        mock_dev.newComputePipelineStateWithFunction_error_.return_value = (mock_pipe, None)
+        # 2048 elements: items_per_tg = 1024 -> pass 1 has num_tgs = 2 > 1, pass 2 has num_tgs = 1
+        arr_2048 = np.ones(2048, dtype=np.float32)
+        res_mp = runner._execute_metal_reduction_passes(arr_2048, fallback=0.0)
+        assert res_mp == 42.0
+
+        # 5. reduce_sum exception fallback (lines 937-940)
+        with patch.object(runner, "is_available", return_value=True):
+            with patch.object(runner, "_execute_metal_reduction_passes", side_effect=RuntimeError("Metal failure")):
+                arr_sum = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+                res_exc = runner.reduce_sum(arr_sum)
+                assert res_exc == 6.0

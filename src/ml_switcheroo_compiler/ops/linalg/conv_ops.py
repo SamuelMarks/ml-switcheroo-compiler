@@ -31,19 +31,41 @@ class ConvGeneralDilated(OpDef):
 
         Returns: Tensor: The evaluated output resulting from this operation.
         """
-        lhs = args[0] if len(args) > 0 else kwargs["lhs"]
-        rhs = args[1] if len(args) > 1 else kwargs["rhs"]
+        lhs = args[0] if len(args) > 0 else kwargs.get("lhs")
+        rhs = args[1] if len(args) > 1 else kwargs.get("rhs")
         config = args[2] if len(args) > MAGIC_VAL_2 else kwargs.get("config", None)
         if config is None:
             config = ConvConfig(window_strides=[], padding=[])
         if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):
             return ()
 
-        # simplified shape inference
-        # Assume NCHW for lhs, OIHW for rhs, and (pad_h, pad_w)
-        # We will just return () if dimension_numbers is None, but let's do a basic heuristic
-        # If dimension_numbers provided, we'd parse it. Let's just return a placeholder for testing.
-        return ()
+        lhs_shape = getattr(lhs, "shape", ())
+        rhs_shape = getattr(rhs, "shape", ())
+        if not lhs_shape or not rhs_shape or len(lhs_shape) < 3 or len(rhs_shape) < 3:
+            return ()
+
+        batch = lhs_shape[0]
+        out_channels = rhs_shape[0]
+        spatial_in = lhs_shape[2:]
+        spatial_k = rhs_shape[2:]
+        strides = getattr(config, "window_strides", []) or [1] * len(spatial_in)
+        padding = getattr(config, "padding", []) or [(0, 0)] * len(spatial_in)
+        lhs_dilation = getattr(config, "lhs_dilation", []) or [1] * len(spatial_in)
+        rhs_dilation = getattr(config, "rhs_dilation", []) or [1] * len(spatial_in)
+
+        out_spatial = []
+        for i, (d_in, k) in enumerate(zip(spatial_in, spatial_k)):
+            st = strides[i] if i < len(strides) else 1
+            pad_i = padding[i] if i < len(padding) else (0, 0)
+            pad_val = pad_i[0] + pad_i[1] if isinstance(pad_i, (list, tuple)) else int(pad_i) * 2
+            d_dil = lhs_dilation[i] if i < len(lhs_dilation) else 1
+            k_dil = rhs_dilation[i] if i < len(rhs_dilation) else 1
+            effective_in = (int(d_in) - 1) * int(d_dil) + 1
+            effective_k = (int(k) - 1) * int(k_dil) + 1
+            dim_out = max(0, (effective_in + pad_val - effective_k) // int(st) + 1)
+            out_spatial.append(dim_out)
+
+        return (batch, out_channels, *out_spatial)
 
 
 @register_op("Convolve")
@@ -54,18 +76,30 @@ class Convolve(OpDef):
     np_op_name = "convolve"
 
     def infer_shape(self, a, v, mode: str = "full", **kwargs):
-        """Infer the output shape.
+        """Infer the output shape for 1D discrete linear convolution.
 
         Args:
-            a (Any): The a parameter.
-            v (Any): The v parameter.
-            mode (str): The mode parameter.
-            **kwargs (Any): Keyword args.
+            a (Any): First input array.
+            v (Any): Second input array.
+            mode (str): Convolution mode ('full', 'same', or 'valid').
+            **kwargs (Any): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output shape.
         """
-        return (None,)
+        if not _has_valid_shape(a) or not _has_valid_shape(v):
+            return ()
+        a_shape = getattr(a, "shape", ())
+        v_shape = getattr(v, "shape", ())
+        na = a_shape[0] if a_shape else 1
+        nv = v_shape[0] if v_shape else 1
+        if mode == "full":
+            return (int(na) + int(nv) - 1,)
+        elif mode == "same":
+            return (max(int(na), int(nv)),)
+        elif mode == "valid":
+            return (max(int(na), int(nv)) - min(int(na), int(nv)) + 1,)
+        return (int(na) + int(nv) - 1,)
 
 
 @register_op("ConvGeneralDilatedLocal")

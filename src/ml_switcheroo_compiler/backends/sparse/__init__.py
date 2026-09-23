@@ -14,7 +14,8 @@ if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
 from . import eager, generator, kernels, types
 from .eager import execute_op
 from .generator import SparseGenerator
-from .types import COOTensor, array, asarray, item, zeros
+from .kernels import spgemm, spgemm_grad, spmm, spmm_grad
+from .types import COOTensor, CSCTensor, CSRTensor, array, asarray, item, zeros
 
 SparseGenerator.zeros = classmethod(zeros)
 SparseGenerator.array = classmethod(array)
@@ -24,6 +25,8 @@ SparseGenerator.execute_op = classmethod(execute_op)
 
 __all__ = [
     "COOTensor",
+    "CSCTensor",
+    "CSRTensor",
     "SparseGenerator",
     "array",
     "asarray",
@@ -32,6 +35,10 @@ __all__ = [
     "generator",
     "item",
     "kernels",
+    "spgemm",
+    "spgemm_grad",
+    "spmm",
+    "spmm_grad",
     "types",
     "zeros",
 ]

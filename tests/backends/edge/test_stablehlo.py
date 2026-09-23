@@ -1,7 +1,9 @@
 """Tests for StableHLO backend coverage."""
 
+import os
 import unittest
 
+import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
@@ -632,3 +634,44 @@ def test_stablehlo_while_extra_block_inputs():
 
     code = gen.generate()
     assert '"stablehlo.while"' in code
+
+
+def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test StableHLO AOT compilation artifact execution with schema fallback, single and multi-output."""
+    g = IRGraph()
+    inp1 = LogicalNode(id="in1", op_type="Input")
+    inp2 = LogicalNode(id="in2", op_type="Input")
+    out1 = LogicalNode(id="out1", op_type="Add", inputs=["in1", "in2"])
+    out2 = LogicalNode(id="out2", op_type="Sub", inputs=["in1", "in2"])
+    g.nodes = {"in1": inp1, "in2": inp2, "out1": out1, "out2": out2}
+    g.inputs = ["in1", "in2"]
+    g.outputs = ["out1"]
+    g.sorted_nodes = [inp1, inp2, out1, out2]
+
+    # Test 1: Normal schema existence and single output return
+    gen1 = StableHLOCodeGenerator(g)
+    artifact1 = gen1._compile_aot_impl(g)
+    res_single = artifact1(np.array([1.0], dtype=np.float32), np.array([2.0], dtype=np.float32))
+    assert res_single is not None
+
+    # Test 2: Schema fallback when schema yaml does not exist, and multi-output
+    g.outputs = ["out1", "out2"]
+    orig_exists = os.path.exists
+
+    def mock_exists(p: str) -> bool:
+        if "stablehlo_schema.yaml" in p:
+            return False
+        return orig_exists(p)
+
+    monkeypatch.setattr(os.path, "exists", mock_exists)
+    gen2 = StableHLOCodeGenerator(g)
+    artifact2 = gen2._compile_aot_impl(g)
+
+    res = artifact2(np.array([1.0], dtype=np.float32), in2=np.array([2.0], dtype=np.float32))
+    assert isinstance(res, tuple)
+    assert len(res) == 2
+
+    # Test 3: Graph has no outputs
+    g.outputs = []
+    res_dict = artifact2(np.array([1.0], dtype=np.float32), np.array([2.0], dtype=np.float32))
+    assert isinstance(res_dict, dict)

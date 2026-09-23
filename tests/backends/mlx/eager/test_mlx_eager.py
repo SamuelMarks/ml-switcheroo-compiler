@@ -115,3 +115,32 @@ def test_mlx_eager_coverage_part2():
             pass
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+def test_mlx_ragged_tensor_to_dense() -> None:
+    """Verify MLX RaggedTensorToDense converts ragged lists and dicts to dense arrays."""
+    from ml_switcheroo_compiler.backends.mlx.eager import _mlx_ragged_tensor_to_dense
+
+    # 1. Test sequence of arrays with padding
+    r1: list[mx.array] = [mx.array([1.0, 2.0]), mx.array([3.0, 4.0, 5.0])]
+    dense1: mx.array = _mlx_ragged_tensor_to_dense(mx, r1, default_value=0.0)
+    assert dense1.shape == (2, 3)
+    assert dense1[0, 2].item() == 0.0
+    assert dense1[1, 2].item() == 5.0
+
+    # 2. Test standard dictionary with values and row_splits
+    r2: dict[str, mx.array] = {
+        "values": mx.array([10.0, 20.0, 30.0, 40.0]),
+        "row_splits": mx.array([0, 1, 4]),
+    }
+    dense2: mx.array = _mlx_ragged_tensor_to_dense(mx, r2, default_value=-1.0)
+    assert dense2.shape == (2, 3)
+    assert dense2[0, 0].item() == 10.0
+    assert dense2[0, 1].item() == -1.0
+    assert dense2[1, 0].item() == 20.0
+    assert dense2[1, 2].item() == 40.0
+
+    # 3. Test fallback pass-through for already dense array
+    arr: mx.array = mx.array([1.0, 2.0])
+    res_dense: mx.array = _mlx_ragged_tensor_to_dense(mx, arr)
+    assert res_dense is arr

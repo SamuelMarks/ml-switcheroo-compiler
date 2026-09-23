@@ -82,3 +82,29 @@ def test_dynamic_update_slice_tracing(mocker):
     t.dtype = "float32"
     res = dynamic_update_slice(t, MockTensor((2,)), [1])
     assert res == "updated"
+
+
+def test_dynamic_slice_validation_and_shapes(mocker) -> None:
+    """Verify that dynamic_slice computes exact shapes and raises on rank mismatch.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    import pytest
+
+    captured_shape: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[object], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shape[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t = MockTensor((10, 20))
+    t.dtype = "float32"
+    dynamic_slice(t, [0, 0], [4, 8])
+    assert captured_shape["DynamicSlice"] == (4, 8)
+
+    with pytest.raises(ValueError, match="slice_sizes length"):
+        dynamic_slice(t, [0], [4])

@@ -89,3 +89,37 @@ def test_slicing_dispatcher():
 
         assert update_slice(1, 2) == "mock_result"
         mock_dispatch.assert_called_with("UpdateSlice", 1, 2)
+
+
+def test_slice_and_strided_slice_exact_shapes(mocker) -> None:
+    """Verify exact output shapes for slice and strided_slice in graph mode.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.slicing._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t = Tensor(None, TensorConfig((10, 20), "float32", "cpu"))
+
+    # 1. Slice along axis 0 with start, end, step
+    slice(t, axis=0, start=2, end=8, step=2)
+    assert captured_shapes["Slice"] == (3, 20)
+
+    # 2. Slice with step > 1 and negative start/end
+    slice(t, axis=1, start=-15, end=-5, step=3)
+    assert captured_shapes["Slice"] == (10, 4)
+
+    # 3. Strided slice across multiple dimensions with step > 1
+    strided_slice(t, begin=[1, 2], end=[9, 18], strides=[2, 4])
+    assert captured_shapes["StridedSlice"] == (4, 4)
+
+    # 4. Strided slice with negative stride (reversing dimension)
+    strided_slice(t, begin=[8, 15], end=[2, 5], strides=[-2, -3])
+    assert captured_shapes["StridedSlice"] == (3, 4)

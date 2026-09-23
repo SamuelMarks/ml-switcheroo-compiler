@@ -367,3 +367,24 @@ def test_wasm_generate_wat_missing_or_invalid_opcodes_yaml() -> None:
         with patch("builtins.open", mock_open(read_data="opcodes: not_a_dict\n")):
             wat_invalid_yaml = gen.generate_wat()
             assert "(module" in wat_invalid_yaml
+
+
+def test_wasm_offline_diagnostic_ops_ignored() -> None:
+    """Test WASM generator ignores offline diagnostic ops in generate() loop and _generate_op."""
+    g = IRGraph()
+    n_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[4])
+    n_diag = IRNode(id="diag0", op_type="DiagnosticProbe", inputs=["in0"], shape_metadata=[4])
+    n_add = IRNode(id="add0", op_type="Add", inputs=["in0", "in0"], shape_metadata=[4])
+    g.nodes = {"in0": n_in, "diag0": n_diag, "add0": n_add}
+    g.inputs = ["in0"]
+    g.outputs = ["add0"]
+
+    gen = WasmCodeGenerator(g)
+    gen.sorted_nodes = [n_in, n_diag, n_add]
+    code = gen.generate()
+    assert "add0" in code
+    compute_section = code.split("// Compute nodes sequentially")[1]
+    assert "diag0" not in compute_section
+
+    # Direct call to _generate_op with diagnostic op covers line 944
+    gen._generate_op(n_diag, "DiagnosticProbe", "diag0", ["in0"], [4], 4)

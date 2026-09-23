@@ -1,12 +1,12 @@
 import pytest
 
 try:
-    import torch  # noqa: F401
+    import jax  # noqa: F401
 except Exception:
     pass
 
 try:
-    import jax  # noqa: F401
+    import torch  # noqa: F401
 except Exception:
     pass
 

@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.sparse.types import COOTensor
+from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
 
 
 def coo_sum_duplicates(
@@ -581,3 +581,157 @@ def coo_dot(
         return float(np.sum(elem))
 
     return coo_matmat(a, b)
+
+
+def spmm(
+    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor, np.ndarray],
+    dense_mat: np.ndarray,
+) -> np.ndarray:
+    """Perform sparse-dense matrix multiplication (SpMM): out = sparse_mat @ dense_mat.
+
+    Args:
+        sparse_mat (Union[CSRTensor, CSCTensor, COOTensor, np.ndarray]): Left sparse matrix operand.
+        dense_mat (np.ndarray): Right dense matrix or vector operand.
+
+    Returns:
+        np.ndarray: Evaluated dense matrix product.
+    """
+    b_arr = np.asarray(dense_mat)
+    if isinstance(sparse_mat, CSRTensor):
+        nrows, _ = sparse_mat.shape
+        ncols_b = b_arr.shape[1] if b_arr.ndim > 1 else 1
+        out_shape = (nrows, ncols_b) if b_arr.ndim > 1 else (nrows,)
+        out = np.zeros(out_shape, dtype=b_arr.dtype)
+        for r in range(nrows):
+            start = sparse_mat.indptr[r]
+            end = sparse_mat.indptr[r + 1]
+            for idx in range(start, end):
+                c = sparse_mat.indices[idx]
+                val = sparse_mat.data[idx]
+                out[r] += val * b_arr[c]
+        return out
+
+    if isinstance(sparse_mat, CSCTensor):
+        return spmm(sparse_mat.to_csr(), b_arr)
+
+    if isinstance(sparse_mat, COOTensor):
+        return spmm(sparse_mat.to_csr(), b_arr)
+
+    return np.matmul(sparse_mat, b_arr)
+
+
+def spgemm(
+    a: Union[CSRTensor, CSCTensor, COOTensor, np.ndarray],
+    b: Union[CSRTensor, CSCTensor, COOTensor, np.ndarray],
+) -> CSRTensor:
+    """Perform sparse-sparse matrix multiplication (SpGEMM): out = A @ B.
+
+    Args:
+        a (Union[CSRTensor, CSCTensor, COOTensor, np.ndarray]): Left sparse matrix operand.
+        b (Union[CSRTensor, CSCTensor, COOTensor, np.ndarray]): Right sparse matrix operand.
+
+    Returns:
+        CSRTensor: Product sparse matrix in CSR format.
+    """
+    csr_a = a if isinstance(a, CSRTensor) else (a.to_csr() if hasattr(a, "to_csr") else CSRTensor.from_dense(a))
+    csr_b = b if isinstance(b, CSRTensor) else (b.to_csr() if hasattr(b, "to_csr") else CSRTensor.from_dense(b))
+
+    m, k1 = csr_a.shape
+    k2, n = csr_b.shape
+    if k1 != k2:
+        raise ValueError(f"Shape mismatch for SpGEMM: {csr_a.shape} vs {csr_b.shape}")
+
+    dense_res = np.zeros((m, n), dtype=csr_a.dtype)
+    for r in range(m):
+        start_a = csr_a.indptr[r]
+        end_a = csr_a.indptr[r + 1]
+        for idx_a in range(start_a, end_a):
+            col_a = csr_a.indices[idx_a]
+            val_a = csr_a.data[idx_a]
+
+            start_b = csr_b.indptr[col_a]
+            end_b = csr_b.indptr[col_a + 1]
+            for idx_b in range(start_b, end_b):
+                col_b = csr_b.indices[idx_b]
+                val_b = csr_b.data[idx_b]
+                dense_res[r, col_b] += val_a * val_b
+
+    return CSRTensor.from_dense(dense_res)
+
+
+def spmm_grad(
+    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor],
+    dense_mat: np.ndarray,
+    cotangent: np.ndarray,
+) -> tuple[CSRTensor, np.ndarray]:
+    """Compute gradients for sparse-dense matrix multiplication (SpMM).
+
+    Args:
+        sparse_mat (Union[CSRTensor, CSCTensor, COOTensor]): Forward sparse matrix input.
+        dense_mat (np.ndarray): Forward dense matrix input.
+        cotangent (np.ndarray): Upstream gradient tensor.
+
+    Returns:
+        tuple[CSRTensor, np.ndarray]: Gradient with respect to sparse_mat (CSRTensor)
+            and gradient with respect to dense_mat (np.ndarray).
+    """
+    csr_a = sparse_mat if isinstance(sparse_mat, CSRTensor) else sparse_mat.to_csr()
+    b_dense = np.asarray(dense_mat)
+    grad_out = np.asarray(cotangent)
+
+    at_dense = csr_a.to_dense().T
+    grad_dense = np.matmul(at_dense, grad_out)
+
+    b_t = b_dense.T if b_dense.ndim > 1 else b_dense.reshape(1, -1)
+    dense_grad_a = np.matmul(grad_out, b_t) if grad_out.ndim > 1 else np.outer(grad_out, b_t)
+
+    nrows, ncols = csr_a.shape
+    indptr = [0]
+    indices = []
+    data = []
+    for r in range(nrows):
+        start = csr_a.indptr[r]
+        end = csr_a.indptr[r + 1]
+        for idx in range(start, end):
+            c = csr_a.indices[idx]
+            indices.append(c)
+            data.append(dense_grad_a[r, c])
+        indptr.append(len(data))
+
+    grad_sparse = CSRTensor(
+        data=np.array(data, dtype=csr_a.dtype),
+        indices=np.array(indices, dtype=np.int64),
+        indptr=np.array(indptr, dtype=np.int64),
+        shape=(nrows, ncols),
+    )
+    return grad_sparse, grad_dense
+
+
+def spgemm_grad(
+    a: Union[CSRTensor, CSCTensor, COOTensor],
+    b: Union[CSRTensor, CSCTensor, COOTensor],
+    cotangent: Union[CSRTensor, CSCTensor, COOTensor, np.ndarray],
+) -> tuple[CSRTensor, CSRTensor]:
+    """Compute gradients for sparse-sparse matrix multiplication (SpGEMM).
+
+    Args:
+        a (Union[CSRTensor, CSCTensor, COOTensor]): Forward sparse matrix A.
+        b (Union[CSRTensor, CSCTensor, COOTensor]): Forward sparse matrix B.
+        cotangent (Union[CSRTensor, CSCTensor, COOTensor, np.ndarray]): Upstream gradient tensor.
+
+    Returns:
+        tuple[CSRTensor, CSRTensor]: Gradient w.r.t A and gradient w.r.t B.
+    """
+    csr_a = a if isinstance(a, CSRTensor) else a.to_csr()
+    csr_b = b if isinstance(b, CSRTensor) else b.to_csr()
+    dense_cot = cotangent.to_dense() if hasattr(cotangent, "to_dense") else np.asarray(cotangent)
+
+    dense_b = csr_b.to_dense()
+    dense_grad_a = np.matmul(dense_cot, dense_b.T)
+    grad_a_csr = CSRTensor.from_dense(dense_grad_a * (csr_a.to_dense() != 0))
+
+    dense_a = csr_a.to_dense()
+    dense_grad_b = np.matmul(dense_a.T, dense_cot)
+    grad_b_csr = CSRTensor.from_dense(dense_grad_b * (csr_b.to_dense() != 0))
+
+    return grad_a_csr, grad_b_csr

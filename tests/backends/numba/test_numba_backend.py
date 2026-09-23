@@ -178,3 +178,85 @@ def test_numba_init_import_guard() -> None:
                 importlib.reload(nb_pkg)
     # Reload after exiting patch to restore clean state
     importlib.reload(nb_pkg)
+
+
+def test_numba_control_flow_while_and_fori_loops() -> None:
+    """Verify Numba visitors for control flow loops (WhileLoop, ForiLoop)."""
+    g = DummyGraph()
+
+    # Standard loop generation
+    gen = NumbaGenerator(g, parallel=False)
+    node_while = IRNode(id="while_1", op_type="WhileLoop", inputs=["init_x"], attributes={"max_iters": 10})
+    out_while = gen.visit_WhileLoop(node_while, ["init_x"])
+    assert out_while == "v_while_1"
+    assert any("while iter_while_1 < 10:" in line for line in gen.code)
+
+    node_fori = IRNode(id="fori_1", op_type="ForiLoop", inputs=["init_y"], attributes={"lower": 0, "upper": 20, "step": 2})
+    out_fori = gen.visit_ForiLoop(node_fori, ["init_y"])
+    assert out_fori == "v_fori_1"
+    assert any("for idx_fori_1 in range(0, 20, 2):" in line for line in gen.code)
+
+    # Parallel loop generation with nb.prange
+    gen_par = NumbaGenerator(g, parallel=True)
+    out_fori_par = gen_par.visit_ForiLoop(node_fori, ["init_y"])
+    assert any("for idx_fori_1 in nb.prange(0, 20, 2):" in line for line in gen_par.code)
+
+
+def test_numba_parallel_reduction_lowering_prange() -> None:
+    """Verify fastmath and parallel loop lowering (nb.prange) for reduction operations."""
+    g = DummyGraph()
+
+    # Parallel mode with nb.prange
+    gen_par = NumbaGenerator(g, fastmath=True, parallel=True)
+
+    n_sum = IRNode(id="sum_1", op_type="Sum", inputs=["arr_in"])
+    out_sum = gen_par.visit_Sum(n_sum, ["arr_in"])
+    assert out_sum == "v_sum_1"
+    assert any("for _i in nb.prange(arr_in.size):" in line for line in gen_par.code)
+
+    n_prod = IRNode(id="prod_1", op_type="Prod", inputs=["arr_in"])
+    out_prod = gen_par.visit_Prod(n_prod, ["arr_in"])
+    assert out_prod == "v_prod_1"
+
+    n_mean = IRNode(id="mean_1", op_type="Mean", inputs=["arr_in"])
+    out_mean = gen_par.visit_Mean(n_mean, ["arr_in"])
+    assert out_mean == "v_mean_1"
+
+    n_max = IRNode(id="max_1", op_type="Max", inputs=["arr_in"])
+    out_max = gen_par.visit_Max(n_max, ["arr_in"])
+    assert out_max == "v_max_1"
+
+    n_min = IRNode(id="min_1", op_type="Min", inputs=["arr_in"])
+    out_min = gen_par.visit_Min(n_min, ["arr_in"])
+    assert out_min == "v_min_1"
+
+    # Non-parallel fallback
+    gen_seq = NumbaGenerator(g, parallel=False)
+    out_sum_seq = gen_seq.visit_Sum(n_sum, ["arr_in"])
+    assert any("v_sum_1 = np.sum(arr_in)" in line for line in gen_seq.code)
+
+
+def test_numba_expanded_eager_operations_parity() -> None:
+    """Verify expanded Numba eager operations match NumPy eager results."""
+    arr1 = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
+    arr2 = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+
+    # Trig and Hyperbolic
+    np.testing.assert_allclose(execute_op(type, "Cos", arr1), np.cos(arr1))
+    np.testing.assert_allclose(execute_op(type, "Tan", arr1), np.tan(arr1))
+    np.testing.assert_allclose(execute_op(type, "Tanh", arr1), np.tanh(arr1))
+
+    # Comparisons and Logic
+    np.testing.assert_array_equal(execute_op(type, "Greater", arr1, arr2), np.greater(arr1, arr2))
+    np.testing.assert_array_equal(execute_op(type, "Less", arr1, arr2), np.less(arr1, arr2))
+    np.testing.assert_array_equal(execute_op(type, "Equal", arr1, arr1), np.equal(arr1, arr1))
+
+    # Reductions
+    np.testing.assert_allclose(execute_op(type, "Var", arr1), np.var(arr1))
+    np.testing.assert_allclose(execute_op(type, "Std", arr1), np.std(arr1))
+    np.testing.assert_allclose(execute_op(type, "Cumsum", arr1), np.cumsum(arr1))
+
+    # Array creation and shape
+    np.testing.assert_allclose(execute_op(type, "Zeros", (2, 2)), np.zeros((2, 2)))
+    np.testing.assert_allclose(execute_op(type, "Ones", (3,)), np.ones(3))
+    np.testing.assert_allclose(execute_op(type, "Arange", 5), np.arange(5))

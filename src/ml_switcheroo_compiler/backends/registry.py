@@ -90,6 +90,26 @@ def _load_sparse() -> None:
     import ml_switcheroo_compiler.backends.sparse  # noqa: F401
 
 
+def _load_dpnp() -> None:
+    """Load the Data Parallel NumPy (dpnp) backend."""
+    import ml_switcheroo_compiler.backends.dpnp  # noqa: F401
+
+
+def _load_awkward() -> None:
+    """Load the Awkward Array backend."""
+    import ml_switcheroo_compiler.backends.awkward  # noqa: F401
+
+
+def _load_pyarrow_compute() -> None:
+    """Load the Apache Arrow Compute backend."""
+    import ml_switcheroo_compiler.backends.pyarrow_compute  # noqa: F401
+
+
+def _load_bohrium() -> None:
+    """Load the Bohrium backend."""
+    import ml_switcheroo_compiler.backends.bohrium  # noqa: F401
+
+
 _LOADERS = {
     "numpy": _load_numpy,
     "pytorch": _load_pytorch,
@@ -109,6 +129,10 @@ _LOADERS = {
     "numba": _load_numba,
     "sparse": _load_sparse,
     "sparse_coo": _load_sparse,
+    "dpnp": _load_dpnp,
+    "awkward": _load_awkward,
+    "pyarrow_compute": _load_pyarrow_compute,
+    "bohrium": _load_bohrium,
 }
 
 BackendName = Literal[
@@ -134,6 +158,10 @@ BackendName = Literal[
     "numba",
     "sparse",
     "sparse_coo",
+    "dpnp",
+    "awkward",
+    "pyarrow_compute",
+    "bohrium",
 ]
 
 
@@ -161,6 +189,10 @@ class BackendRegistry:
         "numba": "ml_switcheroo_compiler.backends.numba",
         "sparse": "ml_switcheroo_compiler.backends.sparse",
         "sparse_coo": "ml_switcheroo_compiler.backends.sparse",
+        "dpnp": "ml_switcheroo_compiler.backends.dpnp",
+        "awkward": "ml_switcheroo_compiler.backends.awkward",
+        "pyarrow_compute": "ml_switcheroo_compiler.backends.pyarrow_compute",
+        "bohrium": "ml_switcheroo_compiler.backends.bohrium",
     }
 
     @classmethod

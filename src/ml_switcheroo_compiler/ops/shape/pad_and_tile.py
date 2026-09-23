@@ -32,8 +32,13 @@ def tile(input: Tensor, reps: Sequence[int]):
         data = backend.execute_op("Tile", (input.data if type(input).__name__ == "Tensor" else input), reps)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    in_shape = list(inputs[0].shape) if inputs[0].shape else [1]
+    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(reps)]
+    while len(in_shape) < len(rep_list):
+        in_shape.insert(0, 1)
+    while len(rep_list) < len(in_shape):
+        rep_list.insert(0, 1)
+    out_shape = tuple(int(d) * int(r) for d, r in zip(in_shape, rep_list))
     return _emit_shape_node(
         "Tile",
         inputs,
@@ -63,8 +68,26 @@ def repeat(
         data = backend.execute_op("Repeat", (input.data if type(input).__name__ == "Tensor" else input), repeats, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    base_shape = inputs[0].shape
+    if axis is None:
+        num_elems = 1
+        for dim in base_shape:
+            num_elems *= int(dim)
+        if isinstance(repeats, int):
+            out_shape = (num_elems * repeats,)
+        elif isinstance(repeats, (list, tuple)):
+            out_shape = (sum(int(r) for r in repeats),)
+        else:
+            out_shape = (num_elems,)
+    else:
+        rank = len(base_shape)
+        norm_axis = axis if axis >= 0 else axis + rank
+        if isinstance(repeats, int):
+            out_shape = tuple(int(d) * repeats if i == norm_axis else int(d) for i, d in enumerate(base_shape))
+        elif isinstance(repeats, (list, tuple)):
+            out_shape = tuple(sum(int(r) for r in repeats) if i == norm_axis else int(d) for i, d in enumerate(base_shape))
+        else:
+            out_shape = base_shape
     return _emit_shape_node(
         "Repeat",
         inputs,
@@ -89,7 +112,6 @@ def triu(input: Tensor, diagonal: int = 0):
         data = backend.execute_op("Triu", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
     out_shape = inputs[0].shape
     return _emit_shape_node(
         "Triu",
@@ -115,7 +137,6 @@ def tril(input: Tensor, diagonal: int = 0):
         data = backend.execute_op("Tril", (input.data if type(input).__name__ == "Tensor" else input), k=diagonal)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
     out_shape = inputs[0].shape
     return _emit_shape_node(
         "Tril",

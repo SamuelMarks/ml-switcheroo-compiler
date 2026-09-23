@@ -10,12 +10,26 @@ operations:
     target_api: numpy.cos
   Tan:
     target_api: numpy.tan
+  Asin:
+    target_api: numpy.arcsin
+  Acos:
+    target_api: numpy.arccos
+  Atan:
+    target_api: numpy.arctan
+  Atan2:
+    target_api: numpy.arctan2
   Sinh:
     target_api: numpy.sinh
   Cosh:
     target_api: numpy.cosh
   Tanh:
     target_api: numpy.tanh
+  Asinh:
+    target_api: numpy.arcsinh
+  Acosh:
+    target_api: numpy.arccosh
+  Atanh:
+    target_api: numpy.arctanh
   Exp:
     target_api: numpy.exp
   Exp2:
@@ -38,6 +52,16 @@ operations:
     target_api: numpy.floor
   Ceil:
     target_api: numpy.ceil
+  Trunc:
+    target_api: numpy.trunc
+  Rint:
+    target_api: numpy.rint
+  Sign:
+    target_api: numpy.sign
+  Reciprocal:
+    target_api: numpy.reciprocal
+  Hypot:
+    target_api: numpy.hypot
   Add:
     target_api: numpy.add
   Sub:
@@ -46,12 +70,44 @@ operations:
     target_api: numpy.multiply
   Div:
     target_api: numpy.divide
+  TrueDivide:
+    target_api: numpy.true_divide
   Power:
     target_api: numpy.power
   Maximum:
     target_api: numpy.maximum
   Minimum:
     target_api: numpy.minimum
+  Clip:
+    target_api: numpy.clip
+  Equal:
+    target_api: numpy.equal
+  NotEqual:
+    target_api: numpy.not_equal
+  Greater:
+    target_api: numpy.greater
+  Less:
+    target_api: numpy.less
+  LogicalAnd:
+    target_api: numpy.logical_and
+  LogicalOr:
+    target_api: numpy.logical_or
+  LogicalXor:
+    target_api: numpy.logical_xor
+  LogicalNot:
+    target_api: numpy.logical_not
+  BitwiseAnd:
+    target_api: numpy.bitwise_and
+  BitwiseOr:
+    target_api: numpy.bitwise_or
+  BitwiseXor:
+    target_api: numpy.bitwise_xor
+  Invert:
+    target_api: numpy.invert
+  LeftShift:
+    target_api: numpy.left_shift
+  RightShift:
+    target_api: numpy.right_shift
   MatMul:
     target_api: numpy.matmul
   Dot:
@@ -66,3 +122,59 @@ operations:
     target_api: numpy.max
   Min:
     target_api: numpy.min
+  Var:
+    target_api: numpy.var
+  Std:
+    target_api: numpy.std
+  Argmax:
+    target_api: numpy.argmax
+  Argmin:
+    target_api: numpy.argmin
+  Cumsum:
+    target_api: numpy.cumsum
+  Cumprod:
+    target_api: numpy.cumprod
+  All:
+    target_api: numpy.all
+  Any:
+    target_api: numpy.any
+  Zeros:
+    target_api: numpy.zeros
+  Ones:
+    target_api: numpy.ones
+  Full:
+    target_api: numpy.full
+  Eye:
+    target_api: numpy.eye
+  Identity:
+    target_api: numpy.identity
+  Diag:
+    target_api: numpy.diag
+  Triu:
+    target_api: numpy.triu
+  Tril:
+    target_api: numpy.tril
+  Arange:
+    target_api: numpy.arange
+  Linspace:
+    target_api: numpy.linspace
+  Reshape:
+    target_api: numpy.reshape
+  Transpose:
+    target_api: numpy.transpose
+  Squeeze:
+    target_api: numpy.squeeze
+  ExpandDims:
+    target_api: numpy.expand_dims
+  Flatten:
+    target_api: numpy.ravel
+  Concatenate:
+    target_api: numpy.concatenate
+  Stack:
+    target_api: numpy.stack
+  Where:
+    target_api: numpy.where
+  Sort:
+    target_api: numpy.sort
+  Argsort:
+    target_api: numpy.argsort

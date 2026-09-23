@@ -23,7 +23,14 @@ class WasmCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (WasmAttrType, optional): Visitor delegates.
         """
-        super().__init__(graph, delegates)
+        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import (
+            OFFLINE_DIAGNOSTIC_OPS,
+            strip_offline_diagnostic_nodes_pass,
+        )
+
+        sanitized_graph = strip_offline_diagnostic_nodes_pass(graph)
+        super().__init__(sanitized_graph, delegates)
+        self.sorted_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") not in OFFLINE_DIAGNOSTIC_OPS]
         self.var_map: dict[str, str] = {}
         self.is_simd: bool = False
 
@@ -931,6 +938,11 @@ class WasmCodeGenerator(BaseGenerator):
             getattr(self, f"visit_{op_type}")(node, op_type, clean_id, inputs, shape, nelem)
             return
 
+        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import OFFLINE_DIAGNOSTIC_OPS
+
+        if op_type in OFFLINE_DIAGNOSTIC_OPS:
+            return
+
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
@@ -1053,9 +1065,11 @@ class WasmCodeGenerator(BaseGenerator):
         self.add_line("")
         self.add_line("  // Compute nodes sequentially")
 
+        from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import OFFLINE_DIAGNOSTIC_OPS
+
         for node in self.sorted_nodes:
             op_type: str = getattr(node, "op_type", "")
-            if op_type in ("Input", "Output", "Constant"):
+            if op_type in ("Input", "Output", "Constant") or op_type in OFFLINE_DIAGNOSTIC_OPS:
                 continue
 
             nid = getattr(node, "id", "")

@@ -78,8 +78,7 @@ templates:
   output:
     body: // Output {in0}
   unimplemented_fallback:
-    body: NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented
-      {op}
+    body: "NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}\n"
   ternary:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
       \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\

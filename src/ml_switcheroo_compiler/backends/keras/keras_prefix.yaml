@@ -10,20 +10,90 @@ functions:
 
   keras_median_filter: |
     def keras_median_filter(images, kernel_size, padding='same', data_format=None):
-        # simplistic implementation or fallback
-        # Keras ops doesn't have median filter natively, but for now we stub it or use basic ops
-        # to avoid the tf dependency
-        return images # STUB
+        if kernel_size is None:
+            kernel_size = 3
+        if isinstance(kernel_size, int):
+            kh, kw = kernel_size, kernel_size
+        else:
+            kh, kw = int(kernel_size[0]), int(kernel_size[1])
+        df = data_format or "channels_last"
+        transposed = False
+        if df == "channels_first" and len(kops.shape(images)) >= 4:
+            images = kops.transpose(images, (0, 2, 3, 1))
+            transposed = True
+            df = "channels_last"
+        shp = kops.shape(images)
+        c = shp[-1]
+        patches = kops.image.extract_patches(images, size=(kh, kw), strides=1, padding=padding, data_format=df)
+        p_shp = kops.shape(patches)
+        reshaped = kops.reshape(patches, (p_shp[0], p_shp[1], p_shp[2], kh * kw, c))
+        res = kops.median(reshaped, axis=-2)
+        if transposed:
+            res = kops.transpose(res, (0, 3, 1, 2))
+        return res
 
   keras_gaussian_blur: |
-    def keras_gaussian_blur(images, kernel_size, sigma, padding='same', data_format=None):
-        # STUB to remove tf dependency
-        return images
+    def keras_gaussian_blur(images, kernel_size=None, sigma=None, padding='same', data_format=None):
+        if kernel_size is None:
+            kernel_size = (3, 3)
+        elif isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+        else:
+            kernel_size = (int(kernel_size[0]), int(kernel_size[1]))
+        if sigma is None:
+            sigma = (1.0, 1.0)
+        elif isinstance(sigma, (int, float)):
+            sigma = (float(sigma), float(sigma))
+        else:
+            sigma = (float(sigma[0]), float(sigma[1]))
+        df = data_format or "channels_last"
+        return kops.image.gaussian_blur(images, kernel_size=kernel_size, sigma=sigma, data_format=df)
 
   keras_elastic_transform: |
     def keras_elastic_transform(images, displacement, interpolation='bilinear', fill_value=0.0, data_format=None):
-        # STUB to remove tf dependency
-        return images
+        if displacement is None:
+            return images
+        disp = kops.convert_to_tensor(displacement)
+        df = data_format or "channels_last"
+        transposed = False
+        if df == "channels_first" and len(kops.shape(images)) >= 4:
+            images = kops.transpose(images, (0, 2, 3, 1))
+            transposed = True
+        shp = kops.shape(images)
+        if len(shp) < 2:
+            return images
+        h, w = (shp[-3], shp[-2]) if len(shp) >= 3 else (shp[-2], shp[-1])
+        y = kops.cast(kops.arange(h), "float32")
+        x = kops.cast(kops.arange(w), "float32")
+        yy, xx = kops.meshgrid(y, x, indexing="ij")
+        disp_y = disp[..., 0] if kops.shape(disp)[-1] >= 1 else 0.0
+        disp_x = disp[..., 1] if kops.shape(disp)[-1] >= 2 else 0.0
+        coords = kops.stack([yy + disp_y, xx + disp_x], axis=0)
+        order = 1 if interpolation == "bilinear" else 0
+        if len(shp) == 4:
+            b, c = shp[0], shp[-1]
+            out_list = []
+            for bi in range(b):
+                c_list = []
+                for ci in range(c):
+                    ch_img = images[bi, :, :, ci]
+                    ch_out = kops.image.map_coordinates(ch_img, coords, order=order, fill_value=fill_value)
+                    c_list.append(ch_out)
+                out_list.append(kops.stack(c_list, axis=-1))
+            res = kops.stack(out_list, axis=0)
+        elif len(shp) == 3:
+            c = shp[-1]
+            c_list = []
+            for ci in range(c):
+                ch_img = images[:, :, ci]
+                ch_out = kops.image.map_coordinates(ch_img, coords, order=order, fill_value=fill_value)
+                c_list.append(ch_out)
+            res = kops.stack(c_list, axis=-1)
+        else:
+            res = kops.image.map_coordinates(images, coords, order=order, fill_value=fill_value)
+        if transposed:
+            res = kops.transpose(res, (0, 3, 1, 2))
+        return res
 
   keras_power_iteration: |
     def keras_power_iteration(w, num_iters, u=None):

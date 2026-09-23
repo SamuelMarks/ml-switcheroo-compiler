@@ -182,3 +182,68 @@ def test_classes_infer_shape():
     assert ScatterMin().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
     assert ScatterMul().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
     assert PutAlongAxisClass().infer_shape(MockTensor((2, 3)), None, None) == (2, 3)
+
+
+def test_indexing_exact_shapes(mocker) -> None:
+    """Verify exact output shapes for take_along_axis, gather_nd, take, where, and classes.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    from ml_switcheroo_compiler.ops.shape.indexing import (
+        gather,
+        gather_nd,
+        take,
+        where,
+    )
+
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.indexing._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t_src = Tensor(None, TensorConfig((4, 8, 16), "float32", "cpu"))
+    t_idx = Tensor(None, TensorConfig((4, 2, 16), "int32", "cpu"))
+
+    # 1. gather (take_along_axis)
+    gather(t_src, axis=1, index=t_idx)
+    assert captured_shapes["Gather"] == (4, 2, 16)
+
+    # 2. gather_nd
+    t_data = Tensor(None, TensorConfig((10, 20, 30), "float32", "cpu"))
+    t_nd_idx = Tensor(None, TensorConfig((5, 2), "int32", "cpu"))
+    gather_nd(t_data, t_nd_idx)
+    assert captured_shapes["GatherNd"] == (5, 30)
+
+    # 3. take along axis
+    t_take_idx = Tensor(None, TensorConfig((3,), "int32", "cpu"))
+    take(t_src, t_take_idx, axis=1)
+    assert captured_shapes["Take"] == (4, 3, 16)
+
+    # 4. where broadcasting
+    c = Tensor(None, TensorConfig((1, 8, 1), "bool", "cpu"))
+    a = Tensor(None, TensorConfig((4, 1, 16), "float32", "cpu"))
+    b = Tensor(None, TensorConfig((4, 8, 1), "float32", "cpu"))
+    where(c, a, b)
+    assert captured_shapes["Where"] == (4, 8, 16)
+
+    # 5. ExtractVolumePatches
+    vol_in = MockTensor((1, 10, 10, 10, 3))
+    vol_out = ExtractVolumePatches().infer_shape(vol_in, [1, 3, 3, 3, 1], [1, 1, 1, 1, 1], "VALID")
+    assert vol_out == (1, 8, 8, 8, 81)
+
+    # 6. DynamicPartition with valid tensor shapes
+    part_data = MockTensor((10, 4))
+    part_ids = MockTensor((10,))
+    p_shapes = DynamicPartition().infer_shape(part_data, part_ids, 3)
+    assert len(p_shapes) == 3
+    assert p_shapes[0] == (None, 4)
+
+    # 7. UnravelIndex
+    flat_idx = MockTensor((15,))
+    unravelled = UnravelIndex().infer_shape(flat_idx, [3, 5])
+    assert unravelled == ((15,), (15,))

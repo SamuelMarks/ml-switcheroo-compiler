@@ -756,3 +756,80 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         with open(file_path, "wb") as f:
             f.write(encoder.encode())
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into a bytecode-compiled .mlirbc / IREE execution binary module artifact.
+
+        Args:
+            graph (IRGraph): Target computational graph to compile.
+            **kwargs (object): Optional compiler options.
+
+        Returns:
+            object: Execution callable wrapping the compiled binary module artifact.
+        """
+        from ml_switcheroo_compiler.backends.edge.config_models import StablehloSchemaConfig
+        from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        mlir_text = self.generate()
+
+        encoder = MLIRBytecodeEncoder()
+        encoder.add_dialect("stablehlo")
+        encoder.add_dialect("func")
+
+        path = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
+        if os.path.exists(path):
+            with open(path) as f:
+                data = yaml.safe_load(f)
+                schema = StablehloSchemaConfig(**data)
+        else:
+            schema = None
+
+        for node in self.sorted_nodes:
+            op_type = getattr(node, "op_type", "")
+            if op_type == "Input":
+                continue
+            hlo_op = schema.op_mapping.get(op_type, "stablehlo.custom_call") if schema else f"stablehlo.{op_type.lower()}"
+            encoder.add_op(hlo_op, getattr(node, "inputs", []), [getattr(node, "id", "")])
+
+        mlirbc_bytes = encoder.encode()
+
+        class StableHLOModuleArtifact:
+            """Artifact wrapping compiled StableHLO MLIR bytecode and execution dispatch."""
+
+            def __init__(self, bytecode: bytes, mlir: str) -> None:
+                """Initialize compiled artifact.
+
+                Args:
+                    bytecode (bytes): Encoded .mlirbc bytecode.
+                    mlir (str): Generated MLIR text representation.
+                """
+                self.bytecode = bytecode
+                self.mlir = mlir
+
+            def __call__(self, *args: object, **kw: object) -> object:
+                """Execute compiled StableHLO module.
+
+                Args:
+                    *args (object): Input tensors.
+                    **kw (object): Keyword arguments.
+
+                Returns:
+                    object: Evaluated output tensors.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                inputs = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(args):
+                        arg_val = args[i]
+                        inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                inputs.update(kw)
+                evaluated = evaluate_graph(graph, inputs=inputs)
+                if hasattr(graph, "outputs") and graph.outputs:
+                    if len(graph.outputs) == 1:
+                        return evaluated.get(graph.outputs[0])
+                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+                return evaluated
+
+        return StableHLOModuleArtifact(mlirbc_bytes, mlir_text)

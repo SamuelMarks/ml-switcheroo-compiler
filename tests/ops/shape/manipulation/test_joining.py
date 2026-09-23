@@ -134,3 +134,46 @@ def test_stack_dtype_branches(mocker):
 
     t4 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), FakeDTypeInvalid(), "cpu"))
     stack([t4, t4], 0)
+
+
+def test_stack_and_concatenate_exact_shape_deduction(mocker) -> None:
+    """Verify that stack and concatenate compute exact output shapes in graph mode.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    captured_shapes: dict[str, tuple[int, ...]] = {}
+
+    def mock_emit(op_name: str, inputs: list[Tensor], attrs: dict[str, object], shape: tuple[int, ...], dtype: object) -> str:
+        captured_shapes[op_name] = shape
+        return op_name
+
+    mocker.patch("ml_switcheroo_compiler.ops.shape.joining._emit_shape_node", side_effect=mock_emit)
+    config.eager_mode = False
+
+    t1 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
+    t2 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
+    t3 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
+
+    # Test stack along axis 0
+    stack([t1, t2, t3], axis=0)
+    assert captured_shapes["Stack"] == (3, 2, 3)
+
+    # Test stack along axis 1
+    stack([t1, t2, t3], axis=1)
+    assert captured_shapes["Stack"] == (2, 3, 3)
+
+    # Test stack along negative axis -1
+    stack([t1, t2, t3], axis=-1)
+    assert captured_shapes["Stack"] == (2, 3, 3)
+
+    # Test concatenate along axis 0
+    t_cat1 = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
+    t_cat2 = Tensor(MockTensor((4, 3)).data, TensorConfig((4, 3), "float32", "cpu"))
+    concatenate([t_cat1, t_cat2], axis=0)
+    assert captured_shapes["Concatenate"] == (6, 3)
+
+    # Test concatenate along axis 1
+    t_cat3 = Tensor(MockTensor((2, 5)).data, TensorConfig((2, 5), "float32", "cpu"))
+    concatenate([t_cat1, t_cat3], axis=1)
+    assert captured_shapes["Concatenate"] == (2, 8)

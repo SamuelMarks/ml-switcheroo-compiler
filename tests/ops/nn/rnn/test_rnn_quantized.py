@@ -214,3 +214,21 @@ def test_time_distributed_coverage():
         mock_op.return_value = "timed"
         with pytest.raises(Exception):
             time_distributed(t, "Dense")
+
+
+def test_time_distributed_inner_op_shape_inference(mocker) -> None:
+    """Verify that TimeDistributed unrolls batch and time dimensions across inner ops.
+
+    Args:
+        mocker (object): Pytest mocker fixture.
+    """
+    t = Tensor(None, TensorConfig(shape=(4, 10, 32), dtype=DType("float32"), device=Device("cpu")))
+
+    class MockInnerOp:
+        def infer_shape(self, inp: object, **kwargs: object) -> tuple[int, ...]:
+            # Maps flattened (40, 32) to (40, 64)
+            return (inp.shape[0], 64)
+
+    mocker.patch("ml_switcheroo_compiler.ops.nn.time_distributed.get_op", return_value=lambda: MockInnerOp())
+    inferred = TimeDistributed().infer_shape(t, wrapped_op_name="Dense")
+    assert inferred == (4, 10, 64)

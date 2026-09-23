@@ -352,3 +352,90 @@ def test_nccl_driver_exhaustive_branches() -> None:
         mock_end_err.ncclGroupEnd.side_effect = RuntimeError("GroupEnd error")
         driver.nccl_lib = mock_end_err
         assert driver.group_end() == -1
+
+
+def test_nccl_driver_cuda_rt_memory_and_streams() -> None:
+    """Verify cuda_rt library discovery, cudaMalloc, cudaFree, cudaMemcpy, and stream_synchronize."""
+    import ctypes
+
+    mock_rt = MagicMock()
+    mock_nccl = MagicMock()
+
+    # Successful discovery of both cuda_rt and nccl
+    with patch("ctypes.CDLL", side_effect=[mock_rt, mock_nccl]):
+        driver = NCCLDriver()
+        assert driver.cuda_rt is mock_rt
+        assert driver.nccl_lib is mock_nccl
+
+    # cudaMalloc success path
+    def fake_malloc_success(ptr_ref: object, size: int) -> int:
+        """Simulate successful cudaMalloc.
+
+        Args:
+            ptr_ref (object): Pointer reference.
+            size (int): Allocation size.
+
+        Returns:
+            int: Return status code.
+        """
+        ctypes.cast(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.value = 0x12345678
+        return 0
+
+    mock_rt.cudaMalloc = fake_malloc_success
+    driver.cuda_rt = mock_rt
+    dev_ptr = driver.allocate_buffer(128)
+    assert dev_ptr == 0x12345678
+    assert dev_ptr not in driver._allocated_buffers
+
+    # cudaFree on hardware device pointer
+    mock_rt.cudaFree.return_value = 0
+    driver.free_buffer(dev_ptr)
+    assert mock_rt.cudaFree.called
+
+    # cudaFree exception handling
+    mock_rt.cudaFree.side_effect = RuntimeError("cudaFree failed")
+    driver.free_buffer(dev_ptr)  # Should not raise
+
+    # cudaMemcpy H2D success and exception
+    arr = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    mock_rt.cudaMemcpy.return_value = 0
+    mock_rt.cudaMemcpy.side_effect = None
+    driver.copy_host_to_device(arr, dev_ptr)
+    assert mock_rt.cudaMemcpy.called
+
+    # cudaMemcpy H2D exception fallback to ctypes.memmove (with real allocated buffer)
+    del mock_rt.cudaMalloc
+    host_buf_ptr = driver.allocate_buffer(arr.nbytes)
+    real_buf = driver._allocated_buffers.pop(host_buf_ptr)
+    mock_rt.cudaMemcpy.side_effect = RuntimeError("H2D failed")
+    driver.copy_host_to_device(arr, host_buf_ptr)
+
+    # cudaMemcpy D2H success and exception
+    out_arr = np.zeros_like(arr)
+    mock_rt.cudaMemcpy.side_effect = None
+    driver.copy_device_to_host(dev_ptr, out_arr)
+    assert mock_rt.cudaMemcpy.called
+
+    mock_rt.cudaMemcpy.side_effect = RuntimeError("D2H failed")
+    driver.copy_device_to_host(host_buf_ptr, out_arr)
+    assert np.allclose(out_arr, arr)
+    del real_buf
+
+    # Restore cudaMalloc with non-zero status branch (fails cudaMalloc, falls back to host buffer)
+    mock_rt.cudaMalloc = MagicMock(return_value=1)
+    fallback_buf = driver.allocate_buffer(64)
+    assert fallback_buf in driver._allocated_buffers
+
+    # stream_synchronize success, None, and exception
+    mock_rt.cudaStreamSynchronize.side_effect = None
+    mock_rt.cudaStreamSynchronize.return_value = 0
+    assert driver.stream_synchronize(None) == 0
+    assert driver.stream_synchronize(999) == 0
+
+    mock_rt.cudaStreamSynchronize.side_effect = RuntimeError("Sync fail")
+    assert driver.stream_synchronize(999) == -1
+
+    # cuda_rt without stream synchronize
+    mock_no_sync = MagicMock(spec=[])
+    driver.cuda_rt = mock_no_sync
+    assert driver.stream_synchronize(999) == 0

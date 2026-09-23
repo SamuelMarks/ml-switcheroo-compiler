@@ -94,13 +94,6 @@ def test_unroll_fori_loop_node():
     assert res.nodes["fori"].op_type == "Identity"
 
 
-def test_get_initial_constants():
-    """Test stub for coverage."""
-    from ml_switcheroo_compiler.transforms.passes.loop_unrolling import _get_initial_constants
-
-    assert _get_initial_constants() == []
-
-
 def test_loop_unrolling_extra_coverage():
     from unittest.mock import patch
 

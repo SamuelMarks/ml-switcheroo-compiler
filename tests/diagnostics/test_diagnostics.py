@@ -246,3 +246,51 @@ def test_to_html() -> None:
     except Exception as e:
         raise e
         pass
+
+
+def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None:
+    """Verify image encoding to PNG bytes and protobuf writing.
+
+    Args:
+        tmp_path (pytest.TempPathFactory): Temporary directory fixture.
+    """
+    import io
+
+    from PIL import Image
+
+    from ml_switcheroo_compiler.diagnostics.summary import encode_image, write_raw_pb
+
+    # 1. Test 4D float tensor encoding
+    device = Device(DeviceType.CPU, 0)
+    data_4d = np.zeros((1, 16, 16, 3), dtype=np.float32)
+    data_4d[0, 8, 8, 0] = 1.0
+    tensor_4d = Tensor(data_4d, TensorConfig((1, 16, 16, 3), DType.Float32, device))
+    png_bytes = encode_image(tensor_4d)
+    assert png_bytes[:8] == b"\x89PNG\r\n\x1a\n"
+
+    # Decode with PIL to verify integrity
+    decoded = Image.open(io.BytesIO(png_bytes))
+    assert decoded.size == (16, 16)
+    assert decoded.mode == "RGB"
+
+    # 2. Test 2D grayscale uint8 tensor
+    data_2d = np.full((8, 8), 128, dtype=np.uint8)
+    tensor_2d = Tensor(data_2d, TensorConfig((8, 8), DType.UInt8, device))
+    png_2d = encode_image(tensor_2d)
+    assert png_2d[:8] == b"\x89PNG\r\n\x1a\n"
+    decoded_2d = Image.open(io.BytesIO(png_2d))
+    assert decoded_2d.size == (8, 8)
+
+    # 3. Test 3D channels-first tensor
+    data_cf = np.zeros((3, 10, 10), dtype=np.float32)
+    tensor_cf = Tensor(data_cf, TensorConfig((3, 10, 10), DType.Float32, device))
+    png_cf = encode_image(tensor_cf)
+    assert png_cf[:8] == b"\x89PNG\r\n\x1a\n"
+    decoded_cf = Image.open(io.BytesIO(png_cf))
+    assert decoded_cf.size == (10, 10)
+
+    # 4. Test write_raw_pb
+    logdir: str = str(tmp_path / "tfevents")
+    write_raw_pb(b"mock_proto_data", logdir)
+    with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
+        assert f.read() == b"mock_proto_data"

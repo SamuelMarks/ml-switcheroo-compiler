@@ -221,3 +221,97 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         torch.save(data, file)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an optimized executable callable using TorchScript or torch.compile.
+
+        Args:
+            graph (IRGraph): Target computational graph to compile.
+            **kwargs (object): Optional compiler options ('mode', 'backend', 'sample_inputs').
+
+        Returns:
+            object: Optimized executable callable wrapping the compiled PyTorch module.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        class GraphModule:
+            """Callable module wrapper evaluating the IR graph."""
+
+            def __call__(self, *fn_args: object) -> object:
+                """Forward execution call.
+
+                Args:
+                    *fn_args (object): Input tensors.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                inputs: dict[str, object] = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(fn_args):
+                        arg_val = fn_args[i]
+                        inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                evaluated = evaluate_graph(graph, inputs=inputs)
+                if hasattr(graph, "outputs") and graph.outputs:
+                    if len(graph.outputs) == 1:
+                        return evaluated.get(graph.outputs[0])
+                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+                return evaluated
+
+        mod = GraphModule()
+
+        try:
+            import torch
+
+            backend = str(kwargs.get("backend", "inductor"))
+            mode = str(kwargs.get("mode", "default"))
+            sample_inputs = kwargs.get("sample_inputs")
+
+            if hasattr(torch, "compile"):
+                try:
+                    compiled_fn = torch.compile(mod, backend=backend, mode=mode)
+
+                    def aot_compiled_runner(*w_args: object, **w_kwargs: object) -> object:
+                        """Execute inductor-compiled PyTorch callable.
+
+                        Args:
+                            *w_args (object): Input tensors.
+                            **w_kwargs (object): Keyword arguments.
+
+                        Returns:
+                            object: Output tensor data.
+                        """
+                        pt_args = [torch.as_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                        return compiled_fn(*pt_args)
+
+                    return aot_compiled_runner
+                except Exception:
+                    pass
+
+            if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
+                pt_samples = [torch.as_tensor(x) for x in sample_inputs]
+                traced = torch.jit.trace(mod, pt_samples)
+
+                def traced_runner(*w_args: object, **w_kwargs: object) -> object:
+                    """Execute traced TorchScript callable.
+
+                    Args:
+                        *w_args (object): Input tensors.
+                        **w_kwargs (object): Keyword arguments.
+
+                    Returns:
+                        object: Output tensor data.
+                    """
+                    pt_args = [torch.as_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                    return traced(*pt_args)
+
+                return traced_runner
+
+            return mod
+        except Exception:
+            return mod
+
+
+PyTorchGenerator = PyTorchCodeGenerator

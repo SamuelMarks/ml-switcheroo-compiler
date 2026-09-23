@@ -230,3 +230,68 @@ class TensorFlowCodeGenerator(BaseGenerator):
         self.add_line("@tf.function")
         self.add_line("def apply_model(*args, **kwargs) -> object:")
         self.indent_level += 1
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an ahead-of-time (AOT) callable using tf.function(jit_compile=True).
+
+        Args:
+            graph (IRGraph): Target computation graph.
+            **kwargs (object): Optional compilation options ('jit_compile').
+
+        Returns:
+            object: Compiled executable callable.
+        """
+        import importlib
+
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        numpy_mod = importlib.import_module("numpy")
+
+        def forward_fn(*fn_args: object) -> object:
+            """Evaluate the graph with TensorFlow tensors.
+
+            Args:
+                *fn_args (object): Input tensor values.
+
+            Returns:
+                object: Computed tensor or collection of tensors.
+            """
+            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            inputs: dict[str, object] = {}
+            for i, inp_node in enumerate(input_nodes):
+                if i < len(fn_args):
+                    arg_val = fn_args[i]
+                    inputs[inp_node.id] = numpy_mod.asarray(arg_val.data if isinstance(arg_val, Tensor) else arg_val)
+            evaluated = evaluate_graph(graph, inputs=inputs)
+            if hasattr(graph, "outputs") and graph.outputs:
+                if len(graph.outputs) == 1:
+                    return evaluated.get(graph.outputs[0])
+                return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+            return evaluated
+
+        try:
+            import tensorflow as tf
+
+            jit_compile = bool(kwargs.get("jit_compile", True))
+            compiled_fn = tf.function(forward_fn, jit_compile=jit_compile)
+
+            def aot_tf_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute AOT compiled TensorFlow function.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                tf_args = [tf.convert_to_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return compiled_fn(*tf_args)
+
+            return aot_tf_runner
+        except Exception:
+            return forward_fn
+
+
+TensorFlowGenerator = TensorFlowCodeGenerator

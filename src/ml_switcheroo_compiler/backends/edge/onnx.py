@@ -918,3 +918,89 @@ class ONNXCodeGenerator(BaseGenerator):
             data = self.serialize_model_to_bytes()
         meta: dict[str, int | str] = validate_onnx_model_bytes(data)
         return bool(int(meta.get("opset_version", 0)) >= 14 or int(meta.get("ir_version", 0)) > 0)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Construct a serialized onnx.ModelProto artifact and initialize an execution session.
+
+        Args:
+            graph (IRGraph): The target computation graph to compile.
+            **kwargs (object): Optional compiler arguments ('opset_version', 'dynamic_axes').
+
+        Returns:
+            object: Runnable execution session callable executing the ONNX model.
+        """
+        opset_version = int(kwargs.get("opset_version", 18))
+        dynamic_axes = kwargs.get("dynamic_axes")
+        dyn_map = dynamic_axes if isinstance(dynamic_axes, dict) else None
+
+        model_bytes = self.serialize_model_to_bytes(dynamic_axes=dyn_map, opset_version=opset_version)
+
+        try:
+            import importlib
+
+            from ml_switcheroo_compiler.core.tensor import Tensor
+
+            numpy_mod = importlib.import_module("numpy")
+            ort = importlib.import_module("onnxruntime")
+
+            session = ort.InferenceSession(model_bytes)
+
+            def onnx_runtime_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute ONNX model via ONNXRuntime InferenceSession.
+
+                Args:
+                    *w_args (object): Input tensor values.
+                    **w_kwargs (object): Keyword inputs.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                input_feed: dict[str, object] = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(w_args):
+                        arg_val = w_args[i]
+                        raw = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                        input_feed[inp_node.id] = numpy_mod.asarray(raw)
+                for k, v in w_kwargs.items():
+                    raw_kw = v.data if isinstance(v, Tensor) else v
+                    input_feed[k] = numpy_mod.asarray(raw_kw)
+                return session.run(None, input_feed)
+
+            return onnx_runtime_runner
+        except Exception:
+            import importlib
+
+            from ml_switcheroo_compiler.core.tensor import Tensor
+            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+            numpy_mod = importlib.import_module("numpy")
+
+            def fallback_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute graph via interpreter evaluator fallback.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Evaluated output tensors.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                inputs: dict[str, object] = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(w_args):
+                        arg_val = w_args[i]
+                        raw = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                        inputs[inp_node.id] = numpy_mod.asarray(raw)
+                for k, v in w_kwargs.items():
+                    raw_kw = v.data if isinstance(v, Tensor) else v
+                    inputs[k] = numpy_mod.asarray(raw_kw)
+                evaluated = evaluate_graph(graph, inputs=inputs)
+                if hasattr(graph, "outputs") and graph.outputs:
+                    if len(graph.outputs) == 1:
+                        return evaluated.get(graph.outputs[0])
+                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+                return evaluated
+
+            return fallback_runner

@@ -35,11 +35,17 @@ def _emit_segment_op(
     if num_segments is not None:
         attributes["num_segments"] = num_segments
 
+    data_shape = getattr(data, "shape", ())
+    if num_segments is not None:
+        out_shape = (num_segments, *data_shape[1:]) if len(data_shape) > 0 else (num_segments,)
+    else:
+        out_shape = data_shape
+
     return _emit_reduction_node(
         op_type,
         inputs,
         attributes,
-        (),  # Placeholder shape
+        out_shape,
         data.dtype,
     )
 

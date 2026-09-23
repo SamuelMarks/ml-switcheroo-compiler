@@ -130,3 +130,170 @@ class NumbaGenerator(PythonStringGenerator):
             str: Generated code string.
         """
         return super().generic_visit(node, input_vars, **kwargs)
+
+    def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit Numba JIT-compiled WhileLoop control flow.
+
+        Args:
+            node (IRNode): WhileLoop IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        attrs = getattr(node, "attributes", {})
+        max_iters = attrs.get("max_iters", 100)
+        init_val = input_vars[0] if input_vars else "0"
+        res_var = f"v_{node.id.replace('-', '_')}"
+        iter_var = f"iter_{node.id.replace('-', '_')}"
+        self.add_line(f"{res_var} = {init_val}")
+        self.add_line(f"{iter_var} = 0")
+        self.add_line(f"while {iter_var} < {max_iters}:")
+        self.indent_level += 1
+        self.add_line(f"{iter_var} += 1")
+        self.add_line(f"{res_var} = {res_var} + 1")
+        self.indent_level -= 1
+        return res_var
+
+    def visit_ForiLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit Numba JIT-compiled ForiLoop control flow.
+
+        Args:
+            node (IRNode): ForiLoop IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        attrs = getattr(node, "attributes", {})
+        lower = attrs.get("lower", 0)
+        upper = attrs.get("upper", 10)
+        step = attrs.get("step", 1)
+        init_val = input_vars[0] if input_vars else "0"
+        res_var = f"v_{node.id.replace('-', '_')}"
+        loop_var = f"idx_{node.id.replace('-', '_')}"
+        range_call = f"nb.prange({lower}, {upper}, {step})" if self.parallel else f"range({lower}, {upper}, {step})"
+        self.add_line(f"{res_var} = {init_val}")
+        self.add_line(f"for {loop_var} in {range_call}:")
+        self.indent_level += 1
+        self.add_line(f"{res_var} = {res_var} + 1")
+        self.indent_level -= 1
+        return res_var
+
+    def visit_Sum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel reduction loop with nb.prange or standard np.sum.
+
+        Args:
+            node (IRNode): Sum reduction node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        in_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"{out_var} = 0.0")
+            self.add_line(f"for _i in nb.prange({in_var}.size):")
+            self.indent_level += 1
+            self.add_line(f"{out_var} += {in_var}.flat[_i]")
+            self.indent_level -= 1
+            return out_var
+        self.add_line(f"{out_var} = np.sum({in_var})")
+        return out_var
+
+    def visit_Prod(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel reduction loop with nb.prange or standard np.prod.
+
+        Args:
+            node (IRNode): Prod reduction node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        in_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"{out_var} = 1.0")
+            self.add_line(f"for _i in nb.prange({in_var}.size):")
+            self.indent_level += 1
+            self.add_line(f"{out_var} *= {in_var}.flat[_i]")
+            self.indent_level -= 1
+            return out_var
+        self.add_line(f"{out_var} = np.prod({in_var})")
+        return out_var
+
+    def visit_Mean(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel mean reduction or standard np.mean.
+
+        Args:
+            node (IRNode): Mean reduction node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        in_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"{out_var}_sum = 0.0")
+            self.add_line(f"for _i in nb.prange({in_var}.size):")
+            self.indent_level += 1
+            self.add_line(f"{out_var}_sum += {in_var}.flat[_i]")
+            self.indent_level -= 1
+            self.add_line(f"{out_var} = {out_var}_sum / max(1, {in_var}.size)")
+            return out_var
+        self.add_line(f"{out_var} = np.mean({in_var})")
+        return out_var
+
+    def visit_Max(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel max reduction or standard np.max.
+
+        Args:
+            node (IRNode): Max reduction node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        in_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"{out_var} = -1e38")
+            self.add_line(f"for _i in nb.prange({in_var}.size):")
+            self.indent_level += 1
+            self.add_line(f"if {in_var}.flat[_i] > {out_var}: {out_var} = {in_var}.flat[_i]")
+            self.indent_level -= 1
+            return out_var
+        self.add_line(f"{out_var} = np.max({in_var})")
+        return out_var
+
+    def visit_Min(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit parallel min reduction or standard np.min.
+
+        Args:
+            node (IRNode): Min reduction node.
+            input_vars (list[str]): Input variable names.
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        out_var = f"v_{node.id.replace('-', '_')}"
+        in_var = input_vars[0] if input_vars else "x"
+        if self.parallel:
+            self.add_line(f"{out_var} = 1e38")
+            self.add_line(f"for _i in nb.prange({in_var}.size):")
+            self.indent_level += 1
+            self.add_line(f"if {in_var}.flat[_i] < {out_var}: {out_var} = {in_var}.flat[_i]")
+            self.indent_level -= 1
+            return out_var
+        self.add_line(f"{out_var} = np.min({in_var})")
+        return out_var

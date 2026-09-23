@@ -21,13 +21,34 @@ def write_raw_pb(pb_data: bytes, logdir: str) -> None:
 
 
 def encode_image(tensor: Tensor) -> bytes:
-    """Encode an image tensor into a format suitable for summary.image.
+    """Encode an image tensor into PNG byte format suitable for summary.image.
 
     Args:
-        tensor (Tensor): The tensor parameter.
+        tensor (Tensor): The image tensor to encode (2D, 3D, or 4D).
 
     Returns:
-        bytes: Result.
+        bytes: PNG encoded image bytes starting with valid PNG header.
     """
-    # Placeholder for image encoding
-    return b"encoded_image_data"
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    raw_data: object = getattr(tensor, "data", tensor)
+    arr: np.ndarray = np.asarray(raw_data)
+    if arr.ndim == 4:
+        arr = arr[0]
+    if arr.ndim == 3 and arr.shape[0] in (1, 3, 4) and arr.shape[-1] not in (1, 3, 4):
+        arr = np.transpose(arr, (1, 2, 0))
+    if arr.ndim == 3 and arr.shape[-1] == 1:
+        arr = arr[:, :, 0]
+
+    if np.issubdtype(arr.dtype, np.floating):
+        arr = np.clip(arr * 255.0, 0.0, 255.0).astype(np.uint8)
+    else:
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
+
+    img = Image.fromarray(arr)
+    buf: io.BytesIO = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()

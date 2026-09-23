@@ -6,6 +6,7 @@ from __future__ import annotations
 
 """Shape operations for Tensor Anys."""
 import builtins
+import math
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
@@ -41,8 +42,31 @@ def slice(
         data = input.data[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    base_shape = inputs[0].shape
+    rank = len(base_shape)
+    norm_axis = axis if axis >= 0 else axis + rank
+    if rank > 0 and 0 <= norm_axis < rank:
+        dim_len = int(base_shape[norm_axis])
+        s = step if step is not None else 1
+        st = start if start is not None else (0 if s > 0 else dim_len - 1)
+        if st < 0:
+            st = max(0, st + dim_len)
+        else:
+            st = min(dim_len, st)
+
+        en = end if end is not None else (dim_len if s > 0 else -1)
+        if en < 0 and end is not None:
+            en = max(0, en + dim_len)
+        elif end is not None:
+            en = min(dim_len, en)
+
+        if s > 0:
+            slice_dim = max(0, math.ceil((en - st) / s))
+        else:
+            slice_dim = max(0, math.ceil((st - en) / (-s)))
+        out_shape = tuple(slice_dim if i == norm_axis else d for i, d in enumerate(base_shape))
+    else:
+        out_shape = base_shape
     return _emit_shape_node(
         "Slice",
         inputs,
@@ -74,8 +98,22 @@ def strided_slice(
         data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    base_shape = inputs[0].shape
+    out_dims = []
+    for i, d in enumerate(base_shape):
+        b = begin[i] if i < len(begin) else 0
+        e = end[i] if i < len(end) else d
+        s = strides[i] if i < len(strides) else 1
+        dim_val = int(d)
+        st = b if b >= 0 else max(0, b + dim_val)
+        st = min(dim_val, st)
+        en = e if e >= 0 else max(0, e + dim_val)
+        en = min(dim_val, en)
+        if s > 0:
+            out_dims.append(max(0, math.ceil((en - st) / s)))
+        else:
+            out_dims.append(max(0, math.ceil((st - en) / (-s))))
+    out_shape = tuple(out_dims)
     return _emit_shape_node(
         "StridedSlice",
         inputs,

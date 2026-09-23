@@ -196,3 +196,103 @@ class JAXCodeGenerator(BaseGenerator):
         self.indent_level = 0
         self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level = self.indent_level + 1
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an ahead-of-time (AOT) compiled executable using JAX JIT and XLA lowering.
+
+        Args:
+            graph (IRGraph): The target computational graph to compile.
+            **kwargs (object): Optional compilation options, such as 'sample_inputs'.
+
+        Returns:
+            object: AOT execution callable wrapping the JAX compiled executable.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+
+        try:
+            import jax
+            import jax.numpy as jnp
+
+            scope: dict[str, object] = {}
+            exec(self.generate(), scope)
+            apply_model_fn = scope.get("apply_model")
+            if apply_model_fn is None or not callable(apply_model_fn):
+                raise ValueError("Generated JAX module is missing apply_model.")
+
+            def jax_forward(*fn_args: object) -> object:
+                """Execute generated JAX model function.
+
+                Args:
+                    *fn_args (object): Positional input arguments.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                return apply_model_fn(None, *fn_args)
+
+            sample_inputs = kwargs.get("sample_inputs")
+            if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
+                sample_args = [jnp.asarray(x.data if isinstance(x, Tensor) else x) for x in sample_inputs]
+                lowered = jax.jit(jax_forward).lower(*sample_args)
+                compiled = lowered.compile()
+
+                def aot_executable(*w_args: object, **w_kwargs: object) -> object:
+                    """Execute the AOT-compiled JAX executable artifact.
+
+                    Args:
+                        *w_args (object): Input tensors.
+                        **w_kwargs (object): Keyword arguments.
+
+                    Returns:
+                        object: Result from the compiled executable.
+                    """
+                    jax_args = [jnp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                    return compiled(*jax_args)
+
+                return aot_executable
+
+            jitted = jax.jit(jax_forward)
+
+            def jit_executable(*w_args: object, **w_kwargs: object) -> object:
+                """Execute JIT-compiled graph callable.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Result from the JIT-compiled function.
+                """
+                jax_args = [jnp.asarray(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return jitted(*jax_args)
+
+            return jit_executable
+        except Exception:
+            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+            def fallback_forward(*fn_args: object) -> object:
+                """Execute interpreter graph evaluation fallback.
+
+                Args:
+                    *fn_args (object): Positional input arguments.
+
+                Returns:
+                    object: Evaluated output tensors.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                inputs: dict[str, object] = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(fn_args):
+                        arg_val = fn_args[i]
+                        inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                evaluated = evaluate_graph(graph, inputs=inputs)
+                if hasattr(graph, "outputs") and graph.outputs:
+                    if len(graph.outputs) == 1:
+                        return evaluated.get(graph.outputs[0])
+                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+                return evaluated
+
+            return fallback_forward
+
+
+JaxGenerator = JAXCodeGenerator

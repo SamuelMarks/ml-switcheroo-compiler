@@ -282,3 +282,72 @@ class MLXCodeGenerator(ClassBasedGenerator):
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
         mx.save_safetensors(file, data)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into an ahead-of-time (AOT) callable using mx.compile.
+
+        Args:
+            graph (IRGraph): Target computational graph.
+            **kwargs (object): Optional compiler arguments (e.g. 'shapeless').
+
+        Returns:
+            object: Compiled execution callable.
+        """
+        from ml_switcheroo_compiler.core.tensor import Tensor
+
+        try:
+            import mlx.core as mx
+
+            scope: dict[str, object] = {}
+            exec(self.generate(), scope)
+            model_cls = scope.get("CompiledModel")
+            if model_cls is None or not callable(model_cls):
+                raise ValueError("Generated MLX module is missing CompiledModel.")
+
+            model_instance = model_cls()
+            shapeless = bool(kwargs.get("shapeless", False))
+            compiled_fn = mx.compile(model_instance, shapeless=shapeless)
+
+            def aot_mlx_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute AOT compiled MLX graph function.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                mlx_args = [mx.array(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                return compiled_fn(*mlx_args, **w_kwargs)
+
+            return aot_mlx_runner
+        except Exception:
+            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+            def fallback_forward(*fn_args: object) -> object:
+                """Execute interpreter graph evaluation fallback.
+
+                Args:
+                    *fn_args (object): Positional input arguments.
+
+                Returns:
+                    object: Evaluated output tensors.
+                """
+                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                inputs: dict[str, object] = {}
+                for i, inp_node in enumerate(input_nodes):
+                    if i < len(fn_args):
+                        arg_val = fn_args[i]
+                        inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
+                evaluated = evaluate_graph(graph, inputs=inputs)
+                if hasattr(graph, "outputs") and graph.outputs:
+                    if len(graph.outputs) == 1:
+                        return evaluated.get(graph.outputs[0])
+                    return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+                return evaluated
+
+            return fallback_forward
+
+
+MLXGenerator = MLXCodeGenerator

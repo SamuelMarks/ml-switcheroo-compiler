@@ -636,3 +636,54 @@ def test_mlir_dialect_validation() -> None:
     assert validate_mlir_operation("arith.addi") is True
     assert validate_mlir_operation("math.exp") is True
     assert validate_mlir_operation("unknown_dialect.fake_op") is False
+
+
+def test_cpp_generator_unmapped_op_strict_and_polyfill() -> None:
+    """Verify strict error reporting and safe zero-init polyfill for unmapped operations in LLVMCPPGenerator."""
+    import pytest
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator, LLVMCPPGenerator
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
+    assert LLVMCPPGenerator is CppGenerator
+
+    g = IRGraph()
+    unmapped_node = IRNode(id="bad_op", op_type="NonExistentCustomOp", inputs=[])
+    unmapped_node.shape_metadata = [2, 3]
+    g.nodes = {"bad_op": unmapped_node}
+
+    # Strict mode must raise UnimplementedMathError
+    gen_strict = CppGenerator(g, strict=True)
+    with pytest.raises(UnimplementedMathError, match="C\\+\\+ code generator does not support operation"):
+        gen_strict.generate(g)
+
+    # Non-strict mode must emit UserWarning and zero-initialized polyfill loop
+    gen_lenient = CppGenerator(g, strict=False)
+    with pytest.warns(UserWarning, match="Emitting safe zero-initialized polyfill"):
+        code = gen_lenient.generate(g)
+
+    assert "NDArrayView<float> bad_op({2,3}); // Fallback Unimplemented NonExistentCustomOp" in code
+    assert "for(size_t i = 0; i < bad_op.size(); ++i) { bad_op.data[i] = 0.0f; }" in code
+
+
+def test_llvm_cpp_validate_mlir_import_error_and_edge_target_idx1() -> None:
+    """Verify validate_mlir_operation on ImportError and CppGenerator incoming edge with target_idx=1."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator, validate_mlir_operation
+
+    # 1. validate_mlir_operation ImportError
+    with patch("ml_switcheroo_compiler.backends.llvm_cpp.generator.get_supported_mlir_dialects", side_effect=ImportError("mock")):
+        assert validate_mlir_operation("custom.op") is False
+
+    # 2. CppGenerator edge target_idx=0 and target_idx=1 with source_idx>0
+    g = IRGraph()
+    prod = IRNode(id="prod", op_type="Split", inputs=[], outputs=["out0", "out1"], shape_metadata=[2, 2])
+    n_add = IRNode(id="add_node", op_type="Add", inputs=["out1", "out1"], shape_metadata=[2, 2])
+    g.nodes = {"prod": prod, "add_node": n_add}
+    g.inputs = []
+    g.outputs = ["add_node"]
+
+    gen = CppGenerator(g)
+    code = gen.generate(g)
+    assert "out1" in code

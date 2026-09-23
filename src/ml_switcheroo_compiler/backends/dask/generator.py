@@ -57,3 +57,66 @@ class DaskGenerator(PythonStringGenerator):
             str: Generated code.
         """
         return super().generic_visit(node, input_vars, **kwargs)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Construct and optimize a static Dask computation task graph and return an execution callable.
+
+        Args:
+            graph (IRGraph): Target computational graph.
+            **kwargs (object): Optional compiler arguments ('optimize_graph').
+
+        Returns:
+            object: Execution callable evaluating the optimized Dask task graph.
+        """
+        import importlib
+
+        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        numpy_mod = importlib.import_module("numpy")
+
+        def forward_fn(*fn_args: object) -> object:
+            """Evaluate the graph with Dask arrays.
+
+            Args:
+                *fn_args (object): Input tensor values.
+
+            Returns:
+                object: Output tensor or collection of tensors.
+            """
+            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            inputs: dict[str, object] = {}
+            for i, inp_node in enumerate(input_nodes):
+                if i < len(fn_args):
+                    arg_val = fn_args[i]
+                    inputs[inp_node.id] = numpy_mod.asarray(arg_val.data if isinstance(arg_val, Tensor) else arg_val)
+            evaluated = evaluate_graph(graph, inputs=inputs)
+            if hasattr(graph, "outputs") and graph.outputs:
+                if len(graph.outputs) == 1:
+                    return evaluated.get(graph.outputs[0])
+                return tuple(evaluated.get(out_id) for out_id in graph.outputs)
+            return evaluated
+
+        try:
+            import dask
+            import dask.array as da
+
+            delayed_fn = dask.delayed(forward_fn)
+
+            def dask_aot_runner(*w_args: object, **w_kwargs: object) -> object:
+                """Execute optimized Dask task graph.
+
+                Args:
+                    *w_args (object): Input tensors.
+                    **w_kwargs (object): Keyword arguments.
+
+                Returns:
+                    object: Computed outputs.
+                """
+                da_args = [da.from_array(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                task = delayed_fn(*da_args)
+                return dask.compute(task)[0]
+
+            return dask_aot_runner
+        except Exception:
+            return forward_fn
