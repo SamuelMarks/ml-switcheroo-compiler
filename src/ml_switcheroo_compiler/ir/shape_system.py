@@ -538,6 +538,66 @@ class SymNode:
         """
         return SymBinaryOp("//", SymNode.to_node(other), self)
 
+    def __mod__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+        """Modulo symbolic expressions.
+
+        Args:
+            other (Union[int, str, SymNode, SymInt]): Divisor operand.
+
+        Returns:
+            SymBinaryOp: Modulo expression node.
+        """
+        return SymBinaryOp("%", self, SymNode.to_node(other))
+
+    def __rmod__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+        """Right-modulo symbolic expressions.
+
+        Args:
+            other (Union[int, str, SymNode, SymInt]): Dividend operand.
+
+        Returns:
+            SymBinaryOp: Modulo expression node.
+        """
+        return SymBinaryOp("%", SymNode.to_node(other), self)
+
+    def __pow__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+        """Exponentiate symbolic expression.
+
+        Args:
+            other (Union[int, str, SymNode, SymInt]): Exponent operand.
+
+        Returns:
+            SymBinaryOp: Power expression node.
+        """
+        return SymBinaryOp("**", self, SymNode.to_node(other))
+
+    def __rpow__(self, other: int | str | SymNode | SymInt) -> SymBinaryOp:
+        """Right-exponentiate symbolic expression.
+
+        Args:
+            other (Union[int, str, SymNode, SymInt]): Base operand.
+
+        Returns:
+            SymBinaryOp: Power expression node.
+        """
+        return SymBinaryOp("**", SymNode.to_node(other), self)
+
+    def __neg__(self) -> SymUnaryOp:
+        """Negate symbolic expression.
+
+        Returns:
+            SymUnaryOp: Negated expression node.
+        """
+        return SymUnaryOp("-", self)
+
+    def __abs__(self) -> SymUnaryOp:
+        """Absolute value of symbolic expression.
+
+        Returns:
+            SymUnaryOp: Absolute value node.
+        """
+        return SymUnaryOp("abs", self)
+
 
 class SymConst(SymNode):
     """Constant integer symbolic node.
@@ -802,6 +862,26 @@ class SymBinaryOp(SymNode):
                 if s_left.left == s_right:
                     return s_left.right
 
+        elif self.op == "%":
+            if isinstance(s_right, SymConst) and s_right.value == 1:
+                return SymConst(0)
+            if isinstance(s_left, SymConst) and s_left.value == 0:
+                return SymConst(0)
+            if s_left == s_right and not (isinstance(s_right, SymConst) and s_right.value == 0):
+                return SymConst(0)
+
+        elif self.op == "min":
+            if s_left == s_right:
+                return s_left
+            if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
+                return SymConst(min(s_left.value, s_right.value))
+
+        elif self.op == "max":
+            if s_left == s_right:
+                return s_left
+            if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
+                return SymConst(max(s_left.value, s_right.value))
+
         poly = self.to_polynomial()
         if poly is not None:
             return _poly_to_symnode(poly)
@@ -839,7 +919,7 @@ class SymBinaryOp(SymNode):
             int: Evaluated integer result.
 
         Raises:
-            ZeroDivisionError: If dividing by zero.
+            ZeroDivisionError: If dividing or taking modulo by zero.
             ValueError: If operator is unsupported.
         """
         v1 = self.left.eval(env)
@@ -852,11 +932,31 @@ class SymBinaryOp(SymNode):
             return v1 * v2
         if self.op == "//":
             if v2 == 0:
-                msg = "Division by zero in symbolic evaluation."
-                raise ZeroDivisionError(msg)
+                raise ZeroDivisionError("Division by zero in symbolic evaluation.")
             return v1 // v2
-        msg = f"Unsupported operator '{self.op}'."
-        raise ValueError(msg)
+        if self.op == "%":
+            if v2 == 0:
+                raise ZeroDivisionError("Modulo by zero in symbolic evaluation.")
+            return v1 % v2
+        if self.op == "**":
+            return int(v1**v2)
+        if self.op == "min":
+            return min(v1, v2)
+        if self.op == "max":
+            return max(v1, v2)
+        if self.op == "==":
+            return int(v1 == v2)
+        if self.op == "!=":
+            return int(v1 != v2)
+        if self.op == "<":
+            return int(v1 < v2)
+        if self.op == "<=":
+            return int(v1 <= v2)
+        if self.op == ">":
+            return int(v1 > v2)
+        if self.op == ">=":
+            return int(v1 >= v2)
+        raise ValueError(f"Unsupported operator '{self.op}'.")
 
     def free_vars(self) -> set[str]:
         """Return free variables of both operands.
@@ -881,6 +981,153 @@ class SymBinaryOp(SymNode):
             str: Representation string.
         """
         return f"SymBinaryOp({self.op!r}, {self.left!r}, {self.right!r})"
+
+
+class SymUnaryOp(SymNode):
+    """Unary operation node in symbolic expression tree (abs, ceil, floor, neg).
+
+    Attributes:
+        op (str): Unary operator name.
+        operand (SymNode): Target operand node.
+    """
+
+    def __init__(self, op: str, operand: SymNode) -> None:
+        """Initialize SymUnaryOp.
+
+        Args:
+            op (str): Operator string ('abs', 'ceil', 'floor', '-').
+            operand (SymNode): Child operand node.
+        """
+        self.op = str(op)
+        self.operand = operand
+
+    def simplify(self) -> SymNode:
+        """Simplify unary operation.
+
+        Returns:
+            SymNode: Simplified expression node.
+        """
+        s_op = self.operand.simplify()
+        if isinstance(s_op, SymConst):
+            v = s_op.value
+            if self.op == "abs":
+                return SymConst(abs(v))
+            if self.op in ("ceil", "floor"):
+                return SymConst(v)
+            if self.op == "-":
+                return SymConst(-v)
+        return SymUnaryOp(self.op, s_op)
+
+    def eval(self, env: dict[str, int]) -> int:
+        """Evaluate unary operation with variable bindings.
+
+        Args:
+            env (dict[str, int]): Variable assignment dictionary.
+
+        Returns:
+            int: Evaluated integer value.
+
+        Raises:
+            ValueError: If operator is unsupported.
+        """
+        val = self.operand.eval(env)
+        if self.op == "abs":
+            return abs(val)
+        if self.op in ("ceil", "floor"):
+            return val
+        if self.op == "-":
+            return -val
+        raise ValueError(f"Unsupported unary operator '{self.op}'.")
+
+    def free_vars(self) -> set[str]:
+        """Return free variables of the operand.
+
+        Returns:
+            set[str]: Set of variable names.
+        """
+        return self.operand.free_vars()
+
+    def __str__(self) -> str:
+        """Return string representation.
+
+        Returns:
+            str: Operator and operand string.
+        """
+        if self.op == "-":
+            return f"-({self.operand})"
+        return f"{self.op}({self.operand})"
+
+    def __repr__(self) -> str:
+        """Return debugging string representation.
+
+        Returns:
+            str: Debugging string.
+        """
+        return f"SymUnaryOp({self.op}, {self.operand!r})"
+
+
+class SymPiecewise(SymNode):
+    """Piecewise conditional symbolic node.
+
+    Attributes:
+        cases (list[tuple[object, SymNode]]): Sequence of (condition, expr) pairs.
+        default (SymNode): Default fallback expression node.
+    """
+
+    def __init__(self, cases: list[tuple[object, SymNode]], default: SymNode) -> None:
+        """Initialize SymPiecewise.
+
+        Args:
+            cases (list[tuple[object, SymNode]]): List of (condition_fn_or_node, expr_node).
+            default (SymNode): Fallback node when no conditions are met.
+        """
+        self.cases = cases
+        self.default = default
+
+    def simplify(self) -> SymNode:
+        """Simplify piecewise expression.
+
+        Returns:
+            SymNode: Simplified expression node.
+        """
+        simplified_cases = []
+        for cond, expr in self.cases:
+            simplified_cases.append((cond, expr.simplify()))
+        return SymPiecewise(simplified_cases, self.default.simplify())
+
+    def eval(self, env: dict[str, int]) -> int:
+        """Evaluate piecewise expression given environment bindings.
+
+        Args:
+            env (dict[str, int]): Variable bindings dictionary.
+
+        Returns:
+            int: Evaluated integer result from the first matching branch or default.
+        """
+        for cond, expr in self.cases:
+            is_met = False
+            if callable(cond):
+                is_met = bool(cond(env))
+            elif isinstance(cond, SymNode):
+                is_met = bool(cond.eval(env))
+            elif isinstance(cond, bool):
+                is_met = cond
+            if is_met:
+                return expr.eval(env)
+        return self.default.eval(env)
+
+    def free_vars(self) -> set[str]:
+        """Return union of free variables across all branches.
+
+        Returns:
+            set[str]: Set of variable names.
+        """
+        vars_set = set(self.default.free_vars())
+        for cond, expr in self.cases:
+            if isinstance(cond, SymNode):
+                vars_set.update(cond.free_vars())
+            vars_set.update(expr.free_vars())
+        return vars_set
 
     def __eq__(self, other: object) -> bool:
         """Check structural equality.

@@ -11,7 +11,6 @@ ALLOWED_MODULE_PATTERNS: tuple[str, ...] = (
     os.path.join("backends", "awkward"),
     os.path.join("backends", "pyarrow_compute"),
     os.path.join("backends", "dpnp"),
-    os.path.join("backends", "bohrium"),
 )
 
 

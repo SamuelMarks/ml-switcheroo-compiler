@@ -133,7 +133,6 @@ BACKEND_ALLOWED: dict[str, set[str]] = {
     "dpnp": {"dpnp"},
     "awkward": {"awkward", "ak"},
     "pyarrow_compute": {"pyarrow"},
-    "bohrium": {"bohrium"},
 }
 
 FORBIDDEN_UPWARD_PREFIXES: tuple[str, ...] = ("zero_", "zero_zoo", "zero")

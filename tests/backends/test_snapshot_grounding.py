@@ -224,12 +224,11 @@ def test_snapshot_grounding_hardware_and_mlir() -> None:
     rocm_eps: set[str] = engine.get_valid_endpoints("rocm")
     assert len(rocm_eps) >= 25
 
-    # Missing upstream targets
-    for missing in ("edge_onnx", "webgpu", "metal"):
-        target = engine.config.targets[missing]
-        assert target.status == "missing_upstream"
-        assert target.fallback_schema == "synthetic"
-        assert engine.get_snapshot_path(missing) is None
+    # Available grounded targets
+    for grounded in ("edge_onnx", "webgpu", "metal"):
+        target = engine.config.targets[grounded]
+        assert target.status == "available"
+        assert len(engine.get_valid_endpoints(grounded)) > 0
 
 
 def test_snapshot_grounding_keyword_validation_discrepancies() -> None:
@@ -530,7 +529,8 @@ def test_snapshot_grounding_is_endpoint_valid_branches() -> None:
     engine = SnapshotGroundingEngine()
 
     assert not engine.is_endpoint_valid("completely_unknown_backend", "torch.add")
-    assert not engine.is_endpoint_valid("edge_onnx", "onnx.Add")
+    assert engine.is_endpoint_valid("edge_onnx", "onnx.Add")
+    assert not engine.is_endpoint_valid("edge_onnx", "onnx.TotallyInvalidOp999")
     assert engine.is_endpoint_valid("pytorch", "torch.add")
     assert engine.is_endpoint_valid("jax", "jnp.sin")
     assert engine.is_endpoint_valid("jax", "jax.sin")

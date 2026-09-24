@@ -24,8 +24,10 @@ def test_keras_np_serialization():
     if os.path.exists(test_file):
         os.remove(test_file)
 
-    model = load_model("nonexistent.keras")
-    assert type(model).__name__ == "FallbackModel"
+    import pytest
+
+    with pytest.raises(FileNotFoundError):
+        load_model("nonexistent.keras")
 
     @register_keras_serializable(package="test", name="myobj")
     class MyCustomObj:

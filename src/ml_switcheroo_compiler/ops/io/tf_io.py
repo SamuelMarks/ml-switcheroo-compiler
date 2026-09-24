@@ -143,60 +143,197 @@ class TFRecordOptions:
         """Initialize.
 
         Args:
-            compression_type (str): The compression_type parameter.
+            compression_type (str): Compression format ('', 'GZIP', or 'ZLIB').
         """
-        self.compression_type = compression_type
+        self.compression_type = compression_type.upper() if compression_type else ""
 
 
 class TFRecordWriter:
-    """Writer for TFRecord format."""
+    """Writer for TFRecord format supporting binary framing, masked CRC32, and compression."""
 
-    def __init__(self, path: str, options=None) -> None:
-        """Initialize.
+    def __init__(self, path: str, options: TFRecordOptions | None = None) -> None:
+        """Initialize TFRecordWriter.
 
         Args:
-            path (str): The path parameter.
-            options (TFRecordOptions): The options parameter.
+            path (str): Destination file path for records.
+            options (TFRecordOptions): Optional compression configuration options.
         """
-        self.path = path
-        self.options = options
+        import os
 
-    def write(self, record) -> None:
-        """Write record.
+        self.path = path
+        self.options = options or TFRecordOptions()
+        self._closed = False
+
+        dir_name = os.path.dirname(path)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+
+        self._file = open(path, "wb")
+        self._compressor: Any = None
+        if self.options.compression_type == "GZIP":
+            import gzip
+
+            self._compressor = gzip.GzipFile(fileobj=self._file, mode="wb")
+        elif self.options.compression_type == "ZLIB":
+            import zlib
+
+            self._compressor = zlib.compressobj()
+
+    @staticmethod
+    def _mask_crc(crc: int) -> int:
+        """Compute masked CRC32 according to TensorFlow TFRecord standard.
 
         Args:
-        record (Any): The record parameter.
+            crc (int): Unmasked CRC32 checksum.
 
         Returns:
-        NoneType: Result.
+            int: 32-bit masked CRC checksum.
         """
-        return None
+        return (((crc >> 15) | (crc << 17)) + 0xA282EAD8) & 0xFFFFFFFF
+
+    def write(self, record: bytes | str) -> None:
+        """Write record using standard length-prefixed binary framing.
+
+        Args:
+            record (bytes | str): Record data to encode and write.
+
+        Raises:
+            ValueError: If writing to a closed writer.
+        """
+        if self._closed:
+            raise ValueError("I/O operation on closed TFRecordWriter")
+
+        import struct
+        import zlib
+
+        if record is None:
+            data = b""
+        elif isinstance(record, str):
+            data = record.encode("utf-8")
+        else:
+            data = bytes(record)
+        length = len(data)
+
+        len_bytes = struct.pack("<Q", length)
+        len_crc = struct.pack("<I", self._mask_crc(zlib.crc32(len_bytes)))
+        data_crc = struct.pack("<I", self._mask_crc(zlib.crc32(data)))
+
+        framed_record = len_bytes + len_crc + data + data_crc
+
+        if self.options.compression_type == "GZIP":
+            self._compressor.write(framed_record)
+        elif self.options.compression_type == "ZLIB":
+            compressed = self._compressor.compress(framed_record)
+            if compressed:
+                self._file.write(compressed)
+        else:
+            self._file.write(framed_record)
 
     def close(self) -> None:
-        """Close.
+        """Flush and close underlying file streams."""
+        if self._closed:
+            return
 
-        Returns:
-        NoneType: Result.
-        """
-        return None
+        if self.options.compression_type == "GZIP" and self._compressor is not None:
+            self._compressor.close()
+        elif self.options.compression_type == "ZLIB" and self._compressor is not None:
+            flushed = self._compressor.flush()
+            if flushed:
+                self._file.write(flushed)
+
+        if self._file and not self._file.closed:
+            self._file.flush()
+            self._file.close()
+
+        self._closed = True
 
     def __enter__(self) -> TFRecordWriter:
         """Enter context manager.
 
         Returns:
-        TFRecordWriter: Result.
+            TFRecordWriter: The open writer instance.
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Exit context manager.
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager and flush all buffers.
 
         Args:
-            exc_type (Any): The exc_type parameter.
-            exc_val (Any): The exc_val parameter.
-            exc_tb (Any): The exc_tb parameter.
+            exc_type (Any): Exception type if raised.
+            exc_val (Any): Exception value if raised.
+            exc_tb (Any): Exception traceback if raised.
         """
         self.close()
+
+
+def read_tfrecords(path: str, compression_type: str = "") -> list[bytes]:
+    """Read all records from a TFRecord file and verify masked CRC checksums.
+
+    Args:
+        path (str): Path to the TFRecord file.
+        compression_type (str): Compression type ('', 'GZIP', or 'ZLIB').
+
+    Returns:
+        list[bytes]: List of verified record byte payloads.
+
+    Raises:
+        ValueError: If any length CRC or data CRC fails verification.
+    """
+    import struct
+    import zlib
+
+    comp = compression_type.upper()
+    if comp == "GZIP":
+        import gzip
+
+        with gzip.open(path, "rb") as f:
+            content = f.read()
+    elif comp == "ZLIB":
+        with open(path, "rb") as f:
+            content = zlib.decompress(f.read())
+    else:
+        with open(path, "rb") as f:
+            content = f.read()
+
+    records: list[bytes] = []
+    offset = 0
+    total = len(content)
+
+    def _mask(crc: int) -> int:
+        """Mask a 32-bit CRC checksum according to the TFRecord protocol.
+
+        Args:
+            crc (int): Unmasked 32-bit CRC checksum.
+
+        Returns:
+            int: Masked 32-bit CRC checksum integer.
+        """
+        return (((crc >> 15) | (crc << 17)) + 0xA282EAD8) & 0xFFFFFFFF
+
+    while offset < total:
+        if offset + 12 > total:
+            break
+        (length,) = struct.unpack("<Q", content[offset : offset + 8])
+        (len_crc,) = struct.unpack("<I", content[offset + 8 : offset + 12])
+        computed_len_crc = _mask(zlib.crc32(content[offset : offset + 8]))
+        if len_crc != computed_len_crc:
+            raise ValueError(f"Corrupted length CRC at offset {offset}")
+
+        offset += 12
+        if offset + length + 4 > total:
+            raise ValueError(f"Unexpected EOF reading record data of length {length}")
+
+        data = content[offset : offset + length]
+        offset += length
+        (data_crc,) = struct.unpack("<I", content[offset : offset + 4])
+        computed_data_crc = _mask(zlib.crc32(data))
+        if data_crc != computed_data_crc:
+            raise ValueError("Corrupted data CRC in record")
+
+        offset += 4
+        records.append(data)
+
+    return records
 
 
 @register_op("DecodeCsv")

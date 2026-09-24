@@ -260,19 +260,58 @@ def _np_textvectorization(backend_module: Any, *args: Any, **kwargs: Any) -> Any
 
 @global_eager_registry.register("WriteFile")
 def _np_writefile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
-    """Evaluate _np_writefile operation.
+    """Evaluate _np_writefile operation with atomic write and directory creation.
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
+        *args: Positional args (filename, contents).
         **kwargs: Keyword args.
 
     Returns:
-            object: Result.
+        int: 1 on successful write, or 0 if inputs are missing.
     """
     func = getattr(backend_module, "writefile", getattr(backend_module, "writefile", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return None
+    if len(args) < 2 or args[0] is None:
+        return 0
+
+    import os
+
+    filename = str(args[0])
+    contents = args[1]
+
+    dir_name = os.path.dirname(filename)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
+
+    tmp_path = f"{filename}.tmp.{os.getpid()}"
+    try:
+        if isinstance(contents, bytes):
+            with open(tmp_path, "wb") as f:
+                f.write(contents)
+                f.flush()
+                os.fsync(f.fileno())
+        elif isinstance(contents, str):
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(contents)
+                f.flush()
+                os.fsync(f.fileno())
+        elif hasattr(contents, "tobytes"):
+            with open(tmp_path, "wb") as f:
+                f.write(contents.tobytes())
+                f.flush()
+                os.fsync(f.fileno())
+        else:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(str(contents))
+                f.flush()
+                os.fsync(f.fileno())
+
+        os.replace(tmp_path, filename)
+        return 1
+    except OSError:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise

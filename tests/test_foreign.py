@@ -63,12 +63,13 @@ def test_generic_utils_stubs():
     with CustomObjectScope():
         pass
     assert deserialize_keras_object() == {}
-    disable_interactive_logging()
     enable_interactive_logging()
+    assert is_interactive_logging_enabled() is True
+    disable_interactive_logging()
+    assert is_interactive_logging_enabled() is False
     assert get_custom_objects() == {}
     assert get_registered_name() == ""
     assert get_registered_object() is None
-    assert is_interactive_logging_enabled() is False
     assert is_keras_tensor() is False
 
     @register_keras_serializable()

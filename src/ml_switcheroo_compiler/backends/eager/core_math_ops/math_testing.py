@@ -67,19 +67,34 @@ def _array_equiv(backend_module: Any, a1: object, a2: object, **kwargs: Any) -> 
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: Any, condition: object, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
+def _assert(backend_module: Any, condition: object, data: Any = None, summarize: int = 3, **kwargs: Any) -> Any:
     """Evaluate _assert operation.
 
     Args:
         backend_module: The backend_module parameter.
         condition: The condition parameter.
-        data: The data parameter.
+        data: Optional tensor data or sequence to summarize upon assertion failure.
         summarize (int): The summarize parameter.
-        **kwargs: Keyword args.
+        **kwargs: Keyword args (e.g. node_id, message).
 
     Returns:
-            object: Result.
+        None: When assertion succeeds.
+
+    Raises:
+        AssertionError: When condition evaluates to False.
     """
+    import numpy as np
+
+    cond_arr = np.asarray(condition)
+    if not np.all(cond_arr):
+        node_id = kwargs.get("node_id", "AssertOp")
+        msg = kwargs.get("message", "Condition evaluated to False")
+        if data is not None:
+            data_arr = np.asarray(data)
+            flat = data_arr.reshape(-1)
+            summary_data = flat[:summarize].tolist() if len(flat) > 0 else []
+            raise AssertionError(f"Assertion failed in node '{node_id}': {msg}. Data sample: {summary_data}")
+        raise AssertionError(f"Assertion failed in node '{node_id}': {msg}")
     return None
 
 

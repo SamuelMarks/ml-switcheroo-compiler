@@ -110,6 +110,49 @@ def _resolve_metal_grid_sizes(
     return str(num_elements), "1", "1"
 
 
+def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[object, ...]) -> dict[str, bytes]:
+    """Prepare raw byte buffers for Metal execution.
+
+    Args:
+        graph (IRGraph): Graph being executed.
+        args (tuple[object, ...]): Input positional arguments.
+
+    Returns:
+        dict[str, bytes]: Mapping of input names to byte buffers.
+    """
+    input_buffers: dict[str, bytes] = {}
+    for idx, arg in enumerate(args):
+        input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
+        if hasattr(arg, "tobytes"):
+            input_buffers[input_name] = arg.tobytes()
+        elif isinstance(arg, (bytes, bytearray, memoryview)):
+            input_buffers[input_name] = bytes(arg)
+        elif hasattr(arg, "data") and hasattr(arg.data, "tobytes"):
+            input_buffers[input_name] = arg.data.tobytes()
+        else:
+            input_buffers[input_name] = bytes(arg)
+    return input_buffers
+
+
+def _evaluate_metal_fallback(graph: IRGraph, args: tuple[object, ...]) -> object:
+    """Evaluate graph using reference interpreter fallback.
+
+    Args:
+        graph (IRGraph): Computation graph to evaluate.
+        args (tuple[object, ...]): Input positional arguments.
+
+    Returns:
+        object: Resulting tensor or tuple of tensors.
+    """
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+    feed_dict: dict[str, object] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    res_dict = evaluate_graph(graph, feed_dict)
+    if len(graph.outputs) == 1:
+        return res_dict.get(graph.outputs[0])
+    return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
+
+
 @register_backend("metal")
 class MetalCodeGenerator(BaseGenerator):
     """Metal Code Generator."""
@@ -395,6 +438,55 @@ class MetalCodeGenerator(BaseGenerator):
         dispatch_lines.append("    command_buffer.waitUntilCompleted()")
 
         return "\n".join(dispatch_lines)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into ahead-of-time Apple Metal executable artifact.
+
+        Args:
+            graph (IRGraph): Target computation graph to compile.
+            **kwargs (object): Compiler options such as optimization levels and metallib targets.
+
+        Returns:
+            object: Executable compiled artifact.
+        """
+        from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+        from ml_switcheroo_compiler.backends.hardware_compilers import MetalCompiler
+
+        metal_source = self.generate()
+        compiler = MetalCompiler()
+        compile_opts = kwargs.get("compile_options", None)
+        comp_res = compiler.compile(metal_source, options=compile_opts if isinstance(compile_opts, list) else None)
+
+        def runner(*args: object, **runner_kwargs: object) -> object:
+            """Execute compiled Metal artifact with runtime dispatch or fallback.
+
+            Args:
+                *args (object): Input tensor or buffer arguments.
+                **runner_kwargs (object): Optional execution options.
+
+            Returns:
+                object: Output tensor or tuple of output tensors.
+            """
+            if MetalRunner.is_available():
+                try:
+                    runner_inst = MetalRunner()
+                    if runner_inst.device is not None:
+                        input_buffers = _prepare_metal_input_buffers(graph, args)
+                        out_dict = runner_inst.execute_graph(graph, input_buffers)
+                        if len(graph.outputs) == 1:
+                            return out_dict.get(graph.outputs[0])
+                        return tuple(out_dict.get(out_name) for out_name in graph.outputs)
+                except Exception:
+                    pass
+
+            return _evaluate_metal_fallback(graph, args)
+
+        return CompiledArtifact(
+            callable_fn=runner,
+            binary_bytes=comp_res.assembly_or_ptx.encode("utf-8") if comp_res.assembly_or_ptx else b"",
+            source_code=metal_source,
+            metadata={"backend": "metal", "compiler_cli": comp_res.compiler_cli, "success": comp_res.success},
+        )
 
 
 class MetalRunner:

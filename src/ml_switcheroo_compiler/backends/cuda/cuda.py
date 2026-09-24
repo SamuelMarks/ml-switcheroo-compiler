@@ -74,6 +74,49 @@ def _extract_kernel_name(body: str, default: str) -> str:
     return default
 
 
+def _prepare_cuda_input_buffers(graph: IRGraph, args: tuple[object, ...]) -> dict[str, bytes]:
+    """Prepare raw byte buffers for CUDA execution.
+
+    Args:
+        graph (IRGraph): Graph being executed.
+        args (tuple[object, ...]): Input positional arguments.
+
+    Returns:
+        dict[str, bytes]: Mapping of input names to byte buffers.
+    """
+    input_buffers: dict[str, bytes] = {}
+    for idx, arg in enumerate(args):
+        input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
+        if hasattr(arg, "tobytes"):
+            input_buffers[input_name] = arg.tobytes()
+        elif isinstance(arg, (bytes, bytearray, memoryview)):
+            input_buffers[input_name] = bytes(arg)
+        elif hasattr(arg, "data") and hasattr(arg.data, "tobytes"):
+            input_buffers[input_name] = arg.data.tobytes()
+        else:
+            input_buffers[input_name] = bytes(arg)
+    return input_buffers
+
+
+def _evaluate_cuda_fallback(graph: IRGraph, args: tuple[object, ...]) -> object:
+    """Evaluate graph using reference interpreter fallback.
+
+    Args:
+        graph (IRGraph): Computation graph to evaluate.
+        args (tuple[object, ...]): Input positional arguments.
+
+    Returns:
+        object: Resulting tensor or tuple of tensors.
+    """
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+    feed_dict: dict[str, object] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    res_dict = evaluate_graph(graph, feed_dict)
+    if len(graph.outputs) == 1:
+        return res_dict.get(graph.outputs[0])
+    return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
+
+
 @register_backend("cuda")
 class CudaCodeGenerator(BaseGenerator):
     """CUDA C++ Code Generator."""
@@ -381,6 +424,54 @@ class CudaCodeGenerator(BaseGenerator):
         cuda.append("    CUDA_CHECK(cudaDeviceSynchronize());")
         cuda.append("}")
         return "\n".join(cuda)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into ahead-of-time CUDA executable artifact.
+
+        Args:
+            graph (IRGraph): Target computation graph to compile.
+            **kwargs (object): Compiler options such as optimization levels and target arch.
+
+        Returns:
+            object: Executable compiled artifact.
+        """
+        from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+        from ml_switcheroo_compiler.backends.hardware_compilers import CUDACompiler
+
+        cuda_source = self.generate()
+        compiler = CUDACompiler()
+        compile_opts = kwargs.get("compile_options", None)
+        comp_res = compiler.compile(cuda_source, options=compile_opts if isinstance(compile_opts, list) else None)
+
+        def runner(*args: object, **runner_kwargs: object) -> object:
+            """Execute compiled CUDA artifact with runtime dispatch or fallback.
+
+            Args:
+                *args (object): Input tensor or buffer arguments.
+                **runner_kwargs (object): Optional execution options.
+
+            Returns:
+                object: Output tensor or tuple of output tensors.
+            """
+            if CUDARunner.is_available():
+                try:
+                    runner_inst = CUDARunner()
+                    input_buffers = _prepare_cuda_input_buffers(graph, args)
+                    out_dict = runner_inst.execute_graph(graph, input_buffers)
+                    if len(graph.outputs) == 1:
+                        return out_dict.get(graph.outputs[0])
+                    return tuple(out_dict.get(out_name) for out_name in graph.outputs)
+                except Exception:
+                    pass
+
+            return _evaluate_cuda_fallback(graph, args)
+
+        return CompiledArtifact(
+            callable_fn=runner,
+            binary_bytes=comp_res.assembly_or_ptx.encode("utf-8") if comp_res.assembly_or_ptx else b"",
+            source_code=cuda_source,
+            metadata={"backend": "cuda", "compiler_cli": comp_res.compiler_cli, "success": comp_res.success},
+        )
 
 
 def _marshall_kernel_params(args: Optional[list[KernelArgType]]) -> Optional[ctypes.Array]:

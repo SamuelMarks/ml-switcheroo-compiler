@@ -8,6 +8,7 @@ from typing import Callable
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.cupy.generator import CuPyGenerator, CupyGenerator
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
@@ -636,3 +637,200 @@ def test_dask_compile_aot_fallbacks() -> None:
 
     # Restore dask_gen_mod
     importlib.reload(dask_gen_mod)
+
+
+def test_compiled_artifact_and_base_generator_caching() -> None:
+    """Verify CompiledArtifact lifecycle, execution, and BaseGenerator.compile_aot caching."""
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, CompiledArtifact
+
+    # CompiledArtifact with callable
+    called = []
+    dummy_fn = lambda *a, **k: (called.append((a, k)), 42)[1]
+    artifact = CompiledArtifact(callable_fn=dummy_fn, binary_bytes=b"test", source_code="code")
+    assert artifact(1, x=2) == 42
+    assert len(called) == 1
+
+    # Cleanup with mock tempdir
+    mock_tmp = MagicMock()
+    artifact.temp_dir = mock_tmp
+    artifact.cleanup()
+    mock_tmp.cleanup.assert_called_once()
+    assert artifact.temp_dir is None
+
+    # Error without callable
+    empty_artifact = CompiledArtifact()
+    with pytest.raises(RuntimeError, match="no executable callable bound"):
+        empty_artifact()
+
+    # BaseGenerator caching
+    graph = _create_sample_graph()
+
+    class TestCachingGen(BaseGenerator):
+        call_count = 0
+
+        def _compile_aot_impl(self, g: IRGraph, **kwargs: object) -> object:
+            self.call_count += 1
+            return CompiledArtifact(callable_fn=lambda *a: 100, binary_bytes=b"bin")
+
+    gen_inst = TestCachingGen(graph)
+    a1 = gen_inst.compile_aot(graph, opt=1)
+    a2 = gen_inst.compile_aot(graph, opt=1)
+    assert a1 is a2
+    assert gen_inst.call_count == 1
+
+    # Different kwargs misses cache
+    a3 = gen_inst.compile_aot(graph, opt=2)
+    assert a3 is not a1
+    assert gen_inst.call_count == 2
+
+    # Class method invocation
+    a_class = TestCachingGen.compile_aot(graph, opt=3)
+    assert a_class is not None
+
+
+def test_native_aot_implementations_all_backends() -> None:
+    """Verify AOT compilation execution for CUDA, ROCm, Metal, WebGL, Numba, Sparse, and Keras generators."""
+    from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
+    from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
+    from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
+    from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+    from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
+
+    graph = _create_sample_graph()
+    inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+
+    # 1. CUDA
+    cuda_gen = CudaCodeGenerator(graph)
+    cuda_art = cuda_gen.compile_aot(graph)
+    assert callable(cuda_art)
+    res_cuda = cuda_art(inp)
+    assert res_cuda is not None
+
+    # 2. ROCm
+    rocm_gen = RocmCodeGenerator(graph)
+    rocm_art = rocm_gen.compile_aot(graph)
+    assert callable(rocm_art)
+    res_rocm = rocm_art(inp)
+    assert res_rocm is not None
+
+    # 3. Metal
+    metal_gen = MetalCodeGenerator(graph)
+    metal_art = metal_gen.compile_aot(graph)
+    assert callable(metal_art)
+    res_metal = metal_art(inp)
+    assert res_metal is not None
+
+    # 4. WebGL
+    webgl_gen = WebGLCodeGenerator(graph)
+    webgl_art = webgl_gen.compile_aot(graph)
+    assert callable(webgl_art)
+    res_webgl = webgl_art(inp)
+    assert res_webgl is not None
+
+    # 5. Numba
+    numba_gen = NumbaGenerator(graph)
+    numba_art = numba_gen.compile_aot(graph)
+    assert callable(numba_art)
+    res_numba = numba_art(inp)
+    assert res_numba is not None
+
+    # 6. Sparse
+    sparse_gen = SparseGenerator(graph)
+    sparse_art = sparse_gen.compile_aot(graph)
+    assert callable(sparse_art)
+    res_sparse = sparse_art(inp)
+    assert res_sparse is not None
+
+    # 7. Keras
+    keras_gen = KerasCodeGenerator(graph)
+    keras_art = keras_gen.compile_aot(graph)
+    assert callable(keras_art)
+    res_keras = keras_art(inp)
+    assert res_keras is not None
+
+
+def test_hardware_compiler_syntax_validation() -> None:
+    """Verify lexer-driven AST syntax validation across comments, strings, macros, and dialect qualifiers."""
+    from ml_switcheroo_compiler.backends.hardware_compilers import (
+        CUDACompiler,
+        HIPCompiler,
+        MetalCompiler,
+        _check_delimiters,
+        _check_preprocessor_directives,
+        _strip_comments_and_strings,
+    )
+
+    cuda_cc = CUDACompiler()
+    hip_cc = HIPCompiler()
+    metal_cc = MetalCompiler()
+
+    # Valid CUDA kernel with comments and strings
+    valid_cuda = """
+    #include <cuda_runtime.h>
+    #ifdef TEST_MACRO
+    // Single line comment with unmatched ( [ {
+    /* Multi line comment
+       with unmatched brackets ) ] }
+    */
+    extern "C" __global__ void my_kernel(const float* in, float* out, int N) {
+        const char* debug = "string with unmatched ( [ { brackets";
+        char q = '"';
+        int idx = blockDim.x * blockIdx.x + threadIdx.x;
+        if (idx < N) {
+            out[idx] = in[idx] * 2.0f;
+        }
+    }
+    #endif
+    """
+    assert cuda_cc._fallback_syntax_check(valid_cuda, ["void", "int"]) is True
+
+    # Valid HIP kernel
+    valid_hip = """
+    #ifndef HIP_KERNEL_H
+    #define HIP_KERNEL_H
+    __global__ void hip_kernel(float* d) {
+        // compute
+    }
+    #endif
+    """
+    assert hip_cc._fallback_syntax_check(valid_hip, ["void"]) is True
+
+    # Valid Metal kernel
+    valid_metal = """
+    #include <metal_stdlib>
+    using namespace metal;
+    kernel void metal_compute(device const float* in [[buffer(0)]], device float* out [[buffer(1)]]) {
+        // Metal body
+    }
+    """
+    assert metal_cc._fallback_syntax_check(valid_metal, ["void"]) is True
+
+    # Unbalanced brackets rejection
+    unbalanced_code = 'extern "C" __global__ void bad() { int x = (1 + 2; }'
+    assert cuda_cc._fallback_syntax_check(unbalanced_code, ["void"]) is False
+
+    # Unbalanced preprocessor directive rejection
+    unbalanced_macro = '#ifdef TEST\n extern "C" __global__ void bad() {}\n'
+    assert cuda_cc._fallback_syntax_check(unbalanced_macro, ["void"]) is False
+
+    # Missing dialect qualifier rejection
+    missing_qualifier = "void cpu_func() { int a = 1; }"
+    assert cuda_cc._fallback_syntax_check(missing_qualifier, ["void"]) is False
+    assert metal_cc._fallback_syntax_check(missing_qualifier, ["void"]) is False
+
+    # Unclosed block comment rejection
+    unclosed_comment = "/* never closed __global__ void test() {}"
+    assert cuda_cc._fallback_syntax_check(unclosed_comment, ["void"]) is False
+
+    # Unclosed quote rejection
+    unclosed_quote = 'extern "C" __global__ void test() { const char* s = "unclosed; }'
+    assert cuda_cc._fallback_syntax_check(unclosed_quote, ["void"]) is False
+
+    # Helper direct tests
+    assert _check_preprocessor_directives("#ifdef A\n#endif") is True
+    assert _check_preprocessor_directives("#endif") is False
+    assert _check_delimiters("(())") is True
+    assert _check_delimiters("(()") is False
+    assert _strip_comments_and_strings("// comment\n'c'")[1] is True

@@ -26,6 +26,7 @@ def test_serialization_extras() -> None:
     sm.save("path")
     assert isinstance(SavedModel.load("path"), SavedModel)
 
-    assert read_fingerprint("path") == "fingerprint"
+    fp = read_fingerprint("path")
+    assert len(fp) == 64
     assert load_variable("path", "name") is not None
     run_restore_ops("path")

@@ -198,3 +198,71 @@ def test_dtype_emulation_config() -> None:
 
     dumped = get_dtype_emulation_config()
     assert "emulation_types" in dumped
+
+
+def test_webgl_texture_packing_validation() -> None:
+    """Test validation errors and valid configurations for WebglTexturePackingConfig."""
+    import pytest
+
+    from ml_switcheroo_compiler.backends.edge.config_models import WebglTexturePackingConfig
+
+    # Valid configurations
+    r_cfg = WebglTexturePackingConfig(format="RED", internal_format="R32F", type="FLOAT", channels=1)
+    assert r_cfg.channels == 1
+    rgba_cfg = WebglTexturePackingConfig(format="RGBA", internal_format="RGBA32F", type="FLOAT", channels=4)
+    assert rgba_cfg.channels == 4
+
+    # Invalid configurations
+    with pytest.raises(ValueError, match="R32F internal_format requires"):
+        WebglTexturePackingConfig(format="RGBA", internal_format="R32F", type="FLOAT", channels=1)
+
+    with pytest.raises(ValueError, match="R32F internal_format requires"):
+        WebglTexturePackingConfig(format="RED", internal_format="R32F", type="FLOAT", channels=4)
+
+    with pytest.raises(ValueError, match="RGBA32F internal_format requires"):
+        WebglTexturePackingConfig(format="RED", internal_format="RGBA32F", type="FLOAT", channels=4)
+
+    with pytest.raises(ValueError, match="RGBA32F internal_format requires"):
+        WebglTexturePackingConfig(format="RGBA", internal_format="RGBA32F", type="FLOAT", channels=1)
+
+
+def test_load_webrtc_collectives_default_path() -> None:
+    """Test loading WebRTC collectives config with default path."""
+    from ml_switcheroo_compiler.backends.edge.config_models import WebrtcCollectivesConfig, load_webrtc_collectives
+
+    cfg = load_webrtc_collectives()
+    assert isinstance(cfg, WebrtcCollectivesConfig)
+    assert cfg.schema_def is not None
+
+
+def test_load_edge_control_flow_templates(tmp_path: object) -> None:
+    """Test loading and validating edge control flow templates from YAML file.
+
+    Args:
+        tmp_path (object): Pytest temporary path fixture.
+    """
+    import os
+
+    import yaml
+
+    from ml_switcheroo_compiler.backends.edge.config_models import (
+        EdgeControlFlowTemplatesConfig,
+        load_edge_control_flow_templates,
+    )
+
+    data = {
+        "control_flow_templates": {
+            "branch": {
+                "body": "if ({cond}) {{ {then_body} }} else {{ {else_body} }}",
+                "default_predicate": "cond",
+            }
+        }
+    }
+    file_path = os.path.join(str(tmp_path), "control_flow.yaml")
+    with open(file_path, "w", encoding="utf-8") as f:
+        yaml.dump(data, f)
+
+    loaded = load_edge_control_flow_templates(file_path)
+    assert isinstance(loaded, EdgeControlFlowTemplatesConfig)
+    assert "branch" in loaded.control_flow_templates
+    assert loaded.control_flow_templates["branch"].body == "if ({cond}) {{ {then_body} }} else {{ {else_body} }}"

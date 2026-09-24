@@ -517,7 +517,7 @@ def serialize_keras_object(obj: object = None) -> dict[str, object] | None:
         dict[str, object] | None: Serialized dictionary or None.
     """
     if obj is None:
-        return None
+        return {}
     cls_name = get_registered_name(obj.__class__)
     cfg: dict[str, object] = obj.get_config() if hasattr(obj, "get_config") else {}
     return {
@@ -544,7 +544,9 @@ def deserialize_keras_object(
     Returns:
         object: Deserialized object instance.
     """
-    if identifier is None or not isinstance(identifier, dict):
+    if identifier is None:
+        return {}
+    if not isinstance(identifier, dict):
         return identifier
     class_name = identifier.get("class_name")
     if not isinstance(class_name, str):

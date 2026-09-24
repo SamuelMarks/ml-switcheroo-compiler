@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.reshape import Resize
@@ -723,15 +724,23 @@ class Searchsorted(OpDef):
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
+            *args (Any): Positional args (sorted_sequence, values).
             **kwargs (Any): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Resulting shape matching values broadcasted with sequence.
         """
-        args[0] if len(args) > 0 else None
+        seq = args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
-        return getattr(v, "shape", ())
+        v_shape = getattr(v, "shape", ())
+        seq_shape = getattr(seq, "shape", ())
+        if not v_shape and not seq_shape:
+            return ()
+        if not seq_shape or len(seq_shape) <= 1:
+            return tuple(v_shape)
+        leading = broadcast_shapes(seq_shape[:-1], v_shape[:-1]) if len(v_shape) > 1 else seq_shape[:-1]
+        v_dim = (v_shape[-1],) if len(v_shape) >= 1 else ()
+        return tuple(leading) + tuple(v_dim)
 
 
 @register_op("SortComplex")
@@ -741,17 +750,19 @@ class SortComplex(OpDef):
     op_name = "SortComplex"
 
     def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+        """Infer shape strictly preserving input tensor shape.
 
         Args:
-            *args (Any): Positional args.
+            *args (Any): Positional args (input array).
             **kwargs (Any): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Resulting shape identical to input shape.
         """
-        a = args[0] if len(args) > 0 else None
-        return getattr(a, "shape", ())
+        if not args or args[0] is None:
+            return ()
+        a = args[0]
+        return tuple(getattr(a, "shape", ()))
 
 
 def _compute_tile_shape(in_shape, reps):

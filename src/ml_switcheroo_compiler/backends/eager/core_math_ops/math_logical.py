@@ -34,19 +34,54 @@ def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
 
 
+_ACTIVE_AXIS_INDICES: dict[Any, int] = {}
+_INFEED_QUEUES: dict[str, Any] = {}
+
+
+def set_axis_index(axis: Any, index: int) -> None:
+    """Set active SPMD axis index for execution.
+
+    Args:
+        axis: Axis identifier (string or integer).
+        index (int): Active rank or thread index.
+    """
+    _ACTIVE_AXIS_INDICES[axis] = index
+
+
+def clear_axis_indices() -> None:
+    """Clear active SPMD axis indices."""
+    _ACTIVE_AXIS_INDICES.clear()
+
+
+def register_infeed_queue(name: str, queue_or_iterator: Any) -> None:
+    """Register infeed data generator or queue.
+
+    Args:
+        name (str): Queue identifier.
+        queue_or_iterator: Host iterator or list of batches.
+    """
+    _INFEED_QUEUES[name] = queue_or_iterator
+
+
+def clear_infeed_queues() -> None:
+    """Clear registered infeed queues."""
+    _INFEED_QUEUES.clear()
+
+
 @global_eager_registry.register("AxisIndex")
 def _axis_index(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _axis_index operation.
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args: Positional args (axis identifier).
+        **kwargs: Keyword args (axis_name).
 
     Returns:
-            object: Result.
+        int: Active axis index.
     """
-    return 0
+    axis_name = args[0] if args else kwargs.get("axis_name", 0)
+    return _ACTIVE_AXIS_INDICES.get(axis_name, 0)
 
 
 @global_eager_registry.register("DivideNoNan")
@@ -201,12 +236,20 @@ def _infeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args: Positional args (queue_name).
+        **kwargs: Keyword args (queue_name).
 
     Returns:
-            object: Result.
+        Any: Ingested tensor from host queue.
     """
+    queue_name = str(args[0]) if args and isinstance(args[0], (str, int)) else str(kwargs.get("queue_name", "default"))
+    if queue_name in _INFEED_QUEUES:
+        it = _INFEED_QUEUES[queue_name]
+        try:
+            val = next(it) if hasattr(it, "__next__") else it.pop(0)
+            return val
+        except (StopIteration, IndexError):
+            return 0
     return 0
 
 

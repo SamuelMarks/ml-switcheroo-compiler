@@ -50,6 +50,14 @@ backend_allowed_roots:
   metal:
     - "metal"
     - "msl"
+  numba:
+    - "numba"
+    - "nb"
+    - "numpy"
+    - "np"
+  sparse:
+    - "sparse"
+    - "ml_switcheroo_compiler"
 
 backend_default_root:
   pytorch: "torch"
@@ -67,6 +75,8 @@ backend_default_root:
   edge_onnx: "onnx"
   webgpu: "webgpu"
   metal: "metal"
+  numba: "numba"
+  sparse: "sparse"
 
 root_expansions:
   jnp: "jax.numpy"

@@ -381,3 +381,236 @@ def test_backends_pytorch_distributed_collectives_branches() -> None:
         assert pytorch_all_gather("raw_tensor") == "raw_tensor"
         assert pytorch_reduce_scatter("raw_tensor") == "raw_tensor"
         assert pytorch_broadcast("raw_tensor") == "raw_tensor"
+
+
+def test_edge_profiler_branches() -> None:
+    """Test full line and branch coverage for EdgeProfiler."""
+    from ml_switcheroo_compiler.backends.edge.profiler import (
+        EdgeProfiler,
+        _calculate_edge_memory_bytes,
+        _get_process_memory_mb,
+    )
+
+    # 1. Platform checks for _get_process_memory_mb
+    with patch("sys.platform", "darwin"):
+        assert _get_process_memory_mb() > 0.0
+    with patch("sys.platform", "linux"):
+        mem = _get_process_memory_mb()
+        assert mem > 0.0
+
+    # 2. _calculate_edge_memory_bytes with empty graph or no nodes
+    empty_graph = IRGraph()
+    empty_graph.nodes = {}
+    assert _calculate_edge_memory_bytes(empty_graph) == 65536
+    empty_graph_no_attr = IRGraph()
+    del empty_graph_no_attr.nodes
+    assert _calculate_edge_memory_bytes(empty_graph_no_attr) == 65536
+
+    # 3. _calculate_edge_memory_bytes with nodes having shape_metadata / shape including non-positive or non-int dim
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input")
+    n1.shape_metadata = (10, -1, "dynamic", 2)
+    n2 = IRNode(id="n2", op_type="Relu")
+    n2.shape = (4, 4)
+    n3 = IRNode(id="n3", op_type="Other")
+    n3.shape = None
+    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    bytes_calc = _calculate_edge_memory_bytes(g)
+    assert bytes_calc >= 65536
+
+    # 4. _prepare_inputs when input_keys match and when they do not match
+    profiler = EdgeProfiler()
+    g_inputs = IRGraph()
+    g_inputs.nodes["x"] = IRNode(id="x", op_type="Input")
+    inputs_payload = {"x": [1.0, 2.0]}
+    prep = profiler._prepare_inputs(g_inputs, inputs_payload)
+    assert prep == [[1.0, 2.0]]
+
+    # _prepare_inputs when graph has no nodes or input_keys do not match
+    assert profiler._prepare_inputs(empty_graph, {"a": [1.0]}) == [[1.0]]
+
+    # 5. profile_graph with ops where evaluate_graph succeeds
+    g_ops = IRGraph()
+    g_ops.nodes["x"] = IRNode(id="x", op_type="Input")
+    g_ops.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "x"])
+    g_ops.outputs = ["add"]
+    with patch("ml_switcheroo_compiler.backends.edge.profiler.evaluate_graph", return_value={"add": [2.0]}):
+        res = profiler.profile_graph(g_ops, inputs={"x": [1.0]}, num_iters=2, warmup_iters=1)
+        assert "latency_ms" in res
+        assert "peak_memory_mb" in res
+
+    # 6. profile_graph with ops where evaluate_graph raises Exception
+    with patch("ml_switcheroo_compiler.backends.edge.profiler.evaluate_graph", side_effect=RuntimeError("Eval failed")):
+        res_fail = profiler.profile_graph(g_ops, inputs={"x": [1.0]}, num_iters=1, warmup_iters=1)
+        assert "latency_ms" in res_fail
+
+    # 7. profile_graph with no ops (has_ops is False)
+    res_no_ops = profiler.profile_graph(g_inputs, inputs={"x": [1.0, 2.0]}, num_iters=1, warmup_iters=1)
+    assert "latency_ms" in res_no_ops
+
+
+def test_numba_profiler_branches() -> None:
+    """Test full line and branch coverage for NumbaProfiler."""
+    import importlib
+
+    from ml_switcheroo_compiler.backends.numba import profiler as nb_prof_mod
+    from ml_switcheroo_compiler.backends.numba.profiler import (
+        NumbaProfiler,
+        _get_process_memory_mb,
+    )
+
+    # 1. Platform checks
+    with patch("sys.platform", "darwin"):
+        assert _get_process_memory_mb() > 0.0
+    with patch("sys.platform", "linux"):
+        mem = _get_process_memory_mb()
+        assert mem > 0.0
+
+    # 2. ImportError branch when numba is not installed
+    with patch.dict("sys.modules", {"numba": None}):
+        importlib.reload(nb_prof_mod)
+        assert nb_prof_mod.numba is None
+    importlib.reload(nb_prof_mod)
+
+    profiler = NumbaProfiler()
+
+    # 3. _prepare_inputs with np.ndarray and non-ndarray values
+    g = IRGraph()
+    g.nodes["x"] = IRNode(id="x", op_type="Input")
+    arr_in = np.array([1.0, 2.0], dtype=np.float32)
+    prep = profiler._prepare_inputs(g, {"x": arr_in})
+    assert len(prep) == 1
+    assert isinstance(prep[0], np.ndarray)
+
+    g_both = IRGraph()
+    g_both.nodes["x"] = IRNode(id="x", op_type="Input")
+    g_both.nodes["y"] = IRNode(id="y", op_type="Input")
+    prep_both = profiler._prepare_inputs(g_both, {"x": arr_in, "y": [3.0, 4.0]})
+    assert len(prep_both) == 2
+    assert isinstance(prep_both[0], np.ndarray)
+    assert isinstance(prep_both[1], np.ndarray)
+
+    # _prepare_inputs fallback when input keys don't match or graph has no nodes
+    empty_graph = IRGraph()
+    empty_graph.nodes = {}
+    prep_empty = profiler._prepare_inputs(empty_graph, {"other": [5.0]})
+    assert len(prep_empty) == 1
+
+    prep_fallback = profiler._prepare_inputs(g_both, {"other": arr_in})
+    assert len(prep_fallback) == 1
+
+    # 4. _compile_graph returning callable and returning None
+    with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="def evaluate(args): return args[0]"):
+        fn = profiler._compile_graph(g)
+        assert callable(fn)
+
+    with patch("ml_switcheroo_compiler.backends.numba.generator.NumbaGenerator.generate", return_value="def not_evaluate(): pass"):
+        fn_none = profiler._compile_graph(g)
+        assert fn_none is None
+
+    # 5. profile_graph with compiled function execution
+    g_ops = IRGraph()
+    g_ops.nodes["x"] = IRNode(id="x", op_type="Input")
+    g_ops.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "x"])
+    with patch.object(profiler, "_compile_graph", return_value=lambda inputs: inputs[0] * 2):
+        res_comp = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=2, warmup_iters=1)
+        assert "mean_latency_ms" in res_comp
+
+    # 6. profile_graph with compilation exception fallback and has_ops
+    with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("Compilation error")):
+        res_err = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=1, warmup_iters=1)
+        assert "mean_latency_ms" in res_err
+
+    # 7. profile_graph with empty inputs (numpy zeros branch)
+    g_empty = IRGraph()
+    res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
+    assert "mean_latency_ms" in res_empty
+
+
+def test_sparse_profiler_branches() -> None:
+    """Test full line and branch coverage for SparseProfiler."""
+    import importlib
+
+    from ml_switcheroo_compiler.backends.sparse import profiler as sp_prof_mod
+    from ml_switcheroo_compiler.backends.sparse.profiler import (
+        SparseProfiler,
+        _get_process_memory_mb,
+    )
+
+    # 1. Platform checks
+    with patch("sys.platform", "darwin"):
+        assert _get_process_memory_mb() > 0.0
+    with patch("sys.platform", "linux"):
+        mem = _get_process_memory_mb()
+        assert mem > 0.0
+
+    # 2. ImportError branch when sparse is not installed
+    with patch.dict("sys.modules", {"sparse": None}):
+        importlib.reload(sp_prof_mod)
+        assert sp_prof_mod.sparse is None
+    importlib.reload(sp_prof_mod)
+
+    profiler = SparseProfiler()
+
+    # 3. _prepare_inputs with sparse module present
+    import sparse as sp_mod
+
+    coo = sp_mod.COO.from_numpy(np.array([1.0, 0.0]))
+    gcxs = sp_mod.GCXS.from_numpy(np.array([0.0, 2.0]))
+    g = IRGraph()
+    g.nodes["x"] = IRNode(id="x", op_type="Input")
+    prep_sp = profiler._prepare_inputs(g, {"x": coo})
+    assert len(prep_sp) == 1
+
+    # Testing all branches of _prepare_inputs: GCXS, np.ndarray, and sequence/scalar
+    prep_multi = profiler._prepare_inputs(IRGraph(), {"a": gcxs, "b": np.array([1.0]), "c": [2.0]})
+    assert len(prep_multi) == 3
+
+    # When sparse is None
+    with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", None):
+        prep_no_sp = profiler._prepare_inputs(IRGraph(), {"x": np.array([1.0]), "y": [2.0]})
+        assert len(prep_no_sp) == 2
+
+    # Topologically sorted input keys branch
+    g_two = IRGraph()
+    g_two.nodes["x"] = IRNode(id="x", op_type="Input")
+    g_two.nodes["y"] = IRNode(id="y", op_type="Input")
+    prep_matched = profiler._prepare_inputs(g_two, {"x": [1.0], "y": [2.0]})
+    assert len(prep_matched) == 2
+
+    # 4. _compile_graph returning callable and returning None
+    with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def evaluate(args): return args[0]"):
+        fn = profiler._compile_graph(g)
+        assert callable(fn)
+
+    with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def other(): pass"):
+        fn_none = profiler._compile_graph(g)
+        assert fn_none is None
+
+    # 5. profile_graph with compiled function execution
+    g_ops = IRGraph()
+    g_ops.nodes["x"] = IRNode(id="x", op_type="Input")
+    g_ops.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "x"])
+    with patch.object(profiler, "_compile_graph", return_value=lambda inputs: inputs[0]):
+        res_comp = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=2, warmup_iters=1)
+        assert "mean_latency_ms" in res_comp
+
+    # 6. profile_graph with compilation exception fallback and add accumulation
+    with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("Compilation error")):
+        with patch.object(profiler, "_prepare_inputs", return_value=[np.array([1.0]), np.array([2.0])]):
+            res_accum = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=1, warmup_iters=1)
+            assert "mean_latency_ms" in res_accum
+
+    # 7. profile_graph fallback with non-addable objects
+    class NoAdd:
+        """Dummy object without addition support."""
+
+    with patch.object(profiler, "_compile_graph", side_effect=RuntimeError("Compilation error")):
+        with patch.object(profiler, "_prepare_inputs", return_value=[NoAdd(), NoAdd()]):
+            res_no_add = profiler.profile_graph(g_ops, inputs={"x": np.array([1.0])}, num_iters=1, warmup_iters=1)
+            assert "mean_latency_ms" in res_no_add
+
+    # 8. profile_graph with empty inputs
+    g_empty = IRGraph()
+    res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
+    assert "mean_latency_ms" in res_empty

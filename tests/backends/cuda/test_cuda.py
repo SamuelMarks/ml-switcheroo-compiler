@@ -3,6 +3,7 @@
 import ctypes
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
@@ -947,3 +948,157 @@ def test_cuda_generator_synthesized_kernels_and_runner_none_lib():
     runner.record_event(None)
     runner.record_event(ctypes.c_void_p(12345))
     assert runner.elapsed_time(ctypes.c_void_p(1), ctypes.c_void_p(2)) == 0.0
+
+
+def test_cuda_prepare_input_buffers() -> None:
+    """Verify input buffer preparation across array, bytes, data wrapper, and fallback types."""
+    from ml_switcheroo_compiler.backends.cuda.cuda import _prepare_cuda_input_buffers
+
+    class _WrapperWithData:
+        def __init__(self, arr: np.ndarray) -> None:
+            self.data = arr
+
+    graph = IRGraph()
+    graph.inputs = ["x", "y"]
+
+    arr = np.array([1, 2, 3], dtype=np.int32)
+    b_raw = b"raw_bytes"
+    ba_raw = bytearray(b"bytearray_data")
+    mv_raw = memoryview(b"memoryview_data")
+    wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
+    list_raw = [1, 2, 3]
+
+    buffers = _prepare_cuda_input_buffers(
+        graph,
+        (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
+    )
+
+    assert buffers["x"] == arr.tobytes()
+    assert buffers["y"] == b_raw
+    assert buffers["in_2"] == bytes(ba_raw)
+    assert buffers["in_3"] == bytes(mv_raw)
+    assert buffers["in_4"] == wrapped.data.tobytes()
+    assert buffers["in_5"] == bytes(list_raw)
+
+
+def test_cuda_evaluate_fallback() -> None:
+    """Verify interpreter fallback execution with single, multi, and empty output graphs."""
+    from ml_switcheroo_compiler.backends.cuda.cuda import _evaluate_cuda_fallback
+
+    class _MockTensor:
+        def __init__(self, data: np.ndarray) -> None:
+            self.data = data
+
+    # 1. Single output graph
+    g_single = IRGraph()
+    n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
+    n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    g_single.nodes = {"x": n_in, "out": n_exp}
+    g_single.inputs = ["x"]
+    g_single.outputs = ["out"]
+
+    arr = np.array([1.0, 2.0], dtype=np.float32)
+    res_single = _evaluate_cuda_fallback(g_single, (arr,))
+    assert res_single is not None
+
+    # Test with arg.data wrapper and extra arguments
+    res_wrapper = _evaluate_cuda_fallback(g_single, (_MockTensor(arr), "extra_arg"))
+    assert res_wrapper is not None
+
+    # 2. Multi output graph
+    g_multi = IRGraph()
+    n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.inputs = ["x"]
+    g_multi.outputs = ["out1", "out2"]
+
+    res_multi = _evaluate_cuda_fallback(g_multi, (arr,))
+    assert isinstance(res_multi, tuple)
+    assert len(res_multi) == 2
+
+    # 3. Empty output graph
+    g_empty = IRGraph()
+    g_empty.nodes = {"x": n_in}
+    g_empty.inputs = ["x"]
+    g_empty.outputs = []
+
+    res_empty = _evaluate_cuda_fallback(g_empty, (arr,))
+    assert isinstance(res_empty, dict)
+
+
+def test_cuda_compile_and_runner_dispatch() -> None:
+    """Verify CudaCodeGenerator._compile_aot_impl and runner execution paths."""
+    from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+    from ml_switcheroo_compiler.backends.hardware_compilers import HardwareCompilationResult
+
+    graph = IRGraph()
+    n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
+    n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    graph.nodes = {"x": n_in, "out": n_exp}
+    graph.inputs = ["x"]
+    graph.outputs = ["out"]
+
+    gen = CudaCodeGenerator(graph)
+
+    # 1. Compile with list options and assembly ptx
+    mock_comp_res = HardwareCompilationResult(
+        success=True,
+        assembly_or_ptx=".version 7.0\n.target sm_70",
+        compiler_cli="nvcc",
+    )
+    with patch("ml_switcheroo_compiler.backends.hardware_compilers.CUDACompiler.compile", return_value=mock_comp_res):
+        artifact = gen.compile_aot(graph, compile_options=["-O3"])
+        assert isinstance(artifact, CompiledArtifact)
+        assert artifact.binary_bytes == b".version 7.0\n.target sm_70"
+        assert artifact.metadata["compiler_cli"] == "nvcc"
+
+    # 2. Compile without list options and without assembly ptx
+    mock_comp_empty = HardwareCompilationResult(
+        success=False,
+        assembly_or_ptx="",
+        compiler_cli="nvcc",
+    )
+    with patch("ml_switcheroo_compiler.backends.hardware_compilers.CUDACompiler.compile", return_value=mock_comp_empty):
+        artifact_empty = gen.compile_aot(graph, compile_options="not-a-list")
+        assert artifact_empty.binary_bytes == b""
+
+    # 3. Runner when CUDARunner.is_available() is True
+    # 3a. Single output
+    mock_runner = MagicMock()
+    mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
+    with patch.object(CUDARunner, "is_available", return_value=True):
+        with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner):
+            res_avail = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
+            assert np.array_equal(res_avail, np.array([42.0]))
+
+    # 3b. Multi output
+    g_multi = IRGraph()
+    n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
+    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.inputs = ["x"]
+    g_multi.outputs = ["out1", "out2"]
+    gen_multi = CudaCodeGenerator(g_multi)
+    with patch("ml_switcheroo_compiler.backends.hardware_compilers.CUDACompiler.compile", return_value=mock_comp_res):
+        art_multi = gen_multi.compile_aot(g_multi)
+
+    mock_runner_multi = MagicMock()
+    mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
+    with patch.object(CUDARunner, "is_available", return_value=True):
+        with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_multi):
+            res_m = art_multi.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
+            assert res_m == (100, 200)
+
+    # 3c. Exception inside CUDARunner block falls back to evaluator
+    mock_runner_err = MagicMock()
+    mock_runner_err.execute_graph.side_effect = RuntimeError("GPU crash")
+    with patch.object(CUDARunner, "is_available", return_value=True):
+        with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_err):
+            res_err = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
+            assert res_err is not None
+
+    # 4. Runner when CUDARunner.is_available() is False -> fallback
+    with patch.object(CUDARunner, "is_available", return_value=False):
+        res_fallback = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
+        assert res_fallback is not None

@@ -584,3 +584,72 @@ def test_sparse_init_import_guard() -> None:
                 importlib.reload(sp_pkg)
 
     importlib.reload(sp_pkg)
+
+
+def test_sparse_aot_compilation_and_runner_execution() -> None:
+    """Verify Sparse ahead-of-time compilation, compiled runner dispatch, and fallback branches."""
+    # 1. Normal compilation and successful execution with single output
+    g = IRGraph(name="test_sparse_aot")
+    g.nodes = {
+        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+    }
+    g.inputs = ["x"]
+    g.outputs = ["y"]
+    gen = SparseGenerator(g)
+    artifact = gen.compile_aot(g)
+    assert artifact.metadata is not None
+    assert artifact.metadata["backend"] == "sparse_coo"
+    assert artifact["backend"] == "sparse_coo"
+
+    arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
+    res = artifact(arr)
+    # Result could be COOTensor or numpy array
+    dense_res = res.to_dense() if hasattr(res, "to_dense") else res
+    np.testing.assert_allclose(dense_res, arr + arr)
+
+    # 2. Multi-output execution with extra unused arguments
+    g_multi = IRGraph(name="test_sparse_aot_multi")
+    g_multi.nodes = {
+        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+        "z": IRNode(id="z", op_type="Mul", inputs=["x", "y"], shape_metadata=(4,)),
+    }
+    g_multi.inputs = ["x"]
+    g_multi.outputs = ["y", "z"]
+    gen_multi = SparseGenerator(g_multi)
+    artifact_multi = gen_multi.compile_aot(g_multi)
+    res_multi = artifact_multi(arr, "extra_arg")
+    assert isinstance(res_multi, tuple) and len(res_multi) == 2
+
+    # 3. Fallback execution when compile_fn returns None
+    with patch.object(gen, "compile_fn", return_value=None):
+        artifact_bad = gen._compile_aot_impl(g)
+        res_fallback = artifact_bad(arr, "extra_arg")
+        np.testing.assert_allclose(res_fallback, arr + arr)
+
+    # Multi-output fallback execution
+    with patch.object(gen_multi, "compile_fn", return_value=None):
+        artifact_multi_fallback = gen_multi._compile_aot_impl(g_multi)
+        res_mf = artifact_multi_fallback(arr, "extra_arg")
+        assert isinstance(res_mf, tuple) and len(res_mf) == 2
+        np.testing.assert_allclose(res_mf[0], arr + arr)
+
+    # 4. Fallback execution with empty outputs
+    g_empty = IRGraph(name="test_sparse_aot_empty")
+    g_empty.nodes = {"x": IRNode(id="x", op_type="Input", shape_metadata=(4,))}
+    g_empty.inputs = ["x"]
+    g_empty.outputs = []
+    with patch.object(gen, "compile_fn", return_value=None):
+        artifact_empty = gen._compile_aot_impl(g_empty)
+        res_empty = artifact_empty(arr)
+        assert isinstance(res_empty, dict)
+
+    # 5. Fallback execution when compiled_fn raises inside runner
+    def exploding_sparse_fn(*args: object) -> None:
+        raise RuntimeError("simulated sparse execution failure")
+
+    with patch.object(gen, "compile_fn", return_value=exploding_sparse_fn):
+        artifact_crash = gen._compile_aot_impl(g)
+        res_recovered = artifact_crash(arr)
+        np.testing.assert_allclose(res_recovered, arr + arr)

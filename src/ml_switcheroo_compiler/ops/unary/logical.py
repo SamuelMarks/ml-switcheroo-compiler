@@ -275,6 +275,10 @@ def _get_size_from_shape(obj) -> int | None:
     Returns:
         int | None: The size.
     """
+    if obj is None:
+        return 0
+    if isinstance(obj, (list, tuple)):
+        return len(obj)
     shape = getattr(obj, "shape", ())
     if not shape:
         return 1
@@ -309,7 +313,7 @@ class Ediff1d(OpDef):
 
         size = _get_size_from_shape(ary)
         if size is not None:
-            size -= 1
+            size = max(size - 1, 0)
 
         if to_begin is not None:
             s_b = _get_size_from_shape(to_begin)

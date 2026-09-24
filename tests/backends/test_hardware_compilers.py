@@ -64,6 +64,44 @@ def test_base_hardware_compiler_fallback_syntax_check_delimiter_branches() -> No
     assert base._fallback_syntax_check("void foo(int x[2]) { if (x[0]) {} }", ["void"])
 
 
+def test_base_hardware_compiler_fallback_syntax_comments_strings_and_preprocessor() -> None:
+    """Verify comments, quotes, and preprocessor directives parsing branches."""
+    base = BaseHardwareCompiler()
+
+    # Line comment
+    assert base._fallback_syntax_check("// Single line comment\nvoid foo() {}", ["void"])
+
+    # Block comment closed
+    assert base._fallback_syntax_check("/* Multi\nline\ncomment */ void foo() {}", ["void"])
+
+    # Block comment unclosed
+    assert not base._fallback_syntax_check("/* Unclosed comment void foo() {}", ["void"])
+
+    # Quoted string closed with escape
+    assert base._fallback_syntax_check('const char* s = "hello \\" world"; void foo() {}', ["void"])
+
+    # Quoted string unclosed
+    assert not base._fallback_syntax_check('const char* s = "unclosed; void foo() {}', ["void"])
+
+    # Single-quoted char closed and escaped
+    assert base._fallback_syntax_check("char c = '\\''; void foo() {}", ["void"])
+
+    # Single-quoted char unclosed
+    assert not base._fallback_syntax_check("char c = 'x; void foo() {}", ["void"])
+
+    # Preprocessor balanced
+    assert base._fallback_syntax_check("#if 1\n#ifdef FOO\n#ifndef BAR\nvoid foo() {}\n#endif\n#endif\n#endif", ["void"])
+
+    # Preprocessor unclosed (#if without #endif)
+    assert not base._fallback_syntax_check("#if 1\nvoid foo() {}", ["void"])
+
+    # Preprocessor extra #endif (negative balance)
+    assert not base._fallback_syntax_check("#endif\nvoid foo() {}", ["void"])
+
+    # Preprocessor line with solitary hash
+    assert base._fallback_syntax_check("#\nvoid foo() {}", ["void"])
+
+
 def test_cuda_compiler_compile_native(tmp_path: Path) -> None:
     """Verify CUDACompiler.compile when native nvcc is available."""
     cuda = CUDACompiler()

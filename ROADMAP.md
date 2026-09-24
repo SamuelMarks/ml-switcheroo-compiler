@@ -32,7 +32,3 @@ To further our goal of being a universally flexible execution engine, the follow
 ### 5. [Sparse](https://sparse.pydata.org/) (`sparse`)
 * **Why Consider:** The `sparse` library implements multidimensional sparse arrays conforming to the `numpy.ndarray` interface, primarily using the Coordinate List (COO) layout.
 * **Architectural Fit:** Major ML frameworks often treat sparse operations as a second-class citizen. Implementing a dedicated `SparseGenerator` backend would allow the compiler to natively route specific ops (like sparse-dense matrix multiplication) to an engine explicitly built for them. This is critical for Graph Neural Networks (GNNs) or models with massive, highly sparse attention masks.
-
-### 6. [Bohrium](https://github.com/bh107/bohrium) (`bohrium`)
-* **Why Consider:** Bohrium provides a drop-in replacement for NumPy but uses a lazy evaluation strategy to construct a computation graph before executing it on multi-core CPUs or GPU clusters via a runtime written in C/OpenCL.
-* **Architectural Fit:** Like Dask, Bohrium handles distributed computation, but it aims for a more seamless, single-machine multi-core experience. Implementing Bohrium would give users an alternative scaling strategy that doesn't require the explicit chunking and cluster management overhead required by Dask, making scaling out simpler for intermediate users.

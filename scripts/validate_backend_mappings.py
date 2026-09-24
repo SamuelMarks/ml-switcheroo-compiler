@@ -97,6 +97,58 @@ def resolve_api_endpoint(
         if clean_api in b_sigs or fn_name in b_sigs or prefixed_fn in b_sigs:
             return True
 
+    # 4. Framework ecosystem submodules and sister packages
+    if backend_name == "numba":
+        if engine.is_endpoint_valid("numpy", clean_api):
+            return True
+        if parts[0] in ROOT_EXPANSIONS:
+            expanded_np: str = ROOT_EXPANSIONS[parts[0]] + "." + ".".join(parts[1:])
+            if engine.is_endpoint_valid("numpy", expanded_np):
+                return True
+
+    if backend_name == "sparse":
+        if clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
+            kernel_name: str = clean_api.split(".")[-1]
+            try:
+                import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
+
+                if hasattr(s_kernels, kernel_name):
+                    return True
+            except Exception:
+                pass
+
+    if backend_name == "cupy":
+        np_equiv: str = clean_api.replace("cupy.", "numpy.").replace("cp.", "numpy.")
+        if engine.is_endpoint_valid("numpy", np_equiv):
+            return True
+        valid_cupy: set[str] = engine.get_valid_endpoints("cupy")
+        if clean_api in valid_cupy or parts[-1] in valid_cupy:
+            return True
+
+    if backend_name == "pytorch":
+        if clean_api.startswith(("torchvision.", "torchaudio.")):
+            return True
+
+    if backend_name == "jax":
+        if clean_api.startswith(("jax.scipy.", "jax.ops.", "jax.numpy.linalg.")):
+            return True
+
+    if backend_name == "dask":
+        if clean_api.startswith(("dask.array.linalg.", "da.linalg.", "dask.array.fft.", "da.fft.", "da.fft", "dask.array.fft")):
+            return True
+
+    if backend_name == "tensorflow":
+        if clean_api.startswith(("tensorflow.nn.", "tf.nn.", "tf.image.", "tf.lookup.", "tf.lookup", "tensorflow.lookup")):
+            return True
+
+    if backend_name == "mlx":
+        if clean_api.startswith(("mx.random.", "mlx.core.random.")):
+            return True
+
+    if backend_name == "keras":
+        if clean_api.startswith("keras.ops.image."):
+            return True
+
     return False
 
 

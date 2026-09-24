@@ -60,23 +60,71 @@ def _fft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 @global_eager_registry.register("Fftconvolve")
 def _fftconvolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
-    """Evaluate _fftconvolve operation.
+    """Evaluate _fftconvolve operation using backend or native FFT/IFFT fallback.
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args: Positional args (in1, in2).
+        **kwargs: Keyword args (mode, axes).
 
     Returns:
-            object: Result.
+        Any: Discrete convolution result of in1 and in2.
     """
-    print("HITTING FFTCONVOLVE")
+    if len(args) < 2 or args[0] is None or args[1] is None:
+        return None
+
+    in1, in2 = args[0], args[1]
+    mode = kwargs.get("mode", "full")
+    axes = kwargs.get("axes", None)
+
     fft_mod = getattr(backend_module, "fft", None)
     if hasattr(fft_mod, "fftconvolve"):
         return fft_mod.fftconvolve(*args, **kwargs)
-    elif hasattr(backend_module, "signal") and hasattr(backend_module.signal, "fftconvolve"):
+    if hasattr(backend_module, "signal") and hasattr(backend_module.signal, "fftconvolve"):
         return backend_module.signal.fftconvolve(*args, **kwargs)
-    return None
+
+    import numpy as np
+
+    np_mod = np if backend_module is None else getattr(backend_module, "numpy", np)
+    a1 = np_mod.asarray(in1)
+    a2 = np_mod.asarray(in2)
+
+    ndim = max(a1.ndim, a2.ndim)
+    s1 = list(a1.shape) + [1] * (ndim - a1.ndim)
+    s2 = list(a2.shape) + [1] * (ndim - a2.ndim)
+    conv_shape = [s1[i] + s2[i] - 1 for i in range(ndim)]
+
+    is_real = not (np_mod.iscomplexobj(a1) or np_mod.iscomplexobj(a2))
+    fft_lib = getattr(np_mod, "fft", np.fft)
+
+    if is_real:
+        f1 = fft_lib.rfftn(a1, s=conv_shape, axes=axes)
+        f2 = fft_lib.rfftn(a2, s=conv_shape, axes=axes)
+        out = fft_lib.irfftn(f1 * f2, s=conv_shape, axes=axes)
+    else:
+        f1 = fft_lib.fftn(a1, s=conv_shape, axes=axes)
+        f2 = fft_lib.fftn(a2, s=conv_shape, axes=axes)
+        out = fft_lib.ifftn(f1 * f2, s=conv_shape, axes=axes)
+
+    if mode == "full":
+        return out
+    elif mode == "same":
+        slices = []
+        for i in range(ndim):
+            start = (s2[i] - 1) // 2
+            slices.append(slice(start, start + s1[i]))
+        return out[tuple(slices)]
+    elif mode == "valid":
+        slices = []
+        for i in range(ndim):
+            start = s2[i] - 1
+            length = s1[i] - s2[i] + 1
+            if length < 1:
+                return np_mod.empty((0,) * ndim, dtype=out.dtype)
+            slices.append(slice(start, start + length))
+        return out[tuple(slices)]
+
+    return out
 
 
 @global_eager_registry.register("Fftfreq")

@@ -1,7 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module __init__.py."""
+"""Serialization package and checkpoint management."""
 
-"""Serialization package."""
+from __future__ import annotations
+
 import json
 import os
 import pickle
@@ -9,7 +10,7 @@ import tempfile
 import typing
 import zipfile
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 
@@ -344,10 +345,10 @@ class KerasSerializationContext:
     """
 
     filepath: str
-    config_dict: typing.Optional[dict[str, object]] = None
-    metadata: typing.Optional[dict[str, object]] = None
-    weights_store: typing.Optional[dict[str, object]] = None
-    state_store: typing.Optional[dict[str, object]] = None
+    config_dict: dict[str, object] | None = None
+    metadata: dict[str, object] | None = None
+    weights_store: dict[str, object] | None = None
+    state_store: dict[str, object] | None = None
 
 
 def _write_keras_zip(ctx: KerasSerializationContext) -> None:
@@ -382,60 +383,97 @@ def save_model(model, filepath: str, overwrite: bool = True, zipped=None, **kwar
     _write_keras_zip(ctx)
 
 
-def load_model(filepath: str, custom_objects=None, compile: bool = True, safe_mode: bool = True, **kwargs):
-    """Load model.
+class LoadedModel:
+    """LoadedModel executable model container holding configuration, weights, and metadata."""
+
+    def __init__(
+        self,
+        config: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+        weights: dict[str, Any] | None = None,
+    ) -> None:
+        """Initialize LoadedModel instance.
+
+        Args:
+            config (dict[str, Any]): Model architecture configuration dictionary.
+            metadata (Optional[dict[str, Any]]): Model serialization metadata dictionary.
+            weights (Optional[dict[str, Any]]): Restored model weights dictionary.
+        """
+        self.config = config
+        self.metadata = metadata or {}
+        self.weights = weights or {}
+
+
+def load_model(
+    filepath: str,
+    custom_objects: dict[str, Any] | None = None,
+    compile: bool = True,
+    safe_mode: bool = True,
+    **kwargs: Any,
+) -> LoadedModel:
+    """Load and reconstruct a serialized model archive from a .keras zip file.
 
     Args:
-        filepath (str): The filepath parameter.
-        custom_objects (object): The custom_objects parameter.
-        compile (bool): The compile parameter.
-        safe_mode (bool): The safe_mode parameter.
-        **kwargs (object): Keyword args.
+        filepath (str): Path to the model archive file.
+        custom_objects (Optional[dict[str, Any]]): Mapping of custom classes or functions.
+        compile (bool): Whether to compile the model after loading.
+        safe_mode (bool): Whether to disallow arbitrary code execution.
+        **kwargs (Any): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
-    """
-    try:
-        import json
-        import zipfile
+        LoadedModel: Fully reconstructed model container with config, metadata, and weights.
 
+    Raises:
+        FileNotFoundError: If filepath does not exist.
+        ValueError: If archive is corrupted or not a valid zip archive.
+    """
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Model file '{filepath}' not found")
+
+    if os.path.isdir(filepath):
+        raise ValueError(f"Invalid model archive: '{filepath}' is a directory, expected a .keras zip archive")
+
+    if not zipfile.is_zipfile(filepath):
+        raise ValueError(f"Invalid or corrupted model archive at '{filepath}'")
+
+    try:
         with zipfile.ZipFile(filepath, "r") as zf:
+            if "config.json" not in zf.namelist():
+                raise ValueError(f"Model archive '{filepath}' is missing 'config.json'")
             config = json.loads(zf.read("config.json").decode("utf-8"))
 
-        class LoadedModel:
-            """LoadedModel operation class."""
+            metadata: dict[str, Any] = {}
+            if "metadata.json" in zf.namelist():
+                metadata = json.loads(zf.read("metadata.json").decode("utf-8"))
 
-            def __init__(self, cfg) -> None:
-                """__init__ method for LoadedModel.
+            weights: dict[str, Any] = {}
+            if "model.weights.h5" in zf.namelist():
+                tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
+                os.close(tmp_fd)
+                try:
+                    with open(tmp_path, "wb") as f:
+                        f.write(zf.read("model.weights.h5"))
+                    weights = _load_h5_weights(tmp_path)
+                finally:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
 
-                Args:
-                    cfg (dict): The cfg parameter.
-                """
-                self.config = cfg
-
-        return LoadedModel(config)
-    except Exception:
-
-        class FallbackModel:
-            """FallbackModel operation class."""
-
-            def __init__(self) -> None:
-                """__init__ method for FallbackModel."""
-                self.config = {}
-                self.fallback = True
-
-        return FallbackModel()
+            return LoadedModel(config=config, metadata=metadata, weights=weights)
+    except Exception as e:
+        if isinstance(e, (ValueError, FileNotFoundError)):
+            raise
+        raise ValueError(f"Failed to load model from '{filepath}': {e}") from e
 
 
-def register_keras_serializable(package: str = "Custom", name: Optional[str] = None) -> Callable[[T], T]:
+def register_keras_serializable(package: str = "Custom", name: str | None = None) -> Callable[[T], T]:
     """Register a custom object for Keras serialization.
 
     Args:
-        package (str): The package parameter.
-        name (Optional): The name parameter.
+        package (str): The package identifier under which to register.
+        name (Optional[str]): Custom registered name.
 
     Returns:
-        Callable: Result.
+        Callable[[T], T]: Decorator registering the target class or function.
     """
 
     def decorator(arg: T) -> T:
@@ -445,8 +483,12 @@ def register_keras_serializable(package: str = "Custom", name: Optional[str] = N
             arg (T): The class or function being decorated.
 
         Returns:
-            T: The same class or function.
+            T: The registered object unchanged.
         """
+        registered_name = name or getattr(arg, "__name__", str(arg))
+        _CUSTOM_OBJECTS[registered_name] = arg
+        if package:
+            _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = arg
         return arg
 
     return decorator
@@ -458,157 +500,276 @@ class custom_object_scope:
     Provides a scope in which custom objects are available for serialization and deserialization.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        """__init__ method for custom_object_scope.
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize custom_object_scope with custom object dictionary or kwargs.
 
         Args:
-            *args (object): Custom objects.
-            **kwargs (object): Custom objects.
+            *args (Any): Custom objects dictionary.
+            **kwargs (Any): Custom objects as keyword arguments.
         """
-        self.custom_objects = args[0] if args else kwargs
+        self.custom_objects = args[0] if args and isinstance(args[0], dict) else kwargs
+        self._backup: dict[str, Any] = {}
 
-    def __enter__(self) -> "custom_object_scope":
-        """__enter__ method for custom_object_scope.
+    def __enter__(self) -> custom_object_scope:
+        """Enter scope and register custom objects.
 
         Returns:
-            custom_object_scope: The context manager instance.
+            custom_object_scope: The active context manager instance.
         """
+        self._backup = dict(_CUSTOM_OBJECTS)
+        _CUSTOM_OBJECTS.update(self.custom_objects)
         return self
 
-    def __exit__(self, *args, **kwargs) -> None:
-        """__exit__ method for custom_object_scope.
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        """Exit scope and restore previous custom objects state.
 
         Args:
-            *args (object): Exiting arguments.
-            **kwargs (object): Exiting keyword arguments.
+            *args (Any): Exception arguments if raised.
+            **kwargs (Any): Keyword arguments.
         """
+        _CUSTOM_OBJECTS.clear()
+        _CUSTOM_OBJECTS.update(self._backup)
 
 
-class CustomObjectScope:
+class CustomObjectScope(custom_object_scope):
     """Alias for custom_object_scope to maintain compatibility."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        """__init__ method for CustomObjectScope.
-
-        Args:
-            *args (object): Custom objects.
-            **kwargs (object): Custom objects.
-        """
-        self.args = args
-        self.kwargs = kwargs
-
-    def __enter__(self) -> "CustomObjectScope":
-        """__enter__ method for CustomObjectScope.
-
-        Returns:
-            CustomObjectScope: The context manager instance.
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """__exit__ method for CustomObjectScope.
-
-        Args:
-            exc_type (object): The exc_type parameter.
-            exc_val (object): The exc_val parameter.
-            exc_tb (object): The exc_tb parameter.
-        """
-        self.args = ()
-        self.kwargs = {}
+    pass
 
 
 class KerasFileEditor:
     """Editor class for interacting with and modifying Keras save files."""
 
     def __init__(self, filepath: str) -> None:
-        """__init__ method for KerasFileEditor.
+        """Initialize KerasFileEditor.
 
         Args:
-            filepath (str): The filepath parameter.
+            filepath (str): The destination file path.
         """
         self.filepath = filepath
 
 
-def deserialize_keras_object(*args, **kwargs):
-    """Deserialize a given Keras object from its configuration.
-
-    Args:
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
-
-    Returns: Tensor: The deserialized Keras object instance.
-    """
-    if args and isinstance(args[0], dict):
-        return args[0]
-    return kwargs
+_CUSTOM_OBJECTS: dict[str, Any] = {}
 
 
-_CUSTOM_OBJECTS = {}
-
-
-def get_custom_objects(*args, **kwargs):
+def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
     """Get the dictionary of currently registered custom objects.
 
     Args:
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (Any): Variable length argument list.
+        **kwargs (Any): Arbitrary keyword arguments.
 
     Returns:
-        dict[str, object]: A dictionary containing custom objects.
+        dict[str, Any]: Mapping of registered names to custom classes/functions.
     """
     return _CUSTOM_OBJECTS
 
 
-def get_registered_name(*args, **kwargs) -> str:
+def get_registered_name(obj: Any = None, *args: Any, **kwargs: Any) -> str:
     """Get the registered name for a given class or function.
 
     Args:
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
+        obj (Any): Target class or function object.
+        *args (Any): Variable length argument list.
+        **kwargs (Any): Arbitrary keyword arguments.
 
     Returns:
         str: The registered name of the object.
     """
-    if args and hasattr(args[0], "__name__"):
-        return args[0].__name__
+    target = obj if obj is not None else (args[0] if args else kwargs.get("obj"))
+    for name, registered_obj in _CUSTOM_OBJECTS.items():
+        if registered_obj is target:
+            return name
+    if hasattr(target, "__name__"):
+        return target.__name__
     return "CustomObject"
 
 
-def get_registered_object(*args, **kwargs):
+def get_registered_object(name: Any = None, *args: Any, **kwargs: Any) -> Any:
     """Get the class or function registered under a specific name.
 
     Args:
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
+        name (Any): Name identifier of the custom object.
+        *args (Any): Variable length argument list.
+        **kwargs (Any): Arbitrary keyword arguments.
 
-    Returns: Tensor: The registered class or function object.
+    Returns:
+        Any: The registered class or function object, or None if not found.
     """
-    name = args[0] if args else kwargs.get("name")
-    return _CUSTOM_OBJECTS.get(name)
+    key = name if name is not None else (args[0] if args else kwargs.get("name"))
+    return _CUSTOM_OBJECTS.get(key) if key is not None else None
 
 
-def serialize_keras_object(*args, **kwargs):
-    """Serialize a Keras object into its configuration format.
+def _serialize_nested_config(val: Any) -> Any:
+    """Recursively serialize nested values within configuration dictionaries.
 
     Args:
-        *args (object): Variable length argument list.
-        **kwargs (object): Arbitrary keyword arguments.
+        val (Any): Config value to serialize.
 
-    Returns: Tensor: The serialized representation of the object.
+    Returns:
+        Any: Serialized primitive, dictionary, or list.
     """
-    if args and hasattr(args[0], "get_config"):
-        return args[0].get_config()
+    if val is None or isinstance(val, (int, float, str, bool)):
+        return val
+    if hasattr(val, "get_config"):
+        return serialize_keras_object(val)
+    if isinstance(val, dict):
+        return {k: _serialize_nested_config(v) for k, v in val.items()}
+    if isinstance(val, (list, tuple)):
+        return [_serialize_nested_config(item) for item in val]
+    return val
+
+
+def serialize_keras_object(instance: Any = None, **kwargs: Any) -> Any:
+    """Serialize a Keras object or compiler config into its dictionary representation.
+
+    Args:
+        instance (Any): Object instance to serialize.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        Any: Serialized dictionary structure.
+    """
+    obj = instance if instance is not None else (kwargs if kwargs else {})
+    if not obj:
+        return {}
+
+    if hasattr(obj, "get_config"):
+        cfg = obj.get_config()
+        # Check if obj or its class is registered in custom objects
+        reg_name: str | None = None
+        for name, reg_obj in _CUSTOM_OBJECTS.items():
+            if reg_obj is obj or reg_obj is getattr(obj, "__class__", None):
+                reg_name = name
+                break
+
+        if reg_name is not None:
+            class_name = getattr(obj, "__class__", type(obj)).__name__
+            return {
+                "class_name": class_name,
+                "config": _serialize_nested_config(cfg),
+                "module": getattr(obj, "__module__", None),
+                "registered_name": reg_name,
+            }
+        return _serialize_nested_config(cfg)
+
+    if isinstance(obj, dict):
+        return {k: _serialize_nested_config(v) for k, v in obj.items()}
+
+    if isinstance(obj, (list, tuple)):
+        return [_serialize_nested_config(item) for item in obj]
+
     return {}
 
 
-__all__ = ["_extract_numpy_weights", "concatenate_arrays", "get_npz_bytes", "is_numpy_array", "load_npz"]
+def deserialize_keras_object(
+    config: Any = None,
+    custom_objects: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> Any:
+    """Deserialize a Keras object or compiler config from its dictionary representation.
+
+    Args:
+        config (Any): Serialized configuration dictionary.
+        custom_objects (Optional[dict[str, Any]]): Optional dictionary of registered custom classes.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        Any: Deserialized object instance or reconstructed config dictionary.
+
+    Raises:
+        ValueError: If an unknown class identifier is encountered without registration.
+    """
+    cfg = config if config is not None else (kwargs if kwargs else {})
+    if not cfg:
+        return {}
+
+    if isinstance(cfg, dict):
+        if "class_name" in cfg and "config" in cfg:
+            class_name = cfg["class_name"]
+            sub_config = cfg["config"]
+            all_customs = dict(_CUSTOM_OBJECTS)
+            if custom_objects:
+                all_customs.update(custom_objects)
+
+            if class_name in all_customs:
+                cls_type = all_customs[class_name]
+                deserialized_sub = deserialize_keras_object(sub_config, custom_objects=custom_objects)
+                if hasattr(cls_type, "from_config"):
+                    return cls_type.from_config(deserialized_sub)
+                if callable(cls_type):
+                    return cls_type(**deserialized_sub) if isinstance(deserialized_sub, dict) else cls_type(deserialized_sub)
+                return cls_type
+
+            raise ValueError(f"Unknown class '{class_name}' encountered during deserialization. Register it via register_keras_serializable.")
+
+        return {k: deserialize_keras_object(v, custom_objects=custom_objects) for k, v in cfg.items()}
+
+    if isinstance(cfg, (list, tuple)):
+        return [deserialize_keras_object(item, custom_objects=custom_objects) for item in cfg]
+
+    return cfg
+
+
+__all__ = [
+    "CustomObjectScope",
+    "KerasFileEditor",
+    "KerasSerializationContext",
+    "LoadedModel",
+    "MaxShardSizePolicy",
+    "PythonState",
+    "SavedModel",
+    "ShardByTaskPolicy",
+    "TrackableResource",
+    "_compile_model_metadata",
+    "_extract_ema_state",
+    "_extract_model_state",
+    "_extract_model_weights",
+    "_extract_non_trainable_state",
+    "_extract_numpy_weights",
+    "_extract_optimizer_state",
+    "_get_format_handler",
+    "_infer_weight_format",
+    "_load_h5_weights",
+    "_load_npz_weights",
+    "_load_pickle_weights",
+    "_load_safetensors_weights",
+    "_save_as_h5",
+    "_save_as_safetensors",
+    "_validate_and_map_weights",
+    "_write_h5_to_zip",
+    "_write_keras_zip",
+    "concatenate_arrays",
+    "custom_object_scope",
+    "deserialize_keras_object",
+    "export_model_topology",
+    "export_to_onnx",
+    "export_to_tflite",
+    "get_custom_objects",
+    "get_npz_bytes",
+    "get_registered_name",
+    "get_registered_object",
+    "graph_to_json",
+    "is_numpy_array",
+    "load_model",
+    "load_npz",
+    "load_variable",
+    "load_weights",
+    "read_fingerprint",
+    "register_keras_serializable",
+    "run_restore_ops",
+    "save_model",
+    "save_weights",
+    "serialize_keras_object",
+    "to_numpy",
+]
 
 
 class TrackableResource:
     """Trackable resource for asset extraction."""
 
     def __init__(self) -> None:
-        """__init__ method for TrackableResource."""
+        """Initialize TrackableResource."""
         self.resource_id = None
         self.tracked: bool = False
 
@@ -617,18 +778,18 @@ class PythonState:
     """Python state synchronization capabilities."""
 
     def __init__(self) -> None:
-        """__init__ method for PythonState."""
-        self.state = {}
+        """Initialize PythonState."""
+        self.state: dict[str, Any] = {}
 
 
 class MaxShardSizePolicy:
     """Sharded saving protocol by max size."""
 
     def __init__(self, max_shard_size: int) -> None:
-        """__init__ method for MaxShardSizePolicy.
+        """Initialize MaxShardSizePolicy.
 
         Args:
-            max_shard_size (int): The max_shard_size parameter.
+            max_shard_size (int): Maximum size per shard in bytes.
         """
         self.max_shard_size = max_shard_size
 
@@ -637,61 +798,145 @@ class ShardByTaskPolicy:
     """Sharded saving protocol by task."""
 
     def __init__(self) -> None:
-        """__init__ method for ShardByTaskPolicy."""
+        """Initialize ShardByTaskPolicy."""
         self.policy = "task"
 
 
 class SavedModel:
-    """SavedModel proto serialization/deserialization."""
+    """SavedModel proto serialization/deserialization and asset bundle manager."""
 
-    def __init__(self) -> None:
-        """__init__ method for SavedModel."""
-        self.model = None
+    def __init__(self, model: Any = None, signatures: dict[str, Any] | None = None) -> None:
+        """Initialize SavedModel instance.
+
+        Args:
+            model (Any): Model or graph structure to encapsulate.
+            signatures (Optional[dict[str, Any]]): Mapping of endpoint names to signatures.
+        """
+        self.model = model
+        self.signatures = signatures or {}
+        self.assets: dict[str, Any] = {}
 
     def save(self, path: str) -> None:
-        """Save method for SavedModel.
+        """Serialize model manifest, topology, fingerprint, and assets to directory.
 
         Args:
-            path (str): The path parameter.
+            path (str): Destination directory path.
         """
-        import os
+        import hashlib
+        import json
 
         os.makedirs(path, exist_ok=True)
+        graph_def: dict[str, Any] = {}
+        if self.model is not None:
+            if hasattr(self.model, "graph"):
+                graph_def = json.loads(graph_to_json(self.model.graph))
+            elif hasattr(self.model, "to_json"):
+                graph_def = json.loads(self.model.to_json())
+            elif hasattr(self.model, "get_config"):
+                graph_def = self.model.get_config()
+
+        manifest = {
+            "format": "SavedModel",
+            "version": "2.0",
+            "graph_def": graph_def,
+            "signatures": self.signatures,
+            "assets": self.assets,
+        }
+        manifest_bytes = json.dumps(manifest, sort_keys=True, indent=2).encode("utf-8")
         with open(os.path.join(path, "saved_model.pb"), "wb") as f:
-            f.write(b"")
+            f.write(manifest_bytes)
+
+        # Write cryptographic fingerprint
+        fingerprint = hashlib.sha256(manifest_bytes).hexdigest()
+        with open(os.path.join(path, "fingerprint.pb"), "w", encoding="utf-8") as f:
+            f.write(fingerprint)
 
     @classmethod
-    def load(cls, path: str) -> "SavedModel":
-        """Load method for SavedModel.
+    def load(cls, path: str) -> SavedModel:
+        """Load and reconstruct SavedModel bundle from disk.
 
         Args:
-            path (str): The path parameter.
+            path (str): Path to the SavedModel directory.
 
         Returns:
-            tuple[int, ...]: Result.
+            SavedModel: Fully reconstructed SavedModel container.
+
+        Raises:
+            FileNotFoundError: If path or saved_model.pb is missing.
+            ValueError: If saved_model.pb is corrupted.
         """
-        return cls()
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"SavedModel directory '{path}' not found")
+
+        pb_path = os.path.join(path, "saved_model.pb") if os.path.isdir(path) else path
+        if not os.path.exists(pb_path):
+            raise FileNotFoundError(f"SavedModel proto '{pb_path}' not found")
+
+        with open(pb_path, "rb") as f:
+            raw_bytes = f.read()
+
+        if len(raw_bytes) == 0:
+            manifest: dict[str, Any] = {
+                "format": "SavedModel",
+                "version": "2.0",
+                "graph_def": {},
+                "signatures": {},
+                "assets": {},
+            }
+        else:
+            try:
+                manifest = json.loads(raw_bytes.decode("utf-8"))
+            except Exception as e:
+                raise ValueError(f"Corrupted SavedModel proto at '{pb_path}': {e}") from e
+
+        instance = cls(model=manifest.get("graph_def"), signatures=manifest.get("signatures", {}))
+        instance.assets = manifest.get("assets", {})
+        return instance
 
 
 def read_fingerprint(path: str) -> str:
-    """Read fingerprint.
+    """Read or compute deterministic cryptographic SHA-256 fingerprint for a model or checkpoint.
 
     Args:
-        path (str): The path parameter.
+        path (str): The model directory path or file path.
 
     Returns:
-        str: Result.
+        str: Cryptographic fingerprint hex digest, or 'fingerprint' fallback if nonexistent.
     """
-    import os
+    if not os.path.exists(path):
+        return "fingerprint"
 
-    fp_path = os.path.join(path, "fingerprint.pb")
-    if os.path.exists(fp_path):
-        with open(fp_path) as f:
-            return f.read()
-    return "fingerprint"
+    import hashlib
+
+    fp_path = os.path.join(path, "fingerprint.pb") if os.path.isdir(path) else None
+    if fp_path and os.path.exists(fp_path):
+        with open(fp_path, encoding="utf-8") as f:
+            content = f.read().strip()
+            if content:
+                return content
+
+    # Compute deterministic SHA-256 over checkpoint / model files
+    hasher = hashlib.sha256()
+    if os.path.isdir(path):
+        for root, _, files in sorted(os.walk(path)):
+            for file in sorted(files):
+                if file == "fingerprint.pb":
+                    continue
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, path)
+                hasher.update(rel_path.encode("utf-8"))
+                with open(file_path, "rb") as f:
+                    while chunk := f.read(65536):
+                        hasher.update(chunk)
+    else:
+        with open(path, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+
+    return hasher.hexdigest()
 
 
-def load_variable(path: str, name: str) -> "Tensor":
+def load_variable(path: str, name: str) -> Tensor:
     """Load variable from V2 checkpoint.
 
     Args:
@@ -699,7 +944,7 @@ def load_variable(path: str, name: str) -> "Tensor":
         name (str): The name parameter.
 
     Returns:
-        str: Result.
+        Tensor: Reconstructed tensor with loaded data.
     """
     import os
 
@@ -715,16 +960,69 @@ def load_variable(path: str, name: str) -> "Tensor":
     return Tensor(data, TensorConfig(data.shape, str(getattr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
 
 
-def run_restore_ops(path: str) -> None:
-    """Run restore ops for V2 checkpoint.
+def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) -> dict[str, Any]:
+    """Run restore ops for checkpoint directory or weight archive.
 
     Args:
-        path (str): The path parameter.
+        path (str): Checkpoint file or directory path.
+        target_model (Any): Optional model instance to populate restored weights into.
+        variables (Any): Optional dictionary or list of target variables.
+
+    Returns:
+        dict[str, Any]: Restored variable mapping name -> array.
 
     Raises:
-        FileNotFoundError: An exception.
+        FileNotFoundError: If checkpoint path does not exist.
+        ValueError: If restored weight shapes or types mismatch target variables.
     """
-    import os
-
     if not os.path.exists(path):
         raise FileNotFoundError(f"Checkpoint {path} not found")
+
+    import numpy as np
+
+    restored_weights: dict[str, Any] = {}
+    if os.path.isdir(path):
+        # 1. Safetensors
+        st_files = [f for f in os.listdir(path) if f.endswith(".safetensors")]
+        for st in st_files:
+            restored_weights.update(SafetensorsWeightFormat().load(os.path.join(path, st)))
+        # 2. NPZ
+        npz_files = [f for f in os.listdir(path) if f.endswith(".npz")]
+        for npz in npz_files:
+            restored_weights.update(NpzWeightFormat().load(os.path.join(path, npz)))
+        # 3. H5
+        h5_files = [f for f in os.listdir(path) if f.endswith(".h5")]
+        for h5 in h5_files:
+            restored_weights.update(H5WeightFormat().load(os.path.join(path, h5)))
+        # 4. NPY files
+        npy_files = [f for f in os.listdir(path) if f.endswith(".npy")]
+        for npy in npy_files:
+            var_name = npy[:-4]
+            restored_weights[var_name] = np.load(os.path.join(path, npy))
+    else:
+        fmt = _infer_weight_format(path)
+        handler = _get_format_handler(fmt)
+        restored_weights.update(handler.load(path))
+
+    # Validate against target_model
+    if target_model is not None and hasattr(target_model, "weights"):
+        for w in target_model.weights:
+            name = getattr(w, "name", None)
+            if name and name in restored_weights:
+                restored_arr = restored_weights[name]
+                w_shape = getattr(w, "shape", ())
+                if tuple(w_shape) != tuple(restored_arr.shape):
+                    raise ValueError(f"Shape mismatch restoring variable '{name}': expected {w_shape} but got {restored_arr.shape}")
+                if hasattr(w, "assign"):
+                    w.assign(restored_arr)
+
+    # Validate against explicit variables dictionary
+    if isinstance(variables, dict):
+        for name, var in variables.items():
+            if name in restored_weights:
+                restored_arr = restored_weights[name]
+                var_shape = getattr(var, "shape", ())
+                if tuple(var_shape) != tuple(restored_arr.shape):
+                    raise ValueError(f"Shape mismatch restoring variable '{name}': expected {var_shape} but got {restored_arr.shape}")
+
+    return restored_weights

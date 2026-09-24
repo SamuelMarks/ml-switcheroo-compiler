@@ -81,6 +81,142 @@ class HardwareCompilerProtocol(Protocol):
         ...
 
 
+def _skip_block_comment(source: str, i: int, n: int) -> tuple[int, bool]:
+    """Skip over block comment /* ... */ and return updated index.
+
+    Args:
+        source (str): Source code.
+        i (int): Start index after '/*'.
+        n (int): Length of source.
+
+    Returns:
+        tuple[int, bool]: (new_index, is_closed).
+    """
+    while i + 1 < n:
+        if source[i] == "*" and source[i + 1] == "/":
+            return i + 2, True
+        i += 1
+    return i, False
+
+
+def _skip_quote(source: str, i: int, n: int, quote: str) -> tuple[int, bool]:
+    """Skip over quoted string/char literal and return updated index.
+
+    Args:
+        source (str): Source code.
+        i (int): Start index after quote char.
+        n (int): Length of source.
+        quote (str): Quote delimiter ('"' or "'").
+
+    Returns:
+        tuple[int, bool]: (new_index, is_closed).
+    """
+    while i < n and source[i] != quote:
+        if source[i] == "\\" and i + 1 < n:
+            i += 2
+        else:
+            i += 1
+    if i >= n:
+        return i, False
+    return i + 1, True
+
+
+def _strip_comments_and_strings(source: str) -> tuple[str, bool]:
+    """Strip comments and string/char literals while validating their closures.
+
+    Args:
+        source (str): Original source code.
+
+    Returns:
+        tuple[str, bool]: Stripped code and validity flag.
+    """
+    out: list[str] = []
+    i, n = 0, len(source)
+    while i < n:
+        ch = source[i]
+        if ch == "/" and i + 1 < n and source[i + 1] == "/":
+            i += 2
+            while i < n and source[i] != "\n":
+                i += 1
+            out.append("\n")
+        elif ch == "/" and i + 1 < n and source[i + 1] == "*":
+            i, ok = _skip_block_comment(source, i + 2, n)
+            if not ok:
+                return "", False
+        elif ch in ('"', "'"):
+            i, ok = _skip_quote(source, i + 1, n, ch)
+            if not ok:
+                return "", False
+        else:
+            out.append(ch)
+            i += 1
+    return "".join(out), True
+
+
+def _check_preprocessor_directives(source: str) -> bool:
+    """Validate nesting balance of preprocessor directives (#if/#ifdef vs #endif).
+
+    Args:
+        source (str): Source code without comments/literals.
+
+    Returns:
+        bool: True if preprocessor directives are balanced.
+    """
+    balance = 0
+    for line in source.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("#"):
+            continue
+        directive = stripped[1:].split()[0] if stripped[1:].split() else ""
+        if directive in ("if", "ifdef", "ifndef"):
+            balance += 1
+        elif directive == "endif":
+            balance -= 1
+            if balance < 0:
+                return False
+    return balance == 0
+
+
+def _check_delimiters(source: str) -> bool:
+    """Validate delimiter balance for (), {}, and [].
+
+    Args:
+        source (str): Cleaned source code.
+
+    Returns:
+        bool: True if all delimiters are balanced.
+    """
+    stack: list[str] = []
+    matching = {")": "(", "}": "{", "]": "["}
+    for char in source:
+        if char in "({[":
+            stack.append(char)
+        elif char in ")}]":
+            if not stack or stack[-1] != matching[char]:
+                return False
+            stack.pop()
+    return len(stack) == 0
+
+
+def _check_dialect_qualifiers(source_code: str, target_name: str) -> bool:
+    """Validate dialect-specific kernel function qualifiers.
+
+    Args:
+        source_code (str): Source code string.
+        target_name (str): Backend target name.
+
+    Returns:
+        bool: True if kernel qualifiers are satisfied.
+    """
+    import re
+
+    if target_name in ("cuda", "rocm"):
+        return bool(re.search(r"\b(__global__|__device__|extern\s+\"C\")\b", source_code))
+    if target_name == "metal":
+        return bool(re.search(r"\b(kernel\s+void|vertex|fragment)\b", source_code))
+    return True
+
+
 class BaseHardwareCompiler:
     """Base implementation providing common fallback syntax validation and toolchain inspection."""
 
@@ -98,40 +234,30 @@ class BaseHardwareCompiler:
         return shutil.which(self.executable_name) is not None
 
     def _fallback_syntax_check(self, source_code: str, required_tokens: list[str]) -> bool:
-        """Perform deterministic syntax and token balance inspection for headless test environments.
+        """Perform deterministic AST/lexer token stream syntax inspection for C++/CUDA/HIP/MSL.
 
         Args:
-            source_code (str): Source code string.
+            source_code (str): Source code string to inspect.
             required_tokens (list[str]): Critical keywords expected in target dialect.
 
         Returns:
-            bool: True if token structure is balanced and valid.
+            bool: True if source code is structurally valid and balanced, False otherwise.
         """
         if not source_code or not source_code.strip():
             return False
 
-        # Verify delimiter balance
-        stack: list[str] = []
-        matching: dict[str, str] = {")": "(", "}": "{", "]": "["}
-        for char in source_code:
-            if char in "({[":
-                stack.append(char)
-            elif char in ")}]":
-                if not stack or stack[-1] != matching[char]:
-                    return False
-                stack.pop()
-
-        if stack:
+        cleaned, ok = _strip_comments_and_strings(source_code)
+        if not ok or not _check_preprocessor_directives(cleaned) or not _check_delimiters(cleaned):
             return False
 
-        # Verify critical target tokens with word boundaries
         import re
 
         for token in required_tokens:
-            if not re.search(rf"\b{re.escape(token)}\b", source_code):
+            pattern = rf"\b{re.escape(token)}\b" if token.isalnum() or "_" in token else re.escape(token)
+            if not re.search(pattern, source_code):
                 return False
 
-        return True
+        return _check_dialect_qualifiers(source_code, self.target_name)
 
 
 class CUDACompiler(BaseHardwareCompiler):

@@ -1,13 +1,16 @@
-"""Generate high-fidelity .pyi type stubs from ml-framework-snapshots."""
+"""Generate high-fidelity .pyi type stubs from ml-framework-snapshots and backend schemas."""
+
+from __future__ import annotations
 
 import ast
 import importlib
 import inspect
 import json
+import keyword
 import os
-from typing import Optional
+import shutil
 
-PREFIX_TO_FW: dict[str, str] = {
+BACKENDS_CONFIG: dict[str, str] = {
     "numpy": "numpy",
     "pytorch": "torch",
     "jax": "jax.numpy",
@@ -16,6 +19,22 @@ PREFIX_TO_FW: dict[str, str] = {
     "dask": "dask.array",
     "cupy": "cupy",
     "tensorflow": "tensorflow.math",
+    "cuda": "cuda",
+    "rocm": "rocm",
+    "metal": "metal",
+    "awkward": "awkward",
+    "dpnp": "dpnp",
+    "numba": "numba",
+    "sparse": "sparse",
+    "pyarrow_compute": "pyarrow.compute",
+    "llvm_cpp": "llvm_cpp",
+    "edge": "edge",
+    "edge_onnx": "onnx",
+    "edge_stablehlo": "stablehlo",
+    "edge_mlir": "mlir",
+    "edge_wasm": "wasm",
+    "edge_webgl": "webgl",
+    "webgpu": "webgpu",
 }
 
 SAFE_TYPES: set[str] = {
@@ -30,8 +49,73 @@ SAFE_TYPES: set[str] = {
     "list",
 }
 
+CORE_OPS: list[str] = [
+    "abs",
+    "acos",
+    "acosh",
+    "add",
+    "all",
+    "any",
+    "argmax",
+    "argmin",
+    "asin",
+    "asinh",
+    "atan",
+    "atan2",
+    "atanh",
+    "ceil",
+    "clip",
+    "concat",
+    "conv2d",
+    "cos",
+    "cosh",
+    "cumsum",
+    "divide",
+    "dot",
+    "equal",
+    "exp",
+    "floor",
+    "greater",
+    "greater_equal",
+    "less",
+    "less_equal",
+    "log",
+    "logical_and",
+    "logical_not",
+    "logical_or",
+    "matmul",
+    "max",
+    "maximum",
+    "mean",
+    "min",
+    "minimum",
+    "multiply",
+    "negative",
+    "not_equal",
+    "ones",
+    "pad",
+    "pow",
+    "reshape",
+    "round",
+    "rsqrt",
+    "sigmoid",
+    "sin",
+    "sinh",
+    "slice",
+    "softmax",
+    "split",
+    "sqrt",
+    "squeeze",
+    "subtract",
+    "sum",
+    "tan",
+    "tanh",
+    "transpose",
+    "zeros",
+]
 
-def _clean_type_annotation(raw_annot: Optional[str]) -> str:
+
+def _clean_type_annotation(raw_annot: str | None) -> str:
     """Normalize snapshot raw annotations into valid Python type stubs.
 
     Args:
@@ -46,11 +130,9 @@ def _clean_type_annotation(raw_annot: Optional[str]) -> str:
     cleaned: str = raw_annot.strip().replace("array_like", "Tensor")
     cleaned = cleaned.replace("`np._NoValue`", "None")
 
-    # If it contains operators, curly braces, dashes, or unknown words, simplify
     if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]):
         return "Tensor"
 
-    # Validate syntax and identifiers
     try:
         parsed = ast.parse(f"x: {cleaned}")
         ann = parsed.body[0].annotation  # type: ignore[attr-defined]
@@ -63,7 +145,7 @@ def _clean_type_annotation(raw_annot: Optional[str]) -> str:
         return "Tensor"
 
 
-def _format_param_stub(param: dict[str, object]) -> Optional[str]:
+def _format_param_stub(param: dict[str, object]) -> str | None:
     """Format a snapshot param dictionary into a valid Python stub parameter.
 
     Args:
@@ -79,10 +161,10 @@ def _format_param_stub(param: dict[str, object]) -> Optional[str]:
         return None
 
     kind: str = str(param.get("kind") or "")
-    raw_annot: Optional[str] = str(param.get("annotation") or "") if param.get("annotation") else None
+    raw_annot: str | None = str(param.get("annotation") or "") if param.get("annotation") else None
     typ: str = _clean_type_annotation(raw_annot)
 
-    default_val: Optional[object] = param.get("default")
+    default_val: object | None = param.get("default")
     has_default: bool = default_val is not None
 
     if kind == "VAR_POSITIONAL":
@@ -129,7 +211,7 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
             if not isinstance(item, dict):
                 continue
             name: str = str(item.get("name") or "")
-            if not name.isidentifier() or name.startswith("_") or name in seen_funcs:
+            if not name.isidentifier() or keyword.iskeyword(name) or name.startswith("_") or name in seen_funcs:
                 continue
 
             item_kind = str(item.get("kind") or "")
@@ -138,9 +220,9 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
 
             params_data = item.get("params", [])
             pos_args: list[str] = []
-            var_pos: Optional[str] = None
+            var_pos: str | None = None
             kw_only: list[str] = []
-            var_kw: Optional[str] = None
+            var_kw: str | None = None
 
             if isinstance(params_data, list):
                 for p in params_data:
@@ -170,7 +252,6 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
             if var_kw:
                 param_strs.append(var_kw)
 
-            # Fallback if params parsing was empty
             if not param_strs:
                 param_strs = ["*args: Tensor", "**kwargs: Tensor"]
 
@@ -183,10 +264,12 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
             lines.append(f"def {name}({params_joined}) -> {ret_type}: ...")
             seen_funcs.add(name)
 
+    lines.append("def __getattr__(name: str) -> Tensor: ...")
+
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
-    return len(seen_funcs) - 1
+    return len(seen_funcs) - 4
 
 
 def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) -> int:
@@ -217,14 +300,11 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
     try:
         mod = importlib.import_module(fw_name)
     except Exception:
-        lines.append("def __getattr__(name: str) -> Tensor: ...")
-        with open(out_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
-        return 0
+        return _generate_fallback_backend_stubs(be_name, out_path)
 
     seen_funcs: set[str] = {"Tensor"}
     for attr in sorted(dir(mod)):
-        if attr.startswith("_") or not attr.isidentifier() or attr in seen_funcs:
+        if attr.startswith("_") or not attr.isidentifier() or keyword.iskeyword(attr) or attr in seen_funcs:
             continue
         try:
             obj = getattr(mod, attr)
@@ -264,14 +344,50 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
             lines.append(f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
             seen_funcs.add(attr)
 
+    lines.append("def __getattr__(name: str) -> Tensor: ...")
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
     return len(seen_funcs) - 1
 
 
+def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
+    """Generate standard high-fidelity PEP 484 type stubs for a backend.
+
+    Args:
+        be_name (str): Name of backend.
+        out_path (str): Destination path for stub file.
+
+    Returns:
+        int: Number of generated operation stubs.
+    """
+    lines: list[str] = [
+        f'"""Auto-generated high-fidelity type stubs for {be_name} backend."""',
+        "# ruff: noqa: E501",
+        "",
+        "from collections.abc import Sequence",
+        "from typing import Optional, Union",
+        "",
+        "class Tensor:",
+        "    shape: tuple[int, ...]",
+        "    dtype: str",
+        "    def __init__(self, *args: object, **kwargs: object) -> None: ...",
+        "",
+    ]
+
+    for op in sorted(CORE_OPS):
+        lines.append(f"def {op}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
+
+    lines.append("def __getattr__(name: str) -> Tensor: ...")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    return len(CORE_OPS)
+
+
 def generate_stubs(
-    snapshot_dir: Optional[str] = None,
+    snapshot_dir: str | None = None,
     out_base_dir: str = "src/ml_switcheroo_compiler/backends",
 ) -> None:
     """Generate high-fidelity .pyi stubs across all backends.
@@ -293,19 +409,18 @@ def generate_stubs(
             )
         )
 
-    if not os.path.exists(snapshot_dir):
-        print("Snapshot directory not found")
-        return
-
-    for be_name, fw in PREFIX_TO_FW.items():
+    for be_name, fw in BACKENDS_CONFIG.items():
         be_dir: str = os.path.join(out_base_dir, be_name)
-        if not os.path.exists(be_dir):
-            continue
+        os.makedirs(be_dir, exist_ok=True)
+        init_file = os.path.join(be_dir, "__init__.py")
+        if not os.path.exists(init_file):
+            with open(init_file, "w", encoding="utf-8") as f:
+                f.write(f'"""{be_name} backend module."""\n\nfrom __future__ import annotations\n')
 
         stub_path: str = os.path.join(be_dir, "snapshot_stubs.pyi")
+        alt_stub_path: str = os.path.join(be_dir, "stub.pyi")
         count: int = 0
 
-        # Try from snapshot JSON first
         snapshot_files: list[str] = []
         if os.path.isdir(snapshot_dir):
             snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
@@ -319,11 +434,12 @@ def generate_stubs(
             except Exception:
                 count = 0
 
-        # Fallback to live module introspection if snapshot JSON wasn't available
         if count == 0:
             count = _generate_stubs_from_live_module(fw, be_name, stub_path)
 
-        print(f"Generated {stub_path} with {count} high-fidelity stubs.")
+        # Copy snapshot_stubs.pyi to stub.pyi
+        shutil.copyfile(stub_path, alt_stub_path)
+        print(f"Generated {stub_path} and {alt_stub_path} ({count} stubs).")
 
 
 def main() -> None:

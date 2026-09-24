@@ -111,16 +111,29 @@ class Vecdot(OpDef):
     op_name = "Vecdot"
 
     def infer_shape(self, *args, **kwargs):
-        """Evaluate infer_shape operation.
+        """Evaluate infer_shape operation contracting vector dimension.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (Any): Positional args (x, y).
+            **kwargs (Any): Keyword args (axis).
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Resulting shape after contracting vector dimension.
         """
-        return args[0] if args else ()
+        if not args or len(args) < 2:
+            return ()
+        x_shape = getattr(args[0], "shape", ())
+        y_shape = getattr(args[1], "shape", ())
+        if not x_shape or not y_shape:
+            return ()
+        axis = int(kwargs.get("axis", -1))
+        x_norm = axis if axis >= 0 else len(x_shape) + axis
+        y_norm = axis if axis >= 0 else len(y_shape) + axis
+        x_batch = tuple(dim for idx, dim in enumerate(x_shape) if idx != x_norm)
+        y_batch = tuple(dim for idx, dim in enumerate(y_shape) if idx != y_norm)
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        return broadcast_shapes(x_batch, y_batch)
 
 
 @register_op("CustomLinearSolve")
@@ -130,16 +143,31 @@ class CustomLinearSolve(OpDef):
     op_name = "CustomLinearSolve"
 
     def infer_shape(self, *args, **kwargs):
-        """Evaluate infer_shape operation.
+        """Evaluate infer_shape operation solving AX = B.
 
         Args:
-            *args (Any): Positional args.
+            *args (Any): Positional args (A, B).
             **kwargs (Any): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Resulting shape matching broadcasted solution X.
         """
-        return args[0] if args else ()
+        if not args or len(args) < 2:
+            return ()
+        a_shape = getattr(args[0], "shape", ())
+        b_shape = getattr(args[1], "shape", ())
+        if len(a_shape) < 2 or len(b_shape) < 1:
+            return ()
+        m = a_shape[-1]
+        batch_a = a_shape[:-2]
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if len(b_shape) == len(a_shape) - 1:
+            batch_b = b_shape[:-1]
+            return broadcast_shapes(batch_a, batch_b) + (m,)
+        batch_b = b_shape[:-2]
+        k = b_shape[-1]
+        return broadcast_shapes(batch_a, batch_b) + (m, k)
 
 
 @register_op("CustomRoot")
@@ -149,16 +177,20 @@ class CustomRoot(OpDef):
     op_name = "CustomRoot"
 
     def infer_shape(self, *args, **kwargs):
-        """Evaluate infer_shape operation.
+        """Evaluate infer_shape operation for root finding.
 
         Args:
-            *args (Any): Positional args.
+            *args (Any): Positional args (fn, x0).
             **kwargs (Any): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Shape matching initial guess x0.
         """
-        return args[0] if args else ()
+        if len(args) > 1 and hasattr(args[1], "shape"):
+            return tuple(args[1].shape)
+        if args and hasattr(args[0], "shape"):
+            return tuple(args[0].shape)
+        return ()
 
     ("ConvGeneralDilated",)
     ("ConvGeneralDilatedLocal",)

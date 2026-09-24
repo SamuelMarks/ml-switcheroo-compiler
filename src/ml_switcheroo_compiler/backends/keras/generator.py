@@ -322,3 +322,60 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_input_vars = []
         self.keras_output_vars = []
         self.indent_level = self.indent_level + 1
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into ahead-of-time Keras executable artifact.
+
+        Args:
+            graph (IRGraph): Target computation graph to compile.
+            **kwargs (object): Compiler options.
+
+        Returns:
+            object: Executable compiled artifact.
+        """
+        from typing import Any
+
+        from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+
+        source_code = self.generate()
+        scope: dict[str, Any] = {}
+        model_obj = None
+        try:
+            exec(source_code, scope)
+            if "get_model" in scope:
+                model_obj = scope["get_model"]()
+        except Exception:
+            model_obj = None
+
+        def runner(*args: object, **runner_kwargs: object) -> object:
+            """Execute compiled Keras artifact using instantiated model or graph fallback.
+
+            Args:
+                *args (object): Input tensor arguments.
+                **runner_kwargs (object): Optional execution options.
+
+            Returns:
+                object: Model execution output or evaluated graph output.
+            """
+            if model_obj is not None:
+                return model_obj(*args, **runner_kwargs)
+
+            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+            feed_dict: dict[str, object] = {}
+            for idx, arg in enumerate(args):
+                if idx < len(graph.inputs):
+                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+            res_dict = evaluate_graph(graph, feed_dict)
+            if not graph.outputs:
+                return res_dict
+            if len(graph.outputs) == 1:
+                return res_dict.get(graph.outputs[0])
+            return tuple(res_dict.get(out) for out in graph.outputs)
+
+        return CompiledArtifact(
+            callable_fn=runner,
+            binary_bytes=source_code.encode("utf-8"),
+            source_code=source_code,
+            metadata={"backend": "keras", "model": model_obj, "options": kwargs},
+        )

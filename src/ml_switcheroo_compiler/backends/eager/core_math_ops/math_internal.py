@@ -51,12 +51,36 @@ def _np_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args: Positional arguments (handle/array, index).
+        **kwargs: Keyword arguments.
 
     Returns:
-            object: Result.
+        Any: Element extracted at the specified index.
+
+    Raises:
+        IndexError: If index is out of bounds for the array or list.
     """
+    if not args or args[0] is None:
+        return 0
+
+    arr = args[0]
+    index = int(args[1]) if len(args) > 1 else int(kwargs.get("index", 0))
+
+    if isinstance(arr, list):
+        if index < 0 or index >= len(arr):
+            raise IndexError(f"TensorArray index {index} out of bounds for list of length {len(arr)}")
+        return arr[index]
+
+    if hasattr(arr, "shape") and hasattr(arr, "__getitem__"):
+        if index < 0 or index >= arr.shape[0]:
+            raise IndexError(f"TensorArray index {index} out of bounds for axis 0 of size {arr.shape[0]}")
+        return arr[index]
+
+    if isinstance(arr, dict):
+        if index not in arr:
+            raise IndexError(f"TensorArray index {index} not found in sparse handle")
+        return arr[index]
+
     return 0
 
 
@@ -66,17 +90,51 @@ def _np_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Args:
         backend_module: The backend_module parameter.
-        *args: Positional args.
-        **kwargs: Keyword args.
+        *args: Positional arguments (handle/array, index, value).
+        **kwargs: Keyword arguments.
 
     Returns:
-            object: Result.
+        Any: Updated array or list containing the written element.
+
+    Raises:
+        IndexError: If index is negative.
     """
-    arr, index, value = args[0], args[1], args[2]
-    if isinstance(arr, list):
-        res = list(arr)
-        res[int(index)] = value
+    if not args:
+        return 0
+
+    arr = args[0]
+    index = int(args[1]) if len(args) > 1 else int(kwargs.get("index", 0))
+    value = args[2] if len(args) > 2 else kwargs.get("value", None)
+
+    if index < 0:
+        raise IndexError(f"Negative TensorArray index {index} is invalid")
+
+    if isinstance(arr, list) or arr is None:
+        res = list(arr) if arr is not None else []
+        if index >= len(res):
+            res.extend([None] * (index - len(res) + 1))
+        res[index] = value
         return res
+
+    import numpy as np
+
+    if isinstance(arr, np.ndarray):
+        if index < arr.shape[0]:
+            res_arr = arr.copy()
+            res_arr[index] = value
+            return res_arr
+        pad_shape = list(arr.shape)
+        pad_shape[0] = index - arr.shape[0] + 1
+        pad = np.zeros(pad_shape, dtype=arr.dtype)
+        res_arr = np.concatenate([arr, pad], axis=0)
+        res_arr[index] = value
+        return res_arr
+
+    if isinstance(arr, dict):
+        res_dict = dict(arr)
+        res_dict[index] = value
+        return res_dict
+
     return 0
 
 

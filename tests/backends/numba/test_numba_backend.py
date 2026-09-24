@@ -260,3 +260,66 @@ def test_numba_expanded_eager_operations_parity() -> None:
     np.testing.assert_allclose(execute_op(type, "Zeros", (2, 2)), np.zeros((2, 2)))
     np.testing.assert_allclose(execute_op(type, "Ones", (3,)), np.ones(3))
     np.testing.assert_allclose(execute_op(type, "Arange", 5), np.arange(5))
+
+
+def test_numba_aot_compilation_and_runner_execution() -> None:
+    """Verify Numba ahead-of-time compilation, successful dispatch, and fallback branches."""
+    # 1. Normal compilation and successful execution with single output
+    g = IRGraph(name="test_nb_aot")
+    g.nodes = {
+        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+    }
+    g.inputs = ["x"]
+    g.outputs = ["y"]
+    gen = NumbaGenerator(g)
+    artifact = gen.compile_aot(g)
+    assert artifact.metadata is not None
+    assert artifact.metadata["backend"] == "numba"
+    assert artifact["backend"] == "numba"
+
+    arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
+    res = artifact(arr)
+    np.testing.assert_allclose(res, arr + arr)
+
+    # 2. Multi-output execution with extra unused arguments
+    g_multi = IRGraph(name="test_nb_aot_multi")
+    g_multi.nodes = {
+        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+        "z": IRNode(id="z", op_type="Mul", inputs=["x", "y"], shape_metadata=(4,)),
+    }
+    g_multi.inputs = ["x"]
+    g_multi.outputs = ["y", "z"]
+    gen_multi = NumbaGenerator(g_multi)
+    artifact_multi = gen_multi.compile_aot(g_multi)
+    res_multi = artifact_multi(arr, "extra_arg")
+    assert isinstance(res_multi, tuple) and len(res_multi) == 2
+    np.testing.assert_allclose(res_multi[0], arr + arr)
+    np.testing.assert_allclose(res_multi[1], arr * (arr + arr))
+
+    # 3. Fallback execution when compiled_fn fails to exec (syntax error in source_code)
+    with patch.object(gen, "generate", return_value="def invalid python syntax !!!"):
+        artifact_bad = gen._compile_aot_impl(g)
+        res_fallback = artifact_bad(arr, "extra_arg")
+        np.testing.assert_allclose(res_fallback, arr + arr)
+
+    # 4. Fallback execution with empty outputs
+    g_empty = IRGraph(name="test_nb_aot_empty")
+    g_empty.nodes = {"x": IRNode(id="x", op_type="Input", shape_metadata=(4,))}
+    g_empty.inputs = ["x"]
+    g_empty.outputs = []
+    with patch.object(gen, "generate", return_value="def invalid python syntax !!!"):
+        artifact_empty = gen._compile_aot_impl(g_empty)
+        res_empty = artifact_empty(arr)
+        assert isinstance(res_empty, dict)
+
+    # 5. Fallback execution when compiled_fn raises exception inside runner
+    def exploding_fn(*args: object) -> None:
+        raise RuntimeError("simulated numba execution failure")
+
+    with patch.object(gen, "generate", return_value="def evaluate(args): pass"):
+        with patch("builtins.exec", side_effect=lambda code, scope: scope.update({"evaluate": exploding_fn})):
+            artifact_crash = gen._compile_aot_impl(g)
+            res_recovered = artifact_crash(arr)
+            np.testing.assert_allclose(res_recovered, arr + arr)

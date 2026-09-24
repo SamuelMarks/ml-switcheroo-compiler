@@ -6,6 +6,7 @@ repos:
   - id: check-yaml
   - id: trailing-whitespace
   - id: end-of-file-fixer
+    exclude: '\.pb$'
 - repo: local
   hooks:
   - id: ruff

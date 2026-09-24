@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Union
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.device import Device
@@ -16,6 +16,66 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
+
+
+@dataclass
+class CompiledArtifact:
+    """Standardized ahead-of-time (AOT) compiled executable artifact container.
+
+    Attributes:
+        callable_fn: Executable callable function or entry point runner.
+        binary_bytes: Raw compiled binary bytes (e.g. PTX, HSACO, metallib, bytecode).
+        source_code: Emitted source code in the target backend language.
+        metadata: Backend-specific compilation metadata, options, and schemas.
+        temp_dir: Optional temporary directory managing compiled build artifacts.
+    """
+
+    callable_fn: Any | None = None
+    binary_bytes: bytes = b""
+    source_code: str = ""
+    metadata: dict[str, Any] | None = None
+    temp_dir: Any = None
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Execute the compiled artifact.
+
+        Args:
+            *args: Positional arguments to pass to the compiled callable.
+            **kwargs: Keyword arguments to pass to the compiled callable.
+
+        Returns:
+            Any: Computation output or tuple of outputs.
+
+        Raises:
+            RuntimeError: If no executable callable_fn is bound to this artifact.
+        """
+        if self.callable_fn is None:
+            raise RuntimeError("CompiledArtifact has no executable callable bound.")
+        return self.callable_fn(*args, **kwargs)
+
+    def cleanup(self) -> None:
+        """Clean up associated temporary directory resources if active."""
+        if self.temp_dir is not None and hasattr(self.temp_dir, "cleanup"):
+            self.temp_dir.cleanup()
+            self.temp_dir = None
+
+    def __getitem__(self, item: str) -> Any:
+        """Allow dictionary-style access to metadata and artifact attributes.
+
+        Args:
+            item (str): Key name to retrieve.
+
+        Returns:
+            Any: Value from metadata dictionary or artifact attributes.
+
+        Raises:
+            KeyError: If key is not found in metadata or attributes.
+        """
+        if self.metadata is not None and item in self.metadata:
+            return self.metadata[item]
+        if hasattr(self, item):
+            return getattr(self, item)
+        raise KeyError(item)
 
 
 class IRGraphWalker:
@@ -395,13 +455,24 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Raises:
             NotImplementedError: If AOT compilation is not implemented for this backend.
         """
-        if isinstance(self, type):
-            target_graph = graph
-            instance = self(target_graph)
-            return instance._compile_aot_impl(target_graph, **kwargs)
-
         target_graph = graph if graph is not None else getattr(self, "graph", None)
-        return self._compile_aot_impl(target_graph, **kwargs)
+        if target_graph is None:
+            target_graph = IRGraph()
+
+        if isinstance(self, type):
+            instance = self(target_graph)
+            return instance.compile_aot(target_graph, **kwargs)
+
+        if not hasattr(self, "_aot_cache") or getattr(self, "_aot_cache", None) is None:
+            self._aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], object] = {}
+
+        cache_key = (id(target_graph), tuple(sorted((str(k), str(v)) for k, v in kwargs.items())))
+        if cache_key in self._aot_cache:
+            return self._aot_cache[cache_key]
+
+        artifact = self._compile_aot_impl(target_graph, **kwargs)
+        self._aot_cache[cache_key] = artifact
+        return artifact
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
         """Internal backend-specific AOT compilation hook.

@@ -227,3 +227,49 @@ class WebGLCodeGenerator(BaseGenerator):
         js.append("}")
 
         return "\n".join(js)
+
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+        """Compile IRGraph into ahead-of-time WebGL executable artifact.
+
+        Args:
+            graph (IRGraph): Target computation graph to compile.
+            **kwargs (object): Compiler options.
+
+        Returns:
+            object: Executable compiled artifact.
+        """
+        from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
+
+        js_source = self.generate()
+
+        def runner(*args: object, **runner_kwargs: object) -> object:
+            """Execute compiled WebGL artifact using fallback graph evaluation.
+
+            Args:
+                *args (object): Input tensor arguments.
+                **runner_kwargs (object): Optional execution options.
+
+            Returns:
+                object: Output tensor or tuple of output tensors.
+            """
+            from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+            feed_dict: dict[str, object] = {}
+            for idx, arg in enumerate(args):
+                if idx < len(graph.inputs):
+                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+            res_dict = evaluate_graph(graph, feed_dict)
+            if not graph.outputs:
+                return res_dict
+            if len(graph.outputs) == 1:
+                return res_dict.get(graph.outputs[0])
+            return tuple(res_dict.get(out) for out in graph.outputs)
+
+        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in getattr(graph, "nodes", {}).items() if getattr(node, "op_type", "").lower() not in ("input", "output")}
+
+        return CompiledArtifact(
+            callable_fn=runner,
+            binary_bytes=js_source.encode("utf-8"),
+            source_code=js_source,
+            metadata={"backend": "webgl", "shaders": shaders_map, "options": kwargs},
+        )

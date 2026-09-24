@@ -99,24 +99,77 @@ targets:
   edge_onnx:
     framework: "onnx"
     snapshot_glob: "onnx_v*.json"
-    status: "missing_upstream"
-    fallback_schema: "synthetic"
+    status: "available"
     canonical_roots:
       - "onnx"
       - "ai.onnx"
   webgpu:
     framework: "webgpu"
-    snapshot_glob: "webgpu_v*.json"
-    status: "missing_upstream"
-    fallback_schema: "synthetic"
+    snapshot_glob: "wgsl_v*.json"
+    status: "available"
     canonical_roots:
       - "webgpu"
       - "wgsl"
   metal:
     framework: "metal"
     snapshot_glob: "metal_v*.json"
-    status: "missing_upstream"
-    fallback_schema: "synthetic"
+    status: "available"
     canonical_roots:
       - "metal"
       - "msl"
+  numba:
+    framework: "numba"
+    snapshot_glob: "numba_v*.json"
+    status: "available"
+    canonical_roots:
+      - "numba"
+  sparse:
+    framework: "sparse"
+    snapshot_glob: "sparse_v*.json"
+    status: "available"
+    canonical_roots:
+      - "sparse"
+  dpnp:
+    framework: "dpnp"
+    snapshot_glob: "dpnp_v*.json"
+    status: "available"
+    canonical_roots:
+      - "dpnp"
+  awkward:
+    framework: "awkward"
+    snapshot_glob: "awkward_v*.json"
+    status: "available"
+    canonical_roots:
+      - "awkward"
+      - "ak"
+  pyarrow_compute:
+    framework: "pyarrow_compute"
+    snapshot_glob: "pyarrow_compute_v*.json"
+    status: "available"
+    canonical_roots:
+      - "pyarrow.compute"
+      - "pc"
+  bohrium:
+    framework: "bohrium"
+    snapshot_glob: "bohrium_v*.json"
+    status: "available"
+    canonical_roots:
+      - "bohrium"
+  wasm_simd:
+    framework: "wasm_simd"
+    snapshot_glob: "wasm_simd_v*.json"
+    status: "available"
+    canonical_roots:
+      - "wasm"
+  webgl:
+    framework: "webgl"
+    snapshot_glob: "webgl_v*.json"
+    status: "available"
+    canonical_roots:
+      - "webgl"
+  cpp_runtime:
+    framework: "cpp_runtime"
+    snapshot_glob: "cpp_runtime_v*.json"
+    status: "available"
+    canonical_roots:
+      - "cpp"
