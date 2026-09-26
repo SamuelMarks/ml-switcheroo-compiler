@@ -3,6 +3,7 @@
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.text.ops import (
     AsString,
     EditDistance,
@@ -40,7 +41,7 @@ def test_text_infer_shape() -> None:
         assert Hashing().infer_shape(t) == (2, 2)
         assert StringLookup().infer_shape(t) == (2, 2)
         assert IntegerLookup().infer_shape(t) == (2, 2)
-        assert TextVectorization().infer_shape(t) == (2, 2)
+        assert TextVectorization().infer_shape(t) == (2, 2, SymVar("seq_len"))
         assert StringToNumber().infer_shape(t) == (2, 2)
         assert StringLower().infer_shape(t) == (2, 2)
         assert StringUpper().infer_shape(t) == (2, 2)
@@ -48,7 +49,7 @@ def test_text_infer_shape() -> None:
         assert StringLength().infer_shape(t) == (2, 2)
         assert StringSubstr().infer_shape(t) == (2, 2)
         assert RegexFullMatch().infer_shape(t) == (2, 2)
-        assert EditDistance().infer_shape(t, t) == (2, 2)
+        assert EditDistance().infer_shape(t, t) == (2,)
         assert AsString().infer_shape(t) == (2, 2)
     except Exception as e:
         raise e

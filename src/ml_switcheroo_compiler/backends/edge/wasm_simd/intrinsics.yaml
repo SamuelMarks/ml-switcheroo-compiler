@@ -117,6 +117,167 @@ intrinsics:
     simd_expr: |
       return wasm_f32x4_max(a, b);
     scalar_fallback: "std::max({0}, {1})"
+  Minimum:
+    macro_name: "WASM_MINIMUM_F32X4"
+    simd_expr: |
+      return wasm_f32x4_min(a, b);
+    scalar_fallback: "std::min({0}, {1})"
+  Maximum:
+    macro_name: "WASM_MAXIMUM_F32X4"
+    simd_expr: |
+      return wasm_f32x4_max(a, b);
+    scalar_fallback: "std::max({0}, {1})"
+  Square:
+    macro_name: "WASM_SQUARE_F32X4"
+    simd_expr: |
+      return wasm_f32x4_mul(x, x);
+    scalar_fallback: "{0} * {0}"
+  Cube:
+    macro_name: "WASM_CUBE_F32X4"
+    simd_expr: |
+      return wasm_f32x4_mul(wasm_f32x4_mul(x, x), x);
+    scalar_fallback: "{0} * {0} * {0}"
+  Reciprocal:
+    macro_name: "WASM_RECIPROCAL_F32X4"
+    simd_expr: |
+      return wasm_f32x4_div(wasm_f32x4_splat(1.0f), x);
+    scalar_fallback: "1.0f / {0}"
+  Rsqrt:
+    macro_name: "WASM_RSQRT_F32X4"
+    simd_expr: |
+      return wasm_f32x4_div(wasm_f32x4_splat(1.0f), wasm_f32x4_sqrt(x));
+    scalar_fallback: "1.0f / std::sqrt({0})"
+  Trunc:
+    macro_name: "WASM_TRUNC_F32X4"
+    simd_expr: |
+      return wasm_f32x4_trunc(x);
+    scalar_fallback: "std::trunc({0})"
+  Sign:
+    macro_name: "WASM_SIGN_F32X4"
+    simd_expr: |
+      v128_t gt0 = wasm_f32x4_gt(x, wasm_f32x4_splat(0.0f));
+      v128_t lt0 = wasm_f32x4_lt(x, wasm_f32x4_splat(0.0f));
+      v128_t pos = wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), gt0);
+      return wasm_v128_bitselect(wasm_f32x4_splat(-1.0f), pos, lt0);
+    scalar_fallback: "({0} > 0.0f) ? 1.0f : (({0} < 0.0f) ? -1.0f : 0.0f)"
+  Relu6:
+    macro_name: "WASM_RELU6_F32X4"
+    simd_expr: |
+      return wasm_f32x4_min(wasm_f32x4_max(x, wasm_f32x4_splat(0.0f)), wasm_f32x4_splat(6.0f));
+    scalar_fallback: "std::min(std::max(0.0f, {0}), 6.0f)"
+  LeakyRelu:
+    macro_name: "WASM_LEAKY_RELU_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_lt(x, wasm_f32x4_splat(0.0f));
+      v128_t scaled = wasm_f32x4_mul(x, wasm_f32x4_splat(0.01f));
+      return wasm_v128_bitselect(scaled, x, mask);
+    scalar_fallback: "({0} < 0.0f) ? (0.01f * {0}) : {0}"
+  HardSwish:
+    macro_name: "WASM_HARDSWISH_F32X4"
+    simd_expr: |
+      v128_t shifted = wasm_f32x4_add(x, wasm_f32x4_splat(3.0f));
+      v128_t clamped = wasm_f32x4_min(wasm_f32x4_max(shifted, wasm_f32x4_splat(0.0f)), wasm_f32x4_splat(6.0f));
+      return wasm_f32x4_mul(x, wasm_f32x4_mul(clamped, wasm_f32x4_splat(0.166666667f)));
+    scalar_fallback: "{0} * std::max(0.0f, std::min(6.0f, {0} + 3.0f)) / 6.0f"
+  HardSigmoid:
+    macro_name: "WASM_HARDSIGMOID_F32X4"
+    simd_expr: |
+      v128_t scaled = wasm_f32x4_add(wasm_f32x4_mul(x, wasm_f32x4_splat(0.2f)), wasm_f32x4_splat(0.5f));
+      return wasm_f32x4_min(wasm_f32x4_max(scaled, wasm_f32x4_splat(0.0f)), wasm_f32x4_splat(1.0f));
+    scalar_fallback: "std::max(0.0f, std::min(1.0f, 0.2f * {0} + 0.5f))"
+  GELU:
+    macro_name: "WASM_GELU_F32X4"
+    simd_expr: |
+      v128_t x3 = wasm_f32x4_mul(wasm_f32x4_mul(x, x), x);
+      v128_t inner = wasm_f32x4_mul(wasm_f32x4_splat(0.79788456f), wasm_f32x4_add(x, wasm_f32x4_mul(wasm_f32x4_splat(0.044715f), x3)));
+      v128_t in2 = wasm_f32x4_mul(inner, inner);
+      v128_t num = wasm_f32x4_add(inner, wasm_f32x4_mul(in2, inner));
+      v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), in2);
+      v128_t tanh_val = wasm_f32x4_div(num, den);
+      return wasm_f32x4_mul(wasm_f32x4_mul(wasm_f32x4_splat(0.5f), x), wasm_f32x4_add(wasm_f32x4_splat(1.0f), tanh_val));
+    scalar_fallback: "0.5f * {0} * (1.0f + std::tanh(0.79788456f * ({0} + 0.044715f * {0} * {0} * {0})))"
+  SiLU:
+    macro_name: "WASM_SILU_F32X4"
+    simd_expr: |
+      v128_t neg_x = wasm_f32x4_neg(x);
+      v128_t exp_nx = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_add(neg_x, wasm_f32x4_mul(wasm_f32x4_splat(0.5f), wasm_f32x4_mul(neg_x, neg_x))));
+      v128_t sig = wasm_f32x4_div(wasm_f32x4_splat(1.0f), wasm_f32x4_add(wasm_f32x4_splat(1.0f), exp_nx));
+      return wasm_f32x4_mul(x, sig);
+    scalar_fallback: "{0} / (1.0f + std::exp(-{0}))"
+  Softplus:
+    macro_name: "WASM_SOFTPLUS_F32X4"
+    simd_expr: |
+      v128_t ex = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_add(x, wasm_f32x4_mul(wasm_f32x4_splat(0.5f), wasm_f32x4_mul(x, x))));
+      v128_t z = wasm_f32x4_div(ex, wasm_f32x4_add(ex, wasm_f32x4_splat(2.0f)));
+      v128_t z2 = wasm_f32x4_mul(z, z);
+      return wasm_f32x4_mul(wasm_f32x4_splat(2.0f), wasm_f32x4_add(z, wasm_f32x4_mul(wasm_f32x4_splat(0.333333333f), wasm_f32x4_mul(z2, z))));
+    scalar_fallback: "std::log1p(std::exp({0}))"
+  Softsign:
+    macro_name: "WASM_SOFTSIGN_F32X4"
+    simd_expr: |
+      v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), wasm_f32x4_abs(x));
+      return wasm_f32x4_div(x, den);
+    scalar_fallback: "{0} / (1.0f + std::abs({0}))"
+  Equal:
+    macro_name: "WASM_EQUAL_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_eq(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} == {1}) ? 1.0f : 0.0f"
+  NotEqual:
+    macro_name: "WASM_NOTEQUAL_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_ne(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} != {1}) ? 1.0f : 0.0f"
+  Greater:
+    macro_name: "WASM_GREATER_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_gt(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} > {1}) ? 1.0f : 0.0f"
+  GreaterEqual:
+    macro_name: "WASM_GREATEREQUAL_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_ge(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} >= {1}) ? 1.0f : 0.0f"
+  Less:
+    macro_name: "WASM_LESS_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_lt(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} < {1}) ? 1.0f : 0.0f"
+  LessEqual:
+    macro_name: "WASM_LESSEQUAL_F32X4"
+    simd_expr: |
+      v128_t mask = wasm_f32x4_le(a, b);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} <= {1}) ? 1.0f : 0.0f"
+  LogicalAnd:
+    macro_name: "WASM_LOGICALAND_F32X4"
+    simd_expr: |
+      v128_t a_nz = wasm_f32x4_ne(a, wasm_f32x4_splat(0.0f));
+      v128_t b_nz = wasm_f32x4_ne(b, wasm_f32x4_splat(0.0f));
+      v128_t mask = wasm_v128_and(a_nz, b_nz);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} != 0.0f && {1} != 0.0f) ? 1.0f : 0.0f"
+  LogicalOr:
+    macro_name: "WASM_LOGICALOR_F32X4"
+    simd_expr: |
+      v128_t a_nz = wasm_f32x4_ne(a, wasm_f32x4_splat(0.0f));
+      v128_t b_nz = wasm_f32x4_ne(b, wasm_f32x4_splat(0.0f));
+      v128_t mask = wasm_v128_or(a_nz, b_nz);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "({0} != 0.0f || {1} != 0.0f) ? 1.0f : 0.0f"
+  LogicalXor:
+    macro_name: "WASM_LOGICALXOR_F32X4"
+    simd_expr: |
+      v128_t a_nz = wasm_f32x4_ne(a, wasm_f32x4_splat(0.0f));
+      v128_t b_nz = wasm_f32x4_ne(b, wasm_f32x4_splat(0.0f));
+      v128_t mask = wasm_v128_xor(a_nz, b_nz);
+      return wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f), mask);
+    scalar_fallback: "(({0} != 0.0f) != ({1} != 0.0f)) ? 1.0f : 0.0f"
   UnknownSIMD_Op_Test:
     macro_name: ""
     simd_expr: ""
@@ -169,4 +330,13 @@ scalars:
   hardsigmoid: "return std::max(0.0f, std::min(1.0f, 0.2f * a + 0.5f));"
   sigmoid: "return 1.0f / (1.0f + std::exp(-a));"
   cast: "return a;"
+  bessel_j0: "return (float)::j0((double)a);"
+  bessel_j1: "return (float)::j1((double)a);"
+  hypot: "return std::hypot(a, b);"
+  fmod: "return std::fmod(a, b);"
+  remainder: "return std::remainder(a, b);"
+  atan2: "return std::atan2(a, b);"
+  cbrt: "return std::cbrt(a);"
+  minimum: "return std::min(a, b);"
+  maximum: "return std::max(a, b);"
   unknownsimd_op_test: "return a;"

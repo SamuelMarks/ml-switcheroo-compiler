@@ -22,7 +22,7 @@ class DPNPGenerator(PythonStringGenerator):
 
         Args:
             graph (IRGraph): The computation graph to compile.
-            device (str): SYCL target device ('auto', 'cpu', 'gpu').
+            device (str): SYCL target device ('auto', 'cpu', 'gpu', 'fpga').
             sycl_queue (object | None): Optional pre-initialized SYCL queue.
         """
         super().__init__(graph)
@@ -55,12 +55,86 @@ class DPNPGenerator(PythonStringGenerator):
         """
         self.code = [self.header]
         self.add_line("import dpnp")
+        if self.device != "auto":
+            self.add_line(f"# Target SYCL Device: {self.device}")
+        if self.sycl_queue is not None:
+            self.add_line("# Active SYCL Queue configuration attached")
         self.add_line("")
         self.add_line(f"def {self._func_name}(args):")
         self.indent_level += 1
         self._generate_body("args")
         self.indent_level -= 1
         return "\n".join(self.code)
+
+    def visit_Add(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit DPNP addition operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Code string.
+        """
+        del node, kwargs
+        return f"dpnp.add({', '.join(input_vars)})"
+
+    def visit_Sub(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit DPNP subtraction operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Code string.
+        """
+        del node, kwargs
+        return f"dpnp.subtract({', '.join(input_vars)})"
+
+    def visit_Mul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit DPNP multiplication operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Code string.
+        """
+        del node, kwargs
+        return f"dpnp.multiply({', '.join(input_vars)})"
+
+    def visit_Div(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit DPNP division operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Code string.
+        """
+        del node, kwargs
+        return f"dpnp.divide({', '.join(input_vars)})"
+
+    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit DPNP matrix multiplication operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Code string.
+        """
+        del node, kwargs
+        return f"dpnp.matmul({', '.join(input_vars)})"
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Fallback for generic nodes emitting DPNP operations.
@@ -88,6 +162,8 @@ class DPNPGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
+        generator_cls = self.__class__
+
         def aot_dpnp_runner(*w_args: object, **w_kw: object) -> object:
             """Execute graph targeting DPNP device.
 
@@ -105,7 +181,7 @@ class DPNPGenerator(PythonStringGenerator):
                     arg_val = w_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             inputs.update(w_kw)
-            evaluated = evaluate_graph(graph, inputs=inputs)
+            evaluated = evaluate_graph(graph, inputs=inputs, backend=generator_cls)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])

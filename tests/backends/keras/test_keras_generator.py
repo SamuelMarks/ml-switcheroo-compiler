@@ -198,3 +198,109 @@ def test_keras_generator_return_only_outputs():
     gen._generate_body = mock_generate_body
     code = gen.generate()
     assert "return out_var" in code
+
+
+def test_keras_generator_return_block_both_inputs_and_outputs():
+    """Test generate() when both keras_input_vars and keras_output_vars are present."""
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    graph = IRGraph()
+    graph.nodes["const_0"] = IRNode(id="const_0", op_type="Constant", inputs=[])
+    gen = KerasCodeGenerator(graph)
+
+    def mock_generate_body(prefix):
+        gen.keras_input_vars = ["in_var"]
+        gen.keras_output_vars = ["out_var"]
+
+    gen._generate_body = mock_generate_body
+    code = gen.generate()
+    assert "return keras.Model(inputs=[in_var], outputs=[out_var])" in code
+
+
+def test_keras_generator_empty_inputs_and_outputs():
+    """Test generate() when keras_input_vars is set but keras_output_vars is empty."""
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    graph = IRGraph()
+    graph.nodes["dummy"] = IRNode(id="dummy", op_type="Identity", inputs=[])
+    gen = KerasCodeGenerator(graph)
+
+    def mock_generate_body(prefix):
+        gen.keras_input_vars = ["in0"]
+        gen.keras_output_vars = []
+
+    gen._generate_body = mock_generate_body
+    code = gen.generate()
+    assert "pass" in code
+
+
+def test_keras_generator_compile_aot():
+    """Test KerasCodeGenerator._compile_aot_impl across successful exec and evaluator fallback."""
+    import numpy as np
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    # 1. Successful exec and get_model execution
+    graph = IRGraph()
+    gen = KerasCodeGenerator(graph)
+    with patch.object(gen, "generate", return_value="def get_model(): return lambda x, **kw: x + 1"):
+        artifact = gen.compile_aot(graph)
+        assert artifact(41) == 42
+        assert artifact.metadata["backend"] == "keras"
+
+    # 1b. Exec succeeds but get_model not defined in scope
+    gen_no_get_model = KerasCodeGenerator(graph)
+    with patch.object(gen_no_get_model, "generate", return_value="x_const = 10"):
+        artifact_no_gm = gen_no_get_model.compile_aot(graph)
+        assert artifact_no_gm.metadata["model"] is None
+
+    # 2. Exec failure / get_model None fallback with single output
+    g_single = IRGraph()
+    node_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[2])
+    node_id = IRNode(id="out0", op_type="Identity", inputs=["in0"], shape_metadata=[2])
+    g_single.nodes = {"in0": node_in, "out0": node_id}
+    g_single.inputs = ["in0"]
+    g_single.outputs = ["out0"]
+
+    class MockTensorWithData:
+        """Mock tensor wrapper holding underlying array data."""
+
+        def __init__(self, data: np.ndarray) -> None:
+            """Initialize mock tensor.
+
+            Args:
+                data (np.ndarray): Underlying array.
+            """
+            self.data: np.ndarray = data
+
+    gen_single = KerasCodeGenerator(g_single)
+    with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):
+        art_single = gen_single.compile_aot(g_single)
+        # Call with arg having .data and extra arg past len(graph.inputs)
+        res_single = art_single(MockTensorWithData(np.array([1, 2])), "extra_arg")
+        assert np.array_equal(res_single, np.array([1, 2]))
+
+    # 3. Fallback with no outputs
+    g_no_out = IRGraph()
+    g_no_out.nodes = {"in0": node_in}
+    g_no_out.inputs = ["in0"]
+    g_no_out.outputs = []
+    gen_no_out = KerasCodeGenerator(g_no_out)
+    with patch.object(gen_no_out, "generate", return_value="invalid python syntax !!!"):
+        art_no_out = gen_no_out.compile_aot(g_no_out)
+        res_no_out = art_no_out(np.array([1, 2]))
+        assert isinstance(res_no_out, dict)
+
+    # 4. Fallback with multiple outputs
+    g_multi = IRGraph()
+    node_out1 = IRNode(id="out1", op_type="Identity", inputs=["in0"], shape_metadata=[2])
+    node_out2 = IRNode(id="out2", op_type="Identity", inputs=["in0"], shape_metadata=[2])
+    g_multi.nodes = {"in0": node_in, "out1": node_out1, "out2": node_out2}
+    g_multi.inputs = ["in0"]
+    g_multi.outputs = ["out1", "out2"]
+    gen_multi = KerasCodeGenerator(g_multi)
+    with patch.object(gen_multi, "generate", return_value="invalid syntax"):
+        art_multi = gen_multi.compile_aot(g_multi)
+        res_multi = art_multi(np.array([5, 6]))
+        assert len(res_multi) == 2
+        assert np.array_equal(res_multi[0], np.array([5, 6]))
+        assert np.array_equal(res_multi[1], np.array([5, 6]))

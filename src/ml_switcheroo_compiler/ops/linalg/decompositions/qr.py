@@ -60,17 +60,19 @@ class Hessenberg(OpDef):
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer shape for HouseholderProduct.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape (..., M, N).
         """
-        return ()
+        if not args:
+            return ()
+        return tuple(int(d) for d in getattr(args[0], "shape", getattr(args[0], "shape_metadata", args[0] if isinstance(args[0], (list, tuple)) else ())))
 
 
 @register_op("Schur")

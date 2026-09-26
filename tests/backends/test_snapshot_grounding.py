@@ -592,6 +592,8 @@ def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: object, mon
     def mock_exists(p: str) -> bool:
         if "ml_switcheroo_compiler" in p and "snapshots" in p:
             return False
+        if "ml-ecosystem-snapshots" in p or "ml_ecosystem_snapshots" in p:
+            return False
         if "ml_framework_snapshots" in p and "snapshots" in p:
             return True
         return real_exists(p)
@@ -620,7 +622,7 @@ def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: object, mon
     # Sub-case C: neither has jsons
     monkeypatch.setattr(os, "listdir", lambda p: [])
     eng_empty = SnapshotGroundingEngine()
-    assert "ml_framework_snapshots" in eng_empty.snapshot_dir
+    assert "ml_ecosystem_snapshots" in eng_empty.snapshot_dir or "ml-ecosystem-snapshots" in eng_empty.snapshot_dir or "ml_framework_snapshots" in eng_empty.snapshot_dir
 
     # Sub-case D: line 270 cd not in dirs_to_check in get_snapshot_path
     monkeypatch.undo()
@@ -734,6 +736,8 @@ def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.Tem
         real_listdir = os.listdir
 
         def mock_default_dir_exists(p: str) -> bool:
+            if "ml-ecosystem-snapshots" in p or "ml_ecosystem_snapshots" in p:
+                return False
             if "ml-framework-snapshots" in p and "snapshots" in p:
                 return True
             if ".cache" in p:
@@ -854,3 +858,83 @@ def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.Tem
 
     monkeypatch.setattr(engine, "get_endpoint_parameters", lambda be, ep: None)
     assert engine.validate_parameter_contract("dummy_be", "dummy_ep", 0, ["kw"]) == []
+
+
+def test_snapshot_grounding_ecosystem_env_precedence(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that ML_ECOSYSTEM_SNAPSHOTS_DIR takes precedence over ML_FRAMEWORK_SNAPSHOTS_DIR.
+
+    Args:
+        tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    eco_dir = tmp_path / "eco_snapshots"
+    fw_dir = tmp_path / "fw_snapshots"
+    eco_dir.mkdir(parents=True, exist_ok=True)
+    fw_dir.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setenv("ML_ECOSYSTEM_SNAPSHOTS_DIR", str(eco_dir))
+    monkeypatch.setenv("ML_FRAMEWORK_SNAPSHOTS_DIR", str(fw_dir))
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import _resolve_default_snapshot_dir
+
+    assert _resolve_default_snapshot_dir() == str(eco_dir)
+
+    monkeypatch.delenv("ML_ECOSYSTEM_SNAPSHOTS_DIR", raising=False)
+    assert _resolve_default_snapshot_dir() == str(fw_dir)
+
+
+def test_snapshot_grounding_ecosystem_importlib_and_cache(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that ml_ecosystem_snapshots package and cache directories are checked.
+
+    Args:
+        tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    import importlib.util
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import _resolve_default_snapshot_dir
+
+    monkeypatch.delenv("ML_ECOSYSTEM_SNAPSHOTS_DIR", raising=False)
+    monkeypatch.delenv("ML_FRAMEWORK_SNAPSHOTS_DIR", raising=False)
+
+    class DummySpec:
+        origin = str(tmp_path / "eco_pkg" / "__init__.py")
+
+    eco_snapshots = tmp_path / "eco_pkg" / "snapshots"
+    eco_snapshots.mkdir(parents=True, exist_ok=True)
+    (eco_snapshots / "sample.json").write_text("{}", encoding="utf-8")
+
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: DummySpec() if name == "ml_ecosystem_snapshots" else None)
+    assert _resolve_default_snapshot_dir() == str(eco_snapshots)
+
+    # Test cache ~/.cache/ml_ecosystem_snapshots
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+    cache_dir = tmp_path / "user_cache" / "snapshots"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    (cache_dir / "cache.json").write_text("{}", encoding="utf-8")
+
+    def mock_expanduser(p: str) -> str:
+        if "ml_ecosystem_snapshots" in p:
+            return str(cache_dir)
+        return p
+
+    monkeypatch.setattr("os.path.expanduser", mock_expanduser)
+    assert _resolve_default_snapshot_dir() == str(cache_dir)
+
+
+def test_snapshot_grounding_new_ecosystem_targets() -> None:
+    """Test that newly added targets (torchvision, torchaudio, scipy, safetensors, nccl) are configured."""
+    cfg = load_backend_snapshot_targets()
+    for target_name, glob_pat in [
+        ("torchvision", "torchvision_v*.json"),
+        ("torchaudio", "torchaudio_v*.json"),
+        ("scipy", "scipy_v*.json"),
+        ("safetensors", "safetensors_v*.json"),
+        ("nccl", "nccl_v*.json"),
+    ]:
+        assert target_name in cfg.targets
+        target = cfg.targets[target_name]
+        assert target.snapshot_glob == glob_pat
+        assert target.framework == target_name
+
+    assert cfg.targets["pytorch"].canonical_roots == ["torch", "pytorch"]

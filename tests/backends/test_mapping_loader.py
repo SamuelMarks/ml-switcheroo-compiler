@@ -1,5 +1,6 @@
 """Tests for backend YAML mapping loader and dynamic eager dispatch."""
 
+import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -237,6 +238,7 @@ def test_dispatch_eager_op() -> None:
             "OpWithDefaults": OpMappingSchema(
                 target_api="std_func",
                 kwarg_translations={"dim": "axis"},
+                kwarg_map={"source_dim": "mapped_dim", "ignore_none": None},
                 default_kwargs={"axis": 0, "keepdims": True},
             ),
             "MethodOp": OpMappingSchema(
@@ -271,10 +273,10 @@ def test_dispatch_eager_op() -> None:
         "test_backend_dispatch",
         "OpWithDefaults",
         [],
-        {"dim": 2},
+        {"dim": 2, "source_dim": 5},
         backend_module=mock_mod,
     )
-    assert res_kwargs == {"axis": 2, "keepdims": True}
+    assert res_kwargs == {"axis": 2, "mapped_dim": 5, "keepdims": True}
 
     # is_method True and method exists
     class CallableObj:
@@ -302,3 +304,12 @@ def test_dispatch_eager_op() -> None:
         backend_module=mock_fallback_mod,
     )
     assert res_fb == "fallback_called"
+
+
+def test_read_and_merge_with_operation(tmp_path: pathlib.Path) -> None:
+    """Test _read_and_merge when file contains top-level operation key."""
+    yaml_file = tmp_path / "op.yaml"
+    yaml_file.write_text("operation: test_single_op\ntarget_api: foo.bar\n")
+    target: dict[str, object] = {}
+    _read_and_merge(str(yaml_file), target)
+    assert "test_single_op" in target

@@ -38,9 +38,7 @@ templates:
     - 1
     - 1
   argmax:
-    body: "__global__ void argmax(const float* A, float* C, int N) {\n    int id =\
-      \ blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] =\
-      \ A[id];\n    }\n}\n"
+    body: "__global__ void argmax(const float* A, float* C, int N) {\n    __shared__ float s_val[256];\n    __shared__ int s_idx[256];\n    int tid = threadIdx.x;\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    s_val[tid] = (id < N) ? A[id] : -1e38f;\n    s_idx[tid] = (id < N) ? id : 0;\n    __syncthreads();\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n            if (s_val[tid + s] > s_val[tid] || (s_val[tid + s] == s_val[tid] && s_idx[tid + s] < s_idx[tid])) {\n                s_val[tid] = s_val[tid + s];\n                s_idx[tid] = s_idx[tid + s];\n            }\n        }\n        __syncthreads();\n    }\n    if (tid == 0) {\n        C[blockIdx.x] = (float)s_idx[0];\n    }\n}\n"
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -57,9 +55,7 @@ templates:
     - 1
     - 1
   argmin:
-    body: "__global__ void argmin(const float* A, float* C, int N) {\n    int id =\
-      \ blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] =\
-      \ A[id];\n    }\n}\n"
+    body: "__global__ void argmin(const float* A, float* C, int N) {\n    __shared__ float s_val[256];\n    __shared__ int s_idx[256];\n    int tid = threadIdx.x;\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    s_val[tid] = (id < N) ? A[id] : 1e38f;\n    s_idx[tid] = (id < N) ? id : 0;\n    __syncthreads();\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n            if (s_val[tid + s] < s_val[tid] || (s_val[tid + s] == s_val[tid] && s_idx[tid + s] < s_idx[tid])) {\n                s_val[tid] = s_val[tid + s];\n                s_idx[tid] = s_idx[tid + s];\n            }\n        }\n        __syncthreads();\n    }\n    if (tid == 0) {\n        C[blockIdx.x] = (float)s_idx[0];\n    }\n}\n"
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -1919,4 +1915,310 @@ templates:
     workgroup_size:
     - 16
     - 16
+    - 1
+  cbrt:
+    body: "__global__ void cbrt_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = cbrtf(A[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  shift_left:
+    body: "__global__ void shift_left_kernel(const float* A, const float* B, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = (float)((int)A[id] << (int)B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  shift_right:
+    body: "__global__ void shift_right_kernel(const float* A, const float* B, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = (float)((int)A[id] >> (int)B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  fmod:
+    body: "__global__ void fmod_kernel(const float* A, const float* B, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = fmodf(A[id], B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  remainder:
+    body: "__global__ void remainder_kernel(const float* A, const float* B, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = remainderf(A[id], B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  hypot:
+    body: "__global__ void hypot_kernel(const float* A, const float* B, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = hypotf(A[id], B[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  is_nan:
+    body: "__global__ void is_nan_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = isnan(A[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  is_inf:
+    body: "__global__ void is_inf_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = isinf(A[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  is_finite:
+    body: "__global__ void is_finite_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = isfinite(A[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  hardsilu:
+    body: "__global__ void hardsilu_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = A[id] * fminf(fmaxf(A[id] + 3.0f, 0.0f), 6.0f) / 6.0f;\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  squareplus:
+    body: "__global__ void squareplus_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = 0.5f * (A[id] + sqrtf(A[id] * A[id] + 4.0f));\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  softsign:
+    body: "__global__ void softsign_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = A[id] / (1.0f + fabsf(A[id]));\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  logsigmoid:
+    body: "__global__ void logsigmoid_kernel(const float* A, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = -log1pf(expf(-A[id]));\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  clamp:
+    body: "__global__ void clamp_kernel(const float* in_0, const float* in_1, const float* in_2, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = fminf(fmaxf(in_0[id], in_1[id]), in_2[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  where:
+    body: "__global__ void where_kernel(const float* in_0, const float* in_1, const float* in_2, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = (in_0[id] != 0.0f) ? in_1[id] : in_2[id];\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  fma:
+    body: "__global__ void fma_kernel(const float* in_0, const float* in_1, const float* in_2, float* C, int N) {\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {\n        C[id] = fmaf(in_0[id], in_1[id], in_2[id]);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  reducevar:
+    body: "__global__ void reducevar_kernel(const float* A, float* C, int N) {\n    __shared__ float s_sum[256];\n    __shared__ float s_sq[256];\n    int tid = threadIdx.x;\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    float val = (id < N) ? A[id] : 0.0f;\n    s_sum[tid] = val;\n    s_sq[tid] = val * val;\n    __syncthreads();\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n            s_sum[tid] += s_sum[tid + s];\n            s_sq[tid] += s_sq[tid + s];\n        }\n        __syncthreads();\n    }\n    if (tid == 0) {\n        float mean = s_sum[0] / (float)N;\n        C[blockIdx.x] = (s_sq[0] / (float)N) - (mean * mean);\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  reducestd:
+    body: "__global__ void reducestd_kernel(const float* A, float* C, int N) {\n    __shared__ float s_sum[256];\n    __shared__ float s_sq[256];\n    int tid = threadIdx.x;\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    float val = (id < N) ? A[id] : 0.0f;\n    s_sum[tid] = val;\n    s_sq[tid] = val * val;\n    __syncthreads();\n    for (int s = blockDim.x / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n            s_sum[tid] += s_sum[tid + s];\n            s_sq[tid] += s_sq[tid + s];\n        }\n        __syncthreads();\n    }\n    if (tid == 0) {\n        float mean = s_sum[0] / (float)N;\n        float var = (s_sq[0] / (float)N) - (mean * mean);\n        C[blockIdx.x] = sqrtf(fmaxf(0.0f, var));\n    }\n}\n"
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: __nv_bfloat16
+      bool: bool
+      float16: __half
+      float32: float
+      int32: int
+      int64: long long
+    workgroup_size:
+    - 256
+    - 1
     - 1

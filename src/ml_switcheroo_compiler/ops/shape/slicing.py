@@ -186,25 +186,29 @@ class IndexInDim(OpDef):
 
     op_name = "IndexInDim"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        operand = args[0] if len(args) > 0 else None
-        index = args[1] if len(args) > 1 else None
-        axis = kwargs.get("axis", 0)
-        keepdims = kwargs.get("keepdims", True)
-        shape = list(getattr(operand, "shape", ()))
+        operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
+        index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
+        axis = int(kwargs.get("axis", 0))
+        keepdims = bool(kwargs.get("keepdims", True))
+        raw_shape = getattr(operand, "shape", getattr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
+        shape = list(int(d) for d in raw_shape)
         if not shape:
             return ()
 
-        index_shape = getattr(index, "shape", ())
+        if axis < 0:
+            axis += len(shape)
+
+        index_shape = tuple(int(d) for d in getattr(index, "shape", getattr(index, "shape_metadata", index if isinstance(index, (list, tuple)) else ())))
         if keepdims:
             shape[axis] = index_shape[0] if index_shape else 1
         else:
@@ -223,18 +227,21 @@ class UpdateSlice(OpDef):
 
     op_name = "UpdateSlice"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        operand = args[0] if len(args) > 0 else None
-        return getattr(operand, "shape", ())
+        operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
+        if operand is None:
+            return ()
+        raw = getattr(operand, "shape", getattr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
+        return tuple(int(d) for d in raw)
 
 
 def index_in_dim(*args, **kwargs):

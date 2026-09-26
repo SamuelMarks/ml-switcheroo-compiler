@@ -665,10 +665,17 @@ class Pswapaxes(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
         shape = list(getattr(x, "shape", ()))
-        if shape and axis < len(shape):
-            shape[axis] = None
+        if not shape:
+            return ()
+        axis1 = int(kwargs.get("axis1", args[1] if len(args) > 1 else 0))
+        axis2 = int(kwargs.get("axis2", args[2] if len(args) > 2 else 1))
+        if axis1 < 0:
+            axis1 += len(shape)
+        if axis2 < 0:
+            axis2 += len(shape)
+        if 0 <= axis1 < len(shape) and 0 <= axis2 < len(shape):
+            shape[axis1], shape[axis2] = shape[axis2], shape[axis1]
         return tuple(shape)
 
 
@@ -709,10 +716,14 @@ class PsumScatter(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        scatter_dimension = kwargs.get("scatter_dimension", 0)
+        scatter_dimension = int(kwargs.get("scatter_dimension", 0))
+        world_size = kwargs.get("world_size")
         shape = list(getattr(x, "shape", ()))
-        if shape and scatter_dimension < len(shape):
-            shape[scatter_dimension] = None
+        if shape and 0 <= scatter_dimension < len(shape):
+            if world_size is not None and shape[scatter_dimension] is not None:
+                shape[scatter_dimension] = shape[scatter_dimension] // int(world_size)
+            else:
+                shape[scatter_dimension] = None
         return tuple(shape)
 
 

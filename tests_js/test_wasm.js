@@ -71,6 +71,25 @@ test('runWasmCompute executes real numerical tensors without mocks', async () =>
     assert.strictEqual(absOutput[0], 5.0);
     assert.strictEqual(absOutput[1], 10.0);
     assert.strictEqual(absOutput[2], 15.0);
+
+    const negKernel = wasmModule.compileWasmKernel('neg');
+    const negOutput = await wasmModule.runWasmCompute(negKernel, input, 3);
+    assert.strictEqual(negOutput[0], -2.0);
+    assert.strictEqual(negOutput[1], -3.0);
+    assert.strictEqual(negOutput[2], -4.0);
+
+    const ceilKernel = wasmModule.compileWasmKernel('ceil');
+    const ceilInput = new Float32Array([1.2, 2.7, -3.4]);
+    const ceilOutput = await wasmModule.runWasmCompute(ceilKernel, ceilInput, 3);
+    assert.strictEqual(ceilOutput[0], 2.0);
+    assert.strictEqual(ceilOutput[1], 3.0);
+    assert.strictEqual(ceilOutput[2], -3.0);
+
+    const floorKernel = wasmModule.compileWasmKernel('floor');
+    const floorOutput = await wasmModule.runWasmCompute(floorKernel, ceilInput, 3);
+    assert.strictEqual(floorOutput[0], 1.0);
+    assert.strictEqual(floorOutput[1], 2.0);
+    assert.strictEqual(floorOutput[2], -4.0);
 });
 
 test('runWasmCompute throws on invalid binary', async () => {

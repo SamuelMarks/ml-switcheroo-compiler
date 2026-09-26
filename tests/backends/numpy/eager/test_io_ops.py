@@ -158,9 +158,12 @@ def test_io_ops_coverage(tmp_path):
     mod._np_save(bk, str(p), np.array([1.0]))
     mod._np_save(bk, filepath=str(p), arr=np.array([1.0]))
     mod._np_save(bk, file=str(p), arr=np.array([1.0]))
+    mod._np_save(bk)
 
-    with pytest.raises(ValueError):
-        mod._np_load(bk, str(p))
+    assert mod._np_load(bk, str(p)) is not None
+
+    with pytest.raises(ValueError, match="Format not supported"):
+        mod._np_load(bk, str(tmp_path / "nonexistent.xyz"))
 
     # savez
     pz = tmp_path / "fz.npz"

@@ -237,3 +237,44 @@ def test_dataclasses_repr() -> None:
 
     c8 = PerspectiveChannelContext(ctx=c7, config=PerspectiveConfig())
     assert c8.config.interpolation == "bilinear"
+
+
+def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test 4D channels_last, MapCoordsContext with valid=None, and singular-free zero-h33 homography."""
+    # 1. 4D image with channels_last / default (branch: arr.ndim == 4 and data_format != 'channels_first')
+    img_4d_last = np.ones((2, 8, 12, 3), dtype=np.float32)
+    ctx_4d_last = _prepare_eager_transform(np, img_4d_last, seed=None, data_format="channels_last")
+    assert ctx_4d_last.B == 2
+    assert ctx_4d_last.H == 8
+    assert ctx_4d_last.W == 12
+    assert ctx_4d_last.C == 3
+
+    # 2. MapCoordsContext with valid=None for nearest, bilinear, and bicubic
+    img_2d = np.arange(16, dtype=np.float32).reshape(4, 4)
+    y_coords = np.array([1.5, 2.0], dtype=np.float32)
+    x_coords = np.array([1.5, 2.0], dtype=np.float32)
+    ctx_no_valid = MapCoordsContext(np_mod=np, image=img_2d, y=y_coords, x=x_coords, valid=None)
+
+    out_nearest = _map_coords_nearest(ctx_no_valid)
+    assert out_nearest.shape == (2,)
+
+    out_bilinear = _map_coords_bilinear(ctx_no_valid)
+    assert out_bilinear.shape == (2,)
+
+    out_bicubic = _map_coords_bicubic(ctx_no_valid)
+    assert out_bicubic.shape == (2,)
+
+    # 3. Homography estimation when abs(h[-1]) <= 1e-12
+    orig_svd = np.linalg.svd
+
+    def mock_svd(a: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        u, s, vh = orig_svd(a)
+        vh_mod = vh.copy()
+        vh_mod[-1, -1] = 0.0
+        return u, s, vh_mod
+
+    monkeypatch.setattr(np.linalg, "svd", mock_svd)
+    src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
+    dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
+    h_out = _compute_perspective_matrix(np, src_pts, dst_pts)
+    assert h_out.shape == (3, 3)

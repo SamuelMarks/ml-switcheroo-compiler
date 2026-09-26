@@ -112,6 +112,10 @@ def test_slice_and_strided_slice_exact_shapes(mocker) -> None:
     slice(t, axis=0, start=2, end=8, step=2)
     assert captured_shapes["Slice"] == (3, 20)
 
+    # 1b. Slice with end=None (defaults to dim_len)
+    slice(t, axis=0, start=2, end=None)
+    assert captured_shapes["Slice"] == (8, 20)
+
     # 2. Slice with step > 1 and negative start/end
     slice(t, axis=1, start=-15, end=-5, step=3)
     assert captured_shapes["Slice"] == (10, 4)
@@ -123,3 +127,26 @@ def test_slice_and_strided_slice_exact_shapes(mocker) -> None:
     # 4. Strided slice with negative stride (reversing dimension)
     strided_slice(t, begin=[8, 15], end=[2, 5], strides=[-2, -3])
     assert captured_shapes["StridedSlice"] == (3, 4)
+
+    # 5. Slice with negative step (reversing dimension)
+    slice(t, axis=0, start=8, end=2, step=-2)
+    assert captured_shapes["Slice"] == (3, 20)
+
+    # 6. Slice with negative end and positive step
+    slice(t, axis=0, start=1, end=-2, step=1)
+    assert captured_shapes["Slice"] == (7, 20)
+
+    # 7. Slice with out-of-bounds axis (rank > 0 but norm_axis >= rank)
+    slice(t, axis=5, start=0, end=5)
+    assert captured_shapes["Slice"] == (10, 20)
+
+    # 8. Slice with rank == 0 scalar tensor
+    t_0d = Tensor(None, TensorConfig((), "float32", "cpu"))
+    slice(t_0d, axis=0)
+    assert captured_shapes["Slice"] == ()
+
+    # 9. IndexInDim with negative axis
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((1,)), axis=-1) == (2, 1)
+
+    # 10. UpdateSlice with None operand
+    assert UpdateSlice().infer_shape(None) == ()

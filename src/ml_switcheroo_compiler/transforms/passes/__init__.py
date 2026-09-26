@@ -26,6 +26,8 @@ from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pas
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import mixed_precision_pass
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
+    HorizontalFusionPass,
+    VerticalFusionPass,
     apply_operator_fusion,
     operator_fusion_pass,
 )
@@ -52,6 +54,8 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import vectorization
 __all__ = [
     "BufferAllocationPass",
     "GraphSchedulingPass",
+    "HorizontalFusionPass",
+    "VerticalFusionPass",
     "apply_operator_fusion",
     "axis_translation_pass",
     "batch_norm_folding_pass",

@@ -501,14 +501,15 @@ class Flatnonzero(OpDef):
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: 1D index shape with symbolic nonzero count.
         """
-        args[0] if len(args) > 0 else None
-        return (None,)
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        return (SymVar("nonzero_count"),)
 
 
 @register_op("Lexsort")
@@ -521,17 +522,16 @@ class Lexsort(OpDef):
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        keys = args[0] if len(args) > 0 else None
-        kwargs.get("axis", -1)
+        keys = args[0] if len(args) > 0 else kwargs.get("keys")
         if isinstance(keys, (list, tuple)):
-            return getattr(keys[0], "shape", ()) if keys else ()
-        in_shape = getattr(keys, "shape", ())
+            return tuple(getattr(keys[0], "shape", getattr(keys[0], "shape_metadata", keys[0] if isinstance(keys[0], (list, tuple)) else ()))) if keys else ()
+        in_shape = tuple(getattr(keys, "shape", getattr(keys, "shape_metadata", keys if isinstance(keys, (list, tuple)) else ())))
         if len(in_shape) > 0:
             return in_shape[1:] if len(in_shape) > 1 else ()
         return ()
@@ -547,15 +547,17 @@ class Nonzero(OpDef):
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Tuple of 1D coordinate arrays with symbolic nonzero count.
         """
-        a = args[0] if len(args) > 0 else None
-        in_shape = getattr(a, "shape", ())
-        return tuple((None,) for _ in in_shape)
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        a = args[0] if len(args) > 0 else kwargs.get("a")
+        in_shape = tuple(getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        return tuple((SymVar("nonzero_count"),) for _ in in_shape)
 
 
 def _infer_shape_percentile_quantile(a, q, axis=None, keepdims: bool = False) -> tuple[int, ...]:
@@ -642,21 +644,23 @@ class RavelMultiIndex(OpDef):
 
     op_name = "RavelMultiIndex"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        multi_index = args[0] if len(args) > 0 else None
-        args[1] if len(args) > 1 else None
+        multi_index = args[0] if len(args) > 0 else kwargs.get("multi_index")
         if isinstance(multi_index, (list, tuple)) and multi_index:
-            return getattr(multi_index[0], "shape", ())
-        return getattr(multi_index, "shape", ())
+            first = multi_index[0]
+            if isinstance(first, (list, tuple)) and first:
+                return tuple(getattr(first[0], "shape", getattr(first[0], "shape_metadata", first[0] if isinstance(first[0], (list, tuple)) else ())))
+            return tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        return tuple(getattr(multi_index, "shape", getattr(multi_index, "shape_metadata", ())))
 
 
 def _repeat_infer_no_axis(in_shape, repeats):
@@ -669,6 +673,8 @@ def _repeat_infer_no_axis(in_shape, repeats):
     Returns:
         tuple: The inferred shape.
     """
+    from ml_switcheroo_compiler.ir.shape_system import SymVar
+
     size: int | None = 1
     for s in in_shape:
         if s is None:
@@ -679,7 +685,7 @@ def _repeat_infer_no_axis(in_shape, repeats):
         return (size * repeats,)
     if isinstance(repeats, (list, tuple)):
         return (sum(repeats),)
-    return (None,)
+    return (SymVar("repeat_size"),)
 
 
 @register_op("Repeat")
@@ -855,19 +861,21 @@ class Unique(OpDef):
         return_counts = kwargs.get("return_counts", False)
         axis = kwargs.get("axis", None)
         in_shape = getattr(ar, "shape", ())
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
         if axis is None:
-            ret_shape = (None,)
+            ret_shape = (SymVar("unique_count"),)
         else:
             ret_shape_list = list(in_shape)
-            ret_shape_list[axis] = None
+            ret_shape_list[axis] = SymVar("unique_count")
             ret_shape = tuple(ret_shape_list)
         ret = [ret_shape]
         if return_index:
-            ret.append((None,) if axis is None else (in_shape[axis],))
+            ret.append((SymVar("unique_count"),) if axis is None else (in_shape[axis],))
         if return_inverse:
             ret.append(_get_unique_inverse_shape(axis, in_shape))
         if return_counts:
-            ret.append((None,))
+            ret.append((SymVar("unique_count"),))
         if len(ret) == 1:
             return ret[0]
         return tuple(ret)

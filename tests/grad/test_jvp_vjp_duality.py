@@ -130,6 +130,14 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
         t = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
 
         def double_fn(x: Tensor) -> object:
+            """Double the input tensor.
+
+            Args:
+                x (Tensor): Input tensor.
+
+            Returns:
+                object: Scaled tensor.
+            """
             return x * 2.0
 
         check_jvp_vjp_duality(double_fn, (t,))
@@ -137,3 +145,49 @@ def test_jvp_vjp_duality_tensor_primals_and_failure() -> None:
         # 2. Strict negative tolerance forces diff > tol, raising SwitcherooError (hits lines 196-197)
         with pytest.raises(SwitcherooError, match="JVP/VJP duality check failed"):
             check_jvp_vjp_duality(double_fn, (t,), atol=-1.0, rtol=-1.0)
+
+
+def test_check_numerical_grads_coverage() -> None:
+    """Test full branch and statement coverage for check_numerical_grads."""
+    import pytest
+
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.errors import SwitcherooError
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.grad.options import GradCheckOptions
+    from ml_switcheroo_compiler.grad.testing import check_numerical_grads
+
+    # 1. Scalar float input
+    def square_fn(x: float) -> float:
+        """Square scalar input.
+
+        Args:
+            x (float): Scalar float value.
+
+        Returns:
+            float: Squared value.
+        """
+        return x * x
+
+    check_numerical_grads(square_fn, (3.0,))
+
+    # 2. Tensor input
+    def tensor_scale_fn(x: Tensor) -> object:
+        """Scale tensor input.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            object: Scaled tensor.
+        """
+        return x * 2.5
+
+    t = Tensor(np.array([1.0, 2.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
+    check_numerical_grads(tensor_scale_fn, (t,))
+
+    # 3. Mismatch error branch with custom GradCheckOptions
+    opts = GradCheckOptions(step=1e-4, atol=-1.0, rtol=-1.0)
+    with pytest.raises(SwitcherooError, match="Gradient check failed for argument"):
+        check_numerical_grads(square_fn, (3.0,), options=opts)

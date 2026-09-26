@@ -3,7 +3,7 @@
 
 import ast
 import builtins
-from typing import Optional, Protocol, TypeVar, Union, cast
+from typing import Optional, Protocol, TypeVar, Union, cast, runtime_checkable
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -13,24 +13,30 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
 
 
-class IndexableArray(Protocol):
-    """Protocol for indexable arrays."""
+@runtime_checkable
+class TensorLike(Protocol):
+    """Protocol defining the structural type contract for tensor/array instances in the interpreter."""
 
-    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "IndexableArray":
-        """Get item by index."""
+    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "TensorLike":
+        """Get item or slice from tensor."""
         ...
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get shape."""
+        """Get multidimensional shape dimensions."""
         ...
 
     def item(self) -> Union[int, float, bool]:
-        """Get item as scalar."""
+        """Get item as scalar value."""
+        ...
+
+    def __len__(self) -> int:
+        """Get length of leading dimension."""
         ...
 
 
-EvalValue = Union[int, float, complex, bytes, str, bool, list, tuple, dict, None, slice, "builtins.ellipsis", IndexableArray]
+IndexableArray = TensorLike
+EvalValue = Union[int, float, complex, bytes, str, bool, list, tuple, dict, None, slice, "builtins.ellipsis", TensorLike]
 
 
 def evaluate_graph(

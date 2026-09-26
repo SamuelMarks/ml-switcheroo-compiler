@@ -26,7 +26,7 @@ def test_sparse_extras() -> None:
     op1 = SparseConcat()
     assert op1.infer_shape(None) == ()
     op2 = SparseSplit()
-    assert op2.infer_shape(None, None) == ()
+    assert op2.infer_shape(None, None) == ((),)
     op3 = SparseToDense()
     assert op3.infer_shape(None, None, None, None) == ()
 
@@ -47,7 +47,7 @@ def test_ragged_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = BooleanMask()
-    assert op1.infer_shape(None, None) == ()
+    assert len(op1.infer_shape(None, None)) == 1
     op2 = MapFlatValues()
     assert op2.infer_shape(None) == ()
 

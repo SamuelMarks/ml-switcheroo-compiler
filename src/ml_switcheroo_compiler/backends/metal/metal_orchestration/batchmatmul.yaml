@@ -1,7 +1,14 @@
 batchmatmul:
   body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void batchmatmul(\n\
-    \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-    \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+    \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+    \    device float* C [[buffer(2)]],\n    uint3 id [[thread_position_in_grid]],\n\
+    \    constant uint& M [[buffer(3)]],\n    constant uint& N [[buffer(4)]],\n  \
+    \  constant uint& K [[buffer(5)]])\n{\n    uint col = id.x;\n    uint row = id.y;\n\
+    \    uint b = id.z;\n    if (row < M && col < N) {\n        float sum = 0.0f;\n\
+    \        const device float* a_mat = A + b * M * K;\n        const device float*\
+    \ b_mat = B + b * K * N;\n        for (uint i = 0; i < K; ++i) {\n           \
+    \ sum += a_mat[row * K + i] * b_mat[i * N + col];\n        }\n        C[(b * M\
+    \ + row) * N + col] = sum;\n    }\n}\n"
   workgroup_size:
   - 16
   - 16
@@ -11,9 +18,9 @@ batchmatmul:
     y: '{M}'
     z: '{B}'
   type_mappings:
-    float32: float
-    float16: half
     bfloat16: bfloat
+    bool: bool
+    float16: half
+    float32: float
     int32: int
     int64: long
-    bool: bool

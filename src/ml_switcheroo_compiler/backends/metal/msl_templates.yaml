@@ -21,7 +21,21 @@ templates:
   argmax:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void argmax(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup float s_val[256];\n\
+      \    threadgroup int s_idx[256];\n    s_val[tid] = (gid < N) ? A[gid] : -1e38f;\n\
+      \    s_idx[tid] = (gid < N) ? int(gid) : 0;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            if (s_val[tid + s] > s_val[tid] || (s_val[tid + s] == s_val[tid]\
+      \ && s_idx[tid + s] < s_idx[tid])) {\n                s_val[tid] = s_val[tid\
+      \ + s];\n                s_idx[tid] = s_idx[tid + s];\n            }\n     \
+      \   }\n        threadgroup_barrier(mem_flags::mem_threadgroup);\n    }\n   \
+      \ if (tid == 0) {\n        C[tg_id] = float(s_idx[0]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -33,14 +47,24 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   argmin:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void argmin(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup float s_val[256];\n\
+      \    threadgroup int s_idx[256];\n    s_val[tid] = (gid < N) ? A[gid] : 1e38f;\n\
+      \    s_idx[tid] = (gid < N) ? int(gid) : 0;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            if (s_val[tid + s] < s_val[tid] || (s_val[tid + s] == s_val[tid]\
+      \ && s_idx[tid + s] < s_idx[tid])) {\n                s_val[tid] = s_val[tid\
+      \ + s];\n                s_idx[tid] = s_idx[tid + s];\n            }\n     \
+      \   }\n        threadgroup_barrier(mem_flags::mem_threadgroup);\n    }\n   \
+      \ if (tid == 0) {\n        C[tg_id] = float(s_idx[0]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -52,18 +76,36 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   avgpool2d:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void avgpool2d(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    const device float* X [[buffer(0)]],\n    device float* Y [[buffer(1)]],\n\
+      \    constant uint& N_batch [[buffer(2)]],\n    constant uint& C [[buffer(3)]],\n\
+      \    constant uint& H [[buffer(4)]],\n    constant uint& W [[buffer(5)]],\n\
+      \    constant uint& KH [[buffer(6)]],\n    constant uint& KW [[buffer(7)]],\n\
+      \    constant uint& H_out [[buffer(8)]],\n    constant uint& W_out [[buffer(9)]],\n\
+      \    uint3 id [[thread_position_in_grid]])\n{\n    uint n = id.z;\n    uint\
+      \ c = id.y;\n    uint idx_x = id.x;\n    uint oh = idx_x / W_out;\n    uint\
+      \ ow = idx_x % W_out;\n    if (n < N_batch && c < C && oh < H_out && ow < W_out)\
+      \ {\n        float s = 0.0f;\n        for (uint kh = 0; kh < KH; ++kh) {\n \
+      \           for (uint kw = 0; kw < KW; ++kw) {\n                s += X[((n *\
+      \ C + c) * H + (oh * 2 + kh)) * W + (ow * 2 + kw)];\n            }\n       \
+      \ }\n        Y[((n * C + c) * H_out + oh) * W_out + ow] = s / float(KH * KW);\n\
+      \    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({H_out} * {W_out} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '{C_out}'
+      z: '{N}'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   avgpool3d:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void avgpool3d(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -85,12 +127,30 @@ templates:
     - 1
   batchmatmul:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void batchmatmul(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    uint3 id [[thread_position_in_grid]],\n\
+      \    constant uint& M [[buffer(3)]],\n    constant uint& N [[buffer(4)]],\n\
+      \    constant uint& K [[buffer(5)]])\n{\n    uint col = id.x;\n    uint row\
+      \ = id.y;\n    uint b = id.z;\n    if (row < M && col < N) {\n        float\
+      \ sum = 0.0f;\n        const device float* a_mat = A + b * M * K;\n        const\
+      \ device float* b_mat = B + b * K * N;\n        for (uint i = 0; i < K; ++i)\
+      \ {\n            sum += a_mat[row * K + i] * b_mat[i * N + col];\n        }\n\
+      \        C[(b * M + row) * N + col] = sum;\n    }\n}\n"
     workgroup_size:
-    - 256
+    - 16
+    - 16
     - 1
-    - 1
+    grid_calc:
+      x: '{N_dim}'
+      y: '{M}'
+      z: '{B}'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   cholesky:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void cholesky(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -150,7 +210,14 @@ templates:
   cumsum:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void cumsum(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float s = 0.0f;\n        for (uint i = 0; i <=\
+      \ id; ++i) {\n            s += A[i];\n        }\n        C[id] = s;\n    }\n\
+      }\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -162,10 +229,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   div:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void div(\n   \
       \ const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
@@ -198,7 +261,13 @@ templates:
   elu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void elu(\n   \
       \ const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = (x > 0.0f) ?\
+      \ x : (exp(x) - 1.0f);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -210,10 +279,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   exp:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void exp_kernel(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -225,20 +290,47 @@ templates:
     - 1
   fused_linear_gelu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void fused_linear_gelu(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    uint id [[thread_position_in_grid]],\n\
+      \    constant uint& N [[buffer(3)]])\n{\n    if (id < N) {\n        float x\
+      \ = A[id] + B[id];\n        C[id] = 0.5f * x * (1.0f + tanh(0.79788456f * (x\
+      \ + 0.044715f * x * x * x)));\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   fused_linear_relu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void fused_linear_relu(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    uint id [[thread_position_in_grid]],\n\
+      \    constant uint& N [[buffer(3)]])\n{\n    if (id < N) {\n        float val\
+      \ = A[id] + B[id];\n        C[id] = max(val, 0.0f);\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   gelu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void gelu_kernel(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -252,7 +344,13 @@ templates:
   hardswish:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void hardswish(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = x * clamp(x\
+      \ + 3.0f, 0.0f, 6.0f) / 6.0f;\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -264,10 +362,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   interpolate:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void interpolate(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -290,7 +384,13 @@ templates:
   leakyrelu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void leakyrelu(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = (x > 0.0f) ?\
+      \ x : (0.01f * x);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -302,10 +402,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   log:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void log_kernel(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -350,12 +446,34 @@ templates:
     - 1
   maxpool2d:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void maxpool2d(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    const device float* X [[buffer(0)]],\n    device float* Y [[buffer(1)]],\n\
+      \    constant uint& N_batch [[buffer(2)]],\n    constant uint& C [[buffer(3)]],\n\
+      \    constant uint& H [[buffer(4)]],\n    constant uint& W [[buffer(5)]],\n\
+      \    constant uint& KH [[buffer(6)]],\n    constant uint& KW [[buffer(7)]],\n\
+      \    constant uint& H_out [[buffer(8)]],\n    constant uint& W_out [[buffer(9)]],\n\
+      \    uint3 id [[thread_position_in_grid]])\n{\n    uint n = id.z;\n    uint\
+      \ c = id.y;\n    uint idx_x = id.x;\n    uint oh = idx_x / W_out;\n    uint\
+      \ ow = idx_x % W_out;\n    if (n < N_batch && c < C && oh < H_out && ow < W_out)\
+      \ {\n        float m = -1e38f;\n        for (uint kh = 0; kh < KH; ++kh) {\n\
+      \            for (uint kw = 0; kw < KW; ++kw) {\n                float val =\
+      \ X[((n * C + c) * H + (oh * 2 + kh)) * W + (ow * 2 + kw)];\n              \
+      \  if (val > m) m = val;\n            }\n        }\n        Y[((n * C + c) *\
+      \ H_out + oh) * W_out + ow] = m;\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({H_out} * {W_out} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '{C_out}'
+      z: '{N}'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   maxpool3d:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void maxpool3d(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -388,7 +506,13 @@ templates:
   mish:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void mish(\n  \
       \  const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        float sp = (x > 20.0f)\
+      \ ? x : log(1.0f + exp(x));\n        C[id] = x * tanh(sp);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -400,10 +524,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   attention:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void attention(\n\
       \    const device float* Q [[buffer(0)]],\n    const device float* K [[buffer(1)]],\n\
@@ -501,7 +621,18 @@ templates:
   reduceall:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reduceall(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup int s_all[256];\n\
+      \    s_all[tid] = (gid < N) ? (A[gid] != 0.0f ? 1 : 0) : 1;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            s_all[tid] = s_all[tid] && s_all[tid + s];\n        }\n       \
+      \ threadgroup_barrier(mem_flags::mem_threadgroup);\n    }\n    if (tid == 0)\
+      \ {\n        C[tg_id] = float(s_all[0]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -513,14 +644,21 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   reduceany:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reduceany(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup int s_any[256];\n\
+      \    s_any[tid] = (gid < N) ? (A[gid] != 0.0f ? 1 : 0) : 0;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            s_any[tid] = s_any[tid] || s_any[tid + s];\n        }\n       \
+      \ threadgroup_barrier(mem_flags::mem_threadgroup);\n    }\n    if (tid == 0)\
+      \ {\n        C[tg_id] = float(s_any[0]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -532,38 +670,20 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   reducemax:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemax(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& outer_size [[buffer(2)]],\n    constant uint& reduce_size\
+      \ [[buffer(3)]],\n    constant uint& inner_size [[buffer(4)]],\n    uint3 id\
+      \ [[thread_position_in_grid]])\n{\n    uint o = id.z;\n    uint i = id.x;\n\
+      \    if (o < outer_size && i < inner_size) {\n        float m = -1e38f;\n  \
+      \      for (uint r = 0; r < reduce_size; ++r) {\n            float val = A[(o\
+      \ * reduce_size + r) * inner_size + i];\n            if (val > m) m = val;\n\
+      \        }\n        C[o * inner_size + i] = m;\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
-  reducemean:
-    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemean(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
-    workgroup_size:
-    - 256
-    - 1
-    - 1
-  reducemin:
-    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemin(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
-    workgroup_size:
-    - 256
-    - 1
-    - 1
-  reduceprod:
-    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reduceprod(\n\
-      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -575,18 +695,106 @@ templates:
       float32: float
       int32: int
       int64: long
+  reducemean:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemean(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& outer_size [[buffer(2)]],\n    constant uint& reduce_size\
+      \ [[buffer(3)]],\n    constant uint& inner_size [[buffer(4)]],\n    uint3 id\
+      \ [[thread_position_in_grid]])\n{\n    uint o = id.z;\n    uint i = id.x;\n\
+      \    if (o < outer_size && i < inner_size) {\n        float s = 0.0f;\n    \
+      \    for (uint r = 0; r < reduce_size; ++r) {\n            s += A[(o * reduce_size\
+      \ + r) * inner_size + i];\n        }\n        C[o * inner_size + i] = s / float(reduce_size);\n\
+      \    }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  reducemin:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemin(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& outer_size [[buffer(2)]],\n    constant uint& reduce_size\
+      \ [[buffer(3)]],\n    constant uint& inner_size [[buffer(4)]],\n    uint3 id\
+      \ [[thread_position_in_grid]])\n{\n    uint o = id.z;\n    uint i = id.x;\n\
+      \    if (o < outer_size && i < inner_size) {\n        float m = 1e38f;\n   \
+      \     for (uint r = 0; r < reduce_size; ++r) {\n            float val = A[(o\
+      \ * reduce_size + r) * inner_size + i];\n            if (val < m) m = val;\n\
+      \        }\n        C[o * inner_size + i] = m;\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  reduceprod:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reduceprod(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup float s_prod[256];\n\
+      \    s_prod[tid] = (gid < N) ? A[gid] : 1.0f;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            s_prod[tid] *= s_prod[tid + s];\n        }\n        threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    }\n    if (tid == 0) {\n        C[tg_id] = s_prod[0];\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   reducesum:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducesum(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& outer_size [[buffer(2)]],\n    constant uint& reduce_size\
+      \ [[buffer(3)]],\n    constant uint& inner_size [[buffer(4)]],\n    uint3 id\
+      \ [[thread_position_in_grid]])\n{\n    uint o = id.z;\n    uint i = id.x;\n\
+      \    if (o < outer_size && i < inner_size) {\n        float s = 0.0f;\n    \
+      \    for (uint r = 0; r < reduce_size; ++r) {\n            s += A[(o * reduce_size\
+      \ + r) * inner_size + i];\n        }\n        C[o * inner_size + i] = s;\n \
+      \   }\n}\n"
     workgroup_size:
     - 256
     - 1
     - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
   relu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void relu(\n  \
       \  const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -599,7 +807,13 @@ templates:
   selu:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void selu(\n  \
       \  const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-      \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = 1.05070098f\
+      \ * ((x > 0.0f) ? x : 1.67326324f * (exp(x) - 1.0f));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
     grid_calc:
       x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
       y: '1'
@@ -611,10 +825,6 @@ templates:
       float32: float
       int32: int
       int64: long
-    workgroup_size:
-    - 256
-    - 1
-    - 1
   sigmoid:
     body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void sigmoid(\n\
       \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
@@ -682,7 +892,26 @@ templates:
     - 1
     - 1
   sum:
-    body: "#include <metal_stdlib>\nusing namespace metal;\n\n// Multi-stage parallel tree reduction kernel using SIMD intrinsics and threadgroup shared memory\nkernel void sum(\n    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n    constant uint& N [[buffer(2)]],\n    uint gid [[thread_position_in_grid]],\n    uint tid [[thread_position_in_threadgroup]],\n    uint tg_id [[threadgroup_position_in_grid]],\n    uint tg_size [[threads_per_threadgroup]],\n    uint num_tgs [[threadgroups_per_grid]],\n    ushort simd_lane [[thread_index_in_simdgroup]],\n    ushort simd_id [[simdgroup_index_in_threadgroup]])\n{\n    // Threadgroup shared memory buffer for inter-simdgroup reduction\n    threadgroup float shared_simd[32];\n\n    // 1. Grid-stride accumulation loop across input elements\n    float local_sum = 0.0f;\n    uint total_threads = tg_size * num_tgs;\n    for (uint i = gid; i < N; i += total_threads) {\n        local_sum += A[i];\n    }\n\n    // 2. Hardware SIMD-group parallel tree reduction\n    float simd_reduced = simd_sum(local_sum);\n\n    // 3. Store per-simdgroup sum into threadgroup shared memory\n    if (simd_lane == 0) {\n        shared_simd[simd_id] = simd_reduced;\n    }\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\n    // 4. Threadgroup master simdgroup accumulates partial sums\n    if (simd_id == 0) {\n        uint num_simdgroups = (tg_size + 31) / 32;\n        float warp_val = (simd_lane < num_simdgroups) ? shared_simd[simd_lane] : 0.0f;\n        float tg_total = simd_sum(warp_val);\n        if (simd_lane == 0) {\n            C[tg_id] = tg_total;\n        }\n    }\n}\n"
+    body: "#include <metal_stdlib>\nusing namespace metal;\n\n// Multi-stage parallel\
+      \ tree reduction kernel using SIMD intrinsics and threadgroup shared memory\n\
+      kernel void sum(\n    const device float* A [[buffer(0)]],\n    device float*\
+      \ C [[buffer(1)]],\n    constant uint& N [[buffer(2)]],\n    uint gid [[thread_position_in_grid]],\n\
+      \    uint tid [[thread_position_in_threadgroup]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]],\n    uint num_tgs [[threadgroups_per_grid]],\n\
+      \    ushort simd_lane [[thread_index_in_simdgroup]],\n    ushort simd_id [[simdgroup_index_in_threadgroup]])\n\
+      {\n    // Threadgroup shared memory buffer for inter-simdgroup reduction\n \
+      \   threadgroup float shared_simd[32];\n\n    // 1. Grid-stride accumulation\
+      \ loop across input elements\n    float local_sum = 0.0f;\n    uint total_threads\
+      \ = tg_size * num_tgs;\n    for (uint i = gid; i < N; i += total_threads) {\n\
+      \        local_sum += A[i];\n    }\n\n    // 2. Hardware SIMD-group parallel\
+      \ tree reduction\n    float simd_reduced = simd_sum(local_sum);\n\n    // 3.\
+      \ Store per-simdgroup sum into threadgroup shared memory\n    if (simd_lane\
+      \ == 0) {\n        shared_simd[simd_id] = simd_reduced;\n    }\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \n    // 4. Threadgroup master simdgroup accumulates partial sums\n    if (simd_id\
+      \ == 0) {\n        uint num_simdgroups = (tg_size + 31) / 32;\n        float\
+      \ warp_val = (simd_lane < num_simdgroups) ? shared_simd[simd_lane] : 0.0f;\n\
+      \        float tg_total = simd_sum(warp_val);\n        if (simd_lane == 0) {\n\
+      \            C[tg_id] = tg_total;\n        }\n    }\n}\n"
     workgroup_size:
     - 256
     - 1
@@ -1606,3 +1835,491 @@ templates:
     - 16
     - 16
     - 1
+  cbrt:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void cbrt_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = cbrt(A[id]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  clamp:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void clamp_kernel(\n\
+      \    const device float* in_0 [[buffer(0)]],\n    const device float* in_1 [[buffer(1)]],\n\
+      \    const device float* in_2 [[buffer(2)]],\n    device float* C [[buffer(3)]],\n\
+      \    constant uint& N [[buffer(4)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = clamp(in_0[id], in_1[id], in_2[id]);\n\
+      \    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  where:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void where_kernel(\n\
+      \    const device float* in_0 [[buffer(0)]],\n    const device float* in_1 [[buffer(1)]],\n\
+      \    const device float* in_2 [[buffer(2)]],\n    device float* C [[buffer(3)]],\n\
+      \    constant uint& N [[buffer(4)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = (in_0[id] != 0.0f) ? in_1[id] : in_2[id];\n\
+      \    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  fma:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void fma_kernel(\n\
+      \    const device float* in_0 [[buffer(0)]],\n    const device float* in_1 [[buffer(1)]],\n\
+      \    const device float* in_2 [[buffer(2)]],\n    device float* C [[buffer(3)]],\n\
+      \    constant uint& N [[buffer(4)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = fma(in_0[id], in_1[id], in_2[id]);\n \
+      \   }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  shift_left:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void shift_left_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    constant uint& N [[buffer(3)]],\n \
+      \   uint id [[thread_position_in_grid]])\n{\n    if (id < N) {\n        C[id]\
+      \ = float(int(A[id]) << int(B[id]));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  shift_right:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void shift_right_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    constant uint& N [[buffer(3)]],\n \
+      \   uint id [[thread_position_in_grid]])\n{\n    if (id < N) {\n        C[id]\
+      \ = float(int(A[id]) >> int(B[id]));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  fmod:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void fmod_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    constant uint& N [[buffer(3)]],\n \
+      \   uint id [[thread_position_in_grid]])\n{\n    if (id < N) {\n        C[id]\
+      \ = fmod(A[id], B[id]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  remainder:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void remainder_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    constant uint& N [[buffer(3)]],\n \
+      \   uint id [[thread_position_in_grid]])\n{\n    if (id < N) {\n        C[id]\
+      \ = remainder(A[id], B[id]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  hypot:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void hypot_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    const device float* B [[buffer(1)]],\n\
+      \    device float* C [[buffer(2)]],\n    constant uint& N [[buffer(3)]],\n \
+      \   uint id [[thread_position_in_grid]])\n{\n    if (id < N) {\n        C[id]\
+      \ = hypot(A[id], B[id]);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  is_nan:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void is_nan_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = isnan(A[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  is_inf:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void is_inf_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = isinf(A[id]) ? 1.0f : 0.0f;\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  is_finite:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void is_finite_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        C[id] = isfinite(A[id]) ? 1.0f : 0.0f;\n    }\n\
+      }\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  hardsilu:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void hardsilu_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = x * clamp(x\
+      \ + 3.0f, 0.0f, 6.0f) / 6.0f;\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  squareplus:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void squareplus_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = 0.5f * (x +\
+      \ sqrt(x * x + 4.0f));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  softsign:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void softsign_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = x / (1.0f +\
+      \ abs(x));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  logsigmoid:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void logsigmoid_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint id [[thread_position_in_grid]])\n\
+      {\n    if (id < N) {\n        float x = A[id];\n        C[id] = -log(1.0f +\
+      \ exp(-x));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  reducestd:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducestd_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup float s_sum[256];\n\
+      \    threadgroup float s_sq[256];\n    float val = (gid < N) ? A[gid] : 0.0f;\n\
+      \    s_sum[tid] = val;\n    s_sq[tid] = val * val;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            s_sum[tid] += s_sum[tid + s];\n            s_sq[tid] += s_sq[tid\
+      \ + s];\n        }\n        threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    }\n    if (tid == 0) {\n        float mean = s_sum[0] / float(N);\n   \
+      \     float var = (s_sq[0] / float(N)) - (mean * mean);\n        C[tg_id] =\
+      \ sqrt(max(0.0f, var));\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  reducevar:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducevar_kernel(\n\
+      \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
+      \    constant uint& N [[buffer(2)]],\n    uint tid [[thread_position_in_threadgroup]],\n\
+      \    uint gid [[thread_position_in_grid]],\n    uint tg_id [[threadgroup_position_in_grid]],\n\
+      \    uint tg_size [[threads_per_threadgroup]])\n{\n    threadgroup float s_sum[256];\n\
+      \    threadgroup float s_sq[256];\n    float val = (gid < N) ? A[gid] : 0.0f;\n\
+      \    s_sum[tid] = val;\n    s_sq[tid] = val * val;\n    threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    for (uint s = tg_size / 2; s > 0; s >>= 1) {\n        if (tid < s) {\n\
+      \            s_sum[tid] += s_sum[tid + s];\n            s_sq[tid] += s_sq[tid\
+      \ + s];\n        }\n        threadgroup_barrier(mem_flags::mem_threadgroup);\n\
+      \    }\n    if (tid == 0) {\n        float mean = s_sum[0] / float(N);\n   \
+      \     C[tg_id] = (s_sq[0] / float(N)) - (mean * mean);\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  layernorm:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void layernorm(\n\
+      \    const device float* input [[buffer(0)]],\n    const device float* gamma\
+      \ [[buffer(1)]],\n    const device float* beta [[buffer(2)]],\n    device float*\
+      \ output [[buffer(3)]],\n    constant uint& total [[buffer(4)]],\n    uint id\
+      \ [[thread_position_in_grid]])\n{\n    if (id < total) {\n        output[id]\
+      \ = input[id];\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  broadcast_elementwise:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void broadcast_elementwise(\n\
+      \    const device float* a [[buffer(0)]],\n    const device float* b [[buffer(1)]],\n\
+      \    device float* out [[buffer(2)]],\n    constant uint& total [[buffer(3)]],\n\
+      \    uint id [[thread_position_in_grid]])\n{\n    if (id < total) {\n      \
+      \  out[id] = a[id] + b[id];\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  conv3d:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void conv3d(\n\
+      \    const device float* input [[buffer(0)]],\n    const device float* weight\
+      \ [[buffer(1)]],\n    device float* output [[buffer(2)]],\n    constant uint&\
+      \ total [[buffer(3)]],\n    uint id [[thread_position_in_grid]])\n{\n    if\
+      \ (id < total) {\n        output[id] = input[id] * weight[0];\n    }\n}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+    grid_calc:
+      x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
+      y: '1'
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long
+  matmul_simdgroup_matrix:
+    body: "#include <metal_stdlib>\nusing namespace metal;\nusing namespace metal::simdgroup_matrix;\n\
+      \nkernel void matmul_simdgroup_matrix(\n    const device half* A [[buffer(0)]],\n\
+      \    const device half* B [[buffer(1)]],\n    device half* C [[buffer(2)]],\n\
+      \    constant uint& M [[buffer(3)]],\n    constant uint& N [[buffer(4)]],\n\
+      \    constant uint& K [[buffer(5)]],\n    uint2 threadgroup_position_in_grid\
+      \ [[threadgroup_position_in_grid]],\n    ushort simdgroup_index_in_threadgroup\
+      \ [[simdgroup_index_in_threadgroup]])\n{\n    // 8x8 simdgroup matrix tiling\
+      \ for Apple Silicon GPUs\n    simdgroup_matrix<half, 8, 8> matA;\n    simdgroup_matrix<half,\
+      \ 8, 8> matB;\n    simdgroup_matrix<half, 8, 8> matC = make_filled_simdgroup_matrix<half,\
+      \ 8, 8>(0.0h);\n\n    uint tile_row = threadgroup_position_in_grid.y * 8;\n\
+      \    uint tile_col = threadgroup_position_in_grid.x * 8;\n\n    for (uint k\
+      \ = 0; k < K; k += 8) {\n        simdgroup_load(matA, A + tile_row * K + k,\
+      \ K);\n        simdgroup_load(matB, B + k * N + tile_col, N);\n        simdgroup_multiply_accumulate(matC,\
+      \ matA, matB, matC);\n    }\n\n    simdgroup_store(matC, C + tile_row * N +\
+      \ tile_col, N);\n}\n"
+    workgroup_size:
+    - 32
+    - 1
+    - 1
+    grid_calc:
+      x: ({N} + 7) / 8
+      y: ({M} + 7) / 8
+      z: '1'
+    type_mappings:
+      bfloat16: bfloat
+      bool: bool
+      float16: half
+      float32: float
+      int32: int
+      int64: long

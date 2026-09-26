@@ -224,3 +224,136 @@ def test_trace_counts():
         reset_trace_count(traced_fn)
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+def test_tracing_state_full_branch_coverage():
+    """Verify all branches and conditions in TracingState."""
+    import sys
+    from types import SimpleNamespace
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.tracing.state import TracingState
+
+    state = TracingState()
+
+    # 1. add_node when not tracing or active_graph is None
+    state.add_node(LogicalNode(id="n0", op_type="Linear"))
+    assert state.active_graph is None
+
+    # 2. start_tracing and nesting
+    g1 = state.start_tracing("Outer")
+    assert state.is_tracing
+    assert state.active_graph.name == "Outer"
+
+    opts = SimpleNamespace(parallel_iterations=4, swap_memory=True, maximum_iterations=100, shape_invariants=[])
+    state.current_loop_options = opts
+
+    g2 = state.start_tracing("Inner")
+    assert state.active_graph.name == "Inner"
+    assert len(state.graph_stack) == 1
+    assert len(state.loop_options_stack) == 1
+
+    # 3. Enrich AST and domain
+    node_with_ast = LogicalNode(id="n_ast", op_type="Relu")
+    node_with_ast.source_ast_ref = "custom_ref"
+    node_with_ast.domain = "custom_domain"
+    state.add_node(node_with_ast)
+    assert node_with_ast.source_ast_ref == "custom_ref"
+    assert node_with_ast.domain == "custom_domain"
+
+    # Test active_graph with name None
+    state.active_graph.name = None
+    node_no_domain = LogicalNode(id="n_no_dom", op_type="Relu")
+    node_no_domain.domain = ""
+    state.add_node(node_no_domain)
+    assert node_no_domain.domain == ""
+
+    # Test active_graph with name and node.domain == ""
+    state.active_graph.name = "Inner"
+    node_empty_domain = LogicalNode(id="n_emp_dom", op_type="Relu")
+    node_empty_domain.domain = ""
+    state.add_node(node_empty_domain)
+    assert node_empty_domain.domain == "Inner"
+
+    # 4. Enrich stream
+    config = sys.modules["ml_switcheroo_compiler.core.config"].config
+    old_stream = config.current_stream
+    try:
+        config.current_stream = "stream_cuda_1"
+        node_stream = LogicalNode(id="n_stream", op_type="Relu")
+        node_stream.stream = None
+        state.add_node(node_stream)
+        assert node_stream.stream == "stream_cuda_1"
+
+        # Stream None but config stream is default
+        config.current_stream = "default"
+        node_stream_def = LogicalNode(id="n_stream_def", op_type="Relu")
+        node_stream_def.stream = None
+        state.add_node(node_stream_def)
+        assert node_stream_def.stream is None
+
+        # Missing config in sys.modules
+        cfg_module = sys.modules.pop("ml_switcheroo_compiler.core.config")
+        try:
+            node_dummy = LogicalNode(id="n_dummy", op_type="Relu")
+            state._enrich_stream(node_dummy)
+        finally:
+            sys.modules["ml_switcheroo_compiler.core.config"] = cfg_module
+    finally:
+        config.current_stream = old_stream
+
+    # 5. Loop options on Loop node
+    state.current_loop_options = opts
+    loop_node = LogicalNode(id="loop_1", op_type="Loop", attributes={})
+    state.add_node(loop_node)
+    assert loop_node.attributes["parallel_iterations"] == 4
+    assert loop_node.attributes["swap_memory"] is True
+    assert loop_node.attributes["maximum_iterations"] == 100
+    assert loop_node.attributes["shape_invariants"] == []
+    assert loop_node.attributes["loop_options"] is opts
+
+    # Loop options with None attributes on opts
+    opts_none = SimpleNamespace(parallel_iterations=None, swap_memory=None, maximum_iterations=None, shape_invariants=None)
+    state.current_loop_options = opts_none
+    loop_node_2 = LogicalNode(id="loop_2", op_type="WhileLoop", attributes={"loop_options": "existing"})
+    state.add_node(loop_node_2)
+    assert "parallel_iterations" not in loop_node_2.attributes
+    assert loop_node_2.attributes["loop_options"] == "existing"
+
+    # 6. Node replacing an Input node in active_graph.inputs
+    state.active_graph.inputs = ["input_to_replace", "other_input"]
+    state.active_graph.input_specs = {"input_to_replace": "spec"}
+    replacing_node = LogicalNode(id="input_to_replace", op_type="Add")
+    state.add_node(replacing_node)
+    assert "input_to_replace" not in state.active_graph.inputs
+    assert "input_to_replace" not in state.active_graph.input_specs
+
+    # Graph without input_specs
+    delattr(state.active_graph, "input_specs")
+    state.active_graph.inputs = ["input_to_replace_2"]
+    replacing_node_2 = LogicalNode(id="input_to_replace_2", op_type="Mul")
+    state.add_node(replacing_node_2)
+    assert "input_to_replace_2" not in state.active_graph.inputs
+
+    # 7. stop_tracing nesting
+    inner_g = state.stop_tracing()
+    assert inner_g is g2
+    assert state.is_tracing
+    assert state.active_graph is g1
+    assert state.current_loop_options is opts
+
+    outer_g = state.stop_tracing()
+    assert outer_g is g1
+    assert not state.is_tracing
+    assert state.active_graph is None
+    assert state.current_loop_options is None
+
+    # Test stop_tracing when graph_stack is not empty but loop_options_stack is empty
+    state_dummy = TracingState()
+    state_dummy.start_tracing("Base")
+    dummy_inner = state_dummy.start_tracing("Inner")
+    state_dummy.loop_options_stack.clear()
+    popped = state_dummy.stop_tracing()
+    assert popped is dummy_inner
+    assert state_dummy.current_loop_options is None

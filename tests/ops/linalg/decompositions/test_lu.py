@@ -16,6 +16,21 @@ def test_lu_dummy() -> None:
 
     t = MockTensor()
     assert LuPivotsToPermutation().infer_shape(t, permutation_size=4) == (2, 4)
+    assert LuPivotsToPermutation().infer_shape(t) == (2, 0)
+    assert LuPivotsToPermutation().infer_shape() == ()
+    assert LuPivotsToPermutation().infer_shape(None) == ()
+
+    from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuFactor
+
+    # 1D tensor (rank < 2) returns (shape, shape)
+    class Mock1DTensor:
+        shape = (5,)
+
+    assert LuFactor().infer_shape(Mock1DTensor()) == ((5,), (5,))
+
+    # kwargs 'a' and 'input'
+    assert LuFactor().infer_shape(a=MockTensor()) == ((2, 3), (2,))
+    assert LuFactor().infer_shape(input=MockTensor()) == ((2, 3), (2,))
 
 
 def test_lu_factor() -> None:
@@ -53,6 +68,12 @@ def test_lu_factor_trace() -> None:
         assert res1 == "mock_lu"
         assert res2 == "mock_piv"
 
+        # Non-tuple fallback branch
+        mock_emit.return_value = "single_res"
+        (res3, res4) = lu_factor(t)
+        assert res3 == "single_res"
+        assert res4 == "single_res"
+
 
 def test_lu_pivots_trace() -> None:
     input_data = np.array([0, 1], dtype=np.int32)
@@ -63,3 +84,8 @@ def test_lu_pivots_trace() -> None:
         mock_emit.return_value = "mock_perm"
         res = lu_pivots_to_permutation(t, 2)
         assert res == "mock_perm"
+
+        # Tuple branch
+        mock_emit.return_value = ("tuple_perm",)
+        res_tuple = lu_pivots_to_permutation(t, 2)
+        assert res_tuple == "tuple_perm"

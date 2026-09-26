@@ -8,7 +8,7 @@ def test_dot_infer_shapes() -> None:
         shape = (2, 3)
 
     t = MockTensor()
-    assert Dot().infer_shape(t, t) is None
+    assert Dot().infer_shape(t, t) == (2, 3)
     assert Tensordot().infer_shape(t, t) == ()
     assert Inner().infer_shape(t, t) == ()
     assert Outer().infer_shape(t, t) == ()

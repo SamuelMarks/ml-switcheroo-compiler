@@ -1,7 +1,8 @@
 """Numba code generator for JIT-compiled CPU acceleration."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
-from typing import Optional
 
 import numpy as np
 
@@ -19,7 +20,7 @@ class NumbaGenerator(PythonStringGenerator):
         self,
         graph: IRGraph,
         fastmath: bool = True,
-        parallel: bool = True,
+        parallel: bool = False,
         nogil: bool = False,
         emit_safe_fallback: bool = True,
     ) -> None:
@@ -112,7 +113,7 @@ class NumbaGenerator(PythonStringGenerator):
         source: str = self.generate()
         namespace: dict[str, object] = {}
         exec(source, namespace)  # noqa: S102
-        func: Optional[object] = namespace.get(self._func_name)
+        func: object | None = namespace.get(self._func_name)
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
@@ -181,6 +182,140 @@ class NumbaGenerator(PythonStringGenerator):
         self.add_line(f"{res_var} = {res_var} + 1")
         self.indent_level -= 1
         return res_var
+
+    def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit Numba JIT-compiled conditional branch (Cond) control flow.
+
+        Args:
+            node (IRNode): Cond IR node.
+            input_vars (list[str]): Input variable names [pred, true_val, false_val].
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        del kwargs
+        pred = input_vars[0] if len(input_vars) > 0 else "True"
+        true_val = input_vars[1] if len(input_vars) > 1 else "0"
+        false_val = input_vars[2] if len(input_vars) > 2 else "0"
+        res_var = f"v_{node.id.replace('-', '_')}"
+        self.add_line(f"if {pred}:")
+        self.indent_level += 1
+        self.add_line(f"{res_var} = {true_val}")
+        self.indent_level -= 1
+        self.add_line("else:")
+        self.indent_level += 1
+        self.add_line(f"{res_var} = {false_val}")
+        self.indent_level -= 1
+        return res_var
+
+    def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit Numba JIT-compiled Scan loop accumulation.
+
+        Args:
+            node (IRNode): Scan IR node.
+            input_vars (list[str]): Input variable names [init_val, xs].
+            **kwargs (object): Additional keyword attributes.
+
+        Returns:
+            str: Output variable name.
+        """
+        del kwargs
+        init_val = input_vars[0] if len(input_vars) > 0 else "0"
+        xs = input_vars[1] if len(input_vars) > 1 else input_vars[0]
+        res_var = f"v_{node.id.replace('-', '_')}"
+        carry_var = f"carry_{node.id.replace('-', '_')}"
+        idx_var = f"i_{node.id.replace('-', '_')}"
+
+        self.add_line(f"{res_var} = np.empty_like({xs})")
+        self.add_line(f"{carry_var} = {init_val}")
+        self.add_line(f"for {idx_var} in range(len({xs})):")
+        self.indent_level += 1
+        self.add_line(f"{carry_var} = {carry_var} + {xs}[{idx_var}]")
+        self.add_line(f"{res_var}[{idx_var}] = {carry_var}")
+        self.indent_level -= 1
+        return res_var
+
+    def generate_vectorized_ufunc(
+        self,
+        op_name: str,
+        scalar_expr: str,
+        arg_names: list[str] | None = None,
+        signatures: list[str] | None = None,
+        target: str = "cpu",
+    ) -> str:
+        """Generate Python/Numba script defining a vectorized ufunc via @vectorize.
+
+        Args:
+            op_name (str): Name of the generated ufunc.
+            scalar_expr (str): Scalar Python expression to evaluate on elements.
+            arg_names (list[str] | None): Names of the scalar parameters.
+            signatures (list[str] | None): Type signature specifications.
+            target (str): Compilation target architecture ('cpu', 'parallel').
+
+        Returns:
+            str: Generated Python/Numba script.
+        """
+        args = arg_names if arg_names is not None else ["x", "y"]
+        sigs = (
+            signatures
+            if signatures is not None
+            else [
+                "float32(float32, float32)" if len(args) == 2 else "float32(float32)",
+                "float64(float64, float64)" if len(args) == 2 else "float64(float64)",
+            ]
+        )
+        sig_str = ", ".join(f"'{s}'" for s in sigs)
+        code_lines = [
+            "import numpy as np",
+            "try:",
+            "    import numba as nb",
+            "except ImportError:",
+            "    nb = None",
+            "",
+            f"@nb.vectorize([{sig_str}], target='{target}'" + (", fastmath=True" if self.fastmath else "") + ")",
+            f"def {op_name}({', '.join(args)}):",
+            f"    return {scalar_expr}",
+        ]
+        return "\n".join(code_lines)
+
+    def compile_vectorized_ufunc(
+        self,
+        op_name: str,
+        scalar_expr: str,
+        arg_names: list[str] | None = None,
+        signatures: list[str] | None = None,
+        target: str = "cpu",
+    ) -> Callable[..., np.ndarray]:
+        """Compile a vectorized ufunc via Numba @vectorize.
+
+        Args:
+            op_name (str): Name of the generated ufunc.
+            scalar_expr (str): Scalar Python expression to evaluate on elements.
+            arg_names (list[str] | None): Names of scalar parameters.
+            signatures (list[str] | None): Type signature specifications.
+            target (str): Compilation target architecture.
+
+        Returns:
+            Callable[..., np.ndarray]: Compiled vectorized ufunc.
+
+        Raises:
+            RuntimeError: If compilation fails or ufunc is not defined.
+        """
+        source = self.generate_vectorized_ufunc(
+            op_name=op_name,
+            scalar_expr=scalar_expr,
+            arg_names=arg_names,
+            signatures=signatures,
+            target=target,
+        )
+        ns: dict[str, object] = {}
+        exec(source, ns)  # noqa: S102
+        func = ns.get(op_name)
+        if not callable(func):
+            msg = f"Vectorized ufunc generation failed to produce callable '{op_name}'."
+            raise RuntimeError(msg)
+        return func
 
     def visit_Sum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Emit parallel reduction loop with nb.prange or standard np.sum.
@@ -488,6 +623,7 @@ class NumbaGenerator(PythonStringGenerator):
             Returns:
                 object: Output tensor or tuple of output tensors.
             """
+            del runner_kwargs
             if compiled_fn is not None:
                 try:
                     args_tuple = tuple(getattr(a, "data", a) for a in args)
@@ -495,13 +631,14 @@ class NumbaGenerator(PythonStringGenerator):
                 except Exception:
                     pass
 
+            from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, object] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, feed_dict)
+            res_dict = evaluate_graph(graph, feed_dict, backend=NumpyGenerator)
             if not graph.outputs:
                 return res_dict
             if len(graph.outputs) == 1:

@@ -638,6 +638,53 @@ templates:
     uniforms:
     - K
     custom_setup: gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'K'), {k_dim});
+  slice:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform int start_x;\nuniform int start_y;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    ivec2 inCoord = outCoord + ivec2(start_x, start_y);\n    float val = texelFetch(A, inCoord, 0).r;\n    fragColor = vec4(val, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - start_x
+    - start_y
+    custom_setup: |
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'start_x'), {start_x});
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'start_y'), {start_y});
+  concat:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform sampler2D B;\nuniform int split_boundary;\nuniform int concat_axis;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    float val = 0.0;\n    if (concat_axis == 0) {\n        if (outCoord.y < split_boundary) {\n            val = texelFetch(A, outCoord, 0).r;\n        } else {\n            val = texelFetch(B, ivec2(outCoord.x, outCoord.y - split_boundary), 0).r;\n        }\n    } else {\n        if (outCoord.x < split_boundary) {\n            val = texelFetch(A, outCoord, 0).r;\n        } else {\n            val = texelFetch(B, ivec2(outCoord.x - split_boundary, outCoord.y), 0).r;\n        }\n    }\n    fragColor = vec4(val, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - split_boundary
+    - concat_axis
+    custom_setup: |
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'split_boundary'), {split_boundary});
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'concat_axis'), {concat_axis});
+  concatenate:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform sampler2D B;\nuniform int split_boundary;\nuniform int concat_axis;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    float val = 0.0;\n    if (concat_axis == 0) {\n        if (outCoord.y < split_boundary) {\n            val = texelFetch(A, outCoord, 0).r;\n        } else {\n            val = texelFetch(B, ivec2(outCoord.x, outCoord.y - split_boundary), 0).r;\n        }\n    } else {\n        if (outCoord.x < split_boundary) {\n            val = texelFetch(A, outCoord, 0).r;\n        } else {\n            val = texelFetch(B, ivec2(outCoord.x - split_boundary, outCoord.y), 0).r;\n        }\n    }\n    fragColor = vec4(val, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - split_boundary
+    - concat_axis
+    custom_setup: |
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'split_boundary'), {split_boundary});
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'concat_axis'), {concat_axis});
+  reduce:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform int K;\nuniform int reduce_axis;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    float acc = 0.0;\n    if (reduce_axis == 1) {\n        for (int k = 0; k < K; ++k) {\n            acc += texelFetch(A, ivec2(k, outCoord.y), 0).r;\n        }\n    } else if (reduce_axis == 0) {\n        for (int k = 0; k < K; ++k) {\n            acc += texelFetch(A, ivec2(outCoord.x, k), 0).r;\n        }\n    } else {\n        ivec2 texSize = textureSize(A, 0);\n        for (int y = 0; y < texSize.y; ++y) {\n            for (int x = 0; x < texSize.x; ++x) {\n                acc += texelFetch(A, ivec2(x, y), 0).r;\n            }\n        }\n    }\n    fragColor = vec4(acc, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - K
+    - reduce_axis
+    custom_setup: |
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'K'), {k_dim});
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'reduce_axis'), {reduce_axis});
+  reduction:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform int K;\nuniform int reduce_axis;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    float acc = 0.0;\n    if (reduce_axis == 1) {\n        for (int k = 0; k < K; ++k) {\n            acc += texelFetch(A, ivec2(k, outCoord.y), 0).r;\n        }\n    } else if (reduce_axis == 0) {\n        for (int k = 0; k < K; ++k) {\n            acc += texelFetch(A, ivec2(outCoord.x, k), 0).r;\n        }\n    } else {\n        ivec2 texSize = textureSize(A, 0);\n        for (int y = 0; y < texSize.y; ++y) {\n            for (int x = 0; x < texSize.x; ++x) {\n                acc += texelFetch(A, ivec2(x, y), 0).r;\n            }\n        }\n    }\n    fragColor = vec4(acc, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - K
+    - reduce_axis
+    custom_setup: |
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'K'), {k_dim});
+      gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'reduce_axis'), {reduce_axis});
+  reduce_sum:
+    body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform int K;\nout vec4 fragColor;\nvoid main() {\n    ivec2 outCoord = ivec2(gl_FragCoord.xy);\n    int row = outCoord.y;\n    float acc = 0.0;\n    for (int k = 0; k < K;\
+      \ ++k) {\n        float a = texelFetch(A, ivec2(k, row), 0).r;\n        acc\
+      \ += a;\n    }\n    fragColor = vec4(acc, 0.0, 0.0, 0.0);\n}\n"
+    uniforms:
+    - K
+    custom_setup: gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'K'), {k_dim});
   attention:
     body: "#version 300 es\nprecision highp float;\nuniform sampler2D A;\nuniform\
       \ sampler2D B;\nuniform sampler2D C;\nuniform int seq_len;\nuniform int head_dim;\n\

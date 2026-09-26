@@ -126,28 +126,23 @@ def resolve_api_endpoint(
             return True
 
     if backend_name == "pytorch":
-        if clean_api.startswith(("torchvision.", "torchaudio.")):
-            return True
+        if clean_api.startswith("torchvision."):
+            return engine.is_endpoint_valid("torchvision", clean_api)
+        if clean_api.startswith("torchaudio."):
+            return engine.is_endpoint_valid("torchaudio", clean_api)
 
     if backend_name == "jax":
         if clean_api.startswith(("jax.scipy.", "jax.ops.", "jax.numpy.linalg.")):
             return True
 
-    if backend_name == "dask":
-        if clean_api.startswith(("dask.array.linalg.", "da.linalg.", "dask.array.fft.", "da.fft.", "da.fft", "dask.array.fft")):
-            return True
-
-    if backend_name == "tensorflow":
-        if clean_api.startswith(("tensorflow.nn.", "tf.nn.", "tf.image.", "tf.lookup.", "tf.lookup", "tensorflow.lookup")):
-            return True
-
-    if backend_name == "mlx":
-        if clean_api.startswith(("mx.random.", "mlx.core.random.")):
-            return True
-
-    if backend_name == "keras":
-        if clean_api.startswith("keras.ops.image."):
-            return True
+    if backend_name in ("numpy", "scipy"):
+        if clean_api.startswith("scipy."):
+            if engine.is_endpoint_valid("scipy", clean_api):
+                return True
+            parts_sc: list[str] = clean_api.split(".")
+            if len(parts_sc) > 3 and clean_api.startswith("scipy.stats."):
+                if engine.is_endpoint_valid("scipy", ".".join(parts_sc[:3])):
+                    return True
 
     return False
 

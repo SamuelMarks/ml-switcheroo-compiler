@@ -3852,7 +3852,7 @@ def test_math_fft_return_none():
 
         pass
 
-    assert _fftconvolve(DummyBackendWithoutFFT(), [1, 2], [3, 4]) is None
+    assert _fftconvolve(DummyBackendWithoutFFT(), None, [3, 4]) is None
 
 
 def test_math_internal_return_zero():
@@ -3881,7 +3881,7 @@ def test_math_fft_branch_coverage():
 
         signal = DummySignal()
 
-    assert _fftconvolve(DummyBackendWithSignal(), [1, 2], [3, 4]) is None
+    assert _fftconvolve(DummyBackendWithSignal(), [1, 2], None) is None
 
 
 def test_math_fft_signal_fftconvolve():

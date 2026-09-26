@@ -16,46 +16,62 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class LuFactor(OpDef):
     """LuFactor Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: Tensor | tuple[int, ...] | list[int] | None,
+        **kwargs: Tensor | tuple[int, ...] | list[int] | str | int | float | None,
+    ) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer LU factorization output shapes (LU, pivots).
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (Tensor | tuple[int, ...] | list[int] | None): Positional args representing input tensor.
+            **kwargs (Tensor | tuple[int, ...] | list[int] | str | int | float | None): Keyword args representing input tensor.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]: Tuple of (lu_shape (..., M, N), pivots_shape (..., min(M, N))).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        if len(shape) < 2:
+            return (shape, shape)
+        m, n = shape[-2], shape[-1]
+        piv_shape = shape[:-2] + (min(m, n),)
+        return (shape, piv_shape)
 
 
 @register_op("LuPivotsToPermutation")
 class LuPivotsToPermutation(OpDef):
     """LuPivotsToPermutation Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: Tensor | tuple[int, ...] | list[int] | None,
+        **kwargs: int,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (Tensor | tuple[int, ...] | list[int] | None): Positional args representing input pivots.
+            **kwargs (int): Keyword args including permutation_size.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output permutation shape.
         """
-        if not args:
+        if not args or args[0] is None:
             return ()
         return args[0].shape[:-1] + (kwargs.get("permutation_size", 0),)
 
 
-def lu_factor(a: Tensor):
+def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
     """Compute pivoted LU decomposition of a matrix for use in `lu_solve`.
 
     Args:
-        a (Tensor): The a parameter.
+        a (Tensor): Input tensor matrix.
 
     Returns:
-        tuple: Result.
+        tuple[Tensor, Tensor]: Tuple containing LU factored tensor and pivot indices tensor.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -69,18 +85,21 @@ def lu_factor(a: Tensor):
         )
 
     piv_shape = a.shape[:-1]
-    return _emit_linalg_node("LuFactor", [a], {}, [a.shape, piv_shape], [a.dtype, a.dtype])
+    res = _emit_linalg_node("LuFactor", [a], {}, [a.shape, piv_shape], [a.dtype, a.dtype])
+    if isinstance(res, tuple):
+        return (res[0], res[1])
+    return (res, res)
 
 
-def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int):
+def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
     """Convert LU pivots to a permutation matrix or array.
 
     Args:
-        pivots (Tensor): The pivots parameter.
-        permutation_size (int): The permutation_size parameter.
+        pivots (Tensor): The pivots tensor.
+        permutation_size (int): Size of the resulting permutation dimension.
 
     Returns:
-        Tensor: Result.
+        Tensor: Transformed permutation tensor.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -89,10 +108,13 @@ def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int):
         data = backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size)
         return Tensor(data, TensorConfig(data.shape, pivots.dtype, pivots.device))
     out_shape = pivots.shape[:-1] + (permutation_size,)
-    return _emit_linalg_node(
+    res = _emit_linalg_node(
         "LuPivotsToPermutation",
         [pivots],
         {"permutation_size": permutation_size},
         [out_shape],
         [pivots.dtype],
     )
+    if isinstance(res, tuple):
+        return res[0]
+    return res

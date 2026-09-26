@@ -52,26 +52,38 @@ class WebGLCodeGenerator(BaseGenerator):
         nid: str = getattr(node, "id", "")
         clean_id: str = nid.replace("-", "_")
 
+        shape = getattr(node, "shape_metadata", None)
+        node_inputs = getattr(node, "inputs", []) or []
+        in_shape = None
+        if node_inputs and len(node_inputs) > 0:
+            in_node = getattr(self.graph, "nodes", {}).get(node_inputs[0])
+            in_shape = getattr(in_node, "shape_metadata", None) if in_node else None
+
+        eff_shape = shape if (shape and len(shape) > 0) else (in_shape if (in_shape and len(in_shape) > 0) else None)
+
         width: int = 32
         height: int = 32
-        shape = getattr(node, "shape_metadata", None)
-        if shape and len(shape) == 1:
+        if eff_shape and len(eff_shape) == 1:
             height = 1
-            width = int(shape[0]) if isinstance(shape[0], int) else 32
-        elif shape and len(shape) == 2:
-            height = int(shape[0]) if isinstance(shape[0], int) else 32
-            width = int(shape[1]) if isinstance(shape[1], int) else 32
-        elif shape and len(shape) > 2:
+            width = int(eff_shape[0]) if isinstance(eff_shape[0], int) else 32
+        elif eff_shape and len(eff_shape) == 2:
+            height = int(eff_shape[0]) if isinstance(eff_shape[0], int) else 32
+            width = int(eff_shape[1]) if isinstance(eff_shape[1], int) else 32
+        elif eff_shape and len(eff_shape) > 2:
             if op_type.lower() in ("conv2d", "maxpool2d", "avgpool2d"):
-                height = int(shape[-2]) if isinstance(shape[-2], int) else 32
-                width = int(shape[-1]) if isinstance(shape[-1], int) else 32
+                outer_spatial = 1
+                for d in eff_shape[:-1]:
+                    if isinstance(d, int):
+                        outer_spatial *= d
+                height = max(1, outer_spatial)
+                width = int(eff_shape[-1]) if isinstance(eff_shape[-1], int) else 32
             else:
                 outer = 1
-                for d in shape[:-1]:
+                for d in eff_shape[:-1]:
                     if isinstance(d, int):
                         outer *= d
-                height = outer
-                width = int(shape[-1]) if isinstance(shape[-1], int) else 32
+                height = max(1, outer)
+                width = int(eff_shape[-1]) if isinstance(eff_shape[-1], int) else 32
 
         norm_op: str = op_type.lower()
         norm_no_underscore: str = norm_op.replace("_", "")
@@ -125,6 +137,23 @@ class WebGLCodeGenerator(BaseGenerator):
                         k_w = k_shape[-1]
                     if isinstance(k_shape[-2], int):
                         k_h = k_shape[-2]
+            attrs: dict[str, object] = getattr(node, "attributes", {}) or {}
+            starts = attrs.get("starts", attrs.get("start", [0, 0]))
+            start_x: int = 0
+            start_y: int = 0
+            if isinstance(starts, (list, tuple)):
+                if len(starts) == 1:
+                    start_y = int(starts[0]) if isinstance(starts[0], int) else 0
+                elif len(starts) >= 2:
+                    start_y = int(starts[0]) if isinstance(starts[0], int) else 0
+                    start_x = int(starts[1]) if isinstance(starts[1], int) else 0
+            elif isinstance(starts, int):
+                start_y = starts
+
+            concat_axis: int = int(attrs.get("axis", 0)) if isinstance(attrs.get("axis", 0), int) else 0
+            split_boundary: int = in_h if concat_axis == 0 else in_w
+            reduce_axis: int = int(attrs.get("axis", 1)) if isinstance(attrs.get("axis", 1), int) else 1
+
             formatted_setup = custom_setup.format(
                 clean_id=clean_id,
                 width=width,
@@ -134,6 +163,11 @@ class WebGLCodeGenerator(BaseGenerator):
                 in_w=in_w,
                 k_h=k_h,
                 k_w=k_w,
+                start_x=start_x,
+                start_y=start_y,
+                concat_axis=concat_axis,
+                split_boundary=split_boundary,
+                reduce_axis=reduce_axis,
             )
             for line in formatted_setup.strip().split("\n"):
                 if line.strip():
@@ -148,6 +182,11 @@ class WebGLCodeGenerator(BaseGenerator):
                 curr_stride *= s
             for i, st in enumerate(strides):
                 setup_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'stride_{i}'), {st});")
+            setup_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'rank'), {len(shape_ints)});")
+            for i, s_dim in enumerate(shape_ints):
+                setup_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'dim_{i}'), {s_dim});")
+            setup_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'out_width'), {width});")
+            setup_lines.append(f"    gl.uniform1i(gl.getUniformLocation(prog_{clean_id}, 'out_height'), {height});")
 
         node_pass_tpl: Optional[str] = self.config.js_orchestration.get("node_pass")
         if node_pass_tpl:

@@ -1,6 +1,6 @@
 operation: Lookup
 backend: tensorflow
-target_api: tf.lookup
-ast_template: '{out} = tf.lookup({inputs})'
+target_api: custom_op
+ast_template: '{out} = {in0}'
 kwarg_map: {}
 dtype_overrides: {}

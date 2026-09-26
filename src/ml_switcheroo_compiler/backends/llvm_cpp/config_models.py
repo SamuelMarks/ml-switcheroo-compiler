@@ -54,10 +54,15 @@ class CppOpConfig(BaseModel):
     Attributes:
         template (str): Name of the compute template to apply (e.g., 'unary', 'binary').
         scalar_expr (str): Scalar C++ expression computing output value.
+        init_val (Optional[str]): Initial value for reduction templates.
+        final_combine (Optional[str]): Final combine expression for reduction templates.
     """
 
     template: str = Field(description="Template name for operation")
     scalar_expr: str = Field(description="Scalar C++ compute expression")
+    init_val: Optional[str] = Field(default=None, description="Initial value for reduction templates")
+    final_combine: Optional[str] = Field(default=None, description="Final combine expression for reduction templates")
+    model_config = {"extra": "allow"}
 
 
 class CppTemplatesConfig(BaseModel):

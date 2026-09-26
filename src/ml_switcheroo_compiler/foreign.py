@@ -46,16 +46,36 @@ class ForeignCall(OpDef):
                     if "return" in hints:
                         ret_type = hints["return"]
                         args_tuple = typing.get_args(ret_type)
-                        if args_tuple:
+                        if args_tuple and all(isinstance(x, int) or x is int for x in args_tuple):
                             return tuple(args_tuple)
                 except Exception:
                     pass
                 try:
                     sig = inspect.signature(first)
                     ret_anno = sig.return_annotation
-                    if hasattr(ret_anno, "__args__"):
+                    if hasattr(ret_anno, "__args__") and all(isinstance(x, int) or x is int for x in ret_anno.__args__):
                         return tuple(ret_anno.__args__)
                 except Exception:
                     pass
+
+                try:
+                    import ast
+
+                    src_code = inspect.getsource(first)
+                    tree = ast.parse(src_code)
+                    for n in ast.walk(tree):
+                        if isinstance(n, ast.Return) and n.value is not None:
+                            if isinstance(n.value, ast.Tuple):
+                                dims: list[int] = []
+                                for elt in n.value.elts:
+                                    if isinstance(elt, ast.Constant) and isinstance(elt.value, int):
+                                        dims.append(elt.value)
+                                if dims and len(dims) == len(n.value.elts):
+                                    return tuple(dims)
+                except Exception:
+                    pass
+
+            if len(args) > 1 and hasattr(args[1], "shape"):
+                return tuple(args[1].shape)
 
         return ()

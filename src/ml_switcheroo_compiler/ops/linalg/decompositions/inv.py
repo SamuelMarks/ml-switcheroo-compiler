@@ -16,50 +16,64 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Inv(OpDef):
     """Inv Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer output shape for matrix inverse.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Matrix inverse shape (..., N, N).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return shape
 
 
 @register_op("InvEx")
 class InvEx(OpDef):
     """InvEx Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer output shapes for InvEx matrix inverse with info.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Tuple of (inv_shape (..., N, N), info_shape (...)).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        info_shape = shape[:-2] if len(shape) >= 2 else ()
+        return (shape, info_shape)
 
 
 @register_op("TriInv")
 class TriInv(OpDef):
     """TriInv Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer output shape for triangular matrix inverse.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple[int, ...]: Triangular inverse shape (..., N, N).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return shape
 
 
 def inv(input: Tensor):

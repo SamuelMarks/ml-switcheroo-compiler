@@ -25,6 +25,9 @@ class UnaryMathOp(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            The computed shape or evaluation result.
+            tuple[int, ...]: The computed shape.
         """
-        return shapes[0] if shapes else ()
+        if not shapes:
+            return ()
+        first = shapes[0]
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))

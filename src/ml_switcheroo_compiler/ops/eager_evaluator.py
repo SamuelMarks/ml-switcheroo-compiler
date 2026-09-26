@@ -25,44 +25,53 @@ class EvaluationStrategy(abc.ABC):
     """Define base evaluation strategy."""
 
     @abc.abstractmethod
-    def evaluate(self, ctx: EvaluationContext):
-        """Evaluate evaluate operation.
+    def evaluate(self, ctx: EvaluationContext) -> object:
+        """Evaluate operation within evaluation context.
 
         Args:
-            ctx (EvaluationContext): The ctx parameter.
+            ctx (EvaluationContext): The evaluation context.
 
         Returns:
-            tuple[int, ...]: Result.
+            object: Evaluated raw tensor or scalar data.
         """
-        return None
+        raise NotImplementedError
 
 
 class CustomEagerEvalStrategy(EvaluationStrategy):
     """Strategy for custom eager evaluation."""
 
-    def evaluate(self, ctx: EvaluationContext):
-        """Evaluate evaluate operation.
+    def evaluate(self, ctx: EvaluationContext) -> object:
+        """Evaluate operation using custom eager execution logic.
 
         Args:
             ctx (EvaluationContext): Context.
 
         Returns:
-            tuple[int, ...]: Result.
+            object: Evaluated raw tensor or scalar data.
+
+        Raises:
+            NotImplementedError: If neither eager_eval nor forward is callable.
         """
-        return ctx.op_cls().eager_eval(*ctx.args, **ctx.kwargs)
+        op_cls = ctx.op_cls
+        op_inst = op_cls() if isinstance(op_cls, type) else op_cls
+        if hasattr(op_inst, "eager_eval") and callable(op_inst.eager_eval):
+            return op_inst.eager_eval(*ctx.args, **ctx.kwargs)
+        if hasattr(op_inst, "forward") and callable(op_inst.forward):
+            return op_inst.forward(*ctx.args, **ctx.kwargs)
+        raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
 class BackendExecuteOpStrategy(EvaluationStrategy):
     """Strategy for backend execution."""
 
-    def evaluate(self, ctx: EvaluationContext):
-        """Evaluate evaluate operation.
+    def evaluate(self, ctx: EvaluationContext) -> object:
+        """Evaluate operation via backend execute_op dispatch.
 
         Args:
             ctx (EvaluationContext): Context.
 
         Returns:
-            tuple[int, ...]: Result.
+            object: Evaluated raw tensor or scalar data.
         """
         return ctx.backend.execute_op(ctx.op_type, *ctx.args, **ctx.kwargs)
 

@@ -80,10 +80,13 @@ class AwkwardGenerator(PythonStringGenerator):
             "Combinations": "ak.combinations({0}, {1})",
             "Concatenate": "ak.concatenate({0})",
             "Where": "ak.where({0}, {1}, {2})",
+            "BroadcastArrays": "ak.broadcast_arrays({0})",
+            "BroadcastFields": "ak.broadcast_fields({0})",
             # Nested record transformations
             "Zip": "ak.zip({0})",
             "Unzip": "ak.unzip({0})",
             "WithField": "ak.with_field({0}, {1}, {2})",
+            "WithoutField": "ak.without_field({0}, {1})",
             "Fields": "ak.fields({0})",
             "ToRegular": "ak.to_regular({0})",
             "FromRegular": "ak.from_regular({0})",
@@ -111,12 +114,210 @@ class AwkwardGenerator(PythonStringGenerator):
         self.code = [self.header]
         self.add_line("import awkward as ak")
         self.add_line("import " + "numpy as np")
+        if self.ragged_mode:
+            self.add_line("# Native ragged layout mode enabled")
         self.add_line("")
         self.add_line(f"def {self._func_name}(args):")
         self.indent_level += 1
         self._generate_body("args")
         self.indent_level -= 1
         return "\n".join(self.code)
+
+    def visit_Flatten(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward flatten operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.flatten({', '.join(input_vars)})"
+
+    def visit_Unflatten(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward unflatten operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.unflatten({', '.join(input_vars)})"
+
+    def visit_Num(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward num dimension count operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.num({', '.join(input_vars)})"
+
+    def visit_PadNone(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward pad_none operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.pad_none({', '.join(input_vars)})"
+
+    def visit_FillNone(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward fill_none operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.fill_none({', '.join(input_vars)})"
+
+    def visit_DropNone(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward drop_none operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.drop_none({', '.join(input_vars)})"
+
+    def visit_Zip(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward record zip operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.zip({', '.join(input_vars)})"
+
+    def visit_Unzip(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward record unzip operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.unzip({', '.join(input_vars)})"
+
+    def visit_WithField(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward with_field record update.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.with_field({', '.join(input_vars)})"
+
+    def visit_Cartesian(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward cartesian product operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.cartesian({', '.join(input_vars)})"
+
+    def visit_Combinations(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward combinations operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.combinations({', '.join(input_vars)})"
+
+    def visit_BroadcastArrays(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward ragged broadcasting transformation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.broadcast_arrays({', '.join(input_vars)})"
+
+    def visit_ToRegular(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward regular layout conversion.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.to_regular({', '.join(input_vars)})"
+
+    def visit_FromRegular(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit native Awkward from_regular layout conversion.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"ak.from_regular({', '.join(input_vars)})"
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Fallback for generic nodes emitting Awkward operations.
@@ -144,6 +345,8 @@ class AwkwardGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
+        generator_cls = self.__class__
+
         def aot_awkward_runner(*w_args: object, **w_kw: object) -> object:
             """Execute graph with Awkward arrays.
 
@@ -161,7 +364,7 @@ class AwkwardGenerator(PythonStringGenerator):
                     arg_val = w_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             inputs.update(w_kw)
-            evaluated = evaluate_graph(graph, inputs=inputs)
+            evaluated = evaluate_graph(graph, inputs=inputs, backend=generator_cls)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])

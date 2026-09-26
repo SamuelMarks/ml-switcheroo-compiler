@@ -104,6 +104,13 @@ ARROW_COMPUTE_OP_MAP: dict[str, str] = {
     "var": "variance",
     "variance": "variance",
     "count": "count",
+    "product": "product",
+    "prod": "product",
+    "mode": "mode",
+    "quantile": "quantile",
+    "median": "approximate_median",
+    "approximatemedian": "approximate_median",
+    "approximate_median": "approximate_median",
     # Cumulative
     "cumsum": "cumulative_sum",
     "cumulativesum": "cumulative_sum",
@@ -113,6 +120,12 @@ ARROW_COMPUTE_OP_MAP: dict[str, str] = {
     "cumulativemax": "cumulative_max",
     "cummin": "cumulative_min",
     "cumulativemin": "cumulative_min",
+    # Bitwise shift & extra math
+    "shift_left": "shift_left",
+    "left_shift": "shift_left",
+    "shift_right": "shift_right",
+    "right_shift": "shift_right",
+    "cbrt": "cbrt",
     # Predicates & Selection
     "isnan": "is_nan",
     "isinf": "is_inf",
@@ -123,6 +136,71 @@ ARROW_COMPUTE_OP_MAP: dict[str, str] = {
     "ifelse": "if_else",
     "select": "if_else",
     "cast": "cast",
+    # Tabular & Columnar Array Kernels
+    "filter": "filter",
+    "take": "take",
+    "gather": "take",
+    "drop_null": "drop_null",
+    "dropna": "drop_null",
+    "fill_null": "fill_null",
+    "fillna": "fill_null",
+    "fill_null_forward": "fill_null_forward",
+    "fill_null_backward": "fill_null_backward",
+    "replace_with_mask": "replace_with_mask",
+    "unique": "unique",
+    "value_counts": "value_counts",
+    "indices_nonzero": "indices_nonzero",
+    "nonzero": "indices_nonzero",
+    "flatnonzero": "indices_nonzero",
+    "sort_indices": "sort_indices",
+    "argsort": "sort_indices",
+    "partition_nth_indices": "partition_nth_indices",
+    "argpartition": "partition_nth_indices",
+    "rank": "rank",
+    "dictionary_encode": "dictionary_encode",
+    # Nested & Structural Columnar Kernels
+    "list_flatten": "list_flatten",
+    "flatten": "list_flatten",
+    "list_slice": "list_slice",
+    "list_element": "list_element",
+    "list_parent_indices": "list_parent_indices",
+    "make_struct": "make_struct",
+    "struct_field": "struct_field",
+    # Columnar Text / String Kernels
+    "lower": "utf8_lower",
+    "ascii_lower": "ascii_lower",
+    "utf8_lower": "utf8_lower",
+    "upper": "utf8_upper",
+    "ascii_upper": "ascii_upper",
+    "utf8_upper": "utf8_upper",
+    "length": "utf8_length",
+    "string_length": "utf8_length",
+    "utf8_length": "utf8_length",
+    "replace_substring": "replace_substring",
+    "replace_substring_regex": "replace_substring_regex",
+    "match_substring": "match_substring",
+    "match_substring_regex": "match_substring_regex",
+    "split_pattern": "split_pattern",
+    "split_pattern_regex": "split_pattern_regex",
+    "capitalize": "ascii_capitalize",
+    "ascii_capitalize": "ascii_capitalize",
+    "title": "ascii_title",
+    "ascii_title": "ascii_title",
+    # GroupBy / Hash Aggregations
+    "hash_count": "hash_count",
+    "hash_count_distinct": "hash_count_distinct",
+    "hash_sum": "hash_sum",
+    "hash_mean": "hash_mean",
+    "hash_min": "hash_min",
+    "hash_max": "hash_max",
+    "hash_stddev": "hash_stddev",
+    "hash_variance": "hash_variance",
+    "hash_any": "hash_any",
+    "hash_all": "hash_all",
+    "hash_product": "hash_product",
+    "hash_first": "hash_first",
+    "hash_last": "hash_last",
+    "hash_list": "hash_list",
 }
 
 
@@ -138,6 +216,77 @@ def _unwrap_arg(arg: object) -> object:
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
         return arg.data
     return arg
+
+
+def _dispatch_groupby(
+    fn_name: str,
+    actual_args: tuple[object, ...],
+    kwargs: dict[str, object],
+) -> tuple[bool, object]:
+    """Dispatch table group_by or hash aggregations if applicable.
+
+    Args:
+        fn_name (str): Lowercase operation name.
+        actual_args (tuple[object, ...]): Operation positional arguments.
+        kwargs (dict[str, object]): Keyword options.
+
+    Returns:
+        tuple[bool, object]: Handled flag and resulting object.
+
+    Raises:
+        BackendNotSupportedError: If group_by or hash aggregation fails.
+    """
+    if fn_name in ("group_by", "groupby") and actual_args:
+        table_obj = actual_args[0]
+        if hasattr(table_obj, "group_by"):
+            keys = kwargs.get("keys", actual_args[1] if len(actual_args) > 1 else [])
+            aggregations = kwargs.get("aggregations", actual_args[2] if len(actual_args) > 2 else [])
+            try:
+                return True, table_obj.group_by(keys).aggregate(aggregations)
+            except Exception as exc:
+                msg = f"Failed executing group_by: {exc}"
+                raise BackendNotSupportedError(msg) from exc
+
+    if fn_name.startswith("hash_") and len(actual_args) >= 3:
+        table_obj = actual_args[0]
+        keys = actual_args[1]
+        agg_col = actual_args[2]
+        agg_name = fn_name[5:]
+        if hasattr(table_obj, "group_by"):
+            try:
+                return True, table_obj.group_by(keys).aggregate([(agg_col, agg_name)])
+            except Exception as exc:
+                msg = f"Failed executing {fn_name}: {exc}"
+                raise BackendNotSupportedError(msg) from exc
+
+    return False, None
+
+
+def _dispatch_cbrt(
+    fn_name: str,
+    actual_args: tuple[object, ...],
+    pc_mod: object,
+) -> tuple[bool, object]:
+    """Dispatch cube root via pc_mod power if applicable.
+
+    Args:
+        fn_name (str): Lowercase operation name.
+        actual_args (tuple[object, ...]): Operation positional arguments.
+        pc_mod (object): pyarrow.compute module.
+
+    Returns:
+        tuple[bool, object]: Handled flag and resulting object.
+
+    Raises:
+        BackendNotSupportedError: If cbrt execution fails.
+    """
+    if fn_name == "cbrt" and actual_args:
+        try:
+            return True, pc_mod.power(actual_args[0], 1.0 / 3.0)
+        except Exception as exc:
+            msg = f"Failed executing cbrt: {exc}"
+            raise BackendNotSupportedError(msg) from exc
+    return False, None
 
 
 def execute_op(
@@ -176,7 +325,17 @@ def execute_op(
     actual_args = tuple(_unwrap_arg(a) for a in raw_args)
     fn_name = op_type.lower()
 
-    # 1. Direct function lookup on pyarrow.compute
+    # 1. GroupBy / Hash Aggregations on Table / RecordBatch
+    handled_gb, res_gb = _dispatch_groupby(fn_name, actual_args, kwargs)
+    if handled_gb:
+        return res_gb
+
+    # 2. Cube root
+    handled_cbrt, res_cbrt = _dispatch_cbrt(fn_name, actual_args, pc_mod)
+    if handled_cbrt:
+        return res_cbrt
+
+    # 3. Direct function lookup on pyarrow.compute
     if hasattr(pc_mod, fn_name):
         compute_fn = getattr(pc_mod, fn_name)
         try:
@@ -185,7 +344,7 @@ def execute_op(
             msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
 
-    # 2. Lookup in standard operation mapping
+    # 4. Lookup in standard operation mapping
     target_name = ARROW_COMPUTE_OP_MAP.get(fn_name)
     if target_name and hasattr(pc_mod, target_name):
         compute_fn = getattr(pc_mod, target_name)

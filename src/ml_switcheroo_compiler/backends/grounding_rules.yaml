@@ -29,6 +29,7 @@ backend_allowed_roots:
   numpy:
     - "numpy"
     - "np"
+    - "scipy"
   edge_stablehlo:
     - "stablehlo"
   edge_mlir:
@@ -106,6 +107,7 @@ root_map:
   da: "dask"
   numpy: "numpy"
   np: "numpy"
+  scipy: "numpy"
   stablehlo: "edge_stablehlo"
   mlir: "edge_mlir"
   cuda: "cuda"

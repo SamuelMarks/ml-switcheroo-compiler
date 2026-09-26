@@ -8,9 +8,8 @@ from __future__ import annotations
 
 
 import threading
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, TypeVar
-
-T_Payload = TypeVar("T_Payload")
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -21,21 +20,23 @@ from ml_switcheroo_compiler.core.mixins import (
 )
 
 if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
-T = TypeVar("T", bound="ProxyTensor[object]")
+T_Payload = TypeVar("T_Payload")
+T = TypeVar("T", bound="ProxyTensor[Tensor]")
 
 
 _TRACE_COUNTS: dict[int, int] = {}
 
 
-def get_trace_count(func) -> int:
+def get_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> int:
     """Return the number of times the function has been traced.
 
     Args:
-        func (object): The function to check.
+        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to check.
 
     Returns:
         int: The number of times the function has been traced.
@@ -43,20 +44,20 @@ def get_trace_count(func) -> int:
     return _TRACE_COUNTS.get(id(func), 0)
 
 
-def increment_trace_count(func) -> None:
+def increment_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> None:
     """Increment the trace count for the given function.
 
     Args:
-        func (object): The function to increment the trace count for.
+        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to increment the trace count for.
     """
     _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
 
 
-def reset_trace_count(func) -> None:
+def reset_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> None:
     """Reset the trace count for the given function.
 
     Args:
-        func (object): The function to reset the trace count for.
+        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to reset the trace count for.
     """
     if id(func) in _TRACE_COUNTS:
         del _TRACE_COUNTS[id(func)]
@@ -116,20 +117,15 @@ class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticM
         id: str,
         shape: tuple[int | str, ...],
         dtype: str = "float32",
-        sparsity=None,
+        sparsity: dict[str, str | int | float | bool] | None = None,
     ) -> None:
         """Initialize a ProxyTensor.
 
-        id (str): Node ID producing this tensor
-            shape (Tuple[Union[int, str], ...]): Tensor shape
-            dtype (str): Tensor data type
-            sparsity (dict[str, object] | None): Sparsity pattern metadata
-
         Args:
-            id (str): Node ID producing this tensor
-            shape (tuple[int | str, ...]): Tensor shape
-            dtype (str): Tensor data type
-            sparsity (dict[str, object] | None, optional): Sparsity pattern metadata. Defaults to None.
+            id (str): Node ID producing this tensor.
+            shape (tuple[int | str, ...]): Tensor shape.
+            dtype (str, optional): Tensor data type. Defaults to "float32".
+            sparsity (dict[str, str | int | float | bool] | None, optional): Sparsity pattern metadata. Defaults to None.
         """
         self.id = id
         self.shape = shape

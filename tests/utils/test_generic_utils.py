@@ -1,3 +1,5 @@
+"""Unit tests for generic and framework-agnostic utility functions."""
+
 import sys
 from unittest import mock
 
@@ -34,7 +36,8 @@ from ml_switcheroo_compiler.utils.generic_utils import (
 )
 
 
-def test_configs():
+def test_configs() -> None:
+    """Test configuration dataclass defaults."""
     hc = HashConfig()
     ac = ArchiveConfig()
     cc = CacheConfig()
@@ -43,7 +46,8 @@ def test_configs():
     assert hc.hash_algorithm == "auto"
 
 
-def test_set_random_seed():
+def test_set_random_seed() -> None:
+    """Test global random seed assignment across random and numpy modules."""
     import types
 
     m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
@@ -55,14 +59,16 @@ def test_set_random_seed():
         set_random_seed(42)
 
 
-def test_validate_cache():
+def test_validate_cache() -> None:
+    """Test cache validation checking file existence."""
     with mock.patch("os.path.exists", return_value=True):
         assert _validate_cache("dummy")
     with mock.patch("os.path.exists", return_value=False):
         assert not _validate_cache("dummy")
 
 
-def test_download_remote_file():
+def test_download_remote_file() -> None:
+    """Test remote file download helper and error handling."""
     with mock.patch("urllib.request.urlretrieve") as mock_url:
         _download_remote_file("http://dummy", "dummy")
         mock_url.assert_called_once()
@@ -74,7 +80,8 @@ def test_download_remote_file():
             _download_remote_file("http://dummy", "dummy")
 
 
-def test_extract_archive():
+def test_extract_archive() -> None:
+    """Test archive extraction for tar, tar.gz, and zip formats."""
     with mock.patch("tarfile.open") as mock_tar:
         _extract_archive("test.tar.gz", "dir")
         _extract_archive("test.tar", "dir")
@@ -85,7 +92,8 @@ def test_extract_archive():
     _extract_archive("test.txt", "dir")  # nothing happens
 
 
-def test_get_file():
+def test_get_file() -> None:
+    """Test file download and extraction caching utility."""
     with mock.patch("ml_switcheroo_compiler.utils.generic_utils._validate_cache", return_value=True):
         res = get_file("test", "http://test")
         assert res.endswith("test")
@@ -105,7 +113,8 @@ def test_get_file():
         assert res_no_extract.endswith("test2")
 
 
-def test_progbar():
+def test_progbar() -> None:
+    """Test progress bar progress tracking and metrics updates."""
     pb = Progbar(10)
     pb.update(1, [("loss", 0.5)])
     assert "loss" in pb._values
@@ -135,7 +144,8 @@ def test_progbar():
     assert pb._format_info(5) == " - 5/10"
 
 
-def test_dummy_classes():
+def test_dummy_classes() -> None:
+    """Test dummy utility compatibility classes."""
     assert FeatureSpace() is not None
     assert Config() is not None
 
@@ -147,7 +157,8 @@ def test_dummy_classes():
     assert bounding_boxes() is not None
 
 
-def test_utility_functions():
+def test_utility_functions() -> None:
+    """Test utility logging and session management functions."""
     clear_session()
 
     with custom_Any_scope() as s:
@@ -165,11 +176,14 @@ def test_utility_functions():
     assert standardize_dtype() is None
 
 
-def test_register_keras_serializable():
+def test_register_keras_serializable() -> None:
+    """Test registration decorator for serializable classes."""
     dec = register_keras_serializable()
 
     @dec
     class Dummy:
+        """Dummy class."""
+
         pass
 
     assert Dummy is not None
@@ -192,6 +206,8 @@ def test_generic_utils_stubs() -> None:
 
     @register_keras_serializable()
     class A:
+        """Class A."""
+
         pass
 
 
@@ -205,14 +221,19 @@ def test_custom_object_scope_and_serialization() -> None:
     )
 
     class CustomDense:
+        """CustomDense test class."""
+
         def __init__(self, units: int = 32) -> None:
+            """Initialize CustomDense."""
             self.units = units
 
         def get_config(self) -> dict[str, int]:
+            """Get configuration dictionary."""
             return {"units": self.units}
 
         @classmethod
         def from_config(cls, config: dict[str, int]) -> "CustomDense":
+            """Instantiate from config."""
             return cls(**config)
 
     # Scoped registration
@@ -240,7 +261,10 @@ def test_custom_object_scope_and_serialization() -> None:
 
     # Class without from_config (uses cls(**config))
     class SimpleLayer:
+        """SimpleLayer test class."""
+
         def __init__(self, val: int = 0) -> None:
+            """Initialize SimpleLayer."""
             self.val = val
 
     deserialized_simple = deserialize_keras_object(
@@ -261,6 +285,8 @@ def test_custom_object_scope_and_serialization() -> None:
 
     @register_keras_serializable(package="TestPkg", name="NamedCustomLayer")
     class NamedCustomLayer:
+        """NamedCustomLayer test class."""
+
         pass
 
     assert get_registered_name(NamedCustomLayer) == "NamedCustomLayer"
@@ -287,12 +313,18 @@ def test_is_keras_tensor_and_dtype() -> None:
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     class FakeKerasHistory:
+        """FakeKerasHistory test class."""
+
         _keras_history = ("layer", 0, 0)
 
     class FakeKerasFlag:
+        """FakeKerasFlag test class."""
+
         is_keras_tensor = True
 
     class DummyObj:
+        """DummyObj test class."""
+
         pass
 
     assert is_keras_tensor(FakeKerasHistory())
@@ -370,3 +402,57 @@ def test_bounding_boxes_conversions() -> None:
 
     with pytest.raises(ValueError, match="image_shape .* is required"):
         bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="rel_xyxy")
+
+
+def test_framework_agnostic_serialization_separation() -> None:
+    """Test framework-agnostic serialization module functionality and strict decoupling."""
+    from ml_switcheroo_compiler.utils.generic_utils import is_symbolic_tensor
+    from ml_switcheroo_compiler.utils.serialization_utils import (
+        CustomObjectScope,
+        deserialize_object,
+        get_registered_name,
+        get_registered_object,
+        register_serializable,
+        serialize_object,
+    )
+
+    @register_serializable(package="CoreModule", name="AgnosticLayer")
+    class AgnosticLayer:
+        """Agnostic layer for serialization testing."""
+
+        def __init__(self, size: int = 128) -> None:
+            """Initialize AgnosticLayer."""
+            self.size = size
+
+        def get_config(self) -> dict[str, int]:
+            """Get configuration dictionary."""
+            return {"size": self.size}
+
+        @classmethod
+        def from_config(cls, config: dict[str, int]) -> "AgnosticLayer":
+            """Create instance from configuration."""
+            return cls(**config)
+
+    assert get_registered_name(AgnosticLayer) == "AgnosticLayer"
+    assert get_registered_object("AgnosticLayer") is AgnosticLayer
+
+    layer = AgnosticLayer(size=256)
+    serialized = serialize_object(layer)
+    assert serialized is not None
+    assert serialized["class_name"] == "AgnosticLayer"
+    assert serialized["config"] == {"size": 256}
+
+    deserialized = deserialize_object(serialized)
+    assert isinstance(deserialized, AgnosticLayer)
+    assert deserialized.size == 256
+
+    # Test CustomObjectScope context manager enter and exit
+    with CustomObjectScope({"TempLayer": AgnosticLayer}):
+        assert get_registered_object("TempLayer") is AgnosticLayer
+    assert get_registered_object("TempLayer") is None
+
+    # Test is_symbolic_tensor
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+    proxy = ProxyTensor("p1", (2, 2), "float32")
+    assert is_symbolic_tensor(proxy)

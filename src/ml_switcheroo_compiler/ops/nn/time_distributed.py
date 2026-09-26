@@ -14,31 +14,35 @@ from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, regis
 class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(
+        self,
+        x: Tensor | tuple[int, ...] | list[int] | None = None,
+        **kwargs: str | int | float | bool | tuple[int, ...] | None,
+    ) -> tuple[int, ...]:
         """Infer the output shape for the TimeDistributed operation.
 
         Args:
-            x (Any): Input tensor with shape (batch, time, *features).
-            **kwargs (Any): Additional keyword arguments, optionally containing 'wrapped_op_name'.
+            x (Tensor | tuple[int, ...] | list[int] | None, optional): Input tensor with shape (batch, time, *features). Defaults to None.
+            **kwargs (str | int | float | bool | tuple[int, ...] | None): Additional keyword arguments, optionally containing 'wrapped_op_name'.
 
         Returns:
             tuple[int, ...]: Inferred output shape preserving batch and time dimensions.
         """
-        x_shape = getattr(x, "shape", ())
+        x_shape: tuple[int, ...] = getattr(x, "shape", ()) if x is not None else ()
         if len(x_shape) < 2:
             return x_shape
         batch, time_dim = x_shape[0], x_shape[1]
         feature_shape = x_shape[2:]
         wrapped_op_name = kwargs.get("wrapped_op_name", None)
-        if wrapped_op_name:
+        if isinstance(wrapped_op_name, str):
             try:
                 inner_op = get_op(wrapped_op_name)()
 
                 class _InnerDummy:
                     """Dummy placeholder tensor representation for inner shape deduction."""
 
-                    shape = (batch * time_dim, *feature_shape)
-                    dtype = getattr(x, "dtype", None)
+                    shape: tuple[int, ...] = (batch * time_dim, *feature_shape)
+                    dtype: str | None = getattr(x, "dtype", None)
 
                 inner_kwargs = {k: v for k, v in kwargs.items() if k != "wrapped_op_name"}
                 inner_out_shape = inner_op.infer_shape(_InnerDummy(), **inner_kwargs)
@@ -52,16 +56,16 @@ class TimeDistributed(OpDef):
 @dispatch_eager("TimeDistributed")
 def time_distributed(
     x: Tensor,
-    **kwargs,
-):
+    **kwargs: str | int | float | bool | tuple[int, ...] | None,
+) -> Tensor:
     """TimeDistributed operation.
 
     Args:
-        x: Input tensor.
-        **kwargs: Additional keyword arguments for the wrapped operation, must include 'wrapped_op_name'.
+        x (Tensor): Input tensor.
+        **kwargs (str | int | float | bool | tuple[int, ...] | None): Additional keyword arguments for the wrapped operation, must include 'wrapped_op_name'.
 
     Returns:
-        Tensor.
+        Tensor: Transformed tensor with wrapped operation applied across time dimension.
     """
     # For eager, we flatten the time dimension, apply the op, and unflatten.
     # We map this to TimeDistributed IR node with attributes.

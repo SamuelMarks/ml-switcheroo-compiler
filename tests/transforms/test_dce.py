@@ -128,3 +128,54 @@ def test_dce_node_subgraphs() -> None:
     assert dce_pass(parent) is True
     assert "dead" not in subgraph.nodes
     assert "live" in subgraph.nodes
+
+
+def test_dce_subgraphs_with_side_effects() -> None:
+    """Test that DCE detects side effects inside node.subgraphs and node.attributes."""
+    # 0. Non-IRGraph in node.subgraphs
+    node_non_graph = IRNode(id="n_non_graph", op_type="CustomOp", subgraphs={"dummy": "not_a_graph"})
+    g0 = IRGraph(name="g0", nodes={"n_non_graph": node_non_graph}, outputs=["n_non_graph"])
+    assert _find_side_effect_nodes(g0) == set()
+    assert dce_pass(g0) is False
+
+    # 1. Side effect inside node.subgraphs
+    sub_se1 = IRGraph(name="sub1", outputs=["s1"])
+    sub_se1.nodes["s1"] = IRNode(id="s1", op_type="Seed", inputs=[])
+    node_with_subgraphs = IRNode(id="n_sub", op_type="CustomOp", subgraphs={"body": sub_se1})
+    g1 = IRGraph(name="g1", nodes={"n_sub": node_with_subgraphs}, outputs=[])
+    assert _find_side_effect_nodes(g1) == {"n_sub"}
+
+    # 2. Side effect inside node.attributes["body"]
+    sub_se2 = IRGraph(name="sub2", outputs=["s2"])
+    sub_se2.nodes["s2"] = IRNode(id="s2", op_type="Seed", inputs=[])
+    node_with_attrs = IRNode(id="n_attr", op_type="CustomOp", attributes={"body": sub_se2})
+    g2 = IRGraph(name="g2", nodes={"n_attr": node_with_attrs}, outputs=[])
+    assert _find_side_effect_nodes(g2) == {"n_attr"}
+
+    # 3. Subgraph without side effects inside attributes
+    sub_clean = IRGraph(name="sub_clean", outputs=["c1"])
+    sub_clean.nodes["c1"] = IRNode(id="c1", op_type="Constant", inputs=[])
+    node_clean = IRNode(id="n_clean", op_type="CustomOp", attributes={"body": sub_clean})
+    g3 = IRGraph(name="g3", nodes={"n_clean": node_clean}, outputs=[])
+    assert _find_side_effect_nodes(g3) == set()
+
+
+def test_dce_prune_unmodified_subgraphs() -> None:
+    """Test DCE pass when subgraphs in both attributes and subgraphs are already minimal (unmodified)."""
+    sub1 = IRGraph(name="sub1", outputs=["c1"])
+    sub1.nodes["c1"] = IRNode(id="c1", op_type="Constant", inputs=[])
+    sub2 = IRGraph(name="sub2", outputs=["c2"])
+    sub2.nodes["c2"] = IRNode(id="c2", op_type="Constant", inputs=[])
+
+    parent = IRGraph(name="parent", outputs=["top_node"])
+    parent.nodes["top_node"] = IRNode(
+        id="top_node",
+        op_type="If",
+        inputs=[],
+        subgraphs={"sub1": sub1},
+        attributes={"body": sub2},
+    )
+
+    # Neither sub1 nor sub2 has dead code, parent node is the output
+    res = dce_pass(parent)
+    assert res is False

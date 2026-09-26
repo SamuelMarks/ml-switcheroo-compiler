@@ -76,8 +76,8 @@ def test_var_keyword_and_var_positional_endpoints() -> None:
     """Verify endpoints with VAR_KEYWORD and VAR_POSITIONAL accept arbitrary inputs."""
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine()
 
-    # MLX add accepts varargs / kwargs
-    errs: list[str] = engine.validate_parameter_contract("mlx", "mlx.core.add", 2, ["arbitrary_unlisted_kwarg"])
+    # MLX export_to_dot accepts varargs / kwargs
+    errs: list[str] = engine.validate_parameter_contract("mlx", "mlx.core.export_to_dot", 2, ["arbitrary_unlisted_kwarg"])
     assert not errs
 
 

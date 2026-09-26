@@ -1102,3 +1102,74 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     with patch.object(CUDARunner, "is_available", return_value=False):
         res_fallback = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None
+
+
+def test_cuda_generator_loop_options_coverage() -> None:
+    """Test CudaCodeGenerator loop options covering all branches in _emit_loop_node."""
+    # 1. All loop options set (True branches)
+    g1 = IRGraph()
+    n_in = IRNode(id="in1", op_type="Input", inputs=[], shape_metadata=[2])
+    n_loop1 = IRNode(
+        id="loop1",
+        op_type="WhileLoop",
+        inputs=["in1"],
+        shape_metadata=[2],
+        attributes={
+            "maximum_iterations": 20,
+            "parallel_iterations": 4,
+            "swap_memory": True,
+            "shape_invariants": [(2,)],
+        },
+    )
+    g1.nodes = {"in1": n_in, "loop1": n_loop1}
+    g1.inputs = ["in1"]
+    g1.outputs = ["loop1"]
+    code1 = CudaCodeGenerator(g1).generate()
+    assert "parallel_iterations=4" in code1
+    assert "swap_memory=True" in code1
+    assert "maximum_iterations=20" in code1
+    assert "shape_invariants=[(2,)]" in code1
+    assert "Swap memory policy enabled" in code1
+    assert "#pragma unroll 4" in code1
+
+    # 2. All loop options None/empty (False branches)
+    g2 = IRGraph()
+    n_loop2 = IRNode(
+        id="loop2",
+        op_type="Loop",
+        inputs=["in1"],
+        shape_metadata=[2],
+        attributes={
+            "maximum_iterations": None,
+            "max_iters": None,
+            "parallel_iterations": None,
+            "swap_memory": None,
+            "shape_invariants": None,
+        },
+    )
+    g2.nodes = {"in1": n_in, "loop2": n_loop2}
+    g2.inputs = ["in1"]
+    g2.outputs = ["loop2"]
+    code2 = CudaCodeGenerator(g2).generate()
+    assert "Loop annotations" not in code2
+    assert "Swap memory policy enabled" not in code2
+    assert "#pragma unroll" not in code2
+
+    # 3. swap_memory=False (swap_memory is not None -> True, if swap_memory -> False)
+    g3 = IRGraph()
+    n_loop3 = IRNode(
+        id="loop3",
+        op_type="WhileLoop",
+        inputs=["in1"],
+        shape_metadata=[2],
+        attributes={
+            "max_iters": 5,
+            "swap_memory": False,
+        },
+    )
+    g3.nodes = {"in1": n_in, "loop3": n_loop3}
+    g3.inputs = ["in1"]
+    g3.outputs = ["loop3"]
+    code3 = CudaCodeGenerator(g3).generate()
+    assert "swap_memory=False" in code3
+    assert "Swap memory policy enabled" not in code3

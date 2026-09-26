@@ -434,11 +434,58 @@ class SymNode:
 
         Raises:
             KeyError: If an unbound variable is encountered.
-            NotImplementedError: If node cannot be evaluated.
         """
         poly = self.to_polynomial()
         if poly is not None:
             return poly.eval(env)
+        simplified = self.simplify()
+        if simplified is not self:
+            return simplified.eval(env)
+        if hasattr(self, "left") and hasattr(self, "right") and hasattr(self, "op"):
+            v1 = self.left.eval(env)
+            v2 = self.right.eval(env)
+            op = self.op
+            if op == "+":
+                return v1 + v2
+            if op == "-":
+                return v1 - v2
+            if op == "*":
+                return v1 * v2
+            if op in ("//", "/"):
+                if v2 == 0:
+                    raise ZeroDivisionError("Division by zero in symbolic evaluation.")
+                return v1 // v2
+            if op == "%":
+                if v2 == 0:
+                    raise ZeroDivisionError("Modulo by zero in symbolic evaluation.")
+                return v1 % v2
+            if op == "**":
+                return int(v1**v2)
+            if op == "min":
+                return min(v1, v2)
+            if op == "max":
+                return max(v1, v2)
+            if op == "==":
+                return int(v1 == v2)
+            if op == "!=":
+                return int(v1 != v2)
+            if op == "<":
+                return int(v1 < v2)
+            if op == "<=":
+                return int(v1 <= v2)
+            if op == ">":
+                return int(v1 > v2)
+            if op == ">=":
+                return int(v1 >= v2)
+        if hasattr(self, "operand") and hasattr(self, "op"):
+            val = self.operand.eval(env)
+            op = self.op
+            if op == "abs":
+                return abs(val)
+            if op == "-":
+                return -val
+            if op in ("floor", "ceil"):
+                return val
         msg = f"Evaluation not implemented for node of type {type(self).__name__}"
         raise NotImplementedError(msg)
 
@@ -861,6 +908,11 @@ class SymBinaryOp(SymNode):
                     return s_left.left
                 if s_left.left == s_right:
                     return s_left.right
+                if isinstance(s_right, SymConst) and s_right.value != 0:
+                    if isinstance(s_left.right, SymConst) and s_left.right.value % s_right.value == 0:
+                        return SymBinaryOp("*", s_left.left, SymConst(s_left.right.value // s_right.value)).simplify()
+                    if isinstance(s_left.left, SymConst) and s_left.left.value % s_right.value == 0:
+                        return SymBinaryOp("*", s_left.right, SymConst(s_left.left.value // s_right.value)).simplify()
 
         elif self.op == "%":
             if isinstance(s_right, SymConst) and s_right.value == 1:
@@ -875,12 +927,40 @@ class SymBinaryOp(SymNode):
                 return s_left
             if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
                 return SymConst(min(s_left.value, s_right.value))
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "min" and (s_left.left == s_right or s_left.right == s_right):
+                return s_left
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "min" and (s_right.left == s_left or s_right.right == s_left):
+                return s_right
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
+                if (s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0) or (s_left.right == s_right and isinstance(s_left.left, SymConst) and s_left.left.value >= 0):
+                    return s_right
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "+":
+                if (s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0) or (s_right.right == s_left and isinstance(s_right.left, SymConst) and s_right.left.value >= 0):
+                    return s_left
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "-" and s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0:
+                return s_left
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "-" and s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0:
+                return s_right
 
         elif self.op == "max":
             if s_left == s_right:
                 return s_left
             if isinstance(s_left, SymConst) and isinstance(s_right, SymConst):
                 return SymConst(max(s_left.value, s_right.value))
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "max" and (s_left.left == s_right or s_left.right == s_right):
+                return s_left
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "max" and (s_right.left == s_left or s_right.right == s_left):
+                return s_right
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "+":
+                if (s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0) or (s_left.right == s_right and isinstance(s_left.left, SymConst) and s_left.left.value >= 0):
+                    return s_left
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "+":
+                if (s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0) or (s_right.right == s_left and isinstance(s_right.left, SymConst) and s_right.left.value >= 0):
+                    return s_right
+            if isinstance(s_left, SymBinaryOp) and s_left.op == "-" and s_left.left == s_right and isinstance(s_left.right, SymConst) and s_left.right.value >= 0:
+                return s_right
+            if isinstance(s_right, SymBinaryOp) and s_right.op == "-" and s_right.left == s_left and isinstance(s_right.right, SymConst) and s_right.right.value >= 0:
+                return s_left
 
         poly = self.to_polynomial()
         if poly is not None:
@@ -981,6 +1061,27 @@ class SymBinaryOp(SymNode):
             str: Representation string.
         """
         return f"SymBinaryOp({self.op!r}, {self.left!r}, {self.right!r})"
+
+    def __eq__(self, other: object) -> bool:
+        """Check structural equality with another binary operation node.
+
+        Args:
+            other (object): Other object.
+
+        Returns:
+            bool: True if other is a SymBinaryOp with identical op, left, and right operands.
+        """
+        if not isinstance(other, SymBinaryOp):
+            return NotImplemented
+        return self.op == other.op and self.left == other.left and self.right == other.right
+
+    def __hash__(self) -> int:
+        """Compute hash for binary operation.
+
+        Returns:
+            int: Hash integer based on op, left, and right operands.
+        """
+        return hash((self.op, self.left, self.right))
 
 
 class SymUnaryOp(SymNode):
@@ -1136,10 +1237,10 @@ class SymPiecewise(SymNode):
             other (object): Other object.
 
         Returns:
-            bool: True if op, left, and right match.
+            bool: True if cases and default match.
         """
-        if isinstance(other, SymBinaryOp):
-            return self.op == other.op and self.left == other.left and self.right == other.right
+        if isinstance(other, SymPiecewise):
+            return self.cases == other.cases and self.default == other.default
         return False
 
     def __hash__(self) -> int:
@@ -1148,7 +1249,7 @@ class SymPiecewise(SymNode):
         Returns:
             int: Hash integer.
         """
-        return hash((self.op, self.left, self.right))
+        return hash((tuple(self.cases), self.default))
 
 
 def _poly_to_symnode(poly: Polynomial) -> SymNode:

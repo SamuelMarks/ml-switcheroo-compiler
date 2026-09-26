@@ -24,6 +24,23 @@ def test_log_poisson_loss():
     res_full = _np_log_poisson_loss(np, targets, log_input, compute_full_loss=True)
     assert res_full.shape == (2,)
 
+    # Test non-log predictions
+    pred_non_log = np.array([1.5, 0.6])
+    res_non_log = _np_log_poisson_loss(np, targets, pred_non_log, log_input=False)
+    assert res_non_log.shape == (2,)
+
+    # Test Stirling approximation fallback without scipy
+    import sys
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {"scipy.special": None}):
+        res_stirling = _np_log_poisson_loss(np, np.array([0.5, 2.0]), np.array([0.1, 0.2]), compute_full_loss=True)
+        assert res_stirling.shape == (2,)
+
+        # Also test with target < 0.5 so that t + 1.0 < 1.5 triggers small_mask in _stirling_gammaln
+        res_stirling_small = _np_log_poisson_loss(np, np.array([0.2]), np.array([0.1]), compute_full_loss=True)
+        assert res_stirling_small.shape == (1,)
+
 
 def test_all_candidate_sampler():
     true_classes = np.array([[1], [2]])
@@ -125,6 +142,10 @@ def test_quantized_conv():
     res = _np_quantized_conv(np, inp, wt, scales, None, stride=(1, 1), padding=1, dilation=(1, 1))
     assert res.shape == (1, 5, 5, 3)
 
+    # Test padding as string / non-int to cover 387->393 branch
+    res_valid = _np_quantized_conv(np, inp, wt, scales, biases, stride=1, padding="VALID", dilation=1)
+    assert res_valid.shape == (1, 3, 3, 3)
+
 
 def test_ctc_beam_step_edge_cases():
     beam = {(1,): (-1.0, -2.0)}
@@ -157,3 +178,27 @@ def test_ctc_beam_search_merge_paths():
     seq_len = np.array([2])
     sparse, log_probs = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5)
     assert len(sparse) == 3
+
+    # Test top_paths > 1
+    sparse_multi, log_probs_multi = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=2)
+    assert len(sparse_multi) == 2
+    assert log_probs_multi.shape == (1, 2)
+
+    # Test top_paths == 1 with top_paths < 1 in loop (forcing empty sparse_list)
+    from unittest.mock import patch
+
+    with patch("ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills.range", return_value=[]):
+        sparse_empty, _ = _np_ctc_beam_search_decoder(np, inputs, seq_len, beam_width=5, top_paths=1)
+        assert sparse_empty[0].shape == (0, 2)
+
+
+def test_max_pool_with_argmax_fallback():
+    """Test max_pool_with_argmax when scipy.ndimage is unavailable."""
+    import sys
+    from unittest.mock import patch
+
+    x = np.random.rand(1, 4, 4, 1)
+    with patch.dict(sys.modules, {"scipy.ndimage": None}):
+        m, a = _np_max_pool_with_argmax(np, x, pool_size=2)
+        assert m.shape == (1, 4, 4, 1)
+        assert a.shape == (1,)

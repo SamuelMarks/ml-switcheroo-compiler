@@ -1,6 +1,8 @@
 # ruff: noqa: D103
 """Tests for serialization extras."""
 
+from pathlib import Path
+
 from ml_switcheroo_compiler.serialization import (
     MaxShardSizePolicy,
     PythonState,
@@ -13,7 +15,7 @@ from ml_switcheroo_compiler.serialization import (
 )
 
 
-def test_serialization_extras() -> None:
+def test_serialization_extras(tmp_path: Path) -> None:
     assert TrackableResource() is not None
     assert PythonState() is not None
 
@@ -22,11 +24,12 @@ def test_serialization_extras() -> None:
 
     assert ShardByTaskPolicy() is not None
 
+    save_dir: str = str(tmp_path / "saved_model")
     sm = SavedModel()
-    sm.save("path")
-    assert isinstance(SavedModel.load("path"), SavedModel)
+    sm.save(save_dir)
+    assert isinstance(SavedModel.load(save_dir), SavedModel)
 
-    fp = read_fingerprint("path")
+    fp = read_fingerprint(save_dir)
     assert len(fp) == 64
-    assert load_variable("path", "name") is not None
-    run_restore_ops("path")
+    assert load_variable(save_dir, "name") is not None
+    run_restore_ops(save_dir)

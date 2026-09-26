@@ -12,6 +12,11 @@ except ImportError:
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.sparse.types import (
+    COOTensor,
+    CSCTensor,
+    CSRTensor,
+)
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -47,13 +52,22 @@ class SparseProfiler:
         """
         arr_dict: dict[str, object] = {}
         for k, val in inputs.items():
-            if sparse is not None and isinstance(val, (sparse.COO, sparse.GCXS)):
+            if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
+            elif sparse is not None and isinstance(val, (sparse.COO, sparse.GCXS)):
+                if hasattr(val, "coords") and hasattr(val, "data") and hasattr(val, "shape"):
+                    arr_dict[k] = COOTensor(indices=np.asarray(val.coords), values=np.asarray(val.data), shape=val.shape)
+                elif hasattr(val, "todense"):
+                    arr_dict[k] = COOTensor.from_dense(np.asarray(val.todense()))
+                else:
+                    arr_dict[k] = val
             elif isinstance(val, np.ndarray):
-                arr_dict[k] = sparse.COO.from_numpy(val) if sparse is not None else val
-            else:
+                arr_dict[k] = COOTensor.from_dense(val)
+            elif isinstance(val, (list, tuple)):
                 np_arr = np.asarray(val, dtype=np.float32)
-                arr_dict[k] = sparse.COO.from_numpy(np_arr) if sparse is not None else np_arr
+                arr_dict[k] = COOTensor.from_dense(np_arr)
+            else:
+                arr_dict[k] = val
 
         sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
         input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
@@ -72,10 +86,11 @@ class SparseProfiler:
         """
         from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 
-        code: str = SparseGenerator(graph).generate()
+        gen = SparseGenerator(graph)
+        code: str = gen.generate()
         ns: dict[str, object] = {}
         exec(code, ns)
-        evaluate_fn = ns.get("evaluate")
+        evaluate_fn = ns.get(gen._func_name)
         return evaluate_fn if callable(evaluate_fn) else None
 
     def profile_graph(
@@ -152,6 +167,9 @@ class SparseProfiler:
             "p50_latency_ms": p50_lat,
             "p95_latency_ms": p95_lat,
             "p99_latency_ms": p99_lat,
+            "p50_ms": p50_lat,
+            "p95_ms": p95_lat,
+            "p99_ms": p99_lat,
             "peak_memory_mb": peak_mem,
             "warmup_iterations": max(1, warmup_iters),
         }

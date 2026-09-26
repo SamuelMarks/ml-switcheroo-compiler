@@ -244,6 +244,7 @@ def test_write_h5_to_zip(mocker, tmp_path):
 
 
 def test_keras_zip_save_load(mocker):
+    mocker.patch("ml_switcheroo_compiler.serialization._load_h5_weights", return_value={"w1": "w1_data"})
     mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
     mocker.patch("ml_switcheroo_compiler.serialization.to_numpy", side_effect=lambda x: x.numpy())
 
@@ -260,7 +261,8 @@ def test_keras_zip_save_load(mocker):
 
 
 def test_load_model_exception():
-    assert load_model("nonexistent.keras") is not None
+    with pytest.raises((FileNotFoundError, ValueError)):
+        load_model("nonexistent.keras")
 
 
 def test_register_keras_serializable():
@@ -324,12 +326,12 @@ def test_saved_model():
     with tempfile.TemporaryDirectory() as td:
         sm.save(td)
         assert os.path.exists(os.path.join(td, "saved_model.pb"))
-    assert SavedModel.load("test") is not None
+        assert SavedModel.load(td) is not None
 
 
 def test_read_fingerprint():
     with tempfile.TemporaryDirectory() as td:
-        assert read_fingerprint(td) == "fingerprint"
+        assert len(read_fingerprint(td)) == 64
         with open(os.path.join(td, "fingerprint.pb"), "w") as f:
             f.write("fp_data")
         assert read_fingerprint(td) == "fp_data"

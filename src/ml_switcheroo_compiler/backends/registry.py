@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 
 def _load_numpy() -> None:
     """Load the NumPy backend."""
-    import ml_switcheroo_compiler.backends.numpy  # noqa: F401
+    import ml_switcheroo_compiler.backends.numpy.generator  # noqa: F401
 
 
 def _load_pytorch() -> None:
@@ -105,6 +105,31 @@ def _load_pyarrow_compute() -> None:
     import ml_switcheroo_compiler.backends.pyarrow_compute  # noqa: F401
 
 
+def _load_cuda() -> None:
+    """Load the CUDA backend."""
+    import ml_switcheroo_compiler.backends.cuda.cuda  # noqa: F401
+
+
+def _load_rocm() -> None:
+    """Load the ROCm backend."""
+    import ml_switcheroo_compiler.backends.rocm.rocm  # noqa: F401
+
+
+def _load_metal() -> None:
+    """Load the Apple Metal backend."""
+    import ml_switcheroo_compiler.backends.metal.metal  # noqa: F401
+
+
+def _load_edge_webgl() -> None:
+    """Load the WebGL backend."""
+    import ml_switcheroo_compiler.backends.edge.webgl  # noqa: F401
+
+
+def _load_webgpu() -> None:
+    """Load the WebGPU backend."""
+    import ml_switcheroo_compiler.backends.edge.webgpu  # noqa: F401
+
+
 _LOADERS = {
     "numpy": _load_numpy,
     "pytorch": _load_pytorch,
@@ -118,9 +143,16 @@ _LOADERS = {
     "pure_python": _load_pure_python,
     "llvm_cpp": _load_llvm_cpp,
     "edge_onnx": _load_edge_onnx,
+    "edge": _load_edge_onnx,
     "edge_stablehlo": _load_edge_stablehlo,
     "edge_wgsl": _load_edge_wgsl,
+    "edge_wasm": _load_edge_wasm_simd,
     "edge_wasm_simd": _load_edge_wasm_simd,
+    "edge_webgl": _load_edge_webgl,
+    "webgpu": _load_webgpu,
+    "cuda": _load_cuda,
+    "rocm": _load_rocm,
+    "metal": _load_metal,
     "numba": _load_numba,
     "sparse": _load_sparse,
     "sparse_coo": _load_sparse,
@@ -141,11 +173,14 @@ BackendName = Literal[
     "dask",
     "pure_python",
     "llvm_cpp",
+    "edge",
     "edge_onnx",
     "edge_stablehlo",
     "edge_wgsl",
+    "edge_wasm",
     "edge_wasm_simd",
     "edge_webgl",
+    "webgpu",
     "metal",
     "cuda",
     "rocm",
@@ -175,10 +210,17 @@ class BackendRegistry:
         "dask": "ml_switcheroo_compiler.backends.dask",
         "pure_python": "ml_switcheroo_compiler.backends.pure_python",
         "llvm_cpp": "ml_switcheroo_compiler.backends.llvm_cpp",
+        "edge": "ml_switcheroo_compiler.backends.edge.onnx",
         "edge_onnx": "ml_switcheroo_compiler.backends.edge.onnx",
         "edge_stablehlo": "ml_switcheroo_compiler.backends.edge.stablehlo",
         "edge_wgsl": "ml_switcheroo_compiler.backends.edge.webgpu",
+        "edge_wasm": "ml_switcheroo_compiler.backends.edge.wasm",
         "edge_wasm_simd": "ml_switcheroo_compiler.backends.edge.wasm",
+        "edge_webgl": "ml_switcheroo_compiler.backends.edge.webgl",
+        "webgpu": "ml_switcheroo_compiler.backends.edge.webgpu",
+        "cuda": "ml_switcheroo_compiler.backends.cuda.cuda",
+        "rocm": "ml_switcheroo_compiler.backends.rocm.rocm",
+        "metal": "ml_switcheroo_compiler.backends.metal.metal",
         "numba": "ml_switcheroo_compiler.backends.numba",
         "sparse": "ml_switcheroo_compiler.backends.sparse",
         "sparse_coo": "ml_switcheroo_compiler.backends.sparse",

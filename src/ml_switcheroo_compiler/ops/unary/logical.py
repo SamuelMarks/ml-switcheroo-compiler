@@ -252,18 +252,18 @@ class Isin(OpDef):
 
     op_name = "Isin"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args (element, test_elements).
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape matching element.
         """
-        element = args[0] if len(args) > 0 else None
-        return getattr(element, "shape", ())
+        element = args[0] if len(args) > 0 else kwargs.get("element")
+        return tuple(getattr(element, "shape", getattr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
 
 
 def _get_size_from_shape(obj) -> int | None:
@@ -279,14 +279,15 @@ def _get_size_from_shape(obj) -> int | None:
         return 0
     if isinstance(obj, (list, tuple)):
         return len(obj)
-    shape = getattr(obj, "shape", ())
+    shape = getattr(obj, "shape", getattr(obj, "shape_metadata", ()))
     if not shape:
         return 1
     size = 1
     for s in shape:
         if s is None:
             return None
-        size *= s
+        if isinstance(s, int):
+            size *= s
     return size
 
 
@@ -301,13 +302,15 @@ class Ediff1d(OpDef):
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result 1D shape.
         """
-        ary = args[0] if len(args) > 0 else None
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        ary = args[0] if len(args) > 0 else kwargs.get("ary")
         to_end = kwargs.get("to_end")
         to_begin = kwargs.get("to_begin")
 
@@ -323,6 +326,8 @@ class Ediff1d(OpDef):
             s_e = _get_size_from_shape(to_end)
             size = size + s_e if size is not None and s_e is not None else None
 
+        if size is None:
+            return (SymVar("diff_len"),)
         return (size,)
 
 

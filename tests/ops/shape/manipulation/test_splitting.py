@@ -83,6 +83,11 @@ def test_unstack(mocker):
     mock_item.device = "cpu"
     mock_builder.emit_tracing_node.return_value = mock_item
     assert len(unstack(t, 0)) == 6
+
+    # 0-D unstack in tracing mode (hits rank == 0 fallback: n_slices = 1, out_shape = ())
+    t_scalar = Tensor(MockTensor(()).data, TensorConfig((), "float32", "cpu"))
+    assert len(unstack(t_scalar, 0)) == 1
+
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.splitting.get_active_backend").return_value
     mock_backend.execute_op.return_value = [MockTensor((4,)) for _ in range(6)]

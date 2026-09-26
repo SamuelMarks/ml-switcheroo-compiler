@@ -1,19 +1,30 @@
 avgpool2d:
   body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void avgpool2d(\n\
-    \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-    \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+    \    const device float* X [[buffer(0)]],\n    device float* Y [[buffer(1)]],\n\
+    \    constant uint& N_batch [[buffer(2)]],\n    constant uint& C [[buffer(3)]],\n\
+    \    constant uint& H [[buffer(4)]],\n    constant uint& W [[buffer(5)]],\n  \
+    \  constant uint& KH [[buffer(6)]],\n    constant uint& KW [[buffer(7)]],\n  \
+    \  constant uint& H_out [[buffer(8)]],\n    constant uint& W_out [[buffer(9)]],\n\
+    \    uint3 id [[thread_position_in_grid]])\n{\n    uint n = id.z;\n    uint c\
+    \ = id.y;\n    uint idx_x = id.x;\n    uint oh = idx_x / W_out;\n    uint ow =\
+    \ idx_x % W_out;\n    if (n < N_batch && c < C && oh < H_out && ow < W_out) {\n\
+    \        float s = 0.0f;\n        for (uint kh = 0; kh < KH; ++kh) {\n       \
+    \     for (uint kw = 0; kw < KW; ++kw) {\n                s += X[((n * C + c)\
+    \ * H + (oh * 2 + kh)) * W + (ow * 2 + kw)];\n            }\n        }\n     \
+    \   Y[((n * C + c) * H_out + oh) * W_out + ow] = s / float(KH * KW);\n    }\n\
+    }\n"
   workgroup_size:
   - 256
   - 1
   - 1
   grid_calc:
-    x: '{H_out} * {W_out}'
+    x: ({H_out} * {W_out} + block_{node_idx}.x - 1) / block_{node_idx}.x
     y: '{C_out}'
     z: '{N}'
   type_mappings:
-    float32: float
-    float16: half
     bfloat16: bfloat
+    bool: bool
+    float16: half
+    float32: float
     int32: int
     int64: long
-    bool: bool

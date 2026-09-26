@@ -818,3 +818,87 @@ def zeros_like_jvp(graph: IRGraph, node: Any, tangents: Any) -> str:
         shape_metadata=getattr(node, "shape_metadata", ()),
     )
     return zero_id
+
+
+@register_vjp("LogPoissonLoss")
+def log_poisson_loss_vjp(graph: IRGraph, node: Any, cotangent: str) -> tuple[str, ...]:
+    """VJP for LogPoissonLoss operation.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (Any): LogPoissonLoss node.
+        cotangent (str): Upstream cotangent node ID.
+
+    Returns:
+        tuple[str, ...]: Adjoint node IDs for targets and log_input arguments.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
+    log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
+    attrs: dict[str, Any] = getattr(node, "attributes", {}) or {}
+    log_input_flag: bool = bool(attrs.get("log_input", True))
+
+    exp_id = f"exp_{uuid.uuid4().hex[:6]}"
+    sub_id = f"sub_{uuid.uuid4().hex[:6]}"
+    mul_id = f"mul_{uuid.uuid4().hex[:6]}"
+
+    if log_input_flag:
+        graph.nodes[exp_id] = LogicalNode(id=exp_id, op_type="Exp", inputs=[log_input_id], shape_metadata=node.shape_metadata)
+        graph.nodes[sub_id] = LogicalNode(id=sub_id, op_type="Sub", inputs=[exp_id, targets_id], shape_metadata=node.shape_metadata)
+        graph.nodes[mul_id] = LogicalNode(id=mul_id, op_type="Mul", inputs=[sub_id, cotangent], shape_metadata=node.shape_metadata)
+    else:
+        one_id = f"one_{uuid.uuid4().hex[:6]}"
+        div_id = f"div_{uuid.uuid4().hex[:6]}"
+        graph.nodes[one_id] = LogicalNode(id=one_id, op_type="Constant", attributes={"value": 1.0}, shape_metadata=node.shape_metadata)
+        graph.nodes[div_id] = LogicalNode(id=div_id, op_type="Div", inputs=[targets_id, log_input_id], shape_metadata=node.shape_metadata)
+        graph.nodes[sub_id] = LogicalNode(id=sub_id, op_type="Sub", inputs=[one_id, div_id], shape_metadata=node.shape_metadata)
+        graph.nodes[mul_id] = LogicalNode(id=mul_id, op_type="Mul", inputs=[sub_id, cotangent], shape_metadata=node.shape_metadata)
+
+    target_zero_id = f"zero_{uuid.uuid4().hex[:6]}"
+    graph.nodes[target_zero_id] = LogicalNode(id=target_zero_id, op_type="ZerosLike", inputs=[targets_id] if targets_id else [], shape_metadata=node.shape_metadata)
+    return (target_zero_id, mul_id)
+
+
+@register_jvp("LogPoissonLoss")
+def log_poisson_loss_jvp(graph: IRGraph, node: Any, tangents: Any) -> str:
+    """JVP for LogPoissonLoss operation.
+
+    Args:
+        graph (IRGraph): Target computation graph.
+        node (Any): LogPoissonLoss node.
+        tangents (Any): Tangent identifiers.
+
+    Returns:
+        str: Tangent node ID.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
+    log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
+    t_tangent: str = tangents[1] if len(tangents) > 1 else tangents[0]
+
+    attrs: dict[str, Any] = getattr(node, "attributes", {}) or {}
+    log_input_flag: bool = bool(attrs.get("log_input", True))
+
+    exp_id = f"exp_tan_{uuid.uuid4().hex[:6]}"
+    sub_id = f"sub_tan_{uuid.uuid4().hex[:6]}"
+    mul_id = f"mul_tan_{uuid.uuid4().hex[:6]}"
+
+    if log_input_flag:
+        graph.nodes[exp_id] = LogicalNode(id=exp_id, op_type="Exp", inputs=[log_input_id], shape_metadata=node.shape_metadata)
+        graph.nodes[sub_id] = LogicalNode(id=sub_id, op_type="Sub", inputs=[exp_id, targets_id], shape_metadata=node.shape_metadata)
+        graph.nodes[mul_id] = LogicalNode(id=mul_id, op_type="Mul", inputs=[sub_id, t_tangent], shape_metadata=node.shape_metadata)
+    else:
+        one_id = f"one_tan_{uuid.uuid4().hex[:6]}"
+        div_id = f"div_tan_{uuid.uuid4().hex[:6]}"
+        graph.nodes[one_id] = LogicalNode(id=one_id, op_type="Constant", attributes={"value": 1.0}, shape_metadata=node.shape_metadata)
+        graph.nodes[div_id] = LogicalNode(id=div_id, op_type="Div", inputs=[targets_id, log_input_id], shape_metadata=node.shape_metadata)
+        graph.nodes[sub_id] = LogicalNode(id=sub_id, op_type="Sub", inputs=[one_id, div_id], shape_metadata=node.shape_metadata)
+        graph.nodes[mul_id] = LogicalNode(id=mul_id, op_type="Mul", inputs=[sub_id, t_tangent], shape_metadata=node.shape_metadata)
+
+    return mul_id

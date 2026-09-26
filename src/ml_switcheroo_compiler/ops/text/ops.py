@@ -4,6 +4,8 @@
 Provides operations and node definitions related to text manipulation and processing.
 """
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import (
@@ -17,38 +19,62 @@ from ml_switcheroo_compiler.ops.base import (
 )
 
 
+def _extract_shape(arg: object) -> tuple[int, ...]:
+    """Extract shape tuple from tensor or shape metadata.
+
+    Args:
+        arg (object): Target tensor or shape structure.
+
+    Returns:
+        tuple[int, ...]: Extracted shape tuple.
+    """
+    if arg is None:
+        return ()
+    if hasattr(arg, "shape"):
+        return tuple(int(d) for d in arg.shape)
+    if hasattr(arg, "shape_metadata"):
+        sm = arg.shape_metadata
+        if sm:
+            return tuple(int(d) for d in sm)
+    if isinstance(arg, (tuple, list)):
+        return tuple(int(d) for d in arg)
+    return ()
+
+
 @register_op("StringToHash")
 class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the output shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape matching input tensor.
         """
-        return ()
+        inp = args[0] if args else kwargs.get("inputs", kwargs.get("input"))
+        return _extract_shape(inp)
 
 
 @register_op("RegexReplace")
 class RegexReplace(OpDef):
     """Operation that replaces matches of a regular expression in a string tensor."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after applying the regular expression replacement.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple[int, ...]: Output shape matching input string tensor.
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input", kwargs.get("inputs"))
+        return _extract_shape(inp)
 
 
 @register_op("StringSplit")
@@ -59,67 +85,77 @@ class StringSplit(OpDef):
         """Infer the resulting shape after splitting strings in the input tensor.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple: Output shape with trailing token dimension.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        inp = args[0] if args else kwargs.get("input", kwargs.get("inputs"))
+        if inp is None:
+            return ()
+        s = _extract_shape(inp)
+        if not s:
+            return ()
+        max_splits = kwargs.get("max_splits")
+        token_dim = int(max_splits) + 1 if isinstance(max_splits, int) and max_splits > 0 else SymVar("num_tokens")
+        return s + (token_dim,)
 
 
 @register_op("Lookup")
 class Lookup(OpDef):
     """Operation that retrieves values from a table based on given keys."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after applying the table lookup.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple[int, ...]: Output shape matching input keys.
         """
-        # The first argument is input_tensor. The shape should be the same as input_tensor.
-        if args and hasattr(args[0], "shape"):
-            return getattr(args[0], "shape", ())
-        return ()
+        inp = args[0] if args else kwargs.get("input_tensor", kwargs.get("inputs", kwargs.get("keys")))
+        return _extract_shape(inp)
 
 
 @register_op("Hashing")
 class Hashing(OpDef):
     """Operation that applies a hashing algorithm to map inputs to bins."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after applying the hashing operation.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple[int, ...]: Output shape matching inputs.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        inp = args[0] if args else kwargs.get("inputs", kwargs.get("input"))
+        return _extract_shape(inp)
 
 
 @register_op("StringLookup")
 class StringLookup(OpDef):
     """Operation that translates strings into integer indices using a vocabulary."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after applying the string lookup operation.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple[int, ...]: Output shape matching inputs.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        inp = args[0] if args else kwargs.get("inputs", kwargs.get("input"))
+        return _extract_shape(inp)
 
 
 @register_op("IntegerLookup")
@@ -147,13 +183,25 @@ class TextVectorization(OpDef):
         """Infer the resulting shape after applying the text vectorization operation.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple: Vectorized sequence or feature shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        inp = args[0] if args else kwargs.get("inputs", kwargs.get("input"))
+        s = _extract_shape(inp) if inp is not None else ()
+        if not s:
+            return ()
+        output_sequence_length = kwargs.get("output_sequence_length")
+        if output_sequence_length is not None:
+            return s + (int(output_sequence_length),)
+        max_tokens = kwargs.get("max_tokens")
+        if max_tokens is not None and kwargs.get("output_mode") in ("count", "tf_idf", "multi_hot"):
+            return s[:-1] + (int(max_tokens),) if s else (int(max_tokens),)
+        return s + (SymVar("seq_len"),)
 
 
 @register_op("StringToNumber")
@@ -211,17 +259,33 @@ class StringUpper(OpDef):
 class StringJoin(OpDef):
     """Operation that joins an iterable of strings into a single string using a separator."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after joining the strings.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+            *args (object): Variable length argument list including input tensors.
+            **kwargs (object): Arbitrary keyword arguments configuring the operation.
 
         Returns:
-            A tuple representing the output shape.
+            tuple[int, ...]: Output shape after join.
         """
-        return ()
+        inp = args[0] if args else kwargs.get("inputs", kwargs.get("input"))
+        if inp is None:
+            return ()
+        if isinstance(inp, (list, tuple)):
+            if inp:
+                return _extract_shape(inp[0])
+            return ()
+        s = list(_extract_shape(inp))
+        axis = kwargs.get("axis")
+        if axis is not None and s:
+            ax = int(axis)
+            if ax < 0:
+                ax += len(s)
+            if 0 <= ax < len(s):
+                s.pop(ax)
+            return tuple(s)
+        return tuple(s)
 
 
 @register_op("StringLength")
@@ -275,7 +339,7 @@ class RegexFullMatch(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def string_to_hash(inputs: "Tensor", **kwargs) -> "Tensor":
+def string_to_hash(inputs: Tensor, **kwargs) -> Tensor:
     """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
@@ -297,7 +361,7 @@ def string_to_hash(inputs: "Tensor", **kwargs) -> "Tensor":
     return get_op("Hashing")()(inputs, **kwargs)
 
 
-def lookup(inputs: "Tensor", **kwargs) -> "Tensor":
+def lookup(inputs: Tensor, **kwargs) -> Tensor:
     """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
@@ -319,7 +383,7 @@ def lookup(inputs: "Tensor", **kwargs) -> "Tensor":
     return get_op("StringLookup")()(inputs, **kwargs)
 
 
-def text_vectorization(inputs: "Tensor", **kwargs) -> "Tensor":
+def text_vectorization(inputs: Tensor, **kwargs) -> Tensor:
     """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
@@ -345,35 +409,36 @@ def text_vectorization(inputs: "Tensor", **kwargs) -> "Tensor":
 class EditDistance(OpDef):
     """Operation that computes the Levenshtein distance between two sequences."""
 
-    def infer_shape(self, hypothesis, truth, **kwargs):
+    def infer_shape(self, hypothesis, truth=None, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after computing the edit distance.
 
         Args:
-            hypothesis: The predicted or generated sequence tensor.
-            truth: The ground truth or reference sequence tensor.
-            **kwargs: Arbitrary keyword arguments configuring the distance calculation.
+            hypothesis (object): The predicted or generated sequence tensor.
+            truth (object): The ground truth or reference sequence tensor.
+            **kwargs (object): Arbitrary keyword arguments configuring the distance calculation.
 
         Returns:
-            An Any or tuple representing the output shape.
+            tuple[int, ...]: Reduced output batch shape.
         """
-        return getattr(hypothesis, "shape", ())
+        s = _extract_shape(hypothesis)
+        return s[:-1] if len(s) >= 1 else ()
 
 
 @register_op("AsString")
 class AsString(OpDef):
     """Operation that converts elements of a tensor into string representations."""
 
-    def infer_shape(self, input_tensor, **kwargs):
+    def infer_shape(self, input_tensor, **kwargs) -> tuple[int, ...]:
         """Infer the resulting shape after formatting the input elements as strings.
 
         Args:
-            input_tensor: The tensor containing the elements to be cast to strings.
-            **kwargs: Arbitrary keyword arguments for formatting the output strings.
+            input_tensor (object): The tensor containing the elements to be cast to strings.
+            **kwargs (object): Arbitrary keyword arguments for formatting the output strings.
 
         Returns:
-            An Any or tuple representing the output shape.
+            tuple[int, ...]: Output shape matching input tensor.
         """
-        return getattr(input_tensor, "shape", ())
+        return _extract_shape(input_tensor)
 
 
 @register_op("ArrayRepr")

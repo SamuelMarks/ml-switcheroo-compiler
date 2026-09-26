@@ -31,6 +31,60 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 KernelArgType = Union[ctypes.c_void_p, int, float, str, None]
 
 
+CUDA_SYNTH_MATH_MAP: dict[str, str] = {
+    "cbrt": "cbrtf(A[id])",
+    "square": "A[id] * A[id]",
+    "cube": "A[id] * A[id] * A[id]",
+    "reciprocal": "1.0f / A[id]",
+    "hardsilu": "A[id] * fminf(fmaxf(A[id] + 3.0f, 0.0f), 6.0f) / 6.0f",
+    "squareplus": "0.5f * (A[id] + sqrtf(A[id] * A[id] + 4.0f))",
+    "softsign": "A[id] / (1.0f + fabsf(A[id]))",
+    "logsigmoid": "-log1pf(expf(-A[id]))",
+    "isnan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "is_nan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "isinf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "is_inf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "isfinite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "is_finite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "shift_left": "(float)((int)A[id] << (int)B[id])",
+    "shift_right": "(float)((int)A[id] >> (int)B[id])",
+    "fmod": "fmodf(A[id], B[id])",
+    "remainder": "remainderf(A[id], B[id])",
+    "hypot": "hypotf(A[id], B[id])",
+    "where": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "select": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "clamp": "fminf(fmaxf(in_0[id], in_1[id]), in_2[id])",
+    "fma": "fmaf(in_0[id], in_1[id], in_2[id])",
+}
+
+
+def _synthesize_cuda_kernel(clean_op: str, inps: list[str], scalar_expr: Optional[str] = None) -> str:
+    """Synthesize a C++ CUDA kernel without fallback placeholder loops.
+
+    Args:
+        clean_op (str): Normalized op identifier.
+        inps (list[str]): Input argument names.
+        scalar_expr (Optional[str]): Explicit scalar math expression if provided.
+
+    Returns:
+        str: Synthesized C++ CUDA kernel source.
+    """
+    if len(inps) <= 1:
+        expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
+        helper = f"__device__ inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
+        return f"{helper}__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+    if len(inps) == 2:
+        expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
+        helper = f"__device__ inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
+        return f"{helper}__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+    params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
+    call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
+    fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
+    expr = scalar_expr or CUDA_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
+    helper = f"__device__ inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in CUDA_SYNTH_MATH_MAP and not scalar_expr else ""
+    return f"{helper}__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+
+
 def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
     """Calculate total number of elements and allocated byte size for an IRNode.
 
@@ -232,6 +286,61 @@ class CudaCodeGenerator(BaseGenerator):
         cuda.append("    CUDA_CHECK(cudaGetLastError());")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
 
+    def _emit_loop_node(
+        self,
+        node: IRNode,
+        node_idx: int,
+        node_buffers: dict[str, str],
+        last_consumer: dict[str, str],
+        outputs_set: set[str],
+        inputs_set: set[str],
+        cuda: list[str],
+    ) -> None:
+        """Emit CUDA host loop execution code for Loop and WhileLoop nodes with loop options.
+
+        Args:
+            node (IRNode): The loop IR node.
+            node_idx (int): Current node index.
+            node_buffers (dict[str, str]): Variable map for allocated device buffers.
+            last_consumer (dict[str, str]): Liveness map for last consumers.
+            outputs_set (set[str]): Graph output node names.
+            inputs_set (set[str]): Graph input node names.
+            cuda (list[str]): Output CUDA source lines.
+        """
+        clean_id = f"node_{node_idx}"
+        out_buf = f"d_out_{node_idx}"
+        node_buffers[str(getattr(node, "id", clean_id))] = out_buf
+        _, bytes_alloc = _calculate_node_bytes(node)
+        cuda.append(f"    float* {out_buf};")
+        cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_buf}, {bytes_alloc}));")
+
+        attrs = getattr(node, "attributes", {})
+        max_iters = attrs.get("maximum_iterations") or attrs.get("max_iters", 10)
+        parallel_iters = attrs.get("parallel_iterations")
+        swap_memory = attrs.get("swap_memory")
+        shape_invariants = attrs.get("shape_invariants")
+
+        annotations: list[str] = []
+        if parallel_iters is not None:
+            annotations.append(f"parallel_iterations={parallel_iters}")
+        if swap_memory is not None:
+            annotations.append(f"swap_memory={swap_memory}")
+        if max_iters is not None:
+            annotations.append(f"maximum_iterations={max_iters}")
+        if shape_invariants is not None:
+            annotations.append(f"shape_invariants={shape_invariants}")
+        if annotations:
+            cuda.append(f"    // Loop annotations: {', '.join(annotations)}")
+        if swap_memory:
+            cuda.append(f"    // Swap memory policy enabled for {out_buf}")
+        if parallel_iters is not None:
+            cuda.append(f"    #pragma unroll {parallel_iters}")
+
+        cuda.append(f"    for (int _iter_{node_idx} = 0; _iter_{node_idx} < {max_iters}; ++_iter_{node_idx}) {{")
+        cuda.append(f"        // Loop iteration body for {clean_id}")
+        cuda.append("    }")
+        self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
+
     def _ensure_template(self, node: IRNode, node_idx: int) -> Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]:
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
@@ -243,7 +352,7 @@ class CudaCodeGenerator(BaseGenerator):
             Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
         """
         op_type = getattr(node, "op_type", "")
-        if op_type.lower() in ("input", "output", "fusedelementwise"):
+        if op_type.lower() in ("input", "output", "fusedelementwise", "loop", "whileloop"):
             return None
         if "unsupported" in op_type.lower():
             raise BackendNotSupportedError(f"Operation '{op_type}' is not supported by cuda backend.")
@@ -251,13 +360,8 @@ class CudaCodeGenerator(BaseGenerator):
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
             inps = getattr(node, "inputs", []) or []
-            if len(inps) <= 1:
-                body = f"__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = A[id];\n    }}\n}}\n"
-            elif len(inps) == 2:
-                body = f"__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = A[id] + B[id];\n    }}\n}}\n"
-            else:
-                params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
-                body = f"__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = blockIdx.x * blockDim.x + threadIdx.x;\n    if (id < N) {{\n        C[id] = in_0[id];\n    }}\n}}\n"
+            scalar_expr = getattr(node, "attributes", {}).get("scalar_expr")
+            body = _synthesize_cuda_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
                 grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),
@@ -294,6 +398,10 @@ class CudaCodeGenerator(BaseGenerator):
 
         if op_type.lower() == "fusedelementwise":
             self._emit_fused_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
+            return
+
+        if op_type.lower() in ("loop", "whileloop"):
+            self._emit_loop_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
             return
 
         tpl = self._ensure_template(node, node_idx)

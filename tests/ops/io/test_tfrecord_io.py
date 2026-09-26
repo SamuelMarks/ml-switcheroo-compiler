@@ -122,3 +122,38 @@ def test_tfrecord_crc_corruption_detection() -> None:
 
         with pytest.raises(ValueError, match="Unexpected EOF"):
             read_tfrecords(trunc_path)
+
+        # 4. Incomplete header (< 12 bytes total) breaks gracefully
+        trailing_path = os.path.join(tmpdir, "trailing.tfrecord")
+        with open(trailing_path, "wb") as f:
+            f.write(b"1234")
+        assert read_tfrecords(trailing_path) == []
+
+
+def test_tfrecord_writer_edge_cases() -> None:
+    """Test TFRecordWriter with None record, already-closed underlying file, and empty compressor flush."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write None record
+        none_path = os.path.join(tmpdir, "none.tfrecord")
+        with TFRecordWriter(none_path) as writer:
+            writer.write(None)
+        records = read_tfrecords(none_path)
+        assert records == [b""]
+
+        # Close when underlying file is already closed (line 247 branch)
+        closed_file_path = os.path.join(tmpdir, "closed_file.tfrecord")
+        writer_closed = TFRecordWriter(closed_file_path)
+        writer_closed._file.close()
+        writer_closed.close()
+        assert writer_closed._closed
+
+        # ZLIB flush returns empty bytes (line 244 branch)
+        class DummyCompressor:
+            def flush(self) -> bytes:
+                return b""
+
+        zlib_empty_path = os.path.join(tmpdir, "zlib_empty.tfrecord")
+        writer_zlib = TFRecordWriter(zlib_empty_path, TFRecordOptions("ZLIB"))
+        writer_zlib._compressor = DummyCompressor()
+        writer_zlib.close()
+        assert writer_zlib._closed

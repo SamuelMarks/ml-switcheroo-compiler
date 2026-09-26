@@ -28,18 +28,72 @@ class Dot(OpDef):
     Computes the dot product of two arrays
     """
 
-    def infer_shape(self, a, b, **kwargs):
-        """Infer shape.
+    def infer_shape(self, a=None, b=None, **kwargs) -> tuple[int, ...]:
+        """Infer output shape for dot product following standard tensor contraction rules.
 
         Args:
-            a (Any): The a parameter.
-            b (Any): The b parameter.
-            **kwargs (Any): Keyword args.
+            a (object): First input tensor or shape.
+            b (object): Second input tensor or shape.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Inferred output shape.
         """
-        return None
+        inp_a = a if a is not None else (kwargs.get("a", kwargs.get("lhs")))
+        inp_b = b if b is not None else (kwargs.get("b", kwargs.get("rhs")))
+        if inp_a is None or inp_b is None:
+            return ()
+
+        def _get_shape(obj: object) -> tuple[int, ...]:
+            """Extract shape tuple from object.
+
+            Args:
+                obj (object): Target tensor or shape.
+
+            Returns:
+                tuple[int, ...]: Extracted shape tuple.
+            """
+            if hasattr(obj, "shape"):
+                return tuple(int(d) for d in obj.shape)
+            if hasattr(obj, "shape_metadata"):
+                sm = obj.shape_metadata
+                if sm:
+                    return tuple(int(d) for d in sm)
+            if isinstance(obj, (list, tuple)):
+                return tuple(int(d) for d in obj)
+            return ()
+
+        shape_a = _get_shape(inp_a)
+        shape_b = _get_shape(inp_b)
+
+        ndim_a = len(shape_a)
+        ndim_b = len(shape_b)
+
+        # 0D scalar cases
+        if ndim_a == 0:
+            return shape_b
+        if ndim_b == 0:
+            return shape_a
+
+        # 1D x 1D -> 0D scalar
+        if ndim_a == 1 and ndim_b == 1:
+            return ()
+
+        # 2D x 2D -> 2D matrix multiplication (M, K) x (K, N) -> (M, N)
+        if ndim_a == 2 and ndim_b == 2:
+            return (shape_a[0], shape_b[1])
+
+        # ND x 1D -> sum-product over last axis of a and only axis of b: a[:-1]
+        if ndim_b == 1:
+            return shape_a[:-1]
+
+        # 1D x ND -> sum-product over first axis of b and only axis of a: b[1:]
+        if ndim_a == 1:
+            return shape_b[1:]
+
+        # ND x MD (N >= 2, M >= 2) -> sum-product over last axis of a and second-to-last axis of b:
+        # result shape is a[:-1] + b[:-2] + b[-1:]
+        return shape_a[:-1] + shape_b[:-2] + (shape_b[-1],)
 
 
 @register_op("DotGeneral")

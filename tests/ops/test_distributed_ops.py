@@ -64,6 +64,7 @@ def test_distributed_ops_infer_shape():
 
     op5 = AllGather()
     assert op5.infer_shape(MockArray((2, 2))) == (2, 2)
+    assert op5.infer_shape(MockArray((2, 2)), world_size=2, axis=0) == (4, 2)
     assert op5.infer_shape(None) == ()
 
     op6 = Reduce()
@@ -76,6 +77,7 @@ def test_distributed_ops_infer_shape():
 
     op8 = ReduceScatter()
     assert op8.infer_shape(MockArray((2, 2))) == (2, 2)
+    assert op8.infer_shape(MockArray((4, 2)), world_size=2, axis=0) == (2, 2)
     assert op8.infer_shape(None) == ()
 
     op9 = AllToAll()

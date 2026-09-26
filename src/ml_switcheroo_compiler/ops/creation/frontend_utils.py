@@ -107,18 +107,18 @@ class FromDlpack(OpDef):
 
     op_name = "FromDlpack"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        obj = args[0] if len(args) > 0 else None
-        return getattr(obj, "shape", ())
+        obj = args[0] if len(args) > 0 else kwargs.get("ext_tensor", kwargs.get("tensor"))
+        return tuple(getattr(obj, "shape", getattr(obj, "shape_metadata", ())))
 
 
 @register_op("Frompyfunc")
@@ -127,17 +127,26 @@ class Frompyfunc(OpDef):
 
     op_name = "Frompyfunc"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Broadcasted input shape.
         """
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        inps = args[3:] if len(args) > 3 else args
+        shapes = [getattr(inp, "shape", getattr(inp, "shape_metadata", ())) for inp in inps if hasattr(inp, "shape") or hasattr(inp, "shape_metadata")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return tuple(res)
 
 
 @register_op("Geomspace")
@@ -146,22 +155,32 @@ class Geomspace(OpDef):
 
     op_name = "Geomspace"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        start = args[0] if len(args) > 0 else None
-        stop = args[1] if len(args) > 1 else None
-        num = kwargs.get("num", args[2] if len(args) > 2 else 50)
-        axis = kwargs.get("axis", 0)
-        shape1 = getattr(start, "shape", ())
-        shape2 = getattr(stop, "shape", ())
+        start = args[0] if len(args) > 0 else kwargs.get("start")
+        stop = args[1] if len(args) > 1 else kwargs.get("stop")
+        raw_num = kwargs.get("num", args[2] if len(args) > 2 else 50)
+        num: int = 50
+        try:
+            num = int(raw_num)
+        except (TypeError, ValueError):
+            pass
+        raw_axis = kwargs.get("axis", 0)
+        axis: int = 0
+        try:
+            axis = int(raw_axis)
+        except (TypeError, ValueError):
+            pass
+        shape1 = getattr(start, "shape", getattr(start, "shape_metadata", ()))
+        shape2 = getattr(stop, "shape", getattr(stop, "shape_metadata", ()))
         b_shape = shape1 if len(shape1) > len(shape2) else shape2
         if not b_shape:
             return (num,)
@@ -178,23 +197,23 @@ class Geometric(OpDef):
 
     op_name = "Geometric"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        p = args[0] if len(args) > 0 else None
+        p = args[0] if len(args) > 0 else kwargs.get("p")
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
         if size is None:
-            return getattr(p, "shape", ())
+            return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
-        return tuple(size)
+        return tuple(int(d) for d in size)
 
 
 def from_dlpack(obj):

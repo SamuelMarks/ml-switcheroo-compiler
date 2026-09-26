@@ -710,20 +710,20 @@ def _mlx_all_to_all(backend_module, tensor, **kwargs):
 
 @mlx_eager_registry.register("ReduceScatter")
 def _mlx_reduce_scatter(backend_module, tensor, **kwargs):
-    """Implement ReduceScatter for MLX eager mode.
+    """Implement ReduceScatter for MLX eager mode using native collectives or ring reduce-scatter fallback.
 
     Args:
         backend_module (object): The MLX backend module.
         tensor (object): The input tensor.
-        **kwargs (object): Keyword args.
+        **kwargs (object): Keyword args including op_type, scatter_dim, rank, world_size, all_ranks_data.
 
-    Returns: mx.array: The scattered tensor.
+    Returns:
+        object: The scattered reduced tensor.
     """
     mx = backend_module
 
-    # Emulate ReduceScatter via AllReduce followed by slicing the relevant chunk for the local rank.
-    # Note: Proper distributed operations require group orchestration, so we rely on mx.distributed where possible.
-    if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
+    # 1. Native distributed path via AllReduce + slicing
+    if mx is not None and hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
         reduced = mx.distributed.all_sum(tensor)
 
         # Get rank and world size to slice
@@ -746,6 +746,51 @@ def _mlx_reduce_scatter(backend_module, tensor, **kwargs):
         slices = [slice(None)] * reduced.ndim
         slices[scatter_dim] = slice(start_idx, end_idx)
         return reduced[tuple(slices)]
+
+    # 2. Host-level ring reduce-scatter collective fallback
+    all_ranks_data = kwargs.get("all_ranks_data")
+    scatter_dim = int(kwargs.get("scatter_dim", 0))
+    red_op = str(kwargs.get("op_type", "SUM")).upper()
+    rank = int(kwargs.get("rank", 0))
+
+    if all_ranks_data:
+        P = len(all_ranks_data)
+        dim_size = getattr(all_ranks_data[0], "shape", [1])[scatter_dim]
+        chunk_size = dim_size // P
+        start = rank * chunk_size
+        end = start + chunk_size
+        slices = [slice(None)] * getattr(all_ranks_data[0], "ndim", 1)
+        slices[scatter_dim] = slice(start, end)
+
+        # Accumulate across all ranks in ring order
+        accum = all_ranks_data[rank][tuple(slices)]
+        for step in range(1, P):
+            peer = (rank + step) % P
+            peer_chunk = all_ranks_data[peer][tuple(slices)]
+            if red_op in ("SUM", "ADD"):
+                accum = mx.add(accum, peer_chunk) if (mx and hasattr(mx, "add")) else (accum + peer_chunk)
+            elif red_op in ("PROD", "PRODUCT", "MUL"):
+                accum = mx.multiply(accum, peer_chunk) if (mx and hasattr(mx, "multiply")) else (accum * peer_chunk)
+            elif red_op == "MAX":
+                accum = mx.maximum(accum, peer_chunk) if (mx and hasattr(mx, "maximum")) else (accum if accum >= peer_chunk else peer_chunk)
+            elif red_op == "MIN":
+                accum = mx.minimum(accum, peer_chunk) if (mx and hasattr(mx, "minimum")) else (accum if accum <= peer_chunk else peer_chunk)
+            else:
+                accum = mx.add(accum, peer_chunk) if (mx and hasattr(mx, "add")) else (accum + peer_chunk)
+
+        return accum
+
+    world_size = int(kwargs.get("world_size", 1))
+    if hasattr(tensor, "shape"):
+        if world_size <= 1:
+            return tensor
+        dim_size = tensor.shape[scatter_dim]
+        chunk_size = dim_size // world_size
+        start_idx = rank * chunk_size
+        end_idx = start_idx + chunk_size
+        slices = [slice(None)] * tensor.ndim
+        slices[scatter_dim] = slice(start_idx, end_idx)
+        return tensor[tuple(slices)]
 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 

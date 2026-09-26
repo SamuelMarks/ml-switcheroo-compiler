@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import tempfile
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import _fftconvolve
+from ml_switcheroo_compiler.backends.eager.core_math_ops.math_fft import (
+    _fft,
+    _fftconvolve,
+    _fftnd,
+    _np_hfft,
+    _rfft,
+)
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import (
     _np_tensorarrayread,
     _np_tensorarraywrite,
@@ -272,3 +279,79 @@ def test_fftconvolve_fallback() -> None:
         signal = MockSignalModule()
 
     assert np.allclose(_fftconvolve(MockSignalBackend(), x, h), [88.0])
+
+
+def test_math_fft_edge_cases() -> None:
+    """Verify edge cases and fallback branches for fft operations."""
+    x = np.array([1.0, 2.0], dtype=np.float32)
+    h = np.array([0.5], dtype=np.float32)
+
+    # 1. Unknown convolution mode falls through to 'return out'
+    out_custom = _fftconvolve(np, x, h, mode="custom_unhandled")
+    assert out_custom.shape == (2,)
+
+    # 2. _fft and _rfft with backend missing fft
+    class EmptyBackend:
+        pass
+
+    assert _fft(EmptyBackend(), x) is None
+    assert _rfft(EmptyBackend(), x) is None
+
+    # 3. _fftnd with fftnd attribute
+    class MockFFTNDModule:
+        @staticmethod
+        def fftnd(*args: object, **kwargs: object) -> object:
+            return np.array([123.0])
+
+    class MockFFTNDBackend:
+        fft = MockFFTNDModule()
+
+    assert np.allclose(_fftnd(MockFFTNDBackend(), x), [123.0])
+
+    # 4. _np_hfft with hfft attribute on backend.fft
+    class MockHFFTModule:
+        @staticmethod
+        def hfft(*args: object, **kwargs: object) -> object:
+            return np.array([456.0])
+
+    class MockHFFTBackend:
+        fft = MockHFFTModule()
+
+    assert np.allclose(_np_hfft(MockHFFTBackend(), x), [456.0])
+
+    # 5. _np_hfft fallback to np.fft.hfft
+    res_hfft_fallback = _np_hfft(EmptyBackend(), x)
+    assert res_hfft_fallback is not None
+
+
+def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify _write_file error handling and cleanup on OSError."""
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_string_io import _np_writefile
+
+    target_file = tmp_path / "test_out.txt"
+
+    # 1. Normal write success with str, bytes, and tobytes
+    assert _np_writefile(object(), str(target_file), "hello world") == 1
+    assert _np_writefile(object(), str(target_file), b"hello bytes") == 1
+
+    class DummyWithToBytes:
+        def tobytes(self) -> bytes:
+            return b"dummy_bytes"
+
+    assert _np_writefile(object(), str(target_file), DummyWithToBytes()) == 1
+
+    # 2. OSError where tmp file exists and gets cleaned up
+    def mock_replace_error(src: str, dst: str) -> None:
+        raise OSError("Disk full error")
+
+    monkeypatch.setattr("os.replace", mock_replace_error)
+    with pytest.raises(OSError, match="Disk full error"):
+        _np_writefile(object(), str(target_file), "content")
+
+    # 3. OSError where tmp file does not exist
+    def mock_open_error(*args: object, **kwargs: object) -> object:
+        raise OSError("Cannot open error")
+
+    monkeypatch.setattr("builtins.open", mock_open_error)
+    with pytest.raises(OSError, match="Cannot open error"):
+        _np_writefile(object(), str(target_file), "content")

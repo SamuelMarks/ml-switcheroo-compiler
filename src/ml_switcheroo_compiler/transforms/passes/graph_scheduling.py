@@ -133,6 +133,317 @@ class DefaultCostModel:
         return costs.default_cost
 
 
+class CpuCostModel:
+    """CPU hardware cost model calibrated against cache hierarchy and vectorization throughput."""
+
+    def __init__(
+        self,
+        l1_cache_bytes: int = 32 * 1024,
+        l2_cache_bytes: int = 512 * 1024,
+        l3_cache_bytes: int = 16 * 1024 * 1024,
+        simd_width_bytes: int = 64,
+        compute_heavy_threshold: int = 250,
+        heavy_interleave_penalty: int = 300,
+        light_interleave_penalty: int = 50,
+    ) -> None:
+        """Initialize CpuCostModel with cache hierarchy parameters.
+
+        Args:
+            l1_cache_bytes (int): L1 data cache capacity in bytes.
+            l2_cache_bytes (int): L2 cache capacity in bytes.
+            l3_cache_bytes (int): L3 shared cache capacity in bytes.
+            simd_width_bytes (int): SIMD vector register width in bytes.
+            compute_heavy_threshold (int): Threshold score for heavy compute operations.
+            heavy_interleave_penalty (int): Scheduling penalty for consecutive heavy ops.
+            light_interleave_penalty (int): Scheduling penalty for consecutive light ops.
+        """
+        self.l1_cache_bytes: int = l1_cache_bytes
+        self.l2_cache_bytes: int = l2_cache_bytes
+        self.l3_cache_bytes: int = l3_cache_bytes
+        self.simd_width_bytes: int = simd_width_bytes
+        self._compute_heavy_threshold: int = compute_heavy_threshold
+        self._heavy_interleave_penalty: int = heavy_interleave_penalty
+        self._light_interleave_penalty: int = light_interleave_penalty
+
+    @property
+    def compute_heavy_threshold(self) -> int:
+        """Threshold for heavy compute cost."""
+        return self._compute_heavy_threshold
+
+    @property
+    def heavy_interleave_penalty(self) -> int:
+        """Penalty for sequential heavy nodes."""
+        return self._heavy_interleave_penalty
+
+    @property
+    def light_interleave_penalty(self) -> int:
+        """Penalty for sequential light nodes."""
+        return self._light_interleave_penalty
+
+    def get_memory_cost(self, node: IRNode) -> int | str:
+        """Calculate memory cost in bytes with CPU cache miss penalties.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int | str: Estimated active memory footprint in bytes.
+        """
+        dtype: str = str(node.attributes.get("dtype", "float32"))
+        dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
+
+        shape: tuple[int | str, ...] | list[int | str] | None = getattr(node, "shape_metadata", None)
+        if shape is None:
+            return dtype_size
+
+        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
+
+        if not is_dynamic and not has_symbolic_dim:
+            size: int = 1
+            for dim in shape:
+                size *= max(1, int(dim))
+            byte_size: int = size * dtype_size
+            if byte_size > self.l3_cache_bytes:
+                return int(byte_size * 1.25)
+            if byte_size > self.l2_cache_bytes:
+                return int(byte_size * 1.1)
+            return byte_size
+
+        dims: list[str] = [str(d) for d in shape]
+        return " * ".join(dims) + f" * {dtype_size}"
+
+    def get_compute_cost(self, node: IRNode) -> int:
+        """Calculate CPU compute cost calibrated for SIMD vector execution.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int: Compute cost heuristic.
+        """
+        dtype: str = str(node.attributes.get("dtype", "float32"))
+        dtype_size: int = 8 if "64" in dtype else 4
+        vector_factor: int = max(1, self.simd_width_bytes // dtype_size)
+
+        op: str = node.op_type
+        shape = getattr(node, "shape_metadata", None)
+        elems: int = 1
+        if shape and not any(isinstance(d, str) for d in shape):
+            for dim in shape:
+                elems *= max(1, int(dim))
+
+        if op in ("MatMul", "BatchMatMul", "Einsum", "Dot"):
+            return max(500, int((elems**1.5) / vector_factor))
+        if op in ("Conv2D", "Conv3D", "Conv"):
+            return max(800, int(elems * 8 / vector_factor))
+        if op in ("ReduceSum", "ReduceMean", "ReduceMax", "ReduceMin"):
+            return max(20, int(elems * 2 / vector_factor))
+        if op in ("Add", "Sub", "Mul", "Div", "Relu", "Sigmoid", "Exp", "Log"):
+            return max(5, int(elems / vector_factor))
+        return 50
+
+
+class GpuCostModel:
+    """GPU hardware cost model calibrated against Roofline model, SM occupancy, and HBM memory bandwidth."""
+
+    def __init__(
+        self,
+        hbm_bandwidth_gbps: float = 900.0,
+        peak_tflops: float = 312.0,
+        launch_latency_ns: int = 5000,
+        sm_count: int = 108,
+        compute_heavy_threshold: int = 400,
+        heavy_interleave_penalty: int = 800,
+        light_interleave_penalty: int = 150,
+    ) -> None:
+        """Initialize GpuCostModel with GPU architecture metrics.
+
+        Args:
+            hbm_bandwidth_gbps (float): High Bandwidth Memory peak bandwidth in GB/s.
+            peak_tflops (float): Peak compute throughput in TFLOPs.
+            launch_latency_ns (int): Kernel launch overhead latency in nanoseconds.
+            sm_count (int): Number of streaming multiprocessors.
+            compute_heavy_threshold (int): Threshold score for heavy compute operations.
+            heavy_interleave_penalty (int): Scheduling penalty for consecutive heavy ops.
+            light_interleave_penalty (int): Scheduling penalty for consecutive light ops.
+        """
+        self.hbm_bandwidth_gbps: float = hbm_bandwidth_gbps
+        self.peak_tflops: float = peak_tflops
+        self.launch_latency_ns: int = launch_latency_ns
+        self.sm_count: int = sm_count
+        self._compute_heavy_threshold: int = compute_heavy_threshold
+        self._heavy_interleave_penalty: int = heavy_interleave_penalty
+        self._light_interleave_penalty: int = light_interleave_penalty
+
+    @property
+    def compute_heavy_threshold(self) -> int:
+        """Threshold for heavy compute cost."""
+        return self._compute_heavy_threshold
+
+    @property
+    def heavy_interleave_penalty(self) -> int:
+        """Penalty for sequential heavy nodes."""
+        return self._heavy_interleave_penalty
+
+    @property
+    def light_interleave_penalty(self) -> int:
+        """Penalty for sequential light nodes."""
+        return self._light_interleave_penalty
+
+    def get_memory_cost(self, node: IRNode) -> int | str:
+        """Calculate GPU global device memory footprint in bytes.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int | str: Estimated memory size in bytes.
+        """
+        dtype: str = str(node.attributes.get("dtype", "float32"))
+        dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
+
+        shape = getattr(node, "shape_metadata", None)
+        if shape is None:
+            return dtype_size
+
+        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
+
+        if not is_dynamic and not has_symbolic_dim:
+            size: int = 1
+            for dim in shape:
+                size *= max(1, int(dim))
+            return size * dtype_size
+
+        dims: list[str] = [str(d) for d in shape]
+        return " * ".join(dims) + f" * {dtype_size}"
+
+    def get_compute_cost(self, node: IRNode) -> int:
+        """Calculate GPU compute cost calibrated against Roofline throughput and launch overhead.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int: Compute cost heuristic score.
+        """
+        launch_cost: int = int(self.launch_latency_ns / 10)
+        op: str = node.op_type
+        shape = getattr(node, "shape_metadata", None)
+        elems: int = 1
+        if shape and not any(isinstance(d, str) for d in shape):
+            for dim in shape:
+                elems *= max(1, int(dim))
+
+        if op in ("MatMul", "BatchMatMul", "Einsum", "Dot"):
+            return launch_cost + max(400, int((elems**1.3) / (self.sm_count * 2)))
+        if op in ("Conv2D", "Conv3D", "Conv"):
+            return launch_cost + max(600, int(elems * 4 / self.sm_count))
+        if op in ("AllReduce", "ReduceScatter", "AllGather"):
+            return launch_cost + 1000
+        if op in ("Add", "Sub", "Mul", "Div", "Relu", "Sigmoid"):
+            return launch_cost + max(1, int(elems / (self.hbm_bandwidth_gbps * 100)))
+        return launch_cost + 50
+
+
+class EdgeCostModel:
+    """Edge and WebAssembly hardware cost model calibrated for constrained linear memory."""
+
+    def __init__(
+        self,
+        max_linear_memory_bytes: int = 512 * 1024 * 1024,
+        allocation_penalty: int = 200,
+        compute_heavy_threshold: int = 150,
+        heavy_interleave_penalty: int = 250,
+        light_interleave_penalty: int = 40,
+    ) -> None:
+        """Initialize EdgeCostModel with memory limits and penalties.
+
+        Args:
+            max_linear_memory_bytes (int): Maximum addressable linear memory limit in bytes.
+            allocation_penalty (int): Memory allocation penalty score.
+            compute_heavy_threshold (int): Threshold for heavy operations.
+            heavy_interleave_penalty (int): Penalty for consecutive heavy operations.
+            light_interleave_penalty (int): Penalty for consecutive light operations.
+        """
+        self.max_linear_memory_bytes: int = max_linear_memory_bytes
+        self.allocation_penalty: int = allocation_penalty
+        self._compute_heavy_threshold: int = compute_heavy_threshold
+        self._heavy_interleave_penalty: int = heavy_interleave_penalty
+        self._light_interleave_penalty: int = light_interleave_penalty
+
+    @property
+    def compute_heavy_threshold(self) -> int:
+        """Threshold for heavy compute cost."""
+        return self._compute_heavy_threshold
+
+    @property
+    def heavy_interleave_penalty(self) -> int:
+        """Penalty for sequential heavy nodes."""
+        return self._heavy_interleave_penalty
+
+    @property
+    def light_interleave_penalty(self) -> int:
+        """Penalty for sequential light nodes."""
+        return self._light_interleave_penalty
+
+    def get_memory_cost(self, node: IRNode) -> int | str:
+        """Calculate memory cost heavily penalizing consumption exceeding constrained limits.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int | str: Estimated memory cost in bytes.
+        """
+        dtype: str = str(node.attributes.get("dtype", "float32"))
+        dtype_size: int = 8 if "64" in dtype else 4
+
+        shape = getattr(node, "shape_metadata", None)
+        if shape is None:
+            return dtype_size
+
+        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
+
+        if not is_dynamic and not has_symbolic_dim:
+            size: int = 1
+            for dim in shape:
+                size *= max(1, int(dim))
+            byte_size: int = size * dtype_size
+            if byte_size > self.max_linear_memory_bytes // 2:
+                return int(byte_size * 2) + self.allocation_penalty
+            return byte_size + self.allocation_penalty
+
+        dims: list[str] = [str(d) for d in shape]
+        return " * ".join(dims) + f" * {dtype_size}"
+
+    def get_compute_cost(self, node: IRNode) -> int:
+        """Calculate Edge single-thread scalar compute cost.
+
+        Args:
+            node (IRNode): The target IR node.
+
+        Returns:
+            int: Compute cost score.
+        """
+        op: str = node.op_type
+        shape = getattr(node, "shape_metadata", None)
+        elems: int = 1
+        if shape and not any(isinstance(d, str) for d in shape):
+            for dim in shape:
+                elems *= max(1, int(dim))
+
+        if op in ("MatMul", "BatchMatMul", "Conv2D", "Conv"):
+            return max(300, int(elems * 2))
+        if op in ("ReduceSum", "ReduceMean"):
+            return max(15, int(elems))
+        if op in ("Add", "Sub", "Mul", "Div", "Relu"):
+            return max(2, int(elems // 4))
+        return 40
+
+
 def _build_adjacency_lists(graph: IRGraph) -> tuple[dict[str, list[str]], dict[str, int], dict[str, int]]:
     """Build adjacency lists.
 

@@ -330,18 +330,18 @@ class HardSilu(OpDef):
 
     op_name = "HardSilu"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else None
-        return getattr(x, "shape", ())
+        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
+        return tuple(getattr(x, "shape", getattr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
 
 
 @register_op("HardSwish")
@@ -350,18 +350,18 @@ class HardSwish(OpDef):
 
     op_name = "HardSwish"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else None
-        return getattr(x, "shape", ())
+        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
+        return tuple(getattr(x, "shape", getattr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
 
 
 @register_op("Squareplus")
@@ -370,18 +370,18 @@ class Squareplus(OpDef):
 
     op_name = "Squareplus"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Result shape matching input.
         """
-        x = args[0] if len(args) > 0 else None
-        return getattr(x, "shape", ())
+        x = args[0] if len(args) > 0 else kwargs.get("x", kwargs.get("input"))
+        return tuple(getattr(x, "shape", getattr(x, "shape_metadata", x if isinstance(x, (list, tuple)) else ())))
 
 
 def hard_silu(*args, **kwargs):

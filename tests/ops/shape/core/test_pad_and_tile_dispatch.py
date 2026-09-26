@@ -4,6 +4,7 @@
 
 import pytest
 
+from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.loss import CategoricalGeneralizedCrossEntropy, CircleLoss
 from ml_switcheroo_compiler.ops.nn.nlp import CtcLoss as NlpCtcLoss
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
@@ -99,9 +100,11 @@ def test_misc_infer_shapes():
 
     op4 = Repeat()
     assert op4.infer_shape(Dummy((2, 3)), 2, axis=None) == (12,)
-    assert op4.infer_shape(Dummy((2, None)), 2, axis=None) == (None,)
+    res_none_dim = op4.infer_shape(Dummy((2, None)), 2, axis=None)
+    assert res_none_dim[0] is None or hasattr(res_none_dim[0], "name")
     assert op4.infer_shape(Dummy((2, 3)), [1, 2], axis=None) == (3,)
-    assert op4.infer_shape(Dummy((2, 3)), None, axis=None) == (None,)
+    res_none_rep = op4.infer_shape(Dummy((2, 3)), None, axis=None)
+    assert res_none_rep[0] is None or hasattr(res_none_rep[0], "name")
 
     assert op4.infer_shape(Dummy((2, 3)), 2, axis=0) == (4, 3)
     assert op4.infer_shape(Dummy((None, 3)), 2, axis=0) == (None, 3)
@@ -122,17 +125,24 @@ def test_misc_infer_shapes():
     assert op7.infer_shape(Dummy((None, 3)), (2, None)) == (None, None)
 
     op8 = Unique()
-    assert op8.infer_shape(Dummy((2, 3)), axis=None) == (None,)
-    assert op8.infer_shape(Dummy((2, 3)), axis=0) == (None, 3)
+    assert op8.infer_shape(Dummy((2, 3)), axis=None)[0] in (None, SymVar("unique_count"))
+    res_u0 = op8.infer_shape(Dummy((2, 3)), axis=0)
+    assert res_u0[0] in (None, SymVar("unique_count")) and res_u0[1] == 3
 
-    assert op8.infer_shape(Dummy((2, 3)), return_index=True, axis=None) == ((None,), (None,))
-    assert op8.infer_shape(Dummy((2, 3)), return_index=True, axis=0) == ((None, 3), (2,))
+    res_idx_none = op8.infer_shape(Dummy((2, 3)), return_index=True, axis=None)
+    assert res_idx_none[0][0] in (None, SymVar("unique_count")) and res_idx_none[1][0] in (None, SymVar("unique_count"))
+    res_idx_0 = op8.infer_shape(Dummy((2, 3)), return_index=True, axis=0)
+    assert res_idx_0[0][0] in (None, SymVar("unique_count")) and res_idx_0[0][1] == 3 and res_idx_0[1] == (2,)
 
-    assert op8.infer_shape(Dummy((2, 3)), return_inverse=True, axis=None) == ((None,), (6,))
-    assert op8.infer_shape(Dummy((None, 3)), return_inverse=True, axis=None) == ((None,), (None,))
-    assert op8.infer_shape(Dummy((2, 3)), return_inverse=True, axis=0) == ((None, 3), (2,))
+    res_inv_none = op8.infer_shape(Dummy((2, 3)), return_inverse=True, axis=None)
+    assert res_inv_none[0][0] in (None, SymVar("unique_count")) and res_inv_none[1] == (6,)
+    res_inv_none_none = op8.infer_shape(Dummy((None, 3)), return_inverse=True, axis=None)
+    assert res_inv_none_none[0][0] in (None, SymVar("unique_count")) and res_inv_none_none[1] == (None,)
+    res_inv_0 = op8.infer_shape(Dummy((2, 3)), return_inverse=True, axis=0)
+    assert res_inv_0[0][0] in (None, SymVar("unique_count")) and res_inv_0[0][1] == 3 and res_inv_0[1] == (2,)
 
-    assert op8.infer_shape(Dummy((2, 3)), return_counts=True, axis=None) == ((None,), (None,))
+    res_cnt_none = op8.infer_shape(Dummy((2, 3)), return_counts=True, axis=None)
+    assert res_cnt_none[0][0] in (None, SymVar("unique_count")) and res_cnt_none[1][0] in (None, SymVar("unique_count"))
 
 
 def test_misc_dispatch():

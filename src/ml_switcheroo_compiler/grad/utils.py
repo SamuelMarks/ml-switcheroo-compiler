@@ -5,36 +5,42 @@ import contextlib
 import math
 import uuid
 from collections.abc import Callable, Sequence
-from typing import Protocol, TypeVar, Union, cast
+from typing import Protocol, TypeVar, Union, cast, runtime_checkable
 
 from ml_switcheroo_compiler.core.tensor import Tensor, Variable
 
 
-class BackendArray(Protocol):
-    """Protocol for a backend array."""
+@runtime_checkable
+class GradTensorProtocol(Protocol):
+    """Protocol defining the structural type contract for tensors participating in gradient evaluation."""
 
     @property
-    def dtype(self) -> "BackendArray":
-        """Get dtype."""
+    def dtype(self) -> object:
+        """Get data type identifier."""
         ...
 
     @property
     def shape(self) -> tuple[int, ...]:
-        """Get shape."""
+        """Get shape dimensions."""
         ...
 
     @property
     def id(self) -> str:
-        """Get id."""
+        """Get unique tensor identifier."""
         ...
 
     @property
-    def data(self) -> "BackendArray":
-        """Get data."""
+    def data(self) -> object:
+        """Get underlying array buffer."""
+        ...
+
+    def __len__(self) -> int:
+        """Get length of leading dimension."""
         ...
 
 
-GradValue = Union[int, float, str, bool, list, tuple, dict, None, Tensor, Variable, BackendArray]
+BackendArray = GradTensorProtocol
+GradValue = Union[int, float, str, bool, list, tuple, dict, None, Tensor, Variable, GradTensorProtocol]
 
 
 from dataclasses import dataclass, field

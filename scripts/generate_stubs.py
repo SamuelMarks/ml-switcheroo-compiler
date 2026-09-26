@@ -10,6 +10,11 @@ import keyword
 import os
 import shutil
 
+from ml_switcheroo_compiler.backends.snapshot_grounding import (
+    SnapshotGroundingEngine,
+    _resolve_default_snapshot_dir,
+)
+
 BACKENDS_CONFIG: dict[str, str] = {
     "numpy": "numpy",
     "pytorch": "torch",
@@ -35,6 +40,7 @@ BACKENDS_CONFIG: dict[str, str] = {
     "edge_wasm": "wasm",
     "edge_webgl": "webgl",
     "webgpu": "webgpu",
+    "pure_python": "pure_python",
 }
 
 SAFE_TYPES: set[str] = {
@@ -43,10 +49,6 @@ SAFE_TYPES: set[str] = {
     "float",
     "bool",
     "str",
-    "None",
-    "tuple",
-    "dict",
-    "list",
 }
 
 CORE_OPS: list[str] = [
@@ -114,12 +116,97 @@ CORE_OPS: list[str] = [
     "zeros",
 ]
 
+TENSOR_CLASS_STUB: list[str] = [
+    "class Tensor:",
+    "    shape: tuple[int, ...]",
+    "    dtype: str",
+    "    device: str",
+    "    ndim: int",
+    "    size: int",
+    "    def __init__(self, data: object = ..., shape: Sequence[int] | None = ..., dtype: str | None = ...) -> None: ...",
+    "    def __len__(self) -> int: ...",
+    "    def __getitem__(self, item: object) -> Tensor: ...",
+    "    def __add__(self, other: Tensor | float | int) -> Tensor: ...",
+    "    def __sub__(self, other: Tensor | float | int) -> Tensor: ...",
+    "    def __mul__(self, other: Tensor | float | int) -> Tensor: ...",
+    "    def __truediv__(self, other: Tensor | float | int) -> Tensor: ...",
+    "    def __neg__(self) -> Tensor: ...",
+    "    def numpy(self) -> object: ...",
+    "    def to(self, device: str) -> Tensor: ...",
+    "    def reshape(self, shape: Sequence[int]) -> Tensor: ...",
+    "    def transpose(self, axes: Sequence[int] | None = ...) -> Tensor: ...",
+    "",
+]
+
+OP_SIGNATURES: dict[str, str] = {
+    "abs": "(x: Tensor) -> Tensor",
+    "acos": "(x: Tensor) -> Tensor",
+    "acosh": "(x: Tensor) -> Tensor",
+    "add": "(x1: Tensor, x2: Tensor | float | int) -> Tensor",
+    "all": "(x: Tensor, axis: int | Sequence[int] | None = ..., keepdims: bool = ...) -> Tensor",
+    "any": "(x: Tensor, axis: int | Sequence[int] | None = ..., keepdims: bool = ...) -> Tensor",
+    "argmax": "(x: Tensor, axis: int | None = ..., keepdims: bool = ...) -> Tensor",
+    "argmin": "(x: Tensor, axis: int | None = ..., keepdims: bool = ...) -> Tensor",
+    "asin": "(x: Tensor) -> Tensor",
+    "asinh": "(x: Tensor) -> Tensor",
+    "atan": "(x: Tensor) -> Tensor",
+    "atan2": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "atanh": "(x: Tensor) -> Tensor",
+    "ceil": "(x: Tensor) -> Tensor",
+    "clip": "(x: Tensor, min_val: Tensor | float, max_val: Tensor | float) -> Tensor",
+    "concat": "(tensors: Sequence[Tensor], axis: int = ...) -> Tensor",
+    "conv2d": "(input: Tensor, weight: Tensor, bias: Tensor | None = ..., stride: int | tuple[int, int] = ..., padding: str | int | tuple[int, int] = ...) -> Tensor",
+    "cos": "(x: Tensor) -> Tensor",
+    "cosh": "(x: Tensor) -> Tensor",
+    "cumsum": "(x: Tensor, axis: int | None = ...) -> Tensor",
+    "divide": "(x1: Tensor, x2: Tensor | float | int) -> Tensor",
+    "dot": "(a: Tensor, b: Tensor) -> Tensor",
+    "equal": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "exp": "(x: Tensor) -> Tensor",
+    "floor": "(x: Tensor) -> Tensor",
+    "greater": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "greater_equal": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "less": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "less_equal": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "log": "(x: Tensor) -> Tensor",
+    "logical_and": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "logical_not": "(x: Tensor) -> Tensor",
+    "logical_or": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "matmul": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "max": "(x: Tensor, axis: int | Sequence[int] | None = ..., keepdims: bool = ...) -> Tensor",
+    "maximum": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "mean": "(x: Tensor, axis: int | Sequence[int] | None = ..., keepdims: bool = ...) -> Tensor",
+    "min": "(x: Tensor, axis: int | Sequence[int] | None = ..., keepdims: bool = ...) -> Tensor",
+    "minimum": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "multiply": "(x1: Tensor, x2: Tensor | float | int) -> Tensor",
+    "negative": "(x: Tensor) -> Tensor",
+    "not_equal": "(x1: Tensor, x2: Tensor) -> Tensor",
+    "ones": "(shape: Sequence[int], dtype: str | None = ...) -> Tensor",
+    "pad": "(x: Tensor, pad_width: Sequence[tuple[int, int]], mode: str = ...) -> Tensor",
+    "pow": "(x1: Tensor, x2: Tensor | float) -> Tensor",
+    "reshape": "(x: Tensor, shape: Sequence[int]) -> Tensor",
+    "round": "(x: Tensor) -> Tensor",
+    "rsqrt": "(x: Tensor) -> Tensor",
+    "sigmoid": "(x: Tensor) -> Tensor",
+    "sign": "(x: Tensor) -> Tensor",
+    "sin": "(x: Tensor) -> Tensor",
+    "sinh": "(x: Tensor) -> Tensor",
+    "softmax": "(x: Tensor, axis: int = ...) -> Tensor",
+    "sqrt": "(x: Tensor) -> Tensor",
+    "square": "(x: Tensor) -> Tensor",
+    "subtract": "(x1: Tensor, x2: Tensor | float | int) -> Tensor",
+    "tan": "(x: Tensor) -> Tensor",
+    "tanh": "(x: Tensor) -> Tensor",
+    "transpose": "(x: Tensor, axes: Sequence[int] | None = ...) -> Tensor",
+    "zeros": "(shape: Sequence[int], dtype: str | None = ...) -> Tensor",
+}
+
 
 def _clean_type_annotation(raw_annot: str | None) -> str:
     """Normalize snapshot raw annotations into valid Python type stubs.
 
     Args:
-        raw_annot (Optional[str]): The raw annotation string.
+        raw_annot (str | None): The raw annotation string.
 
     Returns:
         str: Normalized type annotation string.
@@ -127,19 +214,28 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
     if not raw_annot or raw_annot == "None":
         return "Tensor"
 
-    cleaned: str = raw_annot.strip().replace("array_like", "Tensor")
+    cleaned: str = raw_annot.strip().strip("'\"").replace("array_like", "Tensor")
     cleaned = cleaned.replace("`np._NoValue`", "None")
 
     if any(ch in cleaned for ch in ["{", "}", "-", "(", ")", "/", "|"]):
         return "Tensor"
 
+    if " or " in cleaned or " and " in cleaned or (" " in cleaned and "[" not in cleaned):
+        return "Tensor"
+
     try:
-        parsed = ast.parse(f"x: {cleaned}")
+        parsed: ast.AST = ast.parse(f"x: {cleaned}")
         ann = parsed.body[0].annotation  # type: ignore[attr-defined]
         for node in ast.walk(ann):
             if isinstance(node, ast.Name):
-                if node.id not in SAFE_TYPES and node.id not in {"Optional", "Union", "Sequence", "tuple"}:
+                if node.id not in SAFE_TYPES and node.id not in {"Optional", "Union", "Sequence"}:
                     return "Tensor"
+            elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if node.value in SAFE_TYPES:
+                    return node.value
+                return "Tensor"
+            elif not isinstance(node, (ast.Name, ast.Constant, ast.Subscript, ast.Index, ast.Load)):
+                return "Tensor"
         return cleaned
     except Exception:
         return "Tensor"
@@ -189,19 +285,15 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} from ml-framework-snapshots."""',
-        "# ruff: noqa: E501",
+        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
-        "from typing import Optional, Union",
         "",
-        "class Tensor:",
-        "    shape: tuple[int, ...]",
-        "    dtype: str",
-        "    def __init__(self, *args: object, **kwargs: object) -> None: ...",
-        "",
-    ]
+    ] + list(TENSOR_CLASS_STUB)
 
-    categories: dict[str, object] = data.get("categories", {})  # type: ignore[assignment]
+    categories = data.get("categories", {})
+    if not isinstance(categories, dict):
+        categories = {}
     seen_funcs: set[str] = {"Tensor", "Optional", "Union", "Sequence"}
 
     for _, items in categories.items():
@@ -285,22 +377,19 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} from live module introspection."""',
-        "# ruff: noqa: E501",
+        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
-        "from typing import Optional, Union",
         "",
-        "class Tensor:",
-        "    shape: tuple[int, ...]",
-        "    dtype: str",
-        "    def __init__(self, *args: object, **kwargs: object) -> None: ...",
-        "",
-    ]
+    ] + list(TENSOR_CLASS_STUB)
 
     try:
         mod = importlib.import_module(fw_name)
     except Exception:
-        return _generate_fallback_backend_stubs(be_name, out_path)
+        lines.append("def __getattr__(name: str) -> Tensor: ...")
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        return 0
 
     seen_funcs: set[str] = {"Tensor"}
     for attr in sorted(dir(mod)):
@@ -363,20 +452,15 @@ def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} backend."""',
-        "# ruff: noqa: E501",
+        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
-        "from typing import Optional, Union",
         "",
-        "class Tensor:",
-        "    shape: tuple[int, ...]",
-        "    dtype: str",
-        "    def __init__(self, *args: object, **kwargs: object) -> None: ...",
-        "",
-    ]
+    ] + list(TENSOR_CLASS_STUB)
 
     for op in sorted(CORE_OPS):
-        lines.append(f"def {op}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
+        sig = OP_SIGNATURES.get(op, "(x: Tensor, *args: object, **kwargs: object) -> Tensor")
+        lines.append(f"def {op}{sig}: ...")
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
 
@@ -393,25 +477,22 @@ def generate_stubs(
     """Generate high-fidelity .pyi stubs across all backends.
 
     Args:
-        snapshot_dir (Optional[str]): Directory containing snapshot JSON files.
+        snapshot_dir (str | None): Directory containing snapshot JSON files.
         out_base_dir (str): Output base directory for backends.
     """
     if snapshot_dir is None:
-        snapshot_dir = os.path.abspath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "..",
-                "ml-framework-snapshots",
-                "src",
-                "ml_framework_snapshots",
-                "snapshots",
-            )
-        )
+        snapshot_dir = _resolve_default_snapshot_dir()
+
+    if not os.path.exists(snapshot_dir):
+        print(f"Snapshot directory not found: {snapshot_dir}")
+        return
+
+    engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir)
 
     for be_name, fw in BACKENDS_CONFIG.items():
         be_dir: str = os.path.join(out_base_dir, be_name)
-        os.makedirs(be_dir, exist_ok=True)
+        if not os.path.exists(be_dir):
+            continue
         init_file = os.path.join(be_dir, "__init__.py")
         if not os.path.exists(init_file):
             with open(init_file, "w", encoding="utf-8") as f:
@@ -421,25 +502,36 @@ def generate_stubs(
         alt_stub_path: str = os.path.join(be_dir, "stub.pyi")
         count: int = 0
 
-        snapshot_files: list[str] = []
-        if os.path.isdir(snapshot_dir):
-            snapshot_files = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
-
-        if snapshot_files:
-            latest_file = sorted(snapshot_files)[-1]
+        snapshot_file: str | None = engine.get_snapshot_path(be_name)
+        if snapshot_file and os.path.exists(snapshot_file):
             try:
-                with open(os.path.join(snapshot_dir, latest_file), encoding="utf-8") as f:
+                with open(snapshot_file, encoding="utf-8") as f:
                     data = json.loads(f.read())
                 count = _generate_stubs_from_snapshot(data, be_name, stub_path)
             except Exception:
                 count = 0
 
+        if count == 0 and snapshot_dir and os.path.isdir(snapshot_dir):
+            snapshot_files: list[str] = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
+            if snapshot_files:
+                latest_file = sorted(snapshot_files)[-1]
+                try:
+                    with open(os.path.join(snapshot_dir, latest_file), encoding="utf-8") as f:
+                        data = json.loads(f.read())
+                    count = _generate_stubs_from_snapshot(data, be_name, stub_path)
+                except Exception:
+                    count = 0
+
         if count == 0:
             count = _generate_stubs_from_live_module(fw, be_name, stub_path)
 
+        if count == 0:
+            count = _generate_fallback_backend_stubs(be_name, stub_path)
+
         # Copy snapshot_stubs.pyi to stub.pyi
-        shutil.copyfile(stub_path, alt_stub_path)
-        print(f"Generated {stub_path} and {alt_stub_path} ({count} stubs).")
+        if os.path.exists(stub_path):
+            shutil.copyfile(stub_path, alt_stub_path)
+            print(f"Generated {stub_path} and {alt_stub_path} ({count} stubs).")
 
 
 def main() -> None:

@@ -1,5 +1,7 @@
 """Test eager_evaluator.py."""
 
+import pytest
+
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
 
 
@@ -11,4 +13,5 @@ def test_evaluation_strategy_base():
             return super().evaluate(ctx)
 
     ctx = EvaluationContext(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
-    assert DummyStrategy().evaluate(ctx) is None
+    with pytest.raises(NotImplementedError):
+        DummyStrategy().evaluate(ctx)

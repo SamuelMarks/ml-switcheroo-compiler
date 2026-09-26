@@ -17,13 +17,15 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 class SparseGenerator(PythonStringGenerator):
     """Generate executable Python code using dedicated Sparse COO tensor kernels."""
 
-    def __init__(self, graph: IRGraph) -> None:
+    def __init__(self, graph: IRGraph, memory_efficient: bool = True) -> None:
         """Initialize the Sparse COO code generator.
 
         Args:
             graph (IRGraph): The computation graph to emit code for.
+            memory_efficient (bool): Whether to generate memory-efficient sparse calls.
         """
         super().__init__(graph)
+        self.memory_efficient: bool = memory_efficient
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
     def get_fallback_prefix(self) -> str:
@@ -75,8 +77,14 @@ class SparseGenerator(PythonStringGenerator):
             "dense_spmm": "sp_kernels.dense_spmm({0}, {1})",
             "csr_add": "sp_kernels.csr_add({0}, {1})",
             "csc_add": "sp_kernels.csc_add({0}, {1})",
+            "csr_sub": "sp_kernels.csr_sub({0}, {1})",
+            "csc_sub": "sp_kernels.csc_sub({0}, {1})",
             "sparse_mask": "sp_kernels.sparse_mask({0}, {1})",
             "sparse_conv2d_mask": "sp_kernels.sparse_conv2d_mask({0}, {1}, {2})",
+            "sparse_softmax": "sp_kernels.sparse_softmax({0})",
+            "graph_norm_adjacency": "sp_kernels.graph_norm_adjacency({0})",
+            "gnn_spmm_attention": "sp_kernels.gnn_spmm_attention({0}, {1})",
+            "sparse_dropout": "sp_kernels.sparse_dropout({0})",
         }
 
     def generate(self) -> str:
@@ -88,7 +96,9 @@ class SparseGenerator(PythonStringGenerator):
         self.code = [self.header]
         self.add_line("import numpy as np")
         self.add_line("from ml_switcheroo_compiler.backends.sparse import kernels as sp_kernels")
-        self.add_line("from ml_switcheroo_compiler.backends.sparse.types import COOTensor")
+        self.add_line("from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor")
+        if self.memory_efficient:
+            self.add_line("# Memory-efficient sparse execution active")
         self.add_line("")
         self.add_line(f"def {self._func_name}(args):")
         self.indent_level += 1
@@ -113,6 +123,230 @@ class SparseGenerator(PythonStringGenerator):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
         return func
+
+    def visit_Spmm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse-dense matrix multiplication.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.spmm({', '.join(input_vars)})"
+
+    def visit_Spgemm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse-sparse matrix multiplication.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.spgemm({', '.join(input_vars)})"
+
+    def visit_DenseSpmm(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit dense-sparse matrix multiplication.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.dense_spmm({', '.join(input_vars)})"
+
+    def visit_SparseMask(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse masking operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.sparse_mask({', '.join(input_vars)})"
+
+    def visit_SparseSoftmax(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse softmax kernel operation.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.sparse_softmax({', '.join(input_vars)})"
+
+    def visit_GraphNormAdjacency(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit graph normalized adjacency kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.graph_norm_adjacency({', '.join(input_vars)})"
+
+    def visit_GnnSpmmAttention(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit GNN attention aggregation kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.gnn_spmm_attention({', '.join(input_vars)})"
+
+    def visit_SparseDropout(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse dropout regularizer.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.sparse_dropout({', '.join(input_vars)})"
+
+    def visit_CsrAdd(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit CSR addition kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.csr_add({', '.join(input_vars)})"
+
+    def visit_CscAdd(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit CSC addition kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.csc_add({', '.join(input_vars)})"
+
+    def visit_CsrSub(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit CSR subtraction kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.csr_sub({', '.join(input_vars)})"
+
+    def visit_CscSub(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit CSC subtraction kernel.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.csc_sub({', '.join(input_vars)})"
+
+    def visit_Add(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse COO addition.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.coo_add({', '.join(input_vars)})"
+
+    def visit_Sub(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse COO subtraction.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.coo_sub({', '.join(input_vars)})"
+
+    def visit_Mul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse COO elementwise multiplication.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.coo_mul({', '.join(input_vars)})"
+
+    def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Emit sparse matrix multiplication.
+
+        Args:
+            node (IRNode): Target node.
+            input_vars (list[str]): Input operand names.
+            **kwargs (object): Extra attributes.
+
+        Returns:
+            str: Generated code string.
+        """
+        del node, kwargs
+        return f"sp_kernels.coo_matmat({', '.join(input_vars)})"
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Handle fallback emission for nodes not explicitly specialized.
@@ -152,6 +386,7 @@ class SparseGenerator(PythonStringGenerator):
             Returns:
                 object: Output tensor or tuple of output tensors.
             """
+            del runner_kwargs
             if compiled_fn is not None:
                 try:
                     args_list = [getattr(a, "data", a) for a in args]
@@ -159,13 +394,14 @@ class SparseGenerator(PythonStringGenerator):
                 except Exception:
                     pass
 
+            from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
             feed_dict: dict[str, object] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, feed_dict)
+            res_dict = evaluate_graph(graph, feed_dict, backend=NumpyGenerator)
             if not graph.outputs:
                 return res_dict
             if len(graph.outputs) == 1:

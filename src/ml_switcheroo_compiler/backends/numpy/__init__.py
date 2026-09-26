@@ -6,4 +6,4 @@
 from .eager import execute_op
 from .generator import NumpyGenerator
 
-NumpyGenerator.execute_op = classmethod(execute_op)
+__all__ = ["NumpyGenerator", "execute_op"]

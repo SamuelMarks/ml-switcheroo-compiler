@@ -1,6 +1,13 @@
 # ruff: noqa: F401
 """io module."""
 
+from .async_io import (
+    AsyncIOFuture,
+    NonblockingLoad,
+    NonblockingSave,
+    nonblocking_load,
+    nonblocking_save,
+)
 from .base64_io import (
     DecodeBase64,
     EncodeBase64,
@@ -77,6 +84,7 @@ from .tf_io import (
 )
 
 __all__ = [
+    "AsyncIOFuture",
     "DecodeBase64",
     "DecodeCsv",
     "DecodeImage",
@@ -86,6 +94,8 @@ __all__ = [
     "Fromiter",
     "Fromstring",
     "Load",
+    "NonblockingLoad",
+    "NonblockingSave",
     "ParseExample",
     "ParseSequenceExample",
     "ParseTensor",

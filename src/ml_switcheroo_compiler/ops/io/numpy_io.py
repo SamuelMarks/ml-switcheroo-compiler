@@ -31,6 +31,10 @@ def _fallback_load(filepath):
         return SafetensorsWeightFormat().load(filepath)
     if filepath.endswith(".npz"):
         return load_npz(filepath)
+    if filepath.endswith(".npy"):
+        import numpy as np
+
+        return np.load(filepath)
     if filepath.endswith(".h5"):
         return H5WeightFormat().load(filepath)
     return None

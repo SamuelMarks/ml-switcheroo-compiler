@@ -1,33 +1,42 @@
 """eager_registry.py module."""
 
 import builtins
-from typing import Callable, Optional, Protocol, Union
+from typing import Callable, Optional, Protocol, Union, runtime_checkable
 
 
-class BackendArray(Protocol):
-    """Protocol for a backend array object."""
+@runtime_checkable
+class EagerTensorProtocol(Protocol):
+    """Protocol defining the structural type contract for eager backend array/tensor objects."""
 
-    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "BackendArray":
-        """Get an item from the array."""
+    def __getitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None]) -> "EagerTensorProtocol":
+        """Get an item or slice from the array."""
         ...
 
-    def __setitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None], value: "BackendArray") -> None:
-        """Set an item in the array."""
+    def __setitem__(self, key: Union[int, slice, tuple, list, str, "builtins.ellipsis", None], value: "EagerTensorProtocol") -> None:
+        """Set an item or slice in the array."""
         ...
 
-    def __add__(self, other: "EagerValue") -> "BackendArray":
+    def __len__(self) -> int:
+        """Return the length of the leading dimension."""
+        ...
+
+    def __neg__(self) -> "EagerTensorProtocol":
+        """Elementwise negation."""
+        ...
+
+    def __add__(self, other: "EagerValue") -> "EagerTensorProtocol":
         """Add two arrays."""
         ...
 
-    def __sub__(self, other: "EagerValue") -> "BackendArray":
+    def __sub__(self, other: "EagerValue") -> "EagerTensorProtocol":
         """Subtract two arrays."""
         ...
 
-    def __mul__(self, other: "EagerValue") -> "BackendArray":
+    def __mul__(self, other: "EagerValue") -> "EagerTensorProtocol":
         """Multiply two arrays."""
         ...
 
-    def __truediv__(self, other: "EagerValue") -> "BackendArray":
+    def __truediv__(self, other: "EagerValue") -> "EagerTensorProtocol":
         """Divide two arrays."""
         ...
 
@@ -47,7 +56,7 @@ class BackendArray(Protocol):
         """Compare greater than or equal."""
         ...
 
-    def __pow__(self, other: "EagerValue") -> "BackendArray":
+    def __pow__(self, other: "EagerValue") -> "EagerTensorProtocol":
         """Power operation."""
         ...
 
@@ -57,12 +66,13 @@ class BackendArray(Protocol):
         ...
 
     @property
-    def dtype(self) -> "BackendArray":
+    def dtype(self) -> object:
         """Get the dtype of the array."""
         ...
 
 
-EagerValue = Union[int, float, list, tuple, str, bool, BackendArray, None]
+BackendArray = EagerTensorProtocol
+EagerValue = Union[int, float, list, tuple, str, bool, EagerTensorProtocol, None]
 
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Eager backend registry."""

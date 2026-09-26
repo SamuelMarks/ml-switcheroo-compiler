@@ -1,9 +1,11 @@
 """Numba backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+from typing import Callable
 
 try:
     import numba
@@ -34,13 +36,13 @@ class NumbaProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray]],
+        inputs: dict[str, list[float] | list[list[float]] | np.ndarray],
     ) -> list[np.ndarray]:
         """Convert input payloads into topologically ordered NumPy arrays.
 
         Args:
             graph (IRGraph): IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], np.ndarray]]): Input mapping.
+            inputs (dict[str, list[float] | list[list[float]] | np.ndarray]): Input mapping.
 
         Returns:
             list[np.ndarray]: Ordered list of NumPy arrays.
@@ -58,49 +60,50 @@ class NumbaProfiler:
             return [np_inputs_dict[k] for k in input_keys]
         return list(np_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., object]]:
+    def _compile_graph(self, graph: IRGraph) -> Callable[..., object] | None:
         """Compile an IRGraph into an executable Numba JIT function.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Optional[Callable[..., object]]: JIT-compiled evaluate function.
+            Callable[..., object] | None: JIT-compiled evaluate function.
         """
         from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 
-        code: str = NumbaGenerator(graph).generate()
+        gen = NumbaGenerator(graph)
+        code: str = gen.generate()
         ns: dict[str, object] = {}
         exec(code, ns)
-        fn = ns.get("evaluate")
+        fn = ns.get(gen._func_name)
         return fn if callable(fn) else None
 
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | np.ndarray],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on Numba backend.
 
         Args:
             graph (IRGraph): The IR computation graph.
-            inputs (dict[str, Union[list[float], list[list[float]], np.ndarray]]): Named input structures.
-            device (Optional[str]): Device identifier ('cpu').
+            inputs (dict[str, list[float] | list[list[float]] | np.ndarray]): Named input structures.
+            device (str | None): Device identifier ('cpu').
             num_iters (int): Measurement iteration count.
             warmup_iters (int): Warmup iteration count.
 
         Returns:
-            dict[str, Union[list[float], float]]: Latency and peak memory metrics.
+            dict[str, list[float] | float]: Latency and peak memory metrics.
         """
         del device
 
         np_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., object]] = None
+        compiled_fn: Callable[..., object] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)
@@ -114,7 +117,7 @@ class NumbaProfiler:
                 object: Evaluated output array.
             """
             if has_ops and compiled_fn is not None:
-                return compiled_fn(np_inputs)
+                return compiled_fn(tuple(np_inputs))
 
             if not np_inputs:
                 return np.zeros((1,), dtype=np.float32)
@@ -148,6 +151,9 @@ class NumbaProfiler:
             "p50_latency_ms": p50_lat,
             "p95_latency_ms": p95_lat,
             "p99_latency_ms": p99_lat,
+            "p50_ms": p50_lat,
+            "p95_ms": p95_lat,
+            "p99_ms": p99_lat,
             "peak_memory_mb": peak_mem,
             "warmup_iterations": max(1, warmup_iters),
         }

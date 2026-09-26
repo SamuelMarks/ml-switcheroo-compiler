@@ -30,6 +30,7 @@ ALL_BACKENDS: list[str] = [
     "edge_wasm",
     "edge_webgl",
     "webgpu",
+    "pure_python",
 ]
 
 
@@ -65,3 +66,27 @@ def test_snapshot_stubs_function_definitions() -> None:
         parsed: ast.Module = ast.parse(content, filename=stub_path)
         func_defs: list[ast.FunctionDef] = [node for node in parsed.body if isinstance(node, ast.FunctionDef)]
         assert len(func_defs) > 0, f"Expected function stubs for {backend}, found {len(func_defs)}"
+
+
+def test_snapshot_stubs_tensor_class_methods() -> None:
+    """Verify that class Tensor in all stubs contains methods and annotations."""
+    base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
+
+    for backend in ALL_BACKENDS:
+        stub_path: str = os.path.join(base_dir, backend, "snapshot_stubs.pyi")
+        with open(stub_path, encoding="utf-8") as f:
+            content: str = f.read()
+
+        parsed: ast.Module = ast.parse(content, filename=stub_path)
+        tensor_class: ast.ClassDef | None = next((node for node in parsed.body if isinstance(node, ast.ClassDef) and node.name == "Tensor"), None)
+        assert tensor_class is not None, f"Tensor class missing in {backend}"
+
+        field_names: set[str] = {stmt.target.id for stmt in tensor_class.body if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)}
+        assert "shape" in field_names
+        assert "dtype" in field_names
+        assert "ndim" in field_names
+
+        method_names: set[str] = {stmt.name for stmt in tensor_class.body if isinstance(stmt, ast.FunctionDef)}
+        assert "numpy" in method_names
+        assert "reshape" in method_names
+        assert "transpose" in method_names

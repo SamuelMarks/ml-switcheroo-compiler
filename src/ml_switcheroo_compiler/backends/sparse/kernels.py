@@ -922,3 +922,233 @@ def sparse_conv2d_mask(
                     out_dense[b, o, i, j] = np.sum(window * w_arr[o])
 
     return _apply_sparse_mask(out_dense, mask)
+
+
+def csr_sub(a: CSRTensor, b: CSRTensor) -> CSRTensor:
+    """Subtract two Compressed Sparse Row (CSR) tensors.
+
+    Args:
+        a (CSRTensor): Left operand CSR tensor.
+        b (CSRTensor): Right operand CSR tensor.
+
+    Returns:
+        CSRTensor: Resulting CSR tensor representing a - b.
+
+    Raises:
+        ValueError: If matrix shapes do not match.
+    """
+    if a.shape != b.shape:
+        msg = f"Shape mismatch for CSR subtraction: {a.shape} vs {b.shape}"
+        raise ValueError(msg)
+    if a.nnz == 0:
+        b_neg = coo_neg(b.to_coo())
+        return b_neg.to_csr()
+    if b.nnz == 0:
+        return a
+    return coo_sub(a.to_coo(), b.to_coo()).to_csr()
+
+
+def csc_sub(a: CSCTensor, b: CSCTensor) -> CSCTensor:
+    """Subtract two Compressed Sparse Column (CSC) tensors.
+
+    Args:
+        a (CSCTensor): Left operand CSC tensor.
+        b (CSCTensor): Right operand CSC tensor.
+
+    Returns:
+        CSCTensor: Resulting CSC tensor representing a - b.
+
+    Raises:
+        ValueError: If matrix shapes do not match.
+    """
+    if a.shape != b.shape:
+        msg = f"Shape mismatch for CSC subtraction: {a.shape} vs {b.shape}"
+        raise ValueError(msg)
+    if a.nnz == 0:
+        b_neg = coo_neg(b.to_coo())
+        return b_neg.to_csc()
+    if b.nnz == 0:
+        return a
+    return coo_sub(a.to_coo(), b.to_coo()).to_csc()
+
+
+def sparse_softmax(  # noqa: C901
+    matrix: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+    mask: Optional[Union[COOTensor, np.ndarray]] = None,
+) -> COOTensor:
+    """Compute row-wise softmax exclusively over non-zero elements for GNN attention.
+
+    Args:
+        matrix (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Input sparse or dense matrix.
+        mask (Optional[Union[COOTensor, np.ndarray]]): Optional structural mask.
+
+    Returns:
+        COOTensor: Sparse attention matrix with normalized probabilities along rows.
+    """
+    coo: COOTensor = matrix if isinstance(matrix, COOTensor) else (matrix.to_coo() if hasattr(matrix, "to_coo") else COOTensor.from_dense(np.asarray(matrix)))
+    if mask is not None:
+        coo = sparse_mask(coo, mask)
+
+    if coo.nnz == 0:
+        return coo
+
+    rows = coo.indices[0]
+    vals = coo.values.astype(np.float64)
+    n_rows = coo.shape[0]
+
+    # Row-wise max for numerical stability
+    row_max = np.full(n_rows, -np.inf, dtype=np.float64)
+    for r, v in zip(rows, vals):
+        if v > row_max[r]:
+            row_max[r] = v
+
+    # Compute exp(v - max)
+    exp_vals = np.zeros_like(vals)
+    for idx, (r, v) in enumerate(zip(rows, vals)):
+        exp_vals[idx] = np.exp(v - row_max[r])
+
+    # Sum per row
+    row_sum = np.zeros(n_rows, dtype=np.float64)
+    for r, ev in zip(rows, exp_vals):
+        row_sum[r] += ev
+
+    # Normalize
+    out_vals = np.zeros_like(exp_vals, dtype=coo.values.dtype)
+    for idx, (r, ev) in enumerate(zip(rows, exp_vals)):
+        out_vals[idx] = ev / row_sum[r] if row_sum[r] > 0 else 0.0
+
+    return COOTensor(indices=coo.indices, values=out_vals, shape=coo.shape)
+
+
+def graph_norm_adjacency(
+    adj: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+    add_self_loops: bool = True,
+) -> COOTensor:
+    """Compute symmetric normalized graph adjacency matrix D^{-1/2} A D^{-1/2}.
+
+    Args:
+        adj (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Graph adjacency matrix.
+        add_self_loops (bool): Whether to add self-loops (A + I) before normalizing.
+
+    Returns:
+        COOTensor: Symmetrically normalized sparse adjacency matrix.
+    """
+    coo: COOTensor = adj if isinstance(adj, COOTensor) else (adj.to_coo() if hasattr(adj, "to_coo") else COOTensor.from_dense(np.asarray(adj)))
+    n = coo.shape[0]
+
+    if add_self_loops:
+        diag_indices = np.stack([np.arange(n), np.arange(n)], axis=0)
+        diag_values = np.ones(n, dtype=coo.values.dtype)
+        eye_coo = COOTensor(indices=diag_indices, values=diag_values, shape=(n, n))
+        coo = coo_add(coo, eye_coo)
+
+    # Compute row degrees
+    deg = np.zeros(n, dtype=np.float64)
+    for r, v in zip(coo.indices[0], coo.values):
+        deg[r] += float(v)
+
+    # D^{-1/2}
+    deg_inv_sqrt = np.zeros(n, dtype=np.float64)
+    nonzero_mask = deg > 0
+    deg_inv_sqrt[nonzero_mask] = 1.0 / np.sqrt(deg[nonzero_mask])
+
+    # Multiply entries: D^{-1/2}[i] * A[i, j] * D^{-1/2}[j]
+    norm_vals = np.zeros_like(coo.values, dtype=np.float32)
+    for idx, (i, j, v) in enumerate(zip(coo.indices[0], coo.indices[1], coo.values)):
+        norm_vals[idx] = float(deg_inv_sqrt[i] * float(v) * deg_inv_sqrt[j])
+
+    return COOTensor(indices=coo.indices, values=norm_vals, shape=coo.shape)
+
+
+def gnn_spmm_attention(
+    adj: Union[COOTensor, CSRTensor, CSCTensor, np.ndarray],
+    features: np.ndarray,
+    attention_weights: Optional[Union[COOTensor, np.ndarray]] = None,
+) -> np.ndarray:
+    """Compute Graph Neural Network message aggregation with optional attention weights.
+
+    Args:
+        adj (Union[COOTensor, CSRTensor, CSCTensor, np.ndarray]): Graph connectivity adjacency matrix.
+        features (np.ndarray): Node feature representations of shape (N, F).
+        attention_weights (Optional[Union[COOTensor, np.ndarray]]): Optional attention tensor.
+
+    Returns:
+        np.ndarray: Updated node feature matrix after message passing.
+    """
+    coo_adj: COOTensor = adj if isinstance(adj, COOTensor) else (adj.to_coo() if hasattr(adj, "to_coo") else COOTensor.from_dense(np.asarray(adj)))
+    if attention_weights is not None:
+        attn_coo = attention_weights if isinstance(attention_weights, COOTensor) else (attention_weights.to_coo() if hasattr(attention_weights, "to_coo") else COOTensor.from_dense(np.asarray(attention_weights)))
+        norm_attn = sparse_softmax(attn_coo, mask=coo_adj)
+        return spmm(norm_attn, features)
+    return spmm(coo_adj, features)
+
+
+def sparse_dropout(  # noqa: PLR0911
+    tensor: Union[COOTensor, CSRTensor, CSCTensor],
+    drop_rate: float = 0.5,
+    training: bool = True,
+    seed: Optional[int] = None,
+) -> Union[COOTensor, CSRTensor, CSCTensor]:
+    """Apply edge dropout to non-zero values of a sparse matrix for DropEdge regularization.
+
+    Args:
+        tensor (Union[COOTensor, CSRTensor, CSCTensor]): Sparse tensor to regularize.
+        drop_rate (float): Fraction of edges to drop. Defaults to 0.5.
+        training (bool): Whether in training mode. If False, returns tensor unchanged.
+        seed (Optional[int]): Random seed for reproducible dropout.
+
+    Returns:
+        Union[COOTensor, CSRTensor, CSCTensor]: Sparse tensor with dropped edges scaled by 1/(1-p).
+    """
+    if not training or drop_rate <= 0.0 or tensor.nnz == 0:
+        return tensor
+
+    coo = tensor if isinstance(tensor, COOTensor) else tensor.to_coo()
+
+    if drop_rate >= 1.0:
+        empty_indices = np.zeros((len(coo.shape), 0), dtype=coo.indices.dtype)
+        empty_values = np.zeros(0, dtype=coo.values.dtype)
+        coo_res = COOTensor(indices=empty_indices, values=empty_values, shape=coo.shape)
+        if isinstance(tensor, CSRTensor):
+            return coo_res.to_csr()
+        if isinstance(tensor, CSCTensor):
+            return coo_res.to_csc()
+        return coo_res
+
+    keep_prob = 1.0 - drop_rate
+    scale = 1.0 / keep_prob
+
+    rng = np.random.default_rng(seed)
+
+    keep_mask = rng.uniform(0.0, 1.0, size=coo.nnz) < keep_prob
+    if not np.any(keep_mask):
+        empty_indices = np.zeros((len(coo.shape), 0), dtype=coo.indices.dtype)
+        empty_values = np.zeros(0, dtype=coo.values.dtype)
+        coo_res = COOTensor(indices=empty_indices, values=empty_values, shape=coo.shape)
+    else:
+        new_indices = coo.indices[:, keep_mask]
+        new_values = coo.values[keep_mask] * scale
+        coo_res = COOTensor(indices=new_indices, values=new_values.astype(coo.values.dtype), shape=coo.shape)
+
+    if isinstance(tensor, CSRTensor):
+        return coo_res.to_csr()
+    if isinstance(tensor, CSCTensor):
+        return coo_res.to_csc()
+    return coo_res
+
+
+def __getattr__(name: str) -> object:
+    """Fallback to numpy elementwise or array functions for sparse kernels.
+
+    Args:
+        name (str): Attribute or function name.
+
+    Returns:
+        object: Numpy function if available.
+
+    Raises:
+        AttributeError: If attribute is not found in numpy.
+    """
+    if hasattr(np, name):
+        return getattr(np, name)
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

@@ -21,6 +21,16 @@ def test_control_flow_utils():
     assert args[1] == 42
     assert isinstance(args[0], tuple)
 
+    # subgraph without input_specs attribute
+    class SubgraphNoSpecs:
+        def __init__(self):
+            self.nodes = {}
+
+    g_nospecs = SubgraphNoSpecs()
+    ids_nospecs, args_nospecs = _wrap_proxy_inputs((t,), g_nospecs)
+    assert len(ids_nospecs) == 1
+    assert len(args_nospecs) == 1
+
     # get tensor ids
     assert _get_tensor_ids(t) == ["id"]
     assert _get_tensor_ids([t]) == ["id"]

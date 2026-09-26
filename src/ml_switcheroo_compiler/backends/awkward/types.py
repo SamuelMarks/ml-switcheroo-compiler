@@ -269,3 +269,243 @@ def item(data_or_cls: object, data: object = None) -> float:
         return float(actual_data.item())
     numpy_mod = importlib.import_module("numpy")
     return float(numpy_mod.asarray(actual_data).item())
+
+
+def broadcast_ragged(
+    a_or_cls: object,
+    a: object = None,
+    b: object = None,
+) -> tuple[object, object]:
+    """Broadcast two arrays across ragged dimensions without padding.
+
+    Args:
+        a_or_cls (object): First array operand or class context.
+        a (object): First array operand when called as classmethod, or second array operand.
+        b (object): Second array operand when called as classmethod.
+
+    Returns:
+        tuple[object, object]: Broadcast pair of Awkward or nested array structures.
+    """
+    if isinstance(a_or_cls, type):
+        actual_a = a
+        actual_b = b
+    else:
+        actual_a = a_or_cls
+        actual_b = a if b is None else b
+
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "broadcast_arrays"):
+        try:
+            res = ak_mod.broadcast_arrays(actual_a, actual_b)
+            return (res[0], res[1])
+        except Exception:
+            pass
+
+    if isinstance(actual_a, (int, float, bool)) and isinstance(actual_b, (list, tuple)):
+        broadcasted_a = [[actual_a] * len(sub) if isinstance(sub, (list, tuple)) else actual_a for sub in actual_b]
+        return (broadcasted_a, actual_b)
+    if isinstance(actual_b, (int, float, bool)) and isinstance(actual_a, (list, tuple)):
+        broadcasted_b = [[actual_b] * len(sub) if isinstance(sub, (list, tuple)) else actual_b for sub in actual_a]
+        return (actual_a, broadcasted_b)
+
+    return (actual_a, actual_b)
+
+
+def ragged_shape(data_or_cls: object, data: object = None) -> tuple[int | None, ...]:
+    """Infer the shape tuple of a regular or ragged array structure.
+
+    Args:
+        data_or_cls (object): Array or nested sequence or class context.
+        data (object): Array or nested sequence when called as classmethod.
+
+    Returns:
+        tuple[int | None, ...]: Inferred shape with None for ragged variable dimensions.
+    """
+    actual_data = data_or_cls if data is None else data
+    if hasattr(actual_data, "shape"):
+        return tuple(int(d) for d in actual_data.shape)
+    if isinstance(actual_data, (list, tuple)):
+        outer_len = len(actual_data)
+        if outer_len == 0:
+            return (0,)
+        first_sub = actual_data[0]
+        if isinstance(first_sub, (list, tuple)):
+            sub_len = len(first_sub)
+            for sub in actual_data[1:]:
+                if not isinstance(sub, (list, tuple)) or len(sub) != sub_len:
+                    return (outer_len, None)
+            inner_shape = ragged_shape(first_sub)
+            return (outer_len, *inner_shape)
+        return (outer_len,)
+    return ()
+
+
+def is_ragged(data_or_cls: object, data: object = None) -> bool:
+    """Determine whether an array structure contains ragged variable-length dimensions.
+
+    Args:
+        data_or_cls (object): Array or nested sequence or class context.
+        data (object): Array or nested sequence when called as classmethod.
+
+    Returns:
+        bool: True if structure has ragged inner dimensions, False otherwise.
+    """
+    shape = ragged_shape(data_or_cls, data)
+    return any(d is None for d in shape)
+
+
+def to_regular(
+    data_or_cls: object,
+    data: object = None,
+    fill_value: object = None,
+) -> object:
+    """Convert ragged array to regular dense multidimensional structure.
+
+    Args:
+        data_or_cls (object): Ragged array structure or class context.
+        data (object): Ragged array structure when called as classmethod.
+        fill_value (object): Value to pad missing ragged elements.
+
+    Returns:
+        object: Regular dense array or padded nested list.
+    """
+    actual_data = data_or_cls if data is None else data
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "to_regular"):
+        try:
+            return ak_mod.to_regular(actual_data)
+        except Exception:
+            pass
+
+    if isinstance(actual_data, (list, tuple)):
+        lengths = [len(sub) if isinstance(sub, (list, tuple)) else 1 for sub in actual_data]
+        max_len = max(lengths) if lengths else 0
+        pad_val = 0 if fill_value is None else fill_value
+        padded = []
+        for sub in actual_data:
+            if isinstance(sub, (list, tuple)):
+                padded.append(list(sub) + [pad_val] * (max_len - len(sub)))
+            else:
+                padded.append([sub] + [pad_val] * (max_len - 1))
+        numpy_mod = importlib.import_module("numpy")
+        return numpy_mod.asarray(padded)
+
+    numpy_mod = importlib.import_module("numpy")
+    return numpy_mod.asarray(actual_data)
+
+
+def from_regular(data_or_cls: object, data: object = None) -> object:
+    """Convert regular dense structure to Awkward representation.
+
+    Args:
+        data_or_cls (object): Input array or class context.
+        data (object): Input array when called as classmethod.
+
+    Returns:
+        object: Awkward array representation.
+    """
+    actual_data = data_or_cls if data is None else data
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "from_regular"):
+        try:
+            return ak_mod.from_regular(actual_data)
+        except Exception:
+            pass
+    return array(actual_data)
+
+
+def to_numpy(data_or_cls: object, data: object = None) -> object:
+    """Convert Awkward structure to standard host NumPy ndarray.
+
+    Args:
+        data_or_cls (object): Awkward array or class context.
+        data (object): Awkward array when called as classmethod.
+
+    Returns:
+        object: Host NumPy ndarray buffer.
+    """
+    actual_data = data_or_cls if data is None else data
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "to_numpy"):
+        try:
+            return ak_mod.to_numpy(actual_data)
+        except Exception:
+            pass
+    numpy_mod = importlib.import_module("numpy")
+    return numpy_mod.asarray(actual_data)
+
+
+def from_numpy(data_or_cls: object, data: object = None) -> object:
+    """Construct Awkward array from host NumPy ndarray.
+
+    Args:
+        data_or_cls (object): Host NumPy array or class context.
+        data (object): Host NumPy array when called as classmethod.
+
+    Returns:
+        object: Awkward array.
+    """
+    actual_data = data_or_cls if data is None else data
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "from_numpy"):
+        try:
+            return ak_mod.from_numpy(actual_data)
+        except Exception:
+            pass
+    return array(actual_data)
+
+
+def to_list(data_or_cls: object, data: object = None) -> list[object]:
+    """Convert Awkward array or structure to nested Python list.
+
+    Args:
+        data_or_cls (object): Awkward array or class context.
+        data (object): Awkward array when called as classmethod.
+
+    Returns:
+        list[object]: Python nested list.
+    """
+    actual_data = data_or_cls if data is None else data
+    if hasattr(actual_data, "to_list"):
+        return actual_data.to_list()
+    if hasattr(actual_data, "tolist"):
+        return actual_data.tolist()
+    if isinstance(actual_data, (list, tuple)):
+        return list(actual_data)
+    return [actual_data]
+
+
+def from_iter(data_or_cls: object, data: object = None) -> object:
+    """Construct Awkward array from an arbitrary Python iterable.
+
+    Args:
+        data_or_cls (object): Source iterable or class context.
+        data (object): Source iterable when called as classmethod.
+
+    Returns:
+        object: Constructed Awkward array.
+    """
+    actual_data = data_or_cls if data is None else data
+    ak_mod = _get_ak_module()
+    if hasattr(ak_mod, "from_iter"):
+        try:
+            return ak_mod.from_iter(actual_data)
+        except Exception:
+            pass
+    return array(actual_data)
+
+
+def get_layout(data_or_cls: object, data: object = None) -> object:
+    """Retrieve internal layout description of an Awkward structure.
+
+    Args:
+        data_or_cls (object): Awkward array or class context.
+        data (object): Awkward array when called as classmethod.
+
+    Returns:
+        object: Layout object or shape layout description.
+    """
+    actual_data = data_or_cls if data is None else data
+    if hasattr(actual_data, "layout"):
+        return actual_data.layout
+    return {"shape": ragged_shape(actual_data), "is_ragged": is_ragged(actual_data)}

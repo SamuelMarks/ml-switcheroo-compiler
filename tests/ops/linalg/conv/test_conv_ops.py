@@ -84,3 +84,6 @@ def test_conv_exact_shape_deduction() -> None:
     assert conv1d.infer_shape(a, v, mode="full") == (13,)
     assert conv1d.infer_shape(a, v, mode="same") == (10,)
     assert conv1d.infer_shape(a, v, mode="valid") == (7,)
+    assert conv1d.infer_shape(a, v, mode="unknown_default") == (13,)
+    assert conv1d.infer_shape(None, v) == ()
+    assert conv1d.infer_shape(a, None) == ()

@@ -1,19 +1,14 @@
 conv2d:
   body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void conv2d(\n  \
-    \  const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-    \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+    \  const device float* A [[buffer(0)]],\n    const device float* W [[buffer(1)]],\n\
+    \    device float* C [[buffer(2)]],\n    uint3 id [[thread_position_in_grid]])\n\
+    {\n    uint ow = id.x;\n    uint oh = id.y;\n    uint co = id.z;\n    float sum\
+    \ = 0.0f;\n    for (int kh = 0; kh < 3; ++kh) {\n        for (int kw = 0; kw <\
+    \ 3; ++kw) {\n            uint in_idx = (oh + kh) * 32 + (ow + kw);\n        \
+    \    uint w_idx = co * 9 + kh * 3 + kw;\n            sum += A[in_idx] * W[w_idx];\n\
+    \        }\n    }\n    uint out_idx = co * 1024 + oh * 32 + ow;\n    C[out_idx]\
+    \ = sum;\n}\n"
   workgroup_size:
-  - 256
+  - 16
+  - 16
   - 1
-  - 1
-  grid_calc:
-    x: '{H_out} * {W_out}'
-    y: '{C_out}'
-    z: '{N}'
-  type_mappings:
-    float32: float
-    float16: half
-    bfloat16: bfloat
-    int32: int
-    int64: long
-    bool: bool

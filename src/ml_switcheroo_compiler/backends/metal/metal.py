@@ -153,6 +153,100 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[object, ...]) -> object
     return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
 
 
+METAL_SYNTH_MATH_MAP: dict[str, str] = {
+    "cbrt": "cbrt(A[id])",
+    "square": "A[id] * A[id]",
+    "cube": "A[id] * A[id] * A[id]",
+    "reciprocal": "1.0f / A[id]",
+    "hardsilu": "A[id] * clamp(A[id] + 3.0f, 0.0f, 6.0f) / 6.0f",
+    "squareplus": "0.5f * (A[id] + sqrt(A[id] * A[id] + 4.0f))",
+    "softsign": "A[id] / (1.0f + abs(A[id]))",
+    "logsigmoid": "-log(1.0f + exp(-A[id]))",
+    "isnan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "is_nan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "isinf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "is_inf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "isfinite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "is_finite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "shift_left": "float(int(A[id]) << int(B[id]))",
+    "shift_right": "float(int(A[id]) >> int(B[id]))",
+    "fmod": "fmod(A[id], B[id])",
+    "remainder": "remainder(A[id], B[id])",
+    "hypot": "hypot(A[id], B[id])",
+    "where": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "select": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "clamp": "clamp(in_0[id], in_1[id], in_2[id])",
+    "fma": "fma(in_0[id], in_1[id], in_2[id])",
+}
+
+
+def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: Optional[str] = None) -> str:
+    """Synthesize a C++ Metal MSL kernel without fallback placeholder loops.
+
+    Args:
+        clean_op (str): Normalized op identifier.
+        inps (list[str]): Input argument names.
+        scalar_expr (Optional[str]): Explicit scalar math expression if provided.
+
+    Returns:
+        str: Synthesized C++ Metal MSL kernel source.
+    """
+    if len(inps) <= 1:
+        expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
+        helper = f"inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+        return (
+            "#include <metal_stdlib>\n"
+            "using namespace metal;\n"
+            f"{helper}kernel void {clean_op}_kernel(\n"
+            "    const device float* A [[buffer(0)]],\n"
+            "    device float* C [[buffer(1)]],\n"
+            "    constant uint& N [[buffer(2)]],\n"
+            "    uint id [[thread_position_in_grid]])\n"
+            "{\n"
+            "    if (id < N) {\n"
+            f"        C[id] = {expr};\n"
+            "    }\n"
+            "}\n"
+        )
+    if len(inps) == 2:
+        expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
+        helper = f"inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+        return (
+            "#include <metal_stdlib>\n"
+            "using namespace metal;\n"
+            f"{helper}kernel void {clean_op}_kernel(\n"
+            "    const device float* A [[buffer(0)]],\n"
+            "    const device float* B [[buffer(1)]],\n"
+            "    device float* C [[buffer(2)]],\n"
+            "    constant uint& N [[buffer(3)]],\n"
+            "    uint id [[thread_position_in_grid]])\n"
+            "{\n"
+            "    if (id < N) {\n"
+            f"        C[id] = {expr};\n"
+            "    }\n"
+            "}\n"
+        )
+    params = "\n".join([f"    const device float* in_{i} [[buffer({i})]]," for i in range(len(inps))])
+    call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
+    fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
+    expr = scalar_expr or METAL_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
+    helper = f"inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in METAL_SYNTH_MATH_MAP and not scalar_expr else ""
+    return (
+        "#include <metal_stdlib>\n"
+        "using namespace metal;\n"
+        f"{helper}kernel void {clean_op}_kernel(\n"
+        f"{params}\n"
+        f"    device float* C [[buffer({len(inps)})]],\n"
+        f"    constant uint& N [[buffer({len(inps) + 1})]],\n"
+        "    uint id [[thread_position_in_grid]])\n"
+        "{\n"
+        "    if (id < N) {\n"
+        f"        C[id] = {expr};\n"
+        "    }\n"
+        "}\n"
+    )
+
+
 @register_backend("metal")
 class MetalCodeGenerator(BaseGenerator):
     """Metal Code Generator."""
@@ -248,53 +342,8 @@ class MetalCodeGenerator(BaseGenerator):
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
             inps = getattr(node, "inputs", []) or []
-            if len(inps) <= 1:
-                body = (
-                    "#include <metal_stdlib>\n"
-                    "using namespace metal;\n"
-                    f"kernel void {clean_op}_kernel(\n"
-                    "    const device float* A [[buffer(0)]],\n"
-                    "    device float* C [[buffer(1)]],\n"
-                    "    constant uint& N [[buffer(2)]],\n"
-                    "    uint id [[thread_position_in_grid]])\n"
-                    "{\n"
-                    "    if (id < N) {\n"
-                    "        C[id] = A[id];\n"
-                    "    }\n"
-                    "}\n"
-                )
-            elif len(inps) == 2:
-                body = (
-                    "#include <metal_stdlib>\n"
-                    "using namespace metal;\n"
-                    f"kernel void {clean_op}_kernel(\n"
-                    "    const device float* A [[buffer(0)]],\n"
-                    "    const device float* B [[buffer(1)]],\n"
-                    "    device float* C [[buffer(2)]],\n"
-                    "    constant uint& N [[buffer(3)]],\n"
-                    "    uint id [[thread_position_in_grid]])\n"
-                    "{\n"
-                    "    if (id < N) {\n"
-                    "        C[id] = A[id] + B[id];\n"
-                    "    }\n"
-                    "}\n"
-                )
-            else:
-                buf_params = "\n".join([f"    const device float* in_{i} [[buffer({i})]]," for i in range(len(inps))])
-                body = (
-                    "#include <metal_stdlib>\n"
-                    "using namespace metal;\n"
-                    f"kernel void {clean_op}_kernel(\n"
-                    f"{buf_params}\n"
-                    f"    device float* C [[buffer({len(inps)})]],\n"
-                    f"    constant uint& N [[buffer({len(inps) + 1})]],\n"
-                    "    uint id [[thread_position_in_grid]])\n"
-                    "{\n"
-                    "    if (id < N) {\n"
-                    "        C[id] = in_0[id];\n"
-                    "    }\n"
-                    "}\n"
-                )
+            scalar_expr = getattr(node, "attributes", {}).get("scalar_expr")
+            body = _synthesize_metal_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
                 grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),

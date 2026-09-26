@@ -392,7 +392,16 @@ class WasmCodeGenerator(BaseGenerator):
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
     def visit_WhileLoop(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate WhileLoop."""
+        """Generate WhileLoop with loop option annotations.
+
+        Args:
+            node (IRNode): The IR node representing the loop.
+            op_type (str): The operation type name.
+            clean_id (str): Sanitized identifier for generated code variables.
+            inputs (list[str]): Input variable names.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template: dict[str, str] = get_wasm_template("while_loop")
@@ -405,16 +414,47 @@ class WasmCodeGenerator(BaseGenerator):
             loop_body = subgen.generate()
 
         condition_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
+        max_iters = attrs.get("maximum_iterations")
+        if max_iters is None:
+            max_iters = attrs.get("max_iters", 10)
+        parallel_iters = attrs.get("parallel_iterations")
+        swap_memory = attrs.get("swap_memory")
+        shape_invariants = attrs.get("shape_invariants")
+
+        annotations: list[str] = []
+        if parallel_iters is not None:
+            annotations.append(f"parallel_iterations={parallel_iters}")
+        if swap_memory is not None:
+            annotations.append(f"swap_memory={swap_memory}")
+        if max_iters is not None:
+            annotations.append(f"maximum_iterations={max_iters}")
+        if shape_invariants is not None:
+            annotations.append(f"shape_invariants={shape_invariants}")
+        if annotations:
+            self.add_line(f"  // Loop annotations: {', '.join(annotations)}")
 
         body: str = template["body"].format(
             in0=inputs[0] if inputs else "dummy",
             clean_id=clean_id,
             condition_expr=condition_expr,
-            max_iters=attrs.get("max_iters", 10),
+            max_iters=max_iters,
             loop_body=loop_body,
         )
         for line in body.split("\n"):
             self.add_line(line)
+
+    def visit_Loop(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Loop (alias for WhileLoop).
+
+        Args:
+            node (IRNode): The IR node representing the loop.
+            op_type (str): The operation type name.
+            clean_id (str): Sanitized identifier for generated code variables.
+            inputs (list[str]): Input variable names.
+            shape (list[int]): Shape dimensions.
+            nelem (int): Total number of elements.
+        """
+        self.visit_WhileLoop(node, op_type, clean_id, inputs, shape, nelem)
 
     def visit_Cond(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate Cond with dynamic subgraph lowering."""
@@ -930,11 +970,16 @@ class WasmCodeGenerator(BaseGenerator):
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-                intr = data.get("intrinsics", {}).get(op_type)
+                intrinsics_dict = data.get("intrinsics", {})
+                intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
                 if intr:
                     simd_macro = intr.get("macro_name", "")
                     if intr.get("scalar_fallback"):
                         scalar_expr = intr["scalar_fallback"].format(f"buf_{in0}[i_{clean_id}]", f"buf_{in1}[i_{clean_id}]")
+                if not scalar_expr:
+                    scalars_dict = data.get("scalars", {})
+                    if op_type.lower() in scalars_dict:
+                        scalar_expr = f"_scalar_{op_type.lower()}(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])"
         if not scalar_expr:
             binary_scalars: dict[str, str] = {
                 "add": f"buf_{in0}[i_{clean_id}] + buf_{in1}[i_{clean_id}]",
@@ -984,13 +1029,15 @@ class WasmCodeGenerator(BaseGenerator):
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-                intr = data.get("intrinsics", {}).get(op_type)
+                intrinsics_dict = data.get("intrinsics", {})
+                intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
                 if intr:
                     simd_macro = intr.get("macro_name", "")
                     if intr.get("scalar_fallback"):
                         scalar_expr = intr["scalar_fallback"].format(f"buf_{in_id}[i_{clean_id}]")
                 if not scalar_expr:
-                    scalar_def = data.get("scalars", {}).get(op_type.lower())
+                    scalars_dict = data.get("scalars", {})
+                    scalar_def = scalars_dict.get(op_type.lower())
                     if scalar_def:
                         body_str = scalar_def.replace("return ", "").rstrip(";")
                         scalar_expr = body_str.replace("a", f"buf_{in_id}[i_{clean_id}]")
@@ -1066,6 +1113,26 @@ class WasmCodeGenerator(BaseGenerator):
         mapping: dict[str, WasmAttrType] = op_def.get("variants", {}).get("edge_wasm_simd", {})
 
         if not mapping:
+            import os
+
+            import yaml
+
+            from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
+
+            yaml_path: str = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
+            is_intrinsic = False
+            if os.path.exists(yaml_path):
+                with open(yaml_path) as f:
+                    idata = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
+                    is_intrinsic = op_type in idata.get("intrinsics", {}) or op_type.lower() in idata.get("scalars", {}) or op_type.lower() in [k.lower() for k in idata.get("intrinsics", {})]
+
+            if is_intrinsic:
+                if len(inputs) <= 1:
+                    self._generate_vector_unrolled_op(node, op_type, clean_id, inputs, shape, nelem)
+                else:
+                    self._generate_binary_simd_op(node, op_type, clean_id, inputs, shape, nelem)
+                return
+
             raise UnimplementedMathError(f"Missing WASM SIMD template for {op_type}")
         else:
             template: dict[str, str] = get_wasm_template(mapping["template"])

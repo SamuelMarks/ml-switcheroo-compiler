@@ -114,7 +114,7 @@ class ArrayAtIndexer:
 class TensorConfig:
     """Configuration for a Tensor."""
 
-    shape: tuple[Union[int, str], ...]
+    shape: tuple[Union[int, str, object], ...]
     dtype: Union["DType", str]
     device: Union["Device", str]
     requires_grad: bool = False
@@ -159,20 +159,25 @@ class Tensor(
         """
         self._data = data
 
-        def _parse_dim(s) -> Union[int, str]:
+        def _parse_dim(s: object) -> Union[int, str, object]:
             """Parse dimension.
 
             Args:
-            s (object): The s parameter.
+                s (object): The s parameter.
 
-            Returns: Tensor: Result.
+            Returns:
+                Union[int, str, object]: Result dimension.
             """
+            from ml_switcheroo_compiler.ir.shape_system import SymNode
+
+            if isinstance(s, SymNode):
+                return s
             try:
-                return int(s)
+                return int(s)  # type: ignore[arg-type]
             except (ValueError, TypeError):
                 return str(s)
 
-        self._shape: tuple[Union[int, str], ...] = tuple(_parse_dim(s) for s in config.shape)
+        self._shape: tuple[Union[int, str, object], ...] = tuple(_parse_dim(s) for s in config.shape)
         self._dtype = config.dtype
         self._device = config.device
         self._requires_grad = config.requires_grad

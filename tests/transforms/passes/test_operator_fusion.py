@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import LogicalNode
 
 
@@ -320,3 +322,140 @@ def test_operator_fusion_extra_coverage_3():
 
     engine = PatternMatchingEngine([MockRule2()])
     engine.apply_passes(g)
+
+
+def test_operator_fusion_all_remaining_branches() -> None:
+    """Test all remaining branch coverage in operator_fusion.py."""
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
+        FusionRule,
+        HorizontalFusionPass,
+        MatchMapType,
+        NodePattern,
+        PatternMatchingEngine,
+        VerticalFusionPass,
+        fuse_conv_bias_relu,
+        fuse_elementwise_activation,
+        operator_fusion_pass,
+    )
+
+    # 1. Line 249->253: graph without hasattr(graph, 'inputs') or where optimized is True and no inputs
+    class MinimalGraph:
+        def __init__(self) -> None:
+            self.nodes: dict[str, IRNode] = {}
+            self.outputs: list[str] = []
+
+    min_g = MinimalGraph()
+    min_g.nodes["a_id"] = IRNode(id="a_id", op_type="A")
+    min_g.outputs = ["a_id"]
+
+    class MockRule(FusionRule):
+        def __init__(self) -> None:
+            super().__init__("mock", NodePattern(capture="x"))
+
+        def apply(self, graph: IRGraph, match: MatchMapType) -> dict[str, IRNode] | None:
+            node = match.get("x")
+            if isinstance(node, IRNode) and node.id == "a_id":
+                return {"a_id": IRNode(id="a_fused", op_type="A_fused", inputs=[])}
+            return None
+
+    eng = PatternMatchingEngine([MockRule()])
+    assert eng.apply_passes(min_g)  # type: ignore[arg-type]
+    assert min_g.outputs == ["a_fused"]
+
+    # 2. Lines 711->710, 716, 721, 723, 732->734, 737: fuse_conv_bias_relu branches
+    # Branch 711->710: bias_node.op_type not Add/BiasAdd or len(bias_node.inputs) != 2
+    g_bias_wrong_op = IRGraph()
+    g_bias_wrong_op.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_bias_wrong_op.nodes["mul"] = IRNode(id="mul", op_type="Mul", inputs=["conv", "bias"])
+    g_bias_wrong_op.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["mul"])
+    assert not fuse_conv_bias_relu(g_bias_wrong_op)
+
+    g_bias_wrong_len = IRGraph()
+    g_bias_wrong_len.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_bias_wrong_len.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv"])
+    g_bias_wrong_len.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    assert not fuse_conv_bias_relu(g_bias_wrong_len)
+
+    # Line 716: bias_node has multiple consumers (consumer_count != 1)
+    g_bias_multi = IRGraph()
+    g_bias_multi.nodes["in_x"] = IRNode(id="in_x", op_type="Input", inputs=[])
+    g_bias_multi.nodes["weight"] = IRNode(id="weight", op_type="Input", inputs=[])
+    g_bias_multi.nodes["bias"] = IRNode(id="bias", op_type="Input", inputs=[])
+    g_bias_multi.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_bias_multi.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv", "bias"])
+    g_bias_multi.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    g_bias_multi.nodes["other"] = IRNode(id="other", op_type="Neg", inputs=["add"])
+    assert not fuse_conv_bias_relu(g_bias_multi)
+
+    # Line 721 & 732->734: cand is None or cand not Conv, so conv_id is None; or len(remaining) == 0
+    g_no_conv = IRGraph()
+    g_no_conv.nodes["x"] = IRNode(id="x", op_type="Add", inputs=["in1", "in2"])
+    g_no_conv.nodes["bias"] = IRNode(id="bias", op_type="Constant", inputs=[])
+    g_no_conv.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "bias"])
+    g_no_conv.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    assert not fuse_conv_bias_relu(g_no_conv)
+
+    # Test remaining branch where cand is Conv but bias_node has inputs [conv, conv] (len(remaining) == 0)
+    g_no_remaining = IRGraph()
+    g_no_remaining.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_no_remaining.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv", "conv"])
+    g_no_remaining.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    assert not fuse_conv_bias_relu(g_no_remaining)
+
+    # Line 737: conv has multiple consumers (consumer_count != 1)
+    g_conv_multi = IRGraph()
+    g_conv_multi.nodes["in_x"] = IRNode(id="in_x", op_type="Input", inputs=[])
+    g_conv_multi.nodes["weight"] = IRNode(id="weight", op_type="Input", inputs=[])
+    g_conv_multi.nodes["bias"] = IRNode(id="bias", op_type="Input", inputs=[])
+    g_conv_multi.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_conv_multi.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv", "bias"])
+    g_conv_multi.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    g_conv_multi.nodes["extra"] = IRNode(id="extra", op_type="Neg", inputs=["conv"])
+    assert not fuse_conv_bias_relu(g_conv_multi)
+
+    # Test out_id in consumer_counts (line 711->712)
+    g_conv_out = IRGraph()
+    g_conv_out.nodes["conv"] = IRNode(id="conv", op_type="Conv2D", inputs=["in_x", "weight"])
+    g_conv_out.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["conv", "bias"])
+    g_conv_out.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    g_conv_out.outputs = ["nonexistent_out", "relu"]
+    # Also test an act_node that triggers line 716 continue: op_type not in activation list or inputs != 1
+    g_conv_out.nodes["multi_input_relu"] = IRNode(id="multi_input_relu", op_type="Relu", inputs=["add", "other"])
+    assert not fuse_conv_bias_relu(g_conv_out)
+
+    # 3. Lines 787->786, 790->789, 795: fuse_elementwise_activation branches
+    # Test out_id in consumer_counts (line 790->791)
+    g_elem_out = IRGraph()
+    g_elem_out.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["in1", "in2"])
+    g_elem_out.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    g_elem_out.outputs = ["nonexistent_out", "relu"]
+    # And trigger line 795 continue: act_node op_type in activation list but len(inputs) != 1
+    g_elem_out.nodes["multi_input_relu"] = IRNode(id="multi_input_relu", op_type="Relu", inputs=["add", "other"])
+    assert not fuse_elementwise_activation(g_elem_out)
+
+    # Line 790: elem_node is None or not in ELEMENTWISE_OPS
+    g_elem_not_elem = IRGraph()
+    g_elem_not_elem.nodes["matmul"] = IRNode(id="matmul", op_type="Matmul", inputs=["in1", "in2"])
+    g_elem_not_elem.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["matmul"])
+    assert not fuse_elementwise_activation(g_elem_not_elem)
+
+    # Line 795: elem_node consumer_count != 1
+    g_elem_multi = IRGraph()
+    g_elem_multi.nodes["in1"] = IRNode(id="in1", op_type="Input", inputs=[])
+    g_elem_multi.nodes["in2"] = IRNode(id="in2", op_type="Input", inputs=[])
+    g_elem_multi.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["in1", "in2"])
+    g_elem_multi.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=["add"])
+    g_elem_multi.nodes["extra"] = IRNode(id="extra", op_type="Neg", inputs=["add"])
+    assert not fuse_elementwise_activation(g_elem_multi)
+
+    # 4. Lines 959, 962: operator_fusion_pass triggering vertical_modified and horizontal_modified
+    from unittest.mock import patch
+
+    g_pass = IRGraph()
+    with (
+        patch.object(VerticalFusionPass, "run", return_value=True),
+        patch.object(HorizontalFusionPass, "run", return_value=True),
+        patch("ml_switcheroo_compiler.transforms.passes.operator_fusion.fuse_elementwise_clusters", return_value=True),
+    ):
+        assert operator_fusion_pass(g_pass)

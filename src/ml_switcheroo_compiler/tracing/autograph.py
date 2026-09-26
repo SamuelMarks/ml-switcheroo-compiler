@@ -2,9 +2,20 @@
 """Graph Compilation and AST Processing for AutoGraph capabilities."""
 
 import functools
+from types import TracebackType
 from typing import Callable, Optional, TypeVar, Union
 
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
 F = TypeVar("F", bound=Callable[..., object])
+
+ShapeInvariantType = Union[
+    tuple[Optional[int], ...],
+    list[tuple[Optional[int], ...]],
+    dict[str, tuple[Optional[int], ...]],
+    list[Optional[int]],
+    tuple[list[Optional[int]], ...],
+]
 
 
 class LoopOptions:
@@ -15,7 +26,7 @@ class LoopOptions:
         parallel_iterations: Optional[int] = None,
         swap_memory: Optional[bool] = None,
         maximum_iterations: Optional[int] = None,
-        shape_invariants=None,
+        shape_invariants: Optional[ShapeInvariantType] = None,
     ) -> None:
         """Initialize the LoopOptions.
 
@@ -23,31 +34,80 @@ class LoopOptions:
             parallel_iterations (Optional[int]): The maximum number of iterations allowed to run in parallel.
             swap_memory (Optional[bool]): Whether to enable CPU-GPU memory swapping for large loops.
             maximum_iterations (Optional[int]): The maximum number of loop iterations to execute.
-            shape_invariants (Optional[object]): Metadata describing the invariant shape constraints of loop variables.
+            shape_invariants (Optional[ShapeInvariantType]): Metadata describing the invariant shape constraints of loop variables.
         """
-        self.parallel_iterations = parallel_iterations
-        self.swap_memory = swap_memory
-        self.maximum_iterations = maximum_iterations
-        self.shape_invariants = shape_invariants
+        self.parallel_iterations: Optional[int] = parallel_iterations
+        self.swap_memory: Optional[bool] = swap_memory
+        self.maximum_iterations: Optional[int] = maximum_iterations
+        self.shape_invariants: Optional[ShapeInvariantType] = shape_invariants
+        self._prev_options: Optional[LoopOptions] = None
+
+    def __enter__(self) -> "LoopOptions":
+        """Enter loop options context and inject onto active tracing state.
+
+        Returns:
+            LoopOptions: The active loop options instance.
+        """
+        self._prev_options = global_tracing_state.current_loop_options
+        global_tracing_state.current_loop_options = self
+        if global_tracing_state.active_graph is not None:
+            global_tracing_state.active_graph.loop_options = self
+            metadata = getattr(global_tracing_state.active_graph, "metadata", None)
+            if isinstance(metadata, dict):
+                metadata["loop_options"] = self
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Exit loop options context and restore previous tracing state.
+
+        Args:
+            exc_type (Optional[type[BaseException]]): Exception type if an exception was raised.
+            exc_val (Optional[BaseException]): Exception instance if an exception was raised.
+            exc_tb (Optional[TracebackType]): Traceback if an exception was raised.
+        """
+        global_tracing_state.current_loop_options = self._prev_options
+        if global_tracing_state.active_graph is not None:
+            global_tracing_state.active_graph.loop_options = self._prev_options
+            metadata = getattr(global_tracing_state.active_graph, "metadata", None)
+            if isinstance(metadata, dict):
+                metadata["loop_options"] = self._prev_options
 
 
 def set_loop_options(
     parallel_iterations: Optional[int] = None,
     swap_memory: Optional[bool] = None,
     maximum_iterations: Optional[int] = None,
-    shape_invariants=None,
-) -> None:
+    shape_invariants: Optional[ShapeInvariantType] = None,
+) -> LoopOptions:
     """Set dynamic loop unrolling options for a loop in the active graph trace.
 
     Args:
         parallel_iterations (Optional[int]): The maximum number of parallel loop iterations.
         swap_memory (Optional[bool]): Enable or disable memory swapping.
         maximum_iterations (Optional[int]): Hard limit on the number of loop iterations.
-        shape_invariants (Optional[object]): Tensor shape invariants to enforce during the loop execution.
+        shape_invariants (Optional[ShapeInvariantType]): Tensor shape invariants to enforce during the loop execution.
+
+    Returns:
+        LoopOptions: The configured LoopOptions instance injected into the active trace context.
     """
-    # In a full implementation, this might push a context onto the builder
-    # No-op in eager trace
-    return
+    options = LoopOptions(
+        parallel_iterations=parallel_iterations,
+        swap_memory=swap_memory,
+        maximum_iterations=maximum_iterations,
+        shape_invariants=shape_invariants,
+    )
+    if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
+        global_tracing_state.current_loop_options = options
+        global_tracing_state.active_graph.loop_options = options
+        metadata = getattr(global_tracing_state.active_graph, "metadata", None)
+        if isinstance(metadata, dict):
+            metadata["loop_options"] = options
+    return options
 
 
 def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:

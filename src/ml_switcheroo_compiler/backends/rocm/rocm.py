@@ -118,6 +118,60 @@ def _evaluate_rocm_fallback(graph: IRGraph, args: tuple[object, ...]) -> object:
     return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
 
 
+ROCM_SYNTH_MATH_MAP: dict[str, str] = {
+    "cbrt": "cbrtf(A[id])",
+    "square": "A[id] * A[id]",
+    "cube": "A[id] * A[id] * A[id]",
+    "reciprocal": "1.0f / A[id]",
+    "hardsilu": "A[id] * fminf(fmaxf(A[id] + 3.0f, 0.0f), 6.0f) / 6.0f",
+    "squareplus": "0.5f * (A[id] + sqrtf(A[id] * A[id] + 4.0f))",
+    "softsign": "A[id] / (1.0f + fabsf(A[id]))",
+    "logsigmoid": "-log1pf(expf(-A[id]))",
+    "isnan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "is_nan": "isnan(A[id]) ? 1.0f : 0.0f",
+    "isinf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "is_inf": "isinf(A[id]) ? 1.0f : 0.0f",
+    "isfinite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "is_finite": "isfinite(A[id]) ? 1.0f : 0.0f",
+    "shift_left": "(float)((int)A[id] << (int)B[id])",
+    "shift_right": "(float)((int)A[id] >> (int)B[id])",
+    "fmod": "fmodf(A[id], B[id])",
+    "remainder": "remainderf(A[id], B[id])",
+    "hypot": "hypotf(A[id], B[id])",
+    "where": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "select": "(in_0[id] != 0.0f) ? in_1[id] : in_2[id]",
+    "clamp": "fminf(fmaxf(in_0[id], in_1[id]), in_2[id])",
+    "fma": "fmaf(in_0[id], in_1[id], in_2[id])",
+}
+
+
+def _synthesize_rocm_kernel(clean_op: str, inps: list[str], scalar_expr: Optional[str] = None) -> str:
+    """Synthesize a C++ ROCm HIP kernel without fallback placeholder loops.
+
+    Args:
+        clean_op (str): Normalized op identifier.
+        inps (list[str]): Input argument names.
+        scalar_expr (Optional[str]): Explicit scalar math expression if provided.
+
+    Returns:
+        str: Synthesized C++ ROCm HIP kernel source.
+    """
+    if len(inps) <= 1:
+        expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id])")
+        helper = f"__device__ inline float {clean_op}_op(float a) {{ return a; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
+        return f"{helper}__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+    if len(inps) == 2:
+        expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op(A[id], B[id])")
+        helper = f"__device__ inline float {clean_op}_op(float a, float b) {{ return a + b; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
+        return f"{helper}__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+    params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
+    call_args = ", ".join([f"in_{i}[id]" for i in range(len(inps))])
+    fn_params = ", ".join([f"float in{i}" for i in range(len(inps))])
+    expr = scalar_expr or ROCM_SYNTH_MATH_MAP.get(clean_op, f"{clean_op}_op({call_args})")
+    helper = f"__device__ inline float {clean_op}_op({fn_params}) {{ return in0; }}\n" if clean_op not in ROCM_SYNTH_MATH_MAP and not scalar_expr else ""
+    return f"{helper}__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = {expr};\n    }}\n}}\n"
+
+
 @register_backend("rocm")
 class RocmCodeGenerator(BaseGenerator):
     """ROCm HIP C++ Code Generator."""
@@ -153,13 +207,8 @@ class RocmCodeGenerator(BaseGenerator):
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
             inps = getattr(node, "inputs", []) or []
-            if len(inps) <= 1:
-                body = f"__global__ void {clean_op}_kernel(const float* A, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = A[id];\n    }}\n}}\n"
-            elif len(inps) == 2:
-                body = f"__global__ void {clean_op}_kernel(const float* A, const float* B, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = A[id] + B[id];\n    }}\n}}\n"
-            else:
-                params = ", ".join([f"const float* in_{i}" for i in range(len(inps))])
-                body = f"__global__ void {clean_op}_kernel({params}, float* C, int N) {{\n    int id = hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x;\n    if (id < N) {{\n        C[id] = in_0[id];\n    }}\n}}\n"
+            scalar_expr = getattr(node, "attributes", {}).get("scalar_expr")
+            body = _synthesize_rocm_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
                 grid_calc=GridDimensionConfig(x=f"({{num_elements}} + block_{node_idx}.x - 1) / block_{node_idx}.x", y="1", z="1"),

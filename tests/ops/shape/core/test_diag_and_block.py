@@ -360,3 +360,22 @@ def test_top_k_scalar(mocker):
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value=("val", "idx"))
     assert top_k(t, 2) == (("val", "idx"), ("val", "idx"))
+
+
+def test_pad_and_tile_remaining_missing_branches() -> None:
+    """Test DynamicShape, Rank, Size infer_shape methods, nested RavelMultiIndex, and multi-dim Searchsorted."""
+    assert DynamicShape().infer_shape(MockTensor((2, 3, 4))) == (3,)
+    assert Rank().infer_shape(MockTensor((2, 3))) == ()
+    assert Size().infer_shape(MockTensor((2, 3))) == ()
+
+    from ml_switcheroo_compiler.ops.shape.pad_and_tile import RavelMultiIndex, Searchsorted
+
+    op_ravel = RavelMultiIndex()
+    assert op_ravel.infer_shape([[MockTensor((2, 3))]]) == (2, 3)
+
+    op_search = Searchsorted()
+    seq_2d = MockTensor((2, 10))
+    v_2d = MockTensor((2, 5))
+    v_1d = MockTensor((5,))
+    assert op_search.infer_shape(seq_2d, v_2d) == (2, 5)
+    assert op_search.infer_shape(seq_2d, v_1d) == (2, 5)

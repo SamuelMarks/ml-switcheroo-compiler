@@ -1,19 +1,24 @@
 reducemean:
   body: "#include <metal_stdlib>\nusing namespace metal;\nkernel void reducemean(\n\
     \    const device float* A [[buffer(0)]],\n    device float* C [[buffer(1)]],\n\
-    \    uint id [[thread_position_in_grid]])\n{\n    C[id] = A[id];\n}\n"
+    \    constant uint& outer_size [[buffer(2)]],\n    constant uint& reduce_size\
+    \ [[buffer(3)]],\n    constant uint& inner_size [[buffer(4)]],\n    uint3 id [[thread_position_in_grid]])\n\
+    {\n    uint o = id.z;\n    uint i = id.x;\n    if (o < outer_size && i < inner_size)\
+    \ {\n        float s = 0.0f;\n        for (uint r = 0; r < reduce_size; ++r) {\n\
+    \            s += A[(o * reduce_size + r) * inner_size + i];\n        }\n    \
+    \    C[o * inner_size + i] = s / float(reduce_size);\n    }\n}\n"
   workgroup_size:
   - 256
   - 1
   - 1
   grid_calc:
-    x: '{num_elements}'
+    x: ({num_elements} + block_{node_idx}.x - 1) / block_{node_idx}.x
     y: '1'
     z: '1'
   type_mappings:
-    float32: float
-    float16: half
     bfloat16: bfloat
+    bool: bool
+    float16: half
+    float32: float
     int32: int
     int64: long
-    bool: bool

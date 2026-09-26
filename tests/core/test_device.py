@@ -120,6 +120,11 @@ def test_device_functions_missing_support() -> None:
         with pytest.warns(UserWarning, match="does not support clear_cache()"):
             clear_cache()
 
+    dummy_with_cache = MagicMock()
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=dummy_with_cache):
+        clear_cache()
+        dummy_with_cache.clear_cache.assert_called_once()
+
 
 def test_device_classes() -> None:
     """Test Device, Stream, and StreamContext structures."""

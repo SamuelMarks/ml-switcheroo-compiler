@@ -93,6 +93,47 @@ def validate_workgroup_size(x: int, y: int = 1, z: int = 1) -> None:
         raise WGSLValidationError(f"Total workgroup invocations ({x * y * z}) exceed WebGPU minimum guaranteed limit of 256")
 
 
+def validate_memory_layout(address_space: str, access_mode: Optional[str] = None) -> None:
+    """Validate memory layout address space and access mode against WebGPU specifications.
+
+    Args:
+        address_space (str): Address space qualifier (e.g., 'storage', 'uniform', 'workgroup').
+        access_mode (Optional[str], optional): Access mode qualifier (e.g., 'read', 'read_write').
+
+    Raises:
+        WGSLValidationError: If address space or access mode is invalid according to WebGPU.
+    """
+    valid_address_spaces: set[str] = {"storage", "uniform", "workgroup", "private", "function"}
+    if address_space not in valid_address_spaces:
+        raise WGSLValidationError(f"Invalid WGSL address space qualifier '{address_space}', expected one of {valid_address_spaces}")
+    if access_mode is not None:
+        valid_access_modes: set[str] = {"read", "write", "read_write"}
+        if access_mode not in valid_access_modes:
+            raise WGSLValidationError(f"Invalid WGSL access mode '{access_mode}', expected one of {valid_access_modes}")
+        if address_space == "uniform" and access_mode != "read":
+            raise WGSLValidationError(f"Uniform address space only supports 'read' access mode, got '{access_mode}'")
+        if address_space == "storage" and access_mode not in ("read", "read_write"):
+            raise WGSLValidationError(f"Storage buffer address space supports 'read' or 'read_write' access modes, got '{access_mode}'")
+        if address_space == "workgroup" and access_mode != "read_write":
+            raise WGSLValidationError(f"Workgroup address space only supports 'read_write' access mode, got '{access_mode}'")
+
+
+def validate_binding_limits(group: int, binding: int) -> None:
+    """Validate @group and @binding indices against WebGPU specification limits.
+
+    Args:
+        group (int): Bind group index.
+        binding (int): Binding index within bind group.
+
+    Raises:
+        WGSLValidationError: If group or binding index exceeds WebGPU guaranteed minimum limits.
+    """
+    if group < 0 or group >= 4:
+        raise WGSLValidationError(f"Bind group index {group} exceeds WebGPU minimum guaranteed limit of 4 (allowed: 0..3)")
+    if binding < 0 or binding >= 64:
+        raise WGSLValidationError(f"Binding index {binding} exceeds WebGPU standard limit of 64 (allowed: 0..63)")
+
+
 class WGSLNode:
     """Base WGSL AST Node."""
 
@@ -102,6 +143,13 @@ class WGSLNode:
         Raises:
             WGSLValidationError: If node structure violates specifications.
         """
+        for attr_val in self.__dict__.values():
+            if isinstance(attr_val, WGSLNode):
+                attr_val.validate()
+            elif isinstance(attr_val, (list, tuple)):
+                for item in attr_val:
+                    if isinstance(item, WGSLNode):
+                        item.validate()
 
 
 class WGSLRaw(WGSLNode):
@@ -116,7 +164,85 @@ class WGSLRaw(WGSLNode):
         self.code = code
 
     def validate(self) -> None:
-        """Validate raw node."""
+        """Validate raw string node against WebGPU specifications.
+
+        Raises:
+            WGSLValidationError: If delimiters are unbalanced or WebGPU limits are violated.
+        """
+        pairs: dict[str, str] = {"(": ")", "{": "}", "[": "]"}
+        stack: list[str] = []
+        for char in self.code:
+            if char in pairs:
+                stack.append(pairs[char])
+            elif char in pairs.values():
+                if not stack or stack.pop() != char:
+                    raise WGSLValidationError(f"Unbalanced delimiter '{char}' in raw WGSL code")
+        if stack:
+            raise WGSLValidationError(f"Unclosed delimiter '{stack[-1]}' in raw WGSL code")
+
+        for match in WORKGROUP_SIZE_PATTERN.finditer(self.code):
+            x = int(match.group(1))
+            y = int(match.group(2)) if match.group(2) else 1
+            z = int(match.group(3)) if match.group(3) else 1
+            validate_workgroup_size(x, y, z)
+
+        group_pattern: re.Pattern[str] = re.compile(r"@group\s*\(\s*(\d+)\s*\)")
+        for g_match in group_pattern.finditer(self.code):
+            g_idx = int(g_match.group(1))
+            if g_idx < 0 or g_idx >= 4:
+                raise WGSLValidationError(f"Bind group index {g_idx} exceeds WebGPU minimum guaranteed limit of 4")
+
+        binding_pattern: re.Pattern[str] = re.compile(r"@binding\s*\(\s*(\d+)\s*\)")
+        for b_match in binding_pattern.finditer(self.code):
+            b_idx = int(b_match.group(1))
+            if b_idx < 0 or b_idx >= 64:
+                raise WGSLValidationError(f"Binding index {b_idx} exceeds WebGPU limit of 64")
+
+        var_qual_pattern: re.Pattern[str] = re.compile(r"var\s*<\s*([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*))?\s*>")
+        for v_match in var_qual_pattern.finditer(self.code):
+            space = v_match.group(1)
+            access = v_match.group(2)
+            validate_memory_layout(space, access)
+
+
+class WGSLBinding(WGSLNode):
+    """WGSL Resource Binding Declaration (@group(G) @binding(B) var<address_space, access_mode> name: type)."""
+
+    def __init__(
+        self,
+        group: int,
+        binding: int,
+        name: str,
+        type_str: str,
+        address_space: str = "storage",
+        access_mode: Optional[str] = "read_write",
+    ) -> None:
+        """Initialize WGSLBinding.
+
+        Args:
+            group (int): Bind group index (0..3).
+            binding (int): Binding slot index (0..63).
+            name (str): Bound variable identifier.
+            type_str (str): WGSL type declaration string.
+            address_space (str, optional): Target address space. Defaults to 'storage'.
+            access_mode (Optional[str], optional): Access mode. Defaults to 'read_write'.
+        """
+        self.group: int = group
+        self.binding: int = binding
+        self.name: str = name
+        self.type_str: str = type_str
+        self.address_space: str = address_space
+        self.access_mode: Optional[str] = access_mode
+
+    def validate(self) -> None:
+        """Validate resource binding against WebGPU specification.
+
+        Raises:
+            WGSLValidationError: If binding attributes violate WebGPU specifications.
+        """
+        validate_identifier(self.name)
+        validate_binding_limits(self.group, self.binding)
+        validate_memory_layout(self.address_space, self.access_mode)
 
 
 class WGSLVar(WGSLNode):
@@ -432,6 +558,9 @@ class WGSLEmitter:
             return node
         if isinstance(node, WGSLRaw):
             return node.code
+        if isinstance(node, WGSLBinding):
+            qual: str = f"<{node.address_space}, {node.access_mode}>" if node.access_mode else f"<{node.address_space}>"
+            return f"@group({node.group}) @binding({node.binding}) var{qual} {node.name}: {node.type_str};"
         if isinstance(node, WGSLVar):
             return node.name
         elif isinstance(node, WGSLIndex):

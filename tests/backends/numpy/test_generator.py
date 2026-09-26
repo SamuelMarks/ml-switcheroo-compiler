@@ -51,6 +51,11 @@ def test_numpy_generator():
 def test_numpy_generator_helpers():
     gen = NumpyGenerator(MagicMock(nodes=[]))
     assert isinstance(gen.get_helper_functions(), list)
+    assert NumpyGenerator.get_numpy_rng() is not None
+    import numpy as np
+
+    res = NumpyGenerator.execute_op("Add", np.array([1]), np.array([2]))
+    assert res is not None
 
 
 def test_numpy_generator_aot_and_fallback_prefix():

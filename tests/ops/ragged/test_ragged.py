@@ -68,12 +68,12 @@ def test_ragged_coverage():
     assert RaggedDynamicBroadcast().infer_shape() == ()
     assert RaggedConstant().infer_shape() == ()
     assert RaggedCrossHashed().infer_shape() == ()
-    assert RaggedRange().infer_shape() == ()
-    assert RaggedRowSplitsToSegmentIds().infer_shape() == ()
-    assert RaggedSegmentIdsToRowSplits().infer_shape() == ()
+    assert len(RaggedRange().infer_shape()) == 2
+    assert len(RaggedRowSplitsToSegmentIds().infer_shape()) == 1
+    assert len(RaggedSegmentIdsToRowSplits().infer_shape()) == 1
     assert RaggedStack().infer_shape() == ()
-    assert RaggedStackDynamicPartitions().infer_shape() == ()
-    assert BooleanMask().infer_shape() == ()
+    assert len(RaggedStackDynamicPartitions().infer_shape()) == 2
+    assert len(BooleanMask().infer_shape()) == 1
     assert MapFlatValues().infer_shape(t) == ()
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:

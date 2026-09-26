@@ -353,17 +353,36 @@ class CholeskySolve(OpDef):
 
     op_name = "CholeskySolve"
 
-    def infer_shape(self, chol, rhs, **kwargs):
+    def infer_shape(self, chol, rhs, **kwargs) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the Cholesky solve operation.
 
         Args:
-            chol (Any): The Cholesky factorization tensor.
-            rhs (Any): The right-hand side tensor.
-            **kwargs (Any): Additional keyword arguments.
+            chol (object): The Cholesky factorization tensor.
+            rhs (object): The right-hand side tensor.
+            **kwargs (object): Additional keyword arguments.
 
-        Returns: Tensor: The inferred shape of the output tensor.
+        Returns:
+            tuple[int, ...]: Broadcasted solution shape.
         """
-        return rhs.shape
+        shape_a = tuple(int(d) for d in getattr(chol, "shape", getattr(chol, "shape_metadata", chol if isinstance(chol, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(rhs, "shape", getattr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return shape_b
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            return batch_out + (shape_a[-1],)
+
+        batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+        batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+        return batch_out + (shape_a[-1], shape_b[-1])
 
 
 @register_op("BandedTriangularSolve")
@@ -375,17 +394,36 @@ class BandedTriangularSolve(OpDef):
 
     op_name = "BandedTriangularSolve"
 
-    def infer_shape(self, bands, rhs, **kwargs):
+    def infer_shape(self, bands, rhs, **kwargs) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the banded triangular solve operation.
 
         Args:
-            bands (Any): The banded triangular matrix tensor.
-            rhs (Any): The right-hand side tensor.
-            **kwargs (Any): Additional keyword arguments.
+            bands (object): The banded triangular matrix tensor.
+            rhs (object): The right-hand side tensor.
+            **kwargs (object): Additional keyword arguments.
 
-        Returns: Tensor: The inferred shape of the output tensor.
+        Returns:
+            tuple[int, ...]: Broadcasted solution shape.
         """
-        return rhs.shape
+        shape_a = tuple(int(d) for d in getattr(bands, "shape", getattr(bands, "shape_metadata", bands if isinstance(bands, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(rhs, "shape", getattr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return shape_b
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            return batch_out + (shape_b[-1],)
+
+        batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+        batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+        return batch_out + (shape_b[-2], shape_b[-1])
 
 
 @register_op("EighTridiagonal")

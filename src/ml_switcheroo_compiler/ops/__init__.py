@@ -138,6 +138,7 @@ from ml_switcheroo_compiler.ops.device import (
     synchronize,
 )
 from ml_switcheroo_compiler.ops.io import (
+    AsyncIOFuture,
     DecodeBase64,
     DecodeCsv,
     DecodeImage,
@@ -147,6 +148,8 @@ from ml_switcheroo_compiler.ops.io import (
     Fromiter,
     Fromstring,
     Load,
+    NonblockingLoad,
+    NonblockingSave,
     ParseExample,
     ParseSequenceExample,
     ParseTensor,
@@ -797,6 +800,7 @@ __all__ = [
     "AssertOp",
     "AssignVariable",
     "AssociativeScan",
+    "AsyncIOFuture",
     "Atleast1d",
     "Atleast2d",
     "Atleast3d",
@@ -898,6 +902,8 @@ __all__ = [
     "MatrixTranspose",
     "Moveaxis",
     "Nms",
+    "NonblockingLoad",
+    "NonblockingSave",
     "NormConfig",
     "OpDef",
     "ParseExample",

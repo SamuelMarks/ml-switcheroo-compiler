@@ -329,7 +329,7 @@ def test_symnode_eval_and_free_vars() -> None:
         div_zero.eval({"x": 10})
 
     # Unsupported op raises ValueError
-    bad_op = SymBinaryOp("%", x, c2)
+    bad_op = SymBinaryOp("@", x, c2)
     with pytest.raises(ValueError):
         bad_op.eval({"x": 10})
 
@@ -906,19 +906,26 @@ def test_shape_system_all_remaining_coverage_branches() -> None:
 
     # 789: to_polynomial returns None if left or right returns None
     class IrreducibleNode(SymNode):
+        """Irreducible node for testing."""
+
         def simplify(self):
+            """Simplify."""
             return self
 
         def canonical(self):
+            """Canonical."""
             return self
 
         def to_polynomial(self):
+            """To polynomial."""
             return None
 
         def eval(self, env):
+            """Eval."""
             return 0
 
         def free_vars(self):
+            """Free vars."""
             return set()
 
     s_irred = SymBinaryOp("+", IrreducibleNode(), SymConst(1))
@@ -964,7 +971,10 @@ def test_shape_system_all_remaining_coverage_branches() -> None:
 
     # Lines 1486->1493 and 1491->1493: track_graph with empty shapes
     class MockGraph:
+        """Mock graph for testing."""
+
         def __init__(self, nodes):
+            """Init."""
             self.nodes = nodes
 
     n_mat = MockLogicalNode("matmul", [MockLogicalNode("in1", [], ()), MockLogicalNode("in2", [], ())], (1,))
@@ -976,3 +986,47 @@ def test_shape_system_all_remaining_coverage_branches() -> None:
     from ml_switcheroo_compiler.ir.shape_system import _broadcast_dim
 
     assert _broadcast_dim("N + 1", "1 + N") == "N + 1"
+
+
+def test_non_polynomial_reductions_and_symnode_eval() -> None:
+    """Verify non-polynomial algebraic reductions for min, max, div, and SymNode.eval algorithms."""
+    from ml_switcheroo_compiler.ir.shape_system import SymBinaryOp, SymConst, SymNode, SymUnaryOp, SymVar
+
+    x = SymVar("x")
+    y = SymVar("y")
+
+    # Min reductions
+    assert SymBinaryOp("min", x, x).simplify() == x
+    assert SymBinaryOp("min", SymConst(3), SymConst(5)).simplify() == SymConst(3)
+    assert SymBinaryOp("min", x + 5, x).simplify() == x
+    assert SymBinaryOp("min", x, x + 5).simplify() == x
+    assert SymBinaryOp("min", x - 5, x).simplify() == x - 5
+    assert SymBinaryOp("min", x, x - 5).simplify() == x - 5
+
+    # Max reductions
+    assert SymBinaryOp("max", x, x).simplify() == x
+    assert SymBinaryOp("max", SymConst(3), SymConst(5)).simplify() == SymConst(5)
+    assert SymBinaryOp("max", x + 5, x).simplify() == x + 5
+    assert SymBinaryOp("max", x, x + 5).simplify() == x + 5
+    assert SymBinaryOp("max", x - 5, x).simplify() == x
+    assert SymBinaryOp("max", x, x - 5).simplify() == x
+
+    # Div reductions
+    assert SymBinaryOp("//", x * 6, SymConst(3)).simplify() == SymConst(2) * x
+    assert SymBinaryOp("//", SymConst(6) * x, SymConst(2)).simplify() == SymConst(3) * x
+    assert SymBinaryOp("//", x, x).simplify() == SymConst(1)
+    assert SymBinaryOp("//", x, SymConst(1)).simplify() == x
+
+    # SymNode.eval without raising NotImplementedError for non-linear symbolic constraints
+    node_min = SymBinaryOp("min", x, y)
+    assert node_min.eval({"x": 10, "y": 20}) == 10
+
+    node_max = SymBinaryOp("max", x, y)
+    assert node_max.eval({"x": 10, "y": 20}) == 20
+
+    base_node = SymNode()
+    with pytest.raises(NotImplementedError):
+        base_node.eval({})
+
+    unary_node = SymUnaryOp("abs", x)
+    assert unary_node.eval({"x": -42}) == 42

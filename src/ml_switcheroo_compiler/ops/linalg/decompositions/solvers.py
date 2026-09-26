@@ -16,49 +16,113 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class TriangularSolve(OpDef):
     """TriangularSolve Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer solution shape for triangular system AX = B.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Matrix A and RHS B arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Broadcasted solution shape.
         """
-        return ()
+        a = args[0] if len(args) > 0 else kwargs.get("matrix", kwargs.get("a"))
+        b = args[1] if len(args) > 1 else kwargs.get("rhs", kwargs.get("b"))
+        if a is None or b is None:
+            return ()
+        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return shape_b
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            return batch_out + (shape_a[-1],)
+
+        batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+        batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+        return batch_out + (shape_a[-1], shape_b[-1])
 
 
 @register_op("Lu")
 class Lu(OpDef):
     """Lu Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer P, L, U factor shapes.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input matrix A argument.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple: Tuple of (P_shape, L_shape, U_shape).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        if len(shape) < 2:
+            return (shape, shape, shape)
+        m, n = shape[-2], shape[-1]
+        k = min(m, n)
+        p_shape = shape[:-2] + (m, m)
+        l_shape = shape[:-2] + (m, k)
+        u_shape = shape[:-2] + (k, n)
+        return (p_shape, l_shape, u_shape)
 
 
 @register_op("LuSolve")
 class LuSolve(OpDef):
     """LuSolve Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer solution shape for LU solve.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): LU, pivots, rhs arguments.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple[int, ...]: Broadcasted solution shape.
         """
-        return ()
+        if len(args) >= 3:
+            lu, rhs = args[0], args[2]
+        elif len(args) == 2:
+            lu, rhs = args[0], args[1]
+        else:
+            lu = kwargs.get("lu", kwargs.get("lower_upper", kwargs.get("a")))
+            rhs = kwargs.get("rhs", kwargs.get("b"))
+
+        if lu is None or rhs is None:
+            return ()
+
+        shape_a = tuple(int(d) for d in getattr(lu, "shape", getattr(lu, "shape_metadata", lu if isinstance(lu, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(rhs, "shape", getattr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return shape_b
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            return batch_out + (shape_a[-1],)
+
+        batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+        batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+        return batch_out + (shape_a[-1], shape_b[-1])
 
 
 @register_op("Norm")

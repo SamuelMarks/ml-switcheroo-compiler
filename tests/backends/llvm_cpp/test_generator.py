@@ -887,3 +887,195 @@ def test_cpp_generator_additional_coverage() -> None:
         patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "float val = {init_val};"}),
     ):
         gen_init._visit_node(node_init, empty_g)
+
+
+def test_cpp_generator_new_visitors_and_providers() -> None:
+    """Verify code generation and coverage for new C++ visitors, operators, and dynamic providers."""
+    from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import (
+        get_cpp_operation,
+        get_cpp_template,
+        synthesize_cpp_operation,
+    )
+
+    # 1. Provider functions edge cases
+    assert get_cpp_template("non_existent_template_xyz") == {}
+    s_unary = synthesize_cpp_operation("custom_unary", num_inputs=1)
+    assert s_unary.template == "unary"
+    assert s_unary.scalar_expr == "in0_val"
+
+    s_binary = synthesize_cpp_operation("custom_binary", num_inputs=2)
+    assert s_binary.template == "binary"
+    assert s_binary.scalar_expr == "in0_val + in1_val"
+
+    s_ternary = synthesize_cpp_operation("custom_ternary", num_inputs=3)
+    assert s_ternary.template == "ternary"
+
+    s_custom_expr = synthesize_cpp_operation("custom_op", scalar_expr="std::sin(in0_val)")
+    assert s_custom_expr.scalar_expr == "std::sin(in0_val)"
+
+    s_where = synthesize_cpp_operation("where", num_inputs=3)
+    assert s_where.template == "ternary"
+
+    s_mse = synthesize_cpp_operation("mse_loss", num_inputs=2)
+    assert s_mse.template == "binary"
+
+    op_known = get_cpp_operation("add")
+    assert op_known is not None
+
+    op_synth_allowed = get_cpp_operation("unmapped_op_synth", num_inputs=1, allow_synth=True)
+    assert op_synth_allowed is not None
+
+    op_synth_disallowed = get_cpp_operation("unmapped_op_no_synth", num_inputs=1, allow_synth=False)
+    assert op_synth_disallowed is None
+
+    # 2. Visitors: MaxPool2D and AvgPool2D (2D and 4D shapes, kernel/stride as int and list, is_global)
+    g = IRGraph(name="test_pool")
+    in_node = IRNode(id="in0", op_type="Input", shape_metadata=(1, 3, 8, 8))
+    g.nodes["in0"] = in_node
+
+    gen = CppGenerator(g)
+
+    # 4D with list attrs
+    node_mp_list = IRNode(id="mp_list", op_type="MaxPool2D", inputs=["in0"], shape_metadata=(1, 3, 4, 4), attributes={"kernel_size": [2, 2], "stride": [2, 2]})
+    gen.visit_MaxPool2D(node_mp_list, g)
+    gen._visit_node(node_mp_list, g)
+
+    # 2D with int attrs and global
+    node_mp_int = IRNode(id="mp_int", op_type="global_maxpool2d", inputs=["in0"], shape_metadata=(4, 4), attributes={"kernel_size": 2, "stride": 2})
+    gen.visit_MaxPool2D(node_mp_int, None, is_global=True)
+    gen._visit_node(node_mp_int, g)
+
+    # AvgPool2D
+    node_ap_list = IRNode(id="ap_list", op_type="AvgPool2D", inputs=["in0"], shape_metadata=(1, 3, 4, 4), attributes={"kernel_size": [2, 2], "stride": [2, 2]})
+    gen.visit_AvgPool2D(node_ap_list, g)
+    gen._visit_node(node_ap_list, g)
+
+    node_ap_int = IRNode(id="ap_int", op_type="global_avgpool2d", inputs=["in0"], shape_metadata=(4, 4), attributes={"kernel_size": 2, "stride": 2})
+    gen.visit_AvgPool2D(node_ap_int, None, is_global=True)
+    gen._visit_node(node_ap_int, g)
+
+    # 3. GroupNorm with gamma, beta, num_groups <= 0
+    node_gn_full = IRNode(id="gn_full", op_type="GroupNorm", inputs=["in0", "gamma", "beta"], shape_metadata=(2, 4, 8, 8), attributes={"num_groups": 2, "eps": 1e-4})
+    gen.visit_GroupNorm(node_gn_full, g)
+    gen._visit_node(node_gn_full, g)
+
+    node_gn_nogamma = IRNode(id="gn_no_gamma", op_type="groupnorm", inputs=["in0"], shape_metadata=(2, 4), attributes={"num_groups": 0})
+    gen.visit_GroupNorm(node_gn_nogamma, None)
+    gen._visit_node(node_gn_nogamma, None)
+
+    # 4. Softmax and LogSoftmax
+    node_sm = IRNode(id="sm", op_type="softmax", inputs=["in0"], shape_metadata=(4, 4))
+    gen.visit_Softmax(node_sm, g)
+    gen._visit_node(node_sm, g)
+
+    node_lsm = IRNode(id="lsm", op_type="logsoftmax", inputs=["in0"], shape_metadata=(4, 4))
+    gen.visit_LogSoftmax(node_lsm, g)
+    gen._visit_node(node_lsm, g)
+
+    # 5. Advanced hardware patterns
+    node_wsr = IRNode(id="wsr", op_type="warp_shuffle_reduce", inputs=["in0"], shape_metadata=(4, 4))
+    gen.visit_WarpShuffleReduce(node_wsr, g)
+    gen._visit_node(node_wsr, g)
+
+    node_smtr = IRNode(id="smtr", op_type="shared_memory_tree_reduce", inputs=["in0"], shape_metadata=(4, 4))
+    gen.visit_SharedMemoryTreeReduce(node_smtr, g)
+    gen._visit_node(node_smtr, g)
+
+    node_tmm = IRNode(id="tmm", op_type="tiled_matmul_2d", inputs=["in0"], shape_metadata=(4, 4))
+    gen.visit_TiledMatMul2D(node_tmm, g)
+    gen._visit_node(node_tmm, g)
+
+    node_c2d_halo = IRNode(id="c2d_halo", op_type="conv2d_shared_halo", inputs=["in0"], shape_metadata=(1, 3, 8, 8), attributes={"stride": 1})
+    gen.visit_Conv2DSharedHalo(node_c2d_halo, g)
+    gen._visit_node(node_c2d_halo, g)
+
+    node_mp_dyn = IRNode(id="mp_dyn", op_type="maxpool2d_dynamic", inputs=["in0"], shape_metadata=(1, 3, 4, 4), attributes={"kernel_size": 2, "stride": 2, "dilation_h": 1, "dilation_w": 1, "pad_h": 0, "pad_w": 0})
+    gen.visit_MaxPool2DDynamic(node_mp_dyn, g)
+    gen._visit_node(node_mp_dyn, g)
+
+    node_ap_dyn = IRNode(id="ap_dyn", op_type="avgpool2d_dynamic", inputs=["in0"], shape_metadata=(1, 3, 4, 4), attributes={"kernel_size": 2, "stride": 2, "dilation_h": 1, "dilation_w": 1, "pad_h": 0, "pad_w": 0})
+    gen.visit_AvgPool2DDynamic(node_ap_dyn, g)
+    gen._visit_node(node_ap_dyn, g)
+
+
+def test_llvm_cpp_missing_branches_and_edge_cases() -> None:
+    """Test while loop annotations, 2D shape padding in conv/pooling, decl_op overrides, and edge indices."""
+    g = IRGraph()
+    gen = CppGenerator(g)
+
+    # 1. While loop annotations and parallel iterations (#pragma omp)
+    n_while = IRNode(
+        id="while_opts",
+        op_type="WhileLoop",
+        inputs=["in0"],
+        shape_metadata=(4,),
+        attributes={
+            "maximum_iterations": 10,
+            "parallel_iterations": 4,
+            "swap_memory": True,
+            "shape_invariants": [(4,)],
+        },
+    )
+    gen._visit_loop_op(n_while, g)
+    joined_lines = "\n".join(gen.lines)
+    assert "parallel_iterations=4" in joined_lines
+    assert "swap_memory=True" in joined_lines
+    assert "maximum_iterations=10" in joined_lines
+    assert "shape_invariants=[(4,)]" in joined_lines
+    assert "#pragma omp parallel for num_threads(4)" in joined_lines
+
+    # 2. 2D shapes (< 4D) in MaxPool2D, AvgPool2D, Conv2D, MaxPool2DDynamic, AvgPool2DDynamic
+    node_in_2d = IRNode(id="in_2d", op_type="Input", inputs=[], shape_metadata=(4, 4))
+    node_w_2d = IRNode(id="w_2d", op_type="Weight", inputs=[], shape_metadata=(3, 3))
+    g.nodes["in_2d"] = node_in_2d
+    g.nodes["w_2d"] = node_w_2d
+
+    node_mp_2d = IRNode(id="mp_2d", op_type="MaxPool2D", inputs=["in_2d"], shape_metadata=(4, 4), attributes={"kernel_size": [2, 2], "stride": [1, 1]})
+    gen.visit_MaxPool2D(node_mp_2d, g)
+
+    node_ap_2d = IRNode(id="ap_2d", op_type="AvgPool2D", inputs=["in_2d"], shape_metadata=(4, 4), attributes={"kernel_size": [2, 2], "stride": [1, 1]})
+    gen.visit_AvgPool2D(node_ap_2d, g)
+
+    node_conv_2d = IRNode(id="conv_2d", op_type="Conv2DSharedHalo", inputs=["in_2d", "w_2d"], shape_metadata=(4, 4), attributes={"stride": 1, "padding": "SAME"})
+    gen.visit_Conv2DSharedHalo(node_conv_2d, g)
+
+    node_mp_dyn_2d = IRNode(id="mp_dyn_2d", op_type="MaxPool2DDynamic", inputs=["in_2d"], shape_metadata=(4, 4), attributes={"kernel_size": 2, "stride": 2})
+    gen.visit_MaxPool2DDynamic(node_mp_dyn_2d, g)
+
+    node_ap_dyn_2d = IRNode(id="ap_dyn_2d", op_type="AvgPool2DDynamic", inputs=["in_2d"], shape_metadata=(4, 4), attributes={"kernel_size": 2, "stride": 2})
+    gen.visit_AvgPool2DDynamic(node_ap_dyn_2d, g)
+
+    # 3. decl_op init_val and final_combine with and without existing mapping
+    mock_decl_op = MagicMock()
+    mock_decl_op.template = "elementwise_1d"
+    mock_decl_op.scalar_expr = "in0_val * 2"
+    mock_decl_op.init_val = "0.0"
+    mock_decl_op.final_combine = "out_val"
+
+    with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_operation", return_value=mock_decl_op):
+        with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "// body {clean_id}"}):
+            # 3a. not mapping and decl_op is not None (lines 1290, 1292)
+            with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"NonExistentOp123": {}}):
+                n_unmapped = IRNode(id="unmapped_decl", op_type="NonExistentOp123", inputs=["in_2d"], shape_metadata=(4, 4))
+                gen._visit_node(n_unmapped, g)
+
+            # 3b. mapping with scalar_expr == 'in0_val' and decl_op is not None (lines 1297, 1299)
+            with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"IdentityCustom": {"variants": {"llvm_cpp": {"template": "elementwise_1d", "scalar_expr": "in0_val"}}}}):
+                n_scalar_in0 = IRNode(id="ident_custom", op_type="IdentityCustom", inputs=["in_2d"], shape_metadata=(4, 4))
+                gen._visit_node(n_scalar_in0, g)
+
+    # 4. Target index 2 edge input mapping (line 1330: in2_var = str(src))
+    class DummyGraphWithEdges:
+        """Dummy graph container supporting edges attribute."""
+
+        def __init__(self) -> None:
+            """Initialize dummy graph with nodes and edges."""
+            self.nodes: dict[str, IRNode] = {"in_2d": node_in_2d}
+            self.edges: list[MagicMock] = [MagicMock(target="ternary_op", source="src_node_2", target_idx=2, source_idx=1)]
+
+    g_edges = DummyGraphWithEdges()
+    node_ternary = IRNode(id="ternary_op", op_type="Select", inputs=["in_2d", "in_2d", "in_2d"], shape_metadata=(4, 4))
+    with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "// body {clean_id} {in2}"}):
+        with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Select": {"variants": {"llvm_cpp": {"template": "elementwise_1d"}}}}):
+            gen._visit_node(node_ternary, g_edges)
+            assert any("src_node_2" in line for line in gen.lines)

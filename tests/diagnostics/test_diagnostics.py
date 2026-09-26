@@ -289,8 +289,23 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     decoded_cf = Image.open(io.BytesIO(png_cf))
     assert decoded_cf.size == (10, 10)
 
+    # 3b. Test 3D single channel tensor (H, W, 1)
+    data_1c = np.full((12, 12, 1), 200, dtype=np.uint8)
+    tensor_1c = Tensor(data_1c, TensorConfig((12, 12, 1), DType.UInt8, device))
+    png_1c = encode_image(tensor_1c)
+    assert png_1c[:8] == b"\x89PNG\r\n\x1a\n"
+    decoded_1c = Image.open(io.BytesIO(png_1c))
+    assert decoded_1c.size == (12, 12)
+
     # 4. Test write_raw_pb
     logdir: str = str(tmp_path / "tfevents")
     write_raw_pb(b"mock_proto_data", logdir)
     with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
         assert f.read() == b"mock_proto_data"
+
+    # 5. Test debugging.enable_dump_debug_info
+    from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
+
+    dump_dir: str = str(tmp_path / "dump_debug")
+    enable_dump_debug_info(dump_dir)
+    assert (tmp_path / "dump_debug").exists()

@@ -8,6 +8,26 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
+def _unwrap_input_val(val: object) -> object:
+    """Unwrap Arrow object or Tensor to underlying raw array or scalar.
+
+    Args:
+        val (object): Input value.
+
+    Returns:
+        object: Unwrapped raw data.
+    """
+    from ml_switcheroo_compiler.backends.pyarrow_compute.types import from_arrow, is_arrow_object
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+    if is_arrow_object(val):
+        converted = from_arrow(val)
+        return getattr(converted, "data", converted)
+    if isinstance(val, Tensor):
+        return val.data
+    return val
+
+
 @register_backend("pyarrow_compute")
 class PyArrowComputeGenerator(PythonStringGenerator):
     """Generate Python/PyArrow code operating directly on columnar memory buffers."""
@@ -110,8 +130,54 @@ class PyArrowComputeGenerator(PythonStringGenerator):
             "Std": "pc.stddev({0})",
             "Var": "pc.variance({0})",
             "Count": "pc.count({0})",
+            "Prod": "pc.product({0})",
+            "Product": "pc.product({0})",
+            "Mode": "pc.mode({0})",
+            "Quantile": "pc.quantile({0})",
+            "Median": "pc.approximate_median({0})",
+            "CumSum": "pc.cumulative_sum({0})",
+            "CumulativeSum": "pc.cumulative_sum({0})",
+            "CumProd": "pc.cumulative_prod({0})",
+            "CumulativeProd": "pc.cumulative_prod({0})",
+            "CumMax": "pc.cumulative_max({0})",
+            "CumMin": "pc.cumulative_min({0})",
             "Where": "pc.if_else({0}, {1}, {2})",
             "Cast": "pc.cast({0}, {1})",
+            "Filter": "pc.filter({0}, {1})",
+            "Take": "pc.take({0}, {1})",
+            "Gather": "pc.take({0}, {1})",
+            "DropNull": "pc.drop_null({0})",
+            "FillNull": "pc.fill_null({0}, {1})",
+            "ReplaceWithMask": "pc.replace_with_mask({0}, {1}, {2})",
+            "Unique": "pc.unique({0})",
+            "ValueCounts": "pc.value_counts({0})",
+            "SortIndices": "pc.sort_indices({0})",
+            "Rank": "pc.rank({0})",
+            "DictionaryEncode": "pc.dictionary_encode({0})",
+            "IndicesNonzero": "pc.indices_nonzero({0})",
+            "ListFlatten": "pc.list_flatten({0})",
+            "Flatten": "pc.list_flatten({0})",
+            "ListSlice": "pc.list_slice({0}, {1}, {2})",
+            "ListElement": "pc.list_element({0}, {1})",
+            "MakeStruct": "pc.make_struct({0})",
+            "StructField": "pc.struct_field({0}, {1})",
+            "Lower": "pc.utf8_lower({0})",
+            "Upper": "pc.utf8_upper({0})",
+            "StringLength": "pc.utf8_length({0})",
+            "ReplaceSubstring": "pc.replace_substring({0}, {1}, {2})",
+            "MatchSubstring": "pc.match_substring({0}, {1})",
+            "Cbrt": "pc.cbrt({0})",
+            "ShiftLeft": "pc.shift_left({0}, {1})",
+            "ShiftRight": "pc.shift_right({0}, {1})",
+            "BitwiseAnd": "pc.bit_wise_and({0}, {1})",
+            "BitwiseOr": "pc.bit_wise_or({0}, {1})",
+            "BitwiseXor": "pc.bit_wise_xor({0}, {1})",
+            "BitwiseNot": "pc.bit_wise_not({0})",
+            "IsNull": "pc.is_null({0})",
+            "IsValid": "pc.is_valid({0})",
+            "IsNan": "pc.is_nan({0})",
+            "IsInf": "pc.is_inf({0})",
+            "IsFinite": "pc.is_finite({0})",
         }
 
     def generate(self) -> str:
@@ -154,8 +220,10 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         Returns:
             object: Execution callable.
         """
-        from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.backends.pyarrow_compute.types import is_arrow_object, to_arrow
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+        zero_copy = self.zero_copy
 
         def aot_arrow_runner(*w_args: object, **w_kw: object) -> object:
             """Execute graph with Arrow columnar structures.
@@ -168,16 +236,17 @@ class PyArrowComputeGenerator(PythonStringGenerator):
                 object: Output results.
             """
             input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
-            inputs: dict[str, object] = {}
-            for i, inp_node in enumerate(input_nodes):
-                if i < len(w_args):
-                    arg_val = w_args[i]
-                    inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-            inputs.update(w_kw)
+            inputs: dict[str, object] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}
+            for k, val in w_kw.items():
+                inputs[k] = _unwrap_input_val(val)
+
             evaluated = evaluate_graph(graph, inputs=inputs)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return evaluated.get(graph.outputs[0])
+                    res = evaluated.get(graph.outputs[0])
+                    if zero_copy and is_arrow_object(w_args[0] if w_args else None):
+                        return to_arrow(res, target_type="tensor")
+                    return res
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
             return evaluated
 

@@ -16,49 +16,65 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Eig(OpDef):
     """Eig Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer the output shape for the infer_shape operation.
+    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer eigenvalues and eigenvectors output shapes.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Tuple of (eigenvalues_shape (..., N), eigenvectors_shape (..., N, N)).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        val_shape = shape[:-1] if len(shape) >= 1 else ()
+        return (val_shape, shape)
 
 
 @register_op("Eigh")
 class Eigh(OpDef):
     """Eigh Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer Hermitian/symmetric eigenvalues and eigenvectors output shapes.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple: Tuple of (eigenvalues_shape (..., N), eigenvectors_shape (..., N, N)).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        val_shape = shape[:-1] if len(shape) >= 1 else ()
+        return (val_shape, shape)
 
 
 @register_op("Eigvalsh")
 class Eigvalsh(OpDef):
     """Eigvalsh Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer Hermitian/symmetric eigenvalues output shape (..., N).
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple[int, ...]: Eigenvalues output shape (..., N).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return shape[:-1] if len(shape) >= 1 else ()
 
 
 def eigh(input: Tensor, UPLO: str = "L"):
@@ -109,16 +125,21 @@ def eigvalsh(input: Tensor, UPLO: str = "L"):
 class Eigvals(OpDef):
     """Eigvals Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer eigenvalues output shape (..., N).
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Input tensor or shape arguments.
+            **kwargs (object): Optional keyword arguments.
 
-        Returns: Tensor: The shape.
+        Returns:
+            tuple[int, ...]: Eigenvalues output shape (..., N).
         """
-        return ()
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return shape[:-1] if len(shape) >= 1 else ()
 
 
 def eigvals(input: Tensor):

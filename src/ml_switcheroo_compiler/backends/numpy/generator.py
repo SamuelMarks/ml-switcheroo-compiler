@@ -102,6 +102,22 @@ class NumpyGenerator(
         )
 
     @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Execute an operation eagerly using NumPy eager registry.
+
+        Args:
+            op_type (str): The operation type name.
+            *args (object): Positional arguments for the operation.
+            **kwargs (object): Keyword arguments for the operation.
+
+        Returns:
+            object: Computed result.
+        """
+        from ml_switcheroo_compiler.backends.numpy.eager import execute_op as numpy_execute_op
+
+        return numpy_execute_op(cls, op_type, *args, **kwargs)
+
+    @classmethod
     def get_numpy_rng(cls, *args, **kwargs):
         """Get a numpy random generator.
 
@@ -217,9 +233,9 @@ class NumpyGenerator(
         Returns:
             object: Callable execution wrapper.
         """
+        import ml_switcheroo_compiler.interpreter.evaluator as evaluator_module
         from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-        from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
         def callable_aot(*w_args: object, **w_kw: object) -> object:
             """Execute ahead-of-time compiled graph on inputs.
@@ -238,7 +254,7 @@ class NumpyGenerator(
                     arg_val = w_args[i]
                     input_map[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
 
-            res_map = evaluate_graph(graph, input_map)
+            res_map = evaluator_module.evaluate_graph(graph, input_map)
             if graph.outputs:
                 if len(graph.outputs) == 1:
                     out_val = res_map[graph.outputs[0]]

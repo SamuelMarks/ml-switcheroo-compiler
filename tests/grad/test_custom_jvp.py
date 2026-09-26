@@ -389,6 +389,29 @@ def test_custom_jvp_and_custom_vjp_subgraph_branches():
         assert out_v is not None
         assert any(n.op_type == "CustomVJP" and n.attributes.get("bwd_graph") is subgraph_vjp for n in g_trace_vjp.nodes.values())
         assert any(n.op_type == "Constant" for n in g_trace_vjp.nodes.values())
+
+        # Trace custom_vjp without bwd_subgraph to exercise lines 150 and 152 branches
+        @custom_vjp
+        def fn_vjp_nosub(x):
+            return x * 4
+
+        fn_vjp_nosub.defvjp(lambda x: (x * 4, x), lambda res, cot: (cot * 4,))
+        out_nosub = fn_vjp_nosub(t_noid)
+        assert out_nosub is not None
+        assert any(n.op_type == "CustomVJP" and "bwd" not in n.subgraphs and "fwd" in n.subgraphs for n in g_trace_vjp.nodes.values())
+
+        # Trace custom_vjp without fwd defined (fwd is None)
+        @custom_vjp
+        def fn_vjp_nofwd(x):
+            return x * 5
+
+        out_nofwd = fn_vjp_nofwd(t_noid)
+        assert out_nofwd is not None
+        assert any(n.op_type == "CustomVJP" and "fwd" not in n.subgraphs for n in g_trace_vjp.nodes.values())
+
+        # Test _emit_vjp_node directly with primal_graph=None
+        out_no_primal = fn_vjp_nofwd._emit_vjp_node([t_noid], None, None)
+        assert out_no_primal is not None
     finally:
         global_tracing_state.is_tracing = False
         global_tracing_state.active_graph = None

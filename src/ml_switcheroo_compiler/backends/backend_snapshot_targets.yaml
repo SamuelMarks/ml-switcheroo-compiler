@@ -8,8 +8,36 @@ targets:
     canonical_roots:
       - "torch"
       - "pytorch"
-      - "torchaudio"
+  torchvision:
+    framework: "torchvision"
+    snapshot_glob: "torchvision_v*.json"
+    status: "available"
+    canonical_roots:
       - "torchvision"
+  torchaudio:
+    framework: "torchaudio"
+    snapshot_glob: "torchaudio_v*.json"
+    status: "available"
+    canonical_roots:
+      - "torchaudio"
+  scipy:
+    framework: "scipy"
+    snapshot_glob: "scipy_v*.json"
+    status: "available"
+    canonical_roots:
+      - "scipy"
+  safetensors:
+    framework: "safetensors"
+    snapshot_glob: "safetensors_v*.json"
+    status: "available"
+    canonical_roots:
+      - "safetensors"
+  nccl:
+    framework: "nccl"
+    snapshot_glob: "nccl_v*.json"
+    status: "available"
+    canonical_roots:
+      - "nccl"
   jax:
     framework: "jax"
     snapshot_glob: "jax_v*.json"

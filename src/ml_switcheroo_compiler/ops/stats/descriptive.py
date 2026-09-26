@@ -28,18 +28,50 @@ class ApplyOverAxes(OpDef):
 
     op_name = "ApplyOverAxes"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, func=None, a=None, axes=None, **kwargs) -> tuple[int, ...]:
+        """Infer shape after reducing specified axes to size 1.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            func (object): Applied function.
+            a (object): Input tensor.
+            axes (object): Sequence of axes to reduce.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Axis-reduced shape with reduced dimensions set to 1.
         """
-        # Typically shape does not change for some functions or reduces, fallback to None
-        return None
+        inp_a = a if a is not None else kwargs.get("a", kwargs.get("x", func if not callable(func) and (hasattr(func, "shape") or isinstance(func, (list, tuple))) else None))
+        if inp_a is None:
+            return ()
+
+        def _get_shape(obj: object) -> tuple[int, ...]:
+            """Extract shape tuple from object.
+
+            Args:
+                obj (object): Target tensor or shape.
+
+            Returns:
+                tuple[int, ...]: Extracted shape tuple.
+            """
+            if hasattr(obj, "shape"):
+                return tuple(int(d) for d in obj.shape)
+            if hasattr(obj, "shape_metadata"):
+                sm = obj.shape_metadata
+                if sm:
+                    return tuple(int(d) for d in sm)
+            if isinstance(obj, (list, tuple)):
+                return tuple(int(d) for d in obj)
+            return ()
+
+        shape = list(_get_shape(inp_a))
+        ax = axes if axes is not None else kwargs.get("axes")
+        if ax is not None and shape:
+            axes_list = [int(ax)] if isinstance(ax, int) else [int(x) for x in ax]
+            for a_idx in axes_list:
+                norm_idx = a_idx + len(shape) if a_idx < 0 else a_idx
+                if 0 <= norm_idx < len(shape):
+                    shape[norm_idx] = 1
+        return tuple(shape)
 
 
 @register_op("Bincount")

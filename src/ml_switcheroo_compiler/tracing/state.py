@@ -17,6 +17,8 @@ class TracingState:
         self.active_graph = None
         self.graph_stack: list[LogicalGraph] = []
         self.constant_cache = {}
+        self.current_loop_options = None
+        self.loop_options_stack: list = []
 
     def _enrich_ast_and_domain(self, node) -> None:
         """Enrich a node with AST and domain information.
@@ -64,6 +66,19 @@ class TracingState:
             return
 
         self._enrich_node(node)
+        if self.current_loop_options is not None and getattr(node, "op_type", "") in ("Loop", "WhileLoop") and hasattr(node, "attributes") and isinstance(node.attributes, dict):
+            opts = self.current_loop_options
+            if "parallel_iterations" not in node.attributes and getattr(opts, "parallel_iterations", None) is not None:
+                node.attributes["parallel_iterations"] = opts.parallel_iterations
+            if "swap_memory" not in node.attributes and getattr(opts, "swap_memory", None) is not None:
+                node.attributes["swap_memory"] = opts.swap_memory
+            if "maximum_iterations" not in node.attributes and getattr(opts, "maximum_iterations", None) is not None:
+                node.attributes["maximum_iterations"] = opts.maximum_iterations
+            if "shape_invariants" not in node.attributes and getattr(opts, "shape_invariants", None) is not None:
+                node.attributes["shape_invariants"] = opts.shape_invariants
+            if "loop_options" not in node.attributes:
+                node.attributes["loop_options"] = opts
+
         self.active_graph.nodes[node.id] = node
         if getattr(node, "op_type", "") != "Input" and hasattr(self.active_graph, "inputs"):
             if node.id in self.active_graph.inputs:
@@ -81,8 +96,10 @@ class TracingState:
         """
         if self.active_graph is not None:
             self.graph_stack.append(self.active_graph)
+            self.loop_options_stack.append(self.current_loop_options)
         self.active_graph = LogicalGraph(name=name)
         self.constant_cache = {}
+        self.current_loop_options = None
         self.is_tracing = True
         return self.active_graph
 
@@ -94,9 +111,12 @@ class TracingState:
         graph = self.active_graph
         if self.graph_stack:
             self.active_graph = self.graph_stack.pop()
+            self.current_loop_options = self.loop_options_stack.pop() if self.loop_options_stack else None
             self.is_tracing = True
         else:
             self.active_graph = None
+            self.current_loop_options = None
+            self.loop_options_stack.clear()
             self.is_tracing = False
         return graph
 

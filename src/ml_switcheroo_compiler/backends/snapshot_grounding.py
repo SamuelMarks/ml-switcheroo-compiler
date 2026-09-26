@@ -245,52 +245,92 @@ def _extract_stub_endpoints(backend_name: str, endpoints: set[str]) -> None:
                         endpoints.add(func_name)
 
 
+def _resolve_env_or_package_snapshot_dir() -> str | None:
+    """Resolve snapshot directory from environment variables or installed packages.
+
+    Returns:
+        str | None: Absolute path to the located snapshot directory, or None if not found.
+    """
+    for env_var in ("ML_ECOSYSTEM_SNAPSHOTS_DIR", "ML_FRAMEWORK_SNAPSHOTS_DIR"):
+        env_dir: str | None = os.environ.get(env_var)
+        if env_dir and os.path.exists(env_dir):
+            return os.path.abspath(env_dir)
+
+    for pkg_name in ("ml_ecosystem_snapshots", "ml_framework_snapshots"):
+        try:
+            import importlib.util
+
+            spec = importlib.util.find_spec(pkg_name)
+            if spec is not None and spec.origin is not None:
+                cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
+                if os.path.exists(cand) and any(f.endswith(".json") for f in os.listdir(cand)):
+                    return os.path.abspath(cand)
+        except Exception:
+            pass
+
+    return None
+
+
 def _resolve_default_snapshot_dir() -> str:
     """Resolve default static snapshot directory across environment, packages, and caches.
 
     Returns:
         str: Absolute path to the located snapshot directory.
     """
-    env_dir: str | None = os.environ.get("ML_FRAMEWORK_SNAPSHOTS_DIR")
-    if env_dir and os.path.exists(env_dir):
-        return os.path.abspath(env_dir)
+    env_or_pkg: str | None = _resolve_env_or_package_snapshot_dir()
+    if env_or_pkg is not None:
+        return env_or_pkg
 
-    try:
-        import importlib.util
+    candidate_dirs: list[str] = [
+        os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots", "snapshots")),
+        os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots")),
+        os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots")),
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "ml-ecosystem-snapshots",
+                "src",
+                "ml_ecosystem_snapshots",
+                "snapshots",
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "ml-ecosystem-snapshots",
+                "src",
+                "ml_framework_snapshots",
+                "snapshots",
+            )
+        ),
+        os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "ml-framework-snapshots",
+                "src",
+                "ml_framework_snapshots",
+                "snapshots",
+            )
+        ),
+        os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots")),
+    ]
+    for cdir in candidate_dirs:
+        if os.path.exists(cdir) and any(f.endswith(".json") for f in os.listdir(cdir)):
+            return cdir
 
-        spec = importlib.util.find_spec("ml_framework_snapshots")
-        if spec is not None and spec.origin is not None:
-            cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
-            if os.path.exists(cand) and any(f.endswith(".json") for f in os.listdir(cand)):
-                return os.path.abspath(cand)
-    except Exception:
-        pass
-
-    compiler_cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots"))
-    if os.path.exists(compiler_cache_dir) and any(f.endswith(".json") for f in os.listdir(compiler_cache_dir)):
-        return compiler_cache_dir
-
-    default_dir: str = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "..",
-            "..",
-            "ml-framework-snapshots",
-            "src",
-            "ml_framework_snapshots",
-            "snapshots",
-        )
-    )
-    if os.path.exists(default_dir) and any(f.endswith(".json") for f in os.listdir(default_dir)):
-        return default_dir
-
-    cache_dir: str = os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots"))
-    if os.path.exists(cache_dir) and any(f.endswith(".json") for f in os.listdir(cache_dir)):
-        return cache_dir
-
-    return default_dir
+    return candidate_dirs[3]
 
 
 def _split_signature_params(raw_params: list[object]) -> list[list[dict[str, object]]]:
@@ -358,7 +398,7 @@ class SnapshotGroundingEngine:
         Returns:
             str | None: Absolute path to the latest matching snapshot file, or None.
         """
-        if not os.path.exists(sdir):
+        if not os.path.exists(sdir) or not os.path.isdir(sdir):
             return None
         all_candidates: list[str] = [f for f in os.listdir(sdir) if f.startswith(prefix) and f.endswith(suffix)]
         if not all_candidates:
@@ -385,8 +425,52 @@ class SnapshotGroundingEngine:
 
         dirs_to_check: list[str] = [self.snapshot_dir]
         if self._is_default_snapshot_dir:
-            for extra in ("ml_switcheroo_compiler", "ml_framework_snapshots"):
-                cd: str = os.path.expanduser(os.path.join("~", ".cache", extra, "snapshots"))
+            candidate_dirs: list[str] = [
+                os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "..",
+                        "..",
+                        "..",
+                        "..",
+                        "ml-ecosystem-snapshots",
+                        "src",
+                        "ml_ecosystem_snapshots",
+                        "snapshots",
+                    )
+                ),
+                os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "..",
+                        "..",
+                        "..",
+                        "..",
+                        "ml-ecosystem-snapshots",
+                        "src",
+                        "ml_framework_snapshots",
+                        "snapshots",
+                    )
+                ),
+                os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "..",
+                        "..",
+                        "..",
+                        "..",
+                        "ml-framework-snapshots",
+                        "src",
+                        "ml_framework_snapshots",
+                        "snapshots",
+                    )
+                ),
+                os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots", "snapshots")),
+                os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots")),
+                os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots")),
+                os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots")),
+            ]
+            for cd in candidate_dirs:
                 if cd not in dirs_to_check and os.path.exists(cd):
                     dirs_to_check.append(cd)
 

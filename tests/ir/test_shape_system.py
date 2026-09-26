@@ -273,3 +273,208 @@ def test_symnode_eval_fallback_and_polynomial() -> None:
     bare = BareSymNode()
     with pytest.raises(NotImplementedError, match="Evaluation not implemented"):
         bare.eval({"x": 1})
+
+
+def test_symnode_fallback_eval_branches() -> None:
+    """Test all operator branches in SymNode.eval fallback."""
+    from ml_switcheroo_compiler.ir.shape_system import SymConst, SymNode
+
+    class SimplifyDummy(SymNode):
+        def simplify(self) -> SymNode:
+            return SymConst(100)
+
+    assert SimplifyDummy().eval({}) == 100
+
+    class BinaryDummy(SymNode):
+        def __init__(self, op: str, left: SymNode, right: SymNode) -> None:
+            self.op = op
+            self.left = left
+            self.right = right
+
+    ops_expected = [
+        ("+", 6),
+        ("-", 2),
+        ("*", 8),
+        ("//", 2),
+        ("/", 2),
+        ("%", 0),
+        ("**", 16),
+        ("min", 2),
+        ("max", 4),
+        ("==", 0),
+        ("!=", 1),
+        ("<", 0),
+        ("<=", 0),
+        (">", 1),
+        (">=", 1),
+    ]
+    for op, expected in ops_expected:
+        node = BinaryDummy(op, SymConst(4), SymConst(2))
+        assert node.eval({}) == expected
+
+    with pytest.raises(ZeroDivisionError, match="Division by zero"):
+        BinaryDummy("//", SymConst(4), SymConst(0)).eval({})
+
+    with pytest.raises(ZeroDivisionError, match="Modulo by zero"):
+        BinaryDummy("%", SymConst(4), SymConst(0)).eval({})
+
+    class UnaryDummy(SymNode):
+        def __init__(self, op: str, operand: SymNode) -> None:
+            self.op = op
+            self.operand = operand
+
+    uops_expected = [
+        ("abs", 5),
+        ("-", 5),
+        ("floor", -5),
+        ("ceil", -5),
+    ]
+    for uop, expected in uops_expected:
+        unode = UnaryDummy(uop, SymConst(-5))
+        assert unode.eval({}) == expected
+
+    # Unknown binary op falling through to unary / not implemented
+    class UnknownBin(SymNode):
+        def __init__(self) -> None:
+            self.op = "unknown_op"
+            self.left = SymConst(1)
+            self.right = SymConst(2)
+
+    with pytest.raises(NotImplementedError, match="Evaluation not implemented"):
+        UnknownBin().eval({})
+
+    # Unknown unary op falling through to not implemented
+    class UnknownUnary(SymNode):
+        def __init__(self) -> None:
+            self.op = "unknown_unary"
+            self.operand = SymConst(1)
+
+    with pytest.raises(NotImplementedError, match="Evaluation not implemented"):
+        UnknownUnary().eval({})
+
+
+def test_symbolic_simplification_and_dunder_branches() -> None:
+    """Test missing branch simplifications for min, max, div, pow, mod, piecewise."""
+    from ml_switcheroo_compiler.ir.shape_system import (
+        SymBinaryOp,
+        SymConst,
+        SymNode,
+        SymPiecewise,
+        SymUnaryOp,
+        SymVar,
+    )
+
+    x = SymVar("x")
+    y = SymVar("y")
+
+    # 1. __rmod__ and __rpow__
+    rmod_node = 10 % x
+    assert isinstance(rmod_node, SymBinaryOp)
+    assert rmod_node.op == "%"
+
+    rpow_node = 2**x
+    assert isinstance(rpow_node, SymBinaryOp)
+    assert rpow_node.op == "**"
+
+    # 2. Division simplification with constant multiple (lines 913-915)
+    # s_left.right is const: (x * 6) // 3
+    div_node = SymBinaryOp("//", SymBinaryOp("*", x, SymConst(6)), SymConst(3)).simplify()
+    assert div_node == SymBinaryOp("*", SymConst(2), x)
+
+    # s_left.left is const: (6 * x) // 3
+    div_node_left = SymBinaryOp("//", SymBinaryOp("*", SymConst(6), x), SymConst(3)).simplify()
+    assert div_node_left == SymBinaryOp("*", SymConst(2), x)
+
+    # 3. min simplifications (lines 930-943)
+    # nested min
+    assert (SymBinaryOp("min", SymBinaryOp("min", x, y), x)).simplify() == SymBinaryOp("min", x, y)
+    assert (SymBinaryOp("min", SymBinaryOp("min", y, x), x)).simplify() == SymBinaryOp("min", y, x)
+    assert (SymBinaryOp("min", x, SymBinaryOp("min", x, y))).simplify() == SymBinaryOp("min", x, y)
+    assert (SymBinaryOp("min", x, SymBinaryOp("min", y, x))).simplify() == SymBinaryOp("min", y, x)
+
+    # min with +
+    assert (SymBinaryOp("min", SymBinaryOp("+", x, SymConst(5)), x)).simplify() == x
+    assert (SymBinaryOp("min", SymBinaryOp("+", SymConst(5), x), x)).simplify() == x
+    assert (SymBinaryOp("min", x, SymBinaryOp("+", x, SymConst(5)))).simplify() == x
+    assert (SymBinaryOp("min", x, SymBinaryOp("+", SymConst(5), x))).simplify() == x
+
+    # min with -
+    assert (SymBinaryOp("min", SymBinaryOp("-", x, SymConst(5)), x)).simplify() == SymBinaryOp("-", x, SymConst(5))
+    assert (SymBinaryOp("min", x, SymBinaryOp("-", x, SymConst(5)))).simplify() == SymBinaryOp("-", x, SymConst(5))
+
+    # 4. max simplifications (lines 950-963)
+    # nested max
+    assert (SymBinaryOp("max", SymBinaryOp("max", x, y), x)).simplify() == SymBinaryOp("max", x, y)
+    assert (SymBinaryOp("max", SymBinaryOp("max", y, x), x)).simplify() == SymBinaryOp("max", y, x)
+    assert (SymBinaryOp("max", x, SymBinaryOp("max", x, y))).simplify() == SymBinaryOp("max", x, y)
+    assert (SymBinaryOp("max", x, SymBinaryOp("max", y, x))).simplify() == SymBinaryOp("max", y, x)
+
+    # max with +
+    assert (SymBinaryOp("max", SymBinaryOp("+", x, SymConst(5)), x)).simplify() == SymBinaryOp("+", x, SymConst(5))
+    assert (SymBinaryOp("max", SymBinaryOp("+", SymConst(5), x), x)).simplify() == SymBinaryOp("+", x, SymConst(5))
+    assert (SymBinaryOp("max", x, SymBinaryOp("+", x, SymConst(5)))).simplify() == SymBinaryOp("+", x, SymConst(5))
+    assert (SymBinaryOp("max", x, SymBinaryOp("+", SymConst(5), x))).simplify() == SymBinaryOp("+", x, SymConst(5))
+
+    # max with -
+    assert (SymBinaryOp("max", SymBinaryOp("-", x, SymConst(5)), x)).simplify() == x
+    assert (SymBinaryOp("max", x, SymBinaryOp("-", x, SymConst(5)))).simplify() == x
+
+    # 5. SymUnaryOp.simplify returning SymUnaryOp (line 1120)
+    u_simp = SymUnaryOp("abs", x).simplify()
+    assert isinstance(u_simp, SymUnaryOp)
+
+    # 6. SymPiecewise bool conditions, __eq__, __hash__ (lines 1214, 1242, 1252)
+    pw_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
+    assert pw_true.eval({}) == 42
+    pw_false = SymPiecewise([(False, SymConst(42))], default=SymConst(0))
+    assert pw_false.eval({}) == 0
+
+    pw1 = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
+    pw2 = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
+    assert pw1 == pw2
+    assert hash(pw1) == hash(pw2)
+    assert pw1 != 123
+
+    # Line 913: UnsimplifyingMul to keep right operand as const
+    class UnsimplifyingMul(SymBinaryOp):
+        def simplify(self) -> SymNode:
+            return self
+
+    raw_mul = UnsimplifyingMul("*", x, SymConst(6))
+    assert SymBinaryOp("//", raw_mul, SymConst(3)).simplify() == SymBinaryOp("*", SymConst(2), x)
+
+    # Division remainder != 0 (line 914->965 false branch)
+    assert SymBinaryOp("//", SymBinaryOp("*", x, SymConst(5)), SymConst(3)).simplify() == SymBinaryOp("//", SymBinaryOp("*", SymConst(5), x), SymConst(3))
+
+    # Lines 935, 938, 955, 958 false branches: + with negative const
+    assert SymBinaryOp("min", SymBinaryOp("+", x, SymConst(-5)), x).simplify() == SymBinaryOp("-", x, SymConst(5))
+    assert SymBinaryOp("min", x, SymBinaryOp("+", x, SymConst(-5))).simplify() == SymBinaryOp("-", x, SymConst(5))
+    assert SymBinaryOp("max", SymBinaryOp("+", x, SymConst(-5)), x).simplify() == x
+    assert SymBinaryOp("max", x, SymBinaryOp("+", x, SymConst(-5))).simplify() == x
+
+    # Line 1118: SymUnaryOp '-' with SymConst
+    assert SymUnaryOp("-", SymConst(7)).simplify() == SymConst(-7)
+
+    # 7. Remaining partial branches (935->937, 938->940, 945->965, 955->957, 958->960, 1118->1120, 1214->1216)
+    z = SymVar("z")
+    assert SymBinaryOp("min", SymBinaryOp("+", x, y), z).simplify() == SymBinaryOp("min", SymBinaryOp("+", x, y), z)
+    assert SymBinaryOp("min", z, SymBinaryOp("+", x, y)).simplify() == SymBinaryOp("min", z, SymBinaryOp("+", x, y))
+    assert SymBinaryOp("max", SymBinaryOp("+", x, y), z).simplify() == SymBinaryOp("max", SymBinaryOp("+", x, y), z)
+    assert SymBinaryOp("max", z, SymBinaryOp("+", x, y)).simplify() == SymBinaryOp("max", z, SymBinaryOp("+", x, y))
+
+    # Binary op not in (+, -, *, //, %, min, max), e.g. '=='
+    assert SymBinaryOp("==", x, y).simplify() == SymBinaryOp("==", x, y)
+
+    # SymUnaryOp unknown op with SymConst operand
+    u_cust = SymUnaryOp("custom_unary", SymConst(5)).simplify()
+    assert u_cust.op == "custom_unary" and u_cust.operand == SymConst(5)
+
+    # SymPiecewise cond not callable, SymNode, or bool
+    # Boolean conditions (True and False) hitting both 1215->1216 (True) and 1215->1216 (False)
+    pw_bool_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
+    assert pw_bool_true.eval({}) == 42
+    pw_bool_false = SymPiecewise([(False, SymConst(42))], default=SymConst(0))
+    assert pw_bool_false.eval({}) == 0
+    # Fall-through when cond is neither callable, SymNode, nor bool
+    pw_int = SymPiecewise([(1, SymConst(42))], default=SymConst(0))
+    assert pw_int.eval({}) == 0

@@ -65,9 +65,18 @@ def test_logical_infer_shape_additional():
     assert op.infer_shape(Dummy((5,)), to_begin=Dummy((2,)), to_end=Dummy((3,))) == (9,)
 
     # Ediff1d with None in shape
-    assert op.infer_shape(Dummy((None,))) == (None,)
-    assert op.infer_shape(Dummy((5,)), to_begin=Dummy((None,))) == (None,)
-    assert op.infer_shape(Dummy((5,)), to_end=Dummy((None,))) == (None,)
+    from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+    assert op.infer_shape(Dummy((None,))) == (SymVar("diff_len"),)
+    assert op.infer_shape(Dummy((5,)), to_begin=Dummy((None,))) == (SymVar("diff_len"),)
+    assert op.infer_shape(Dummy((5,)), to_end=Dummy((None,))) == (SymVar("diff_len"),)
+
+    # Edge cases for _get_size_from_shape (None, list/tuple, non-int in shape)
+    assert op.infer_shape(None) == (0,)
+    assert op.infer_shape(Dummy((5,)), to_begin=[1, 2]) == (6,)
+    assert op.infer_shape(Dummy((5,)), to_end=(10,)) == (5,)
+    assert op.infer_shape(Dummy((5,)), to_begin=None) == (4,)
+    assert op.infer_shape(Dummy((5, "str_dim")), to_begin=Dummy(())) == (5,)
 
 
 def test_logical_dispatch():

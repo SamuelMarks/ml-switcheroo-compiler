@@ -23,16 +23,26 @@ class RaggedGather(OpDef):
     op_name = "RaggedGather"
 
     def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+        """Infer output shape for RaggedGather.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args (params, indices).
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Inferred shape.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        params = args[0] if args else kwargs.get("params")
+        indices = args[1] if len(args) > 1 else kwargs.get("indices")
+        if params is None or indices is None:
+            return ()
+        shape_p = tuple(getattr(params, "shape", getattr(params, "shape_metadata", params if isinstance(params, (list, tuple)) else ())))
+        shape_i = tuple(getattr(indices, "shape", getattr(indices, "shape_metadata", indices if isinstance(indices, (list, tuple)) else ())))
+        leading = shape_i if shape_i else (SymVar("gather_batch"),)
+        trailing = shape_p[1:] if len(shape_p) > 1 else ()
+        return leading + trailing
 
 
 @register_op("RaggedTensorToDense")
@@ -49,13 +59,27 @@ class RaggedTensorToDense(OpDef):
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Dense output shape.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        target_shape = kwargs.get("shape")
+        if target_shape is not None:
+            return tuple(target_shape)
+        rt_input = args[0] if args else kwargs.get("rt_input")
+        if rt_input is None:
+            return ()
+        inp_shape = tuple(getattr(rt_input, "shape", getattr(rt_input, "shape_metadata", rt_input if isinstance(rt_input, (list, tuple)) else ())))
+        if not inp_shape:
+            return ()
+        batch = inp_shape[0]
+        ragged_dim = inp_shape[1] if len(inp_shape) > 1 else SymVar("max_seq_len")
+        trailing = inp_shape[2:] if len(inp_shape) > 2 else ()
+        return (batch, ragged_dim) + trailing
 
 
 def ragged_tensor_to_dense(
@@ -124,13 +148,16 @@ class RaggedAdd(OpDef):
         """Calculate the output shape for a ragged addition operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result shape.
         """
-        return ()
+        inp = args[0] if args else kwargs.get("x", kwargs.get("a"))
+        if inp is None:
+            return ()
+        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 @register_op("RaggedMatMul")
@@ -147,13 +174,24 @@ class RaggedMatMul(OpDef):
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Output shape with preserved outer and contraction dims.
         """
-        return ()
+        a = args[0] if args else kwargs.get("a")
+        b = args[1] if len(args) > 1 else kwargs.get("b")
+        if a is None or b is None:
+            return ()
+        shape_a = tuple(getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        if len(shape_a) < 2 or len(shape_b) < 2:
+            return shape_a
+        m = shape_a[-2]
+        n = shape_b[-1]
+        batch = shape_a[:-2]
+        return batch + (m, n)
 
 
 @register_op("RaggedDynamicBroadcast")
@@ -170,13 +208,19 @@ class RaggedDynamicBroadcast(OpDef):
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Broadcasted target shape.
         """
-        return ()
+        shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
+        if shape is not None:
+            return tuple(shape)
+        inp = args[0] if args else kwargs.get("input")
+        if inp is None:
+            return ()
+        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 @register_op("RaggedConstant")
@@ -193,12 +237,20 @@ class RaggedConstant(OpDef):
         """Calculate the output shape for a ragged constant operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result shape with symbolic inner ragged dimension.
         """
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        val = args[0] if args else kwargs.get("pylist", kwargs.get("constant", kwargs.get("value")))
+        if val is None:
+            return ()
+        if isinstance(val, (list, tuple)):
+            batch = len(val)
+            return (batch, SymVar("var_len"))
         return ()
 
 
@@ -216,13 +268,23 @@ class RaggedCrossHashed(OpDef):
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result shape with leading batch and symbolic cross length.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
+        if not inputs and "inputs" in kwargs:
+            inputs = kwargs["inputs"]
+        if not inputs:
+            return ()
+        first = inputs[0]
+        f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        batch = f_shape[0] if f_shape else 1
+        return (batch, SymVar("cross_len"))
 
 
 @register_op("RaggedRange")
@@ -239,13 +301,20 @@ class RaggedRange(OpDef):
         """Calculate the output shape for a ragged range operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args (starts, limits, deltas).
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Result shape with batch size and symbolic range length.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        starts = args[0] if args else kwargs.get("starts")
+        if starts is None:
+            return (1, SymVar("range_len"))
+        s_shape = tuple(getattr(starts, "shape", getattr(starts, "shape_metadata", (len(starts),) if isinstance(starts, (list, tuple)) else ())))
+        batch = s_shape[0] if s_shape else 1
+        return (batch, SymVar("range_len"))
 
 
 @register_op("RaggedRowSplitsToSegmentIds")
@@ -262,13 +331,15 @@ class RaggedRowSplitsToSegmentIds(OpDef):
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: 1D segment IDs shape.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        return (SymVar("num_elements"),)
 
 
 @register_op("RaggedSegmentIdsToRowSplits")
@@ -285,13 +356,18 @@ class RaggedSegmentIdsToRowSplits(OpDef):
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Row splits shape (num_segments + 1,).
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        num_segments = kwargs.get("num_segments")
+        if isinstance(num_segments, int):
+            return (num_segments + 1,)
+        return (SymVar("num_segments_plus_1"),)
 
 
 @register_op("RaggedStack")
@@ -308,13 +384,26 @@ class RaggedStack(OpDef):
         """Calculate the output shape for a ragged stack operation.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args (list of tensors).
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Higher-rank stacked shape.
         """
-        return ()
+        rt_inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
+        if not rt_inputs and "values" in kwargs:
+            rt_inputs = kwargs["values"]
+        if not rt_inputs:
+            return ()
+        first = rt_inputs[0]
+        f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        axis = int(kwargs.get("axis", 0))
+        n = len(rt_inputs)
+        s = list(f_shape)
+        if axis < 0:
+            axis += len(s) + 1
+        s.insert(axis, n)
+        return tuple(s)
 
 
 @register_op("RaggedStackDynamicPartitions")
@@ -331,13 +420,21 @@ class RaggedStackDynamicPartitions(OpDef):
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Partition stacked shape (num_partitions, ...).
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        num_partitions = int(kwargs.get("num_partitions", 2))
+        data = args[0] if args else kwargs.get("data")
+        trailing = ()
+        if data is not None:
+            d_shape = tuple(getattr(data, "shape", getattr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+            trailing = d_shape[1:] if len(d_shape) > 1 else ()
+        return (num_partitions, SymVar("partition_len")) + trailing
 
 
 __all__ = [
@@ -369,16 +466,29 @@ class BooleanMask(OpDef):
     op_name = "BooleanMask"
 
     def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+        """Infer output shape for BooleanMask.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Positional args (data, mask).
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Filtered shape with dynamic leading dimension.
         """
-        return ()
+        from ml_switcheroo_compiler.ir.shape_system import SymVar
+
+        data = args[0] if args else kwargs.get("data", kwargs.get("tensor"))
+        mask = args[1] if len(args) > 1 else kwargs.get("mask")
+        if data is None:
+            return (SymVar("masked_count"),)
+        d_shape = tuple(getattr(data, "shape", getattr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+        m_ndim = 1
+        if mask is not None:
+            m_shape = getattr(mask, "shape", getattr(mask, "shape_metadata", None))
+            if m_shape:
+                m_ndim = len(m_shape)
+        trailing = d_shape[m_ndim:] if len(d_shape) >= m_ndim else ()
+        return (SymVar("masked_count"),) + trailing
 
 
 @register_op("MapFlatValues")
@@ -387,18 +497,21 @@ class MapFlatValues(OpDef):
 
     op_name = "MapFlatValues"
 
-    def infer_shape(self, op, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, op=None, *args, **kwargs):
+        """Infer shape for MapFlatValues operation.
 
         Args:
-            op (Any): The op parameter.
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            op (object): The mapped op.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Shape matching the primary ragged input.
         """
-        return ()
+        inp = args[0] if args else kwargs.get("x", kwargs.get("input"))
+        if inp is None:
+            return ()
+        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 from .frontend import boolean_mask, map_flat_values

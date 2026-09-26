@@ -203,4 +203,4 @@ def test_ragged_missing():
     class DummyShape:
         shape = (1, 2)
 
-    assert RaggedDot().infer_shape(DummyShape()) == ()
+    assert RaggedDot().infer_shape(DummyShape()) == (1, 2, 1)

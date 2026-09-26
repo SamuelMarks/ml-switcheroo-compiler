@@ -19,6 +19,10 @@ def test_concatenate(mocker):
     mocker.patch("ml_switcheroo_compiler.ops.shape.joining._emit_shape_node", return_value="concat")
     assert concatenate([t1, t2], 0) == "concat"
 
+    # 0-D scalar tensor concatenation in tracing mode
+    t_scalar = Tensor(MockTensor(()).data, TensorConfig((), "float32", "cpu"))
+    assert concatenate([t_scalar, t_scalar], 0) == "concat"
+
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((6, 3))

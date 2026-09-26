@@ -168,7 +168,10 @@ class TFRecordWriter:
         if dir_name:
             os.makedirs(dir_name, exist_ok=True)
 
-        self._file = open(path, "wb")
+        # If path points to an existing directory (e.g. repo directory 'path/'), write to a file inside it
+        actual_path = os.path.join(path, "records.tfrecord") if os.path.isdir(path) else path
+
+        self._file = open(actual_path, "wb")
         self._compressor: Any = None
         if self.options.compression_type == "GZIP":
             import gzip

@@ -16,34 +16,83 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class Solve(OpDef):
     """Solve Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+        """Infer solution shape for linear system AX = B.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (object): Matrix A and RHS B arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Broadcasted solution shape.
         """
-        return ()
+        a = args[0] if len(args) > 0 else kwargs.get("a")
+        b = args[1] if len(args) > 1 else kwargs.get("b")
+        if a is None or b is None:
+            return ()
+        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return shape_b
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            return batch_out + (shape_a[-1],)
+
+        batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+        return batch_out + (shape_a[-1], shape_b[-1])
 
 
 @register_op("SolveEx")
 class SolveEx(OpDef):
     """SolveEx Operation Definition."""
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(self, *args, **kwargs) -> tuple[tuple[int, ...], tuple[int, ...]] | tuple[int, ...]:
+        """Infer solution and info shapes for SolveEx.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (object): Matrix A and RHS B arguments.
+            **kwargs (object): Optional keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple: Tuple of (solution_shape, info_shape).
         """
-        return ()
+        a = args[0] if len(args) > 0 else kwargs.get("a")
+        b = args[1] if len(args) > 1 else kwargs.get("b")
+        if a is None or b is None:
+            return ()
+        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+
+        if len(shape_a) < 2 or len(shape_b) < 1:
+            return (shape_b, ())
+
+        batch_a = shape_a[:-2]
+        is_1d = (len(shape_b) == 1) or (len(shape_b) == len(shape_a) - 1 and len(shape_a) > 2)
+
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        if is_1d:
+            batch_b = shape_b[:-1] if len(shape_b) > 1 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            sol_shape = batch_out + (shape_a[-1],)
+        else:
+            batch_b = shape_b[:-2] if len(shape_b) >= 2 else ()
+            batch_out = broadcast_shapes(batch_a, batch_b) if (batch_a or batch_b) else ()
+            sol_shape = batch_out + (shape_a[-1], shape_b[-1])
+
+        info_shape = batch_out
+        return (sol_shape, info_shape)
 
 
 def solve(a: Tensor, b: Tensor):

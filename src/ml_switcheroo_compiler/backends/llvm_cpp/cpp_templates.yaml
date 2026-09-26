@@ -78,7 +78,7 @@ templates:
   output:
     body: // Output {in0}
   unimplemented_fallback:
-    body: "NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}\n"
+    body: "NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}\n#pragma omp simd\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}\n"
   ternary:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
       \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\
@@ -251,6 +251,18 @@ templates:
       \    float inv_sum = 1.0f / sum_exp;\n    #pragma omp simd\n    for (int j =\
       \ 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = std::exp({in0}.data[r\
       \ * {D} + j] - max_val) * inv_sum;\n    }}\n}}\n"
+  logsoftmax:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
+      \   #pragma omp simd reduction(max:max_val)\n    for (int j = 0; j < {D}; ++j)\
+      \ {{ max_val = std::max(max_val, {in0}.data[r * {D} + j]); }}\n    float sum_exp\
+      \ = 0.0f;\n    #pragma omp simd reduction(+:sum_exp)\n    for (int j = 0; j\
+      \ < {D}; ++j) {{ sum_exp += std::exp({in0}.data[r * {D} + j] - max_val); }}\n\
+      \    float log_sum = std::log(sum_exp);\n    #pragma omp simd\n    for (int j\
+      \ = 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r\
+      \ * {D} + j] - max_val) - log_sum;\n    }}\n}}\n"
+  groupnorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint N = {N};\nint G = {G};\nint C_per_G = {C_per_G};\nint spatial = {spatial};\nint group_size = C_per_G * spatial;\nfor (int ng = 0; ng < N * G; ++ng) {{\n    int base = ng * group_size;\n    float mean = 0.0f;\n    #pragma omp simd reduction(+:mean)\n    for (int i = 0; i < group_size; ++i) mean += {in0}.data[base + i];\n    mean /= (float)(group_size > 0 ? group_size : 1);\n    float var = 0.0f;\n    #pragma omp simd reduction(+:var)\n    for (int i = 0; i < group_size; ++i) {{\n        float d = {in0}.data[base + i] - mean;\n        var += d * d;\n    }}\n    var /= (float)(group_size > 0 ? group_size : 1);\n    float inv_std = 1.0f / std::sqrt(var + {eps});\n    #pragma omp simd\n    for (int i = 0; i < group_size; ++i) {{\n        int c = (ng % G) * C_per_G + (i / spatial);\n        float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n        float b = {has_beta} ? {beta}.data[c] : 0.0f;\n        {clean_id}.data[base + i] = g * ({in0}.data[base + i] - mean) * inv_std + b;\n    }}\n}}\n"
   warp_shuffle_reduce:
     body: "NDArrayView<float> {clean_id}({out_shape_str});\nfloat total_sum = 0.0f;\n\
       #pragma omp parallel for reduction(+:total_sum)\nfor (size_t i = 0; i < {in0}.size();\
@@ -518,6 +530,74 @@ operations:
   bessel_i1:
     template: unary
     scalar_expr: bessel_i1(in0_val)
+  hardswish:
+    template: unary
+    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
+  hardsilu:
+    template: unary
+    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
+  reduceany:
+    template: reduction
+    init_val: "0.0"
+    scalar_expr: '(val != 0.0f) ? 1.0f : res'
+    final_combine: res
+  reduceall:
+    template: reduction
+    init_val: "1.0"
+    scalar_expr: '(val == 0.0f) ? 0.0f : res'
+    final_combine: res
+  reducesum:
+    template: reduction
+    init_val: "0.0"
+    scalar_expr: res + val
+    final_combine: res
+  reducemean:
+    template: reduction
+    init_val: "0.0"
+    scalar_expr: res + val
+    final_combine: res / (float){in0}.size()
+  reducemax:
+    template: reduction
+    init_val: "-1e38"
+    scalar_expr: std::max(res, val)
+    final_combine: res
+  reducemin:
+    template: reduction
+    init_val: "1e38"
+    scalar_expr: std::min(res, val)
+    final_combine: res
+  reduceprod:
+    template: reduction
+    init_val: "1.0"
+    scalar_expr: res * val
+    final_combine: res
+  cbrt:
+    template: unary
+    scalar_expr: std::cbrt(in0_val)
+  reciprocalnonan:
+    template: unary
+    scalar_expr: '(in0_val == 0.0f) ? 0.0f : (1.0f / in0_val)'
+  isreal:
+    template: unary
+    scalar_expr: 1.0f
+  celu:
+    template: unary
+    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
+  celu_:
+    template: unary
+    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
+  mse_loss:
+    template: binary
+    scalar_expr: (in0_val - in1_val) * (in0_val - in1_val)
+  polydiv:
+    template: binary
+    scalar_expr: in0_val / in1_val
+  viewcopy:
+    template: unary
+    scalar_expr: in0_val
+  full:
+    template: unary
+    scalar_expr: in0_val
 prelude: "#include <iostream>\n#include <vector>\n#include <cmath>\n#include <numeric>\n\
   #include <algorithm>\n#include <cassert>\n#include <cstdlib>\n#include <cstring>\n\
   #include <memory>\n#ifdef USE_BLAS\n#include <cblas.h>\n#endif\n\ninline float digamma(float\

@@ -273,7 +273,8 @@ def test_evaluator_missing_funcs():
     # Just generic coverage
     from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EvaluationContext, EvaluationStrategy
 
-    assert EvaluationStrategy.evaluate(None, None) is None
+    with pytest.raises(NotImplementedError):
+        EvaluationStrategy.evaluate(None, None)
 
     class DummyOp:
         @staticmethod
