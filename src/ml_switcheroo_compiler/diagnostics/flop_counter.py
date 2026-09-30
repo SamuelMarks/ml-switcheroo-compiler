@@ -1,19 +1,21 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """FLOP estimation module."""
 
+from __future__ import annotations
+
 import math
 
-from ml_switcheroo_ir import LogicalGraph
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
-def _estimate_node_flops(node) -> int:
+def _estimate_node_flops(node: LogicalNode) -> int:
     """Estimate flops for a single node.
 
     Args:
-        node (object): The node parameter.
+        node (LogicalNode): The IR node to estimate.
 
     Returns:
-        int: Result.
+        int: Estimated FLOP count for the node.
     """
     if node.op_type == "MatMul":
         # rough estimate
@@ -36,10 +38,10 @@ def estimate_flops(graph: LogicalGraph) -> int:
     """Estimate the number of floating-point operations in the graph.
 
     Args:
-        graph (LogicalGraph): The graph parameter.
+        graph (LogicalGraph): The IR graph to analyze.
 
     Returns:
-        int: Result.
+        int: Total estimated FLOP count across all nodes.
     """
     total_flops = 0
     for node in graph.nodes.values():

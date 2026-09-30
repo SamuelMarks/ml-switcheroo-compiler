@@ -1,7 +1,15 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for sets.py."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 @register_op("Setdiff1d")
@@ -10,17 +18,26 @@ class Setdiff1d(OpDef):
 
     op_name = "Setdiff1d"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer the output shape for the infer_shape operation.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for set difference.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("Setxor1d")
@@ -29,16 +46,26 @@ class Setxor1d(OpDef):
 
     op_name = "Setxor1d"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for set XOR.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("Union1d")
@@ -47,16 +74,26 @@ class Union1d(OpDef):
 
     op_name = "Union1d"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for set union.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueAll")
@@ -65,16 +102,26 @@ class UniqueAll(OpDef):
 
     op_name = "UniqueAll"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for unique all elements.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueCounts")
@@ -83,16 +130,26 @@ class UniqueCounts(OpDef):
 
     op_name = "UniqueCounts"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for unique counts.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueInverse")
@@ -101,16 +158,26 @@ class UniqueInverse(OpDef):
 
     op_name = "UniqueInverse"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for unique inverse indices.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueValues")
@@ -119,13 +186,23 @@ class UniqueValues(OpDef):
 
     op_name = "UniqueValues"
 
-    def infer_shape(self, *args, **kwargs):
-        """Infer shape.
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
+        """Infer output shape for unique values.
 
         Args:
-            *args (Any): Arguments.
-            **kwargs (Any): Keyword arguments.
+            *args (tuple[int, ...] | list[int] | Tensor | IRNode): Input shapes or tensors.
+            **kwargs (str | int | float | bool | None): Keyword arguments.
 
-        Returns: Tensor: Computed shape.
+        Returns:
+            tuple[int, ...]: Output shape.
         """
-        return args[0] if args else ()
+        if not args:
+            return ()
+        first = args[0]
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))

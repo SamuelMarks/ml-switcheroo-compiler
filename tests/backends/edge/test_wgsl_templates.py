@@ -151,6 +151,7 @@ def test_backends_wgsl_empty_kernels() -> None:
 
 def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
     """Test get_wgsl_grounding_schema when json file is missing and validate_wgsl_statement branches."""
+    import json
     from unittest import mock
 
     import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
@@ -161,12 +162,36 @@ def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
         schema = wp.get_wgsl_grounding_schema()
         assert schema == {"ops": []}
 
-    # Reset cache
-    wp._WGSL_GROUNDING_SCHEMA = None
+    # 2. get_wgsl_grounding_schema cached branch
+    cached_schema = wp.get_wgsl_grounding_schema()
+    assert cached_schema == {"ops": []}
 
-    # 2. validate_wgsl_statement where ops is not a list (or op_entry is not a dict)
+    # 3. get_wgsl_grounding_schema when schema_path exists
+    wp._WGSL_GROUNDING_SCHEMA = None
+    mock_json_content = json.dumps({"ops": [{"name": "mock_op"}, "not_a_dict_entry", {"name": "other_op"}]})
+    with mock.patch("os.path.exists", return_value=True):
+        with mock.patch("builtins.open", mock.mock_open(read_data=mock_json_content)):
+            schema_loaded = wp.get_wgsl_grounding_schema()
+            assert len(schema_loaded["ops"]) == 3
+
+    # 4. validate_wgsl_statement finding op in ops_list
+    assert wp.validate_wgsl_statement("mock_op") is True
+
+    # 5. validate_wgsl_statement finding op in get_wgsl_op_mapping
+    with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value="custom_mapped"):
+        assert wp.validate_wgsl_statement("unknown_in_ops") is True
+
+    # 6. validate_wgsl_statement finding op in _WGSL_TEMPLATES (case-insensitive and exact match)
+    with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None):
+        with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": {"my_template": "code"}}):
+            assert wp.validate_wgsl_statement("MY_TEMPLATE") is True
+            assert wp.validate_wgsl_statement("my_template") is True
+            assert wp.validate_wgsl_statement("completely_unmatched_op") is False
+
+    # 7. validate_wgsl_statement where ops is not a list and templates is not a dict
     with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_grounding_schema", return_value={"ops": "not_a_list"}):
         with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_op_mapping", return_value=None):
             with mock.patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._WGSL_TEMPLATES", {"templates": "not_a_dict"}):
                 res = wp.validate_wgsl_statement("non_existent_op")
                 assert res is False
+    wp._WGSL_GROUNDING_SCHEMA = None

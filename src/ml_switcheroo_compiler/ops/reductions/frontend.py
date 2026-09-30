@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply reduction operations frontend."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -39,16 +41,20 @@ from .frontend_stats import (
 from .frontend_utils import reduce_window
 
 
-def sum(a, axis=None, keepdims: bool = False):
-    """Sum.
+def sum(
+    a: Tensor,
+    axis: int | tuple[int, ...] | None = None,
+    keepdims: bool = False,
+) -> Tensor:
+    """Sum reduction operation.
 
     Args:
-        a (Any): The a parameter.
-        axis (Any): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        a (Tensor): Input tensor to reduce.
+        axis (int | tuple[int, ...] | None): Axis or axes along which to sum.
+        keepdims (bool): Whether to keep the reduced dimensions with length 1.
 
     Returns:
-        Tensor: Result.
+        Tensor: Resulting reduced tensor.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
@@ -56,16 +62,20 @@ def sum(a, axis=None, keepdims: bool = False):
     return _emit_shape_node("Sum", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def max(a, axis=None, keepdims: bool = False):
-    """Max.
+def max(
+    a: Tensor,
+    axis: int | tuple[int, ...] | None = None,
+    keepdims: bool = False,
+) -> Tensor:
+    """Max reduction operation.
 
     Args:
-        a (Any): The a parameter.
-        axis (Any): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        a (Tensor): Input tensor to reduce.
+        axis (int | tuple[int, ...] | None): Axis or axes along which to compute max.
+        keepdims (bool): Whether to keep the reduced dimensions with length 1.
 
     Returns:
-        Tensor: Result.
+        Tensor: Resulting reduced tensor.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
@@ -73,16 +83,20 @@ def max(a, axis=None, keepdims: bool = False):
     return _emit_shape_node("Max", [a], {"axis": axis, "keepdims": keepdims}, (None,), getattr(a, "dtype", "float32"))
 
 
-def min(a, axis=None, keepdims: bool = False):
-    """Min.
+def min(
+    a: Tensor,
+    axis: int | tuple[int, ...] | None = None,
+    keepdims: bool = False,
+) -> Tensor:
+    """Min reduction operation.
 
     Args:
-        a (Any): The a parameter.
-        axis (Any): The axis parameter.
-        keepdims (bool): The keepdims parameter.
+        a (Tensor): Input tensor to reduce.
+        axis (int | tuple[int, ...] | None): Axis or axes along which to compute min.
+        keepdims (bool): Whether to keep the reduced dimensions with length 1.
 
     Returns:
-        Tensor: Result.
+        Tensor: Resulting reduced tensor.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)

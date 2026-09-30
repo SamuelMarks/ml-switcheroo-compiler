@@ -1,10 +1,23 @@
 # ruff: noqa: E501
+import pytest
+
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions import approx_max_k, approx_min_k, segment_max, segment_mean, segment_min, segment_prod, unsorted_segment_max, unsorted_segment_mean, unsorted_segment_min, unsorted_segment_prod, unsorted_segment_sqrt_n, unsorted_segment_sum
-from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
+from ml_switcheroo_compiler.ops.reductions.frontend import (
+    max as fe_max,
+)
+from ml_switcheroo_compiler.ops.reductions.frontend import (
+    min as fe_min,
+)
+from ml_switcheroo_compiler.ops.reductions.frontend import (
+    segment_sum,
+)
+from ml_switcheroo_compiler.ops.reductions.frontend import (
+    sum as fe_sum,
+)
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 "Provides required module functionality."
@@ -76,7 +89,10 @@ def test_reductions_frontend_brute():
     indices2d = Tensor(np.zeros((2, 3, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8), "int64", "cpu"))
     indices3d = Tensor(np.zeros((2, 3, 8, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8, 8), "int64", "cpu"))
 
-    with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend") as mock_backend:
+    with (
+        patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend") as mock_backend,
+        patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.get_active_backend") as mock_backend_utils,
+    ):
 
         class DummyBackend:
             def execute_op(self, op_type, *args, **kwargs):
@@ -87,7 +103,9 @@ def test_reductions_frontend_brute():
             def array(self, x):
                 return x
 
-        mock_backend.return_value = DummyBackend()
+        dummy_backend = DummyBackend()
+        mock_backend.return_value = dummy_backend
+        mock_backend_utils.return_value = dummy_backend
 
         adaptive_avg_pool2d(t_2d, (4, 4))
         adaptive_max_pool2d(t_2d, (4, 4))
@@ -183,3 +201,77 @@ def test_segment_exact_shapes(mocker) -> None:
 
     segment_prod(data_2d, seg_ids, num_segments=4)
     assert captured_shapes["SegmentProd"] == (4, 8)
+
+
+def test_reductions_frontend_sum_max_min() -> None:
+    """Test sum, max, min in both eager and graph modes."""
+    t = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32), TensorConfig((2, 2), "float32", "cpu"))
+
+    # Eager mode
+    config.eager_mode = True
+    s_eager = fe_sum(t, axis=0, keepdims=True)
+    assert s_eager.shape == (1, 2)
+    m_eager = fe_max(t, axis=1, keepdims=False)
+    assert m_eager.shape == (2,)
+    n_eager = fe_min(t, axis=None, keepdims=False)
+    assert n_eager.shape == ()
+
+    # Tracing / graph mode
+    config.eager_mode = False
+    s_graph = fe_sum(t, axis=0, keepdims=True)
+    assert isinstance(s_graph, Tensor)
+    m_graph = fe_max(t, axis=1, keepdims=False)
+    assert isinstance(m_graph, Tensor)
+    n_graph = fe_min(t, axis=None, keepdims=False)
+    assert isinstance(n_graph, Tensor)
+
+
+def test_reductions_frontend_stats_ops() -> None:
+    """Test all frontend_stats operations for full branch coverage."""
+    from ml_switcheroo_compiler.ops.reductions.frontend_stats import (
+        approx_max_k,
+        approx_min_k,
+        corrcoef,
+        correlate,
+        cov,
+        ctc_loss,
+        pmean,
+        psum,
+    )
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    t = Tensor(np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
+    t2 = Tensor(np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
+
+    with patch.object(global_tracing_state, "add_node"):
+        # psum and pmean
+        assert isinstance(psum(t, "devices"), Tensor)
+        assert isinstance(pmean(t, "devices"), Tensor)
+
+        # approx_max_k and approx_min_k
+        v1, i1 = approx_max_k(t, k=2)
+        assert isinstance(v1, Tensor)
+        assert isinstance(i1, Tensor)
+        v2, i2 = approx_min_k(t, k=2)
+        assert isinstance(v2, Tensor)
+        assert isinstance(i2, Tensor)
+
+        # ctc_loss
+        targets = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
+        inp_len = Tensor(np.array([4], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
+        tgt_len = Tensor(np.array([2], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
+        loss = ctc_loss(t, targets, inp_len, tgt_len)
+        assert isinstance(loss, Tensor)
+
+        # corrcoef
+        assert isinstance(corrcoef(t), Tensor)
+        assert isinstance(corrcoef(t, t2, rowvar=False, bias=True, ddof=1), Tensor)
+
+        # correlate
+        assert isinstance(correlate(t, t2, mode="full"), Tensor)
+
+        # cov
+        assert isinstance(cov(t), Tensor)
+        assert isinstance(cov(t, t2, rowvar=True, bias=False, ddof=0, fweights=None, aweights=None), Tensor)
+        with pytest.raises(ValueError, match="Invalid keyword argument"):
+            cov(t, invalid_key=True)

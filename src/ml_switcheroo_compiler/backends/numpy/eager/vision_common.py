@@ -80,18 +80,3 @@ __all__ = [
     "np",
     "numpy_eager_registry",
 ]
-
-__all__ = [
-    "__cached__",
-    "__doc__",
-    "__file__",
-    "__loader__",
-    "__name__",
-    "__package__",
-    "__spec__",
-    "_np_mel_filterbank",
-    "_np_mfcc",
-    "_np_power_iteration",
-    "np",
-    "numpy_eager_registry",
-]

@@ -1,13 +1,13 @@
-"""Module environment.py."""
+"""Provide the Environment class for managing variable state and tensor memory mappings during evaluation."""
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import TYPE_CHECKING, Union
 
-"""Provide the Environment class for managing variable state and tensor memory mappings.
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
 
-during evaluation
-"""
+ValueType = Union["Tensor", float, int, bool, str, tuple[int, ...], list[float]]
 
 
 class Environment:
@@ -15,28 +15,30 @@ class Environment:
 
     This class acts as a symbol table or memory store, mapping variable names
     to their corresponding values or tensors during the evaluation of an expression
-    or execution of a graph
+    or execution of a graph.
 
     Attributes:
-    memory (dict[str, object]): The internal storage mapping variable names to their
-    values
+        memory (dict[str, ValueType]): The internal storage mapping variable names to their values.
     """
 
-    def __init__(self, inputs=None) -> None:
-        """Initialize the object.
+    memory: dict[str, ValueType]
+
+    def __init__(self, inputs: dict[str, ValueType] | None = None) -> None:
+        """Initialize the environment.
 
         Args:
-            inputs (dict[str, object]): The inputs to process.
+            inputs (dict[str, ValueType] | None): Initial variable mapping dictionary.
         """
-        self.memory = inputs or {}
+        self.memory = inputs if inputs is not None else {}
 
-    def get(self, name: str):
+    def get(self, name: str) -> ValueType:
         """Retrieve the value associated with the given node or variable name.
 
         Args:
             name (str): The unique identifier for the tensor or variable to retrieve.
 
-        Returns: Tensor: The concrete tensor, scalar, or value associated with the name.
+        Returns:
+            ValueType: The concrete tensor, scalar, or value associated with the name.
 
         Raises:
             ValueError: If the requested name does not exist in the environment's memory.
@@ -46,12 +48,12 @@ class Environment:
             raise ValueError(msg)
         return self.memory[name]
 
-    def set(self, name: str, value) -> None:
+    def set(self, name: str, value: ValueType) -> None:
         """Store or update a value in the environment for a specific node or variable.
 
         Args:
             name (str): The unique identifier where the value should be stored.
-            value (object): The concrete tensor, scalar, or object to store.
+            value (ValueType): The concrete tensor, scalar, or object to store.
         """
         self.memory[name] = value
 

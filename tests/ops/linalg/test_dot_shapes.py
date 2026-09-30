@@ -95,3 +95,66 @@ def test_apply_over_axes_shape_inference() -> None:
 
     # Fallback
     assert op.infer_shape(None, None) == ()
+
+
+from hypothesis import given
+from hypothesis import strategies as st
+from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
+
+
+@given(k=st.integers(min_value=1, max_value=32))
+def test_hypothesis_dot_vector_contracts(k: int) -> None:
+    """Property test verifying 1D vector contractions via Hypothesis.
+
+    Args:
+        k (int): Contracting vector length.
+    """
+    op = Dot()
+    v1 = _make_tensor((k,))
+    v2 = _make_tensor((k,))
+    assert op.infer_shape(v1, v2) == ()
+
+
+@given(
+    m=st.integers(min_value=1, max_value=32),
+    k=st.integers(min_value=1, max_value=32),
+    n=st.integers(min_value=1, max_value=32),
+)
+def test_hypothesis_dot_matrix_contracts(m: int, k: int, n: int) -> None:
+    """Property test verifying 2D matrix contractions via Hypothesis and compliance.
+
+    Args:
+        m (int): Left matrix row count.
+        k (int): Inner contracting dimension.
+        n (int): Right matrix column count.
+    """
+    op = Dot()
+    m1 = _make_tensor((m, k))
+    m2 = _make_tensor((k, n))
+    assert op.infer_shape(m1, m2) == (m, n)
+
+    is_valid, out_shape, err = validate_matmul_shapes((m, k), (k, n), strict_2d=True)
+    assert is_valid is True
+    assert out_shape == [m, n]
+    assert err is None
+
+
+@given(
+    b=st.integers(min_value=1, max_value=8),
+    m=st.integers(min_value=1, max_value=16),
+    k=st.integers(min_value=1, max_value=16),
+    n=st.integers(min_value=1, max_value=16),
+)
+def test_hypothesis_dot_batched_contracts(b: int, m: int, k: int, n: int) -> None:
+    """Property test verifying batched 3D x 2D matrix contraction.
+
+    Args:
+        b (int): Batch dimension size.
+        m (int): Batch matrix row count.
+        k (int): Inner contracting dimension.
+        n (int): Right matrix column count.
+    """
+    op = Dot()
+    t_3d = _make_tensor((b, m, k))
+    m_2d = _make_tensor((k, n))
+    assert op.infer_shape(t_3d, m_2d) == (b, m, n)

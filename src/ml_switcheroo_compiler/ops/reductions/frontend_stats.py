@@ -6,55 +6,58 @@ from __future__ import annotations
 
 """Frontend reductions ops."""
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
 from .frontend_utils import _emit_reduction_node
 
 
 @dispatch_eager("Psum")
-def psum(x: Tensor, axis_name: str):
+def psum(x: Tensor, axis_name: str) -> Tensor:
     """Compute an all-reduce sum over the specified mapped axis.
 
     Args:
-        x (Tensor): The x parameter.
-        axis_name (str): The axis_name parameter.
+        x (Tensor): The input tensor to sum.
+        axis_name (str): The named axis along which to reduce.
 
     Returns:
-        Tensor: Result.
+        Tensor: Reduced tensor result.
     """
     return _emit_reduction_node("Psum", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("Pmean")
-def pmean(x: Tensor, axis_name: str):
+def pmean(x: Tensor, axis_name: str) -> Tensor:
     """Compute an all-reduce mean over the specified mapped axis.
 
     Args:
-        x (Tensor): The x parameter.
-        axis_name (str): The axis_name parameter.
+        x (Tensor): The input tensor to average.
+        axis_name (str): The named axis along which to reduce.
 
     Returns:
-        Tensor: Result.
+        Tensor: Reduced tensor result.
     """
     return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("ApproxMaxK")
-def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95):
+def approx_max_k(
+    operand: Tensor,
+    k: int,
+    reduction_dimension: int = -1,
+    recall_target: float = 0.95,
+) -> tuple[Tensor, Tensor]:
     """Compute approximate top-k max elements and their indices.
 
     Args:
-        operand (Tensor): The input tensor
-        k (int): Number of top elements to look for along the last dimension
-        reduction_dimension (int): The dimension to reduce along
-        recall_target (float): The target recall
+        operand (Tensor): The input tensor.
+        k (int): Number of top elements to look for along the last dimension.
+        reduction_dimension (int): The dimension to reduce along.
+        recall_target (float): The target recall.
 
     Returns:
-        tuple[Tensor, Tensor]: A tuple of (values, indices)
+        tuple[Tensor, Tensor]: A tuple of (values, indices).
     """
     attributes = {
         "k": k,
@@ -68,17 +71,22 @@ def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
 
 
 @dispatch_eager("ApproxMinK")
-def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95):
+def approx_min_k(
+    operand: Tensor,
+    k: int,
+    reduction_dimension: int = -1,
+    recall_target: float = 0.95,
+) -> tuple[Tensor, Tensor]:
     """Compute approximate top-k min elements and their indices.
 
     Args:
-        operand (Tensor): The input tensor
-        k (int): Number of top elements to look for along the last dimension
-        reduction_dimension (int): The dimension to reduce along
-        recall_target (float): The target recall
+        operand (Tensor): The input tensor.
+        k (int): Number of top elements to look for along the last dimension.
+        reduction_dimension (int): The dimension to reduce along.
+        recall_target (float): The target recall.
 
     Returns:
-        tuple[Tensor, Tensor]: A tuple of (values, indices)
+        tuple[Tensor, Tensor]: A tuple of (values, indices).
     """
     attributes = {
         "k": k,
@@ -96,7 +104,7 @@ def ctc_loss(
     targets: Tensor,
     input_lengths: Tensor,
     target_lengths: Tensor,
-):
+) -> Tensor:
     """Connectionist Temporal Classification Loss.
 
     Args:
@@ -113,18 +121,24 @@ def ctc_loss(
 
 
 @dispatch_eager("Corrcoef")
-def corrcoef(x, y=None, rowvar: bool = True, bias=None, ddof=None):
+def corrcoef(
+    x: Tensor,
+    y: Tensor | None = None,
+    rowvar: bool = True,
+    bias: bool | None = None,
+    ddof: int | None = None,
+) -> Tensor:
     """Return Pearson product-moment correlation coefficients.
 
     Args:
-        x (Any): The x parameter.
-        y (Any): The y parameter.
-        rowvar (bool): The rowvar parameter.
-        bias (Any): The bias parameter.
-        ddof (Any): The ddof parameter.
+        x (Tensor): Input tensor.
+        y (Tensor | None): Optional second input tensor.
+        rowvar (bool): If True, each row represents a variable.
+        bias (bool | None): Default normalization is False.
+        ddof (int | None): Degrees of freedom.
 
     Returns:
-        Tensor: Result.
+        Tensor: Correlation matrix.
     """
     return _emit_reduction_node(
         "Corrcoef",
@@ -136,38 +150,42 @@ def corrcoef(x, y=None, rowvar: bool = True, bias=None, ddof=None):
 
 
 @dispatch_eager("Correlate")
-def correlate(a, v, mode: str = "valid"):
+def correlate(
+    a: Tensor,
+    v: Tensor,
+    mode: str = "valid",
+) -> Tensor:
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
-        a (Any): The a parameter.
-        v (Any): The v parameter.
-        mode (str): The mode parameter.
+        a (Tensor): First 1-D sequence.
+        v (Tensor): Second 1-D sequence.
+        mode (str): Mode of correlation ('valid', 'same', 'full').
 
     Returns:
-        Tensor: Result.
+        Tensor: Cross-correlation result.
     """
     return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
 
 
 @dispatch_eager("Cov")
 def cov(
-    m,
-    y=None,
-    **kwargs,
-):
+    m: Tensor,
+    y: Tensor | None = None,
+    **kwargs: bool | int | float | Tensor | None,
+) -> Tensor:
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        m (Any): The m parameter.
-        y (Any): The y parameter.
-        **kwargs (Any): Keyword args.
+        m (Tensor): Input tensor.
+        y (Tensor | None): Optional additional data.
+        **kwargs (bool | int | float | Tensor | None): Keyword args including rowvar, bias, ddof, fweights, aweights.
 
     Returns:
-        Tensor: Result.
+        Tensor: Covariance matrix result.
 
     Raises:
-        ValueError: An exception.
+        ValueError: If an unexpected keyword argument is provided.
     """
     allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
     for k in kwargs:

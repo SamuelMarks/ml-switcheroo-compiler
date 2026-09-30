@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -22,15 +21,19 @@ from ml_switcheroo_compiler.ops.configs import WindowConfig
 class ReduceWindow:
     """ReduceWindow class."""
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(
+        self,
+        *args: Tensor | float | str | WindowConfig,
+        **kwargs: Tensor | float | str | WindowConfig | None,
+    ) -> tuple[int, ...]:
+        """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (Tensor | float | str | WindowConfig): Positional args.
+            **kwargs (Tensor | float | str | WindowConfig | None): Keyword args.
 
         Returns:
-            tuple: Result.
+            tuple[int, ...]: Result.
         """
         return ()
 
@@ -41,17 +44,17 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_st
 def _emit_reduction_node(
     op_type: str,
     inputs: Sequence[Tensor],
-    attrs,
-    out_shape,
+    attrs: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None],
+    out_shape: tuple[int | None, ...],
     out_dtype: DType,
-):
+) -> Tensor:
     """Evaluate _emit_reduction_node operation.
 
     Args:
         op_type (str): The op_type parameter.
-        inputs (Sequence): The inputs parameter.
-        attrs (dict): The attrs parameter.
-        out_shape (tuple): The out_shape parameter.
+        inputs (Sequence[Tensor]): The inputs parameter.
+        attrs (dict[str, int | float | str | bool | tuple[int, ...] | list[int] | tuple[tuple[int, int], ...] | None]): The attrs parameter.
+        out_shape (tuple[int | None, ...]): The out_shape parameter.
         out_dtype (DType): The out_dtype parameter.
 
     Returns:
@@ -72,12 +75,17 @@ def _emit_reduction_node(
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
-def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig):
+def _reduce_window_eager(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
     """Evaluate _reduce_window_eager operation.
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (Any): The init_value parameter.
+        init_value (Tensor | float): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
@@ -96,18 +104,22 @@ def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computatio
     return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device))
 
 
-def _build_reduce_window_attributes(init_value: Tensor | float, computation: str, window_config: WindowConfig):
+def _build_reduce_window_attributes(
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None]:
     """Evaluate _build_reduce_window_attributes operation.
 
     Args:
-        init_value (Any): The init_value parameter.
+        init_value (Tensor | float): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
     Returns:
-        dict: Result.
+        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None]: Result.
     """
-    attributes = {
+    attributes: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None] = {
         "computation": computation,
         "window_dimensions": window_config.window_dimensions,
         "window_strides": window_config.window_strides,
@@ -120,12 +132,17 @@ def _build_reduce_window_attributes(init_value: Tensor | float, computation: str
     return attributes
 
 
-def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig):
+def _reduce_window_trace(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
     """Evaluate _reduce_window_trace operation.
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (Any): The init_value parameter.
+        init_value (Tensor | float): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 
@@ -149,12 +166,12 @@ def reduce_window(
     init_value: Tensor | float,
     computation: str,
     window_config: WindowConfig,
-):
+) -> Tensor:
     """Apply a reduction function over a sliding window of the input.
 
     Args:
         operand (Tensor): The operand parameter.
-        init_value (Any): The init_value parameter.
+        init_value (Tensor | float): The init_value parameter.
         computation (str): The computation parameter.
         window_config (WindowConfig): The window_config parameter.
 

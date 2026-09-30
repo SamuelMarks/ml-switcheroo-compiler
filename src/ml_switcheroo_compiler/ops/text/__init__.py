@@ -1,7 +1,9 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module __init__.py."""
-
 """Text operations module."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.ops.text import ops
 from ml_switcheroo_compiler.ops.text.frontend import (
@@ -22,6 +24,9 @@ from ml_switcheroo_compiler.ops.text.frontend import (
     text_vectorization,
 )
 
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ir.core import IRNode
+
 _ = ops
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -34,15 +39,18 @@ class CreateToken(OpDef):
     op_name = "CreateToken"
 
 
-def create_token(*args, **kwargs):
+def create_token(
+    *args: str | int | float | bool,
+    **kwargs: str | int | float | bool | None,
+) -> IRNode:
     """Create token.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (str | int | float | bool): Positional args.
+        **kwargs (str | int | float | bool | None): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        IRNode: Resulting graph node.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 

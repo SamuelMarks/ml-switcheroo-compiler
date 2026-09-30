@@ -1,10 +1,14 @@
 """Diagnostics and types registry schema and validation for non-math metadata classes."""
 
+from __future__ import annotations
+
 import os
-from typing import Optional
+from typing import Union
 
 import yaml
 from pydantic import BaseModel
+
+MetadataValue = Union[str, int, float, bool, list[str], list[dict[str, Union[str, bool]]]]
 
 
 class TypeDefinition(BaseModel):
@@ -20,7 +24,7 @@ class TypeDefinition(BaseModel):
     name: str
     description: str = ""
     category: str = "type"
-    attributes: dict[str, object] = {}
+    attributes: dict[str, MetadataValue] = {}
 
 
 class TypesRegistryConfig(BaseModel):
@@ -33,7 +37,7 @@ class TypesRegistryConfig(BaseModel):
     types: dict[str, TypeDefinition] = {}
 
 
-def load_types_registry(yaml_path: Optional[str] = None) -> TypesRegistryConfig:
+def load_types_registry(yaml_path: str | None = None) -> TypesRegistryConfig:
     """Load non-math types registry from YAML configuration.
 
     Args:
@@ -47,11 +51,12 @@ def load_types_registry(yaml_path: Optional[str] = None) -> TypesRegistryConfig:
     if not os.path.exists(yaml_path):
         return TypesRegistryConfig(types={})
     with open(yaml_path, encoding="utf-8") as f:
-        data: dict[str, object] = yaml.safe_load(f) or {}
+        loaded = yaml.safe_load(f)
+        data: dict[str, dict[str, TypeDefinition]] = loaded if isinstance(loaded, dict) else {}
     return TypesRegistryConfig(**data)
 
 
-_TYPES_CACHE: Optional[set[str]] = None
+_TYPES_CACHE: set[str] | None = None
 
 
 def is_non_math_type(name: str) -> bool:

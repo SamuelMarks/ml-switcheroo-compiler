@@ -1,34 +1,48 @@
 """Numpy Logical Reductions."""
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from __future__ import annotations
+
+from types import ModuleType
+from typing import Union
+
+import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("All")
-def _np_all(backend_module, *args, **kwargs):
+def _np_all(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, int, float, bool, None],
+    **kwargs: Union[int, tuple[int, ...], bool, None],
+) -> np.ndarray:
     """Evaluate _np_all operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, int, float, bool, None]): Positional arguments to pass to all.
+        **kwargs (Union[int, tuple[int, ...], bool, None]): Keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Evaluated boolean reduction.
     """
     return backend_module.all(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CountNonzero")
-def _np_count_nonzero(backend_module, *args, **kwargs):
+def _np_count_nonzero(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, int, float, bool, None],
+    **kwargs: Union[int, tuple[int, ...], bool, None],
+) -> np.ndarray:
     """Evaluate _np_count_nonzero operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, int, float, bool, None]): Positional arguments to pass to count_nonzero.
+        **kwargs (Union[int, tuple[int, ...], bool, None]): Keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Count of non-zero elements.
     """
     return backend_module.count_nonzero(*args, **kwargs)

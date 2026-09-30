@@ -401,23 +401,31 @@ def test_mlx_cum_ops_dtype_fallbacks():
 def test_mlx_relu_and_zeros_and_reduce_scatter_coverage():
     """Test _mlx_relu fallback, scalar shape in _mlx_zeros, and _mlx_reduce_scatter exception fallback."""
     # 1. _mlx_relu with mlx.nn present
-    mock_nn = MagicMock()
-    mock_nn.relu.return_value = "relu_out"
-    orig_pkg_nn = getattr(mock_pkg, "nn", None)
-    mock_pkg.nn = mock_nn
     try:
+        import mlx.nn  # noqa: F401
+
+        has_mlx_nn = True
+    except (ImportError, AttributeError):
+        has_mlx_nn = False
+
+    if has_mlx_nn:
+        with patch("mlx.nn.relu", return_value="relu_out"):
+            assert eager._mlx_relu(mock_mx, "x") == "relu_out"
+    else:
+        mock_nn = MagicMock()
+        mock_nn.relu.return_value = "relu_out"
         with patch.dict(sys.modules, {"mlx.nn": mock_nn}):
             assert eager._mlx_relu(mock_mx, "x") == "relu_out"
-    finally:
-        if orig_pkg_nn is not None:
-            mock_pkg.nn = orig_pkg_nn
-        elif hasattr(mock_pkg, "nn"):
-            delattr(mock_pkg, "nn")
 
     # 2. _mlx_relu fallback to maximum
     with patch.dict(sys.modules, {"mlx.nn": None}):
-        mock_mx.maximum.return_value = "max_relu"
-        assert eager._mlx_relu(mock_mx, "x") == "max_relu"
+        if "mlx" in sys.modules and hasattr(sys.modules["mlx"], "nn"):
+            with patch.object(sys.modules["mlx"], "nn", None):
+                mock_mx.maximum.return_value = "max_relu"
+                assert eager._mlx_relu(mock_mx, "x") == "max_relu"
+        else:
+            mock_mx.maximum.return_value = "max_relu"
+            assert eager._mlx_relu(mock_mx, "x") == "max_relu"
 
     # 3. int shape in _mlx_zeros with resolved dtype (line 333)
     with patch("ml_switcheroo_compiler.backends.mlx.eager._resolve_dtype", return_value="float32"):

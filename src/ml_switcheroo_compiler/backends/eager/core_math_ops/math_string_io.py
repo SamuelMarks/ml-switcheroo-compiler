@@ -274,10 +274,10 @@ def _np_writefile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if func is not None:
         return func(*args, **kwargs)
 
-    if len(args) < 2 or args[0] is None:
-        return 0
-
     import os
+
+    if len(args) < 2 or args[0] is None or not isinstance(args[0], (str, bytes, os.PathLike)):
+        return 0
 
     filename = str(args[0])
     contents = args[1]

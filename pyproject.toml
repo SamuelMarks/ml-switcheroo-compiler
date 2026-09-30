@@ -32,9 +32,11 @@ onnx = ["requirements-backend-onnx.txt"]
 packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
+target-version = "py39"
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
 lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR09", "D"]
+lint.ignore = ["B905", "UP007"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -94,6 +96,7 @@ ignore-module = false
 ignore-nested-functions = false
 ignore-nested-classes = false
 ignore-setters = false
+ignore-overloaded-functions = true
 fail-under = 100
 exclude = ["tests", "docs", "ml-switcheroo-ir"]
 ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]

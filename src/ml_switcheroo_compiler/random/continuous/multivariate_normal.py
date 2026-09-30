@@ -3,16 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional, Union
-
-from ml_switcheroo_compiler.core.tensor import Tensor
-
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-
-"""Core abstractions and logic definitions for multivariate_normal.py."""
-import typing
 from dataclasses import dataclass
-from typing import Any
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -23,19 +14,24 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 class MultivariateNormalOptions:
     """Options for multivariate normal."""
 
-    shape: Any | None = None
-    dtype: Any | None = None
+    shape: Sequence[int] | tuple[int, ...] | None = None
+    dtype: dtypes.DType | None = None
     method: str = "cholesky"
 
 
-def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNormalOptions | None = None) -> Tensor:
+def multivariate_normal(
+    key: Tensor | str,
+    mean: Tensor | float,
+    cov: Tensor | float,
+    options: MultivariateNormalOptions | None = None,
+) -> Tensor:
     """Sample from a multivariate normal distribution.
 
     Args:
-        key (Any): The key parameter.
-        mean (Any): The mean parameter.
-        cov (Any): The cov parameter.
-        options (Any): The options parameter.
+        key (Tensor | str): The key parameter.
+        mean (Tensor | float): The mean parameter.
+        cov (Tensor | float): The cov parameter.
+        options (MultivariateNormalOptions | None): The options parameter.
 
     Returns:
         Tensor: Result.
@@ -46,10 +42,16 @@ def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNorm
     method = options.method
 
     dtype = dtype or dtypes.DType.Float32
-    out_shape = shape if shape is not None else ()
-    inputs = [key]
+    out_shape = tuple(shape) if shape is not None else ()
+    inputs: list[Tensor | str] = [key]
     if isinstance(mean, Tensor):
         inputs.append(mean)
     if isinstance(cov, Tensor):
         inputs.append(cov)
-    return _emit_random_node("MultivariateNormal", inputs, out_shape, dtype, {"method": method})
+    return _emit_random_node(
+        "MultivariateNormal",
+        inputs,  # type: ignore[arg-type]
+        out_shape,
+        dtype,
+        {"method": method},
+    )

@@ -1,9 +1,17 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Core abstractions and logic definitions for exponential.py."""
+"""Core abstractions and logic definitions for exponential operations."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.ops.base import register_op
 
 from .base import UnaryMathOp
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 @register_op("Exp")
@@ -73,15 +81,19 @@ class NanToNum(UnaryMathOp):
 
     op_name = "NanToNum"
 
-    def __call__(self, x, **kwargs):
+    def __call__(
+        self,
+        x: Tensor | IRNode | int | float | str,
+        **kwargs: int | float | str | bool | None,
+    ) -> Tensor | IRNode | str:
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
-        x (Any): The x parameter.
-        **kwargs (Any): Keyword args.
+            x (Tensor | IRNode | int | float | str): The input parameter.
+            **kwargs (int | float | str | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            Tensor | IRNode | str: Result.
         """
         kwargs.pop("copy", None)
         return super().__call__(x, **kwargs)

@@ -1,27 +1,29 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Math Ops."""
+"""Math Ops Gamma."""
 
-from collections.abc import Sequence
-from typing import Optional
+from __future__ import annotations
+
+from types import ModuleType
+from typing import Union
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
-
-from .math_general import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("Mvlgamma")
-def _np_mvlgamma(backend_module, *args, **kwargs):
+def _np_mvlgamma(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, int, float],
+    **kwargs: Union[int, float],
+) -> np.ndarray:
     """Evaluate _np_mvlgamma operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, int, float]): Input arguments.
+        **kwargs (Union[int, float]): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Log multivariate gamma evaluation.
     """
     return backend_module.mvlgamma(*args, **kwargs)

@@ -1,4 +1,4 @@
-"""Generate high-fidelity .pyi type stubs from ml-framework-snapshots and backend schemas."""
+"""Generate high-fidelity .pyi type stubs from ml-ecosystem-snapshots and backend schemas."""
 
 from __future__ import annotations
 
@@ -9,6 +9,12 @@ import json
 import keyword
 import os
 import shutil
+
+from ml_ecosystem_snapshots.stubs import (
+    _format_param_list,
+    _sanitize_default,
+    validate_pyi_stub,
+)
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
     SnapshotGroundingEngine,
@@ -241,6 +247,33 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
         return "Tensor"
 
 
+def format_params_via_ecosystem(
+    params: list[dict[str, object]],
+    has_varargs: bool = False,
+) -> str:
+    """Format parameter definitions utilizing ml-ecosystem-snapshots stub formatter.
+
+    Args:
+        params (list[dict[str, object]]): List of parameter dictionaries.
+        has_varargs (bool): Whether to append generic *args if not present. Defaults to False.
+
+    Returns:
+        str: Comma-separated signature parameter string.
+    """
+    clean_params: list[dict[str, object]] = []
+    for p in params:
+        if isinstance(p, dict) and p.get("name"):
+            clean_params.append(
+                {
+                    "name": p["name"],
+                    "kind": p.get("kind", "POSITIONAL_OR_KEYWORD"),
+                    "annotation": _clean_type_annotation(str(p.get("annotation") or "Tensor")),
+                    "default": p.get("default"),
+                }
+            )
+    return _format_param_list(clean_params, has_varargs=has_varargs)
+
+
 def _format_param_stub(param: dict[str, object]) -> str | None:
     """Format a snapshot param dictionary into a valid Python stub parameter.
 
@@ -268,6 +301,7 @@ def _format_param_stub(param: dict[str, object]) -> str | None:
     if kind == "VAR_KEYWORD":
         return f"**{name}: {typ}"
     if has_default:
+        _sanitize_default(str(default_val))
         return f"{name}: {typ} = ..."
     return f"{name}: {typ}"
 
@@ -284,7 +318,7 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
         int: Number of generated function stubs.
     """
     lines: list[str] = [
-        f'"""Auto-generated high-fidelity type stubs for {be_name} from ml-framework-snapshots."""',
+        f'"""Auto-generated high-fidelity type stubs for {be_name} from ml-ecosystem-snapshots."""',
         "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
@@ -358,8 +392,10 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
 
+    stub_content: str = "\n".join(lines) + "\n"
+    validate_pyi_stub(stub_content)
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write(stub_content)
 
     return len(seen_funcs) - 4
 
@@ -434,8 +470,10 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
             seen_funcs.add(attr)
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
+    stub_content = "\n".join(lines) + "\n"
+    validate_pyi_stub(stub_content)
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write(stub_content)
 
     return len(seen_funcs) - 1
 
@@ -464,8 +502,10 @@ def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
 
+    fallback_content = "\n".join(lines) + "\n"
+    validate_pyi_stub(fallback_content)
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write(fallback_content)
 
     return len(CORE_OPS)
 
@@ -505,19 +545,32 @@ def generate_stubs(
         snapshot_file: str | None = engine.get_snapshot_path(be_name)
         if snapshot_file and os.path.exists(snapshot_file):
             try:
-                with open(snapshot_file, encoding="utf-8") as f:
-                    data = json.loads(f.read())
+                if snapshot_file.endswith(".gz"):
+                    import gzip
+
+                    with gzip.open(snapshot_file, "rt", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    with open(snapshot_file, encoding="utf-8") as f:
+                        data = json.loads(f.read())
                 count = _generate_stubs_from_snapshot(data, be_name, stub_path)
             except Exception:
                 count = 0
 
         if count == 0 and snapshot_dir and os.path.isdir(snapshot_dir):
-            snapshot_files: list[str] = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and f.endswith(".json")]
+            snapshot_files: list[str] = [f for f in os.listdir(snapshot_dir) if f.startswith(f"{fw}_v") and (f.endswith(".json") or f.endswith(".json.gz"))]
             if snapshot_files:
                 latest_file = sorted(snapshot_files)[-1]
                 try:
-                    with open(os.path.join(snapshot_dir, latest_file), encoding="utf-8") as f:
-                        data = json.loads(f.read())
+                    latest_path = os.path.join(snapshot_dir, latest_file)
+                    if latest_path.endswith(".gz"):
+                        import gzip
+
+                        with gzip.open(latest_path, "rt", encoding="utf-8") as f:
+                            data = json.load(f)
+                    else:
+                        with open(latest_path, encoding="utf-8") as f:
+                            data = json.loads(f.read())
                     count = _generate_stubs_from_snapshot(data, be_name, stub_path)
                 except Exception:
                     count = 0

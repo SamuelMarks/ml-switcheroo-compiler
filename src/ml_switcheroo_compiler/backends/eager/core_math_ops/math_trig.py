@@ -146,7 +146,7 @@ def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.arctan(*args, **kwargs)
+    return np.arctan2(*args, **kwargs)
 
 
 @global_eager_registry.register("Sinc")
@@ -200,7 +200,9 @@ def _isinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if func:
         return func(*args, **kwargs)
 
-    return backend_module.isinf(backend_module.asarray(args[0]))
+    import numpy as np
+
+    return np.isinf(args[0])
 
 
 @global_eager_registry.register("Isposinf")
@@ -219,4 +221,6 @@ def _isposinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if func:
         return func(*args, **kwargs)
 
-    return backend_module.isposinf(backend_module.asarray(args[0]))
+    import numpy as np
+
+    return np.isposinf(args[0])

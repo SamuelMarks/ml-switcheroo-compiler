@@ -43,7 +43,7 @@ class OpDef:
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...] | tuple[tuple[int, ...], ...] | str:
         """infer_shape function.
 
         Args:
@@ -51,7 +51,7 @@ class OpDef:
             kwargs: Keyword args.
 
         Returns:
-            tuple[int, ...] | tuple[tuple[int, ...], ...]: Inferred output shape or tuple of output shapes.
+            tuple[int, ...] | tuple[tuple[int, ...], ...] | str: Inferred output shape or tuple of output shapes.
         """
         return tuple()
 

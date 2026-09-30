@@ -1,48 +1,56 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Math Ops."""
+"""Math Ops Segment."""
 
-from collections.abc import Sequence
-from typing import Optional
+from __future__ import annotations
+
+from types import ModuleType
+from typing import Union
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
-
-from .math_general import _get_np_arg, _get_sc
 
 
 @numpy_eager_registry.register("SegmentSum")
-def _np_segment_sum(backend_module, data, segment_ids, num_segments=None, **kwargs):
+def _np_segment_sum(
+    backend_module: ModuleType,
+    data: np.ndarray,
+    segment_ids: np.ndarray,
+    num_segments: int | None = None,
+    **kwargs: Union[int, float, str, None],
+) -> np.ndarray:
     """Evaluate _np_segment_sum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        data (object): The data parameter.
-        segment_ids (object): The segment_ids parameter.
-        num_segments (object): The num_segments parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        data (np.ndarray): Data array to sum over segments.
+        segment_ids (np.ndarray): 1D array indicating segment memberships.
+        num_segments (int | None): Number of distinct segments.
+        **kwargs (Union[int, float, str, None]): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Segment-summed result array.
     """
-    num_segments = num_segments if num_segments is not None else np.max(segment_ids) + 1
-    out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+    n_segments = num_segments if num_segments is not None else int(np.max(segment_ids)) + 1
+    out = np.zeros((n_segments,) + data.shape[1:], dtype=data.dtype)
     np.add.at(out, segment_ids, data)
     return out
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
-def _np_sparsesegmentsum(backend_module, *args, **kwargs):
+def _np_sparsesegmentsum(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, list[float], list[int]],
+    **kwargs: Union[int, float, str, None],
+) -> np.ndarray:
     """Implement SparseSegmentSum.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, list[float], list[int]]): Positional input arguments.
+        **kwargs (Union[int, float, str, None]): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Summed tensor result.
     """
     data = backend_module.asarray(args[0])
     return backend_module.sum(data, axis=0, keepdims=True)

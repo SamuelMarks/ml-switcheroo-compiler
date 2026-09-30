@@ -54,6 +54,7 @@ def test_trace_counts() -> None:
     def dummy_fn(x: Tensor) -> Tensor:
         return x
 
+    reset_trace_count(dummy_fn)
     assert get_trace_count(dummy_fn) == 0
     increment_trace_count(dummy_fn)
     assert get_trace_count(dummy_fn) == 1

@@ -1,7 +1,21 @@
+"""Tests for ReductionOp base class in ops.reductions.core."""
+
+from __future__ import annotations
+
+from pytest_mock import MockerFixture
+
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
 
-def test_reduction_op_call(mocker):
+def test_reduction_op_call(mocker: MockerFixture) -> None:
+    """Test calling ReductionOp dispatches operation to dispatch_op.
+
+    Args:
+        mocker (MockerFixture): Pytest mock fixture.
+
+    Returns:
+        None.
+    """
     op = ReductionOp()
     op.op_type = "MockReduction"
 
@@ -21,12 +35,22 @@ def test_reduction_op_call(mocker):
     mock_dispatch.assert_called_with("MockReduction", axis=1, keepdims=False)
 
 
-def test_reduction_op_infer_shape():
+def test_reduction_op_infer_shape() -> None:
+    """Test infer_shape on ReductionOp returns empty tuple.
+
+    Returns:
+        None.
+    """
     op = ReductionOp()
     assert op.infer_shape() == ()
 
 
-def test_reduction_op_format_args():
+def test_reduction_op_format_args() -> None:
+    """Test _format_args on ReductionOp formats axis and keepdims.
+
+    Returns:
+        None.
+    """
     op = ReductionOp()
 
     # Only x

@@ -1,18 +1,17 @@
+"""Unit tests for Vector-Jacobian Product (VJP) rule registry."""
+
 # ruff: noqa: E501
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
-
-"Provides required module functionality."
 
 
 def test_vjp_registry_coverage() -> None:
     """Test the vjp registry coverage behavior.
 
     Returns:
-        object: The inferred shape or computed result.
+        None
     """
-    "Execute the requested function."
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
@@ -56,12 +55,14 @@ def test_vjp_registry_coverage() -> None:
         assert has_vjp("fake_op") is True
 
 
-def test_vjp_registry_lazy_load():
+def test_vjp_registry_lazy_load() -> None:
+    """Test lazy loading in get_vjp when entry is initially missing from the registry."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
 
-    def mock_get_data(name):
+    def mock_get_data(name: str) -> None:
+        """Mock loader that populates registry on demand."""
         _VJP_REGISTRY[name] = "lazy_loaded_vjp"
         return None
 
@@ -70,7 +71,8 @@ def test_vjp_registry_lazy_load():
         assert res == "lazy_loaded_vjp"
 
 
-def test_has_vjp_not_in_registry_or_data():
+def test_has_vjp_not_in_registry_or_data() -> None:
+    """Test has_vjp returns False when operation is absent from registry and file data."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -79,7 +81,8 @@ def test_has_vjp_not_in_registry_or_data():
         assert has_vjp("AbsolutelyMissingOpTypeXYZ123") is False
 
 
-def test_has_vjp_data():
+def test_has_vjp_data() -> None:
+    """Test has_vjp returns True when operation is found in file data."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -95,10 +98,12 @@ def test_vjp_registry_full_branches():
 
     import yaml
 
+    import ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry as vr
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
         load_primitive_vjp_rules,
     )
 
+    vr._DECLARATIVE_VJP_CACHE = None
     # Cache hit branch (line 43)
     load_primitive_vjp_rules(path=None)
     rules_cached = load_primitive_vjp_rules(path=None)

@@ -244,7 +244,7 @@ def validate_arguments_against_snapshot(
     call_kwargs: list[str],
     engine: SnapshotGroundingEngine,
 ) -> list[str]:
-    """Validate argument mappings against snapshot parameter lists.
+    """Validate argument mappings against snapshot parameter lists and anti-patterns.
 
     Args:
         backend_name (str): Target backend identifier.
@@ -256,11 +256,41 @@ def validate_arguments_against_snapshot(
     Returns:
         list[str]: Validation error messages if mismatch occurs.
     """
+    errors: list[str] = []
+    fw_target = engine.config.targets.get(backend_name)
+    canonical_fw: str = fw_target.framework if fw_target else backend_name
+
+    try:
+        from ml_ecosystem_snapshots.grounding import validate_python_call
+        from ml_ecosystem_snapshots.mcp_server import explain_anti_pattern
+
+        dummy_args: list[str] = list(call_args)
+        dummy_kwargs: dict[str, str] = {kw: "val" for kw in call_kwargs if kw and not kw.startswith("_")}
+        item: dict[str, object] | None = engine.get_endpoint_item(backend_name, endpoint)
+        canonical_ep: str = str(item.get("api_path") or endpoint) if item else endpoint
+        report = validate_python_call(canonical_fw, canonical_ep, dummy_args, dummy_kwargs)
+        for diag in report.diagnostics:
+            if diag.field == "api_path":
+                continue
+            fix_msg: str = f" (suggested fix: '{diag.suggested_fix}')" if diag.suggested_fix else ""
+            if diag.field.startswith("kwargs."):
+                kw: str = diag.field[7:]
+                anti_info: dict[str, object] = explain_anti_pattern(canonical_fw, canonical_ep, kw)
+                if anti_info.get("is_known_anti_pattern"):
+                    exp: str = str(anti_info.get("explanation") or "")
+                    canon: str = str(anti_info.get("canonical_argument") or "")
+                    errors.append(f"Anti-pattern detected for '{kw}' on '{endpoint}' in backend '{backend_name}': {exp} (use '{canon}')")
+                    continue
+            errors.append(f"{diag.message}{fix_msg}")
+        if errors:
+            return errors
+    except Exception:
+        pass
+
     params: list[dict[str, object]] | None = engine.get_endpoint_parameters(backend_name, endpoint)
     if not params:
         return []
 
-    errors: list[str] = []
     has_var_kw: bool = any(p.get("kind") == "VAR_KEYWORD" for p in params)
     allowed_kwargs: set[str] = {str(p.get("name")) for p in params if p.get("kind") in ("POSITIONAL_OR_KEYWORD", "KEYWORD_ONLY")}
 
@@ -369,7 +399,9 @@ def validate_mappings() -> list[str]:
                             if f"{backend_name}_" in ep or "prefix" in ep or f"_{backend_name}" in ep or (backend_name == "numpy" and ep.startswith("np_")):
                                 continue
                             if not resolve_api_endpoint(ep, backend_name, engine):
-                                errors.append(f"{filepath}: '{op}' unverified call '{ep}' in '{backend_name}' backend")
+                                suggestion: str | None = engine.suggest_closest_endpoint(backend_name, ep) if backend_name else None
+                                hint: str = f" (did you mean '{suggestion}'?)" if suggestion else ""
+                                errors.append(f"{filepath}: '{op}' unverified call '{ep}' in '{backend_name}' backend{hint}")
                             else:
                                 arg_errs: list[str] = validate_arguments_against_snapshot(backend_name, ep, call_args, call_kwargs, engine)
                                 for ae in arg_errs:
@@ -388,7 +420,9 @@ def validate_mappings() -> list[str]:
                     continue
 
                 if not resolve_api_endpoint(clean_api, backend_name, engine):
-                    errors.append(f"{filepath}: '{op}' mapped to unverified/hallucinated endpoint '{clean_api}'")
+                    suggestion = engine.suggest_closest_endpoint(backend_name, clean_api) if backend_name else None
+                    hint = f" (did you mean '{suggestion}'?)" if suggestion else ""
+                    errors.append(f"{filepath}: '{op}' mapped to unverified/hallucinated endpoint '{clean_api}'{hint}")
 
     return errors
 

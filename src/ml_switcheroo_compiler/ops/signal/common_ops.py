@@ -1,8 +1,10 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Signal processing operations."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,10 +17,10 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 def _emit_signal_node(
     op_type: str,
     inputs: list[Tensor],
-    attrs,
+    attrs: dict[str, int | float | str | bool | tuple[int, ...]],
     out_shape: tuple[int, ...],
     dtype: str,
-):
+) -> Tensor | tuple[Tensor, ...]:
     """Emit a signal node.
 
     Args:
@@ -29,20 +31,20 @@ def _emit_signal_node(
         dtype (str): The dtype parameter.
 
     Returns:
-        Tensor: Result.
+        Tensor | tuple[Tensor, ...]: Result.
     """
     return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
-def _calculate_padding(mode: str, boundary: str, fillvalue: float):
+def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, str | float]:
     """Calculate padding configuration for convolve2d.
 
     Args:
         mode (str): Padding mode.
-        boundary (str): Boundary condition.
+        boundary (boundary): Boundary condition.
         fillvalue (float): Fill value for 'fill' boundary.
 
     Returns:
-        dict[str, Any]: Padding configuration dictionary.
+        dict[str, str | float]: Padding configuration dictionary.
     """
     return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}

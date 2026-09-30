@@ -6,6 +6,7 @@ from __future__ import annotations
 
 """Reductions."""
 
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
@@ -127,12 +128,16 @@ class Cumsum(ReductionOp):
 class NaryMathOp(OpDef):
     """Define base class for N-ary mathematical operations (operations taking a list of tensors)."""
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: Tensor | list[Tensor] | tuple[Tensor, ...],
+        **kwargs: Tensor | list[Tensor] | tuple[Tensor, ...] | int | float | str | bool | None,
+    ) -> tuple[int, ...]:
         """Infer the output shape for the infer_shape operation.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (Tensor | list[Tensor] | tuple[Tensor, ...]): Positional args.
+            **kwargs (Tensor | list[Tensor] | tuple[Tensor, ...] | int | float | str | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

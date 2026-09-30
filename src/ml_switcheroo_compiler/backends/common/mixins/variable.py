@@ -15,13 +15,18 @@ class VariableASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Variable and assignment AST generator mixin."""
 
-    def visit_Assign(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Assign(
+        self,
+        node: IRNode,
+        input_vars: list[str],
+        **kwargs: str | int | float | bool | None,
+    ) -> str:
         """Evaluate visit_Assign operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs: Keyword args.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
             str: Result.
@@ -29,13 +34,18 @@ class VariableASTVisitor(CommonASTVisitor):
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_assign({input_vars[0]}, {input_vars[1]})"
 
-    def visit_AssignAdd(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AssignAdd(
+        self,
+        node: IRNode,
+        input_vars: list[str],
+        **kwargs: str | int | float | bool | None,
+    ) -> str:
         """Evaluate visit_AssignAdd operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs: Keyword args.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
             str: Result.
@@ -43,13 +53,18 @@ class VariableASTVisitor(CommonASTVisitor):
         pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_assign_add({input_vars[0]}, {input_vars[1]})"
 
-    def visit_AssignSub(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AssignSub(
+        self,
+        node: IRNode,
+        input_vars: list[str],
+        **kwargs: str | int | float | bool | None,
+    ) -> str:
         """Evaluate visit_AssignSub operation.
 
         Args:
             node (IRNode): The node parameter.
             input_vars (list[str]): The input_vars parameter.
-            **kwargs: Keyword args.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
             str: Result.

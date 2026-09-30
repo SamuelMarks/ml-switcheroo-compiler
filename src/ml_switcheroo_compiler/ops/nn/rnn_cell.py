@@ -1,9 +1,6 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module rnn_cell.py."""
+"""RNN cell operations."""
 
-"""RNN operations."""
-
-from typing import Any, Optional
+from __future__ import annotations
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
@@ -16,27 +13,27 @@ def simple_rnn_cell(
     state: tuple[Tensor, ...],
     kernel: Tensor,
     recurrent_kernel: Tensor,
-    bias: Optional[Tensor] = None,
+    bias: Tensor | None = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Fused SimpleRNN cell math.
 
     Args:
-        inputs (Tensor): The inputs.
-        state (tuple[Tensor, ...]): The hidden state (usually a 1-element tuple).
-        kernel (Tensor): The input weights.
-        recurrent_kernel (Tensor): The recurrent weights.
-        bias (Optional[Tensor]): The bias.
+        inputs (Tensor): Input tensor.
+        state (tuple[Tensor, ...]): Hidden state tuple (usually a 1-element tuple).
+        kernel (Tensor): Input weights tensor.
+        recurrent_kernel (Tensor): Recurrent state weights tensor.
+        bias (Tensor | None): Optional bias tensor.
 
     Returns:
-        tuple[Tensor, tuple[Tensor, ...]]: The output and new state.
+        tuple[Tensor, tuple[Tensor, ...]]: The computed output tensor and new state tuple.
     """
     h_prev = state[0]
 
-    matrix_x = matmul(inputs, kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_x = matmul(inputs, kernel)
     if bias is not None:
         matrix_x = add(matrix_x, bias)
 
-    matrix_inner = matmul(h_prev, recurrent_kernel)  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    matrix_inner = matmul(h_prev, recurrent_kernel)
 
     h_new = tanh(add(matrix_x, matrix_inner))
 

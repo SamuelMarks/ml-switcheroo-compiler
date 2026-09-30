@@ -355,3 +355,9 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
     monkeypatch.setattr("builtins.open", mock_open_error)
     with pytest.raises(OSError, match="Cannot open error"):
         _np_writefile(object(), str(target_file), "content")
+
+    # 4. Bare filename (no directory) covering dir_name == "" branch and other object types
+    monkeypatch.undo()
+    monkeypatch.chdir(tmp_path)
+    assert _np_writefile(object(), "bare_filename.txt", 12345) == 1
+    assert (tmp_path / "bare_filename.txt").read_text(encoding="utf-8") == "12345"

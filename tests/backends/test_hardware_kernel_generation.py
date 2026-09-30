@@ -267,3 +267,37 @@ def test_all_registered_operations_hardware_codegen_parity() -> None:
         # LLVM/C++ code generation and syntax validation
         cpp_src = CppGenerator(g).generate()
         assert clang_comp.validate_syntax(cpp_src)
+
+
+def test_sass_and_rdna_assembly_compliance() -> None:
+    """Verify SASS and RDNA assembly kernels against hardware compliance checkers."""
+    from ml_ecosystem_snapshots.compliance import (
+        check_rdna_assembly_compliance,
+        check_sass_assembly_compliance,
+    )
+
+    # Valid SASS kernel instruction sequence on SM80
+    sass_snippet = """
+    FFMA R0, R1, R2, R3;
+    FADD R4, R0, R5;
+    """
+    res_sass = check_sass_assembly_compliance(sass_snippet, sm_arch="sm_80")
+    assert res_sass["is_compliant"] is True
+    assert res_sass["verified_instructions"] >= 1
+
+    # Invalid SASS instruction
+    res_sass_invalid = check_sass_assembly_compliance("INVALID_UNKNOWN_MNEMONIC R0, R1;", sm_arch="sm_80")
+    assert res_sass_invalid["is_compliant"] is False
+
+    # Valid RDNA assembly on GFX10/RDNA1
+    rdna_snippet = """
+    v_add_f32_e32 v0, v1, v2
+    v_mul_f32_e32 v3, v0, v4
+    """
+    res_rdna = check_rdna_assembly_compliance(rdna_snippet, gfx_arch="GFX10/RDNA1")
+    assert res_rdna["is_compliant"] is True
+    assert res_rdna["verified_instructions"] >= 1
+
+    # Invalid RDNA instruction
+    res_rdna_invalid = check_rdna_assembly_compliance("v_invalid_instruction_xyz v0, v1", gfx_arch="GFX10/RDNA1")
+    assert res_rdna_invalid["is_compliant"] is False

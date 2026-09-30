@@ -18,14 +18,14 @@ def _emit_segment_op(
     data: Tensor,
     segment_ids: Tensor,
     num_segments: int | None = None,
-):
+) -> Tensor:
     """Evaluate _emit_segment_op operation.
 
     Args:
         op_type (str): The op_type parameter.
         data (Tensor): The data parameter.
         segment_ids (Tensor): The segment_ids parameter.
-        num_segments (Any): The num_segments parameter.
+        num_segments (int | None): The num_segments parameter.
 
     Returns:
         Tensor: Result.

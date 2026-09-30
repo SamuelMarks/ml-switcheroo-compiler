@@ -938,3 +938,463 @@ def test_snapshot_grounding_new_ecosystem_targets() -> None:
         assert target.framework == target_name
 
     assert cfg.targets["pytorch"].canonical_roots == ["torch", "pytorch"]
+
+
+def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
+    """Test verification of candidate snapshot JSON completion across backends.
+
+    Args:
+        tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
+    """
+    from ml_switcheroo_compiler.backends.snapshot_grounding import _is_snapshot_file_complete
+
+    # Non-dask backends return True unconditionally
+    dummy_file = str(tmp_path / "torch_dummy.json")
+    assert _is_snapshot_file_complete(dummy_file, "pytorch") is True
+
+    # Complete dask snapshot with array category
+    complete_dask = tmp_path / "complete_dask.json"
+    complete_dask.write_text('{"categories": {"array": [{"name": "abs"}]}}', encoding="utf-8")
+    assert _is_snapshot_file_complete(str(complete_dask), "dask") is True
+
+    # Incomplete dask snapshot without array category
+    incomplete_dask = tmp_path / "incomplete_dask.json"
+    incomplete_dask.write_text('{"categories": {"util": [{"name": "Expr"}]}}', encoding="utf-8")
+    assert _is_snapshot_file_complete(str(incomplete_dask), "dask") is False
+
+    # Missing or invalid JSON file
+    assert _is_snapshot_file_complete(str(tmp_path / "non_existent.json"), "dask") is False
+    corrupt_dask = tmp_path / "corrupt.json"
+    corrupt_dask.write_text("{bad json", encoding="utf-8")
+    assert _is_snapshot_file_complete(str(corrupt_dask), "dask") is False
+
+
+def test_compute_levenshtein() -> None:
+    """Test Levenshtein distance calculation across edge cases."""
+    from ml_switcheroo_compiler.backends.snapshot_grounding import compute_levenshtein
+
+    assert compute_levenshtein("same", "same") == 0
+    assert compute_levenshtein("", "test") == 4
+    assert compute_levenshtein("test", "") == 4
+    assert compute_levenshtein("cat", "hat") == 1
+    assert compute_levenshtein("kitten", "sitting") == 3
+
+
+def test_suggest_closest_endpoint() -> None:
+    """Test suggesting closest endpoint on mistyped candidates."""
+    from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
+
+    engine = SnapshotGroundingEngine()
+    # Empty / unknown backend returns None
+    assert engine.suggest_closest_endpoint("unknown_backend_xyz", "matmul") is None
+
+    # Known backend with valid endpoint close match
+    suggestion = engine.suggest_closest_endpoint("numpy", "matmull")
+    assert suggestion is not None
+    assert "matmul" in suggestion.lower()
+
+    # Candidate exceeding max_distance returns None
+    assert engine.suggest_closest_endpoint("numpy", "completely_unrelated_nonsense_symbol_12345", max_distance=2) is None
+
+
+def test_compressed_snapshot_archive_support(tmp_path: pytest.TempPathFactory) -> None:
+    """Test loading and validating compressed (.json.gz) framework snapshot archives.
+
+    Args:
+        tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
+    """
+    import gzip
+    import json
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        BackendSnapshotTargetModel,
+        BackendSnapshotTargetsConfig,
+        SnapshotGroundingEngine,
+        _is_snapshot_file_complete,
+    )
+
+    gz_file = tmp_path / "mockfw_v1.0.0.json.gz"
+    payload = {
+        "categories": {
+            "math": [
+                {
+                    "name": "gz_op",
+                    "api_path": "mockfw.gz_op",
+                    "kind": "function",
+                    "params": [{"name": "x", "kind": "POSITIONAL_OR_KEYWORD"}],
+                }
+            ]
+        }
+    }
+    with gzip.open(gz_file, "wt", encoding="utf-8") as f:
+        json.dump(payload, f)
+
+    cfg = BackendSnapshotTargetsConfig(
+        targets={
+            "mock_gz": BackendSnapshotTargetModel(
+                framework="mockfw",
+                snapshot_glob="mockfw_v*.json",
+                canonical_roots=["mockfw"],
+            )
+        }
+    )
+    engine = SnapshotGroundingEngine(snapshot_dir=str(tmp_path), config=cfg)
+    assert engine.get_snapshot_path("mock_gz") == str(gz_file)
+    data = engine.load_snapshot("mock_gz")
+    assert isinstance(data, dict)
+    assert "categories" in data
+    assert engine.is_endpoint_valid("mock_gz", "mockfw.gz_op")
+
+    ref = engine.get_endpoint_ghost_ref("mock_gz", "mockfw.gz_op")
+    assert ref is not None
+    assert ref.name == "gz_op"
+
+    # Test dask gz completeness
+    dask_gz_file = tmp_path / "dask_v1.0.0.json.gz"
+    with gzip.open(dask_gz_file, "wt", encoding="utf-8") as f:
+        json.dump({"categories": {"array": [{"name": "compute"}]}}, f)
+    assert _is_snapshot_file_complete(str(dask_gz_file), "dask") is True
+
+    bad_dask_gz = tmp_path / "dask_incomplete_v1.0.0.json.gz"
+    with gzip.open(bad_dask_gz, "wt", encoding="utf-8") as f:
+        json.dump({"categories": {"other": []}}, f)
+    assert _is_snapshot_file_complete(str(bad_dask_gz), "dask") is False
+
+
+def test_standard_arg_map_and_discrepancy_replacement() -> None:
+    """Test standard argument mapping and anti-pattern replacement resolution."""
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        _find_discrepancy_replacement,
+        _load_standard_arg_map,
+    )
+
+    std_map = _load_standard_arg_map()
+    assert isinstance(std_map, dict)
+    assert "axis" in std_map
+    assert "dim" in std_map
+
+    rep = _find_discrepancy_replacement("axis", {"dim"}, {"dim"}, "torch", "torch.sum")
+    assert rep == "dim"
+
+    rep_np = _find_discrepancy_replacement("dim", {"axis"}, {"axis"}, "numpy", "numpy.sum")
+    assert rep_np == "axis"
+
+    assert _find_discrepancy_replacement("unknown_xyz", {"foo"}, {"foo"}, "torch", "torch.sum") is None
+
+
+def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.TempPathFactory) -> None:
+    """Verify remaining branch edge cases in snapshot_grounding module.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+        tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
+    """
+    import importlib
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        SnapshotGroundingEngine,
+        _find_discrepancy_replacement,
+        _hydrate_ghost_ref,
+        _is_snapshot_file_complete,
+        _load_standard_arg_map,
+        _param_to_dict,
+        _populate_from_grounding_engine,
+        compute_levenshtein,
+    )
+
+    # 1. _load_standard_arg_map exception branch
+    real_import = importlib.import_module
+
+    def mock_import_err(name: str, package: str | None = None) -> object:
+        if "ml_ecosystem_snapshots" in name:
+            raise ImportError("Simulated missing module")
+        return real_import(name, package)
+
+    monkeypatch.setattr(importlib, "import_module", mock_import_err)
+    fallback_map = _load_standard_arg_map()
+    assert isinstance(fallback_map, dict)
+    assert fallback_map.get("dim") == "dim"
+    monkeypatch.undo()
+
+    # 2. _param_to_dict non-dict and non-model_dump
+    assert _param_to_dict("not_a_dict_or_model") == {}
+    assert _param_to_dict(12345) == {}
+
+    # 3. _hydrate_ghost_ref invalid dict
+    assert _hydrate_ghost_ref({"invalid_field_types": 123, "params": "not_a_list"}) is None
+
+    # 4. _populate_from_grounding_engine None engine or target
+    endpoints: set[str] = set()
+    item_map: dict[str, dict[str, object]] = {}
+    ref_map: dict[str, object] = {}
+    _populate_from_grounding_engine(None, None, endpoints, item_map, ref_map)  # type: ignore[arg-type]
+    assert len(endpoints) == 0
+
+    # 5. _find_discrepancy_replacement when explain_anti_pattern returns known anti pattern
+    class DummyMCP:
+        @staticmethod
+        def explain_anti_pattern(fw: str, ep: str, kw: str) -> dict[str, object]:
+            return {"is_known_anti_pattern": True, "canonical_argument": "dim"}
+
+    monkeypatch.setattr(
+        importlib,
+        "import_module",
+        lambda name, pkg=None: DummyMCP() if "mcp_server" in name else real_import(name, pkg),
+    )
+    assert _find_discrepancy_replacement("axis", {"dim"}, {"dim"}, "torch", "torch.sum") == "dim"
+    monkeypatch.undo()
+
+    # 6. _is_snapshot_file_complete corrupt files
+    corrupt_file = tmp_path / "corrupt_dask.json"
+    corrupt_file.write_text("invalid json syntax {{{", encoding="utf-8")
+    assert _is_snapshot_file_complete(str(corrupt_file), "dask") is False
+
+    non_dict_file = tmp_path / "list_dask.json"
+    non_dict_file.write_text("[1, 2, 3]", encoding="utf-8")
+    assert _is_snapshot_file_complete(str(non_dict_file), "dask") is False
+
+    # 7. compute_levenshtein when s1 == s2 or s2 is empty
+    assert compute_levenshtein("same", "same") == 0
+    assert compute_levenshtein("test", "") == 4
+
+    # 8. get_endpoint_ghost_ref with unknown backend target
+    engine = SnapshotGroundingEngine()
+    assert engine.get_endpoint_ghost_ref("unknown_backend_xyz", "some.endpoint") is None
+
+
+def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test remaining branches and fallbacks in snapshot_grounding.py to achieve 100% coverage.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
+    """
+    import importlib
+    import sys
+    from unittest import mock
+
+    from ml_ecosystem_snapshots.models import ExtendedGhostRef
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        SnapshotGroundingEngine,
+        _find_discrepancy_replacement,
+        _load_standard_arg_map,
+        _param_to_dict,
+        _populate_from_grounding_engine,
+        _populate_from_snapshot_data,
+        _register_ghost_ref,
+        _signatures_from_ghost_ref,
+        _signatures_from_item,
+        _split_signature_params,
+        compute_levenshtein,
+    )
+
+    real_import = importlib.import_module
+
+    # 1. _load_standard_arg_map when STANDARD_ARG_MAP is not a dict
+    class DummyModelsNotDict:
+        STANDARD_ARG_MAP = "not_a_dict"
+
+    monkeypatch.setattr(
+        importlib,
+        "import_module",
+        lambda name, pkg=None: DummyModelsNotDict() if "models" in name else real_import(name, pkg),
+    )
+    fallback_map = _load_standard_arg_map()
+    assert fallback_map.get("dim") == "dim"
+    monkeypatch.undo()
+
+    # 2. _find_discrepancy_replacement comprehensive branches
+    mock_mcp = mock.MagicMock()
+    mock_mcp.explain_anti_pattern.return_value = {"is_known_anti_pattern": True, "canonical_argument": "keepdims"}
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp}):
+        assert _find_discrepancy_replacement("keepdim", {"keepdims"}, set(), "torch", "torch.sum") == "keepdims"
+        assert _find_discrepancy_replacement("keepdim", set(), {"keepdims"}, "torch", "torch.sum") == "keepdims"
+        assert _find_discrepancy_replacement("keepdim", set(), set(), "torch", "torch.sum") is None
+
+    mock_mcp_not = mock.MagicMock()
+    mock_mcp_not.explain_anti_pattern.return_value = {"is_known_anti_pattern": False}
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_not}):
+        assert _find_discrepancy_replacement("not_a_pair", {"other"}, set(), "torch", "torch.sum") is None
+
+    mock_mcp_err = mock.MagicMock()
+    mock_mcp_err.explain_anti_pattern.side_effect = RuntimeError("explain fail")
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_err}):
+        assert _find_discrepancy_replacement("not_anti", set(), set(), "torch", "torch.sum") is None
+
+    mock_mcp_no_fn = mock.MagicMock(spec=[])
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.mcp_server": mock_mcp_no_fn}):
+        assert _find_discrepancy_replacement("not_anti", set(), set(), "torch", "torch.sum") is None
+
+    # 3. compute_levenshtein: with real engine first (lines 478-479) and then pure python fallback
+    mock_ge_lev = mock.MagicMock()
+    mock_ge_lev.compute_levenshtein.return_value = 42
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_ge_lev}):
+        assert compute_levenshtein("alpha", "alphb") == 42
+
+    mock_ge_err = mock.MagicMock()
+    mock_ge_err.compute_levenshtein.side_effect = RuntimeError("lev error")
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_ge_err}):
+        assert compute_levenshtein("a", "b") == 1
+
+    monkeypatch.setattr(
+        importlib,
+        "import_module",
+        lambda name, pkg=None: object() if "grounding.engine" in name else real_import(name, pkg),
+    )
+    assert compute_levenshtein("kitten", "sitting") == 3
+    assert compute_levenshtein("a", "b") == 1
+    assert compute_levenshtein("short", "much_longer_string") > 0
+    assert compute_levenshtein("", "test") == 4
+    assert compute_levenshtein("same", "same") == 0
+    monkeypatch.undo()
+
+    # 4. _split_signature_params with varied kinds, docstring headers, and POSITIONAL_ONLY after pos/kw
+    params = [
+        {"name": "not_ident#", "kind": "POSITIONAL_OR_KEYWORD"},
+        {"name": "Parameters", "kind": "POSITIONAL_OR_KEYWORD"},
+        {"name": "var_args", "kind": "VAR_POSITIONAL"},
+        {"name": "a", "kind": "POSITIONAL_OR_KEYWORD"},
+        {"name": "b", "kind": "POSITIONAL_ONLY"},
+        {"name": "c", "kind": "KEYWORD_ONLY"},
+    ]
+    split_sigs = _split_signature_params(params)
+    assert len(split_sigs) == 2
+
+    # 5. _populate_from_grounding_engine branches: _discover_target_files and load_target
+    class MockEngineDiscoverNoLoad:
+        def _discover_target_files(self, fw: str) -> bool:
+            return True
+
+    class MockTarget:
+        framework = "fake"
+
+    endpoints_set: set[str] = set()
+    _populate_from_grounding_engine(MockEngineDiscoverNoLoad(), MockTarget(), endpoints_set, {}, {})  # type: ignore[arg-type]
+    assert len(endpoints_set) == 0
+
+    class MockEngineDiscoverFalse:
+        def _discover_target_files(self, fw: str) -> bool:
+            return False
+
+    _populate_from_grounding_engine(MockEngineDiscoverFalse(), MockTarget(), endpoints_set, {}, {})  # type: ignore[arg-type]
+    assert len(endpoints_set) == 0
+
+    class MockEngineRaising:
+        def _discover_target_files(self, fw: str) -> bool:
+            raise RuntimeError("discover failed")
+
+    _populate_from_grounding_engine(MockEngineRaising(), MockTarget(), endpoints_set, {}, {})  # type: ignore[arg-type]
+    assert len(endpoints_set) == 0
+
+    # 6. _register_ghost_ref with empty api_path and empty name
+    dummy_ref_empty = ExtendedGhostRef(
+        api_path="",
+        name="",
+        kind="function",
+        framework="dummy",
+        aliases=["dummy_alias"],
+        params=[],
+    )
+    endpoints_set2: set[str] = set()
+    ref_map2: dict[str, ExtendedGhostRef] = {}
+    item_map2: dict[str, dict[str, object]] = {}
+    _register_ghost_ref("dummy_sym", dummy_ref_empty, endpoints_set2, item_map2, ref_map2)
+    assert "dummy_sym" in endpoints_set2
+    assert "dummy_alias" in endpoints_set2
+
+    # 7. _populate_from_snapshot_data with item that cannot be hydrated
+    item_map_unhydrated: dict[str, dict[str, object]] = {"unhydratable": {"params": "bad"}}
+    _populate_from_snapshot_data(
+        {"bad_item": [{"name": "bad", "api_path": "bad", "params": "not_valid"}]},
+        endpoints_set2,
+        item_map_unhydrated,
+        ref_map2,
+    )
+
+    # 8. _param_to_dict with callable model_dump returning non-dict
+    class BadModelDump:
+        def model_dump(self) -> str:
+            return "not_a_dict"
+
+    assert _param_to_dict(BadModelDump()) == {}
+
+    # 9. _signatures_from_ghost_ref with empty params and overloads
+    ref_empty_sigs = ExtendedGhostRef(
+        api_path="test_empty",
+        name="test_empty",
+        kind="function",
+        framework="dummy",
+        params=[],
+        overloads=[{"params": []}],
+    )
+    assert _signatures_from_ghost_ref(ref_empty_sigs) == []
+
+    # 10. _signatures_from_item with overloads
+    item_overloads = {
+        "overloads": [
+            {"params": [{"name": "x", "kind": "POSITIONAL_OR_KEYWORD"}]},
+            "invalid_non_dict_overload",
+        ]
+    }
+    extracted = _signatures_from_item(item_overloads)
+    assert len(extracted) == 1
+
+    # 11. SnapshotGroundingEngine.__init__ ge_cls is None branch and exception
+    mock_mod_no_ge = mock.MagicMock()
+    mock_mod_no_ge.GroundingEngine = None
+    with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_mod_no_ge}):
+        eng_no_ge_cls = SnapshotGroundingEngine()
+        assert eng_no_ge_cls._grounding_engine is None
+
+    def mock_import_ge_fail(name: str, pkg: str | None = None) -> object:
+        if "grounding.engine" in name:
+            raise RuntimeError("GroundingEngine init failure")
+        return real_import(name, pkg)
+
+    monkeypatch.setattr(importlib, "import_module", mock_import_ge_fail)
+    eng_no_ge = SnapshotGroundingEngine()
+    assert eng_no_ge._grounding_engine is None
+    monkeypatch.undo()
+
+    # 12. suggest_closest_endpoint with suggest_closest_symbol, None return, and exception
+    class MockGEWithSuggest:
+        @staticmethod
+        def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> str:
+            return "suggested_symbol"
+
+    engine_with_sug = SnapshotGroundingEngine()
+    engine_with_sug._grounding_engine = MockGEWithSuggest()
+    assert engine_with_sug.suggest_closest_endpoint("pytorch", "torch.ad") == "suggested_symbol"
+
+    class MockGEWithNone:
+        @staticmethod
+        def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> None:
+            return None
+
+    engine_sug_none = SnapshotGroundingEngine()
+    engine_sug_none._grounding_engine = MockGEWithNone()
+    with mock.patch.object(engine_sug_none, "get_valid_endpoints", return_value={"torch.add"}):
+        assert engine_sug_none.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
+
+    class MockGEWithExc:
+        @staticmethod
+        def suggest_closest_symbol(fw: str, cand: str, max_distance: int = 4) -> None:
+            raise RuntimeError("Symbol suggest error")
+
+    engine_sug_exc = SnapshotGroundingEngine()
+    engine_sug_exc._grounding_engine = MockGEWithExc()
+    with mock.patch.object(engine_sug_exc, "get_valid_endpoints", return_value={"torch.add"}):
+        assert engine_sug_exc.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
+
+    engine_no_sug_fn = SnapshotGroundingEngine()
+    engine_no_sug_fn._grounding_engine = object()
+    with mock.patch.object(engine_no_sug_fn, "get_valid_endpoints", return_value={"torch.add"}):
+        assert engine_no_sug_fn.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
+
+    engine_fallback = SnapshotGroundingEngine()
+    engine_fallback._grounding_engine = None
+    with mock.patch.object(engine_fallback, "get_valid_endpoints", return_value={"torch.add", "torch.sub"}):
+        assert engine_fallback.suggest_closest_endpoint("pytorch", "torch.ad", max_distance=3) == "torch.add"
+        assert engine_fallback.suggest_closest_endpoint("pytorch", "xyz_completely_different", max_distance=1) is None
+    with mock.patch.object(engine_fallback, "get_valid_endpoints", return_value=set()):
+        assert engine_fallback.suggest_closest_endpoint("pytorch", "torch.ad") is None

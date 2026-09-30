@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply normalization basic operations."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -10,12 +12,16 @@ class GroupMean(OpDef):
 
     op_name: str = "GroupMean"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | int | None,
+        **kwargs: tuple[int, ...] | int | float | str | bool | None,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | int | None): Positional args.
+            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -29,12 +35,16 @@ class GroupVariance(OpDef):
 
     op_name: str = "GroupVariance"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | int | None,
+        **kwargs: tuple[int, ...] | int | float | str | bool | None,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | int | None): Positional args.
+            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -48,12 +58,16 @@ class GroupNorm(OpDef):
 
     op_name: str = "GroupNorm"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | int | None,
+        **kwargs: tuple[int, ...] | int | float | str | bool | None,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | int | None): Positional args.
+            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.

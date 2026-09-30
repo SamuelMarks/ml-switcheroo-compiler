@@ -211,3 +211,70 @@ def test_symbolic_compute_costs_and_stream_merging() -> None:
     scheduler = GraphSchedulingPass()
     scheduler.run(graph)
     assert graph.nodes["n3"].stream in ("stream_1", "stream_2")
+
+
+def test_default_cost_model_and_standalone_pass() -> None:
+    """Test DefaultCostModel properties, memory and compute costs, and graph_scheduling_pass."""
+    from ml_switcheroo_compiler.transforms.passes.graph_scheduling import DefaultCostModel, graph_scheduling_pass
+
+    default_model = DefaultCostModel()
+    assert default_model.compute_heavy_threshold > 0
+    assert default_model.heavy_interleave_penalty > 0
+    assert default_model.light_interleave_penalty > 0
+
+    # Node with None shape
+    node_none = IRNode("n_none", "Add", shape_metadata=None, attributes={"dtype": "float32"})
+    assert default_model.get_memory_cost(node_none) == 4
+
+    # Node with static shape
+    node_static = IRNode("n_static", "MatMul", shape_metadata=(10, 20), attributes={"dtype": "float32"})
+    assert default_model.get_memory_cost(node_static) == 200 * 4
+
+    # Node with symbolic shape
+    node_sym = IRNode("n_sym", "MatMul", shape_metadata=("B", 64), attributes={"dtype": "float32"})
+    assert default_model.get_memory_cost(node_sym) == "B * 64 * 4"
+
+    # Node with empty dynamic shape
+    node_dyn = IRNode("n_dyn", "Add", shape_metadata=(), attributes={"dtype": "float32", "is_dynamic_shape": True})
+    assert default_model.get_memory_cost(node_dyn) == 4
+
+    # Compute costs: heavy, light, default
+    node_heavy = IRNode("n_h", "MatMul")
+    assert default_model.get_compute_cost(node_heavy) == default_model.config.compute_costs.heavy_cost
+
+    node_light = IRNode("n_l", "Add")
+    assert default_model.get_compute_cost(node_light) == default_model.config.compute_costs.light_cost
+
+    node_other = IRNode("n_o", "UnknownOp")
+    assert default_model.get_compute_cost(node_other) == default_model.config.compute_costs.default_cost
+
+    # Node with empty dynamic shape reaching line 117
+    from unittest.mock import Mock
+
+    mock_dyn_empty = Mock()
+    mock_dyn_empty.attributes = {"dtype": "float32"}
+    mock_dyn_empty.shape_metadata = ()
+    mock_dyn_empty.is_dynamic_shape = True
+    assert default_model.get_memory_cost(mock_dyn_empty) == 4
+
+    # Standalone function graph_scheduling_pass
+    graph = IRGraph()
+    graph.nodes["in"] = IRNode("in", "Input", shape_metadata=(4,))
+    graph.nodes["out"] = IRNode("out", "Relu", inputs=["in"], shape_metadata=(4,))
+    res = graph_scheduling_pass(graph)
+    assert res is True
+
+    # Graph with external input not in graph.nodes
+    graph_ext = IRGraph()
+    graph_ext.nodes["n1"] = IRNode("n1", "Add", inputs=["external_tensor"], shape_metadata=(10,))
+    scheduler = GraphSchedulingPass(cost_model=default_model)
+    sched_ext = scheduler.schedule(graph_ext)
+    assert sched_ext == ["n1"]
+    peak_mem_ext = scheduler.calculate_peak_memory(graph_ext, sched_ext)
+    assert peak_mem_ext > 0
+
+    # Cyclic graph where scheduling cannot schedule all nodes
+    cyclic_graph = IRGraph()
+    cyclic_graph.nodes["a"] = IRNode("a", "Op", inputs=["b"])
+    cyclic_graph.nodes["b"] = IRNode("b", "Op", inputs=["a"])
+    assert GraphSchedulingPass().run(cyclic_graph) is False

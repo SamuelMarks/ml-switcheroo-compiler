@@ -1,9 +1,11 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Configuration classes for operations."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 
 @dataclass
@@ -11,10 +13,10 @@ class ConvConfig:
     """Configuration for convolution operations."""
 
     window_strides: Sequence[int]
-    padding: Union[Sequence[tuple[int, int]], str]
-    lhs_dilation: Optional[Sequence[int]] = None
-    rhs_dilation: Optional[Sequence[int]] = None
-    dimension_numbers: Optional[Union[tuple, str]] = None
+    padding: Sequence[tuple[int, int]] | str
+    lhs_dilation: Sequence[int] | None = None
+    rhs_dilation: Sequence[int] | None = None
+    dimension_numbers: tuple[int, ...] | str | None = None
     feature_group_count: int = 1
     batch_group_count: int = 1
 
@@ -24,10 +26,10 @@ class WindowConfig:
     """Configuration for windowed operations."""
 
     window_dimensions: Sequence[int]
-    window_strides: Optional[Sequence[int]] = None
-    padding: Optional[Union[Sequence[tuple[int, int]], str]] = None
-    base_dilation: Optional[Sequence[int]] = None
-    window_dilation: Optional[Sequence[int]] = None
+    window_strides: Sequence[int] | None = None
+    padding: Sequence[tuple[int, int]] | str | None = None
+    base_dilation: Sequence[int] | None = None
+    window_dilation: Sequence[int] | None = None
 
 
 @dataclass
@@ -37,10 +39,10 @@ class InitializerConfig:
     scale: float
     mode: str
     distribution: str
-    in_axis: Union[int, Sequence[int]] = -2
-    out_axis: Union[int, Sequence[int]] = -1
-    batch_axis: Union[int, Sequence[int]] = ()
-    dtype: Optional[Union[str, type]] = None
+    in_axis: int | Sequence[int] = -2
+    out_axis: int | Sequence[int] = -1
+    batch_axis: int | Sequence[int] = ()
+    dtype: str | type | None = None
 
 
 @dataclass
@@ -50,7 +52,7 @@ class SpaceConfig:
     num: int = 50
     endpoint: bool = True
     base: float = 10.0
-    dtype: Optional[Union[str, type]] = None
+    dtype: str | type | None = None
     axis: int = 0
 
 
@@ -60,8 +62,8 @@ class STFTConfig:
 
     frame_length: int
     frame_step: int
-    fft_length: Optional[int] = None
-    window_fn: Optional[str] = "hann"
+    fft_length: int | None = None
+    window_fn: str | None = "hann"
     pad_end: bool = False
 
 
@@ -72,7 +74,7 @@ class BBoxConfig:
     crop_size: tuple[int, int]
     interpolation: str = "bilinear"
     extrapolation_value: float = 0.0
-    data_format: Optional[str] = None
+    data_format: str | None = None
 
 
 @dataclass
@@ -81,16 +83,16 @@ class PerspectiveConfig:
 
     interpolation: str = "bilinear"
     fill_value: float = 0.0
-    data_format: Optional[str] = None
+    data_format: str | None = None
 
 
 @dataclass
 class BlurConfig:
     """Gaussian blur configuration."""
 
-    kernel_size: Union[int, tuple[int, int]]
-    sigma: Union[float, tuple[float, float]]
-    data_format: Optional[str] = None
+    kernel_size: int | tuple[int, int]
+    sigma: float | tuple[float, float]
+    data_format: str | None = None
 
 
 @dataclass
@@ -99,18 +101,18 @@ class ElasticConfig:
 
     interpolation: str = "bilinear"
     fill_value: float = 0.0
-    data_format: Optional[str] = None
+    data_format: str | None = None
 
 
 @dataclass
 class ResizeOptions:
     """Image resize configuration."""
 
-    size: Union[int, tuple[int, int]]
+    size: int | tuple[int, int]
     interpolation: str = "bilinear"
     align_corners: bool = False
     half_pixel_centers: bool = False
-    data_format: Optional[str] = None
+    data_format: str | None = None
 
 
 @dataclass
@@ -180,9 +182,15 @@ class Precision:
 class PrecisionLike:
     """PrecisionLike class."""
 
-    def __init__(self) -> None:
-        """Initialize."""
-        self.value = None
+    value: str | None
+
+    def __init__(self, value: str | None = None) -> None:
+        """Initialize precision descriptor.
+
+        Args:
+            value (str | None): Optional precision name or setting.
+        """
+        self.value = value
 
 
 class RandomAlgorithm:

@@ -22,11 +22,13 @@ def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             object: Result.
     """
     func = getattr(backend_module, "correlate", None)
-    if func:
+    if func is not None:
         return func(*args, **kwargs)
+    import numpy as np
+
     (a, v) = (args[0], args[1])
     mode = kwargs.get("mode", "valid") if hasattr(kwargs, "get") else "valid"
-    return backend_module.correlate(backend_module.asarray(a), backend_module.asarray(v), mode=mode)
+    return np.correlate(np.asarray(a), np.asarray(v), mode=mode)
 
 
 @global_eager_registry.register("WindowHann")

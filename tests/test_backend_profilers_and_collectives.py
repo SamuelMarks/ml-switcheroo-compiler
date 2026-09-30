@@ -566,6 +566,19 @@ def test_sparse_profiler_branches() -> None:
     prep_multi = profiler._prepare_inputs(IRGraph(), {"a": gcxs, "b": np.array([1.0]), "c": [2.0]})
     assert len(prep_multi) == 3
 
+    # Fallback branch when sparse object has neither coords/data nor todense
+    class _MockSparseNoAttrs(sp_mod.COO):
+        def __init__(self) -> None:
+            pass
+
+        @property
+        def todense(self) -> object:
+            raise AttributeError("no todense")
+
+    mock_sparse_val = _MockSparseNoAttrs()
+    prep_sparse_fallback = profiler._prepare_inputs(IRGraph(), {"s": mock_sparse_val})
+    assert prep_sparse_fallback == [mock_sparse_val]
+
     # When sparse is None
     with patch("ml_switcheroo_compiler.backends.sparse.profiler.sparse", None):
         prep_no_sp = profiler._prepare_inputs(IRGraph(), {"x": np.array([1.0]), "y": [2.0]})

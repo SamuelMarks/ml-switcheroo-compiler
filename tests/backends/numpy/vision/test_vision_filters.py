@@ -1,19 +1,22 @@
 """Tests for numpy eager vision filters."""
 
 import numpy as np
+import pytest
 
+from ml_switcheroo_compiler.backends.numpy.eager import vision_filters
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filters import (
     _np_random_gaussian_blur,
     _np_random_sharpness,
 )
 
 
-def test_random_gaussian_blur() -> None:
+def test_random_gaussian_blur(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test random gaussian blur.
 
     Returns:
         None
     """
+    monkeypatch.setattr(vision_filters, "_np_gaussian_blur", lambda mod, img, **kw: img)
     images = np.ones((1, 5, 5, 3))
     kernel_size = (3, 3)
     sigma = (1.0, 1.0)

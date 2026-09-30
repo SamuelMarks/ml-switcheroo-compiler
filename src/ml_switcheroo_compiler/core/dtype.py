@@ -1,6 +1,8 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Module dtype.py."""
 
+from __future__ import annotations
+
 """DType enums for the ml-switcheroo compiler."""
 
 from enum import Enum
@@ -86,3 +88,80 @@ unsignedinteger = (DType.UInt64, DType.UInt32, DType.UInt16, DType.UInt8, DType.
 integer = signedinteger + unsignedinteger
 number = inexact + integer
 generic = number + (DType.Bool, DType.String, DType.Object)
+
+
+class DTypeValidationError(TypeError):
+    """Exception raised when an operand data type is invalid for an operation."""
+
+
+def validate_dtype_for_op(op_name: str, dtype: DType | str) -> tuple[bool, str | None]:
+    """Validate that a data type is legally applicable to a mathematical operator.
+
+    Rejects quantized, integer, boolean, and non-numeric types for transcendental
+    operations (e.g., 'sin', 'exp', 'log', 'cos', 'sqrt', 'cholesky', 'linalg_inv', 'inv').
+
+    Args:
+        op_name (str): Operation or function name.
+        dtype (DType | str): Data type or DType enum to validate.
+
+    Returns:
+        tuple[bool, str | None]: Tuple of (is_valid, optional_error_message).
+    """
+    dtype_str: str = dtype.value if isinstance(dtype, DType) else str(dtype)
+    try:
+        import importlib
+
+        mod = importlib.import_module("ml_ecosystem_snapshots.compliance")
+        fn = getattr(mod, "validate_dtype_for_op", None)
+        if fn is not None:
+            res: tuple[bool, str | None] = fn(op_name, dtype_str)
+            return res
+    except Exception:
+        pass
+
+    clean_op: str = op_name.lower().split(".")[-1]
+    transcendental_ops: tuple[str, ...] = (
+        "sin",
+        "cos",
+        "tan",
+        "exp",
+        "log",
+        "sqrt",
+        "rsqrt",
+        "sigmoid",
+        "tanh",
+        "cholesky",
+        "linalg_inv",
+        "inv",
+    )
+    if clean_op in transcendental_ops:
+        clean_dt: str = dtype_str.lower()
+        non_float_prefixes: tuple[str, ...] = (
+            "int",
+            "uint",
+            "qint",
+            "quint",
+            "bool",
+            "string",
+            "object",
+        )
+        if any(clean_dt.startswith(p) for p in non_float_prefixes):
+            return False, (f"Data type '{dtype_str}' is not supported for transcendental operation '{op_name}'. Floating-point or complex dtype required.")
+    return True, None
+
+
+def check_dtype_for_op(op_name: str, dtype: DType | str) -> None:
+    """Enforce data type compatibility for an operation, raising DTypeValidationError if rejected.
+
+    Args:
+        op_name (str): Operation or function name.
+        dtype (DType | str): Data type or DType enum to validate.
+
+    Raises:
+        DTypeValidationError: If the data type is incompatible with the operation.
+    """
+    valid: bool
+    err: str | None
+    valid, err = validate_dtype_for_op(op_name, dtype)
+    if not valid:
+        raise DTypeValidationError(err or f"Invalid dtype '{dtype}' for op '{op_name}'")

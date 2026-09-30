@@ -1,11 +1,6 @@
-"""Module backend_utils.py."""
+"""Backend code generation and node formatting utilities."""
 
 from __future__ import annotations
-
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-
-"""Backend utilities."""
-
 
 from typing import TYPE_CHECKING
 
@@ -14,34 +9,35 @@ if TYPE_CHECKING:
 
 
 def resolve_input_vars(node: IRNode, var_names: dict[str, str]) -> list[str]:
-    """Resolve input variable names for a node.
+    """Resolve input variable names for an IR node.
 
     Args:
-        node (IRNode): The node to process.
-        var_names (dict[str, str]): Variable name mapping.
+        node (IRNode): The IR node whose inputs are resolved.
+        var_names (dict[str, str]): Variable name mapping dictionary.
 
     Returns:
-        list[str]: Resolved variable names.
+        list[str]: Resolved variable names in the target emitter context.
     """
     return [var_names.get(in_id, in_id) for in_id in node.inputs]
 
 
 def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> str | None:
-    """Format shape metadata for a node.
+    """Format shape metadata for an IR node into a code representation.
 
     Args:
-        node (IRNode): The node to process.
-        var_names (dict[str, str]): Variable name mapping.
+        node (IRNode): The IR node containing shape metadata.
+        var_names (dict[str, str]): Variable name mapping dictionary.
 
     Returns:
-        str | None: Formatted shape metadata.
+        str | None: Formatted shape tuple representation or None if not present.
     """
     if not (hasattr(node, "shape_metadata") and node.shape_metadata):
         return None
-    formatted_shape = []
+    formatted_shape: list[str] = []
     for dim in node.shape_metadata:
         if hasattr(dim, "id"):
-            formatted_shape.append(var_names.get(dim.id, dim.id))
+            dim_id = str(dim.id)
+            formatted_shape.append(var_names.get(dim_id, dim_id))
         elif isinstance(dim, str):
             formatted_shape.append(f"'{dim}'")
         else:

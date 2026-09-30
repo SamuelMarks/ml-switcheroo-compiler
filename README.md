@@ -20,6 +20,8 @@ Exported directly from the root namespace (`ml_switcheroo_compiler`), the compil
 - **`RaggedTensor`**: First-class representation for non-uniform, nested tensor dimensions with ragged splits.
 - **`SparseTensor`**: Memory-efficient coordinate list (COO) representation for sparse linear algebra.
 - **`TensorArray`**: Dynamically indexable, growable, and writable sequences of tensors for dynamic control flow loops.
+
+Complementing the tensor hierarchy, functional dataset pipeline abstractions are provided under `ml_switcheroo_compiler.core.dataset`:
 - **`Dataset`**: Functional data transformation pipelines and batched streaming iterators.
 
 ## Major Project Goals
@@ -79,14 +81,21 @@ flowchart TD
             DK_B[Dask]
             SP_B[Sparse]
             NB_B[Numba]
+            AK_B[Awkward]
+            DP_B[DPNP]
+            PA_B[PyArrow]
+            PY_B[Pure Python]
 
             GEN_S2S --> PT_B & JX_B & MLX_B & KR_B & TF_B
             GEN_S2S --> NP_B & CP_B & DK_B & SP_B & NB_B
+            GEN_S2S --> AK_B & DP_B & PA_B & PY_B
             PT_B ~~~ NP_B
             JX_B ~~~ CP_B
             MLX_B ~~~ DK_B
             KR_B ~~~ SP_B
             TF_B ~~~ NB_B
+            AK_B ~~~ DP_B
+            PA_B ~~~ PY_B
         end
 
         subgraph Hardware ["Hardware Accelerators"]
@@ -109,13 +118,15 @@ flowchart TD
             GL_B[WebGL 2.0]
             ONNX_B[ONNX]
             SHLO_B[StableHLO]
+            MLIR_B[MLIR]
             RTC_B[WebRTC Distributed Mesh]
 
             GEN_EDGE --> WG_B & WA_B & GL_B
-            GEN_EDGE --> ONNX_B & SHLO_B & RTC_B
+            GEN_EDGE --> ONNX_B & SHLO_B & MLIR_B & RTC_B
             WG_B ~~~ ONNX_B
             WA_B ~~~ SHLO_B
-            GL_B ~~~ RTC_B
+            GL_B ~~~ MLIR_B
+            RTC_B ~~~ MLIR_B
         end
     end
 
@@ -128,14 +139,17 @@ flowchart TD
 ```
 
 - **Unified IR:** A strict, framework-agnostic intermediate representation (`LogicalGraph` / `LogicalNode`) defining precise shape semantics (learned via live forward/backward passes), mathematical primitives, control flow, and state management.
-- **Middle-End Optimization:** Executes multi-stage optimization passes configured from `O0` to `O3` (canonicalization, constant folding, CSE, DCE, operator fusion, buffer allocation, loop tiling, vectorization, and SPMD partitioning) before code generation.
+- **Middle-End Optimization:** Executes multi-stage optimization passes configured from `O0` to `O3` (canonicalization, constant folding, CSE, DCE, operator fusion, buffer allocation, loop tiling, vectorization, batch norm folding, mixed precision, and SPMD partitioning) before code generation.
 - **Python Emission & CST Transpilation:** Emits idiomatic source code for target frameworks or directly rewrites syntax trees across framework dialects.
 - **Hardware & Edge Emission:** Translates computation graphs into CUDA `.cu`, ROCm HIP, Metal MSL, WGSL compute shaders, and WASM SIMD headers.
 
 ## Advanced Transformations and Distributed Support
 
 The engine supports a comprehensive suite of advanced optimizations and parity features across all backends:
-- **Compiler Optimizations:** Built-in Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Constant Folding, Operator Fusion, Loop Tiling & Unrolling, Memory Planning, Vectorization, and Scheduling logic via the `PassManager`.
+- **Compiler Optimizations:** Built-in Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Constant Folding, Operator Fusion, Loop Tiling & Unrolling, Memory Planning, Vectorization, Scheduling logic, Batch Normalization folding, Mixed Precision casting, and Quantization passes (PTQ, QAT, and INT8/INT4 lowering) via the `PassManager`.
+- **Foreign Graph Ingestion:** Ingest external framework computation graphs directly into the Unified IR via `ingest_torch_fx` (PyTorch `torch.fx.GraphModule`), `ingest_jaxpr` (JAX `jaxpr`), and `ForeignCall` nodes without manual rewrites.
+- **Model Serialization & Formats:** First-class model export and weight serialization supporting SafeTensors (`safetensors`), HDF5 (`h5py`), NumPy (`npz`), Python Pickle, and Protocol Buffers / SavedModel (`export_api`).
+- **Diagnostics & Profiling Suite:** Integrated FLOP counter (`flop_counter`), peak memory profiler (`memory_profiler`), automated NaN/Inf numerical anomaly detection (`numerical_anomaly`), live shape debugging (`shape_debugger`), and architectural layer inspection (`summary`).
 - **Automatic Differentiation:** Full support for `jvp` (Forward-Mode), `vjp` / `grad` (Reverse-Mode), and higher-order derivatives (`hessian`, `hvp`, `jacfwd`, `jacrev`), accompanied by dynamic programming (Knapsack) memory-budgeted checkpointing, binomial rematerialization schedules, and custom gradient hooks.
 - **Distributed Topologies & Sharding:** Device meshes (`DeviceMesh`), layout maps (`LayoutMap`), sharding specifications (`ShardingSpec`), and SPMD graph partitioning passes.
 - **Distributed Collectives & Edge Mesh:** Host collective operations (`all_reduce`, `all_gather`, `reduce_scatter`, `broadcast`, `shard_tensor`) alongside browser-to-browser P2P WebRTC data channels for decentralized execution.
@@ -166,6 +180,10 @@ graph TD
         ZT[zero-tensorflow]
         ZM[zero-mlx]
         ZPX[zero-pax]
+        ZO[zero-optax]
+        ZC[zero-chex]
+        ZG[zero-grain]
+        ZOB[zero-orbax]
     end
 
     subgraph "Compilation Core"
@@ -184,12 +202,17 @@ graph TD
         TF_B[tensorflow]
         NUMBA_B[numba]
         SPARSE_B[sparse]
+        AK_B[awkward]
+        DP_B[dpnp]
+        PA_B[pyarrow_compute]
+        PY_B[pure_python]
         CUDA_B[cuda]
         ROCM_B[rocm]
         METAL_B[metal]
         EDGE_WGPU[webgpu/wgsl]
         EDGE_WASM[wasm]
         EDGE_WEBGL[webgl]
+        EDGE_MLIR[edge_mlir]
         LLVM[llvm_cpp]
         ONNX[onnx]
         STABLEHLO[stablehlo]
@@ -202,9 +225,19 @@ graph TD
     ZZ -.->|Validates Float Equivalence| ZT
     ZZ -.->|Validates Float Equivalence| ZM
     ZZ -.->|Validates Float Equivalence| ZPX
+    ZZ -.->|Tests| ZG
 
     ZJ --> COMP
+    ZO --> ZJ
+    ZC --> COMP
+    ZG --> COMP
+    ZOB --> COMP
+    ZJ --> ZC
+    ZO --> ZC
+
     ZF --> ZJ
+    ZF --> ZO
+    ZF --> ZOB
     ZP --> COMP
     ZK --> COMP
     ZT --> ZK
@@ -221,12 +254,17 @@ graph TD
     COMP --> TF_B
     COMP --> NUMBA_B
     COMP --> SPARSE_B
+    COMP --> AK_B
+    COMP --> DP_B
+    COMP --> PA_B
+    COMP --> PY_B
     COMP --> CUDA_B
     COMP --> ROCM_B
     COMP --> METAL_B
     COMP --> EDGE_WGPU
     COMP --> EDGE_WASM
     COMP --> EDGE_WEBGL
+    COMP --> EDGE_MLIR
     COMP --> LLVM
     COMP --> ONNX
     COMP --> STABLEHLO
@@ -246,12 +284,17 @@ The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecos
 - **`tensorflow`**: TensorFlow computation graph backend.
 - **`numba`**: JIT-compiled `@njit` kernels for accelerated CPU/CUDA execution.
 - **`sparse` (`sparse_coo`)**: Coordinate-format sparse tensor computation backend.
+- **`awkward`**: Awkward Array backend supporting non-regular, nested, and ragged array structures.
+- **`dpnp`**: Data Parallel C++ (Intel oneAPI DPNP) GPU/CPU acceleration backend.
+- **`pyarrow_compute`**: Apache Arrow Compute engine backend for columnar and memory-mapped tensor operations.
+- **`pure_python`**: Reference pure-Python execution and code generation backend without third-party array dependencies.
 - **`cuda`**: Native NVIDIA CUDA (`.cu`) code generation backend.
 - **`rocm`**: Native AMD HIP GPU code generation backend.
 - **`metal`**: Apple Silicon Metal Shading Language (MSL) compute shader backend.
 - **`edge (webgpu/wgsl)`**: In-browser parallel GPU compute backend via WGSL.
 - **`edge (wasm)`**: In-browser and edge CPU compute backend via WASM SIMD (v128).
 - **`edge (webgl)`**: Fallback in-browser 2D texture computation backend.
+- **`edge (edge_mlir)`**: Multi-Level Intermediate Representation (MLIR) bytecode emission backend.
 - **`edge (onnx / stablehlo)`**: Standardized model serialization and OpenXLA bytecode export targets.
 - **`llvm_cpp`**: Vectorized C++17 and LLVM fallback execution backend.
 
@@ -261,7 +304,7 @@ The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecos
 
 | Name | Description | CI Shields |
 |---|---|---|
-| [`ml-framework-snapshots`](https://github.com/SamuelMarks/ml-framework-snapshots) | Static API extraction and schema formalization for major ML frameworks. | [![CI](https://github.com/SamuelMarks/ml-framework-snapshots/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-framework-snapshots/actions/workflows/ci.yml) |
+| [`ml-ecosystem-snapshots`](https://github.com/SamuelMarks/ml-ecosystem-snapshots) | Static API extraction and schema formalization for major ML frameworks. | [![CI](https://github.com/SamuelMarks/ml-ecosystem-snapshots/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-ecosystem-snapshots/actions/workflows/ci.yml) |
 | [`ml-switcheroo-ir`](https://github.com/SamuelMarks/ml-switcheroo-ir) | The core dependency-free IR for the ml-switcheroo model translation ecosystem. | [![CI](https://github.com/SamuelMarks/ml-switcheroo-ir/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-ir/actions/workflows/ci.yml) |
 | [`zero-chex`](https://github.com/SamuelMarks/zero-chex) | Chex is a library of utilities for helping to write reliable JAX code. | [![CI](https://github.com/SamuelMarks/zero-chex/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-chex/actions/workflows/ci.yml) |
 | [`zero-flax`](https://github.com/SamuelMarks/zero-flax) | Flax is a neural network library for JAX that is designed for flexibility. | [![CI](https://github.com/SamuelMarks/zero-flax/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-flax/actions/workflows/ci.yml) |

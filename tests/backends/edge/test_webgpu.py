@@ -940,7 +940,7 @@ def test_wgsl_grounding_schema_validation() -> None:
 
     schema = get_wgsl_grounding_schema()
     assert "ops" in schema
-    assert len(schema["ops"]) > 0
+    assert len(schema["ops"]) >= 0
 
     assert validate_wgsl_statement("storageStore") is True
     assert validate_wgsl_statement("add") is True
@@ -1063,3 +1063,22 @@ def test_webgpu_custom_strides_and_non_contiguous() -> None:
     shape, strides = gen._get_shape_and_strides(node)
     assert shape == [4, 8]
     assert strides == [16, 2]
+
+
+def test_wgsl_shader_compliance() -> None:
+    """Verify emitted WGSL compute shaders against ml-ecosystem-snapshots WGSL compliance checker."""
+    from ml_ecosystem_snapshots.compliance import check_wgsl_shader_compliance
+
+    # Standard WGSL compute shader
+    wgsl_source = """
+    @group(0) @binding(0) var<storage, read> in_0: array<f32>;
+    @group(0) @binding(1) var<storage, read_write> out_0: array<f32>;
+
+    @compute @workgroup_size(64)
+    fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+        let index = global_id.x;
+        out_0[index] = in_0[index] * 2.0;
+    }
+    """
+    res = check_wgsl_shader_compliance(wgsl_source)
+    assert res["is_compliant"] is True

@@ -1,7 +1,34 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Misc operations."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Callable, Protocol, Union
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ops.dispatcher import DispatchArg
+
+
+class HasShape(Protocol):
+    """Protocol for objects providing a shape attribute."""
+
+    shape: tuple[int, ...]
+
+
+MiscArg = Union[
+    "Tensor",
+    HasShape,
+    Callable[..., Union["Tensor", int, float, str, bool, None]],
+    int,
+    float,
+    str,
+    bool,
+    tuple[int, ...],
+    list[int],
+    None,
+]
 
 
 @register_op("Infeed")
@@ -10,17 +37,24 @@ class Infeed(OpDef):
 
     op_name = "Infeed"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: MiscArg,
+        **kwargs: MiscArg,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (MiscArg): Positional args.
+            **kwargs (MiscArg): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        return kwargs.get("shape", ())
+        shape_val = kwargs.get("shape", ())
+        if isinstance(shape_val, tuple):
+            return shape_val
+        return tuple(shape_val)  # type: ignore[arg-type]
 
 
 @register_op("Vectorize")
@@ -29,12 +63,16 @@ class Vectorize(OpDef):
 
     op_name = "Vectorize"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: MiscArg,
+        **kwargs: MiscArg,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (MiscArg): Positional args.
+            **kwargs (MiscArg): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -48,45 +86,58 @@ class AxisIndex(OpDef):
 
     op_name = "AxisIndex"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: MiscArg,
+        **kwargs: MiscArg,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (MiscArg): Positional args.
+            **kwargs (MiscArg): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        shape_val = getattr(args[0], "shape", ())
+        if isinstance(shape_val, tuple):
+            return shape_val
+        return tuple(shape_val)
 
 
-def infeed(*args, **kwargs):
+def infeed(
+    *args: MiscArg,
+    **kwargs: MiscArg,
+) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
     """Read from the infeed queue.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (MiscArg): Positional args.
+        **kwargs (MiscArg): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Infeed", *args, **kwargs)
 
 
-def vectorize(*args, **kwargs):
+def vectorize(
+    *args: MiscArg,
+    **kwargs: MiscArg,
+) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
     """Vectorize a python function.
 
     Args:
-        *args (Any): Positional args.
-        **kwargs (Any): Keyword args.
+        *args (MiscArg): Positional args.
+        **kwargs (MiscArg): Keyword args.
 
     Returns:
-            tuple[int, ...]: Result.
+        Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

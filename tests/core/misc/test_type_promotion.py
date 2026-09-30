@@ -265,3 +265,24 @@ def test_declarative_yaml_type_promotion_consistency():
         assert promote_types(DType.Int16, DType.Float32) == DType.Float32
         assert promote_types(DType.Int32, DType.Float32) == DType.Float64
         assert promote_types(DType.Int64, DType.Float32) == DType.Float64
+
+
+def test_load_declarative_promotion_lattice_branches() -> None:
+    """Test branches of _load_declarative_promotion_lattice including non-existent file and invalid DType values."""
+    from unittest.mock import mock_open, patch
+
+    # Non-existent file branch
+    with patch("os.path.exists", return_value=False):
+        tp._load_declarative_promotion_lattice()
+
+    # Invalid source DType, invalid target DType, and invalid promoted DType in YAML
+    fake_yaml = """
+lattice:
+  invalid_source_dtype_value:
+    float32: float32
+  float32:
+    invalid_target_dtype_value: float32
+    int32: invalid_promoted_dtype_value
+"""
+    with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=fake_yaml)):
+        tp._load_declarative_promotion_lattice()

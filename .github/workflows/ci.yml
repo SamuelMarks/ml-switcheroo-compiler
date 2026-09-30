@@ -55,6 +55,9 @@ jobs:
     - name: Validate Backend Mappings
       run: python3 scripts/validate_backend_mappings.py
 
+    - name: Check Snapshot Drift
+      run: python3 scripts/check_snapshot_drift.py
+
     - name: Update Badges
       run: |
         python3 scripts/update_badges.py

@@ -346,3 +346,92 @@ def test_main_and_runpy(capsys: CaptureFixture[str]) -> None:
 
     captured = capsys.readouterr()
     assert "Snapshot directory not found" in captured.out
+
+
+def test_format_params_via_ecosystem() -> None:
+    """Verify format_params_via_ecosystem formatting with defaults and types."""
+    params = [
+        {"name": "x", "kind": "POSITIONAL_OR_KEYWORD", "annotation": "Tensor"},
+        {"name": "dim", "kind": "KEYWORD_ONLY", "annotation": "int", "default": 0},
+        "invalid",
+        {"name": ""},
+    ]
+    res = gs.format_params_via_ecosystem(params, has_varargs=True)  # type: ignore[arg-type]
+    assert "x: Tensor" in res
+    assert "dim: int = 0" in res
+
+
+def test_clean_type_annotation_additional_branches() -> None:
+    """Verify clean_type_annotation branches for constants and expressions."""
+    assert gs._clean_type_annotation('Sequence["int"]') == "int"
+    assert gs._clean_type_annotation('Sequence["bar"]') == "Tensor"
+    assert gs._clean_type_annotation("1 + 2") == "Tensor"
+
+
+def test_generate_stubs_with_gzipped_snapshots(tmp_path: Path) -> None:
+    """Verify stub generation reading from compressed .json.gz snapshot files.
+
+    Args:
+        tmp_path (Path): Pytest temporary path fixture.
+    """
+    import gzip
+
+    mock_data = {
+        "categories": {
+            "math": [
+                {"name": "gz_add", "kind": "function"},
+            ]
+        }
+    }
+    snap_dir = tmp_path / "snapshots"
+    snap_dir.mkdir()
+    gz_file = snap_dir / "numpy_v1.json.gz"
+    with gzip.open(gz_file, "wt", encoding="utf-8") as f:
+        f.write(json.dumps(mock_data))
+
+    out_base = tmp_path / "backends"
+    numpy_dir = out_base / "numpy"
+    numpy_dir.mkdir(parents=True)
+
+    gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
+    stub_file = numpy_dir / "snapshot_stubs.pyi"
+    assert stub_file.exists()
+    content = stub_file.read_text(encoding="utf-8")
+    assert "def gz_add" in content
+
+
+def test_generate_fallback_backend_stubs(tmp_path: Path) -> None:
+    """Verify _generate_fallback_backend_stubs generates valid AST stubs for edge backends.
+
+    Args:
+        tmp_path (Path): Pytest temporary path fixture.
+    """
+    out_file = tmp_path / "fallback.pyi"
+    count = gs._generate_fallback_backend_stubs("edge_mlir", str(out_file))
+    assert count > 0
+    assert out_file.exists()
+    content = out_file.read_text(encoding="utf-8")
+    assert "def add(x1: Tensor, x2: Tensor | float | int) -> Tensor: ..." in content
+    assert "def __getattr__(name: str) -> Tensor: ..." in content
+
+
+def test_generate_stubs_fallback_generation(tmp_path: Path) -> None:
+    """Verify fallback stub generation path when snapshot and live introspection return zero.
+
+    Args:
+        tmp_path (Path): Pytest temporary path fixture.
+    """
+    snap_dir = tmp_path / "snapshots"
+    snap_dir.mkdir()
+
+    out_base = tmp_path / "backends"
+    edge_dir = out_base / "edge_mlir"
+    edge_dir.mkdir(parents=True)
+
+    with patch("scripts.generate_stubs._generate_stubs_from_live_module", return_value=0):
+        gs.generate_stubs(snapshot_dir=str(snap_dir), out_base_dir=str(out_base))
+
+    stub_file = edge_dir / "snapshot_stubs.pyi"
+    assert stub_file.exists()
+    content = stub_file.read_text(encoding="utf-8")
+    assert "def add" in content

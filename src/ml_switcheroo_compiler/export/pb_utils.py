@@ -1,21 +1,17 @@
-"""pb_utils module."""
-
-from typing import TypeVar, Union
-
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-"""Module pb_utils.py."""
+"""Minimal Protobuf binary encoder utilities."""
 
-"""Minimal Protobuf Encoder."""
+from __future__ import annotations
 
 
 def encode_varint(value: int) -> bytes:
     """Encode an integer as a protobuf varint.
 
     Args:
-        value (int): The value parameter.
+        value (int): Integer value to encode.
 
     Returns:
-        bytes: Result.
+        bytes: Encoded varint bytes.
     """
     if value < 0:
         value += 1 << 64
@@ -34,6 +30,8 @@ def encode_varint(value: int) -> bytes:
 class ProtobufWriter:
     """Provide a minimal writer for protobuf binary format."""
 
+    data: bytearray
+
     def __init__(self) -> None:
         """Initialize ProtobufWriter."""
         self.data = bytearray()
@@ -42,8 +40,8 @@ class ProtobufWriter:
         """Add a varint field.
 
         Args:
-            tag (int): The tag parameter.
-            value (int): The value parameter.
+            tag (int): Field tag number.
+            value (int): Integer field value.
         """
         self.data.extend(encode_varint((tag << 3) | 0))
         self.data.extend(encode_varint(value))
@@ -52,8 +50,8 @@ class ProtobufWriter:
         """Add a length-delimited bytes field.
 
         Args:
-            tag (int): The tag parameter.
-            value (bytes): The value parameter.
+            tag (int): Field tag number.
+            value (bytes): Raw bytes field value.
         """
         self.data.extend(encode_varint((tag << 3) | 2))
         self.data.extend(encode_varint(len(value)))
@@ -63,17 +61,17 @@ class ProtobufWriter:
         """Add a length-delimited string field.
 
         Args:
-            tag (int): The tag parameter.
-            value (str): The value parameter.
+            tag (int): Field tag number.
+            value (str): String field value.
         """
         self.add_bytes(tag, value.encode("utf-8"))
 
-    def add_message(self, tag: int, writer: "ProtobufWriter") -> None:
+    def add_message(self, tag: int, writer: ProtobufWriter) -> None:
         """Add a nested message field.
 
         Args:
-            tag (int): The tag parameter.
-            writer ("ProtobufWriter"): The ProtobufWriter parameter.
+            tag (int): Field tag number.
+            writer (ProtobufWriter): ProtobufWriter containing the nested message bytes.
         """
         self.add_bytes(tag, writer.get_bytes())
 
@@ -81,6 +79,6 @@ class ProtobufWriter:
         """Get the encoded bytes.
 
         Returns:
-        bytes: Result.
+            bytes: Encoded protobuf payload bytes.
         """
         return bytes(self.data)

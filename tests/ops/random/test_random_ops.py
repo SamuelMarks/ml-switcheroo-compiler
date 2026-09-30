@@ -41,7 +41,14 @@ from ml_switcheroo_compiler.ops.random_ops import (
     Wald,
     WeibullMin,
     WrapKeyData,
+    binomial,
+    categorical,
+    choice,
+    dirichlet,
+    permutation,
+    truncated_normal,
 )
+from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 from ml_switcheroo_compiler.ops.random_ops.frontend import sobol_sample
 from ml_switcheroo_compiler.ops.random_ops.sobol import SobolSample, generate_sobol
 
@@ -92,6 +99,31 @@ def test_random_ops_coverage():
         op = op_cls()
         assert op.infer_shape(DummyShape()) is not None
         assert op.infer_shape() == ()
+
+    lowercase_ops = [
+        categorical,
+        dirichlet,
+        binomial,
+        truncated_normal,
+        permutation,
+        choice,
+    ]
+    for op_cls in lowercase_ops:
+        op = op_cls()
+        assert op.infer_shape(DummyShape()) == (1, 2)
+        assert op.infer_shape(None) == ()
+
+    # Test Rademacher OpDef and rademacher function
+    rm = Rademacher()
+    assert rm.infer_shape() == ()
+    assert rm.infer_shape(5) == (5,)
+    assert rm.infer_shape((2, 3)) == (2, 3)
+    assert rm.infer_shape(shape=(4, 2)) == (4, 2)
+    assert rm.infer_shape(size=7) == (7,)
+    assert rm.infer_shape(size=(3, 3)) == (3, 3)
+
+    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="dispatched_rademacher"):
+        assert rademacher(5) == "dispatched_rademacher"
 
     assert RngBitGenerator().infer_shape(1, (1, 2), "float32") == (1, 2)
     assert RngUniform().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)

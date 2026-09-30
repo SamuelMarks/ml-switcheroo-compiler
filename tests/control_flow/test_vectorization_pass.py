@@ -368,3 +368,107 @@ def test_vectorization_exhaustive_branches():
     outer_dict.outputs = ["vmap_dict"]
     opt_dict = vectorization_pass(outer_dict)
     assert "vmap_dict" in opt_dict.nodes
+
+
+def test_vectorization_extra_branches() -> None:
+    """Test remaining branches of vectorization pass for 100% coverage."""
+    from unittest.mock import patch
+
+    # Nonexistent rules file branch in _load_vmap_rules
+    with patch("os.path.exists", return_value=False):
+        rules = _load_vmap_rules()
+        assert rules == {}
+
+    # Shift axis with negative axis or axes
+    g_neg = IRGraph(name="test_neg_axis")
+    g_neg.inputs = ["x"]
+    g_neg.nodes["x"] = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=(3, 4))
+    g_neg.nodes["sum_neg"] = IRNode(
+        id="sum_neg",
+        op_type="ReduceSum",
+        inputs=["x"],
+        attributes={"axis": -1, "axes": (-1, 0), "dim": -2},
+        shape_metadata=(3,),
+    )
+    g_neg.outputs = ["sum_neg"]
+    vec_neg = vectorize_graph(g_neg, in_axes=0, batch_size=5, out_axes=0)
+    assert vec_neg.nodes["sum_neg"].attributes["axis"] == -1
+    assert vec_neg.nodes["sum_neg"].attributes["dim"] == -2
+    assert vec_neg.nodes["sum_neg"].attributes["axes"] == (-1, 1)
+
+    # Vmap node where input is not in graph nodes, or axis >= len(shape)
+    g_vmap_edge = IRGraph(name="edge_vmap")
+    g_vmap_edge.nodes["missing_in"] = IRNode(
+        id="missing_in",
+        op_type="Vmap",
+        inputs=["nonexistent_input"],
+        attributes={"in_axes": 5, "body": None},
+    )
+    res_edge = vectorization_pass(g_vmap_edge)
+    assert "missing_in" in res_edge.nodes
+
+    # Vmap node with existing input but axis >= shape length
+    g_vmap_oob = IRGraph(name="oob_vmap")
+    g_vmap_oob.nodes["in_node"] = IRNode(id="in_node", op_type="Input", shape_metadata=(2,))
+    g_vmap_oob.nodes["vmap_oob"] = IRNode(
+        id="vmap_oob",
+        op_type="Vmap",
+        inputs=["in_node"],
+        attributes={"in_axes": 10, "body": None},
+    )
+    res_oob = vectorization_pass(g_vmap_oob)
+    assert "vmap_oob" in res_oob.nodes
+
+    # Vmap node with empty inputs (batch_size stays 1)
+    g_vmap_no_inputs = IRGraph(name="no_in_vmap")
+    g_vmap_no_inputs.nodes["vmap_empty"] = IRNode(
+        id="vmap_empty",
+        op_type="Vmap",
+        inputs=[],
+        attributes={"body": None},
+    )
+    res_empty_vmap = vectorization_pass(g_vmap_no_inputs)
+    assert "vmap_empty" in res_empty_vmap.nodes
+
+    # Graph with an unbatched operation alongside batched operation
+    # And operations exercising shift_permutation and prepend_batch_dim
+    g_policies = IRGraph(name="test_policies")
+    g_policies.inputs = ["batched_in", "unbatched_in"]
+    g_policies.nodes["batched_in"] = IRNode(id="batched_in", op_type="Input", shape_metadata=(3, 4))
+    g_policies.nodes["unbatched_in"] = IRNode(id="unbatched_in", op_type="Input", shape_metadata=(2, 2))
+
+    # Unbatched op (inputs contain no batched tensors)
+    g_policies.nodes["unbatched_op"] = IRNode(
+        id="unbatched_op",
+        op_type="Add",
+        inputs=["unbatched_in", "unbatched_in"],
+        shape_metadata=(2, 2),
+    )
+
+    # shift_permutation policy
+    g_policies.nodes["transpose_op"] = IRNode(
+        id="transpose_op",
+        op_type="Transpose",
+        inputs=["batched_in"],
+        attributes={"permutation": (1, 0)},
+        shape_metadata=(4, 3),
+    )
+
+    # prepend_batch_dim policy with both "shape" and "newshape" attributes
+    g_policies.nodes["reshape_op"] = IRNode(
+        id="reshape_op",
+        op_type="Reshape",
+        inputs=["batched_in"],
+        attributes={"shape": [12], "newshape": (12,)},
+        shape_metadata=(12,),
+    )
+    g_policies.outputs = ["unbatched_op", "transpose_op", "reshape_op"]
+
+    vec_policies = vectorize_graph(g_policies, in_axes={"batched_in": 0, "unbatched_in": None}, batch_size=7, out_axes=0)
+    assert vec_policies.nodes["unbatched_op"].op_type == "Add"
+    assert vec_policies.nodes["unbatched_op"].shape_metadata == (2, 2)
+    assert vec_policies.nodes["transpose_op"].attributes["permutation"] == (0, 2, 1)
+    assert vec_policies.nodes["transpose_op"].shape_metadata == (7, 4, 3)
+    assert vec_policies.nodes["reshape_op"].attributes["shape"] == (7, 12)
+    assert vec_policies.nodes["reshape_op"].attributes["newshape"] == (7, 12)
+    assert vec_policies.nodes["reshape_op"].shape_metadata == (7, 12)

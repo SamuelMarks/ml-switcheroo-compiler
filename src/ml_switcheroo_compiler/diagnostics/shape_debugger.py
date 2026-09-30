@@ -5,8 +5,11 @@ This module includes functions to trace model execution shapes into Markdown tab
 well as export logical graphs to Graphviz DOT and HTML formats for visualization
 """
 
+from __future__ import annotations
+
 import os
-from typing import Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
@@ -15,29 +18,32 @@ from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-_FORMATTERS = {}
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+_FORMATTERS: dict[str, dict[str, str]] = {}
 
 
 def _load_formatters() -> None:
-    """_load_formatters function.
-
-    Returns:
-        object: Result.
-    """
+    """Load formatters dictionary from YAML."""
     global _FORMATTERS
     if not _FORMATTERS:
         yaml_path = os.path.join(os.path.dirname(__file__), "formatters.yaml")
         if os.path.exists(yaml_path):
-            with open(yaml_path) as f:
-                _FORMATTERS = yaml.safe_load(f) or {}
+            with open(yaml_path, encoding="utf-8") as f:
+                loaded = yaml.safe_load(f)
+                _FORMATTERS = loaded if isinstance(loaded, dict) else {}
 
 
-def debug_shapes(model_func, input_shape) -> str:
+def debug_shapes(
+    model_func: Callable[[Tensor], Tensor | tuple[int, ...] | None],
+    input_shape: tuple[int, ...],
+) -> str:
     """Trace the execution of a model function to debug and document tensor shapes.
 
     Args:
-        model_func (object): The model_func parameter.
-        input_shape (object): The input_shape parameter.
+        model_func (Callable[[Tensor], Tensor | tuple[int, ...] | None]): The model_func parameter.
+        input_shape (tuple[int, ...]): The input_shape parameter.
 
     Returns:
         str: Result.

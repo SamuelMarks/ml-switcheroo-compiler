@@ -31,7 +31,7 @@ def image_data_format() -> str:
     return "channels_last"
 
 
-_uid_dict = {}
+_uid_dict: dict[str, int] = {}
 
 
 def get_uid(prefix: str = "") -> int:
@@ -80,38 +80,11 @@ __all__ = [
     "TensorArray",
     "TextDataset",
     "TracingError",
+    "backend",
     "clear_assertions",
     "config",
     "evaluate_assertions",
-    "record_assertion",
-]
-
-__all__ = [
-    "AudioDataset",
-    "BackendNotSupportedError",
-    "CompilationError",
-    "ConfigContext",
-    "DType",
-    "DTypePromotionError",
-    "Dataset",
-    "Device",
-    "DeviceType",
-    "EagerMode",
-    "ImageDataset",
-    "NumpyDataset",
-    "QuantDType",
-    "RaggedTensor",
-    "ShapeMismatchError",
-    "SparseTensor",
-    "SparseTensorCOO",
-    "SparseTensorCSR",
-    "SwitcherooError",
-    "Tensor",
-    "TensorArray",
-    "TextDataset",
-    "TracingError",
-    "clear_assertions",
-    "config",
-    "evaluate_assertions",
+    "get_uid",
+    "image_data_format",
     "record_assertion",
 ]

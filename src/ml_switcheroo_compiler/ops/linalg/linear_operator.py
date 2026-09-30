@@ -7,33 +7,47 @@ from __future__ import annotations
 """Core abstractions and logic definitions for linear_operator.py."""
 
 
+from typing import TYPE_CHECKING, Protocol, Union
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+
+class HasShape(Protocol):
+    """Protocol for objects providing a shape attribute."""
+
+    shape: tuple[int, ...]
+
+
+ShapeOperand = Union["Tensor", HasShape, int, float, str, None]
 
 
 class BaseLinearOperator(OpDef):
     """Base for linear operators."""
 
-    def infer_shape(self, *args, **kwargs):
-        """infer_shape function.
+    def infer_shape(
+        self,
+        *args: ShapeOperand,
+        **kwargs: ShapeOperand,
+    ) -> tuple[int, ...]:
+        """Infer output shape for linear operator.
 
         Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
+            *args (ShapeOperand): Positional arguments or operands.
+            **kwargs (ShapeOperand): Keyword arguments including operand or operator.
 
         Returns:
-        Any: Result.
+            tuple[int, ...]: Inferred output shape.
         """
         # Default shape inference attempts to find a shape or operand
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
         if hasattr(operand, "shape"):
-            return getattr(operand, "shape", ())
+            shape_val = getattr(operand, "shape", ())
+            if isinstance(shape_val, tuple):
+                return shape_val
+            return tuple(shape_val)
         return ()
 
 

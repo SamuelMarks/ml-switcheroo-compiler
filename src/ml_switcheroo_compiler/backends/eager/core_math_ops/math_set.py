@@ -81,7 +81,15 @@ def _np_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.unique(args[0], return_index=True, return_inverse=True, return_counts=True)
+    arr = np.asarray(args[0]).flatten()
+    values, indices = np.unique(arr, return_index=True)
+    val_to_idx = {v: i for i, v in enumerate(values.tolist())}
+    inverse_indices = np.array([val_to_idx[x] for x in arr.tolist()], dtype=np.intp)
+    counts_dict: dict[int, int] = {}
+    for idx in inverse_indices.tolist():
+        counts_dict[idx] = counts_dict.get(idx, 0) + 1
+    counts = np.array([counts_dict[i] for i in range(len(values))], dtype=np.intp)
+    return values, indices, inverse_indices, counts
 
 
 @global_eager_registry.register("UniqueCounts")
@@ -101,7 +109,13 @@ def _np_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
         return func(*args, **kwargs)
     import numpy as np
 
-    return np.unique(args[0], return_counts=True)
+    arr = np.asarray(args[0]).flatten()
+    values = np.unique(arr)
+    counts_map: dict[Any, int] = {}
+    for elem in arr.tolist():
+        counts_map[elem] = counts_map.get(elem, 0) + 1
+    counts = np.array([counts_map[v] for v in values.tolist()], dtype=np.intp)
+    return values, counts
 
 
 @global_eager_registry.register("UniqueValues")

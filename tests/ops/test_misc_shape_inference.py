@@ -186,6 +186,7 @@ def test_distributed_ops_shapes() -> None:
 
     # Pswapaxes
     assert op_swap.infer_shape(t, axis1=0, axis2=2) == (16, 8, 4)
+    assert op_swap.infer_shape(t, axis1=-3, axis2=-1) == (16, 8, 4)
 
     # PsumScatter: (4, 8, 16) with world_size=2 along dim 1 -> (4, 4, 16)
     assert op_scatter.infer_shape(t, scatter_dimension=1, world_size=2) == (4, 4, 16)

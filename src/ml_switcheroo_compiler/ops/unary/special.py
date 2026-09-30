@@ -4,27 +4,52 @@
 Bitcast, and Frexp
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Protocol, Union
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+
+class HasShape(Protocol):
+    """Protocol for objects exposing a shape attribute."""
+
+    shape: tuple[int, ...]
 
 
 @register_op("Cast")
 class Cast(OpDef):
     """Provide an operation that casts an input array to a specified data type."""
 
-    def infer_shape(self, x, dtype=None, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...] | str:
         """Infer shape.
 
         Args:
-            x (Any): The x parameter.
-            dtype (Any): The dtype parameter.
-            **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape): The input tensor or shape.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...] | str: Resulting shape or string.
         """
-        return x
+        if not args:
+            x_kw = kwargs.get("x")
+            return str(x_kw) if x_kw is not None else ()
+        first = args[0]
+        if isinstance(first, str):
+            return first
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("Bitcast")
@@ -38,12 +63,16 @@ class CanCast(OpDef):
 
     op_name = "CanCast"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | str | Tensor | IRNode,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            *args (Any): Positional args.
-            **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | list[int] | str | Tensor | IRNode): Positional args.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
@@ -56,18 +85,29 @@ class CanCast(OpDef):
 class Frexp(OpDef):
     """Provide an operation that decomposes a floating-point array into mantissa and exponent."""
 
-    def infer_shape(self, x, dtype=None, **kwargs):
+    def infer_shape(
+        self,
+        *args: tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...] | str:
         """Infer the output shape of the operation.
 
         Args:
-            x (Any): The x parameter.
-            dtype (Any): The dtype parameter.
-            **kwargs (Any): Keyword args.
+            *args (tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape): The input tensor or shape.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
-            tuple[int, ...]: Result.
+            tuple[int, ...] | str: Result.
         """
-        return x
+        if not args:
+            x_kw = kwargs.get("x")
+            return str(x_kw) if x_kw is not None else ()
+        first = args[0]
+        if isinstance(first, str):
+            return first
+        if isinstance(first, (tuple, list)):
+            return tuple(first)
+        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
 
 
 @register_op("Erf")
@@ -177,17 +217,21 @@ class Lbeta(OpDef):
 
     op_name = "Lbeta"
 
-    def infer_shape(self, x, **kwargs):
+    def infer_shape(
+        self,
+        x: tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape,
+        **kwargs: str | int | float | bool | None,
+    ) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
-            x (Any): The x parameter.
-            **kwargs (Any): Keyword args.
+            x (tuple[int, ...] | list[int] | str | Tensor | IRNode | HasShape): The input tensor, shape or container.
+            **kwargs (str | int | float | bool | None): Keyword args.
 
         Returns:
             tuple[int, ...]: Result.
         """
-        shape = getattr(x, "shape", ())
+        shape = tuple(getattr(x, "shape", x if isinstance(x, (tuple, list)) else ()))
         if len(shape) > 0:
             return shape[:-1]
         return ()

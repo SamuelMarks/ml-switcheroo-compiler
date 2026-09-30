@@ -96,3 +96,19 @@ def test_axis_translation_conv2d_already_nhwc():
     graph.nodes = {"conv_1": conv}
     modified = axis_translation_pass(graph)
     assert modified is False
+
+
+def test_axis_translation_conv2d_empty_inputs():
+    """Test Conv2D with layout NCHW but empty inputs."""
+    graph = IRGraph()
+    conv = IRNode(id="conv_1", op_type="Conv2D", inputs=[], attributes={"layout": "NCHW"})
+    graph.nodes = {"conv_1": conv}
+    assert axis_translation_pass(graph) is True
+
+
+def test_passes_package_init() -> None:
+    """Test passes package __init__ exports."""
+    import ml_switcheroo_compiler.transforms.passes as passes
+
+    assert hasattr(passes, "axis_translation_pass")
+    assert passes.axis_translation_pass is not None

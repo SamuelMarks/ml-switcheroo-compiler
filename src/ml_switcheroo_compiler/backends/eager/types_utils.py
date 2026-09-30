@@ -1,59 +1,139 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Types utils for eager backend."""
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import Protocol, Union
 
 
-def generic_zeros(mod: object, shape: tuple[int, ...]) -> object:
+class ZerosModule(Protocol):
+    """Protocol for module providing zeros."""
+
+    def zeros(
+        self,
+        shape: tuple[int, ...],
+    ) -> Union[tuple[str, tuple[int, ...]], tuple[int, ...]]:
+        """Create zeros."""
+        ...
+
+
+class ArrayModule(Protocol):
+    """Protocol for module providing array."""
+
+    def array(
+        self,
+        data: Union[list[int], list[float], tuple[int, ...], int, float, str],
+        dtype: Union[str, type, None] = None,
+    ) -> Union[
+        tuple[
+            str,
+            Union[list[int], list[float], tuple[int, ...], int, float, str],
+            Union[str, type, None],
+        ],
+        list[int],
+        list[float],
+    ]:
+        """Create array."""
+        ...
+
+
+class AsArrayModule(Protocol):
+    """Protocol for module providing asarray."""
+
+    def asarray(
+        self,
+        data: Union[list[int], list[float], tuple[int, ...], int, float, str],
+    ) -> Union[
+        tuple[
+            str,
+            Union[list[int], list[float], tuple[int, ...], int, float, str],
+        ],
+        list[int],
+        list[float],
+    ]:
+        """Create asarray."""
+        ...
+
+
+class HasItem(Protocol):
+    """Protocol for objects providing item method."""
+
+    def item(self) -> Union[float, int]:
+        """Extract item."""
+        ...
+
+
+InputData = Union[list[int], list[float], tuple[int, ...], int, float, str]
+ArrayResult = Union[
+    tuple[str, InputData, Union[str, type, None]],
+    tuple[str, InputData],
+    list[int],
+    list[float],
+]
+
+
+def generic_zeros(
+    mod: ZerosModule,
+    shape: tuple[int, ...],
+) -> Union[tuple[str, tuple[int, ...]], tuple[int, ...]]:
     """Provide generic zeros.
 
     Args:
-        mod: The mod parameter.
-        shape: The shape parameter.
+        mod (ZerosModule): The module parameter.
+        shape (tuple[int, ...]): The shape parameter.
 
     Returns:
-            object: Result.
+        tuple[str, tuple[int, ...]] | tuple[int, ...]: Result.
     """
     return mod.zeros(shape)
 
 
-def generic_array(mod: object, data: object, dtype: Optional[object] = None) -> object:
+def generic_array(
+    mod: ArrayModule,
+    data: InputData,
+    dtype: Union[str, type, None] = None,
+) -> ArrayResult:
     """Provide generic array.
 
     Args:
-        mod: The mod parameter.
-        data: The data parameter.
-        dtype: The dtype parameter.
+        mod (ArrayModule): The module parameter.
+        data (InputData): The data parameter.
+        dtype (Union[str, type, None]): The dtype parameter.
 
     Returns:
-            object: Result.
+        ArrayResult: Result.
     """
     if dtype is not None:
         return mod.array(data, dtype=dtype)
     return mod.array(data)
 
 
-def generic_asarray(mod: object, data: object) -> object:
+def generic_asarray(
+    mod: AsArrayModule,
+    data: InputData,
+) -> Union[tuple[str, InputData], list[int], list[float]]:
     """Provide generic asarray.
 
     Args:
-        mod: The mod parameter.
-        data: The data parameter.
+        mod (AsArrayModule): The module parameter.
+        data (InputData): The data parameter.
 
     Returns:
-            object: Result.
+        tuple[str, InputData] | list[int] | list[float]: Result.
     """
     return mod.asarray(data)
 
 
-def generic_item(mod: object, data: object) -> float:
+def generic_item(
+    mod: Union[ZerosModule, ArrayModule, AsArrayModule, None],
+    data: HasItem,
+) -> float:
     """Provide generic item.
 
     Args:
-        mod: The mod parameter.
-        data: The data parameter.
+        mod (ZerosModule | ArrayModule | AsArrayModule | None): The module parameter.
+        data (HasItem): The data parameter.
 
     Returns:
-            float: Result.
+        float: Result.
     """
     return float(data.item())

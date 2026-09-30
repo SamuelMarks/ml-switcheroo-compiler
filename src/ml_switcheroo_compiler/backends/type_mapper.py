@@ -1,17 +1,19 @@
 # ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Type mapping utilities for backend generators."""
 
-import typing
+from __future__ import annotations
 
 
 class TypeMapper:
     """Handle mapping between generic IR types and backend-specific types."""
 
-    def __init__(self, type_dict=None) -> None:
+    type_dict: dict[str, str]
+
+    def __init__(self, type_dict: dict[str, str] | None = None) -> None:
         """Initialize.
 
         Args:
-            type_dict (typing.Optional[dict[str, object]]): Dictionary of type mappings.
+            type_dict (dict[str, str] | None): Dictionary of type mappings.
         """
         self.type_dict = type_dict or {}
 

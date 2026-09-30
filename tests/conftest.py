@@ -1,12 +1,43 @@
 import pytest
 
 try:
+    import yaml  # noqa: F401
+
+    yaml.safe_load("dummy: 1")
+except Exception:
+    pass
+
+try:
+    import scipy.linalg  # noqa: F401
+except Exception:
+    pass
+
+try:
     import jax  # noqa: F401
 except Exception:
     pass
 
 try:
+    import dask  # noqa: F401
+    import jinja2  # noqa: F401
+except Exception:
+    pass
+
+try:
     import torch  # noqa: F401
+except Exception:
+    pass
+
+try:
+    import numba  # noqa: F401
+    import sparse  # noqa: F401
+except Exception:
+    pass
+
+try:
+    import tensorflow as tf
+
+    tf.config.run_functions_eagerly(True)
 except Exception:
     pass
 

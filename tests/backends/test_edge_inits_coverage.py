@@ -5,14 +5,39 @@ from __future__ import annotations
 
 def test_edge_inits_symbol_exports() -> None:
     """Verify that all standalone edge and webgpu packages export canonical generators."""
+    import ml_switcheroo_compiler.backends.edge as edge
+    import ml_switcheroo_compiler.backends.edge.distributed_webrtc as edge_webrtc
     import ml_switcheroo_compiler.backends.edge_mlir as edge_mlir
     import ml_switcheroo_compiler.backends.edge_onnx as edge_onnx
     import ml_switcheroo_compiler.backends.edge_stablehlo as edge_stablehlo
     import ml_switcheroo_compiler.backends.edge_wasm as edge_wasm
     import ml_switcheroo_compiler.backends.edge_webgl as edge_webgl
+    import ml_switcheroo_compiler.backends.llvm_cpp as llvm_cpp
     import ml_switcheroo_compiler.backends.webgpu as webgpu
 
+    assert hasattr(edge, "ONNXCodeGenerator")
+    assert edge.ONNXCodeGenerator is not None
+    assert hasattr(edge, "StableHLOCodeGenerator")
+    assert edge.StableHLOCodeGenerator is not None
+    assert hasattr(edge, "WasmCodeGenerator")
+    assert edge.WasmCodeGenerator is not None
+    assert hasattr(edge, "WebGPUCodeGenerator")
+    assert edge.WebGPUCodeGenerator is not None
+
+    assert hasattr(edge_webrtc, "SignalingHandler")
+    assert edge_webrtc.SignalingHandler is not None
+    assert hasattr(edge_webrtc, "SignalingServer")
+    assert edge_webrtc.SignalingServer is not None
+    assert hasattr(edge_webrtc, "WebRTCDataChannelStream")
+    assert edge_webrtc.WebRTCDataChannelStream is not None
+
+    assert hasattr(llvm_cpp, "CppGenerator")
+    assert llvm_cpp.CppGenerator is not None
+    assert hasattr(llvm_cpp, "LLVMCPPRunner")
+    assert llvm_cpp.LLVMCPPRunner is not None
+
     assert hasattr(edge_mlir, "MLIRBytecodeEncoder")
+    assert edge_mlir.MLIRBytecodeEncoder is not None
     assert edge_mlir.MLIRBytecodeEncoder is not None
 
     assert hasattr(edge_onnx, "ONNXCodeGenerator")

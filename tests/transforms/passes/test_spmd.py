@@ -439,3 +439,20 @@ def test_propagate_sharding_convolutions_and_elementwise():
     if hasattr(g_no_out, "outputs"):
         delattr(g_no_out, "outputs")
     assert spmd_partitioning_pass(g_no_out) is True
+
+
+def test_spmd_pass_inject_collectives():
+    from ml_switcheroo_compiler.transforms.passes.spmd import spmd_partitioning_pass
+
+    for coll in ("AllReduce", "ReduceScatter", "AllGather", "AllToAll"):
+        g = IRGraph()
+        n1 = IRNode(id="n1", op_type="Add", inputs=[], attributes={"inject_collective": coll}, sharding=DummySharding(["x"]))
+        n2 = IRNode(id="n2", op_type="Relu", inputs=["n1"])
+        g.nodes = {"n1": n1, "n2": n2}
+        g.outputs = ["n1"]
+        res = spmd_partitioning_pass(g)
+        assert res is True
+        expected_coll_id = "n1_all_reduce" if coll == "AllReduce" else f"n1_{coll.lower()}"
+        assert expected_coll_id in g.nodes
+        assert g.outputs == [expected_coll_id]
+        assert g.nodes["n2"].inputs == [expected_coll_id]

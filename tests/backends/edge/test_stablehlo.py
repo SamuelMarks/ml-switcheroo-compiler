@@ -675,3 +675,25 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     g.outputs = []
     res_dict = artifact2(np.array([1.0], dtype=np.float32), np.array([2.0], dtype=np.float32))
     assert isinstance(res_dict, dict)
+
+
+def test_stablehlo_mlir_text_compliance() -> None:
+    """Verify generated StableHLO text against ml-ecosystem-snapshots compliance checker."""
+    from ml_ecosystem_snapshots.compliance import check_mlir_text_compliance
+
+    g = IRGraph()
+    inp1 = LogicalNode(id="in1", op_type="Input")
+    inp1.shape_metadata = (2, 2)
+    inp1.dtype = "float32"
+    out1 = LogicalNode(id="out1", op_type="Add", inputs=["in1", "in1"])
+    out1.shape_metadata = (2, 2)
+    out1.dtype = "float32"
+    g.nodes = {"in1": inp1, "out1": out1}
+    g.inputs = ["in1"]
+    g.outputs = ["out1"]
+    g.sorted_nodes = [inp1, out1]
+
+    gen = StableHLOCodeGenerator(g)
+    code = gen.generate()
+    compliance = check_mlir_text_compliance(code)
+    assert compliance["is_compliant"] is True

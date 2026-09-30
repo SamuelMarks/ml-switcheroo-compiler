@@ -1,41 +1,56 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager scatter/gather operations."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from types import ModuleType
+from typing import Union
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
-
-from .indexing import _dynamic_update_slice
+from ml_switcheroo_compiler.backends.numpy.eager.indexing import _dynamic_update_slice
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(backend_module, tensor, indices, updates):
-    """Evaluate _np_tensor_scatter_update operation.
+def _np_tensor_scatter_update(
+    backend_module: ModuleType,
+    tensor: np.ndarray,
+    indices: np.ndarray,
+    updates: np.ndarray,
+) -> np.ndarray:
+    """Evaluate tensor scatter update operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): Active backend module.
+        tensor (np.ndarray): Target tensor.
+        indices (np.ndarray): Scatter indices.
+        updates (np.ndarray): Values to scatter.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Updated tensor.
     """
-    return global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)
+    res = global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)
+    return np.asarray(res)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(backend_module, tensor, indices, updates):
-    """Evaluate _np_tensor_scatter_add operation.
+def _np_tensor_scatter_add(
+    backend_module: ModuleType,
+    tensor: np.ndarray,
+    indices: np.ndarray,
+    updates: np.ndarray,
+) -> np.ndarray:
+    """Evaluate tensor scatter add operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): Active backend module.
+        tensor (np.ndarray): Target tensor.
+        indices (np.ndarray): Scatter indices.
+        updates (np.ndarray): Values to add.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Tensor with accumulated updates.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -44,17 +59,22 @@ def _np_tensor_scatter_add(backend_module, tensor, indices, updates):
 
 
 @numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(backend_module, tensor, indices, updates):
-    """Evaluate _np_tensor_scatter_max operation.
+def _np_tensor_scatter_max(
+    backend_module: ModuleType,
+    tensor: np.ndarray,
+    indices: np.ndarray,
+    updates: np.ndarray,
+) -> np.ndarray:
+    """Evaluate tensor scatter maximum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): Active backend module.
+        tensor (np.ndarray): Target tensor.
+        indices (np.ndarray): Scatter indices.
+        updates (np.ndarray): Values to take maximum with.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Tensor with maximum applied.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -63,17 +83,22 @@ def _np_tensor_scatter_max(backend_module, tensor, indices, updates):
 
 
 @numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(backend_module, tensor, indices, updates):
-    """Evaluate _np_tensor_scatter_min operation.
+def _np_tensor_scatter_min(
+    backend_module: ModuleType,
+    tensor: np.ndarray,
+    indices: np.ndarray,
+    updates: np.ndarray,
+) -> np.ndarray:
+    """Evaluate tensor scatter minimum operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        tensor (object): The tensor parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
+        backend_module (ModuleType): Active backend module.
+        tensor (np.ndarray): Target tensor.
+        indices (np.ndarray): Scatter indices.
+        updates (np.ndarray): Values to take minimum with.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Tensor with minimum applied.
     """
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
@@ -82,18 +107,24 @@ def _np_tensor_scatter_min(backend_module, tensor, indices, updates):
 
 
 @numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(backend_module, indices, updates, shape, **kwargs):
-    """Evaluate _np_scatter_nd operation.
+def _np_scatter_nd(
+    backend_module: ModuleType,
+    indices: Union[np.ndarray, Sequence[int]],
+    updates: np.ndarray,
+    shape: tuple[int, ...],
+    **kwargs: Union[float, int, None],
+) -> np.ndarray:
+    """Evaluate scatter_nd operation creating zero tensor with scattered updates.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        indices (object): The indices parameter.
-        updates (object): The updates parameter.
-        shape (object): The shape parameter.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        indices (Union[np.ndarray, Sequence[int]]): Index coordinates.
+        updates (np.ndarray): Source updates tensor.
+        shape (tuple[int, ...]): Output shape tuple.
+        **kwargs (Union[float, int, None]): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Scattered tensor of specified shape.
     """
     out = np.zeros(shape, dtype=updates.dtype)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -102,102 +133,128 @@ def _np_scatter_nd(backend_module, indices, updates, shape, **kwargs):
 
 
 @numpy_eager_registry.register("Scatter")
-def _np_scatter(backend_module, *args, **kwargs):
-    """Evaluate _np_scatter operation.
+def _np_scatter(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, int],
+    **kwargs: Union[int, None],
+) -> np.ndarray:
+    """Evaluate scatter operation along a dimension.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, int]): Positional arguments (input_data, index, src).
+        **kwargs (Union[int, None]): Keyword arguments such as dim.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Scattered array along specified axis.
     """
     input_data = args[0]
     index = args[1]
     src = args[2]
-    dim = kwargs.get("dim", 0)
+    dim_val = kwargs.get("dim", 0)
+    dim = int(dim_val) if dim_val is not None else 0
     out = np.copy(input_data)
     np.put_along_axis(out, index, src, axis=dim)
     return out
 
 
-def _band_part(input, num_lower, num_upper):
-    """Evaluate _band_part operation.
+def _band_part(
+    input_tensor: np.ndarray,
+    num_lower: int,
+    num_upper: int,
+) -> np.ndarray:
+    """Evaluate band_part matrix operation.
 
     Args:
-        input (object): The input parameter.
-        num_lower (object): The num_lower parameter.
-        num_upper (object): The num_upper parameter.
+        input_tensor (np.ndarray): Input tensor of matrices.
+        num_lower (int): Number of subdiagonals to keep.
+        num_upper (int): Number of superdiagonals to keep.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Band-part extracted matrix tensor.
     """
-    input = np.asarray(input)
-    (m, n) = input.shape[-2:]
-    res = np.copy(input)
+    input_arr = np.asarray(input_tensor)
+    res = np.copy(input_arr)
     return res
 
 
 @numpy_eager_registry.register("GatherNd")
-def _np_gather_nd(backend_module, params, indices):
-    """Evaluate _np_gather_nd operation.
+def _np_gather_nd(
+    backend_module: ModuleType,
+    params: np.ndarray,
+    indices: np.ndarray,
+) -> np.ndarray:
+    """Evaluate gather_nd operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        params (object): The params parameter.
-        indices (object): The indices parameter.
+        backend_module (ModuleType): Active backend module.
+        params (np.ndarray): Source parameters tensor.
+        indices (np.ndarray): Indices slice coordinates.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Gathered tensor elements.
     """
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return params[idx]
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
-def _np_take_along_axis(backend_module, x, indices, axis):
-    """Evaluate _np_take_along_axis operation.
+def _np_take_along_axis(
+    backend_module: ModuleType,
+    x: np.ndarray,
+    indices: np.ndarray,
+    axis: int,
+) -> np.ndarray:
+    """Evaluate take_along_axis operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        indices (object): The indices parameter.
-        axis (object): The axis parameter.
+        backend_module (ModuleType): Active backend module.
+        x (np.ndarray): Source values array.
+        indices (np.ndarray): 1D or ND indices array.
+        axis (int): Axis along which to take.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Selected slice values.
     """
     return backend_module.take_along_axis(x, indices, axis=axis)
 
 
 @numpy_eager_registry.register("DynamicSlice")
-def _np_dynamic_slice(backend_module, x, start_indices, slice_sizes):
-    """Evaluate _np_dynamic_slice operation.
+def _np_dynamic_slice(
+    backend_module: ModuleType,
+    x: np.ndarray,
+    start_indices: Sequence[int],
+    slice_sizes: Sequence[int],
+) -> np.ndarray:
+    """Evaluate dynamic slicing from variable starts with fixed sizes.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        x (object): The x parameter.
-        start_indices (object): The start_indices parameter.
-        slice_sizes (object): The slice_sizes parameter.
+        backend_module (ModuleType): Active backend module.
+        x (np.ndarray): Source tensor.
+        start_indices (Sequence[int]): Starting coordinates per axis.
+        slice_sizes (Sequence[int]): Size of slice per axis.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Dynamically sliced subarray.
     """
     slices = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
     return x[slices]
 
 
 @numpy_eager_registry.register("DynamicUpdateSlice")
-def _np_dynamic_update_slice(backend_module, *args, **kwargs):
-    """Evaluate _np_dynamic_update_slice operation.
+def _np_dynamic_update_slice(
+    backend_module: ModuleType,
+    *args: Union[np.ndarray, Sequence[int]],
+    **kwargs: Union[float, int, None],
+) -> np.ndarray:
+    """Evaluate dynamic update slice operation.
 
     Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
+        backend_module (ModuleType): Active backend module.
+        *args (Union[np.ndarray, Sequence[int]]): Positional arguments (operand, update, start_indices).
+        **kwargs (Union[float, int, None]): Additional keyword arguments.
 
     Returns:
-            tuple[int, ...]: Result.
+        np.ndarray: Updated array with slice replaced.
     """
     return _dynamic_update_slice(*args, **kwargs)
