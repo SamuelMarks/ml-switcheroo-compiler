@@ -20,7 +20,7 @@ def test_math_scatter_ops() -> None:
 
     # TensorScatterUpdate
     sc_up = scatter_mod._np_tensor_scatter_update(np, target, indices, updates)
-    assert np.array_equal(sc_up, target)
+    assert sc_up[0, 0] == 5.0 and sc_up[1, 1] == 10.0
     assert numpy_eager_registry.get("TensorScatterUpdate")(np, target, indices, updates) is not None
 
     # TensorScatterAdd

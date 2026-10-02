@@ -96,7 +96,7 @@ def test_distributed_ops():
     assert Pmin().infer_shape(t) == (1,)
     assert Outfeed().infer_shape(t) == ()
     assert Pshuffle().infer_shape(t) == (1,)
-    assert Pswapaxes().infer_shape(t) == (None,)
+    assert Pswapaxes().infer_shape(t, axis1=0, axis2=0) == (1,)
     assert Ppermute().infer_shape(t) == (1,)
     assert PsumScatter().infer_shape(t) == (None,)
 

@@ -127,7 +127,13 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
 
     from ml_switcheroo_compiler.core.tensor import Tensor, Variable
 
-    all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
+    all_tensors = []
+    for obj in gc.get_objects():
+        try:
+            if isinstance(obj, Tensor):
+                all_tensors.append(obj)
+        except ReferenceError:
+            pass
     wrt_tensors: list[GradValue] = []
     wrt_ids: list[str] = []
     for t in all_tensors:
@@ -170,7 +176,13 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
 
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-    all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
+    all_tensors = []
+    for obj in gc.get_objects():
+        try:
+            if isinstance(obj, Tensor):
+                all_tensors.append(obj)
+        except ReferenceError:
+            pass
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
         if hasattr(t, "data") and hasattr(t.data, "id"):

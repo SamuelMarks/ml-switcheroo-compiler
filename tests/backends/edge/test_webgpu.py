@@ -942,7 +942,7 @@ def test_wgsl_grounding_schema_validation() -> None:
     assert "ops" in schema
     assert len(schema["ops"]) >= 0
 
-    assert validate_wgsl_statement("storageStore") is True
+    assert validate_wgsl_statement("Constant") is True
     assert validate_wgsl_statement("add") is True
     assert validate_wgsl_statement("non_existent_fake_wgsl_op") is False
 

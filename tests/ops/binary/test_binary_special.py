@@ -31,8 +31,13 @@ def test_binary_special():
 
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    sp.EagerEvaluator = DummyEval()
-    assert d(1, 2) == "eager_eval"
+    orig_evaluator = sp.EagerEvaluator
+
+    try:
+        sp.EagerEvaluator = DummyEval()
+        assert d(1, 2) == "eager_eval"
+    finally:
+        sp.EagerEvaluator = orig_evaluator
 
     config.eager_mode = False
 

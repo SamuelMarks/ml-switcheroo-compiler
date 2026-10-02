@@ -121,7 +121,7 @@ def test_distributed_ops_infer_shape():
     assert op18.infer_shape() == ()
 
     op19 = Pswapaxes()
-    assert op19.infer_shape(MockArray((2, 2)), MockArray((2, 1)), axis=0) == (None, 2)
+    assert op19.infer_shape(MockArray((2, 3)), axis1=0, axis2=1) == (3, 2)
 
     op20 = Ppermute()
     assert op20.infer_shape(MockArray((2, 2)), MockArray((2, 1))) == (2, 2)

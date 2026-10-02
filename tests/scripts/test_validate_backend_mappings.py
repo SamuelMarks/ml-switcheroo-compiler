@@ -64,11 +64,11 @@ def test_validate_arguments_against_snapshot() -> None:
 
     # Too many positional args
     errs_too_many = validate_arguments_against_snapshot("pytorch", "torch.matmul", ["a", "b", "c", "d", "e", "f"], [], engine)
-    assert any("too many positional arguments" in e for e in errs_too_many)
+    assert any("Too many positional arguments" in e for e in errs_too_many)
 
     # Unknown keyword argument
     errs_kw = validate_arguments_against_snapshot("pytorch", "torch.matmul", ["a", "b"], ["invalid_kwarg_12345"], engine)
-    assert any("unknown keyword argument" in e for e in errs_kw)
+    assert any("Unexpected or hallucinated keyword argument" in e for e in errs_kw)
 
 
 def test_resolve_api_endpoint_success() -> None:

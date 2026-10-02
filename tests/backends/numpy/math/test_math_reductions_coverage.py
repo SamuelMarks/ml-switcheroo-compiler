@@ -19,6 +19,9 @@ def test_math_reductions_ops(monkeypatch: pytest.MonkeyPatch) -> None:
         None
     """
     x = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
+
+    _tcp_dist_ctx.world_size = 1
 
     # Pmean
     assert np.array_equal(red_module._np_pmean(np, x, "axis0"), x)
