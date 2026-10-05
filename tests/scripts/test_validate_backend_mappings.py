@@ -105,7 +105,7 @@ def test_resolve_api_endpoint_internal_helper() -> None:
 def test_resolve_api_endpoint_nonexistent_snapshot() -> None:
     """Test endpoint validation when snapshot directory is invalid."""
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir="/non_existent")
-    assert resolve_api_endpoint("torch.add", "pytorch", engine) is False
+    assert resolve_api_endpoint("dummy.dummy_func", "unknown_backend", engine) is False
 
 
 def test_extract_op_api() -> None:

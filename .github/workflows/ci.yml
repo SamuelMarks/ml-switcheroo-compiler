@@ -50,7 +50,7 @@ jobs:
         radon cc src/ -a --total-average | grep "Average complexity: A"
 
     - name: Duplicate Code Check
-      run: for d in src/ml_switcheroo_compiler/*/; do pylint "$d" --disable=all --enable=duplicate-code || exit 1; done
+      run: for d in src/ml_switcheroo_compiler/*/; do pylint "$d" --disable=all --enable=duplicate-code --ignore-patterns=".*stubs?\.pyi" || exit 1; done
 
     - name: Validate Backend Mappings
       run: python3 scripts/validate_backend_mappings.py

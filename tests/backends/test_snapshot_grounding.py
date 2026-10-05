@@ -151,13 +151,27 @@ def test_snapshot_grounding_engine_missing_snapshot(tmp_path: object) -> None:
     empty_dir: str = str(tmp_path)
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine(snapshot_dir=empty_dir)
 
-    assert engine.get_snapshot_path("pytorch") is None
-    with pytest.raises(FileNotFoundError):
-        engine.load_snapshot("pytorch")
+    # Disable grounding engine fallback to truly simulate missing everything
+    engine._grounding_engine = None
 
-    assert engine.get_valid_endpoints("pytorch") == set()
-    assert not engine.is_endpoint_valid("pytorch", "torch.add")
-    assert not engine.is_endpoint_valid("unknown_backend", "dummy")
+    import os
+    import shutil
+
+    real_stub = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "pytorch", "snapshot_stubs.pyi")
+    temp_stub = str(tmp_path / "temp_snapshot_stubs.pyi")
+    shutil.copyfile(real_stub, temp_stub)
+    os.remove(real_stub)
+
+    try:
+        assert engine.get_snapshot_path("pytorch") is None
+        with pytest.raises(FileNotFoundError):
+            engine.load_snapshot("pytorch")
+
+        assert engine.get_valid_endpoints("pytorch") == set()
+        assert not engine.is_endpoint_valid("pytorch", "torch.add")
+        assert not engine.is_endpoint_valid("unknown_backend", "dummy")
+    finally:
+        shutil.copyfile(temp_stub, real_stub)
 
 
 def test_snapshot_grounding_engine_corrupted_config(tmp_path: object) -> None:
@@ -967,6 +981,20 @@ def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
     corrupt_dask = tmp_path / "corrupt.json"
     corrupt_dask.write_text("{bad json", encoding="utf-8")
     assert _is_snapshot_file_complete(str(corrupt_dask), "dask") is False
+
+    # Test dask gz completeness
+    dask_gz_file = tmp_path / "dask_v1.0.0.json.gz"
+    import gzip
+    import json
+
+    with gzip.open(dask_gz_file, "wt", encoding="utf-8") as f:
+        json.dump({"categories": {"array": [{"name": "compute"}]}}, f)
+    assert _is_snapshot_file_complete(str(dask_gz_file), "dask") is True
+
+    bad_dask_gz = tmp_path / "dask_incomplete_v1.0.0.json.gz"
+    with gzip.open(bad_dask_gz, "wt", encoding="utf-8") as f:
+        json.dump({"categories": {"other": []}}, f)
+    assert _is_snapshot_file_complete(str(bad_dask_gz), "dask") is False
 
 
 def test_compute_levenshtein() -> None:

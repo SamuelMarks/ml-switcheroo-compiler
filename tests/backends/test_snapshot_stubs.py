@@ -35,11 +35,11 @@ ALL_BACKENDS: list[str] = [
 
 
 def test_snapshot_stubs_exist_and_parse() -> None:
-    """Verify that snapshot_stubs.pyi and stub.pyi exist and parse valid AST across all 24 backends."""
+    """Verify that snapshot_stubs.pyi exists and parses valid AST across all 24 backends."""
     base_dir: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends"))
 
     for backend in ALL_BACKENDS:
-        for stub_name in ("snapshot_stubs.pyi", "stub.pyi"):
+        for stub_name in ("snapshot_stubs.pyi",):
             stub_path: str = os.path.join(base_dir, backend, stub_name)
             assert os.path.exists(stub_path), f"Missing {stub_name} for {backend}"
 

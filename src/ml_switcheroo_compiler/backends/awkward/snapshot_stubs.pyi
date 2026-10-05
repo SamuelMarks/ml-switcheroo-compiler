@@ -56,35 +56,16 @@ def flatten(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behav
 def from_arrow(array: Tensor, *, generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_arrow_schema(schema: Tensor) -> Tensor: ...
 def from_avro_file(file: Tensor, limit_entries: Tensor = ..., *, debug_forth: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_buffers(
-    form: Tensor, length: Tensor, container: Tensor, buffer_key: Tensor = ..., *, backend: Tensor = ..., byteorder: Tensor = ..., allow_noncanonical_form: Tensor = ..., enable_virtualarray_caching: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
-) -> Tensor: ...
+def from_buffers(form: Tensor, length: Tensor, container: Tensor, buffer_key: Tensor = ..., *, backend: Tensor = ..., byteorder: Tensor = ..., allow_noncanonical_form: Tensor = ..., enable_virtualarray_caching: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_categorical(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_cupy(array: Tensor, *, regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_dlpack(array: Tensor, *, prefer_cpu: Tensor = ..., regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_feather(path: Tensor, *, columns: Tensor = ..., use_threads: Tensor = ..., memory_map: Tensor = ..., generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_iter(iterable: Tensor, *, allow_record: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ..., initial: Tensor = ..., resize: Tensor = ...) -> Tensor: ...
 def from_jax(array: Tensor, *, regulararray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ..., primitive_policy: Tensor = ...) -> Tensor: ...
-def from_json(
-    source: Tensor,
-    *,
-    line_delimited: Tensor = ...,
-    schema: Tensor = ...,
-    nan_string: Tensor = ...,
-    posinf_string: Tensor = ...,
-    neginf_string: Tensor = ...,
-    complex_record_fields: Tensor = ...,
-    buffersize: Tensor = ...,
-    initial: Tensor = ...,
-    resize: Tensor = ...,
-    highlevel: Tensor = ...,
-    behavior: Tensor = ...,
-    attrs: Tensor = ...,
-) -> Tensor: ...
+def from_json(source: Tensor, *, line_delimited: Tensor = ..., schema: Tensor = ..., nan_string: Tensor = ..., posinf_string: Tensor = ..., neginf_string: Tensor = ..., complex_record_fields: Tensor = ..., buffersize: Tensor = ..., initial: Tensor = ..., resize: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_numpy(array: Tensor, *, regulararray: Tensor = ..., recordarray: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., primitive_policy: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def from_parquet(
-    path: Tensor, *, columns: Tensor = ..., row_groups: Tensor = ..., storage_options: Tensor = ..., max_gap: Tensor = ..., max_block: Tensor = ..., footer_sample_size: Tensor = ..., generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...
-) -> Tensor: ...
+def from_parquet(path: Tensor, *, columns: Tensor = ..., row_groups: Tensor = ..., storage_options: Tensor = ..., max_gap: Tensor = ..., max_block: Tensor = ..., footer_sample_size: Tensor = ..., generate_bitmasks: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_raggedtensor(array: Tensor) -> Tensor: ...
 def from_rdataframe(rdf: Tensor, columns: Tensor, *, keep_order: Tensor = ..., offsets_type: Tensor = ..., with_name: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def from_regular(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
@@ -145,120 +126,23 @@ def to_buffers(array: Tensor, container: Tensor = ..., buffer_key: Tensor = ...,
 def to_cudf(array: Tensor) -> Tensor: ...
 def to_cupy(array: Tensor) -> Tensor: ...
 def to_dataframe(array: Tensor, *, how: Tensor = ..., levelname: Tensor = ..., anonymous: Tensor = ...) -> Tensor: ...
-def to_feather(
-    array: Tensor,
-    destination: Tensor,
-    *,
-    list_to32: Tensor = ...,
-    string_to32: Tensor = ...,
-    bytestring_to32: Tensor = ...,
-    emptyarray_to: Tensor = ...,
-    categorical_as_dictionary: Tensor = ...,
-    extensionarray: Tensor = ...,
-    count_nulls: Tensor = ...,
-    compression: Tensor = ...,
-    compression_level: Tensor = ...,
-    chunksize: Tensor = ...,
-    feather_version: Tensor = ...,
-) -> Tensor: ...
+def to_feather(array: Tensor, destination: Tensor, *, list_to32: Tensor = ..., string_to32: Tensor = ..., bytestring_to32: Tensor = ..., emptyarray_to: Tensor = ..., categorical_as_dictionary: Tensor = ..., extensionarray: Tensor = ..., count_nulls: Tensor = ..., compression: Tensor = ..., compression_level: Tensor = ..., chunksize: Tensor = ..., feather_version: Tensor = ...) -> Tensor: ...
 def to_jax(array: Tensor) -> Tensor: ...
-def to_json(
-    array: Tensor,
-    file: Tensor = ...,
-    *,
-    line_delimited: Tensor = ...,
-    num_indent_spaces: Tensor = ...,
-    num_readability_spaces: Tensor = ...,
-    nan_string: Tensor = ...,
-    posinf_string: Tensor = ...,
-    neginf_string: Tensor = ...,
-    complex_record_fields: Tensor = ...,
-    convert_bytes: Tensor = ...,
-    convert_other: Tensor = ...,
-) -> Tensor: ...
+def to_json(array: Tensor, file: Tensor = ..., *, line_delimited: Tensor = ..., num_indent_spaces: Tensor = ..., num_readability_spaces: Tensor = ..., nan_string: Tensor = ..., posinf_string: Tensor = ..., neginf_string: Tensor = ..., complex_record_fields: Tensor = ..., convert_bytes: Tensor = ..., convert_other: Tensor = ...) -> Tensor: ...
 def to_layout(array: Tensor, *, allow_record: Tensor = ..., allow_unknown: Tensor = ..., none_policy: Tensor = ..., use_from_iter: Tensor = ..., primitive_policy: Tensor = ..., string_policy: Tensor = ..., regulararray: Tensor = ...) -> Tensor: ...
 def to_list(array: Tensor) -> Tensor: ...
 def to_numpy(array: Tensor, *, allow_missing: Tensor = ...) -> Tensor: ...
 def to_packed(array: Tensor, *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
-def to_parquet(
-    array: Tensor,
-    destination: Tensor,
-    *,
-    list_to32: Tensor = ...,
-    string_to32: Tensor = ...,
-    bytestring_to32: Tensor = ...,
-    emptyarray_to: Tensor = ...,
-    categorical_as_dictionary: Tensor = ...,
-    extensionarray: Tensor = ...,
-    count_nulls: Tensor = ...,
-    compression: Tensor = ...,
-    compression_level: Tensor = ...,
-    row_group_size: Tensor = ...,
-    data_page_size: Tensor = ...,
-    parquet_flavor: Tensor = ...,
-    parquet_version: Tensor = ...,
-    parquet_page_version: Tensor = ...,
-    parquet_metadata_statistics: Tensor = ...,
-    parquet_dictionary_encoding: Tensor = ...,
-    parquet_byte_stream_split: Tensor = ...,
-    parquet_coerce_timestamps: Tensor = ...,
-    parquet_old_int96_timestamps: Tensor = ...,
-    parquet_compliant_nested: Tensor = ...,
-    parquet_extra_options: Tensor = ...,
-    storage_options: Tensor = ...,
-) -> Tensor: ...
+def to_parquet(array: Tensor, destination: Tensor, *, list_to32: Tensor = ..., string_to32: Tensor = ..., bytestring_to32: Tensor = ..., emptyarray_to: Tensor = ..., categorical_as_dictionary: Tensor = ..., extensionarray: Tensor = ..., count_nulls: Tensor = ..., compression: Tensor = ..., compression_level: Tensor = ..., row_group_size: Tensor = ..., data_page_size: Tensor = ..., parquet_flavor: Tensor = ..., parquet_version: Tensor = ..., parquet_page_version: Tensor = ..., parquet_metadata_statistics: Tensor = ..., parquet_dictionary_encoding: Tensor = ..., parquet_byte_stream_split: Tensor = ..., parquet_coerce_timestamps: Tensor = ..., parquet_old_int96_timestamps: Tensor = ..., parquet_compliant_nested: Tensor = ..., parquet_extra_options: Tensor = ..., storage_options: Tensor = ...) -> Tensor: ...
 def to_parquet_dataset(directory: Tensor, filenames: Tensor = ..., storage_options: Tensor = ...) -> Tensor: ...
-def to_parquet_row_groups(
-    iterator: Tensor,
-    destination: Tensor,
-    *,
-    list_to32: Tensor = ...,
-    string_to32: Tensor = ...,
-    bytestring_to32: Tensor = ...,
-    emptyarray_to: Tensor = ...,
-    categorical_as_dictionary: Tensor = ...,
-    extensionarray: Tensor = ...,
-    count_nulls: Tensor = ...,
-    compression: Tensor = ...,
-    compression_level: Tensor = ...,
-    row_group_size: Tensor = ...,
-    data_page_size: Tensor = ...,
-    parquet_flavor: Tensor = ...,
-    parquet_version: Tensor = ...,
-    parquet_page_version: Tensor = ...,
-    parquet_metadata_statistics: Tensor = ...,
-    parquet_dictionary_encoding: Tensor = ...,
-    parquet_byte_stream_split: Tensor = ...,
-    parquet_coerce_timestamps: Tensor = ...,
-    parquet_old_int96_timestamps: Tensor = ...,
-    parquet_compliant_nested: Tensor = ...,
-    parquet_extra_options: Tensor = ...,
-    storage_options: Tensor = ...,
-) -> Tensor: ...
+def to_parquet_row_groups(iterator: Tensor, destination: Tensor, *, list_to32: Tensor = ..., string_to32: Tensor = ..., bytestring_to32: Tensor = ..., emptyarray_to: Tensor = ..., categorical_as_dictionary: Tensor = ..., extensionarray: Tensor = ..., count_nulls: Tensor = ..., compression: Tensor = ..., compression_level: Tensor = ..., row_group_size: Tensor = ..., data_page_size: Tensor = ..., parquet_flavor: Tensor = ..., parquet_version: Tensor = ..., parquet_page_version: Tensor = ..., parquet_metadata_statistics: Tensor = ..., parquet_dictionary_encoding: Tensor = ..., parquet_byte_stream_split: Tensor = ..., parquet_coerce_timestamps: Tensor = ..., parquet_old_int96_timestamps: Tensor = ..., parquet_compliant_nested: Tensor = ..., parquet_extra_options: Tensor = ..., storage_options: Tensor = ...) -> Tensor: ...
 def to_raggedtensor(array: Tensor) -> Tensor: ...
 def to_rdataframe(arrays: Tensor, *, flatlist_as_rvec: Tensor = ...) -> Tensor: ...
 def to_regular(array: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def to_safetensors(array: Tensor, destination: Tensor, *, storage_options: Tensor = ..., container: Tensor = ..., buffer_key: Tensor = ..., form_key: Tensor = ..., id_start: Tensor = ..., backend: Tensor = ..., byteorder: Tensor = ...) -> Tensor: ...
 def to_tensorflow(array: Tensor) -> Tensor: ...
 def to_torch(array: Tensor) -> Tensor: ...
-def transform(
-    transformation: Tensor,
-    array: Tensor,
-    *more_arrays: Tensor,
-    depth_context: Tensor = ...,
-    lateral_context: Tensor = ...,
-    allow_records: Tensor = ...,
-    broadcast_parameters_rule: Tensor = ...,
-    left_broadcast: Tensor = ...,
-    right_broadcast: Tensor = ...,
-    numpy_to_regular: Tensor = ...,
-    regular_to_jagged: Tensor = ...,
-    return_value: Tensor = ...,
-    expect_return_value: Tensor = ...,
-    highlevel: Tensor = ...,
-    behavior: Tensor = ...,
-    attrs: Tensor = ...,
-) -> Tensor: ...
+def transform(transformation: Tensor, array: Tensor, *more_arrays: Tensor, depth_context: Tensor = ..., lateral_context: Tensor = ..., allow_records: Tensor = ..., broadcast_parameters_rule: Tensor = ..., left_broadcast: Tensor = ..., right_broadcast: Tensor = ..., numpy_to_regular: Tensor = ..., regular_to_jagged: Tensor = ..., return_value: Tensor = ..., expect_return_value: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def type(array: Tensor, *, behavior: Tensor = ...) -> Tensor: ...
 def unflatten(array: Tensor, counts: Tensor, axis: Tensor = ..., *, highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...
 def unzip(array: Tensor, *, how: Tensor = ..., highlevel: Tensor = ..., behavior: Tensor = ..., attrs: Tensor = ...) -> Tensor: ...

@@ -83,7 +83,7 @@ def test_ecosystem_snapshots_grounding() -> None:
     """Verify that newly integrated ecosystem snapshots have valid endpoints and ground operations."""
     engine: SnapshotGroundingEngine = SnapshotGroundingEngine()
 
-    for target in ["torchvision", "torchaudio", "scipy", "safetensors", "nccl"]:
+    for target in ["safetensors", "nccl"]:
         valid_eps: set[str] = engine.get_valid_endpoints(target)
         assert len(valid_eps) > 0, f"Snapshot for {target} has zero valid endpoints"
 

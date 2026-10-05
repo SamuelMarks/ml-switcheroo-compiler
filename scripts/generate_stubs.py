@@ -8,7 +8,6 @@ import inspect
 import json
 import keyword
 import os
-import shutil
 
 from ml_ecosystem_snapshots.stubs import (
     _format_param_list,
@@ -21,15 +20,15 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
     _resolve_default_snapshot_dir,
 )
 
-BACKENDS_CONFIG: dict[str, str] = {
+BACKENDS_CONFIG: dict[str, str | tuple[str, ...]] = {
     "numpy": "numpy",
-    "pytorch": "torch",
-    "jax": "jax.numpy",
+    "pytorch": ("torch", "torch.linalg", "torch.fft", "torch.random", "torch.nn.functional"),
+    "jax": ("jax.numpy", "jax.numpy.linalg", "jax.numpy.fft", "jax.scipy.special"),
     "keras": "keras.ops",
-    "mlx": "mlx.core",
-    "dask": "dask.array",
-    "cupy": "cupy",
-    "tensorflow": "tensorflow.math",
+    "mlx": ("mlx.core", "mlx.core.linalg"),
+    "dask": ("dask.array", "dask.array.linalg", "dask.array.fft", "dask.array.random"),
+    "cupy": ("cupy", "cupy.linalg", "cupy.fft", "cupy.random"),
+    "tensorflow": ("tensorflow.math", "tensorflow.linalg", "tensorflow.random"),
     "cuda": "cuda",
     "rocm": "rocm",
     "metal": "metal",
@@ -400,11 +399,11 @@ def _generate_stubs_from_snapshot(data: dict[str, object], be_name: str, out_pat
     return len(seen_funcs) - 4
 
 
-def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) -> int:
+def _generate_stubs_from_live_module(fw_name: str | tuple[str, ...], be_name: str, out_path: str) -> int:
     """Generate high-fidelity stubs by inspecting the live installed framework module.
 
     Args:
-        fw_name (str): The Python module name (e.g. 'torch', 'jax.numpy').
+        fw_name (str | tuple[str, ...]): The Python module name(s) (e.g. 'torch', 'jax.numpy').
         be_name (str): Backend directory name.
         out_path (str): Destination .pyi file path.
 
@@ -419,55 +418,60 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
         "",
     ] + list(TENSOR_CLASS_STUB)
 
-    try:
-        mod = importlib.import_module(fw_name)
-    except Exception:
+    seen_funcs: set[str] = {"Tensor", "Sequence"}
+    mod_names = fw_name if isinstance(fw_name, tuple) else (fw_name,)
+    for mod_name in mod_names:
+        try:
+            mod = importlib.import_module(mod_name)
+        except Exception:
+            continue
+
+        for attr in sorted(dir(mod)):
+            if attr.startswith("_") or not attr.isidentifier() or keyword.iskeyword(attr) or attr in seen_funcs:
+                continue
+            try:
+                obj = getattr(mod, attr)
+                if not callable(obj):
+                    continue
+                sig = inspect.signature(obj)
+                pos_args = []
+                var_pos = None
+                kw_only = []
+                var_kw = None
+
+                for p in sig.parameters.values():
+                    p_name = p.name
+                    default_str = " = ..." if p.default is not inspect.Parameter.empty else ""
+                    if p.kind == inspect.Parameter.VAR_POSITIONAL:
+                        var_pos = f"*{p_name}: Tensor"
+                    elif p.kind == inspect.Parameter.VAR_KEYWORD:
+                        var_kw = f"**{p_name}: Tensor"
+                    elif p.kind == inspect.Parameter.KEYWORD_ONLY:
+                        kw_only.append(f"{p_name}: Tensor{default_str}")
+                    else:
+                        pos_args.append(f"{p_name}: Tensor{default_str}")
+
+                param_strs = list(pos_args)
+                if var_pos:
+                    param_strs.append(var_pos)
+                elif kw_only:
+                    param_strs.append("*")
+                param_strs.extend(kw_only)
+                if var_kw:
+                    param_strs.append(var_kw)
+
+                joined = ", ".join(param_strs)
+                lines.append(f"def {attr}({joined}) -> Tensor: ...")
+                seen_funcs.add(attr)
+            except Exception:
+                lines.append(f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
+                seen_funcs.add(attr)
+
+    if len(seen_funcs) <= 2:
         lines.append("def __getattr__(name: str) -> Tensor: ...")
         with open(out_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
         return 0
-
-    seen_funcs: set[str] = {"Tensor"}
-    for attr in sorted(dir(mod)):
-        if attr.startswith("_") or not attr.isidentifier() or keyword.iskeyword(attr) or attr in seen_funcs:
-            continue
-        try:
-            obj = getattr(mod, attr)
-            if not callable(obj):
-                continue
-            sig = inspect.signature(obj)
-            pos_args = []
-            var_pos = None
-            kw_only = []
-            var_kw = None
-
-            for p in sig.parameters.values():
-                p_name = p.name
-                default_str = " = ..." if p.default is not inspect.Parameter.empty else ""
-                if p.kind == inspect.Parameter.VAR_POSITIONAL:
-                    var_pos = f"*{p_name}: Tensor"
-                elif p.kind == inspect.Parameter.VAR_KEYWORD:
-                    var_kw = f"**{p_name}: Tensor"
-                elif p.kind == inspect.Parameter.KEYWORD_ONLY:
-                    kw_only.append(f"{p_name}: Tensor{default_str}")
-                else:
-                    pos_args.append(f"{p_name}: Tensor{default_str}")
-
-            param_strs = list(pos_args)
-            if var_pos:
-                param_strs.append(var_pos)
-            elif kw_only:
-                param_strs.append("*")
-            param_strs.extend(kw_only)
-            if var_kw:
-                param_strs.append(var_kw)
-
-            joined = ", ".join(param_strs)
-            lines.append(f"def {attr}({joined}) -> Tensor: ...")
-            seen_funcs.add(attr)
-        except Exception:
-            lines.append(f"def {attr}(*args: Tensor, **kwargs: Tensor) -> Tensor: ...")
-            seen_funcs.add(attr)
 
     lines.append("def __getattr__(name: str) -> Tensor: ...")
     stub_content = "\n".join(lines) + "\n"
@@ -475,7 +479,7 @@ def _generate_stubs_from_live_module(fw_name: str, be_name: str, out_path: str) 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(stub_content)
 
-    return len(seen_funcs) - 1
+    return len(seen_funcs) - 2
 
 
 def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
@@ -539,7 +543,6 @@ def generate_stubs(
                 f.write(f'"""{be_name} backend module."""\n\nfrom __future__ import annotations\n')
 
         stub_path: str = os.path.join(be_dir, "snapshot_stubs.pyi")
-        alt_stub_path: str = os.path.join(be_dir, "stub.pyi")
         count: int = 0
 
         snapshot_file: str | None = engine.get_snapshot_path(be_name)
@@ -581,10 +584,9 @@ def generate_stubs(
         if count == 0:
             count = _generate_fallback_backend_stubs(be_name, stub_path)
 
-        # Copy snapshot_stubs.pyi to stub.pyi
+        # We no longer copy snapshot_stubs.pyi to stub.pyi to avoid duplicate code warnings.
         if os.path.exists(stub_path):
-            shutil.copyfile(stub_path, alt_stub_path)
-            print(f"Generated {stub_path} and {alt_stub_path} ({count} stubs).")
+            print(f"Generated {stub_path} ({count} stubs).")
 
 
 def main() -> None:

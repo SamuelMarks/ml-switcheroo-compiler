@@ -604,10 +604,6 @@ def _populate_from_grounding_engine(
     if engine is None or target is None:
         return
     try:
-        discover_fn = getattr(engine, "_discover_target_files", None)
-        has_files: bool = bool(discover_fn(target.framework)) if discover_fn is not None else False
-        if not has_files:
-            return
         load_fn = getattr(engine, "load_target", None)
         if load_fn is None:
             return
@@ -895,14 +891,11 @@ class SnapshotGroundingEngine:
 
         try:
             snapshot_data: dict[str, object] | list[object] = self.load_snapshot(backend_name)
+            _populate_from_snapshot_data(snapshot_data, endpoints, item_map, ref_map)
         except FileNotFoundError:
-            self._endpoint_cache[backend_name] = endpoints
-            self._endpoint_item_cache[backend_name] = item_map
-            self._ghost_ref_cache[backend_name] = ref_map
-            return endpoints
+            pass
 
         _populate_from_grounding_engine(self._grounding_engine, target, endpoints, item_map, ref_map)
-        _populate_from_snapshot_data(snapshot_data, endpoints, item_map, ref_map)
         _extract_stub_endpoints(backend_name, endpoints)
 
         self._endpoint_cache[backend_name] = endpoints
