@@ -97,6 +97,9 @@ class Lstsq(OpDef):
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
+        if not args:
+            return ()
+
         a = args[0]
         b = args[1]
         shape_a = getattr(a, "shape", ())
@@ -467,7 +470,23 @@ class MatrixNorm(OpDef):
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
-        return ()
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        dim = kwargs.get("dim", (-2, -1))
+        keepdims = kwargs.get("keepdims", False)
+
+        dims = (dim,) if isinstance(dim, int) else dim
+        if keepdims:
+            out_shape = list(shape)
+            for d in dims:
+                out_shape[d] = 1
+            return tuple(out_shape)
+
+        dim_indices = [d if d >= 0 else len(shape) + d for d in dims]
+        return tuple(s for i, s in enumerate(shape) if i not in dim_indices)
 
 
 @register_op("VectorNorm")
@@ -488,7 +507,23 @@ class VectorNorm(OpDef):
 
         Returns: Tensor: The inferred shape of the output tensor.
         """
-        return ()
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        dim = kwargs.get("dim", -1)
+        keepdims = kwargs.get("keepdims", False)
+
+        dims = (dim,) if isinstance(dim, int) else dim
+        if keepdims:
+            out_shape = list(shape)
+            for d in dims:
+                out_shape[d] = 1
+            return tuple(out_shape)
+
+        dim_indices = [d if d >= 0 else len(shape) + d for d in dims]
+        return tuple(s for i, s in enumerate(shape) if i not in dim_indices)
 
 
 @register_op("Svdvals")

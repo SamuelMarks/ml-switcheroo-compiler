@@ -61,7 +61,12 @@ class ForeignCall(OpDef):
                 try:
                     import ast
 
-                    src_code = inspect.getsource(first)
+                    lines = inspect.getsource(first).split("\n")
+                    if lines:
+                        spaces = len(lines[0]) - len(lines[0].lstrip())
+                        src_code = "\n".join(line[spaces:] if len(line) >= spaces else line for line in lines)
+                    else:
+                        src_code = ""
                     tree = ast.parse(src_code)
                     for n in ast.walk(tree):
                         if isinstance(n, ast.Return) and n.value is not None:

@@ -26,6 +26,9 @@ class TriangularSolve(OpDef):
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
         """
+        if not args:
+            return ()
+
         a = args[0] if len(args) > 0 else kwargs.get("matrix", kwargs.get("a"))
         b = args[1] if len(args) > 1 else kwargs.get("rhs", kwargs.get("b"))
         if a is None or b is None:
@@ -154,7 +157,16 @@ class MatrixExponential(OpDef):
 
         Returns: Tensor: The shape.
         """
-        return ()
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        if len(shape) < 2:
+            raise ValueError("MatrixExponential requires at least 2 dimensions")
+        if shape[-1] != shape[-2]:
+            raise ValueError("MatrixExponential requires a square matrix")
+        return shape
 
 
 @register_op("Cross")
@@ -170,7 +182,19 @@ class Cross(OpDef):
 
         Returns: Tensor: The shape.
         """
-        return ()
+        if not args:
+            return ()
+
+        a = args[0]
+        b = args[1]
+        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", ())))
+        dim = kwargs.get("dim", -1)
+        if shape_a[dim] != 3 or shape_b[dim] != 3:
+            raise ValueError("Cross requires dimension size 3")
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        return broadcast_shapes(shape_a, shape_b)
 
 
 @register_op("PowerIteration")

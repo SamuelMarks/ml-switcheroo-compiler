@@ -17,16 +17,27 @@ class GroupMean(OpDef):
         *args: tuple[int, ...] | int | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
-        """Infer shape.
+        """Infer shape."""
+        if not args:
+            return ()
 
-        Args:
-            *args (tuple[int, ...] | int | None): Positional args.
-            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
+        shape = args[0]
+        if isinstance(shape, int):
+            shape = (shape,)
+        elif hasattr(shape, "shape"):
+            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
 
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return ()
+        if len(shape) <= 1:
+            return tuple(int(d) for d in shape)
+
+        num_groups = kwargs.get("num_groups", shape[1])
+        keepdims = kwargs.get("keepdims", True)
+
+        if not keepdims:
+            return (int(shape[0]), int(str(num_groups)))
+
+        out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
+        return tuple(int(d) for d in out_shape)
 
 
 @register_op("GroupVariance")
@@ -40,16 +51,27 @@ class GroupVariance(OpDef):
         *args: tuple[int, ...] | int | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
-        """Infer shape.
+        """Infer shape."""
+        if not args:
+            return ()
 
-        Args:
-            *args (tuple[int, ...] | int | None): Positional args.
-            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
+        shape = args[0]
+        if isinstance(shape, int):
+            shape = (shape,)
+        elif hasattr(shape, "shape"):
+            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
 
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return ()
+        if len(shape) <= 1:
+            return tuple(int(d) for d in shape)
+
+        num_groups = kwargs.get("num_groups", shape[1])
+        keepdims = kwargs.get("keepdims", True)
+
+        if not keepdims:
+            return (int(shape[0]), int(str(num_groups)))
+
+        out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
+        return tuple(int(d) for d in out_shape)
 
 
 @register_op("GroupNorm")
@@ -63,13 +85,13 @@ class GroupNorm(OpDef):
         *args: tuple[int, ...] | int | None,
         **kwargs: tuple[int, ...] | int | float | str | bool | None,
     ) -> tuple[int, ...]:
-        """Infer shape.
+        """Infer shape."""
+        if not args:
+            return ()
 
-        Args:
-            *args (tuple[int, ...] | int | None): Positional args.
-            **kwargs (tuple[int, ...] | int | float | str | bool | None): Keyword args.
-
-        Returns:
-            tuple[int, ...]: Result.
-        """
-        return ()
+        shape = args[0]
+        if isinstance(shape, int):
+            return (shape,)
+        if hasattr(shape, "shape"):
+            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
+        return tuple(int(d) for d in shape)

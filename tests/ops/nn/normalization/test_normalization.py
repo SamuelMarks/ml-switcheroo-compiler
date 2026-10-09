@@ -14,9 +14,9 @@ def test_normalization_coverage():
     config.eager_mode = True
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert GroupMean().infer_shape(t) == ()
-    assert GroupVariance().infer_shape(t) == ()
-    assert GroupNorm().infer_shape(t) == ()
+    assert GroupMean().infer_shape(t) == (1, 2)
+    assert GroupVariance().infer_shape(t) == (1, 2)
+    assert GroupNorm().infer_shape(t) == (1, 2)
 
     import sys
 

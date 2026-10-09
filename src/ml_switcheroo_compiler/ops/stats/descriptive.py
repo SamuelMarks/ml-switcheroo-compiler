@@ -287,6 +287,43 @@ class Descriptive(OpDef):
 
     op_name = "Descriptive"
 
+    def infer_shape(self, *args, **kwargs):
+        """Infer shape.
+
+        Args:
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
+
+        Returns:
+            tuple: Shape tuple.
+        """
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        axis = kwargs.get("axis", None)
+        keepdims = kwargs.get("keepdims", False)
+
+        if axis is None:
+            if keepdims:
+                out_shape = tuple(1 for _ in shape)
+            else:
+                out_shape = ()
+            return (out_shape, out_shape, out_shape, out_shape)
+
+        axes = (axis,) if isinstance(axis, int) else axis
+        if keepdims:
+            out_shape = list(shape)
+            for d in axes:
+                out_shape[d] = 1
+            out_shape = tuple(out_shape)
+        else:
+            dim_indices = [d if d >= 0 else len(shape) + d for d in axes]
+            out_shape = tuple(s for i, s in enumerate(shape) if i not in dim_indices)
+
+        return (out_shape, out_shape, out_shape, out_shape)
+
 
 @dispatch_eager("Descriptive")
 def descriptive(a):
@@ -306,6 +343,26 @@ class Distributions(OpDef):
     """Distributions operation."""
 
     op_name = "Distributions"
+
+    def infer_shape(self, *args, **kwargs):
+        """Infer shape.
+
+        Args:
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
+
+        Returns:
+            tuple: Shape tuple.
+        """
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        sample_shape = kwargs.get("sample_shape", ())
+        if isinstance(sample_shape, int):
+            sample_shape = (sample_shape,)
+        return tuple(sample_shape) + shape
 
 
 @dispatch_eager("Distributions")

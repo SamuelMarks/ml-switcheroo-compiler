@@ -1,642 +1,335 @@
-templates:
-  if_op:
-    body: 'if ({cond_var}.data[0] > 0.0f) {{
-
-      {then_body}
-
-      }} else {{
-
-      {else_body}
-
-      }}
-
-      '
-  loop_op:
-    body: "while (true) {{\n{cond_body}{loop_body}\n    break;\n}}\n"
-  unary:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
-      \ i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.data[i];\n    {clean_id}.data[i] = {scalar_expr};\n\
-      }}\n"
-  binary:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
-      \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\
-      \    float in1_val = {in1}.get(idx_{clean_id});\n    {clean_id}.data[i] = {scalar_expr};\n\
-      \    /* update index */\n    for(int d = {rank}-1; d >= 0; --d) {{\n       \
-      \ idx_{clean_id}[d]++;\n        if (idx_{clean_id}[d] < {clean_id}.shape[d])\
-      \ break;\n        idx_{clean_id}[d] = 0;\n    }}\n}}\n"
-  matmul:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#ifdef USE_BLAS\ncblas_sgemm(CblasRowMajor,\
-      \ CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in0}.data.data(), {K}, {in1}.data.data(),\
-      \ {N}, 0.0f, {clean_id}.data.data(), {N});\n#else\nfor (size_t i = 0; i < {M};\
-      \ ++i) {{\n    for (size_t j = 0; j < {N}; ++j) {{\n        float sum = 0.0f;\n\
-      \        #pragma omp simd reduction(+:sum)\n        for (size_t k = 0; k < {K};\
-      \ ++k) {{\n            sum += {in0}.data[i * {K} + k] * {in1}.data[k * {N} +\
-      \ j];\n        }}\n        {clean_id}.data[i * {N} + j] = sum;\n    }}\n}}\n\
-      #endif\n"
-  reduction:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0)\
-      \ {{\n    float res = {init_val};\n    #pragma omp simd\n    for(size_t i=0;\
-      \ i<{in0}.size(); ++i) {{\n        float val = {in0}.data[i];\n        res =\
-      \ {scalar_expr};\n    }}\n    {clean_id}.data[0] = {final_combine};\n}}\n"
-  fallback_copy:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
-      \ i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = {in0}.data[i];\n\
-      }}\n"
-  conv2d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {out_channels}; ++oc)\
-      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
-      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum = 0.0f;\n\
-      \                for (int ic = 0; ic < {in_channels}; ++ic) {{\n           \
-      \         for (int fy = 0; fy < {filter_h}; ++fy) {{\n                     \
-      \   #pragma omp simd reduction(+:sum)\n                        for (int fx =\
-      \ 0; fx < {filter_w}; ++fx) {{\n                            int in_y = oy *\
-      \ {stride_h} + fy;\n                            int in_x = ox * {stride_w} +\
-      \ fx;\n                            int in_idx = ((b * {in_channels} + ic) *\
-      \ {in_height} + in_y) * {in_width} + in_x;\n                            int\
-      \ w_idx = ((oc * {in_channels} + ic) * {filter_h} + fy) * {filter_w} + fx;\n\
-      \                            sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
-      \                        }}\n                    }}\n                }}\n  \
-      \              {clean_id}.data[out_idx++] = sum;\n            }}\n        }}\n\
-      \    }}\n}}\n"
-  scan:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0)\
-      \ {{\n    float acc = 0.0f;\n    for(size_t i=0; i<{in0}.size(); ++i) {{\n \
-      \       acc = acc + {in0}.data[i];\n        {clean_id}.data[i] = acc;\n    }}\n\
-      }}\n"
-  attention:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
-      \ i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = 0.0f;\n}}\n"
-  input:
-    body: NDArrayView<float> {clean_id}({out_shape_str}{offset_str}); // Input
-  constant:
-    body: 'NDArrayView<float> {clean_id}({out_shape_str});
-
-      for(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = {val}; }}
-
-      '
-  output:
-    body: // Output {in0}
-  unimplemented_fallback:
-    body: "NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented {op}\n#pragma omp simd\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}\n"
-  ternary:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
-      \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\
-      \    float in1_val = {in1}.get(idx_{clean_id});\n    float in2_val = {in2}.get(idx_{clean_id});\n\
-      \    {clean_id}.data[i] = {scalar_expr};\n    for(int d = {rank}-1; d >= 0;\
-      \ --d) {{\n        idx_{clean_id}[d]++;\n        if (idx_{clean_id}[d] < {clean_id}.shape[d])\
-      \ break;\n        idx_{clean_id}[d] = 0;\n    }}\n}}\n"
-  maxpool2d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels}; ++oc)\
-      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
-      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float max_val = -1e38f;\n\
-      \                #pragma omp simd reduction(max:max_val)\n                for\
-      \ (int fy = 0; fy < {filter_h}; ++fy) {{\n                    for (int fx =\
-      \ 0; fx < {filter_w}; ++fx) {{\n                        int in_y = oy * {stride_h}\
-      \ + fy;\n                        int in_x = ox * {stride_w} + fx;\n        \
-      \                if (in_y < {in_height} && in_x < {in_width}) {{\n         \
-      \                   int in_idx = ((b * {channels} + oc) * {in_height} + in_y)\
-      \ * {in_width} + in_x;\n                            max_val = std::max(max_val,\
-      \ {in0}.data[in_idx]);\n                        }}\n                    }}\n\
-      \                }}\n                {clean_id}.data[out_idx++] = max_val;\n\
-      \            }}\n        }}\n    }}\n}}\n"
-  avgpool2d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels}; ++oc)\
-      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
-      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum_val = 0.0f;\n\
-      \                int count = 0;\n                for (int fy = 0; fy < {filter_h};\
-      \ ++fy) {{\n                    for (int fx = 0; fx < {filter_w}; ++fx) {{\n\
-      \                        int in_y = oy * {stride_h} + fy;\n                \
-      \        int in_x = ox * {stride_w} + fx;\n                        if (in_y\
-      \ < {in_height} && in_x < {in_width}) {{\n                            int in_idx\
-      \ = ((b * {channels} + oc) * {in_height} + in_y) * {in_width} + in_x;\n    \
-      \                        sum_val += {in0}.data[in_idx];\n                  \
-      \          count++;\n                        }}\n                    }}\n  \
-      \              }}\n                {clean_id}.data[out_idx++] = (count > 0)\
-      \ ? (sum_val / count) : 0.0f;\n            }}\n        }}\n    }}\n}}\n"
-  batchnorm:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
-      \ i=0; i<{clean_id}.size(); ++i) {{\n    int c = (i / {spatial}) % {channels};\n\
-      \    float m = {has_mean} ? {mean}.data[c] : 0.0f;\n    float v = {has_var}\
-      \ ? {var}.data[c] : 1.0f;\n    float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n\
-      \    float b = {has_beta} ? {beta}.data[c] : 0.0f;\n    {clean_id}.data[i] =\
-      \ (({in0}.data[i] - m) / std::sqrt(v + 1e-5f)) * g + b;\n}}\n"
-  layernorm:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
-      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float mean = 0.0f;\n    #pragma\
-      \ omp simd reduction(+:mean)\n    for (int j = 0; j < {D}; ++j) {{ mean += {in0}.data[r\
-      \ * {D} + j]; }}\n    mean /= {D};\n    float var = 0.0f;\n    #pragma omp simd\
-      \ reduction(+:var)\n    for (int j = 0; j < {D}; ++j) {{\n        float diff\
-      \ = {in0}.data[r * {D} + j] - mean;\n        var += diff * diff;\n    }}\n \
-      \   var /= {D};\n    float inv_std = 1.0f / std::sqrt(var + 1e-5f);\n    #pragma\
-      \ omp simd\n    for (int j = 0; j < {D}; ++j) {{\n        float g = {has_gamma}\
-      \ ? {gamma}.data[j] : 1.0f;\n        float b = {has_beta} ? {beta}.data[j] :\
-      \ 0.0f;\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r * {D} + j] - mean)\
-      \ * inv_std * g + b;\n    }}\n}}\n"
-  rmsnorm:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
-      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float sum_sq = 0.0f;\n   \
-      \ #pragma omp simd reduction(+:sum_sq)\n    for (int j = 0; j < {D}; ++j) {{\
-      \ float x = {in0}.data[r * {D} + j]; sum_sq += x * x; }}\n    float rms = 1.0f\
-      \ / std::sqrt(sum_sq / {D} + 1e-5f);\n    #pragma omp simd\n    for (int j =\
-      \ 0; j < {D}; ++j) {{\n        float g = {has_gamma} ? {gamma}.data[j] : 1.0f;\n\
-      \        {clean_id}.data[r * {D} + j] = {in0}.data[r * {D} + j] * rms * g;\n\
-      \    }}\n}}\n"
-  conv3d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C_out}; ++oc) {{\n\
-      \        for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
-      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
-      \ ++ox) {{\n                    float sum = 0.0f;\n                    for\
-      \ (int ic = 0; ic < {C_in}; ++ic) {{\n                        for (int kd =\
-      \ 0; kd < {KD}; ++kd) {{\n                            for (int fy = 0; fy <\
-      \ {KH}; ++fy) {{\n                                #pragma omp simd reduction(+:sum)\n\
-      \                                for (int fx = 0; fx < {KW}; ++fx) {{\n    \
-      \                                int in_d = od * {stride_d} + kd;\n        \
-      \                            int in_y = oy * {stride_h} + fy;\n            \
-      \                        int in_x = ox * {stride_w} + fx;\n                \
-      \                    if (in_d < {D} && in_y < {H} && in_x < {W}) {{\n      \
-      \                                  int in_idx = ((((b * {C_in} + ic) * {D} +\
-      \ in_d) * {H} + in_y) * {W}) + in_x;\n                                     \
-      \   int w_idx = ((((oc * {C_in} + ic) * {KD} + kd) * {KH} + fy) * {KW}) + fx;\n\
-      \                                        sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
-      \                                    }}\n                                }}\n\
-      \                            }}\n                        }}\n              \
-      \      }}\n                    {clean_id}.data[out_idx++] = sum;\n         \
-      \       }}\n            }}\n        }}\n    }}\n}}\n"
-  maxpool3d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n \
-      \       for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
-      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
-      \ ++ox) {{\n                    float max_val = -1e38f;\n                 \
-      \   for (int kd = 0; kd < {KD}; ++kd) {{\n                        for (int fy\
-      \ = 0; fy < {KH}; ++fy) {{\n                            #pragma omp simd reduction(max:max_val)\n\
-      \                            for (int fx = 0; fx < {KW}; ++fx) {{\n        \
-      \                        int in_d = od * {stride_d} + kd;\n                \
-      \                int in_y = oy * {stride_h} + fy;\n                        \
-      \        int in_x = ox * {stride_w} + fx;\n                                if\
-      \ (in_d < {D} && in_y < {H} && in_x < {W}) {{\n                            \
-      \        int in_idx = ((((b * {C} + oc) * {D} + in_d) * {H} + in_y) * {W}) +\
-      \ in_x;\n                                    max_val = std::max(max_val, {in0}.data[in_idx]);\n\
-      \                                }}\n                            }}\n      \
-      \                  }}\n                    }}\n                    {clean_id}.data[out_idx++]\
-      \ = max_val;\n                }}\n            }}\n        }}\n    }}\n}}\n"
-  avgpool3d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
-      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n \
-      \       for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
-      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
-      \ ++ox) {{\n                    float sum_val = 0.0f;\n                   \
-      \ int count = 0;\n                    for (int kd = 0; kd < {KD}; ++kd) {{\n\
-      \                        for (int fy = 0; fy < {KH}; ++fy) {{\n             \
-      \               for (int fx = 0; fx < {KW}; ++fx) {{\n                     \
-      \           int in_d = od * {stride_d} + kd;\n                             \
-      \   int in_y = oy * {stride_h} + fy;\n                                int in_x\
-      \ = ox * {stride_w} + fx;\n                                if (in_d < {D} &&\
-      \ in_y < {H} && in_x < {W}) {{\n                                    int in_idx\
-      \ = ((((b * {C} + oc) * {D} + in_d) * {H} + in_y) * {W}) + in_x;\n         \
-      \                           sum_val += {in0}.data[in_idx];\n               \
-      \                     count++;\n                                }}\n        \
-      \                    }}\n                        }}\n                    }}\n\
-      \                    {clean_id}.data[out_idx++] = (count > 0) ? (sum_val / count)\
-      \ : 0.0f;\n                }}\n            }}\n        }}\n    }}\n}}\n"
-  slice:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
-      \ 0);\nstd::vector<int> starts_{clean_id} = {starts};\nstd::vector<int> strides_{clean_id}\
-      \ = {strides};\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    std::vector<int>\
-      \ in_idx_{clean_id}({rank}, 0);\n    for(int d = 0; d < {rank}; ++d) {{\n \
-      \       in_idx_{clean_id}[d] = starts_{clean_id}[d] + out_idx_{clean_id}[d]\
-      \ * strides_{clean_id}[d];\n    }}\n    {clean_id}.data[i] = {in0}.get(in_idx_{clean_id});\n\
-      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
-      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
-      \ = 0;\n    }}\n}}\n"
-  pad:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
-      \ 0);\nstd::vector<int> pad_low_{clean_id} = {pad_low};\nfor(size_t i=0; i<{clean_id}.size();\
-      \ ++i) {{\n    bool is_pad = false;\n    std::vector<int> in_idx_{clean_id}({rank},\
-      \ 0);\n    for(int d = 0; d < {rank}; ++d) {{\n        int coord = out_idx_{clean_id}[d]\
-      \ - pad_low_{clean_id}[d];\n        if (coord < 0 || coord >= {in0}.shape[d])\
-      \ {{ is_pad = true; break; }}\n        in_idx_{clean_id}[d] = coord;\n    }}\n\
-      \    {clean_id}.data[i] = is_pad ? {pad_val} : {in0}.get(in_idx_{clean_id});\n\
-      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
-      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
-      \ = 0;\n    }}\n}}\n"
-  gather_nd:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint num_slices = {in1}.size()\
-      \ / {index_depth};\nint slice_size = {clean_id}.size() / (num_slices > 0 ? num_slices\
-      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int src_offset = 0;\n\
-      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
-      \ * {index_depth} + k];\n        src_offset += idx_k * {in0}.strides[k];\n \
-      \   }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[s\
-      \ * slice_size + j] = {in0}.data[src_offset + j];\n    }}\n}}\n"
-  scatter_nd:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::memcpy({clean_id}.data.data(),\
-      \ {in0}.data.data(), {in0}.size() * sizeof(float));\nint num_slices = {in1}.size()\
-      \ / {index_depth};\nint slice_size = {in2}.size() / (num_slices > 0 ? num_slices\
-      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int dst_offset = 0;\n\
-      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
-      \ * {index_depth} + k];\n        dst_offset += idx_k * {clean_id}.strides[k];\n\
-      \    }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[dst_offset\
-      \ + j] = {in2}.data[s * slice_size + j];\n    }}\n}}\n"
-  softmax:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
-      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
-      \   #pragma omp simd reduction(max:max_val)\n    for (int j = 0; j < {D}; ++j)\
-      \ {{ max_val = std::max(max_val, {in0}.data[r * {D} + j]); }}\n    float sum_exp\
-      \ = 0.0f;\n    #pragma omp simd reduction(+:sum_exp)\n    for (int j = 0; j\
-      \ < {D}; ++j) {{ sum_exp += std::exp({in0}.data[r * {D} + j] - max_val); }}\n\
-      \    float inv_sum = 1.0f / sum_exp;\n    #pragma omp simd\n    for (int j =\
-      \ 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = std::exp({in0}.data[r\
-      \ * {D} + j] - max_val) * inv_sum;\n    }}\n}}\n"
-  logsoftmax:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
-      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
-      \   #pragma omp simd reduction(max:max_val)\n    for (int j = 0; j < {D}; ++j)\
-      \ {{ max_val = std::max(max_val, {in0}.data[r * {D} + j]); }}\n    float sum_exp\
-      \ = 0.0f;\n    #pragma omp simd reduction(+:sum_exp)\n    for (int j = 0; j\
-      \ < {D}; ++j) {{ sum_exp += std::exp({in0}.data[r * {D} + j] - max_val); }}\n\
-      \    float log_sum = std::log(sum_exp);\n    #pragma omp simd\n    for (int j\
-      \ = 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r\
-      \ * {D} + j] - max_val) - log_sum;\n    }}\n}}\n"
-  groupnorm:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint N = {N};\nint G = {G};\nint C_per_G = {C_per_G};\nint spatial = {spatial};\nint group_size = C_per_G * spatial;\nfor (int ng = 0; ng < N * G; ++ng) {{\n    int base = ng * group_size;\n    float mean = 0.0f;\n    #pragma omp simd reduction(+:mean)\n    for (int i = 0; i < group_size; ++i) mean += {in0}.data[base + i];\n    mean /= (float)(group_size > 0 ? group_size : 1);\n    float var = 0.0f;\n    #pragma omp simd reduction(+:var)\n    for (int i = 0; i < group_size; ++i) {{\n        float d = {in0}.data[base + i] - mean;\n        var += d * d;\n    }}\n    var /= (float)(group_size > 0 ? group_size : 1);\n    float inv_std = 1.0f / std::sqrt(var + {eps});\n    #pragma omp simd\n    for (int i = 0; i < group_size; ++i) {{\n        int c = (ng % G) * C_per_G + (i / spatial);\n        float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n        float b = {has_beta} ? {beta}.data[c] : 0.0f;\n        {clean_id}.data[base + i] = g * ({in0}.data[base + i] - mean) * inv_std + b;\n    }}\n}}\n"
-  warp_shuffle_reduce:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nfloat total_sum = 0.0f;\n\
-      #pragma omp parallel for reduction(+:total_sum)\nfor (size_t i = 0; i < {in0}.size();\
-      \ ++i) {{\n    total_sum += {in0}.data[i];\n}}\n{clean_id}.data[0] = total_sum;\n"
-  shared_memory_tree_reduce:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nfloat tree_sum = 0.0f;\n\
-      #pragma omp simd reduction(+:tree_sum)\nfor (size_t i = 0; i < {in0}.size();\
-      \ ++i) {{\n    tree_sum += {in0}.data[i];\n}}\n{clean_id}.data[0] = tree_sum;\n"
-  tiled_matmul_2d:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\nconst size_t TILE = 32;\n\
-      #pragma omp parallel for collapse(2)\nfor (size_t i = 0; i < {M}; i += TILE)\
-      \ {{\n    for (size_t j = 0; j < {N}; j += TILE) {{\n        for (size_t k =\
-      \ 0; k < {K}; k += TILE) {{\n            for (size_t ii = i; ii < std::min(i\
-      \ + TILE, (size_t){M}); ++ii) {{\n                for (size_t jj = j; jj < std::min(j\
-      \ + TILE, (size_t){N}); ++jj) {{\n                    float acc = (k == 0) ?\
-      \ 0.0f : {clean_id}.data[ii * {N} + jj];\n                    #pragma omp simd\
-      \ reduction(+:acc)\n                    for (size_t kk = k; kk < std::min(k\
-      \ + TILE, (size_t){K}); ++kk) {{\n                        acc += {in0}.data[ii\
-      \ * {K} + kk] * {in1}.data[kk * {N} + jj];\n                    }}\n       \
-      \             {clean_id}.data[ii * {N} + jj] = acc;\n                }}\n  \
-      \          }}\n        }}\n    }}\n}}\n"
-  conv2d_shared_halo:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
-      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {out_channels};\
-      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
-      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum =\
-      \ 0.0f;\n                for (int ic = 0; ic < {in_channels}; ++ic) {{\n   \
-      \                 for (int fy = 0; fy < {filter_h}; ++fy) {{\n             \
-      \           #pragma omp simd reduction(+:sum)\n                        for (int\
-      \ fx = 0; fx < {filter_w}; ++fx) {{\n                            int in_y =\
-      \ oy * {stride_h} + fy;\n                            int in_x = ox * {stride_w}\
-      \ + fx;\n                            int in_idx = ((b * {in_channels} + ic)\
-      \ * {in_height} + in_y) * {in_width} + in_x;\n                            int\
-      \ w_idx = ((oc * {in_channels} + ic) * {filter_h} + fy) * {filter_w} + fx;\n\
-      \                            sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
-      \                        }}\n                    }}\n                }}\n  \
-      \              int out_idx = ((b * {out_channels} + oc) * {out_height} + oy)\
-      \ * {out_width} + ox;\n                {clean_id}.data[out_idx] = sum;\n   \
-      \         }}\n        }}\n    }}\n}}\n"
-  maxpool2d_dynamic:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
-      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels};\
-      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
-      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float max_val\
-      \ = -1e38f;\n                for (int fy = 0; fy < {filter_h}; ++fy) {{\n  \
-      \                  #pragma omp simd reduction(max:max_val)\n               \
-      \     for (int fx = 0; fx < {filter_w}; ++fx) {{\n                        int\
-      \ in_y = oy * {stride_h} + fy * {dilation_h} - {pad_h};\n                  \
-      \      int in_x = ox * {stride_w} + fx * {dilation_w} - {pad_w};\n         \
-      \               if (in_y >= 0 && in_y < {in_height} && in_x >= 0 && in_x < {in_width})\
-      \ {{\n                            int in_idx = ((b * {channels} + oc) * {in_height}\
-      \ + in_y) * {in_width} + in_x;\n                            max_val = std::max(max_val,\
-      \ {in0}.data[in_idx]);\n                        }}\n                    }}\n\
-      \                }}\n                int out_idx = ((b * {channels} + oc) *\
-      \ {out_height} + oy) * {out_width} + ox;\n                {clean_id}.data[out_idx]\
-      \ = max_val;\n            }}\n        }}\n    }}\n}}\n"
-  avgpool2d_dynamic:
-    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
-      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels};\
-      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
-      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum_val\
-      \ = 0.0f;\n                int count = 0;\n                for (int fy = 0;\
-      \ fy < {filter_h}; ++fy) {{\n                    for (int fx = 0; fx < {filter_w};\
-      \ ++fx) {{\n                        int in_y = oy * {stride_h} + fy * {dilation_h}\
-      \ - {pad_h};\n                        int in_x = ox * {stride_w} + fx * {dilation_w}\
-      \ - {pad_w};\n                        if (in_y >= 0 && in_y < {in_height} &&\
-      \ in_x >= 0 && in_x < {in_width}) {{\n                            int in_idx\
-      \ = ((b * {channels} + oc) * {in_height} + in_y) * {in_width} + in_x;\n    \
-      \                        sum_val += {in0}.data[in_idx];\n                  \
-      \          count++;\n                        }}\n                    }}\n  \
-      \              }}\n                int out_idx = ((b * {channels} + oc) * {out_height}\
-      \ + oy) * {out_width} + ox;\n                {clean_id}.data[out_idx] = (count\
-      \ > 0) ? (sum_val / count) : 0.0f;\n            }}\n        }}\n    }}\n}}\n"
 operations:
-  sin:
-    template: unary
-    scalar_expr: std::sin(in0_val)
-  cos:
-    template: unary
-    scalar_expr: std::cos(in0_val)
-  tan:
-    template: unary
-    scalar_expr: std::tan(in0_val)
-  sinh:
-    template: unary
-    scalar_expr: std::sinh(in0_val)
-  cosh:
-    template: unary
-    scalar_expr: std::cosh(in0_val)
-  tanh:
-    template: unary
-    scalar_expr: std::tanh(in0_val)
-  asin:
-    template: unary
-    scalar_expr: std::asin(in0_val)
-  acos:
-    template: unary
-    scalar_expr: std::acos(in0_val)
-  atan:
-    template: unary
-    scalar_expr: std::atan(in0_val)
-  exp:
-    template: unary
-    scalar_expr: std::exp(in0_val)
-  log:
-    template: unary
-    scalar_expr: std::log(in0_val)
-  sqrt:
-    template: unary
-    scalar_expr: std::sqrt(in0_val)
   abs:
-    template: unary
     scalar_expr: std::abs(in0_val)
-  neg:
     template: unary
-    scalar_expr: -in0_val
-  relu:
+  acos:
+    scalar_expr: std::acos(in0_val)
     template: unary
-    scalar_expr: std::max(0.0f, in0_val)
-  sigmoid:
-    template: unary
-    scalar_expr: 1.0f / (1.0f + std::exp(-in0_val))
   add:
-    template: binary
     scalar_expr: in0_val + in1_val
-  mul:
     template: binary
-    scalar_expr: in0_val * in1_val
-  div:
-    template: binary
-    scalar_expr: in0_val / in1_val
-  sub:
-    template: binary
-    scalar_expr: in0_val - in1_val
-  pow:
-    template: binary
-    scalar_expr: std::pow(in0_val, in1_val)
-  maximum:
-    template: binary
-    scalar_expr: std::max(in0_val, in1_val)
-  minimum:
-    template: binary
-    scalar_expr: std::min(in0_val, in1_val)
-  equal:
-    template: binary
-    scalar_expr: '(in0_val == in1_val) ? 1.0f : 0.0f'
-  notequal:
-    template: binary
-    scalar_expr: '(in0_val != in1_val) ? 1.0f : 0.0f'
-  less:
-    template: binary
-    scalar_expr: '(in0_val < in1_val) ? 1.0f : 0.0f'
-  lessequal:
-    template: binary
-    scalar_expr: '(in0_val <= in1_val) ? 1.0f : 0.0f'
-  greater:
-    template: binary
-    scalar_expr: '(in0_val > in1_val) ? 1.0f : 0.0f'
-  greaterequal:
-    template: binary
-    scalar_expr: '(in0_val >= in1_val) ? 1.0f : 0.0f'
-  floor:
+  asin:
+    scalar_expr: std::asin(in0_val)
     template: unary
-    scalar_expr: std::floor(in0_val)
+  atan:
+    scalar_expr: std::atan(in0_val)
+    template: unary
+  bessel:
+    scalar_expr: bessel_j0(in0_val)
+    template: unary
+  bessel_i0:
+    scalar_expr: bessel_i0(in0_val)
+    template: unary
+  bessel_i1:
+    scalar_expr: bessel_i1(in0_val)
+    template: unary
+  bessel_j0:
+    scalar_expr: bessel_j0(in0_val)
+    template: unary
+  bessel_j1:
+    scalar_expr: bessel_j1(in0_val)
+    template: unary
+  bitwise_and:
+    scalar_expr: (float)((int)in0_val & (int)in1_val)
+    template: binary
+  bitwise_not:
+    scalar_expr: (float)(~(int)in0_val)
+    template: unary
+  bitwise_or:
+    scalar_expr: (float)((int)in0_val | (int)in1_val)
+    template: binary
+  bitwise_xor:
+    scalar_expr: (float)((int)in0_val ^ (int)in1_val)
+    template: binary
+  cbrt:
+    scalar_expr: std::cbrt(in0_val)
+    template: unary
   ceil:
-    template: unary
     scalar_expr: std::ceil(in0_val)
-  round:
     template: unary
-    scalar_expr: std::round(in0_val)
-  trunc:
-    template: unary
-    scalar_expr: std::trunc(in0_val)
-  sign:
-    template: unary
-    scalar_expr: '(in0_val > 0.0f) ? 1.0f : ((in0_val < 0.0f) ? -1.0f : 0.0f)'
-  square:
-    template: unary
-    scalar_expr: in0_val * in0_val
-  reciprocal:
-    template: unary
-    scalar_expr: 1.0f / in0_val
-  rsqrt:
-    template: unary
-    scalar_expr: 1.0f / std::sqrt(in0_val)
-  log2:
-    template: unary
-    scalar_expr: std::log2(in0_val)
-  log10:
-    template: unary
-    scalar_expr: std::log10(in0_val)
-  exp2:
-    template: unary
-    scalar_expr: std::exp2(in0_val)
-  expm1:
-    template: unary
-    scalar_expr: std::expm1(in0_val)
-  log1p:
-    template: unary
-    scalar_expr: std::log1p(in0_val)
-  erf:
-    template: unary
-    scalar_expr: std::erf(in0_val)
-  erfc:
-    template: unary
-    scalar_expr: std::erfc(in0_val)
-  gelu:
-    template: unary
-    scalar_expr: 0.5f * in0_val * (1.0f + std::erf(in0_val * 0.7071067811865475f))
-  silu:
-    template: unary
-    scalar_expr: in0_val / (1.0f + std::exp(-in0_val))
-  leakyrelu:
-    template: unary
-    scalar_expr: '(in0_val > 0.0f) ? in0_val : (0.01f * in0_val)'
-  elu:
-    template: unary
+  celu:
     scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
-  selu:
     template: unary
+  celu_:
+    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
+    template: unary
+  cholesky:
+    scalar_expr: in0_val
+    template: cholesky
+  clamp:
+    scalar_expr: std::min(std::max(in0_val, in1_val), in2_val)
+    template: ternary
+  cos:
+    scalar_expr: std::cos(in0_val)
+    template: unary
+  cosh:
+    scalar_expr: std::cosh(in0_val)
+    template: unary
+  digamma:
+    scalar_expr: digamma(in0_val)
+    template: unary
+  div:
+    scalar_expr: in0_val / in1_val
+    template: binary
+  elu:
+    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
+    template: unary
+  equal:
+    scalar_expr: '(in0_val == in1_val) ? 1.0f : 0.0f'
+    template: binary
+  erf:
+    scalar_expr: std::erf(in0_val)
+    template: unary
+  erfc:
+    scalar_expr: std::erfc(in0_val)
+    template: unary
+  exp:
+    scalar_expr: std::exp(in0_val)
+    template: unary
+  exp2:
+    scalar_expr: std::exp2(in0_val)
+    template: unary
+  expm1:
+    scalar_expr: std::expm1(in0_val)
+    template: unary
+  floor:
+    scalar_expr: std::floor(in0_val)
+    template: unary
+  full:
+    scalar_expr: in0_val
+    template: unary
+  gelu:
+    scalar_expr: 0.5f * in0_val * (1.0f + std::erf(in0_val * 0.7071067811865475f))
+    template: unary
+  greater:
+    scalar_expr: '(in0_val > in1_val) ? 1.0f : 0.0f'
+    template: binary
+  greaterequal:
+    scalar_expr: '(in0_val >= in1_val) ? 1.0f : 0.0f'
+    template: binary
+  groupnorm:
+    scalar_expr: in0_val
+    template: groupnorm
+  hardsigmoid:
+    scalar_expr: std::max(0.0f, std::min(1.0f, (in0_val + 3.0f) / 6.0f))
+    template: unary
+  hardsilu:
+    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
+    template: unary
+  hardswish:
+    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
+    template: unary
+  instancenorm:
+    scalar_expr: in0_val
+    template: instancenorm
+  isreal:
+    scalar_expr: 1.0f
+    template: unary
+  leakyrelu:
+    scalar_expr: '(in0_val > 0.0f) ? in0_val : (0.01f * in0_val)'
+    template: unary
+  less:
+    scalar_expr: '(in0_val < in1_val) ? 1.0f : 0.0f'
+    template: binary
+  lessequal:
+    scalar_expr: '(in0_val <= in1_val) ? 1.0f : 0.0f'
+    template: binary
+  lgamma:
+    scalar_expr: std::lgamma(in0_val)
+    template: unary
+  log:
+    scalar_expr: std::log(in0_val)
+    template: unary
+  log10:
+    scalar_expr: std::log10(in0_val)
+    template: unary
+  log1p:
+    scalar_expr: std::log1p(in0_val)
+    template: unary
+  log2:
+    scalar_expr: std::log2(in0_val)
+    template: unary
+  logical_and:
+    scalar_expr: '(in0_val != 0.0f && in1_val != 0.0f) ? 1.0f : 0.0f'
+    template: binary
+  logical_not:
+    scalar_expr: '(in0_val == 0.0f) ? 1.0f : 0.0f'
+    template: unary
+  logical_or:
+    scalar_expr: '(in0_val != 0.0f || in1_val != 0.0f) ? 1.0f : 0.0f'
+    template: binary
+  maximum:
+    scalar_expr: std::max(in0_val, in1_val)
+    template: binary
+  minimum:
+    scalar_expr: std::min(in0_val, in1_val)
+    template: binary
+  mish:
+    scalar_expr: in0_val * std::tanh(std::log1p(std::exp(in0_val)))
+    template: unary
+  mse_loss:
+    scalar_expr: (in0_val - in1_val) * (in0_val - in1_val)
+    template: binary
+  mul:
+    scalar_expr: in0_val * in1_val
+    template: binary
+  neg:
+    scalar_expr: -in0_val
+    template: unary
+  notequal:
+    scalar_expr: '(in0_val != in1_val) ? 1.0f : 0.0f'
+    template: binary
+  polydiv:
+    scalar_expr: in0_val / in1_val
+    template: binary
+  pow:
+    scalar_expr: std::pow(in0_val, in1_val)
+    template: binary
+  qr:
+    scalar_expr: in0_val
+    template: qr
+  reciprocal:
+    scalar_expr: 1.0f / in0_val
+    template: unary
+  reciprocalnonan:
+    scalar_expr: '(in0_val == 0.0f) ? 0.0f : (1.0f / in0_val)'
+    template: unary
+  reduceall:
+    final_combine: res
+    init_val: '1.0'
+    scalar_expr: '(val == 0.0f) ? 0.0f : res'
+    template: reduction
+  reduceany:
+    final_combine: res
+    init_val: '0.0'
+    scalar_expr: '(val != 0.0f) ? 1.0f : res'
+    template: reduction
+  reducemax:
+    final_combine: res
+    init_val: -1e38
+    scalar_expr: std::max(res, val)
+    template: reduction
+  reducemean:
+    final_combine: res / (float){in0}.size()
+    init_val: '0.0'
+    scalar_expr: res + val
+    template: reduction
+  reducemin:
+    final_combine: res
+    init_val: 1e38
+    scalar_expr: std::min(res, val)
+    template: reduction
+  reduceprod:
+    final_combine: res
+    init_val: '1.0'
+    scalar_expr: res * val
+    template: reduction
+  reducesum:
+    final_combine: res
+    init_val: '0.0'
+    scalar_expr: res + val
+    template: reduction
+  relu:
+    scalar_expr: std::max(0.0f, in0_val)
+    template: unary
+  rmsnorm:
+    scalar_expr: in0_val
+    template: rmsnorm
+  round:
+    scalar_expr: std::round(in0_val)
+    template: unary
+  rsqrt:
+    scalar_expr: 1.0f / std::sqrt(in0_val)
+    template: unary
+  selu:
     scalar_expr: '1.05070098f * ((in0_val > 0.0f) ? in0_val : (1.67326324f * (std::exp(in0_val)
       - 1.0f)))'
-  clamp:
-    template: ternary
-    scalar_expr: std::min(std::max(in0_val, in1_val), in2_val)
-  logical_and:
+    template: unary
+  sigmoid:
+    scalar_expr: 1.0f / (1.0f + std::exp(-in0_val))
+    template: unary
+  sign:
+    scalar_expr: '(in0_val > 0.0f) ? 1.0f : ((in0_val < 0.0f) ? -1.0f : 0.0f)'
+    template: unary
+  silu:
+    scalar_expr: in0_val / (1.0f + std::exp(-in0_val))
+    template: unary
+  sin:
+    scalar_expr: std::sin(in0_val)
+    template: unary
+  sinh:
+    scalar_expr: std::sinh(in0_val)
+    template: unary
+  solvetriangular:
+    scalar_expr: in0_val
+    template: solvetriangular
+  sqrt:
+    scalar_expr: std::sqrt(in0_val)
+    template: unary
+  square:
+    scalar_expr: in0_val * in0_val
+    template: unary
+  sub:
+    scalar_expr: in0_val - in1_val
     template: binary
-    scalar_expr: '(in0_val != 0.0f && in1_val != 0.0f) ? 1.0f : 0.0f'
-  logical_or:
-    template: binary
-    scalar_expr: '(in0_val != 0.0f || in1_val != 0.0f) ? 1.0f : 0.0f'
-  logical_not:
+  svd:
+    scalar_expr: in0_val
+    template: svd
+  swish:
+    scalar_expr: in0_val / (1.0f + std::exp(-in0_val))
     template: unary
-    scalar_expr: '(in0_val == 0.0f) ? 1.0f : 0.0f'
-  bitwise_and:
-    template: binary
-    scalar_expr: (float)((int)in0_val & (int)in1_val)
-  bitwise_or:
-    template: binary
-    scalar_expr: (float)((int)in0_val | (int)in1_val)
-  bitwise_xor:
-    template: binary
-    scalar_expr: (float)((int)in0_val ^ (int)in1_val)
-  bitwise_not:
+  tan:
+    scalar_expr: std::tan(in0_val)
     template: unary
-    scalar_expr: (float)(~(int)in0_val)
-  lgamma:
+  tanh:
+    scalar_expr: std::tanh(in0_val)
     template: unary
-    scalar_expr: std::lgamma(in0_val)
-  digamma:
+  trunc:
+    scalar_expr: std::trunc(in0_val)
     template: unary
-    scalar_expr: digamma(in0_val)
-  bessel:
-    template: unary
-    scalar_expr: bessel_j0(in0_val)
-  bessel_j0:
-    template: unary
-    scalar_expr: bessel_j0(in0_val)
-  bessel_j1:
-    template: unary
-    scalar_expr: bessel_j1(in0_val)
-  bessel_i0:
-    template: unary
-    scalar_expr: bessel_i0(in0_val)
-  bessel_i1:
-    template: unary
-    scalar_expr: bessel_i1(in0_val)
-  hardswish:
-    template: unary
-    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
-  hardsilu:
-    template: unary
-    scalar_expr: in0_val * std::max(0.0f, std::min(6.0f, in0_val + 3.0f)) / 6.0f
-  reduceany:
-    template: reduction
-    init_val: "0.0"
-    scalar_expr: '(val != 0.0f) ? 1.0f : res'
-    final_combine: res
-  reduceall:
-    template: reduction
-    init_val: "1.0"
-    scalar_expr: '(val == 0.0f) ? 0.0f : res'
-    final_combine: res
-  reducesum:
-    template: reduction
-    init_val: "0.0"
-    scalar_expr: res + val
-    final_combine: res
-  reducemean:
-    template: reduction
-    init_val: "0.0"
-    scalar_expr: res + val
-    final_combine: res / (float){in0}.size()
-  reducemax:
-    template: reduction
-    init_val: "-1e38"
-    scalar_expr: std::max(res, val)
-    final_combine: res
-  reducemin:
-    template: reduction
-    init_val: "1e38"
-    scalar_expr: std::min(res, val)
-    final_combine: res
-  reduceprod:
-    template: reduction
-    init_val: "1.0"
-    scalar_expr: res * val
-    final_combine: res
-  cbrt:
-    template: unary
-    scalar_expr: std::cbrt(in0_val)
-  reciprocalnonan:
-    template: unary
-    scalar_expr: '(in0_val == 0.0f) ? 0.0f : (1.0f / in0_val)'
-  isreal:
-    template: unary
-    scalar_expr: 1.0f
-  celu:
-    template: unary
-    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
-  celu_:
-    template: unary
-    scalar_expr: '(in0_val > 0.0f) ? in0_val : (std::exp(in0_val) - 1.0f)'
-  mse_loss:
-    template: binary
-    scalar_expr: (in0_val - in1_val) * (in0_val - in1_val)
-  polydiv:
-    template: binary
-    scalar_expr: in0_val / in1_val
   viewcopy:
-    template: unary
     scalar_expr: in0_val
-  full:
     template: unary
-    scalar_expr: in0_val
 prelude: "#include <iostream>\n#include <vector>\n#include <cmath>\n#include <numeric>\n\
   #include <algorithm>\n#include <cassert>\n#include <cstdlib>\n#include <cstring>\n\
   #include <memory>\n#ifdef USE_BLAS\n#include <cblas.h>\n#endif\n\ninline float digamma(float\
-  \ x) {\n    if (x <= 0.0f && x == std::floor(x)) return 0.0f;\n    float result =\
-  \ 0.0f;\n    if (x < 0.0f) {\n        result = -3.141592653589793f / std::tan(3.141592653589793f\
+  \ x) {\n    if (x <= 0.0f && x == std::floor(x)) return 0.0f;\n    float result\
+  \ = 0.0f;\n    if (x < 0.0f) {\n        result = -3.141592653589793f / std::tan(3.141592653589793f\
   \ * x);\n        x = 1.0f - x;\n    }\n    while (x < 7.0f) {\n        result -=\
   \ 1.0f / x;\n        x += 1.0f;\n    }\n    float x_inv = 1.0f / x;\n    float x_inv2\
-  \ = x_inv * x_inv;\n    result += std::log(x) - 0.5f * x_inv - x_inv2 * (1.0f / 12.0f\
-  \ - x_inv2 * (1.0f / 120.0f - x_inv2 / 252.0f));\n    return result;\n}\n\ninline float bessel_j0(float x) {\n    return (float)::j0((double)x);\n}\n\ninline\
+  \ = x_inv * x_inv;\n    result += std::log(x) - 0.5f * x_inv - x_inv2 * (1.0f /\
+  \ 12.0f - x_inv2 * (1.0f / 120.0f - x_inv2 / 252.0f));\n    return result;\n}\n\n\
+  inline float bessel_j0(float x) {\n    return (float)::j0((double)x);\n}\n\ninline\
   \ float bessel_j1(float x) {\n    return (float)::j1((double)x);\n}\n\ninline float\
-  \ bessel_i0(float x) {\n    float ax = std::abs(x);\n    if (ax < 3.75f) {\n \
-  \       float y = (x / 3.75f) * (x / 3.75f);\n        return 1.0f + y * (3.5156229f\
-  \ + y * (3.0899424f + y * (1.2067492f + y * (0.2659732f + y * (0.0360768f + y\
-  \ * 0.0045813f)))));\n    } else {\n        float y = 3.75f / ax;\n        return\
+  \ bessel_i0(float x) {\n    float ax = std::abs(x);\n    if (ax < 3.75f) {\n   \
+  \     float y = (x / 3.75f) * (x / 3.75f);\n        return 1.0f + y * (3.5156229f\
+  \ + y * (3.0899424f + y * (1.2067492f + y * (0.2659732f + y * (0.0360768f + y *\
+  \ 0.0045813f)))));\n    } else {\n        float y = 3.75f / ax;\n        return\
   \ (std::exp(ax) / std::sqrt(ax)) * (0.39894228f + y * (0.01328592f + y * (0.00225319f\
   \ + y * (-0.00157565f + y * (0.00916281f + y * (-0.02057706f + y * (0.02635537f\
   \ + y * (-0.01647633f + y * 0.00392377f))))))));\n    }\n}\n\ninline float bessel_i1(float\
-  \ x) {\n    float ax = std::abs(x);\n    float ans;\n    if (ax < 3.75f) {\n \
-  \       float y = (x / 3.75f) * (x / 3.75f);\n        ans = ax * (0.5f + y * (0.87890594f\
-  \ + y * (0.51498869f + y * (0.15084934f + y * (0.02658733f + y * (0.00301532f\
-  \ + y * 0.00032411f))))));\n    } else {\n        float y = 3.75f / ax;\n     \
-  \   ans = (std::exp(ax) / std::sqrt(ax)) * (0.39894228f + y * (-0.03988024f + y\
-  \ * (-0.00362018f + y * (0.00163801f + y * (-0.01031555f + y * (0.02282967f +\
-  \ y * (-0.02895312f + y * (0.01787654f + y * -0.00420059f))))))));\n    }\n \
-  \   return (x < 0.0f) ? -ans : ans;\n}\n\ntemplate<typename T, size_t Alignment\
-  \ = 64>\nstruct AlignedBuffer {\n    T* ptr = nullptr;\n    size_t num_bytes = 0;\n\n    AlignedBuffer(size_t bytes) : num_bytes(bytes) {\n\
-  \        size_t aligned_bytes = (bytes + Alignment - 1) & ~(Alignment - 1);\n  \
-  \      if (aligned_bytes == 0) aligned_bytes = Alignment;\n#if defined(_MSC_VER)\n\
-  \        ptr = static_cast<T*>(_aligned_malloc(aligned_bytes, Alignment));\n#elif\
-  \ defined(__APPLE__) || defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L\n\
-  \        void* raw = nullptr;\n        if (posix_memalign(&raw, Alignment, aligned_bytes)\
-  \ == 0) {\n            ptr = static_cast<T*>(raw);\n        }\n#else\n        ptr\
-  \ = static_cast<T*>(std::aligned_alloc(Alignment, aligned_bytes));\n#endif\n   \
-  \     if (ptr && bytes > 0) std::memset(ptr, 0, bytes);\n    }\n\n    ~AlignedBuffer()\
-  \ {\n#if defined(_MSC_VER)\n        if (ptr) _aligned_free(ptr);\n#else\n      \
-  \  if (ptr) std::free(ptr);\n#endif\n    }\n\n    T* data() { return ptr; }\n  \
-  \  const T* data() const { return ptr; }\n    size_t size() const { return num_bytes;\
-  \ }\n};\n\ntemplate<typename T>\nstruct NDArrayView {\n    std::vector<T> data;\n\
-  \    std::vector<int> shape;\n    std::vector<int> strides;\n    bool bounds_checked\
+  \ x) {\n    float ax = std::abs(x);\n    float ans;\n    if (ax < 3.75f) {\n   \
+  \     float y = (x / 3.75f) * (x / 3.75f);\n        ans = ax * (0.5f + y * (0.87890594f\
+  \ + y * (0.51498869f + y * (0.15084934f + y * (0.02658733f + y * (0.00301532f +\
+  \ y * 0.00032411f))))));\n    } else {\n        float y = 3.75f / ax;\n        ans\
+  \ = (std::exp(ax) / std::sqrt(ax)) * (0.39894228f + y * (-0.03988024f + y * (-0.00362018f\
+  \ + y * (0.00163801f + y * (-0.01031555f + y * (0.02282967f + y * (-0.02895312f\
+  \ + y * (0.01787654f + y * -0.00420059f))))))));\n    }\n    return (x < 0.0f) ?\
+  \ -ans : ans;\n}\n\ntemplate<typename T, size_t Alignment = 64>\nstruct AlignedBuffer\
+  \ {\n    T* ptr = nullptr;\n    size_t num_bytes = 0;\n\n    AlignedBuffer(size_t\
+  \ bytes) : num_bytes(bytes) {\n        size_t aligned_bytes = (bytes + Alignment\
+  \ - 1) & ~(Alignment - 1);\n        if (aligned_bytes == 0) aligned_bytes = Alignment;\n\
+  #if defined(_MSC_VER)\n        ptr = static_cast<T*>(_aligned_malloc(aligned_bytes,\
+  \ Alignment));\n#elif defined(__APPLE__) || defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE\
+  \ >= 200112L\n        void* raw = nullptr;\n        if (posix_memalign(&raw, Alignment,\
+  \ aligned_bytes) == 0) {\n            ptr = static_cast<T*>(raw);\n        }\n#else\n\
+  \        ptr = static_cast<T*>(std::aligned_alloc(Alignment, aligned_bytes));\n\
+  #endif\n        if (ptr && bytes > 0) std::memset(ptr, 0, bytes);\n    }\n\n   \
+  \ ~AlignedBuffer() {\n#if defined(_MSC_VER)\n        if (ptr) _aligned_free(ptr);\n\
+  #else\n        if (ptr) std::free(ptr);\n#endif\n    }\n\n    T* data() { return\
+  \ ptr; }\n    const T* data() const { return ptr; }\n    size_t size() const { return\
+  \ num_bytes; }\n};\n\ntemplate<typename T>\nstruct NDArrayView {\n    std::vector<T>\
+  \ data;\n    std::vector<int> shape;\n    std::vector<int> strides;\n    bool bounds_checked\
   \ = true;\n\n    NDArrayView() = default;\n\n    NDArrayView(const std::vector<int>&\
   \ s, T* external_buffer = nullptr) : shape(s) {\n        int n = 1;\n        for\
   \ (int dim : s) n *= dim;\n        data.resize(n, 0.0f);\n        if (external_buffer\
@@ -667,3 +360,360 @@ prelude: "#include <iostream>\n#include <vector>\n#include <cmath>\n#include <nu
   }\n\ninline void inc_indices(std::vector<int>& indices, const std::vector<int>&\
   \ shape) {\n    for (int i = (int)shape.size() - 1; i >= 0; --i) {\n        indices[i]++;\n\
   \        if (indices[i] < shape[i]) break;\n        indices[i] = 0;\n    }\n}\n"
+templates:
+  attention:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
+      \ i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = 0.0f;\n}}\n"
+  avgpool2d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels}; ++oc)\
+      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
+      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum_val = 0.0f;\n\
+      \                int count = 0;\n                for (int fy = 0; fy < {filter_h};\
+      \ ++fy) {{\n                    for (int fx = 0; fx < {filter_w}; ++fx) {{\n\
+      \                        int in_y = oy * {stride_h} + fy;\n                \
+      \        int in_x = ox * {stride_w} + fx;\n                        if (in_y\
+      \ < {in_height} && in_x < {in_width}) {{\n                            int in_idx\
+      \ = ((b * {channels} + oc) * {in_height} + in_y) * {in_width} + in_x;\n    \
+      \                        sum_val += {in0}.data[in_idx];\n                  \
+      \          count++;\n                        }}\n                    }}\n  \
+      \              }}\n                {clean_id}.data[out_idx++] = (count > 0)\
+      \ ? (sum_val / count) : 0.0f;\n            }}\n        }}\n    }}\n}}\n"
+  avgpool2d_dynamic:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
+      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels};\
+      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
+      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum_val\
+      \ = 0.0f;\n                int count = 0;\n                for (int fy = 0;\
+      \ fy < {filter_h}; ++fy) {{\n                    for (int fx = 0; fx < {filter_w};\
+      \ ++fx) {{\n                        int in_y = oy * {stride_h} + fy * {dilation_h}\
+      \ - {pad_h};\n                        int in_x = ox * {stride_w} + fx * {dilation_w}\
+      \ - {pad_w};\n                        if (in_y >= 0 && in_y < {in_height} &&\
+      \ in_x >= 0 && in_x < {in_width}) {{\n                            int in_idx\
+      \ = ((b * {channels} + oc) * {in_height} + in_y) * {in_width} + in_x;\n    \
+      \                        sum_val += {in0}.data[in_idx];\n                  \
+      \          count++;\n                        }}\n                    }}\n  \
+      \              }}\n                int out_idx = ((b * {channels} + oc) * {out_height}\
+      \ + oy) * {out_width} + ox;\n                {clean_id}.data[out_idx] = (count\
+      \ > 0) ? (sum_val / count) : 0.0f;\n            }}\n        }}\n    }}\n}}\n"
+  avgpool3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n  \
+      \      for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy = 0;\
+      \ oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out}; ++ox)\
+      \ {{\n                    float sum_val = 0.0f;\n                    int count\
+      \ = 0;\n                    for (int kd = 0; kd < {KD}; ++kd) {{\n         \
+      \               for (int fy = 0; fy < {KH}; ++fy) {{\n                     \
+      \       for (int fx = 0; fx < {KW}; ++fx) {{\n                             \
+      \   int in_d = od * {stride_d} + kd;\n                                int in_y\
+      \ = oy * {stride_h} + fy;\n                                int in_x = ox * {stride_w}\
+      \ + fx;\n                                if (in_d < {D} && in_y < {H} && in_x\
+      \ < {W}) {{\n                                    int in_idx = ((((b * {C} +\
+      \ oc) * {D} + in_d) * {H} + in_y) * {W}) + in_x;\n                         \
+      \           sum_val += {in0}.data[in_idx];\n                               \
+      \     count++;\n                                }}\n                       \
+      \     }}\n                        }}\n                    }}\n             \
+      \       {clean_id}.data[out_idx++] = (count > 0) ? (sum_val / count) : 0.0f;\n\
+      \                }}\n            }}\n        }}\n    }}\n}}\n"
+  batchnorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
+      \ i=0; i<{clean_id}.size(); ++i) {{\n    int c = (i / {spatial}) % {channels};\n\
+      \    float m = {has_mean} ? {mean}.data[c] : 0.0f;\n    float v = {has_var}\
+      \ ? {var}.data[c] : 1.0f;\n    float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n\
+      \    float b = {has_beta} ? {beta}.data[c] : 0.0f;\n    {clean_id}.data[i] =\
+      \ (({in0}.data[i] - m) / std::sqrt(v + 1e-5f)) * g + b;\n}}\n"
+  binary:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
+      \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\
+      \    float in1_val = {in1}.get(idx_{clean_id});\n    {clean_id}.data[i] = {scalar_expr};\n\
+      \    /* update index */\n    for(int d = {rank}-1; d >= 0; --d) {{\n       \
+      \ idx_{clean_id}[d]++;\n        if (idx_{clean_id}[d] < {clean_id}.shape[d])\
+      \ break;\n        idx_{clean_id}[d] = 0;\n    }}\n}}\n"
+  constant:
+    body: 'NDArrayView<float> {clean_id}({out_shape_str});
+
+      for(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = {val}; }}
+
+      '
+  conv2d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {out_channels}; ++oc)\
+      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
+      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum = 0.0f;\n\
+      \                for (int ic = 0; ic < {in_channels}; ++ic) {{\n           \
+      \         for (int fy = 0; fy < {filter_h}; ++fy) {{\n                     \
+      \   #pragma omp simd reduction(+:sum)\n                        for (int fx =\
+      \ 0; fx < {filter_w}; ++fx) {{\n                            int in_y = oy *\
+      \ {stride_h} + fy;\n                            int in_x = ox * {stride_w} +\
+      \ fx;\n                            int in_idx = ((b * {in_channels} + ic) *\
+      \ {in_height} + in_y) * {in_width} + in_x;\n                            int\
+      \ w_idx = ((oc * {in_channels} + ic) * {filter_h} + fy) * {filter_w} + fx;\n\
+      \                            sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
+      \                        }}\n                    }}\n                }}\n  \
+      \              {clean_id}.data[out_idx++] = sum;\n            }}\n        }}\n\
+      \    }}\n}}\n"
+  conv2d_shared_halo:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
+      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {out_channels};\
+      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
+      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float sum =\
+      \ 0.0f;\n                for (int ic = 0; ic < {in_channels}; ++ic) {{\n   \
+      \                 for (int fy = 0; fy < {filter_h}; ++fy) {{\n             \
+      \           #pragma omp simd reduction(+:sum)\n                        for (int\
+      \ fx = 0; fx < {filter_w}; ++fx) {{\n                            int in_y =\
+      \ oy * {stride_h} + fy;\n                            int in_x = ox * {stride_w}\
+      \ + fx;\n                            int in_idx = ((b * {in_channels} + ic)\
+      \ * {in_height} + in_y) * {in_width} + in_x;\n                            int\
+      \ w_idx = ((oc * {in_channels} + ic) * {filter_h} + fy) * {filter_w} + fx;\n\
+      \                            sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
+      \                        }}\n                    }}\n                }}\n  \
+      \              int out_idx = ((b * {out_channels} + oc) * {out_height} + oy)\
+      \ * {out_width} + ox;\n                {clean_id}.data[out_idx] = sum;\n   \
+      \         }}\n        }}\n    }}\n}}\n"
+  conv3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C_out}; ++oc) {{\n\
+      \        for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy =\
+      \ 0; oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out};\
+      \ ++ox) {{\n                    float sum = 0.0f;\n                    for (int\
+      \ ic = 0; ic < {C_in}; ++ic) {{\n                        for (int kd = 0; kd\
+      \ < {KD}; ++kd) {{\n                            for (int fy = 0; fy < {KH};\
+      \ ++fy) {{\n                                #pragma omp simd reduction(+:sum)\n\
+      \                                for (int fx = 0; fx < {KW}; ++fx) {{\n    \
+      \                                int in_d = od * {stride_d} + kd;\n        \
+      \                            int in_y = oy * {stride_h} + fy;\n            \
+      \                        int in_x = ox * {stride_w} + fx;\n                \
+      \                    if (in_d < {D} && in_y < {H} && in_x < {W}) {{\n      \
+      \                                  int in_idx = ((((b * {C_in} + ic) * {D} +\
+      \ in_d) * {H} + in_y) * {W}) + in_x;\n                                     \
+      \   int w_idx = ((((oc * {C_in} + ic) * {KD} + kd) * {KH} + fy) * {KW}) + fx;\n\
+      \                                        sum += {in0}.data[in_idx] * {in1}.data[w_idx];\n\
+      \                                    }}\n                                }}\n\
+      \                            }}\n                        }}\n              \
+      \      }}\n                    {clean_id}.data[out_idx++] = sum;\n         \
+      \       }}\n            }}\n        }}\n    }}\n}}\n"
+  fallback_copy:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
+      \ i=0; i<{clean_id}.size(); ++i) {{\n    {clean_id}.data[i] = {in0}.data[i];\n\
+      }}\n"
+  gather_nd:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint num_slices = {in1}.size()\
+      \ / {index_depth};\nint slice_size = {clean_id}.size() / (num_slices > 0 ? num_slices\
+      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int src_offset = 0;\n\
+      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
+      \ * {index_depth} + k];\n        src_offset += idx_k * {in0}.strides[k];\n \
+      \   }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[s\
+      \ * slice_size + j] = {in0}.data[src_offset + j];\n    }}\n}}\n"
+  groupnorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint N = {N};\nint G =\
+      \ {G};\nint C_per_G = {C_per_G};\nint spatial = {spatial};\nint group_size =\
+      \ C_per_G * spatial;\nfor (int ng = 0; ng < N * G; ++ng) {{\n    int base =\
+      \ ng * group_size;\n    float mean = 0.0f;\n    #pragma omp simd reduction(+:mean)\n\
+      \    for (int i = 0; i < group_size; ++i) mean += {in0}.data[base + i];\n  \
+      \  mean /= (float)(group_size > 0 ? group_size : 1);\n    float var = 0.0f;\n\
+      \    #pragma omp simd reduction(+:var)\n    for (int i = 0; i < group_size;\
+      \ ++i) {{\n        float d = {in0}.data[base + i] - mean;\n        var += d\
+      \ * d;\n    }}\n    var /= (float)(group_size > 0 ? group_size : 1);\n    float\
+      \ inv_std = 1.0f / std::sqrt(var + {eps});\n    #pragma omp simd\n    for (int\
+      \ i = 0; i < group_size; ++i) {{\n        int c = (ng % G) * C_per_G + (i /\
+      \ spatial);\n        float g = {has_gamma} ? {gamma}.data[c] : 1.0f;\n     \
+      \   float b = {has_beta} ? {beta}.data[c] : 0.0f;\n        {clean_id}.data[base\
+      \ + i] = g * ({in0}.data[base + i] - mean) * inv_std + b;\n    }}\n}}\n"
+  if_op:
+    body: 'if ({cond_var}.data[0] > 0.0f) {{
+
+      {then_body}
+
+      }} else {{
+
+      {else_body}
+
+      }}
+
+      '
+  input:
+    body: NDArrayView<float> {clean_id}({out_shape_str}{offset_str}); // Input
+  layernorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float mean = 0.0f;\n    #pragma\
+      \ omp simd reduction(+:mean)\n    for (int j = 0; j < {D}; ++j) {{ mean += {in0}.data[r\
+      \ * {D} + j]; }}\n    mean /= {D};\n    float var = 0.0f;\n    #pragma omp simd\
+      \ reduction(+:var)\n    for (int j = 0; j < {D}; ++j) {{\n        float diff\
+      \ = {in0}.data[r * {D} + j] - mean;\n        var += diff * diff;\n    }}\n \
+      \   var /= {D};\n    float inv_std = 1.0f / std::sqrt(var + 1e-5f);\n    #pragma\
+      \ omp simd\n    for (int j = 0; j < {D}; ++j) {{\n        float g = {has_gamma}\
+      \ ? {gamma}.data[j] : 1.0f;\n        float b = {has_beta} ? {beta}.data[j] :\
+      \ 0.0f;\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r * {D} + j] - mean)\
+      \ * inv_std * g + b;\n    }}\n}}\n"
+  logsoftmax:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
+      \   #pragma omp simd reduction(max:max_val)\n    for (int j = 0; j < {D}; ++j)\
+      \ {{ max_val = std::max(max_val, {in0}.data[r * {D} + j]); }}\n    float sum_exp\
+      \ = 0.0f;\n    #pragma omp simd reduction(+:sum_exp)\n    for (int j = 0; j\
+      \ < {D}; ++j) {{ sum_exp += std::exp({in0}.data[r * {D} + j] - max_val); }}\n\
+      \    float log_sum = std::log(sum_exp);\n    #pragma omp simd\n    for (int\
+      \ j = 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = ({in0}.data[r\
+      \ * {D} + j] - max_val) - log_sum;\n    }}\n}}\n"
+  loop_op:
+    body: "while (true) {{\n{cond_body}{loop_body}\n    break;\n}}\n"
+  matmul:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#ifdef USE_BLAS\ncblas_sgemm(CblasRowMajor,\
+      \ CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in0}.data.data(), {K}, {in1}.data.data(),\
+      \ {N}, 0.0f, {clean_id}.data.data(), {N});\n#else\nfor (size_t i = 0; i < {M};\
+      \ ++i) {{\n    for (size_t j = 0; j < {N}; ++j) {{\n        float sum = 0.0f;\n\
+      \        #pragma omp simd reduction(+:sum)\n        for (size_t k = 0; k < {K};\
+      \ ++k) {{\n            sum += {in0}.data[i * {K} + k] * {in1}.data[k * {N} +\
+      \ j];\n        }}\n        {clean_id}.data[i * {N} + j] = sum;\n    }}\n}}\n\
+      #endif\n"
+  maxpool2d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels}; ++oc)\
+      \ {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n            for\
+      \ (int ox = 0; ox < {out_width}; ++ox) {{\n                float max_val = -1e38f;\n\
+      \                #pragma omp simd reduction(max:max_val)\n                for\
+      \ (int fy = 0; fy < {filter_h}; ++fy) {{\n                    for (int fx =\
+      \ 0; fx < {filter_w}; ++fx) {{\n                        int in_y = oy * {stride_h}\
+      \ + fy;\n                        int in_x = ox * {stride_w} + fx;\n        \
+      \                if (in_y < {in_height} && in_x < {in_width}) {{\n         \
+      \                   int in_idx = ((b * {channels} + oc) * {in_height} + in_y)\
+      \ * {in_width} + in_x;\n                            max_val = std::max(max_val,\
+      \ {in0}.data[in_idx]);\n                        }}\n                    }}\n\
+      \                }}\n                {clean_id}.data[out_idx++] = max_val;\n\
+      \            }}\n        }}\n    }}\n}}\n"
+  maxpool2d_dynamic:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp parallel for\
+      \ collapse(2)\nfor (int b = 0; b < {B}; ++b) {{\n    for (int oc = 0; oc < {channels};\
+      \ ++oc) {{\n        for (int oy = 0; oy < {out_height}; ++oy) {{\n         \
+      \   for (int ox = 0; ox < {out_width}; ++ox) {{\n                float max_val\
+      \ = -1e38f;\n                for (int fy = 0; fy < {filter_h}; ++fy) {{\n  \
+      \                  #pragma omp simd reduction(max:max_val)\n               \
+      \     for (int fx = 0; fx < {filter_w}; ++fx) {{\n                        int\
+      \ in_y = oy * {stride_h} + fy * {dilation_h} - {pad_h};\n                  \
+      \      int in_x = ox * {stride_w} + fx * {dilation_w} - {pad_w};\n         \
+      \               if (in_y >= 0 && in_y < {in_height} && in_x >= 0 && in_x < {in_width})\
+      \ {{\n                            int in_idx = ((b * {channels} + oc) * {in_height}\
+      \ + in_y) * {in_width} + in_x;\n                            max_val = std::max(max_val,\
+      \ {in0}.data[in_idx]);\n                        }}\n                    }}\n\
+      \                }}\n                int out_idx = ((b * {channels} + oc) *\
+      \ {out_height} + oy) * {out_width} + ox;\n                {clean_id}.data[out_idx]\
+      \ = max_val;\n            }}\n        }}\n    }}\n}}\n"
+  maxpool3d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint out_idx = 0;\nfor\
+      \ (int b = 0; b < {N}; ++b) {{\n    for (int oc = 0; oc < {C}; ++oc) {{\n  \
+      \      for (int od = 0; od < {D_out}; ++od) {{\n            for (int oy = 0;\
+      \ oy < {H_out}; ++oy) {{\n                for (int ox = 0; ox < {W_out}; ++ox)\
+      \ {{\n                    float max_val = -1e38f;\n                    for (int\
+      \ kd = 0; kd < {KD}; ++kd) {{\n                        for (int fy = 0; fy <\
+      \ {KH}; ++fy) {{\n                            #pragma omp simd reduction(max:max_val)\n\
+      \                            for (int fx = 0; fx < {KW}; ++fx) {{\n        \
+      \                        int in_d = od * {stride_d} + kd;\n                \
+      \                int in_y = oy * {stride_h} + fy;\n                        \
+      \        int in_x = ox * {stride_w} + fx;\n                                if\
+      \ (in_d < {D} && in_y < {H} && in_x < {W}) {{\n                            \
+      \        int in_idx = ((((b * {C} + oc) * {D} + in_d) * {H} + in_y) * {W}) +\
+      \ in_x;\n                                    max_val = std::max(max_val, {in0}.data[in_idx]);\n\
+      \                                }}\n                            }}\n      \
+      \                  }}\n                    }}\n                    {clean_id}.data[out_idx++]\
+      \ = max_val;\n                }}\n            }}\n        }}\n    }}\n}}\n"
+  output:
+    body: // Output {in0}
+  pad:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
+      \ 0);\nstd::vector<int> pad_low_{clean_id} = {pad_low};\nfor(size_t i=0; i<{clean_id}.size();\
+      \ ++i) {{\n    bool is_pad = false;\n    std::vector<int> in_idx_{clean_id}({rank},\
+      \ 0);\n    for(int d = 0; d < {rank}; ++d) {{\n        int coord = out_idx_{clean_id}[d]\
+      \ - pad_low_{clean_id}[d];\n        if (coord < 0 || coord >= {in0}.shape[d])\
+      \ {{ is_pad = true; break; }}\n        in_idx_{clean_id}[d] = coord;\n    }}\n\
+      \    {clean_id}.data[i] = is_pad ? {pad_val} : {in0}.get(in_idx_{clean_id});\n\
+      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
+      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
+      \ = 0;\n    }}\n}}\n"
+  reduction:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0)\
+      \ {{\n    float res = {init_val};\n    #pragma omp simd\n    for(size_t i=0;\
+      \ i<{in0}.size(); ++i) {{\n        float val = {in0}.data[i];\n        res =\
+      \ {scalar_expr};\n    }}\n    {clean_id}.data[0] = {final_combine};\n}}\n"
+  rmsnorm:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float sum_sq = 0.0f;\n    #pragma\
+      \ omp simd reduction(+:sum_sq)\n    for (int j = 0; j < {D}; ++j) {{ float x\
+      \ = {in0}.data[r * {D} + j]; sum_sq += x * x; }}\n    float rms = 1.0f / std::sqrt(sum_sq\
+      \ / {D} + 1e-5f);\n    #pragma omp simd\n    for (int j = 0; j < {D}; ++j) {{\n\
+      \        float g = {has_gamma} ? {gamma}.data[j] : 1.0f;\n        {clean_id}.data[r\
+      \ * {D} + j] = {in0}.data[r * {D} + j] * rms * g;\n    }}\n}}\n"
+  scan:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nif ({in0}.size() > 0)\
+      \ {{\n    float acc = 0.0f;\n    for(size_t i=0; i<{in0}.size(); ++i) {{\n \
+      \       acc = acc + {in0}.data[i];\n        {clean_id}.data[i] = acc;\n    }}\n\
+      }}\n"
+  scatter_nd:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::memcpy({clean_id}.data.data(),\
+      \ {in0}.data.data(), {in0}.size() * sizeof(float));\nint num_slices = {in1}.size()\
+      \ / {index_depth};\nint slice_size = {in2}.size() / (num_slices > 0 ? num_slices\
+      \ : 1);\nfor (int s = 0; s < num_slices; ++s) {{\n    int dst_offset = 0;\n\
+      \    for (int k = 0; k < {index_depth}; ++k) {{\n        int idx_k = (int){in1}.data[s\
+      \ * {index_depth} + k];\n        dst_offset += idx_k * {clean_id}.strides[k];\n\
+      \    }}\n    for (int j = 0; j < slice_size; ++j) {{\n        {clean_id}.data[dst_offset\
+      \ + j] = {in2}.data[s * slice_size + j];\n    }}\n}}\n"
+  shared_memory_tree_reduce:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nfloat tree_sum = 0.0f;\n\
+      #pragma omp simd reduction(+:tree_sum)\nfor (size_t i = 0; i < {in0}.size();\
+      \ ++i) {{\n    tree_sum += {in0}.data[i];\n}}\n{clean_id}.data[0] = tree_sum;\n"
+  slice:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> out_idx_{clean_id}({rank},\
+      \ 0);\nstd::vector<int> starts_{clean_id} = {starts};\nstd::vector<int> strides_{clean_id}\
+      \ = {strides};\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    std::vector<int>\
+      \ in_idx_{clean_id}({rank}, 0);\n    for(int d = 0; d < {rank}; ++d) {{\n  \
+      \      in_idx_{clean_id}[d] = starts_{clean_id}[d] + out_idx_{clean_id}[d] *\
+      \ strides_{clean_id}[d];\n    }}\n    {clean_id}.data[i] = {in0}.get(in_idx_{clean_id});\n\
+      \    for(int d = {rank}-1; d >= 0; --d) {{\n        out_idx_{clean_id}[d]++;\n\
+      \        if (out_idx_{clean_id}[d] < {clean_id}.shape[d]) break;\n        out_idx_{clean_id}[d]\
+      \ = 0;\n    }}\n}}\n"
+  softmax:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nint rows = {clean_id}.size()\
+      \ / {D};\nfor (int r = 0; r < rows; ++r) {{\n    float max_val = -1e38f;\n \
+      \   #pragma omp simd reduction(max:max_val)\n    for (int j = 0; j < {D}; ++j)\
+      \ {{ max_val = std::max(max_val, {in0}.data[r * {D} + j]); }}\n    float sum_exp\
+      \ = 0.0f;\n    #pragma omp simd reduction(+:sum_exp)\n    for (int j = 0; j\
+      \ < {D}; ++j) {{ sum_exp += std::exp({in0}.data[r * {D} + j] - max_val); }}\n\
+      \    float inv_sum = 1.0f / sum_exp;\n    #pragma omp simd\n    for (int j =\
+      \ 0; j < {D}; ++j) {{\n        {clean_id}.data[r * {D} + j] = std::exp({in0}.data[r\
+      \ * {D} + j] - max_val) * inv_sum;\n    }}\n}}\n"
+  ternary:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nstd::vector<int> idx_{clean_id}({rank},\
+      \ 0);\nfor(size_t i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.get(idx_{clean_id});\n\
+      \    float in1_val = {in1}.get(idx_{clean_id});\n    float in2_val = {in2}.get(idx_{clean_id});\n\
+      \    {clean_id}.data[i] = {scalar_expr};\n    for(int d = {rank}-1; d >= 0;\
+      \ --d) {{\n        idx_{clean_id}[d]++;\n        if (idx_{clean_id}[d] < {clean_id}.shape[d])\
+      \ break;\n        idx_{clean_id}[d] = 0;\n    }}\n}}\n"
+  tiled_matmul_2d:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nconst size_t TILE = 32;\n\
+      #pragma omp parallel for collapse(2)\nfor (size_t i = 0; i < {M}; i += TILE)\
+      \ {{\n    for (size_t j = 0; j < {N}; j += TILE) {{\n        for (size_t k =\
+      \ 0; k < {K}; k += TILE) {{\n            for (size_t ii = i; ii < std::min(i\
+      \ + TILE, (size_t){M}); ++ii) {{\n                for (size_t jj = j; jj < std::min(j\
+      \ + TILE, (size_t){N}); ++jj) {{\n                    float acc = (k == 0) ?\
+      \ 0.0f : {clean_id}.data[ii * {N} + jj];\n                    #pragma omp simd\
+      \ reduction(+:acc)\n                    for (size_t kk = k; kk < std::min(k\
+      \ + TILE, (size_t){K}); ++kk) {{\n                        acc += {in0}.data[ii\
+      \ * {K} + kk] * {in1}.data[kk * {N} + jj];\n                    }}\n       \
+      \             {clean_id}.data[ii * {N} + jj] = acc;\n                }}\n  \
+      \          }}\n        }}\n    }}\n}}\n"
+  unary:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\n#pragma omp simd\nfor(size_t\
+      \ i=0; i<{clean_id}.size(); ++i) {{\n    float in0_val = {in0}.data[i];\n  \
+      \  {clean_id}.data[i] = {scalar_expr};\n}}\n"
+  unimplemented_fallback:
+    body: 'NDArrayView<float> {clean_id}({out_shape_str}); // Fallback Unimplemented
+      {op}
+
+      #pragma omp simd
+
+      for(size_t i=0; i<{clean_id}.size(); ++i) {{ {clean_id}.data[i] = 0.0f; }}
+
+      '
+  warp_shuffle_reduce:
+    body: "NDArrayView<float> {clean_id}({out_shape_str});\nfloat total_sum = 0.0f;\n\
+      #pragma omp parallel for reduction(+:total_sum)\nfor (size_t i = 0; i < {in0}.size();\
+      \ ++i) {{\n    total_sum += {in0}.data[i];\n}}\n{clean_id}.data[0] = total_sum;\n"

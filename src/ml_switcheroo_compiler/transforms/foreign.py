@@ -7,36 +7,26 @@ Tools for ingesting external graphs like Torch FX and JAX jaxpr.
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
-def _handle_fx_placeholder(node, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Handle a Torch FX placeholder node.
-
-    Args:
-        node (object): The FX node.
-        graph (LogicalGraph): The logical graph.
-        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
-    """
+def _handle_fx_placeholder(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
     node_map[node.name] = node.name
 
 
-def _handle_fx_call_function(node, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Handle a Torch FX call_function node.
-
-    Args:
-        node (object): The FX node.
-        graph (LogicalGraph): The logical graph.
-        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
-    """
-    target_name = getattr(node.target, "__name__", str(node.target))
+def _handle_fx_call_method(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
+    target_name = str(node.target)
 
     op_map = {
-        "add": "Add",
-        "mul": "Mul",
+        "view": "Reshape",
+        "reshape": "Reshape",
+        "permute": "Transpose",
+        "transpose": "Transpose",
+        "contiguous": "Identity",
+        "relu": "Relu",
+        "flatten": "Flatten",
+        "unsqueeze": "Unsqueeze",
+        "squeeze": "Squeeze",
     }
-    op_type = "Unknown"
-    for key, val in op_map.items():
-        if key in target_name:
-            op_type = val
-            break
+
+    op_type = op_map.get(target_name, "Unknown")
 
     inputs = []
     for arg in node.args:
@@ -45,12 +35,20 @@ def _handle_fx_call_function(node, graph: LogicalGraph, node_map: dict[str, str]
         else:
             inputs.append(str(arg))
 
+    attributes = {}
+    if hasattr(node, "kwargs"):
+        for k, v in node.kwargs.items():
+            if isinstance(v, (list, tuple)):
+                attributes[k] = list(v)
+            elif isinstance(v, (int, float, str, bool)):
+                attributes[k] = v
+
     l_node = LogicalNode(
         id=node.name,
         op_type=op_type,
         domain="ai.onnx",
         version=1,
-        attributes={},
+        attributes=attributes,
         inputs=inputs,
         shape_metadata=(),
     )
@@ -58,35 +56,172 @@ def _handle_fx_call_function(node, graph: LogicalGraph, node_map: dict[str, str]
     node_map[node.name] = node.name
 
 
-def _handle_fx_output(node, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Handle a Torch FX output node.
+def _handle_fx_call_module(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
+    target_name = str(node.target)
+    op_type = "CallModule"
 
-    Args:
-        node (object): The FX node.
-        graph (LogicalGraph): The logical graph.
-        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
-    """
+    if target_name in modules:
+        mod = modules[target_name]
+        mod_type = type(mod).__name__
+        if "Conv" in mod_type:
+            op_type = "Conv"
+        elif "BatchNorm" in mod_type:
+            op_type = "BatchNormalization"
+        elif "LayerNorm" in mod_type:
+            op_type = "LayerNormalization"
+        elif "GroupNorm" in mod_type:
+            op_type = "GroupNormalization"
+        elif "Linear" in mod_type:
+            op_type = "Gemm"
+        elif "Dropout" in mod_type:
+            op_type = "Dropout"
+        elif "ReLU" in mod_type:
+            op_type = "Relu"
+        elif "MaxPool" in mod_type:
+            op_type = "MaxPool"
+        elif "AvgPool" in mod_type:
+            op_type = "AveragePool"
+
+    inputs = []
+    for arg in node.args:
+        if hasattr(arg, "name") and arg.name in node_map:
+            inputs.append(node_map[arg.name])
+        else:
+            inputs.append(str(arg))
+
+    attributes = {}
+    if hasattr(node, "kwargs"):
+        for k, v in node.kwargs.items():
+            if isinstance(v, (list, tuple)):
+                attributes[k] = list(v)
+            elif isinstance(v, (int, float, str, bool)):
+                attributes[k] = v
+
+    l_node = LogicalNode(
+        id=node.name,
+        op_type=op_type,
+        domain="ai.onnx",
+        version=1,
+        attributes=attributes,
+        inputs=inputs,
+        shape_metadata=(),
+    )
+    graph.nodes[node.name] = l_node
+    node_map[node.name] = node.name
+
+
+def _handle_fx_get_attr(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
+    l_node = LogicalNode(
+        id=node.name,
+        op_type="Constant",
+        domain="ai.onnx",
+        version=1,
+        attributes={"target": str(node.target)},
+        inputs=[],
+        shape_metadata=(),
+    )
+    graph.nodes[node.name] = l_node
+    node_map[node.name] = node.name
+
+
+def _handle_fx_call_function(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
+    target_name = getattr(node.target, "__name__", str(node.target))
+
+    op_map = {
+        "add": "Add",
+        "sub": "Sub",
+        "mul": "Mul",
+        "div": "Div",
+        "neg": "Neg",
+        "pow": "Pow",
+        "abs": "Abs",
+        "exp": "Exp",
+        "log": "Log",
+        "sqrt": "Sqrt",
+        "sin": "Sin",
+        "cos": "Cos",
+        "tan": "Tan",
+        "tanh": "Tanh",
+        "sigmoid": "Sigmoid",
+        "matmul": "MatMul",
+        "bmm": "MatMul",
+        "linear": "Gemm",
+        "mm": "MatMul",
+        "conv1d": "Conv",
+        "conv2d": "Conv",
+        "conv3d": "Conv",
+        "max_pool2d": "MaxPool",
+        "avg_pool2d": "AveragePool",
+        "batch_norm": "BatchNormalization",
+        "layer_norm": "LayerNormalization",
+        "group_norm": "GroupNormalization",
+        "sum": "ReduceSum",
+        "mean": "ReduceMean",
+        "max": "ReduceMax",
+        "min": "ReduceMin",
+        "argmax": "ArgMax",
+        "argmin": "ArgMin",
+        "slice": "Slice",
+        "gather": "Gather",
+        "scatter": "ScatterND",
+        "cat": "Concat",
+        "stack": "Concat",
+        "relu": "Relu",
+    }
+
+    op_type = "Unknown"
+
+    # Exact match first, then fallback
+    if target_name in op_map:
+        op_type = op_map[target_name]
+    else:
+        for key, val in op_map.items():
+            if target_name.startswith(key + "_") or target_name.endswith("." + key):
+                op_type = val
+                break
+
+    inputs = []
+    for arg in node.args:
+        if hasattr(arg, "name") and arg.name in node_map:
+            inputs.append(node_map[arg.name])
+        else:
+            inputs.append(str(arg))
+
+    attributes = {}
+    if hasattr(node, "kwargs"):
+        for k, v in node.kwargs.items():
+            if isinstance(v, (list, tuple)):
+                attributes[k] = list(v)
+            elif isinstance(v, (int, float, str, bool)):
+                attributes[k] = v
+
+    l_node = LogicalNode(
+        id=node.name,
+        op_type=op_type,
+        domain="ai.onnx",
+        version=1,
+        attributes=attributes,
+        inputs=inputs,
+        shape_metadata=(),
+    )
+    graph.nodes[node.name] = l_node
+    node_map[node.name] = node.name
+
+
+def _handle_fx_output(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
     outputs = []
     args = node.args[0]
     if isinstance(args, tuple):
         outputs.extend([arg.name for arg in args if hasattr(arg, "name")])
     elif hasattr(args, "name"):
         outputs.append(args.name)
+    elif isinstance(args, list):
+        outputs.extend([arg.name for arg in args if hasattr(arg, "name")])
     graph.outputs = outputs
 
 
 def ingest_torch_fx(fx_graph_module) -> LogicalGraph:
-    """Ingests a Torch FX GraphModule and converts it to a LogicalGraph.
-
-    Args:
-        fx_graph_module (object): The Torch FX GraphModule.
-
-    Returns:
-        LogicalGraph: The converted LogicalGraph.
-
-    Raises:
-        ValueError: If fx_graph_module is None.
-    """
+    """Ingest Torch FX graph module."""
     if fx_graph_module is None:
         raise ValueError("Torch FX GraphModule cannot be None")
 
@@ -98,24 +233,29 @@ def ingest_torch_fx(fx_graph_module) -> LogicalGraph:
     handlers = {
         "placeholder": _handle_fx_placeholder,
         "call_function": _handle_fx_call_function,
+        "call_method": _handle_fx_call_method,
+        "call_module": _handle_fx_call_module,
+        "get_attr": _handle_fx_get_attr,
         "output": _handle_fx_output,
     }
+
+    modules = {}
+    if hasattr(fx_graph_module, "named_modules"):
+        try:
+            modules = dict(fx_graph_module.named_modules())
+        except Exception:
+            pass
 
     node_map: dict[str, str] = {}
     for node in fx_graph_module.graph.nodes:
         if node.op in handlers:
-            handlers[node.op](node, graph, node_map)
-
+            handlers[node.op](node, graph, node_map, modules)
+        else:
+            pass
     return graph
 
 
 def _extract_jaxpr_constants(jaxpr, graph: LogicalGraph) -> None:
-    """Extract constants from a JAX jaxpr.
-
-    Args:
-        jaxpr (object): The JAX jaxpr.
-        graph (LogicalGraph): The logical graph to populate.
-    """
     if hasattr(jaxpr, "consts"):
         constvars = getattr(jaxpr, "constvars", None)
         for i, const_val in enumerate(jaxpr.consts):
@@ -133,12 +273,6 @@ def _extract_jaxpr_constants(jaxpr, graph: LogicalGraph) -> None:
 
 
 def _translate_jax_equation(eqn, graph: LogicalGraph) -> None:
-    """Translate a JAX equation into a logical node.
-
-    Args:
-        eqn (object): The JAX equation.
-        graph (LogicalGraph): The logical graph.
-    """
     op_type = "Unknown"
     primitive_name = getattr(eqn.primitive, "name", str(eqn.primitive))
     if primitive_name == "add":
@@ -152,30 +286,33 @@ def _translate_jax_equation(eqn, graph: LogicalGraph) -> None:
 
     out_id = str(id(eqn.outvars[0])) if eqn.outvars else "out"
 
+    attributes = {}
+    if hasattr(eqn, "params"):
+        for k, v in eqn.params.items():
+            if isinstance(v, (list, tuple)):
+                attributes[k] = list(v)
+            elif isinstance(v, (int, float, str, bool)):
+                attributes[k] = v
+
+    shape_metadata = ()
+    if eqn.outvars and hasattr(eqn.outvars[0], "aval") and hasattr(eqn.outvars[0].aval, "shape"):
+        shape_metadata = tuple(eqn.outvars[0].aval.shape)
+
     l_node = LogicalNode(
         id=out_id,
         op_type=op_type,
         domain="ai.onnx",
         version=1,
-        attributes={},
+        attributes=attributes,
         inputs=inputs,
-        shape_metadata=(),
+        shape_metadata=shape_metadata,
     )
+
     graph.nodes[out_id] = l_node
 
 
 def ingest_jaxpr(jaxpr) -> LogicalGraph:
-    """Ingests a JAX jaxpr and converts it to a LogicalGraph.
-
-    Args:
-        jaxpr (object): The JAX jaxpr.
-
-    Returns:
-        LogicalGraph: The converted LogicalGraph.
-
-    Raises:
-        ValueError: If fx_graph_module is None.
-    """
+    """Ingest JAX jaxpr."""
     if jaxpr is None:
         raise ValueError("JAX jaxpr cannot be None")
 

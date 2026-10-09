@@ -20,6 +20,31 @@ class JAXCodeGenerator(BaseGenerator):
     """JAX code generator."""
 
     @classmethod
+    def get_memory_info(cls, device=None):
+        """Get memory info."""
+        import jax
+
+        try:
+            dev = jax.local_devices()[0]
+            stats = dev.memory_stats()
+            return {"current": stats.get("bytes_in_use", 0), "peak": stats.get("peak_bytes_in_use", 0)}
+        except Exception:
+            psutil = __import__("psutil")
+            rss = psutil.Process().memory_info().rss
+            return {"current": rss, "peak": rss}
+
+    @classmethod
+    def initialize_distributed(cls, *args, **kwargs):
+        """Initialize distributed context."""
+        import jax.distributed
+
+        backend_config = kwargs.get("backend_config")
+        if backend_config:
+            jax.distributed.initialize(coordinator_address=backend_config.options.get("coordinator_address") if backend_config.options else None, num_processes=backend_config.world_size, process_id=backend_config.rank)
+        else:
+            jax.distributed.initialize()
+
+    @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load.
 

@@ -38,6 +38,26 @@ class CreateToken(OpDef):
 
     op_name = "CreateToken"
 
+    def infer_shape(self, *args, **kwargs):
+        """Infer shape.
+
+        Args:
+            *args (Any): Positional args.
+            **kwargs (Any): Keyword args.
+
+        Returns:
+            tuple: Shape tuple.
+        """
+        if not args:
+            return ()
+
+        a = args[0]
+        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        max_length = kwargs.get("max_length")
+        if max_length is not None:
+            return shape + (max_length,)
+        return shape
+
 
 def create_token(
     *args: str | int | float | bool,

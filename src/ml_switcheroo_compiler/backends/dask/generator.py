@@ -16,6 +16,24 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 class DaskGenerator(PythonStringGenerator):
     """Generate Dask python code from IR."""
 
+    @classmethod
+    def get_memory_info(cls, device=None):
+        """Get memory info."""
+        psutil = __import__("psutil")
+        rss = psutil.Process().memory_info().rss
+        return {"current": rss, "peak": rss}
+
+    @classmethod
+    def initialize_distributed(cls, *args, **kwargs):
+        """Initialize distributed context."""
+        from dask.distributed import Client
+
+        backend_config = kwargs.get("backend_config")
+        if backend_config and hasattr(backend_config, "options") and backend_config.options and "scheduler_address" in backend_config.options:
+            Client(backend_config.options["scheduler_address"])
+        else:
+            Client()
+
     def __init__(self, graph: IRGraph) -> None:
         """Init.
 

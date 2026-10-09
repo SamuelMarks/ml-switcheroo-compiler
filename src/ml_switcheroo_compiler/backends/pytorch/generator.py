@@ -15,6 +15,30 @@ from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTor
 class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerator):
     """PyTorch code generator."""
 
+    @classmethod
+    def get_memory_info(cls, device=None):
+        """Get memory info."""
+        import torch
+
+        if torch.cuda.is_available() and (device is None or "cuda" in str(device)):
+            dev = device if device is not None else "cuda"
+            return {"current": torch.cuda.memory_allocated(dev), "peak": torch.cuda.max_memory_allocated(dev)}
+        psutil = __import__("psutil")
+        rss = psutil.Process().memory_info().rss
+        return {"current": rss, "peak": rss}
+
+    @classmethod
+    def initialize_distributed(cls, *args, **kwargs):
+        """Initialize distributed context."""
+        import torch.distributed
+
+        backend_config = kwargs.get("backend_config")
+        if not torch.distributed.is_initialized():
+            if backend_config:
+                torch.distributed.init_process_group(backend=backend_config.backend, init_method=backend_config.init_method, world_size=backend_config.world_size, rank=backend_config.rank)
+            else:
+                pass
+
     _base_class_name: str = "nn.Module"
 
     def __init__(self, graph: IRGraph) -> None:

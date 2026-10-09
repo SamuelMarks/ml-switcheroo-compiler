@@ -54,7 +54,7 @@ def _worker_all_to_all(rank: int, world_size: int, return_dict: dict) -> None:
 def test_multiprocess_all_reduce() -> None:
     """Test multi-process AllReduce across 4 processes."""
     world_size = 4
-    ctx = mp.get_context("fork")
+    ctx = mp.get_context("spawn")
     manager = ctx.Manager()
     return_dict = manager.dict()
 
@@ -76,7 +76,7 @@ def test_multiprocess_all_reduce() -> None:
 def test_multiprocess_all_gather() -> None:
     """Test multi-process AllGather across 4 processes."""
     world_size = 4
-    ctx = mp.get_context("fork")
+    ctx = mp.get_context("spawn")
     manager = ctx.Manager()
     return_dict = manager.dict()
 
@@ -97,7 +97,7 @@ def test_multiprocess_all_gather() -> None:
 def test_multiprocess_reduce_scatter() -> None:
     """Test multi-process ReduceScatter across 4 processes."""
     world_size = 4
-    ctx = mp.get_context("fork")
+    ctx = mp.get_context("spawn")
     manager = ctx.Manager()
     return_dict = manager.dict()
 
@@ -125,7 +125,7 @@ def test_multiprocess_reduce_scatter() -> None:
 def test_multiprocess_all_to_all() -> None:
     """Test multi-process AllToAll across 4 processes."""
     world_size = 4
-    ctx = mp.get_context("fork")
+    ctx = mp.get_context("spawn")
     manager = ctx.Manager()
     return_dict = manager.dict()
 
