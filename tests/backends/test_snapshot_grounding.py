@@ -1308,7 +1308,7 @@ def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -
     assert len(endpoints_set) == 0
 
     class MockEngineRaising:
-        def _discover_target_files(self, fw: str) -> bool:
+        def load_target(self, fw: str) -> dict[str, ExtendedGhostRef]:
             raise RuntimeError("discover failed")
 
     _populate_from_grounding_engine(MockEngineRaising(), MockTarget(), endpoints_set, {}, {})  # type: ignore[arg-type]
@@ -1337,6 +1337,16 @@ def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -
         endpoints_set2,
         item_map_unhydrated,
         ref_map2,
+    )
+
+    # 7b. _populate_from_snapshot_data with sym already in ref_map
+    item_map_already: dict[str, dict[str, object]] = {"already": {"name": "a", "api_path": "b"}}
+    ref_map_already: dict[str, ExtendedGhostRef] = {"already": dummy_ref_empty}
+    _populate_from_snapshot_data(
+        [],
+        set(),
+        item_map_already,
+        ref_map_already,
     )
 
     # 8. _param_to_dict with callable model_dump returning non-dict

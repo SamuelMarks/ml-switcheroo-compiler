@@ -191,8 +191,12 @@ def bitwise_and(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def bitwise_or(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def bitwise_xor(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def block_lstm(seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, forget_bias: int = ..., cell_clip: int = ..., use_peephole: bool = ..., name: Tensor = ...) -> Tensor: ...
-def block_lstm_grad(seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, i: Tensor, cs: Tensor, f: Tensor, o: Tensor, ci: Tensor, co: Tensor, h: Tensor, cs_grad: Tensor, h_grad: Tensor, use_peephole: bool, name: Tensor = ...) -> Tensor: ...
-def block_lstm_grad_v2(seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, i: Tensor, cs: Tensor, f: Tensor, o: Tensor, ci: Tensor, co: Tensor, h: Tensor, cs_grad: Tensor, h_grad: Tensor, use_peephole: bool, name: Tensor = ...) -> Tensor: ...
+def block_lstm_grad(
+    seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, i: Tensor, cs: Tensor, f: Tensor, o: Tensor, ci: Tensor, co: Tensor, h: Tensor, cs_grad: Tensor, h_grad: Tensor, use_peephole: bool, name: Tensor = ...
+) -> Tensor: ...
+def block_lstm_grad_v2(
+    seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, i: Tensor, cs: Tensor, f: Tensor, o: Tensor, ci: Tensor, co: Tensor, h: Tensor, cs_grad: Tensor, h_grad: Tensor, use_peephole: bool, name: Tensor = ...
+) -> Tensor: ...
 def block_lstmv2(seq_len_max: Tensor, x: Tensor, cs_prev: Tensor, h_prev: Tensor, w: Tensor, wci: Tensor, wcf: Tensor, wco: Tensor, b: Tensor, cell_clip: int = ..., use_peephole: bool = ..., name: Tensor = ...) -> Tensor: ...
 def boolean_mask_v2(tensor: Tensor, mask: bool, axis: Tensor = ..., name: str = ...) -> Tensor: ...
 def boosted_trees_aggregate_stats(node_ids: Tensor, gradients: Tensor, hessians: Tensor, feature: Tensor, max_splits: int, num_buckets: int, name: Tensor = ...) -> Tensor: ...
@@ -218,10 +222,27 @@ def boosted_trees_quantile_stream_resource_get_bucket_boundaries(quantile_stream
 def boosted_trees_quantile_stream_resource_handle_op(container: str = ..., shared_name: str = ..., name: Tensor = ...) -> Tensor: ...
 def boosted_trees_serialize_ensemble(tree_ensemble_handle: Tensor, name: Tensor = ...) -> Tensor: ...
 def boosted_trees_sparse_aggregate_stats(node_ids: Tensor, gradients: Tensor, hessians: Tensor, feature_indices: Tensor, feature_values: Tensor, feature_shape: Tensor, max_splits: int, num_buckets: int, name: Tensor = ...) -> Tensor: ...
-def boosted_trees_sparse_calculate_best_feature_split(node_id_range: Tensor, stats_summary_indices: Tensor, stats_summary_values: Tensor, stats_summary_shape: Tensor, l1: Tensor, l2: Tensor, tree_complexity: Tensor, min_node_weight: Tensor, logits_dimension: int, split_type: str = ..., name: Tensor = ...) -> Tensor: ...
+def boosted_trees_sparse_calculate_best_feature_split(
+    node_id_range: Tensor, stats_summary_indices: Tensor, stats_summary_values: Tensor, stats_summary_shape: Tensor, l1: Tensor, l2: Tensor, tree_complexity: Tensor, min_node_weight: Tensor, logits_dimension: int, split_type: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def boosted_trees_training_predict(tree_ensemble_handle: Tensor, cached_tree_ids: Tensor, cached_node_ids: Tensor, bucketized_features: Tensor, logits_dimension: int, name: Tensor = ...) -> Tensor: ...
 def boosted_trees_update_ensemble(tree_ensemble_handle: Tensor, feature_ids: Tensor, node_ids: Tensor, gains: Tensor, thresholds: Tensor, left_node_contribs: Tensor, right_node_contribs: Tensor, max_depth: Tensor, learning_rate: Tensor, pruning_mode: int, name: Tensor = ...) -> Tensor: ...
-def boosted_trees_update_ensemble_v2(tree_ensemble_handle: Tensor, feature_ids: Tensor, dimension_ids: Tensor, node_ids: Tensor, gains: Tensor, thresholds: Tensor, left_node_contribs: Tensor, right_node_contribs: Tensor, split_types: Tensor, max_depth: Tensor, learning_rate: Tensor, pruning_mode: Tensor, logits_dimension: int = ..., name: Tensor = ...) -> Tensor: ...
+def boosted_trees_update_ensemble_v2(
+    tree_ensemble_handle: Tensor,
+    feature_ids: Tensor,
+    dimension_ids: Tensor,
+    node_ids: Tensor,
+    gains: Tensor,
+    thresholds: Tensor,
+    left_node_contribs: Tensor,
+    right_node_contribs: Tensor,
+    split_types: Tensor,
+    max_depth: Tensor,
+    learning_rate: Tensor,
+    pruning_mode: Tensor,
+    logits_dimension: int = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def broadcast_args(s0: Tensor, s1: Tensor, name: Tensor = ...) -> Tensor: ...
 def broadcast_dynamic_shape(shape_x: Tensor, shape_y: Tensor) -> Tensor: ...
 def broadcast_gradient_args(s0: Tensor, s1: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -261,8 +282,12 @@ def collective_gather_v2(input: Tensor, group_size: Tensor, group_key: Tensor, i
 def collective_initialize_communicator(group_key: Tensor, rank: Tensor, group_size: Tensor, communication_hint: str = ..., timeout_seconds: int = ..., name: Tensor = ...) -> Tensor: ...
 def collective_permute(input: Tensor, source_target_pairs: Tensor, name: Tensor = ...) -> Tensor: ...
 def collective_reduce(input: Tensor, group_size: int, group_key: int, instance_key: int, merge_op: str, final_op: str, subdiv_offsets: Tensor, wait_for: str = ..., communication_hint: str = ..., timeout_seconds: int = ..., name: Tensor = ...) -> Tensor: ...
-def collective_reduce_scatter_v2(input: Tensor, group_size: Tensor, group_key: Tensor, instance_key: Tensor, ordering_token: Tensor, merge_op: str, final_op: str, communication_hint: str = ..., timeout_seconds: int = ..., is_stateless: bool = ..., max_subdivs_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def collective_reduce_v2(input: Tensor, group_size: Tensor, group_key: Tensor, instance_key: Tensor, ordering_token: Tensor, merge_op: str, final_op: str, communication_hint: str = ..., timeout_seconds: int = ..., is_stateless: bool = ..., max_subdivs_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
+def collective_reduce_scatter_v2(
+    input: Tensor, group_size: Tensor, group_key: Tensor, instance_key: Tensor, ordering_token: Tensor, merge_op: str, final_op: str, communication_hint: str = ..., timeout_seconds: int = ..., is_stateless: bool = ..., max_subdivs_per_device: float = ..., name: Tensor = ...
+) -> Tensor: ...
+def collective_reduce_v2(
+    input: Tensor, group_size: Tensor, group_key: Tensor, instance_key: Tensor, ordering_token: Tensor, merge_op: str, final_op: str, communication_hint: str = ..., timeout_seconds: int = ..., is_stateless: bool = ..., max_subdivs_per_device: float = ..., name: Tensor = ...
+) -> Tensor: ...
 def collective_reduce_v3(input: Tensor, communicator: Tensor, group_assignment: Tensor, reduction: str, timeout_seconds: int = ..., name: Tensor = ...) -> Tensor: ...
 def combined_non_max_suppression(boxes: float, scores: Tensor, max_output_size_per_class: Tensor, max_total_size: Tensor, iou_threshold: float = ..., score_threshold: float = ..., pad_per_class: bool = ..., clip_boxes: bool = ..., name: Tensor = ...) -> Tensor: ...
 def complex(real: Tensor, imag: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -310,8 +335,25 @@ def conv3d_v2(input: Tensor, filters: Tensor, strides: Tensor, padding: Tensor, 
 def conv_transpose(input: Tensor, filters: Tensor, output_shape: Tensor, strides: Tensor, padding: Tensor = ..., data_format: Tensor = ..., dilations: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def convert_image_dtype(image: Tensor, dtype: Tensor, saturate: bool = ..., name: Tensor = ...) -> Tensor: ...
 def convert_to_coo_tensor(indices_or_row_splits: Tensor, values: Tensor, weights: Tensor, sample_count: int, combiner: str, name: Tensor = ...) -> Tensor: ...
-def convert_to_list_of_sparse_core_coo_tensors(indices_or_row_splits: Tensor, values: Tensor, weights: Tensor, sample_count: int, num_sc_per_chip: int, row_offset: int, col_offset: int, col_shift: int, num_sc_shards: int, stacked_table_sample_count: int, combiner: str, name: Tensor = ...) -> Tensor: ...
-def convert_to_sparse_core_csr_wrapped_coo_tensor(sorted_row_ids_list: Tensor, sorted_col_ids_list: Tensor, sorted_gains_list: Tensor, id_counts_list: Tensor, splits: Tensor, sample_count_per_sc: int, num_replica: int, max_minibatches_per_sc: int, max_ids_per_chip_per_sample: int, table_vocab_size: int, feature_width: int, table_name: str, allow_id_dropping: bool, name: Tensor = ...) -> Tensor: ...
+def convert_to_list_of_sparse_core_coo_tensors(
+    indices_or_row_splits: Tensor, values: Tensor, weights: Tensor, sample_count: int, num_sc_per_chip: int, row_offset: int, col_offset: int, col_shift: int, num_sc_shards: int, stacked_table_sample_count: int, combiner: str, name: Tensor = ...
+) -> Tensor: ...
+def convert_to_sparse_core_csr_wrapped_coo_tensor(
+    sorted_row_ids_list: Tensor,
+    sorted_col_ids_list: Tensor,
+    sorted_gains_list: Tensor,
+    id_counts_list: Tensor,
+    splits: Tensor,
+    sample_count_per_sc: int,
+    num_replica: int,
+    max_minibatches_per_sc: int,
+    max_ids_per_chip_per_sample: int,
+    table_vocab_size: int,
+    feature_width: int,
+    table_name: str,
+    allow_id_dropping: bool,
+    name: Tensor = ...,
+) -> Tensor: ...
 def convert_to_tensor_v2_with_dispatch(value: Tensor, dtype: Tensor = ..., dtype_hint: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def convolution_v2(input: Tensor, filters: Tensor, strides: Tensor = ..., padding: str = ..., data_format: Tensor = ..., dilations: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def copy(input: Tensor, tensor_name: str = ..., debug_ops_spec: str = ..., name: Tensor = ...) -> Tensor: ...
@@ -343,26 +385,178 @@ def ctc_loss_v2(inputs: Tensor, labels_indices: Tensor, labels_values: Tensor, s
 def ctc_loss_v3(labels: Tensor, logits: Tensor, label_length: Tensor, logit_length: Tensor, logits_time_major: bool = ..., unique: Tensor = ..., blank_index: Tensor = ..., name: str = ...) -> Tensor: ...
 def ctc_unique_labels(labels: Tensor, name: str = ...) -> Tensor: ...
 def cudnn_rnn(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., is_training: bool = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnn_backprop(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, output: Tensor, output_h: Tensor, output_c: Tensor, output_backprop: Tensor, output_h_backprop: Tensor, output_c_backprop: Tensor, reserve_space: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnn_backprop_v2(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, output: Tensor, output_h: Tensor, output_c: Tensor, output_backprop: Tensor, output_h_backprop: Tensor, output_c_backprop: Tensor, reserve_space: Tensor, host_reserved: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnn_backprop_v3(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, sequence_lengths: Tensor, output: Tensor, output_h: Tensor, output_c: Tensor, output_backprop: Tensor, output_h_backprop: Tensor, output_c_backprop: Tensor, reserve_space: Tensor, host_reserved: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., time_major: bool = ..., name: Tensor = ...) -> Tensor: ...
+def cudnn_rnn_backprop(
+    input: Tensor,
+    input_h: Tensor,
+    input_c: Tensor,
+    params: Tensor,
+    output: Tensor,
+    output_h: Tensor,
+    output_c: Tensor,
+    output_backprop: Tensor,
+    output_h_backprop: Tensor,
+    output_c_backprop: Tensor,
+    reserve_space: Tensor,
+    rnn_mode: str = ...,
+    input_mode: str = ...,
+    direction: str = ...,
+    dropout: int = ...,
+    seed: int = ...,
+    seed2: int = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def cudnn_rnn_backprop_v2(
+    input: Tensor,
+    input_h: Tensor,
+    input_c: Tensor,
+    params: Tensor,
+    output: Tensor,
+    output_h: Tensor,
+    output_c: Tensor,
+    output_backprop: Tensor,
+    output_h_backprop: Tensor,
+    output_c_backprop: Tensor,
+    reserve_space: Tensor,
+    host_reserved: Tensor,
+    rnn_mode: str = ...,
+    input_mode: str = ...,
+    direction: str = ...,
+    dropout: int = ...,
+    seed: int = ...,
+    seed2: int = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def cudnn_rnn_backprop_v3(
+    input: Tensor,
+    input_h: Tensor,
+    input_c: Tensor,
+    params: Tensor,
+    sequence_lengths: Tensor,
+    output: Tensor,
+    output_h: Tensor,
+    output_c: Tensor,
+    output_backprop: Tensor,
+    output_h_backprop: Tensor,
+    output_c_backprop: Tensor,
+    reserve_space: Tensor,
+    host_reserved: Tensor,
+    rnn_mode: str = ...,
+    input_mode: str = ...,
+    direction: str = ...,
+    dropout: int = ...,
+    seed: int = ...,
+    seed2: int = ...,
+    num_proj: int = ...,
+    time_major: bool = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def cudnn_rnn_canonical_to_params(num_layers: Tensor, num_units: Tensor, input_size: Tensor, weights: Tensor, biases: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnn_canonical_to_params_v2(num_layers: Tensor, num_units: Tensor, input_size: Tensor, weights: Tensor, biases: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., name: Tensor = ...) -> Tensor: ...
+def cudnn_rnn_canonical_to_params_v2(
+    num_layers: Tensor, num_units: Tensor, input_size: Tensor, weights: Tensor, biases: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., name: Tensor = ...
+) -> Tensor: ...
 def cudnn_rnn_params_size(num_layers: Tensor, num_units: Tensor, input_size: Tensor, T: Tensor, S: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., name: Tensor = ...) -> Tensor: ...
 def cudnn_rnn_params_to_canonical(num_layers: Tensor, num_units: Tensor, input_size: Tensor, params: Tensor, num_params: int, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnn_params_to_canonical_v2(num_layers: Tensor, num_units: Tensor, input_size: Tensor, params: Tensor, num_params_weights: int, num_params_biases: int, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., name: Tensor = ...) -> Tensor: ...
+def cudnn_rnn_params_to_canonical_v2(
+    num_layers: Tensor, num_units: Tensor, input_size: Tensor, params: Tensor, num_params_weights: int, num_params_biases: int, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., name: Tensor = ...
+) -> Tensor: ...
 def cudnn_rnnv2(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., is_training: bool = ..., name: Tensor = ...) -> Tensor: ...
-def cudnn_rnnv3(input: Tensor, input_h: Tensor, input_c: Tensor, params: Tensor, sequence_lengths: Tensor, rnn_mode: str = ..., input_mode: str = ..., direction: str = ..., dropout: int = ..., seed: int = ..., seed2: int = ..., num_proj: int = ..., is_training: bool = ..., time_major: bool = ..., name: Tensor = ...) -> Tensor: ...
+def cudnn_rnnv3(
+    input: Tensor,
+    input_h: Tensor,
+    input_c: Tensor,
+    params: Tensor,
+    sequence_lengths: Tensor,
+    rnn_mode: str = ...,
+    input_mode: str = ...,
+    direction: str = ...,
+    dropout: int = ...,
+    seed: int = ...,
+    seed2: int = ...,
+    num_proj: int = ...,
+    is_training: bool = ...,
+    time_major: bool = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def cumprod(x: Tensor, axis: str = ..., exclusive: bool = ..., reverse: bool = ..., name: Tensor = ...) -> Tensor: ...
 def cumsum(x: Tensor, axis: str = ..., exclusive: bool = ..., reverse: bool = ..., name: Tensor = ...) -> Tensor: ...
 def cumulative_logsumexp(x: Tensor, axis: str = ..., exclusive: bool = ..., reverse: bool = ..., name: Tensor = ...) -> Tensor: ...
 def custom_gradient(f: Tensor = ...) -> Tensor: ...
 def data_format_dim_map(x: Tensor, src_format: str = ..., dst_format: str = ..., name: Tensor = ...) -> Tensor: ...
 def data_format_vec_permute(x: Tensor, src_format: str = ..., dst_format: str = ..., name: Tensor = ...) -> Tensor: ...
-def data_service_dataset(dataset_id: Tensor, processing_mode: Tensor, address: Tensor, protocol: Tensor, job_name: Tensor, max_outstanding_requests: Tensor, iteration_counter: Tensor, output_types: Tensor, output_shapes: Tensor, task_refresh_interval_hint_ms: float = ..., data_transfer_protocol: str = ..., target_workers: str = ..., cross_trainer_cache_options: str = ..., name: Tensor = ...) -> Tensor: ...
-def data_service_dataset_v2(dataset_id: Tensor, processing_mode: Tensor, address: Tensor, protocol: Tensor, job_name: Tensor, consumer_index: Tensor, num_consumers: Tensor, max_outstanding_requests: Tensor, iteration_counter: Tensor, output_types: Tensor, output_shapes: Tensor, task_refresh_interval_hint_ms: float = ..., data_transfer_protocol: str = ..., target_workers: str = ..., cross_trainer_cache_options: str = ..., name: Tensor = ...) -> Tensor: ...
-def data_service_dataset_v3(dataset_id: Tensor, processing_mode: Tensor, address: Tensor, protocol: Tensor, job_name: Tensor, consumer_index: Tensor, num_consumers: Tensor, max_outstanding_requests: Tensor, iteration_counter: Tensor, output_types: Tensor, output_shapes: Tensor, uncompress_fn: Tensor, task_refresh_interval_hint_ms: float = ..., data_transfer_protocol: str = ..., target_workers: str = ..., uncompress: bool = ..., cross_trainer_cache_options: str = ..., name: Tensor = ...) -> Tensor: ...
-def data_service_dataset_v4(dataset_id: Tensor, processing_mode: Tensor, address: Tensor, protocol: Tensor, job_name: Tensor, consumer_index: Tensor, num_consumers: Tensor, max_outstanding_requests: Tensor, iteration_counter: Tensor, output_types: Tensor, output_shapes: Tensor, uncompress_fn: Tensor, task_refresh_interval_hint_ms: float = ..., data_transfer_protocol: str = ..., target_workers: str = ..., uncompress: bool = ..., cross_trainer_cache_options: str = ..., name: Tensor = ...) -> Tensor: ...
+def data_service_dataset(
+    dataset_id: Tensor,
+    processing_mode: Tensor,
+    address: Tensor,
+    protocol: Tensor,
+    job_name: Tensor,
+    max_outstanding_requests: Tensor,
+    iteration_counter: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    task_refresh_interval_hint_ms: float = ...,
+    data_transfer_protocol: str = ...,
+    target_workers: str = ...,
+    cross_trainer_cache_options: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def data_service_dataset_v2(
+    dataset_id: Tensor,
+    processing_mode: Tensor,
+    address: Tensor,
+    protocol: Tensor,
+    job_name: Tensor,
+    consumer_index: Tensor,
+    num_consumers: Tensor,
+    max_outstanding_requests: Tensor,
+    iteration_counter: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    task_refresh_interval_hint_ms: float = ...,
+    data_transfer_protocol: str = ...,
+    target_workers: str = ...,
+    cross_trainer_cache_options: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def data_service_dataset_v3(
+    dataset_id: Tensor,
+    processing_mode: Tensor,
+    address: Tensor,
+    protocol: Tensor,
+    job_name: Tensor,
+    consumer_index: Tensor,
+    num_consumers: Tensor,
+    max_outstanding_requests: Tensor,
+    iteration_counter: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    uncompress_fn: Tensor,
+    task_refresh_interval_hint_ms: float = ...,
+    data_transfer_protocol: str = ...,
+    target_workers: str = ...,
+    uncompress: bool = ...,
+    cross_trainer_cache_options: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def data_service_dataset_v4(
+    dataset_id: Tensor,
+    processing_mode: Tensor,
+    address: Tensor,
+    protocol: Tensor,
+    job_name: Tensor,
+    consumer_index: Tensor,
+    num_consumers: Tensor,
+    max_outstanding_requests: Tensor,
+    iteration_counter: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    uncompress_fn: Tensor,
+    task_refresh_interval_hint_ms: float = ...,
+    data_transfer_protocol: str = ...,
+    target_workers: str = ...,
+    uncompress: bool = ...,
+    cross_trainer_cache_options: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def dataset_cardinality(input_dataset: Tensor, cardinality_options: str = ..., name: Tensor = ...) -> Tensor: ...
 def dataset_fingerprint(input_dataset: Tensor, name: Tensor = ...) -> Tensor: ...
 def dataset_from_graph(graph_def: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -442,7 +636,9 @@ def dummy_iteration_counter(name: Tensor = ...) -> Tensor: ...
 def dummy_memory_cache(name: Tensor = ...) -> Tensor: ...
 def dummy_seed_generator(name: Tensor = ...) -> Tensor: ...
 def dynamic_enqueue_tpu_embedding_arbitrary_tensor_batch(sample_indices_or_row_splits: Tensor, aggregation_weights: Tensor, embedding_indices: Tensor, mode_override: Tensor, device_ordinal: Tensor, combiners: Tensor = ..., name: Tensor = ...) -> Tensor: ...
-def dynamic_enqueue_tpu_embedding_ragged_tensor_batch(sample_splits: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, device_ordinal: Tensor, table_ids: Tensor, combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...) -> Tensor: ...
+def dynamic_enqueue_tpu_embedding_ragged_tensor_batch(
+    sample_splits: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, device_ordinal: Tensor, table_ids: Tensor, combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def dynamic_partition(data: Tensor, partitions: Tensor, num_partitions: int, name: Tensor = ...) -> Tensor: ...
 def dynamic_stitch(indices: Tensor, data: Tensor, name: Tensor = ...) -> Tensor: ...
 def eager_py_func(func: Tensor = ..., inp: Tensor = ..., Tout: Tensor = ..., name: Tensor = ...) -> Tensor: ...
@@ -465,9 +661,13 @@ def encode_proto(sizes: Tensor, values: Tensor, field_names: Tensor, message_typ
 def encode_wav(audio: Tensor, sample_rate: Tensor, name: Tensor = ...) -> Tensor: ...
 def enqueue_tpu_embedding_arbitrary_tensor_batch(sample_indices_or_row_splits: Tensor, aggregation_weights: Tensor, embedding_indices: Tensor, mode_override: Tensor, device_ordinal: int = ..., combiners: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def enqueue_tpu_embedding_integer_batch(batch: Tensor, mode_override: Tensor, device_ordinal: int = ..., name: Tensor = ...) -> Tensor: ...
-def enqueue_tpu_embedding_ragged_tensor_batch(sample_splits: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, table_ids: Tensor, device_ordinal: int = ..., combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...) -> Tensor: ...
+def enqueue_tpu_embedding_ragged_tensor_batch(
+    sample_splits: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, table_ids: Tensor, device_ordinal: int = ..., combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def enqueue_tpu_embedding_sparse_batch(sample_indices: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, device_ordinal: int = ..., combiners: str = ..., name: Tensor = ...) -> Tensor: ...
-def enqueue_tpu_embedding_sparse_tensor_batch(sample_indices: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, table_ids: Tensor, device_ordinal: int = ..., combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...) -> Tensor: ...
+def enqueue_tpu_embedding_sparse_tensor_batch(
+    sample_indices: Tensor, embedding_indices: Tensor, aggregation_weights: Tensor, mode_override: Tensor, table_ids: Tensor, device_ordinal: int = ..., combiners: str = ..., max_sequence_lengths: str = ..., num_features: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def ensure_shape(x: Tensor, shape: Tensor, name: str = ...) -> Tensor: ...
 def enter(data: Tensor, frame_name: str, is_constant: bool = ..., parallel_iterations: int = ..., name: Tensor = ...) -> Tensor: ...
 def equal(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -490,8 +690,23 @@ def experimental_dataset_cardinality(input_dataset: Tensor, name: Tensor = ...) 
 def experimental_dataset_to_tf_record(input_dataset: Tensor, filename: Tensor, compression_type: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_dense_to_sparse_batch_dataset(input_dataset: Tensor, batch_size: Tensor, row_shape: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_directed_interleave_dataset(selector_input_dataset: Tensor, data_input_datasets: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def experimental_group_by_reducer_dataset(input_dataset: Tensor, key_func_other_arguments: Tensor, init_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, finalize_func_other_arguments: Tensor, key_func: Tensor, init_func: Tensor, reduce_func: Tensor, finalize_func: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def experimental_group_by_window_dataset(input_dataset: Tensor, key_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, window_size_func_other_arguments: Tensor, key_func: Tensor, reduce_func: Tensor, window_size_func: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
+def experimental_group_by_reducer_dataset(
+    input_dataset: Tensor,
+    key_func_other_arguments: Tensor,
+    init_func_other_arguments: Tensor,
+    reduce_func_other_arguments: Tensor,
+    finalize_func_other_arguments: Tensor,
+    key_func: Tensor,
+    init_func: Tensor,
+    reduce_func: Tensor,
+    finalize_func: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    name: Tensor = ...,
+) -> Tensor: ...
+def experimental_group_by_window_dataset(
+    input_dataset: Tensor, key_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, window_size_func_other_arguments: Tensor, key_func: Tensor, reduce_func: Tensor, window_size_func: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...
+) -> Tensor: ...
 def experimental_ignore_errors_dataset(input_dataset: Tensor, output_types: Tensor, output_shapes: Tensor, log_warning: bool = ..., name: Tensor = ...) -> Tensor: ...
 def experimental_iterator_get_device(resource: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_latency_stats_dataset(input_dataset: Tensor, tag: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -501,7 +716,9 @@ def experimental_map_dataset(input_dataset: Tensor, other_arguments: Tensor, f: 
 def experimental_matching_files_dataset(patterns: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_max_intra_op_parallelism_dataset(input_dataset: Tensor, max_intra_op_parallelism: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_non_serializable_dataset(input_dataset: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def experimental_parallel_interleave_dataset(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, sloppy: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
+def experimental_parallel_interleave_dataset(
+    input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, sloppy: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...
+) -> Tensor: ...
 def experimental_parse_example_dataset(input_dataset: Tensor, num_parallel_calls: Tensor, dense_defaults: Tensor, sparse_keys: Tensor, dense_keys: Tensor, sparse_types: Tensor, dense_shapes: Tensor, output_types: Tensor, output_shapes: Tensor, sloppy: bool = ..., name: Tensor = ...) -> Tensor: ...
 def experimental_private_thread_pool_dataset(input_dataset: Tensor, num_threads: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
 def experimental_random_dataset(seed: Tensor, seed2: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -552,7 +769,9 @@ def fixed_length_record_dataset(filenames: Tensor, header_bytes: Tensor, record_
 def fixed_length_record_dataset_v2(filenames: Tensor, header_bytes: Tensor, record_bytes: Tensor, footer_bytes: Tensor, buffer_size: Tensor, compression_type: Tensor, metadata: str = ..., name: Tensor = ...) -> Tensor: ...
 def fixed_length_record_reader(record_bytes: int, header_bytes: int = ..., footer_bytes: int = ..., hop_bytes: int = ..., container: str = ..., shared_name: str = ..., name: Tensor = ...) -> Tensor: ...
 def fixed_length_record_reader_v2(record_bytes: int, header_bytes: int = ..., footer_bytes: int = ..., hop_bytes: int = ..., container: str = ..., shared_name: str = ..., encoding: str = ..., name: Tensor = ...) -> Tensor: ...
-def fixed_unigram_candidate_sampler(true_classes: Tensor, num_true: Tensor, num_sampled: Tensor, unique: bool, range_max: Tensor, vocab_file: str = ..., distortion: float = ..., num_reserved_ids: Tensor = ..., num_shards: int = ..., shard: int = ..., unigrams: Tensor = ..., seed: Tensor = ..., name: Tensor = ...) -> Tensor: ...
+def fixed_unigram_candidate_sampler(
+    true_classes: Tensor, num_true: Tensor, num_sampled: Tensor, unique: bool, range_max: Tensor, vocab_file: str = ..., distortion: float = ..., num_reserved_ids: Tensor = ..., num_shards: int = ..., shard: int = ..., unigrams: Tensor = ..., seed: Tensor = ..., name: Tensor = ...
+) -> Tensor: ...
 def flat_map_dataset(input_dataset: Tensor, other_arguments: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...) -> Tensor: ...
 def flip_left_right(image: Tensor) -> Tensor: ...
 def flip_up_down(image: Tensor) -> Tensor: ...
@@ -571,7 +790,19 @@ def fractional_max_pool_grad(orig_input: Tensor, orig_output: Tensor, out_backpr
 def fractional_max_pool_v2(value: Tensor, pooling_ratio: Tensor, pseudo_random: bool = ..., overlapping: bool = ..., seed: int = ..., name: Tensor = ...) -> Tensor: ...
 def fresnel_cos(x: Tensor, name: Tensor = ...) -> Tensor: ...
 def fresnel_sin(x: Tensor, name: Tensor = ...) -> Tensor: ...
-def function(func: Tensor = ..., input_signature: Tensor = ..., autograph: bool = ..., jit_compile: str = ..., reduce_retracing: bool = ..., experimental_implements: Tensor = ..., experimental_autograph_options: Tensor = ..., experimental_attributes: Tensor = ..., experimental_relax_shapes: Tensor = ..., experimental_compile: Tensor = ..., experimental_follow_type_hints: Tensor = ...) -> Tensor: ...
+def function(
+    func: Tensor = ...,
+    input_signature: Tensor = ...,
+    autograph: bool = ...,
+    jit_compile: str = ...,
+    reduce_retracing: bool = ...,
+    experimental_implements: Tensor = ...,
+    experimental_autograph_options: Tensor = ...,
+    experimental_attributes: Tensor = ...,
+    experimental_relax_shapes: Tensor = ...,
+    experimental_compile: Tensor = ...,
+    experimental_follow_type_hints: Tensor = ...,
+) -> Tensor: ...
 def fused_batch_norm_grad(y_backprop: Tensor, x: Tensor, scale: Tensor, reserve_space_1: Tensor, reserve_space_2: Tensor, epsilon: float = ..., data_format: str = ..., is_training: bool = ..., name: Tensor = ...) -> Tensor: ...
 def fused_batch_norm_grad_v2(y_backprop: Tensor, x: Tensor, scale: Tensor, reserve_space_1: Tensor, reserve_space_2: Tensor, epsilon: float = ..., data_format: str = ..., is_training: bool = ..., name: Tensor = ...) -> Tensor: ...
 def fused_batch_norm_grad_v3(y_backprop: Tensor, x: Tensor, scale: Tensor, reserve_space_1: Tensor, reserve_space_2: Tensor, reserve_space_3: Tensor, epsilon: float = ..., data_format: str = ..., is_training: bool = ..., name: Tensor = ...) -> Tensor: ...
@@ -591,12 +822,31 @@ def get_current_name_scope(*args: Tensor, **kwargs: Tensor) -> Tensor: ...
 def get_element_at_index(dataset: Tensor, index: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
 def get_logger(*args: Tensor, **kwargs: Tensor) -> Tensor: ...
 def get_minibatch_splits_with_physical_replica(program_key: Tensor, row_ids: Tensor, col_ids: Tensor, gains: Tensor, sample_count: int, num_replica: int, table_vocab_size: int, feature_width: int, num_sc_per_chip: int, table_name: str, mini_batch_splits: str, name: Tensor = ...) -> Tensor: ...
-def get_minibatches_in_csr_with_physical_replica(program_key: Tensor, row_ids: Tensor, col_ids: Tensor, gains: Tensor, splits: Tensor, id_counts: Tensor, sample_count: int, num_replica: int, max_minibatches_per_sc: int, max_ids_per_chip_per_sample: int, table_vocab_size: int, feature_width: int, num_sc_per_chip: int, table_name: str, mini_batch_in_csr: str, name: Tensor = ...) -> Tensor: ...
+def get_minibatches_in_csr_with_physical_replica(
+    program_key: Tensor,
+    row_ids: Tensor,
+    col_ids: Tensor,
+    gains: Tensor,
+    splits: Tensor,
+    id_counts: Tensor,
+    sample_count: int,
+    num_replica: int,
+    max_minibatches_per_sc: int,
+    max_ids_per_chip_per_sample: int,
+    table_vocab_size: int,
+    feature_width: int,
+    num_sc_per_chip: int,
+    table_name: str,
+    mini_batch_in_csr: str,
+    name: Tensor = ...,
+) -> Tensor: ...
 def get_options(input_dataset: Tensor, name: Tensor = ...) -> Tensor: ...
 def get_session_handle(value: Tensor, name: Tensor = ...) -> Tensor: ...
 def get_session_handle_v2(value: Tensor, name: Tensor = ...) -> Tensor: ...
 def get_session_tensor(handle: Tensor, dtype: Tensor, name: Tensor = ...) -> Tensor: ...
-def get_stats_from_list_of_sparse_core_coo_tensors(row_ids_list: Tensor, col_ids_list: Tensor, gains_list: Tensor, sample_count_list: Tensor, col_offset_list: Tensor, num_replica: int, table_vocab_size: int, feature_width: int, num_sc_per_chip: int, table_name: str, name: Tensor = ...) -> Tensor: ...
+def get_stats_from_list_of_sparse_core_coo_tensors(
+    row_ids_list: Tensor, col_ids_list: Tensor, gains_list: Tensor, sample_count_list: Tensor, col_offset_list: Tensor, num_replica: int, table_vocab_size: int, feature_width: int, num_sc_per_chip: int, table_name: str, name: Tensor = ...
+) -> Tensor: ...
 def global_iter_id(name: Tensor = ...) -> Tensor: ...
 def global_norm(t_list: Tensor, name: Tensor = ...) -> Tensor: ...
 def global_shuffle_dataset(input_dataset: Tensor, seed: Tensor, seed2: Tensor, seed_generator: Tensor, output_types: Tensor, output_shapes: Tensor, reshuffle_each_iteration: bool = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
@@ -606,8 +856,23 @@ def grayscale_to_rgb(images: Tensor, name: Tensor = ...) -> Tensor: ...
 def greater(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def greater_equal(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def group(name: Tensor, *inputs: Tensor, **kwargs: Tensor) -> Tensor: ...
-def group_by_reducer_dataset(input_dataset: Tensor, key_func_other_arguments: Tensor, init_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, finalize_func_other_arguments: Tensor, key_func: Tensor, init_func: Tensor, reduce_func: Tensor, finalize_func: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def group_by_window_dataset(input_dataset: Tensor, key_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, window_size_func_other_arguments: Tensor, key_func: Tensor, reduce_func: Tensor, window_size_func: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...) -> Tensor: ...
+def group_by_reducer_dataset(
+    input_dataset: Tensor,
+    key_func_other_arguments: Tensor,
+    init_func_other_arguments: Tensor,
+    reduce_func_other_arguments: Tensor,
+    finalize_func_other_arguments: Tensor,
+    key_func: Tensor,
+    init_func: Tensor,
+    reduce_func: Tensor,
+    finalize_func: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    name: Tensor = ...,
+) -> Tensor: ...
+def group_by_window_dataset(
+    input_dataset: Tensor, key_func_other_arguments: Tensor, reduce_func_other_arguments: Tensor, window_size_func_other_arguments: Tensor, key_func: Tensor, reduce_func: Tensor, window_size_func: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def gru_block_cell(x: Tensor, h_prev: Tensor, w_ru: Tensor, w_c: Tensor, b_ru: Tensor, b_c: Tensor, name: Tensor = ...) -> Tensor: ...
 def gru_block_cell_grad(x: Tensor, h_prev: Tensor, w_ru: Tensor, w_c: Tensor, b_ru: Tensor, b_c: Tensor, r: Tensor, u: Tensor, c: Tensor, d_h: Tensor, name: Tensor = ...) -> Tensor: ...
 def guarantee_const(input: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -697,7 +962,9 @@ def lbeta(x: Tensor, name: Tensor = ...) -> Tensor: ...
 def leaky_relu_grad(gradients: Tensor, features: Tensor, alpha: float = ..., name: Tensor = ...) -> Tensor: ...
 def learned_unigram_candidate_sampler(true_classes: Tensor, num_true: Tensor, num_sampled: Tensor, unique: bool, range_max: Tensor, seed: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def left_shift(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
-def legacy_parallel_interleave_dataset_v2(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
+def legacy_parallel_interleave_dataset_v2(
+    input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., metadata: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def less(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def less_equal(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def lgamma(x: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -857,7 +1124,9 @@ def no_gradient(op_type: str) -> Tensor: ...
 def no_op(name: Tensor = ...) -> Tensor: ...
 def non_deterministic_ints(shape: Tensor, dtype: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def non_max_suppression(boxes: float, scores: Tensor, max_output_size: Tensor, iou_threshold: float = ..., score_threshold: float = ..., name: Tensor = ...) -> Tensor: ...
-def non_max_suppression_padded(boxes: Tensor, scores: Tensor, max_output_size: Tensor, iou_threshold: float = ..., score_threshold: float = ..., pad_to_max_output_size: bool = ..., name: Tensor = ..., sorted_input: bool = ..., canonicalized_coordinates: bool = ..., tile_size: int = ...) -> Tensor: ...
+def non_max_suppression_padded(
+    boxes: Tensor, scores: Tensor, max_output_size: Tensor, iou_threshold: float = ..., score_threshold: float = ..., pad_to_max_output_size: bool = ..., name: Tensor = ..., sorted_input: bool = ..., canonicalized_coordinates: bool = ..., tile_size: int = ...
+) -> Tensor: ...
 def non_max_suppression_v2(boxes: Tensor, scores: float, max_output_size: Tensor, iou_threshold: Tensor, name: Tensor = ...) -> Tensor: ...
 def non_max_suppression_v3(boxes: Tensor, scores: float, max_output_size: Tensor, iou_threshold: Tensor, score_threshold: float, name: Tensor = ...) -> Tensor: ...
 def non_max_suppression_v4(boxes: Tensor, scores: float, max_output_size: Tensor, iou_threshold: Tensor, score_threshold: float, pad_to_max_output_size: bool = ..., name: Tensor = ...) -> Tensor: ...
@@ -908,22 +1177,141 @@ def parallel_batch_dataset(input_dataset: Tensor, batch_size: Tensor, num_parall
 def parallel_concat(values: Tensor, shape: Tensor, name: Tensor = ...) -> Tensor: ...
 def parallel_dynamic_stitch(indices: Tensor, data: Tensor, name: Tensor = ...) -> Tensor: ...
 def parallel_filter_dataset(input_dataset: Tensor, other_arguments: Tensor, num_parallel_calls: Tensor, predicate: bool, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
-def parallel_interleave_dataset(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, sloppy: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...) -> Tensor: ...
+def parallel_interleave_dataset(
+    input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, sloppy: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def parallel_interleave_dataset_v2(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, sloppy: bool = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
 def parallel_interleave_dataset_v3(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
-def parallel_interleave_dataset_v4(input_dataset: Tensor, other_arguments: Tensor, cycle_length: Tensor, block_length: Tensor, buffer_output_elements: Tensor, prefetch_input_elements: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
-def parallel_map_dataset(input_dataset: Tensor, other_arguments: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, use_inter_op_parallelism: bool = ..., sloppy: bool = ..., preserve_cardinality: bool = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
-def parallel_map_dataset_v2(input_dataset: Tensor, other_arguments: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, use_inter_op_parallelism: bool = ..., deterministic: str = ..., preserve_cardinality: bool = ..., use_unbounded_threadpool: bool = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
+def parallel_interleave_dataset_v4(
+    input_dataset: Tensor,
+    other_arguments: Tensor,
+    cycle_length: Tensor,
+    block_length: Tensor,
+    buffer_output_elements: Tensor,
+    prefetch_input_elements: Tensor,
+    num_parallel_calls: Tensor,
+    f: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    deterministic: str = ...,
+    metadata: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def parallel_map_dataset(
+    input_dataset: Tensor, other_arguments: Tensor, num_parallel_calls: Tensor, f: Tensor, output_types: Tensor, output_shapes: Tensor, use_inter_op_parallelism: bool = ..., sloppy: bool = ..., preserve_cardinality: bool = ..., metadata: str = ..., name: Tensor = ...
+) -> Tensor: ...
+def parallel_map_dataset_v2(
+    input_dataset: Tensor,
+    other_arguments: Tensor,
+    num_parallel_calls: Tensor,
+    f: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    use_inter_op_parallelism: bool = ...,
+    deterministic: str = ...,
+    preserve_cardinality: bool = ...,
+    use_unbounded_threadpool: bool = ...,
+    metadata: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def parallel_stack(values: Tensor, name: str = ...) -> Tensor: ...
 def parameterized_truncated_normal(shape: Tensor, means: Tensor, stdevs: Tensor, minvals: Tensor, maxvals: Tensor, seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
 def parse_example(serialized: Tensor, names: Tensor, sparse_keys: Tensor, dense_keys: Tensor, dense_defaults: Tensor, sparse_types: Tensor, dense_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def parse_example_dataset(input_dataset: Tensor, num_parallel_calls: Tensor, dense_defaults: Tensor, sparse_keys: Tensor, dense_keys: Tensor, sparse_types: Tensor, dense_shapes: Tensor, output_types: Tensor, output_shapes: Tensor, sloppy: bool = ..., ragged_keys: str = ..., ragged_value_types: Tensor = ..., ragged_split_types: Tensor = ..., name: Tensor = ...) -> Tensor: ...
-def parse_example_dataset_v2(input_dataset: Tensor, num_parallel_calls: Tensor, dense_defaults: Tensor, sparse_keys: Tensor, dense_keys: Tensor, sparse_types: Tensor, dense_shapes: Tensor, output_types: Tensor, output_shapes: Tensor, deterministic: str = ..., ragged_keys: str = ..., ragged_value_types: Tensor = ..., ragged_split_types: Tensor = ..., name: Tensor = ...) -> Tensor: ...
+def parse_example_dataset(
+    input_dataset: Tensor,
+    num_parallel_calls: Tensor,
+    dense_defaults: Tensor,
+    sparse_keys: Tensor,
+    dense_keys: Tensor,
+    sparse_types: Tensor,
+    dense_shapes: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    sloppy: bool = ...,
+    ragged_keys: str = ...,
+    ragged_value_types: Tensor = ...,
+    ragged_split_types: Tensor = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def parse_example_dataset_v2(
+    input_dataset: Tensor,
+    num_parallel_calls: Tensor,
+    dense_defaults: Tensor,
+    sparse_keys: Tensor,
+    dense_keys: Tensor,
+    sparse_types: Tensor,
+    dense_shapes: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    deterministic: str = ...,
+    ragged_keys: str = ...,
+    ragged_value_types: Tensor = ...,
+    ragged_split_types: Tensor = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def parse_example_v2(serialized: Tensor, names: Tensor, sparse_keys: Tensor, dense_keys: Tensor, ragged_keys: Tensor, dense_defaults: Tensor, num_sparse: int, sparse_types: Tensor, ragged_value_types: Tensor, ragged_split_types: Tensor, dense_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def parse_sequence_example(serialized: Tensor, debug_name: Tensor, context_dense_defaults: Tensor, feature_list_dense_missing_assumed_empty: Tensor, context_sparse_keys: Tensor, context_dense_keys: Tensor, feature_list_sparse_keys: Tensor, feature_list_dense_keys: Tensor, Ncontext_sparse: int = ..., Ncontext_dense: int = ..., Nfeature_list_sparse: int = ..., Nfeature_list_dense: int = ..., context_sparse_types: Tensor = ..., feature_list_dense_types: Tensor = ..., context_dense_shapes: str = ..., feature_list_sparse_types: Tensor = ..., feature_list_dense_shapes: str = ..., name: Tensor = ...) -> Tensor: ...
-def parse_sequence_example_v2(serialized: Tensor, debug_name: Tensor, context_sparse_keys: Tensor, context_dense_keys: Tensor, context_ragged_keys: Tensor, feature_list_sparse_keys: Tensor, feature_list_dense_keys: Tensor, feature_list_ragged_keys: Tensor, feature_list_dense_missing_assumed_empty: Tensor, context_dense_defaults: Tensor, Ncontext_sparse: int = ..., context_sparse_types: Tensor = ..., context_ragged_value_types: Tensor = ..., context_ragged_split_types: Tensor = ..., context_dense_shapes: str = ..., Nfeature_list_sparse: int = ..., Nfeature_list_dense: int = ..., feature_list_dense_types: Tensor = ..., feature_list_sparse_types: Tensor = ..., feature_list_ragged_value_types: Tensor = ..., feature_list_ragged_split_types: Tensor = ..., feature_list_dense_shapes: str = ..., name: Tensor = ...) -> Tensor: ...
+def parse_sequence_example(
+    serialized: Tensor,
+    debug_name: Tensor,
+    context_dense_defaults: Tensor,
+    feature_list_dense_missing_assumed_empty: Tensor,
+    context_sparse_keys: Tensor,
+    context_dense_keys: Tensor,
+    feature_list_sparse_keys: Tensor,
+    feature_list_dense_keys: Tensor,
+    Ncontext_sparse: int = ...,
+    Ncontext_dense: int = ...,
+    Nfeature_list_sparse: int = ...,
+    Nfeature_list_dense: int = ...,
+    context_sparse_types: Tensor = ...,
+    feature_list_dense_types: Tensor = ...,
+    context_dense_shapes: str = ...,
+    feature_list_sparse_types: Tensor = ...,
+    feature_list_dense_shapes: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def parse_sequence_example_v2(
+    serialized: Tensor,
+    debug_name: Tensor,
+    context_sparse_keys: Tensor,
+    context_dense_keys: Tensor,
+    context_ragged_keys: Tensor,
+    feature_list_sparse_keys: Tensor,
+    feature_list_dense_keys: Tensor,
+    feature_list_ragged_keys: Tensor,
+    feature_list_dense_missing_assumed_empty: Tensor,
+    context_dense_defaults: Tensor,
+    Ncontext_sparse: int = ...,
+    context_sparse_types: Tensor = ...,
+    context_ragged_value_types: Tensor = ...,
+    context_ragged_split_types: Tensor = ...,
+    context_dense_shapes: str = ...,
+    Nfeature_list_sparse: int = ...,
+    Nfeature_list_dense: int = ...,
+    feature_list_dense_types: Tensor = ...,
+    feature_list_sparse_types: Tensor = ...,
+    feature_list_ragged_value_types: Tensor = ...,
+    feature_list_ragged_split_types: Tensor = ...,
+    feature_list_dense_shapes: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def parse_single_example(serialized: Tensor, dense_defaults: Tensor, num_sparse: int, sparse_keys: Tensor, dense_keys: Tensor, sparse_types: Tensor, dense_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
-def parse_single_sequence_example(serialized: Tensor, feature_list_dense_missing_assumed_empty: Tensor, context_sparse_keys: Tensor, context_dense_keys: Tensor, feature_list_sparse_keys: Tensor, feature_list_dense_keys: Tensor, context_dense_defaults: Tensor, debug_name: Tensor, context_sparse_types: Tensor = ..., feature_list_dense_types: Tensor = ..., context_dense_shapes: str = ..., feature_list_sparse_types: Tensor = ..., feature_list_dense_shapes: str = ..., name: Tensor = ...) -> Tensor: ...
+def parse_single_sequence_example(
+    serialized: Tensor,
+    feature_list_dense_missing_assumed_empty: Tensor,
+    context_sparse_keys: Tensor,
+    context_dense_keys: Tensor,
+    feature_list_sparse_keys: Tensor,
+    feature_list_dense_keys: Tensor,
+    context_dense_defaults: Tensor,
+    debug_name: Tensor,
+    context_sparse_types: Tensor = ...,
+    feature_list_dense_types: Tensor = ...,
+    context_dense_shapes: str = ...,
+    feature_list_sparse_types: Tensor = ...,
+    feature_list_dense_shapes: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def parse_tensor(serialized: Tensor, out_type: Tensor, name: Tensor = ...) -> Tensor: ...
 def partitioned_call(args: Tensor, Tout: Tensor, f: Tensor, config: str = ..., config_proto: str = ..., executor_type: str = ..., name: Tensor = ...) -> Tensor: ...
 def per_image_standardization(image: Tensor) -> Tensor: ...
@@ -958,32 +1346,152 @@ def quantize_down_and_shrink_range(input: Tensor, input_min: Tensor, input_max: 
 def quantize_v2(input: Tensor, min_range: Tensor, max_range: Tensor, T: Tensor, mode: str = ..., round_mode: str = ..., narrow_range: bool = ..., axis: float = ..., ensure_minimum_range: float = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_add(x: Tensor, y: Tensor, min_x: Tensor, max_x: Tensor, min_y: Tensor, max_y: Tensor, Toutput: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_avg_pool(input: Tensor, min_input: Tensor, max_input: Tensor, ksize: Tensor, strides: Tensor, padding: str, name: Tensor = ...) -> Tensor: ...
-def quantized_batch_norm_with_global_normalization(t: Tensor, t_min: Tensor, t_max: Tensor, m: Tensor, m_min: Tensor, m_max: Tensor, v: Tensor, v_min: Tensor, v_max: Tensor, beta: Tensor, beta_min: Tensor, beta_max: Tensor, gamma: bool, gamma_min: Tensor, gamma_max: Tensor, out_type: Tensor, variance_epsilon: float, scale_after_normalization: bool, name: Tensor = ...) -> Tensor: ...
+def quantized_batch_norm_with_global_normalization(
+    t: Tensor,
+    t_min: Tensor,
+    t_max: Tensor,
+    m: Tensor,
+    m_min: Tensor,
+    m_max: Tensor,
+    v: Tensor,
+    v_min: Tensor,
+    v_max: Tensor,
+    beta: Tensor,
+    beta_min: Tensor,
+    beta_max: Tensor,
+    gamma: bool,
+    gamma_min: Tensor,
+    gamma_max: Tensor,
+    out_type: Tensor,
+    variance_epsilon: float,
+    scale_after_normalization: bool,
+    name: Tensor = ...,
+) -> Tensor: ...
 def quantized_bias_add(input: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_bias: Tensor, max_bias: Tensor, out_type: Tensor, name: Tensor = ...) -> Tensor: ...
 def quantized_concat(concat_dim: Tensor, values: Tensor, input_mins: Tensor, input_maxes: Tensor, name: Tensor = ...) -> Tensor: ...
 def quantized_conv2d(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_conv2d_and_relu(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_and_relu_and_requantize(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_and_requantize(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
+def quantized_conv2d_and_relu_and_requantize(
+    input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...
+) -> Tensor: ...
+def quantized_conv2d_and_requantize(
+    input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def quantized_conv2d_per_channel(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_conv2d_with_bias(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_conv2d_with_bias_and_relu(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_with_bias_and_relu_and_requantize(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_with_bias_and_requantize(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_with_bias_signed_sum_and_relu_and_requantize(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, summand: Tensor, min_summand: Tensor, max_summand: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_with_bias_sum_and_relu(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, summand: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_conv2d_with_bias_sum_and_relu_and_requantize(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, summand: Tensor, min_summand: Tensor, max_summand: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
+def quantized_conv2d_with_bias_and_relu_and_requantize(
+    input: Tensor,
+    filter: Tensor,
+    bias: Tensor,
+    min_input: Tensor,
+    max_input: Tensor,
+    min_filter: Tensor,
+    max_filter: Tensor,
+    min_freezed_output: Tensor,
+    max_freezed_output: Tensor,
+    strides: Tensor,
+    padding: str,
+    out_type: Tensor = ...,
+    dilations: str = ...,
+    padding_list: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def quantized_conv2d_with_bias_and_requantize(
+    input: Tensor,
+    filter: Tensor,
+    bias: Tensor,
+    min_input: Tensor,
+    max_input: Tensor,
+    min_filter: Tensor,
+    max_filter: Tensor,
+    min_freezed_output: Tensor,
+    max_freezed_output: Tensor,
+    strides: Tensor,
+    padding: str,
+    out_type: Tensor = ...,
+    dilations: str = ...,
+    padding_list: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def quantized_conv2d_with_bias_signed_sum_and_relu_and_requantize(
+    input: Tensor,
+    filter: Tensor,
+    bias: Tensor,
+    min_input: Tensor,
+    max_input: Tensor,
+    min_filter: Tensor,
+    max_filter: Tensor,
+    min_freezed_output: Tensor,
+    max_freezed_output: Tensor,
+    summand: Tensor,
+    min_summand: Tensor,
+    max_summand: Tensor,
+    strides: Tensor,
+    padding: str,
+    out_type: Tensor = ...,
+    dilations: str = ...,
+    padding_list: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def quantized_conv2d_with_bias_sum_and_relu(
+    input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, summand: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...
+) -> Tensor: ...
+def quantized_conv2d_with_bias_sum_and_relu_and_requantize(
+    input: Tensor,
+    filter: Tensor,
+    bias: Tensor,
+    min_input: Tensor,
+    max_input: Tensor,
+    min_filter: Tensor,
+    max_filter: Tensor,
+    min_freezed_output: Tensor,
+    max_freezed_output: Tensor,
+    summand: Tensor,
+    min_summand: Tensor,
+    max_summand: Tensor,
+    strides: Tensor,
+    padding: str,
+    out_type: Tensor = ...,
+    dilations: str = ...,
+    padding_list: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def quantized_depthwise_conv2d(input: Tensor, filter: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_depthwise_conv2d_with_bias(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_depthwise_conv2d_with_bias_and_relu(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_depthwise_conv2d_with_bias_and_relu_and_requantize(input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...) -> Tensor: ...
+def quantized_depthwise_conv2d_with_bias_and_relu(
+    input: Tensor, filter: Tensor, bias: Tensor, min_input: Tensor, max_input: Tensor, min_filter: Tensor, max_filter: Tensor, strides: Tensor, padding: str, out_type: Tensor = ..., dilations: str = ..., padding_list: str = ..., name: Tensor = ...
+) -> Tensor: ...
+def quantized_depthwise_conv2d_with_bias_and_relu_and_requantize(
+    input: Tensor,
+    filter: Tensor,
+    bias: Tensor,
+    min_input: Tensor,
+    max_input: Tensor,
+    min_filter: Tensor,
+    max_filter: Tensor,
+    min_freezed_output: Tensor,
+    max_freezed_output: Tensor,
+    strides: Tensor,
+    padding: str,
+    out_type: Tensor = ...,
+    dilations: str = ...,
+    padding_list: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def quantized_instance_norm(x: Tensor, x_min: Tensor, x_max: Tensor, output_range_given: bool = ..., given_y_min: int = ..., given_y_max: int = ..., variance_epsilon: float = ..., min_separation: float = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_mat_mul(a: Tensor, b: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., Tactivation: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_mat_mul_with_bias(a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_mat_mul_with_bias_and_dequantize(a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor, transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...) -> Tensor: ...
+def quantized_mat_mul_with_bias_and_dequantize(
+    a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor, transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def quantized_mat_mul_with_bias_and_relu(a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_mat_mul_with_bias_and_relu_and_requantize(a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...) -> Tensor: ...
-def quantized_mat_mul_with_bias_and_requantize(a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...) -> Tensor: ...
+def quantized_mat_mul_with_bias_and_relu_and_requantize(
+    a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...
+) -> Tensor: ...
+def quantized_mat_mul_with_bias_and_requantize(
+    a: Tensor, b: Tensor, bias: Tensor, min_a: Tensor, max_a: Tensor, min_b: Tensor, max_b: Tensor, min_freezed_output: Tensor, max_freezed_output: Tensor, Toutput: Tensor = ..., transpose_a: bool = ..., transpose_b: bool = ..., input_quant_mode: str = ..., name: Tensor = ...
+) -> Tensor: ...
 def quantized_max_pool(input: Tensor, min_input: Tensor, max_input: Tensor, ksize: Tensor, strides: Tensor, padding: str, name: Tensor = ...) -> Tensor: ...
 def quantized_mul(x: Tensor, y: Tensor, min_x: Tensor, max_x: Tensor, min_y: Tensor, max_y: Tensor, Toutput: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def quantized_relu(features: Tensor, min_features: Tensor, max_features: Tensor, out_type: Tensor = ..., name: Tensor = ...) -> Tensor: ...
@@ -1009,7 +1517,9 @@ def queue_size(handle: Tensor, name: Tensor = ...) -> Tensor: ...
 def queue_size_v2(handle: Tensor, name: Tensor = ...) -> Tensor: ...
 def ragged_bincount(splits: Tensor, values: Tensor, size: Tensor, weights: Tensor, binary_output: bool = ..., name: Tensor = ...) -> Tensor: ...
 def ragged_count_sparse_output(splits: Tensor, values: Tensor, weights: Tensor, binary_output: int, minlength: float = ..., maxlength: float = ..., name: Tensor = ...) -> Tensor: ...
-def ragged_cross(ragged_values: Tensor, ragged_row_splits: Tensor, sparse_indices: Tensor, sparse_values: Tensor, sparse_shape: Tensor, dense_inputs: Tensor, input_order: str, hashed_output: bool, num_buckets: int, hash_key: int, out_values_type: Tensor, out_row_splits_type: Tensor, name: Tensor = ...) -> Tensor: ...
+def ragged_cross(
+    ragged_values: Tensor, ragged_row_splits: Tensor, sparse_indices: Tensor, sparse_values: Tensor, sparse_shape: Tensor, dense_inputs: Tensor, input_order: str, hashed_output: bool, num_buckets: int, hash_key: int, out_values_type: Tensor, out_row_splits_type: Tensor, name: Tensor = ...
+) -> Tensor: ...
 def ragged_fill_empty_rows(value_rowids: Tensor, values: Tensor, nrows: Tensor, default_value: Tensor, name: Tensor = ...) -> Tensor: ...
 def ragged_fill_empty_rows_grad(reverse_index_map: Tensor, grad_values: Tensor, name: Tensor = ...) -> Tensor: ...
 def ragged_gather(params_nested_splits: Tensor, params_dense_values: Tensor, indices: Tensor, OUTPUT_RAGGED_RANK: int, name: Tensor = ...) -> Tensor: ...
@@ -1208,7 +1718,9 @@ def round(x: Tensor, name: Tensor = ...) -> Tensor: ...
 def rsqrt(x: Tensor, name: Tensor = ...) -> Tensor: ...
 def rsqrt_grad(y: Tensor, dy: Tensor, name: Tensor = ...) -> Tensor: ...
 def safe_embedding_lookup_sparse_v2(embedding_weights: Tensor, sparse_ids: Tensor, sparse_weights: float = ..., combiner: str = ..., default_id: str = ..., max_norm: Tensor = ..., name: Tensor = ..., allow_fast_lookup: bool = ...) -> Tensor: ...
-def sample_distorted_bounding_box(image_size: Tensor, bounding_boxes: Tensor, seed: int = ..., seed2: int = ..., min_object_covered: float = ..., aspect_ratio_range: str = ..., area_range: str = ..., max_attempts: int = ..., use_image_if_no_bounding_boxes: bool = ..., name: Tensor = ...) -> Tensor: ...
+def sample_distorted_bounding_box(
+    image_size: Tensor, bounding_boxes: Tensor, seed: int = ..., seed2: int = ..., min_object_covered: float = ..., aspect_ratio_range: str = ..., area_range: str = ..., max_attempts: int = ..., use_image_if_no_bounding_boxes: bool = ..., name: Tensor = ...
+) -> Tensor: ...
 def sample_distorted_bounding_box_v2(image_size: Tensor, bounding_boxes: Tensor, seed: int = ..., min_object_covered: float = ..., aspect_ratio_range: str = ..., area_range: str = ..., max_attempts: int = ..., use_image_if_no_bounding_boxes: bool = ..., name: Tensor = ...) -> Tensor: ...
 def sampled_softmax_loss_v2(weights: Tensor, biases: Tensor, labels: Tensor, inputs: Tensor, num_sampled: Tensor, num_classes: Tensor, num_true: int = ..., sampled_values: Tensor = ..., remove_accidental_hits: bool = ..., seed: Tensor = ..., name: str = ...) -> Tensor: ...
 def sampling_dataset(input_dataset: Tensor, rate: Tensor, seed: Tensor, seed2: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -1240,8 +1752,44 @@ def scatter_nd_update(ref: Tensor, indices: Tensor, updates: Tensor, use_locking
 def scatter_sub(ref: Tensor, indices: Tensor, updates: Tensor, use_locking: bool = ..., name: Tensor = ...) -> Tensor: ...
 def scatter_update(ref: Tensor, indices: Tensor, updates: Tensor, use_locking: bool = ..., name: Tensor = ...) -> Tensor: ...
 def sdca_fprint(input: Tensor, name: Tensor = ...) -> Tensor: ...
-def sdca_optimizer(sparse_example_indices: Tensor, sparse_feature_indices: Tensor, sparse_feature_values: Tensor, dense_features: Tensor, example_weights: Tensor, example_labels: Tensor, sparse_indices: Tensor, sparse_weights: Tensor, dense_weights: Tensor, example_state_data: Tensor, loss_type: str, l1: float, l2: float, num_loss_partitions: int, num_inner_iterations: int, adaptative: bool = ..., name: Tensor = ...) -> Tensor: ...
-def sdca_optimizer_v2(sparse_example_indices: Tensor, sparse_feature_indices: Tensor, sparse_feature_values: Tensor, dense_features: Tensor, example_weights: Tensor, example_labels: Tensor, sparse_indices: Tensor, sparse_weights: Tensor, dense_weights: Tensor, example_state_data: Tensor, loss_type: str, l1: float, l2: float, num_loss_partitions: int, num_inner_iterations: int, adaptive: bool = ..., name: Tensor = ...) -> Tensor: ...
+def sdca_optimizer(
+    sparse_example_indices: Tensor,
+    sparse_feature_indices: Tensor,
+    sparse_feature_values: Tensor,
+    dense_features: Tensor,
+    example_weights: Tensor,
+    example_labels: Tensor,
+    sparse_indices: Tensor,
+    sparse_weights: Tensor,
+    dense_weights: Tensor,
+    example_state_data: Tensor,
+    loss_type: str,
+    l1: float,
+    l2: float,
+    num_loss_partitions: int,
+    num_inner_iterations: int,
+    adaptative: bool = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def sdca_optimizer_v2(
+    sparse_example_indices: Tensor,
+    sparse_feature_indices: Tensor,
+    sparse_feature_values: Tensor,
+    dense_features: Tensor,
+    example_weights: Tensor,
+    example_labels: Tensor,
+    sparse_indices: Tensor,
+    sparse_weights: Tensor,
+    dense_weights: Tensor,
+    example_state_data: Tensor,
+    loss_type: str,
+    l1: float,
+    l2: float,
+    num_loss_partitions: int,
+    num_inner_iterations: int,
+    adaptive: bool = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def sdca_shrink_l1(weights: Tensor, l1: float, l2: float, name: Tensor = ...) -> Tensor: ...
 def searchsorted(sorted_sequence: Tensor, values: Tensor, side: str = ..., out_type: Tensor = ..., name: Tensor = ...) -> Tensor: ...
 def segment_max(data: Tensor, segment_ids: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -1294,9 +1842,45 @@ def slice(input_: Tensor, begin: Tensor, size: Tensor, name: Tensor = ...) -> Te
 def sliding_window_dataset(input_dataset: Tensor, window_size: Tensor, window_shift: Tensor, window_stride: Tensor, output_types: Tensor, output_shapes: Tensor, drop_remainder: bool = ..., name: Tensor = ...) -> Tensor: ...
 def snapshot(input: Tensor, name: Tensor = ...) -> Tensor: ...
 def snapshot_chunk_dataset(chunk_file: Tensor, output_types: Tensor, output_shapes: Tensor, compression: str = ..., name: Tensor = ...) -> Tensor: ...
-def snapshot_dataset(input_dataset: Tensor, path: Tensor, output_types: Tensor, output_shapes: Tensor, compression: str = ..., reader_path_prefix: str = ..., writer_path_prefix: str = ..., shard_size_bytes: int = ..., pending_snapshot_expiry_seconds: int = ..., num_reader_threads: int = ..., reader_buffer_size: int = ..., num_writer_threads: int = ..., writer_buffer_size: int = ..., shuffle_on_read: bool = ..., seed: int = ..., seed2: int = ..., mode: str = ..., snapshot_name: str = ..., name: Tensor = ...) -> Tensor: ...
+def snapshot_dataset(
+    input_dataset: Tensor,
+    path: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    compression: str = ...,
+    reader_path_prefix: str = ...,
+    writer_path_prefix: str = ...,
+    shard_size_bytes: int = ...,
+    pending_snapshot_expiry_seconds: int = ...,
+    num_reader_threads: int = ...,
+    reader_buffer_size: int = ...,
+    num_writer_threads: int = ...,
+    writer_buffer_size: int = ...,
+    shuffle_on_read: bool = ...,
+    seed: int = ...,
+    seed2: int = ...,
+    mode: str = ...,
+    snapshot_name: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def snapshot_dataset_reader(shard_dir: Tensor, start_index: Tensor, output_types: Tensor, output_shapes: Tensor, version: int, compression: str = ..., name: Tensor = ...) -> Tensor: ...
-def snapshot_dataset_v2(input_dataset: Tensor, path: Tensor, reader_func_other_args: Tensor, shard_func_other_args: Tensor, output_types: Tensor, output_shapes: Tensor, reader_func: Tensor, shard_func: Tensor, compression: str = ..., reader_prefix: str = ..., writer_prefix: str = ..., hash_valid: bool = ..., hash: int = ..., metadata: str = ..., name: Tensor = ...) -> Tensor: ...
+def snapshot_dataset_v2(
+    input_dataset: Tensor,
+    path: Tensor,
+    reader_func_other_args: Tensor,
+    shard_func_other_args: Tensor,
+    output_types: Tensor,
+    output_shapes: Tensor,
+    reader_func: Tensor,
+    shard_func: Tensor,
+    compression: str = ...,
+    reader_prefix: str = ...,
+    writer_prefix: str = ...,
+    hash_valid: bool = ...,
+    hash: int = ...,
+    metadata: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def snapshot_nested_dataset_reader(inputs: Tensor, output_types: Tensor, output_shapes: Tensor, name: Tensor = ...) -> Tensor: ...
 def sobel_edges(image: Tensor) -> Tensor: ...
 def sobol_sample(dim: Tensor, num_results: Tensor, skip: Tensor = ..., dtype: Tensor = ..., name: Tensor = ...) -> Tensor: ...
@@ -1308,7 +1892,21 @@ def softplus_grad(gradients: Tensor, features: Tensor, name: Tensor = ...) -> Te
 def softsign(features: Tensor, name: Tensor = ...) -> Tensor: ...
 def softsign_grad(gradients: Tensor, features: Tensor, name: Tensor = ...) -> Tensor: ...
 def sort(values: Tensor, axis: int = ..., direction: Tensor = ..., name: Tensor = ...) -> Tensor: ...
-def sort_list_of_sparse_core_coo_tensors(row_ids_list: Tensor, col_ids_list: Tensor, gains_list: Tensor, sample_count_list: Tensor, col_offset_list: Tensor, num_replica: int, table_vocab_size: int, feature_width: int, num_sc_per_chip: int, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, name: Tensor = ...) -> Tensor: ...
+def sort_list_of_sparse_core_coo_tensors(
+    row_ids_list: Tensor,
+    col_ids_list: Tensor,
+    gains_list: Tensor,
+    sample_count_list: Tensor,
+    col_offset_list: Tensor,
+    num_replica: int,
+    table_vocab_size: int,
+    feature_width: int,
+    num_sc_per_chip: int,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    name: Tensor = ...,
+) -> Tensor: ...
 def space_to_batch(input: Tensor, paddings: Tensor, block_size: int, name: Tensor = ...) -> Tensor: ...
 def space_to_batch_nd(input: Tensor, block_shape: Tensor, paddings: Tensor, name: Tensor = ...) -> Tensor: ...
 def space_to_batch_v2(input: Tensor, block_shape: Tensor, paddings: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -1589,7 +2187,22 @@ def tpu_partitioned_input(inputs: Tensor, partition_dim: int = ..., name: Tensor
 def tpu_partitioned_input_v2(inputs: Tensor, partition_dims: Tensor, is_packed: bool = ..., name: Tensor = ...) -> Tensor: ...
 def tpu_partitioned_output(inputs: Tensor, num_splits: int, partition_dim: int = ..., name: Tensor = ...) -> Tensor: ...
 def tpu_partitioned_output_v2(inputs: Tensor, num_splits: int, partition_dims: Tensor, name: Tensor = ...) -> Tensor: ...
-def tpu_replicate_metadata(num_replicas: int, num_cores_per_replica: int = ..., topology: str = ..., use_tpu: bool = ..., device_assignment: str = ..., computation_shape: str = ..., host_compute_core: str = ..., padding_map: str = ..., step_marker_location: str = ..., allow_soft_placement: bool = ..., use_spmd_for_xla_partitioning: bool = ..., use_shardy_partitioner: bool = ..., tpu_compile_options_proto: str = ..., name: Tensor = ...) -> Tensor: ...
+def tpu_replicate_metadata(
+    num_replicas: int,
+    num_cores_per_replica: int = ...,
+    topology: str = ...,
+    use_tpu: bool = ...,
+    device_assignment: str = ...,
+    computation_shape: str = ...,
+    host_compute_core: str = ...,
+    padding_map: str = ...,
+    step_marker_location: str = ...,
+    allow_soft_placement: bool = ...,
+    use_spmd_for_xla_partitioning: bool = ...,
+    use_shardy_partitioner: bool = ...,
+    tpu_compile_options_proto: str = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def tpu_replicated_input(inputs: Tensor, is_mirrored_variable: bool = ..., index: float = ..., is_packed: bool = ..., name: Tensor = ...) -> Tensor: ...
 def tpu_replicated_output(input: Tensor, num_replicas: int, name: Tensor = ...) -> Tensor: ...
 def trace(x: Tensor, name: Tensor = ...) -> Tensor: ...
@@ -1616,13 +2229,112 @@ def unicode_transcode(input: Tensor, input_encoding: str, output_encoding: str, 
 def uniform_candidate_sampler(true_classes: Tensor, num_true: int, num_sampled: int, unique: bool, range_max: int, seed: int = ..., seed2: int = ..., name: Tensor = ...) -> Tensor: ...
 def uniform_dequantize(input: Tensor, scales: Tensor, zero_points: Tensor, Tout: Tensor, quantization_min_val: int, quantization_max_val: int, quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
 def uniform_quantize(input: Tensor, scales: Tensor, zero_points: Tensor, Tout: Tensor, quantization_min_val: int, quantization_max_val: int, quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
-def uniform_quantized_add(lhs: Tensor, rhs: Tensor, lhs_scales: Tensor, lhs_zero_points: Tensor, rhs_scales: Tensor, rhs_zero_points: Tensor, output_scales: Tensor, output_zero_points: Tensor, lhs_quantization_min_val: int, lhs_quantization_max_val: int, rhs_quantization_min_val: int, rhs_quantization_max_val: int, output_quantization_min_val: int, output_quantization_max_val: int, lhs_quantization_axis: float = ..., rhs_quantization_axis: float = ..., output_quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
+def uniform_quantized_add(
+    lhs: Tensor,
+    rhs: Tensor,
+    lhs_scales: Tensor,
+    lhs_zero_points: Tensor,
+    rhs_scales: Tensor,
+    rhs_zero_points: Tensor,
+    output_scales: Tensor,
+    output_zero_points: Tensor,
+    lhs_quantization_min_val: int,
+    lhs_quantization_max_val: int,
+    rhs_quantization_min_val: int,
+    rhs_quantization_max_val: int,
+    output_quantization_min_val: int,
+    output_quantization_max_val: int,
+    lhs_quantization_axis: float = ...,
+    rhs_quantization_axis: float = ...,
+    output_quantization_axis: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def uniform_quantized_clip_by_value(operand: Tensor, min: Tensor, max: Tensor, scales: Tensor, zero_points: Tensor, quantization_min_val: int, quantization_max_val: int, quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
-def uniform_quantized_convolution(lhs: Tensor, rhs: Tensor, lhs_scales: Tensor, lhs_zero_points: Tensor, rhs_scales: Tensor, rhs_zero_points: Tensor, output_scales: Tensor, output_zero_points: Tensor, Tout: Tensor, padding: Tensor, lhs_quantization_min_val: int, lhs_quantization_max_val: int, rhs_quantization_min_val: int, rhs_quantization_max_val: int, output_quantization_min_val: int, output_quantization_max_val: int, window_strides: str = ..., explicit_padding: str = ..., rhs_dilation: Tensor = ..., lhs_quantization_axis: int = ..., batch_group_count: int = ..., lhs_dilation: Tensor = ..., feature_group_count: int = ..., name: Tensor = ..., dimension_numbers: str = ..., output_quantization_axis: int = ..., rhs_quantization_axis: int = ...) -> Tensor: ...
-def uniform_quantized_convolution_hybrid(lhs: Tensor, rhs: Tensor, rhs_scales: Tensor, rhs_zero_points: Tensor, Tout: Tensor, padding: Tensor, rhs_quantization_min_val: int, rhs_quantization_max_val: int, window_strides: str = ..., explicit_padding: str = ..., dimension_numbers: str = ..., rhs_dilation: Tensor = ..., feature_group_count: int = ..., rhs_quantization_axis: int = ..., name: Tensor = ..., batch_group_count: int = ..., lhs_dilation: Tensor = ...) -> Tensor: ...
-def uniform_quantized_dot(lhs: Tensor, rhs: Tensor, lhs_scales: Tensor, lhs_zero_points: Tensor, rhs_scales: Tensor, rhs_zero_points: Tensor, output_scales: Tensor, output_zero_points: Tensor, Tout: Tensor, lhs_quantization_min_val: int, lhs_quantization_max_val: int, rhs_quantization_min_val: int, rhs_quantization_max_val: int, output_quantization_min_val: int, output_quantization_max_val: int, lhs_quantization_axis: float = ..., rhs_quantization_axis: float = ..., output_quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
+def uniform_quantized_convolution(
+    lhs: Tensor,
+    rhs: Tensor,
+    lhs_scales: Tensor,
+    lhs_zero_points: Tensor,
+    rhs_scales: Tensor,
+    rhs_zero_points: Tensor,
+    output_scales: Tensor,
+    output_zero_points: Tensor,
+    Tout: Tensor,
+    padding: Tensor,
+    lhs_quantization_min_val: int,
+    lhs_quantization_max_val: int,
+    rhs_quantization_min_val: int,
+    rhs_quantization_max_val: int,
+    output_quantization_min_val: int,
+    output_quantization_max_val: int,
+    window_strides: str = ...,
+    explicit_padding: str = ...,
+    rhs_dilation: Tensor = ...,
+    lhs_quantization_axis: int = ...,
+    batch_group_count: int = ...,
+    lhs_dilation: Tensor = ...,
+    feature_group_count: int = ...,
+    name: Tensor = ...,
+    dimension_numbers: str = ...,
+    output_quantization_axis: int = ...,
+    rhs_quantization_axis: int = ...,
+) -> Tensor: ...
+def uniform_quantized_convolution_hybrid(
+    lhs: Tensor,
+    rhs: Tensor,
+    rhs_scales: Tensor,
+    rhs_zero_points: Tensor,
+    Tout: Tensor,
+    padding: Tensor,
+    rhs_quantization_min_val: int,
+    rhs_quantization_max_val: int,
+    window_strides: str = ...,
+    explicit_padding: str = ...,
+    dimension_numbers: str = ...,
+    rhs_dilation: Tensor = ...,
+    feature_group_count: int = ...,
+    rhs_quantization_axis: int = ...,
+    name: Tensor = ...,
+    batch_group_count: int = ...,
+    lhs_dilation: Tensor = ...,
+) -> Tensor: ...
+def uniform_quantized_dot(
+    lhs: Tensor,
+    rhs: Tensor,
+    lhs_scales: Tensor,
+    lhs_zero_points: Tensor,
+    rhs_scales: Tensor,
+    rhs_zero_points: Tensor,
+    output_scales: Tensor,
+    output_zero_points: Tensor,
+    Tout: Tensor,
+    lhs_quantization_min_val: int,
+    lhs_quantization_max_val: int,
+    rhs_quantization_min_val: int,
+    rhs_quantization_max_val: int,
+    output_quantization_min_val: int,
+    output_quantization_max_val: int,
+    lhs_quantization_axis: float = ...,
+    rhs_quantization_axis: float = ...,
+    output_quantization_axis: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def uniform_quantized_dot_hybrid(lhs: Tensor, rhs: Tensor, rhs_scales: Tensor, rhs_zero_points: Tensor, Tout: Tensor, rhs_quantization_min_val: int, rhs_quantization_max_val: int, rhs_quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
-def uniform_requantize(input: Tensor, input_scales: Tensor, input_zero_points: Tensor, output_scales: Tensor, output_zero_points: Tensor, Tout: Tensor, input_quantization_min_val: int, input_quantization_max_val: int, output_quantization_min_val: int, output_quantization_max_val: int, input_quantization_axis: float = ..., output_quantization_axis: float = ..., name: Tensor = ...) -> Tensor: ...
+def uniform_requantize(
+    input: Tensor,
+    input_scales: Tensor,
+    input_zero_points: Tensor,
+    output_scales: Tensor,
+    output_zero_points: Tensor,
+    Tout: Tensor,
+    input_quantization_min_val: int,
+    input_quantization_max_val: int,
+    output_quantization_min_val: int,
+    output_quantization_max_val: int,
+    input_quantization_axis: float = ...,
+    output_quantization_axis: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def unique(x: Tensor, out_idx: str = ..., name: Tensor = ...) -> Tensor: ...
 def unique_dataset(input_dataset: Tensor, output_types: Tensor, output_shapes: Tensor, metadata: str = ..., name: Tensor = ...) -> Tensor: ...
 def unique_v2(x: Tensor, axis: Tensor = ..., out_idx: Tensor = ..., name: Tensor = ...) -> Tensor: ...
@@ -1674,29 +2386,454 @@ def xla_concat_nd(inputs: Tensor, num_concats: Tensor, paddings: str = ..., name
 def xla_sparse_core_adagrad(indices: Tensor, gradient: Tensor, learning_rate: Tensor, accumulator: Tensor, embedding_table: Tensor, feature_width: int, name: Tensor = ...) -> Tensor: ...
 def xla_sparse_core_adagrad_momentum(indices: Tensor, gradient: Tensor, learning_rate: Tensor, beta_1: Tensor, epsilon: Tensor, accumulator: Tensor, momentum: Tensor, embedding_table: Tensor, feature_width: int, use_nesterov: bool, beta_2: float, exponent: float, name: Tensor = ...) -> Tensor: ...
 def xla_sparse_core_adam(embedding_table: Tensor, indices: Tensor, gradient: Tensor, learning_rate: Tensor, momentum: Tensor, velocity: Tensor, beta_1: Tensor, beta_2: Tensor, epsilon: Tensor, feature_width: int, use_sum_inside_sqrt: bool, name: Tensor = ...) -> Tensor: ...
-def xla_sparse_core_ftrl(embedding_table: Tensor, accumulator: Tensor, linear: Tensor, learning_rate: Tensor, indices: Tensor, gradient: Tensor, beta: Tensor, learning_rate_power: Tensor, l2_regularization_strength: Tensor, feature_width: int, multiply_linear_by_learning_rate: bool, l1_regularization_strength: float, name: Tensor = ...) -> Tensor: ...
+def xla_sparse_core_ftrl(
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    linear: Tensor,
+    learning_rate: Tensor,
+    indices: Tensor,
+    gradient: Tensor,
+    beta: Tensor,
+    learning_rate_power: Tensor,
+    l2_regularization_strength: Tensor,
+    feature_width: int,
+    multiply_linear_by_learning_rate: bool,
+    l1_regularization_strength: float,
+    name: Tensor = ...,
+) -> Tensor: ...
 def xla_sparse_core_sgd(indices: Tensor, gradient: Tensor, learning_rate: Tensor, embedding_table: Tensor, feature_width: int, name: Tensor = ...) -> Tensor: ...
 def xla_sparse_dense_matmul(row_ids: Tensor, col_ids: Tensor, values: Tensor, offsets: Tensor, embedding_table: Tensor, max_ids_per_partition: int, max_unique_ids_per_partition: int, input_size: int, name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adagrad_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, learning_rate: Tensor, combiner_weights_learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adagrad_momentum_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, learning_rate: Tensor, combiner_weights_learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, momenta: Tensor, use_nesterov: bool, exponent: float, beta1: float, beta2: float, epsilon: float, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adam_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, learning_rate: Tensor, combiner_weights_learning_rate: Tensor, embedding_table: Tensor, momenta: Tensor, velocity: Tensor, use_sum_inside_sqrt: bool, beta1: float, beta2: float, epsilon: float, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, tables: Tensor, hyperparameters: Tensor, combiner_weights_learning_rate: Tensor, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, optimizer_custom_computation: Tensor, table_name: str, num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_ftrl_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, learning_rate: Tensor, combiner_weights_learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, linear: Tensor, multiply_linear_by_learning_rate: bool, beta: float, learning_rate_power: float, l1_regularization_strength: float, l2_regularization_strength: float, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_sgd_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, weights: Tensor, preserved_valencies: Tensor, preserved_vectors: Tensor, preserved_weights: Tensor, activation_gradients: Tensor, learning_rate: Tensor, combiner_weights_learning_rate: Tensor, embedding_table: Tensor, max_valency: int, num_weights: int, combiner_table_vjp_computation: Tensor, combiner_weights_vjp_computation: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_custom_combiner_on_tc_with_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_pos_ids: Tensor, sorted_gains: Tensor, embedding_table: Tensor, weights: Tensor, input_size: int, max_valency: int, num_weights: int, combiner_computation: Tensor, quantization_config_low: float, quantization_config_high: float, quantization_config_num_buckets: int, table_name: str, num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adagrad_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, num_minibatches_per_physical_sparse_core: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adagrad_and_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, num_minibatches_per_physical_sparse_core: Tensor, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adagrad_momentum_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, momenta: Tensor, num_minibatches_per_physical_sparse_core: Tensor, use_nesterov: bool, exponent: float, beta1: float, beta2: float, epsilon: float, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adagrad_momentum_and_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, momenta: Tensor, num_minibatches_per_physical_sparse_core: Tensor, use_nesterov: bool, exponent: float, beta1: float, beta2: float, epsilon: float, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adam_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, momenta: Tensor, velocity: Tensor, num_minibatches_per_physical_sparse_core: Tensor, use_sum_inside_sqrt: bool, beta1: float, beta2: float, epsilon: float, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_adam_and_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, momenta: Tensor, velocity: Tensor, num_minibatches_per_physical_sparse_core: Tensor, use_sum_inside_sqrt: bool, beta1: float, beta2: float, epsilon: float, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, tables: Tensor, hyperparameters: Tensor, num_minibatches_per_physical_sparse_core: Tensor, custom_computation: Tensor, table_name: str, num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_ftrl_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, linear: Tensor, num_minibatches_per_physical_sparse_core: Tensor, multiply_linear_by_learning_rate: bool, beta: float, learning_rate_power: float, l1_regularization_strength: float, l2_regularization_strength: float, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_ftrl_and_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, accumulator: Tensor, linear: Tensor, num_minibatches_per_physical_sparse_core: Tensor, multiply_linear_by_learning_rate: bool, beta: float, learning_rate_power: float, l1_regularization_strength: float, l2_regularization_strength: float, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_sgd_and_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, num_minibatches_per_physical_sparse_core: Tensor, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_grad_with_sgd_and_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, activation_gradients: Tensor, learning_rate: Tensor, embedding_table: Tensor, num_minibatches_per_physical_sparse_core: Tensor, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, clip_weight_min: str = ..., clip_weight_max: str = ..., num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_with_csr_input(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, embedding_table: Tensor, num_minibatches_per_physical_sparse_core: Tensor, input_size: int, quantization_config_low: float, quantization_config_high: float, quantization_config_num_buckets: int, table_name: str, num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
-def xla_sparse_dense_matmul_with_static_buffer_size(row_pointers: Tensor, sorted_sample_ids: Tensor, sorted_token_ids: Tensor, sorted_gains: Tensor, embedding_table: Tensor, num_minibatches_per_physical_sparse_core: Tensor, input_size: int, quantization_config_low: float, quantization_config_high: float, quantization_config_num_buckets: int, max_ids_per_sparse_core: int, max_unique_ids_per_sparse_core: int, table_name: str, num_sparsecores_per_device: float = ..., name: Tensor = ...) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adagrad_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adagrad_momentum_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    momenta: Tensor,
+    use_nesterov: bool,
+    exponent: float,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_adam_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    embedding_table: Tensor,
+    momenta: Tensor,
+    velocity: Tensor,
+    use_sum_inside_sqrt: bool,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    tables: Tensor,
+    hyperparameters: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    optimizer_custom_computation: Tensor,
+    table_name: str,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_ftrl_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    linear: Tensor,
+    multiply_linear_by_learning_rate: bool,
+    beta: float,
+    learning_rate_power: float,
+    l1_regularization_strength: float,
+    l2_regularization_strength: float,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_grad_with_sgd_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    weights: Tensor,
+    preserved_valencies: Tensor,
+    preserved_vectors: Tensor,
+    preserved_weights: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    combiner_weights_learning_rate: Tensor,
+    embedding_table: Tensor,
+    max_valency: int,
+    num_weights: int,
+    combiner_table_vjp_computation: Tensor,
+    combiner_weights_vjp_computation: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_custom_combiner_on_tc_with_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_pos_ids: Tensor,
+    sorted_gains: Tensor,
+    embedding_table: Tensor,
+    weights: Tensor,
+    input_size: int,
+    max_valency: int,
+    num_weights: int,
+    combiner_computation: Tensor,
+    quantization_config_low: float,
+    quantization_config_high: float,
+    quantization_config_num_buckets: int,
+    table_name: str,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adagrad_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adagrad_and_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adagrad_momentum_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    momenta: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    use_nesterov: bool,
+    exponent: float,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adagrad_momentum_and_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    momenta: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    use_nesterov: bool,
+    exponent: float,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adam_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    momenta: Tensor,
+    velocity: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    use_sum_inside_sqrt: bool,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_adam_and_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    momenta: Tensor,
+    velocity: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    use_sum_inside_sqrt: bool,
+    beta1: float,
+    beta2: float,
+    epsilon: float,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    tables: Tensor,
+    hyperparameters: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    custom_computation: Tensor,
+    table_name: str,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_ftrl_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    linear: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    multiply_linear_by_learning_rate: bool,
+    beta: float,
+    learning_rate_power: float,
+    l1_regularization_strength: float,
+    l2_regularization_strength: float,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_ftrl_and_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    accumulator: Tensor,
+    linear: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    multiply_linear_by_learning_rate: bool,
+    beta: float,
+    learning_rate_power: float,
+    l1_regularization_strength: float,
+    l2_regularization_strength: float,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_sgd_and_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_grad_with_sgd_and_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    activation_gradients: Tensor,
+    learning_rate: Tensor,
+    embedding_table: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    clip_weight_min: str = ...,
+    clip_weight_max: str = ...,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_with_csr_input(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    embedding_table: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    input_size: int,
+    quantization_config_low: float,
+    quantization_config_high: float,
+    quantization_config_num_buckets: int,
+    table_name: str,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
+def xla_sparse_dense_matmul_with_static_buffer_size(
+    row_pointers: Tensor,
+    sorted_sample_ids: Tensor,
+    sorted_token_ids: Tensor,
+    sorted_gains: Tensor,
+    embedding_table: Tensor,
+    num_minibatches_per_physical_sparse_core: Tensor,
+    input_size: int,
+    quantization_config_low: float,
+    quantization_config_high: float,
+    quantization_config_num_buckets: int,
+    max_ids_per_sparse_core: int,
+    max_unique_ids_per_sparse_core: int,
+    table_name: str,
+    num_sparsecores_per_device: float = ...,
+    name: Tensor = ...,
+) -> Tensor: ...
 def xla_split_nd(input: Tensor, N: int, num_splits: Tensor, paddings: str = ..., name: Tensor = ...) -> Tensor: ...
 def xlog1py(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...
 def xlogy(x: Tensor, y: Tensor, name: Tensor = ...) -> Tensor: ...

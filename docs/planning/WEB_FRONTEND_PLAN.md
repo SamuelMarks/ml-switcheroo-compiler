@@ -7,30 +7,30 @@ The goal is to build an interactive Web Playground embedded within a unified, Sp
 The playground will be cleanly integrated into the Sphinx theme (e.g., Furo or Sphinx Book Theme) using a wide, split-pane layout to maximize editor real estate.
 
 ### Layout Elements & Features
-- [ ] **Global Controls:**
-  - [ ] **Theme Toggle:** An accessible toggle switch for Light/Dark mode that respects system preferences (`prefers-color-scheme`) by default.
-- [ ] **Left Pane (Source):**
-  - [ ] **Header Controls:**
-    - [ ] **Source Framework Dropdown:** Uses `<optgroup>` to organize options logically:
+- [x] **Global Controls:**
+  - [x] **Theme Toggle:** An accessible toggle switch for Light/Dark mode that respects system preferences (`prefers-color-scheme`) by default.
+- [x] **Left Pane (Source):**
+  - [x] **Header Controls:**
+    - [x] **Source Framework Dropdown:** Uses `<optgroup>` to organize options logically:
       - *Group: Base ML Frameworks* (TensorFlow, Keras, PyTorch, MLX)
       - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen)
-    - [ ] **Examples Dropdown:** Pre-populated code snippets that auto-update based on the selected Source Framework (e.g., Simple MLP, CNN, Attention Block).
-  - [ ] **Editor:** A Monaco Editor instance configured for Python.
-    - [ ] Enable syntax highlighting.
-    - [ ] Enable basic autocomplete for Python syntax.
-    - [ ] Line numbers and minimap configured for readability.
-- [ ] **Right Pane (Target/Output):**
-  - [ ] **Header Controls:**
-    - [ ] **Target Framework Dropdown:** Uses `<optgroup>` to organize options logically:
+    - [x] **Examples Dropdown:** Pre-populated code snippets that auto-update based on the selected Source Framework (e.g., Simple MLP, CNN, Attention Block).
+  - [x] **Editor:** A Monaco Editor instance configured for Python.
+    - [x] Enable syntax highlighting.
+    - [x] Enable basic autocomplete for Python syntax.
+    - [x] Line numbers and minimap configured for readability.
+- [x] **Right Pane (Target/Output):**
+  - [x] **Header Controls:**
+    - [x] **Target Framework Dropdown:** Uses `<optgroup>` to organize options logically:
       - *Group: Base ML Frameworks* (TensorFlow, Keras, PyTorch, MLX)
       - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen)
       - *Group: Native Web Execution* (WebGPU, WASM SIMD)
-    - [ ] **Action Buttons:**
-      - [ ] `Compile`: Runs the ML Switcheroo compiler to generate the target code.
-      - [ ] `Execute in browser`: **Dynamically visible** *only* when WebGPU or WASM SIMD is selected.
-  - [ ] **Editors/Panels:**
-    - [ ] **Output Editor:** A read-only Monaco Editor instance. Syntax highlighting dynamically switches based on the target (e.g., Python, C++, WGSL, WAT).
-    - [ ] **Console Panel:** A terminal-like output view below the editor to show compilation logs, errors, or execution results (e.g., resulting tensors).
+    - [x] **Action Buttons:**
+      - [x] `Compile`: Runs the ML Switcheroo compiler to generate the target code.
+      - [x] `Execute in browser`: **Dynamically visible** *only* when WebGPU or WASM SIMD is selected.
+  - [x] **Editors/Panels:**
+    - [x] **Output Editor:** A read-only Monaco Editor instance. Syntax highlighting dynamically switches based on the target (e.g., Python, C++, WGSL, WAT).
+    - [x] **Console Panel:** A terminal-like output view below the editor to show compilation logs, errors, or execution results (e.g., resulting tensors).
 
 ## 3. Technical Architecture & Constraints
 
@@ -54,32 +54,32 @@ The playground will be cleanly integrated into the Sphinx theme (e.g., Furo or S
 ### 3.3 Compilation Strategy
 To compile Python ML code into other representations within a static HTML site, we will evaluate two viable paths:
 - **Option A (Client-Side Pyodide - Recommended for static hosting):**
-  - [ ] Run `ml-switcheroo-compiler` directly in the browser via Pyodide.
-  - [ ] Compile the library and its pure-Python dependencies into a `.whl`.
-  - [ ] JavaScript calls Python compilation functions via `pyodide.runPython` or exposed JS-to-Python bindings.
+  - [x] Run `ml-switcheroo-compiler` directly in the browser via Pyodide.
+  - [x] Compile the library and its pure-Python dependencies into a `.whl`.
+  - [x] JavaScript calls Python compilation functions via `pyodide.runPython` or exposed JS-to-Python bindings.
 - **Option B (Server-Side Backend - Fallback):**
-  - [ ] Host a lightweight FastAPI service.
-  - [ ] The static HTML makes REST POST calls containing the source code and target parameters.
-  - [ ] Receive the compiled output (or compilation errors) back as JSON.
+  - [x] Host a lightweight FastAPI service.
+  - [x] The static HTML makes REST POST calls containing the source code and target parameters.
+  - [x] Receive the compiled output (or compilation errors) back as JSON.
 
 ### 3.4 In-Browser Execution Environments
 When the user clicks "Execute in browser":
 
 - **WebGPU Target:**
-  - [ ] The compiler outputs valid WGSL (WebGPU Shading Language) and a JSON metadata payload detailing inputs/outputs.
-  - [ ] The frontend JS verifies `navigator.gpu` is available.
-  - [ ] Requests an adapter and device (`navigator.gpu.requestAdapter()`).
-  - [ ] Allocates GPU buffers using `device.createBuffer()`.
-  - [ ] Creates a compute pipeline (`device.createComputePipeline()`).
-  - [ ] Dispatches the work via a command encoder.
-  - [ ] Maps the output buffer (`buffer.mapAsync()`), reads back the `Float32Array`, and prints to the UI console.
+  - [x] The compiler outputs valid WGSL (WebGPU Shading Language) and a JSON metadata payload detailing inputs/outputs.
+  - [x] The frontend JS verifies `navigator.gpu` is available.
+  - [x] Requests an adapter and device (`navigator.gpu.requestAdapter()`).
+  - [x] Allocates GPU buffers using `device.createBuffer()`.
+  - [x] Creates a compute pipeline (`device.createComputePipeline()`).
+  - [x] Dispatches the work via a command encoder.
+  - [x] Maps the output buffer (`buffer.mapAsync()`), reads back the `Float32Array`, and prints to the UI console.
 
 - **WASM SIMD Target:**
-  - [ ] The compiler outputs WebAssembly (WASM binary format) with SIMD instructions enabled (`-msimd128`).
-  - [ ] The frontend fetches and instantiates the WASM module (`WebAssembly.instantiate()`).
-  - [ ] Populates shared `WebAssembly.Memory` with input tensors.
-  - [ ] Calls the exported WASM computation functions.
-  - [ ] Reads the resulting memory buffer back and parses it into typed arrays for display in the UI console.
+  - [x] The compiler outputs WebAssembly (WASM binary format) with SIMD instructions enabled (`-msimd128`).
+  - [x] The frontend fetches and instantiates the WASM module (`WebAssembly.instantiate()`).
+  - [x] Populates shared `WebAssembly.Memory` with input tensors.
+  - [x] Calls the exported WASM computation functions.
+  - [x] Reads the resulting memory buffer back and parses it into typed arrays for display in the UI console.
 
 ## 4. Multi-Project Sphinx Documentation Setup
 The documentation site will serve as a monolithic portal for 13 distinct codebases.
@@ -98,9 +98,9 @@ for p in projects:
 ```
 
 ### Doc Generation Tools
-- [ ] **`sphinx.ext.autodoc` & `sphinx.ext.autosummary`**: Used to recursively scrape docstrings from all registered paths.
-- [ ] **Sphinx extensions to add:** `sphinx_copybutton`, `sphinx_design`, `myst_parser`.
-- [ ] **Table of Contents (TOC) Organization**:
+- [x] **`sphinx.ext.autodoc` & `sphinx.ext.autosummary`**: Used to recursively scrape docstrings from all registered paths.
+- [x] **Sphinx extensions to add:** `sphinx_copybutton`, `sphinx_design`, `myst_parser`.
+- [x] **Table of Contents (TOC) Organization**:
   - **1. Playground & Interactive Sandbox** (The primary landing experience).
   - **2. Compiler Core**: `ml-switcheroo-compiler`, `ml-switcheroo-ir`.
   - **3. Frontend/Backend Ecosystem**: `zero-jax`, `zero-pytorch`, `zero-tf`, `zero-keras`, `zero-mlx`.
@@ -109,56 +109,56 @@ for p in projects:
 ### Fast Development Workflow (Makefile)
 Because scraping 13 distinct projects via `autosummary` will make iterative frontend development extremely slow, we require optimized `make` targets. The `conf.py` will read environment variables (e.g., `FAST_BUILD=1`) to conditionally bypass scraping sibling projects and only build the core pages and interactive frontend.
 
-- [ ] `make docs`: Standard command. Scrapes all 13 projects, generates complete API documentation, and builds the playground.
-- [ ] `make docs-fast`: Fast command. Disables heavy `autosummary` generation and builds *only* the web frontend/playground pages for rapid UI/UX iteration.
-- [ ] `make serve_docs`: Builds the full docs and serves them locally (e.g., via `python -m http.server -d docs/_build/html`).
-- [ ] `make serve_docs-fast`: Runs the fast frontend-only build and serves it locally.
+- [x] `make docs`: Standard command. Scrapes all 13 projects, generates complete API documentation, and builds the playground.
+- [x] `make docs-fast`: Fast command. Disables heavy `autosummary` generation and builds *only* the web frontend/playground pages for rapid UI/UX iteration.
+- [x] `make serve_docs`: Builds the full docs and serves them locally (e.g., via `python -m http.server -d docs/_build/html`).
+- [x] `make serve_docs-fast`: Runs the fast frontend-only build and serves it locally.
 
 ## 5. Execution Phasing
 
 ### Phase 1: Multi-Repo Sphinx Plumbing
-- [ ] Initialize the base `docs/` folder using `sphinx-quickstart`.
-- [ ] Configure path resolution in `conf.py` to all `../zero-*` sibling directories.
-- [ ] Create `.rst` or `.md` (via MyST) stub files for each project.
-- [ ] Configure `autosummary` to generate the unified API documentation stubs.
-- [ ] Setup the `FAST_BUILD` environment variable toggle in `conf.py` to optionally skip large project imports.
-- [ ] Implement `make docs`, `make docs-fast`, `make serve_docs`, and `make serve_docs-fast` in the repository `Makefile`.
-- [ ] Test the static builds (both full and fast) to ensure routing and static assets compile properly.
+- [x] Initialize the base `docs/` folder using `sphinx-quickstart`.
+- [x] Configure path resolution in `conf.py` to all `../zero-*` sibling directories.
+- [x] Create `.rst` or `.md` (via MyST) stub files for each project.
+- [x] Configure `autosummary` to generate the unified API documentation stubs.
+- [x] Setup the `FAST_BUILD` environment variable toggle in `conf.py` to optionally skip large project imports.
+- [x] Implement `make docs`, `make docs-fast`, `make serve_docs`, and `make serve_docs-fast` in the repository `Makefile`.
+- [x] Test the static builds (both full and fast) to ensure routing and static assets compile properly.
 
 ### Phase 2: Playground UI Scaffold & Testing Baseline
-- [ ] Setup vanilla JS testing framework (e.g., native Node.js test runner) and JSDoc linting.
-- [ ] Create a custom Sphinx Directive to output the playground HTML container.
-- [ ] Embed Monaco Editor via CDN into the static assets.
-- [ ] Build the **responsive vanilla CSS** to handle the split-pane layout and mobile stacking.
-- [ ] Implement the UI state machine in strictly vanilla JS:
-  - [ ] Setup Light/Dark mode toggle (respecting system prefs and saving to `localStorage`).
-  - [ ] Setup Source Framework dropdown logic using semantic `<optgroup>` elements.
-  - [ ] Wire the Examples dropdown to update the left editor.
-  - [ ] Setup Target Framework dropdown logic using semantic `<optgroup>` elements.
-  - [ ] Write logic to dynamically show/hide the "Execute in browser" button based on target selection.
-- [ ] **Ensure 100% test coverage and 100% JSDoc coverage for all UI logic before proceeding.**
-- [ ] **Conduct full accessibility (a11y) audit via axe-core or Lighthouse to ensure WCAG 2.1 AA compliance (keyboard nav, ARIA labels, contrast ratios).**
+- [x] Setup vanilla JS testing framework (e.g., native Node.js test runner) and JSDoc linting.
+- [x] Create a custom Sphinx Directive to output the playground HTML container.
+- [x] Embed Monaco Editor via CDN into the static assets.
+- [x] Build the **responsive vanilla CSS** to handle the split-pane layout and mobile stacking.
+- [x] Implement the UI state machine in strictly vanilla JS:
+  - [x] Setup Light/Dark mode toggle (respecting system prefs and saving to `localStorage`).
+  - [x] Setup Source Framework dropdown logic using semantic `<optgroup>` elements.
+  - [x] Wire the Examples dropdown to update the left editor.
+  - [x] Setup Target Framework dropdown logic using semantic `<optgroup>` elements.
+  - [x] Write logic to dynamically show/hide the "Execute in browser" button based on target selection.
+- [x] **Ensure 100% test coverage and 100% JSDoc coverage for all UI logic before proceeding.**
+- [x] **Conduct full accessibility (a11y) audit via axe-core or Lighthouse to ensure WCAG 2.1 AA compliance (keyboard nav, ARIA labels, contrast ratios).**
 
 ### Phase 3: Compiler Hookup
-- [ ] Create a build script to package `ml-switcheroo-compiler` as a Pyodide-compatible wheel.
-- [ ] Integrate Pyodide loading into the Sphinx static JS.
-- [ ] Connect the "Compile" button click event to execute the Pyodide compiler function.
-- [ ] Handle compilation errors gracefully and pipe them to the UI console.
-- [ ] Update the right-hand editor with the successfully compiled output string.
-- [ ] **Write tests ensuring the JS-to-Pyodide bridge is fully covered.**
+- [x] Create a build script to package `ml-switcheroo-compiler` as a Pyodide-compatible wheel.
+- [x] Integrate Pyodide loading into the Sphinx static JS.
+- [x] Connect the "Compile" button click event to execute the Pyodide compiler function.
+- [x] Handle compilation errors gracefully and pipe them to the UI console.
+- [x] Update the right-hand editor with the successfully compiled output string.
+- [x] **Write tests ensuring the JS-to-Pyodide bridge is fully covered.**
 
 ### Phase 4: WebGPU Execution Engine
-- [ ] Build a JS module `webgpu_runner.js`.
-- [ ] Implement initialization check for WebGPU support.
-- [ ] Implement data serialization/deserialization to move JS arrays into GPU buffers.
-- [ ] Hook the "Execute in browser" button to run the `webgpu_runner` when WGSL is the target.
-- [ ] Pipe the numeric outputs (or execution errors) to the UI console.
-- [ ] **Ensure 100% test and JSDoc coverage for `webgpu_runner.js`.**
+- [x] Build a JS module `webgpu_runner.js`.
+- [x] Implement initialization check for WebGPU support.
+- [x] Implement data serialization/deserialization to move JS arrays into GPU buffers.
+- [x] Hook the "Execute in browser" button to run the `webgpu_runner` when WGSL is the target.
+- [x] Pipe the numeric outputs (or execution errors) to the UI console.
+- [x] **Ensure 100% test and JSDoc coverage for `webgpu_runner.js`.**
 
 ### Phase 5: WASM SIMD Execution Engine
-- [ ] Build a JS module `wasm_runner.js`.
-- [ ] Implement WASM instantiation logic and `WebAssembly.Memory` management.
-- [ ] Hook the "Execute in browser" button to run the `wasm_runner` when WASM is the target.
-- [ ] Ensure proper memory bounds checking and read-back for the final tensor results.
-- [ ] Output the results to the UI console.
-- [ ] **Ensure 100% test and JSDoc coverage for `wasm_runner.js`.**
+- [x] Build a JS module `wasm_runner.js`.
+- [x] Implement WASM instantiation logic and `WebAssembly.Memory` management.
+- [x] Hook the "Execute in browser" button to run the `wasm_runner` when WASM is the target.
+- [x] Ensure proper memory bounds checking and read-back for the final tensor results.
+- [x] Output the results to the UI console.
+- [x] **Ensure 100% test and JSDoc coverage for `wasm_runner.js`.**
