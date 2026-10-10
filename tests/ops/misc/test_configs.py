@@ -33,7 +33,7 @@ def test_root_registry_config_methods():
 
     cfg = OpsRegistry(root={"TestOp": OpRegistryConfig(variants={})})
 
-    assert "TestOp" in cfg.dict()
+    assert "TestOp" in cfg.model_dump()
     items = list(cfg.items())
     assert len(items) == 1
     assert items[0][0] == "TestOp"

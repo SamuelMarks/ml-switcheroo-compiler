@@ -25,19 +25,21 @@ class GroupMean(OpDef):
         if isinstance(shape, int):
             shape = (shape,)
         elif hasattr(shape, "shape"):
-            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
+            shape = tuple(d for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
 
         if len(shape) <= 1:
-            return tuple(int(d) for d in shape)
+            return tuple(d for d in shape)
 
         num_groups = kwargs.get("num_groups", shape[1])
         keepdims = kwargs.get("keepdims", True)
 
         if not keepdims:
-            return (int(shape[0]), int(str(num_groups)))
+            import typing
+
+            return typing.cast(tuple[int, ...], (shape[0], num_groups))
 
         out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
-        return tuple(int(d) for d in out_shape)
+        return typing.cast(tuple[int, ...], tuple(out_shape))
 
 
 @register_op("GroupVariance")
@@ -59,19 +61,21 @@ class GroupVariance(OpDef):
         if isinstance(shape, int):
             shape = (shape,)
         elif hasattr(shape, "shape"):
-            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
+            shape = tuple(d for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
 
         if len(shape) <= 1:
-            return tuple(int(d) for d in shape)
+            return tuple(d for d in shape)
 
         num_groups = kwargs.get("num_groups", shape[1])
         keepdims = kwargs.get("keepdims", True)
 
         if not keepdims:
-            return (int(shape[0]), int(str(num_groups)))
+            import typing
+
+            return typing.cast(tuple[int, ...], (shape[0], num_groups))
 
         out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
-        return tuple(int(d) for d in out_shape)
+        return typing.cast(tuple[int, ...], tuple(out_shape))
 
 
 @register_op("GroupNorm")
@@ -93,5 +97,5 @@ class GroupNorm(OpDef):
         if isinstance(shape, int):
             return (shape,)
         if hasattr(shape, "shape"):
-            shape = tuple(int(d) for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
-        return tuple(int(d) for d in shape)
+            shape = tuple(d for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
+        return tuple(d for d in shape)

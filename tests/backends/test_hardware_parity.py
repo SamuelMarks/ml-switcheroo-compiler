@@ -417,7 +417,7 @@ def test_golden_seed_cross_backend_float_equivalence() -> None:
 
         x_t = torch.from_numpy(x_np)
         y_t = torch.from_numpy(y_np)
-        out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).numpy()
+        out_torch = (torch.matmul(torch.relu(x_t + y_t), torch.sin(x_t)) - torch.exp(-torch.abs(y_t))).cpu().detach().numpy()
         assert np.allclose(out_torch, z_ref, atol=1e-5, rtol=1e-4)
     except ImportError:
         pass
