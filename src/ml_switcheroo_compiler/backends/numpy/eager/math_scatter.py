@@ -8,7 +8,7 @@ from typing import Union
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.indexing import _dynamic_update_slice
 
 
@@ -30,8 +30,10 @@ def _np_tensor_scatter_update(
     Returns:
         np.ndarray: Updated tensor.
     """
-    res = global_eager_registry.get("TensorScatterUpdate")(backend_module, tensor, indices, updates)
-    return np.asarray(res)
+    res = backend_module.copy(backend_module.array(tensor))
+    idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
+    res[idx] = backend_module.array(updates)
+    return res
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
