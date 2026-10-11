@@ -27,6 +27,8 @@ cupy = ["requirements-backend-cupy.txt"]
 dask = ["requirements-backend-dask.txt"]
 tensorflow = ["requirements-backend-tensorflow.txt"]
 onnx = ["requirements-backend-onnx.txt"]
+numba = ["requirements-backend-numba.txt"]
+sparse = ["requirements-backend-sparse.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ml_switcheroo_compiler"]

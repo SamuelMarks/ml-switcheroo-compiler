@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -29,7 +29,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install --upgrade setuptools wheel
-        python3 -m pip install ruff pytest pytest-cov build radon pylint pytest-mock pytest-asyncio mypy Pillow
+        python3 -m pip install ruff build radon pylint Pillow
         python3 -m pip install -e ./ml-switcheroo-ir
         if [ -f "pyproject.toml" ]; then python3 -m pip install -e . || true; fi
         for req in requirements*.txt; do python3 -m pip install -r "$req" || true; done
@@ -39,11 +39,6 @@ jobs:
 
     - name: Check Linting (Ruff)
       run: ruff check --config pyproject.toml
-
-    - name: Test & Coverage
-      run: |
-        export KERAS_BACKEND=torch
-        pytest --cov=. --cov-report=xml
 
     - name: Cyclomatic Complexity
       run: |
@@ -58,6 +53,93 @@ jobs:
     - name: Check Snapshot Drift
       run: python3 scripts/check_snapshot_drift.py
 
+    - name: Build Package
+      run: python3 -m build
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [cupy, dask, jax, keras, mlx, numba, numpy, onnx, sparse, tensorflow, torch]
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/checkout@v7
+      with:
+        repository: SamuelMarks/ml-switcheroo-ir
+        path: ml-switcheroo-ir
+
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+
+    - name: Install Dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade setuptools wheel
+        python3 -m pip install pytest pytest-cov pytest-mock pytest-asyncio pytest-xdist mypy Pillow
+        python3 -m pip install -e ./ml-switcheroo-ir
+        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . || true; fi
+        python3 -m pip install -r requirements.txt || true
+        python3 -m pip install -r requirements-dev.txt || true
+        python3 -m pip install -r requirements-backend-${{ matrix.backend }}.txt || true
+
+    - name: Test & Coverage
+      run: |
+        # Set KERAS_BACKEND for frameworks that Keras directly supports
+        export KERAS_BACKEND=${{ matrix.backend }}
+        if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
+          export KERAS_BACKEND=numpy
+        fi
+        pytest --cov=. --cov-report=xml
+
+    - name: Upload Coverage
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage-${{ matrix.backend }}
+        path: .coverage
+        include-hidden-files: true
+
+  update-badges:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: actions/checkout@v7
+      with:
+        repository: SamuelMarks/ml-switcheroo-ir
+        path: ml-switcheroo-ir
+
+    - name: Set up Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+
+    - name: Install Dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install coverage
+        python3 -m pip install -e ./ml-switcheroo-ir
+        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . || true; fi
+        python3 -m pip install -r requirements.txt || true
+        python3 -m pip install -r requirements-dev.txt || true
+
+    - name: Download all coverage files
+      uses: actions/download-artifact@v8
+      with:
+        path: coverage-files
+
+    - name: Combine Coverage
+      run: |
+        for dir in coverage-files/*/; do
+          mv "$dir/.coverage" ".coverage.$(basename $dir)"
+        done
+        python3 -m coverage combine
+        python3 -m coverage xml -o coverage.xml
+
     - name: Update Badges
       run: |
         python3 scripts/update_badges.py
@@ -65,6 +147,3 @@ jobs:
           echo "Coverage badges in README.md are out of date. Please run pre-commit or the update badges script locally and commit the changes."
           exit 1
         fi
-
-    - name: Build Package
-      run: python3 -m build

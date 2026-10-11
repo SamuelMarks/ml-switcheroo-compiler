@@ -300,6 +300,36 @@ The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecos
 
 ---
 
+## Development & Testing
+
+This project requires strict environment isolation for testing to prevent C++ symbol namespace and memory allocator collisions across different machine learning frameworks (e.g., PyTorch, TensorFlow, JAX).
+
+To run tests locally, we use `tox` combined with `tox-uv` for fast virtual environment resolution. Install the tooling globally:
+
+```bash
+pip install tox tox-uv
+```
+
+Execute the full isolated test matrix (covering all 11 backends):
+
+```bash
+tox
+```
+
+To run a specific backend's isolated environment:
+
+```bash
+tox -e jax,torch
+```
+
+The repository also enforces module-level isolation via `pytest-xdist` configuration. If running `pytest` directly, ensure you use the pre-configured load-file isolation:
+
+```bash
+pytest -n auto --dist loadfile
+```
+
+---
+
 ## Related Projects
 
 | Name | Description | CI Shields |

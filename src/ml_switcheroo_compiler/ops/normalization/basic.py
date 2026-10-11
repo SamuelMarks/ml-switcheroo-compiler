@@ -33,9 +33,9 @@ class GroupMean(OpDef):
         num_groups = kwargs.get("num_groups", shape[1])
         keepdims = kwargs.get("keepdims", True)
 
-        if not keepdims:
-            import typing
+        import typing
 
+        if not keepdims:
             return typing.cast(tuple[int, ...], (shape[0], num_groups))
 
         out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
@@ -69,9 +69,9 @@ class GroupVariance(OpDef):
         num_groups = kwargs.get("num_groups", shape[1])
         keepdims = kwargs.get("keepdims", True)
 
-        if not keepdims:
-            import typing
+        import typing
 
+        if not keepdims:
             return typing.cast(tuple[int, ...], (shape[0], num_groups))
 
         out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
