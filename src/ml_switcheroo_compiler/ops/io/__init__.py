@@ -1,12 +1,11 @@
-# ruff: noqa: F401
 """io module."""
 
 from .async_io import (
     AsyncIOFuture,
     NonblockingLoad,
     NonblockingSave,
-    nonblocking_load,
-    nonblocking_save,
+    nonblocking_load,  # noqa: F401
+    nonblocking_save,  # noqa: F401
 )
 from .base64_io import (
     DecodeBase64,

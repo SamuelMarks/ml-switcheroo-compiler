@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import os
 
 import yaml
@@ -465,7 +465,7 @@ class BufferAllocationPass:
         allocator = InterferenceGraphColoringAllocator(alignment=alignment)
         return allocator.compute_peak_memory_reduction(graph)
 
-    def run(self, graph: IRGraph) -> bool:
+    def run(self, graph: IRGraph) -> bool:  # noqa: C901, PLR0912, PLR0915
         """Run the buffer allocation pass on the graph.
 
         Args:
@@ -490,7 +490,7 @@ class BufferAllocationPass:
         # Tag graph with register colored allocations for linear targets (WebGPU, WASM, LLVM/C++)
         if not graph_attrs.get("skip_coloring", False):
             try:
-                coloring_allocator = InterferenceGraphColoringAllocator(alignment=256)
+                coloring_allocator = InterferenceGraphColoringAllocator(alignment=256)  # noqa: F841
                 # Build interference graph directly using already-extracted node_sizes
                 ig = InterferenceGraph()
                 birth = {node.id: i for i, node in enumerate(sorted_nodes)}

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import typing
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 
 """SPMD compiler pass."""
 
@@ -194,7 +194,7 @@ def _get_spmd_rules():
     return _SPMD_RULES
 
 
-def _determine_spmd_communication(
+def _determine_spmd_communication(  # noqa: C901
     node: IRNode,
     idx: int,
     inp_id: str,
@@ -364,7 +364,7 @@ class SPMDShardingAnnotation:
         return f"SPMDShardingAnnotation(mesh={self.mesh}, mesh_mapping={self.mesh_mapping})"
 
 
-def propagate_sharding(graph: IRGraph) -> bool:
+def propagate_sharding(graph: IRGraph) -> bool:  # noqa: C901, PLR0912, PLR0915
     """Propagate sharding annotations across matmul, reduction, and elementwise nodes.
 
     Args:

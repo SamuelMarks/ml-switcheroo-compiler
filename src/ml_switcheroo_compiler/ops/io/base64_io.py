@@ -1,19 +1,19 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
 
-import glob
-import os
-import shutil
+import glob  # noqa: F401
+import os  # noqa: F401
+import shutil  # noqa: F401
 
-from ml_switcheroo_compiler.core.config import config as core_config
-from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
+from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from ml_switcheroo_compiler.serialization.utils import load_npz
+from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
+from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat  # noqa: F401
+from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
 def _eager_base64(op: str, data, pad: bool = False):

@@ -139,6 +139,10 @@ def main(argv: list[str] | None = None, stdout: TextIO | None = None) -> int:
     old_target: str = args.old if args.old is not None else _resolve_default_snapshot_dir()
     new_target: str = args.new if args.new is not None else old_target
 
+    if not os.path.exists(old_target) and not os.path.exists(new_target):
+        print(f"Skipping drift check. Snapshots not found at {old_target}", file=out)
+        return 0
+
     if os.path.isfile(old_target) and os.path.isfile(new_target):
         diff, changelog = compare_snapshot_files(old_target, new_target)
         if args.output_changelog:

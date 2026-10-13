@@ -1,11 +1,11 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Core utilities."""
 
 from __future__ import annotations
 
-import builtins
-import typing
-from typing import Any, Callable, Optional, Protocol, Union
+import builtins  # noqa: F401
+import typing  # noqa: F401
+from typing import Any, Callable, Optional, Protocol, Union  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -547,7 +547,7 @@ def _np_scattermax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
+    import numpy as np  # noqa: F401
 
     return args[0]
 
@@ -567,7 +567,7 @@ def _np_scattermin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
+    import numpy as np  # noqa: F401
 
     return args[0]
 

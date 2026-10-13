@@ -713,12 +713,14 @@ class SnapshotGroundingEngine:
         self,
         snapshot_dir: str | None = None,
         config: BackendSnapshotTargetsConfig | None = None,
+        fail_on_missing: bool = True,
     ) -> None:
         """Initialize the SnapshotGroundingEngine.
 
         Args:
             snapshot_dir (str | None): Path to snapshot directory. Defaults to standard repository location.
             config (BackendSnapshotTargetsConfig | None): Optional loaded targets configuration.
+            fail_on_missing (bool): Whether to fail on missing directories.
         """
         if config is None:
             config = load_backend_snapshot_targets()
@@ -726,6 +728,7 @@ class SnapshotGroundingEngine:
         self._is_default_snapshot_dir: bool = snapshot_dir is None
         self.snapshot_dir: str = os.path.abspath(snapshot_dir) if snapshot_dir is not None else _resolve_default_snapshot_dir()
 
+        self._fail_on_missing = fail_on_missing
         self._endpoint_cache: dict[str, set[str]] = {}
         self._endpoint_item_cache: dict[str, dict[str, dict[str, object]]] = {}
         self._ghost_ref_cache: dict[str, dict[str, ExtendedGhostRef]] = {}
@@ -860,6 +863,8 @@ class SnapshotGroundingEngine:
 
         path: str | None = self.get_snapshot_path(backend_name)
         if path is None:
+            if not getattr(self, "_fail_on_missing", True):
+                return {}
             raise FileNotFoundError(f"No snapshot JSON file found for backend '{backend_name}' in {self.snapshot_dir}")
 
         if path.endswith(".gz"):

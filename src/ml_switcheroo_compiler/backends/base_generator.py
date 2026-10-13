@@ -1,11 +1,11 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Define base generator for emitting backend code from IR."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union  # noqa: F401
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.device import Device
@@ -33,7 +33,7 @@ class CompiledArtifact:
     callable_fn: Any | None = None
     binary_bytes: bytes = b""
     source_code: str = ""
-    metadata: dict[str, Any] | None = None
+    metadata: dict[str, AttributeValue] | None = None
     temp_dir: Any = None
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -310,7 +310,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         val = node.attributes.get("value")
         return repr(val)
 
-    def visit_OpNode(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit_OpNode(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:  # noqa: C901
         """Generic visitor for IRNode driven by declarative mapping YAML templates.
 
         Args:
@@ -690,3 +690,6 @@ class ClassBasedGenerator(BaseGenerator):
         self.indent_level += 1
         self._generate_body()
         return "\n".join(self.code)
+
+
+from ml_switcheroo_ir import AttributeValue

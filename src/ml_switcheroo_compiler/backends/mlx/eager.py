@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Backend utilities."""
 import builtins
 
@@ -38,7 +38,7 @@ def _get_mlx_func(op_type: str):
     return None
 
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 def execute_op(cls: type, op_type: str, *args, **kwargs):
     """Evaluate execute_op operation.
 
@@ -709,7 +709,7 @@ def _mlx_all_to_all(backend_module, tensor, **kwargs):
 
 
 @mlx_eager_registry.register("ReduceScatter")
-def _mlx_reduce_scatter(backend_module, tensor, **kwargs):
+def _mlx_reduce_scatter(backend_module, tensor, **kwargs):  # noqa: C901, PLR0915
     """Implement ReduceScatter for MLX eager mode using native collectives or ring reduce-scatter fallback.
 
     Args:

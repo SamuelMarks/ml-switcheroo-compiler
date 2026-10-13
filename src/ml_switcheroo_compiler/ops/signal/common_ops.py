@@ -1,17 +1,17 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Signal processing operations."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass  # noqa: F401
+from typing import Optional  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.backends.registry import get_active_backend  # noqa: F401
+from ml_switcheroo_compiler.core.config import config  # noqa: F401
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
+from ml_switcheroo_compiler.ops.base import OpDef, register_op  # noqa: F401
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node  # noqa: F401
 
 
 def _emit_signal_node(

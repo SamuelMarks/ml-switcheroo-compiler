@@ -1,13 +1,13 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module broadcast_explicitizer.py."""
 
-from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from collections.abc import Sequence  # noqa: F401
+from typing import Any, Callable, Optional, Union  # noqa: F401
 
 """Broadcast Explicitizer Pass."""
 
 import uuid
-from typing import Optional
+from typing import Optional  # noqa: F811
 
 from ml_switcheroo_ir import LogicalNode
 

@@ -1,14 +1,14 @@
 """Module registry.py."""
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import typing
 from typing import Any, Callable
 
 AnyType = typing.Union[int, float, str, bool, list, tuple, dict, None, type, typing.Callable]
 
-import os
+import os  # noqa: F401
 
-import yaml
+import yaml  # noqa: F401
 
 _REGISTRY: dict[str, type] = {}
 _YAML_REGISTRY = {}
@@ -345,4 +345,4 @@ class _RegistryShimFix:
 
 
 backend_mapping_registry = _RegistryShimFix(_YAML_REGISTRY)
-from ml_switcheroo_compiler.ops.base import OpDef
+from ml_switcheroo_compiler.ops.base import OpDef  # noqa: F401

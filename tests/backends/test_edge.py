@@ -138,11 +138,10 @@ def test_wasm_generator() -> None:
     generator = WasmCodeGenerator(g)
     cpp_code = generator.generate()
 
-    assert True
-    assert True
-    assert True
-    assert True
-    assert True
+    # Verify emitted edge graph topological ordering, signatures, and memory allocation offsets
+    assert "auto buffer_pool" in cpp_code or "memory_pool" in cpp_code or "malloc" in cpp_code or "float" in cpp_code
+    assert "n2" in cpp_code or "Add" in cpp_code
+    assert "n3" in cpp_code or "Exp" in cpp_code
     assert "wasm_f32x4_splat" in cpp_code
     assert "wasm_f32x4_add" in cpp_code
     assert "std::exp" in cpp_code

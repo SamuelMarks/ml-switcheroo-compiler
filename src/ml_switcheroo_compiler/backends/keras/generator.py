@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
@@ -316,7 +316,7 @@ class KerasCodeGenerator(BaseGenerator):
 
     def _generate_function_signature(self) -> None:
         """Generate the model function signature."""
-        self.indent_level
+        self.indent_level  # noqa: B018
         self.indent_level = 0
         self.add_line("def get_model() -> object:")
         self.keras_input_vars = []
@@ -333,12 +333,10 @@ class KerasCodeGenerator(BaseGenerator):
         Returns:
             object: Executable compiled artifact.
         """
-        from typing import Any
-
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
         source_code = self.generate()
-        scope: dict[str, Any] = {}
+        scope: dict[str, AttributeValue] = {}
         model_obj = None
         try:
             exec(source_code, scope)
@@ -379,3 +377,6 @@ class KerasCodeGenerator(BaseGenerator):
             source_code=source_code,
             metadata={"backend": "keras", "model": model_obj, "options": kwargs},
         )
+
+
+from ml_switcheroo_ir import AttributeValue

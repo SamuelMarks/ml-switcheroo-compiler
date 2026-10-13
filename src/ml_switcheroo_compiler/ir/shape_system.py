@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import os
 from typing import TYPE_CHECKING, Union
 
@@ -212,7 +212,7 @@ class Polynomial:
                     new_terms[merged_mono] = curr
         return Polynomial(new_terms)
 
-    def div_exact(self, other: Polynomial) -> Polynomial | None:
+    def div_exact(self, other: Polynomial) -> Polynomial | None:  # noqa: C901, PLR0911
         """Attempt exact polynomial division.
 
         Args:
@@ -256,7 +256,7 @@ class Polynomial:
 
         return None
 
-    def canonical_str(self) -> str:
+    def canonical_str(self) -> str:  # noqa: C901, PLR0912
         """Return canonical deterministic string representation of polynomial.
 
         Returns:
@@ -348,7 +348,7 @@ class Polynomial:
         """
         return f"Polynomial({self.canonical_str()})"
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate polynomial expression given variable bindings.
 
         Args:
@@ -396,7 +396,7 @@ class SymNode:
         msg = f"Cannot convert {type(val)} to SymNode"
         raise TypeError(msg)
 
-    def simplify(self) -> SymNode:
+    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Apply algebraic simplification rules recursively.
 
         Returns:
@@ -423,7 +423,7 @@ class SymNode:
         """
         return None
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate expression given variable bindings.
 
         Args:
@@ -677,7 +677,7 @@ class SymConst(SymNode):
         """
         return Polynomial.from_const(self.value)
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate constant value.
 
         Args:
@@ -767,7 +767,7 @@ class SymVar(SymNode):
         """
         return Polynomial.from_var(self.name)
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate variable given environment.
 
         Args:
@@ -851,7 +851,7 @@ class SymBinaryOp(SymNode):
         self.left: SymNode = left
         self.right: SymNode = right
 
-    def simplify(self) -> SymNode:
+    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Apply algebraic rewrite rules to simplify binary operation.
 
         Returns:
@@ -989,7 +989,7 @@ class SymBinaryOp(SymNode):
             return p_left.div_exact(p_right)
         return None
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate binary operation given variable bindings.
 
         Args:
@@ -1102,7 +1102,7 @@ class SymUnaryOp(SymNode):
         self.op = str(op)
         self.operand = operand
 
-    def simplify(self) -> SymNode:
+    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Simplify unary operation.
 
         Returns:
@@ -1119,7 +1119,7 @@ class SymUnaryOp(SymNode):
                 return SymConst(-v)
         return SymUnaryOp(self.op, s_op)
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate unary operation with variable bindings.
 
         Args:
@@ -1185,7 +1185,7 @@ class SymPiecewise(SymNode):
         self.cases = cases
         self.default = default
 
-    def simplify(self) -> SymNode:
+    def simplify(self) -> SymNode:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Simplify piecewise expression.
 
         Returns:
@@ -1196,7 +1196,7 @@ class SymPiecewise(SymNode):
             simplified_cases.append((cond, expr.simplify()))
         return SymPiecewise(simplified_cases, self.default.simplify())
 
-    def eval(self, env: dict[str, int]) -> int:
+    def eval(self, env: dict[str, int]) -> int:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Evaluate piecewise expression given environment bindings.
 
         Args:
@@ -1252,7 +1252,7 @@ class SymPiecewise(SymNode):
         return hash((tuple(self.cases), self.default))
 
 
-def _poly_to_symnode(poly: Polynomial) -> SymNode:
+def _poly_to_symnode(poly: Polynomial) -> SymNode:  # noqa: C901, PLR0912
     """Convert a canonical Polynomial back into a simplified SymNode expression tree.
 
     Args:
@@ -1316,7 +1316,7 @@ def _poly_to_symnode(poly: Polynomial) -> SymNode:
     return res_node or SymConst(0)
 
 
-def _tokenize_expr(expr_str: str) -> list[str]:
+def _tokenize_expr(expr_str: str) -> list[str]:  # noqa: C901
     """Tokenize a symbolic expression string into component tokens.
 
     Args:
@@ -1362,7 +1362,7 @@ def _tokenize_expr(expr_str: str) -> list[str]:
     return tokens
 
 
-def _parse_sym_str(s: str) -> SymNode:
+def _parse_sym_str(s: str) -> SymNode:  # noqa: C901
     """Parse an algebraic string expression into a structured SymNode.
 
     Args:
@@ -1702,7 +1702,7 @@ class SymbolicConstraintTracker:
             self._parent[key] = self._find(self._parent[key])
         return self._parent[key]
 
-    def record_equality(
+    def record_equality(  # noqa: C901, PLR0912
         self,
         a: int | str | SymNode | SymInt,
         b: int | str | SymNode | SymInt,
@@ -1989,7 +1989,7 @@ class ShapeTracker:
         return resolved
 
     @staticmethod
-    def resolve_dynamic_bounds(
+    def resolve_dynamic_bounds(  # noqa: C901, PLR0912
         graph: object,
         feedback_telemetry: dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]],
         tracker: SymbolicConstraintTracker | None = None,

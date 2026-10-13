@@ -1,4 +1,3 @@
-# ruff: noqa: D103
 """Tests for io primitives."""
 
 import pytest

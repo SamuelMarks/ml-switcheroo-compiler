@@ -1,4 +1,3 @@
-# ruff: noqa: D103
 """Tests for lookup ops."""
 
 from ml_switcheroo_compiler.core.dtype import DType

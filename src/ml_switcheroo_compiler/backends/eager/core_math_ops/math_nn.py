@@ -1,9 +1,9 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """math_nn module."""
 
 from __future__ import annotations
 
-import builtins
+import builtins  # noqa: F401
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -247,7 +247,7 @@ def _leaky_relu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return backend_module.where(cond, x, alpha * x)
 
 
-def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
+def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:  # noqa: C901, PLR0912
     """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 
     Args:
@@ -385,6 +385,6 @@ def _np_fractionalavgpool(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
+    import numpy as np  # noqa: F401
 
     return args[0]

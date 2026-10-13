@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import os
-from typing import Any
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 _WGSL_TEMPLATES: dict[str, dict[str, dict[str, str | list[int] | None]] | dict[str, str] | str | None] = {}
 _WGSL_KERNELS: dict[str, object] = {}
@@ -130,21 +130,23 @@ def _load_templates() -> None:
         _WGSL_TEMPLATES = loaded
 
 
-def get_wgsl_template(name: str) -> dict[str, Any]:
+def get_wgsl_template(name: str) -> dict[str, AttributeValue]:
     """Retrieve WGSL template configuration by operation name.
 
     Args:
         name (str): Operation or template name.
 
     Returns:
-        dict[str, Any]: Template configuration dict.
+        dict[str, AttributeValue]: Template configuration dict.
     """
     _load_templates()
     templates_dict = _WGSL_TEMPLATES.get("templates", {})
     if isinstance(templates_dict, dict):
         tpl = templates_dict.get(name, {})
         if isinstance(tpl, dict):
-            return tpl
+            from typing import cast
+
+            return cast(dict[str, AttributeValue], tpl)
     return {}
 
 

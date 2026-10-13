@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-from typing import Optional
+# ruff: noqa: E402, E501, F403
+from typing import Optional  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLEmitter
@@ -173,7 +173,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         nodes.append(f"let {out_var}: u32 = {out_var}_offset + {base_offset_words}u;")
         return nodes
 
-    def _get_wgsl_for_op(self, node: IRNode, shape: list[int], nelem: int, clean_id: str) -> tuple[list[str], str, str, str]:
+    def _get_wgsl_for_op(self, node: IRNode, shape: list[int], nelem: int, clean_id: str) -> tuple[list[str], str, str, str]:  # noqa: C901, PLR0912, PLR0915
         """_get_wgsl_for_op function.
 
         Args:
@@ -188,7 +188,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         global_code_list: list[str] = []
         op_type: str = getattr(node, "op_type", "")
-        body_nodes: list[str] = []
+        body_nodes: list[str] = []  # noqa: F841
 
         # Get input nodes for shapes/strides
         inputs: list[str] = getattr(node, "inputs", [])
@@ -199,7 +199,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         _, out_strides = self._get_shape_and_strides(node)
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
-            get_js_orchestration_template,
+            get_js_orchestration_template,  # noqa: F401
             get_wgsl_op_mapping,
             get_wgsl_template,
         )
@@ -419,7 +419,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
     def visit_WhileLoop(self, node: IRNode, input_vars: list[str], **kwargs: object) -> tuple[list[str], str, str, str]:
         """Generate WGSL loop constructs via YAML templates with dynamic subgraph lowering."""
-        shape: list[int] = kwargs.get("shape", [])
+        shape: list[int] = kwargs.get("shape", [])  # noqa: F841
         nelem: int = kwargs.get("nelem", 1)
         clean_id: str = kwargs.get("clean_id", "")
 
@@ -487,7 +487,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
     def visit_Cond(self, node: IRNode, input_vars: list[str], **kwargs: object) -> tuple[list[str], str, str, str]:
         """Generate WGSL if/else block branching via YAML templates with dynamic subgraph lowering."""
-        shape: list[int] = kwargs.get("shape", [])
+        shape: list[int] = kwargs.get("shape", [])  # noqa: F841
         nelem: int = kwargs.get("nelem", 1)
         clean_id: str = kwargs.get("clean_id", "")
 
@@ -540,11 +540,11 @@ class WebGPUCodeGenerator(BaseGenerator):
 
     def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: object) -> tuple[list[str], str, str, str]:
         """Generate WGSL scan via YAML templates."""
-        shape: list[int] = kwargs.get("shape", [])
+        shape: list[int] = kwargs.get("shape", [])  # noqa: F841
         nelem: int = kwargs.get("nelem", 1)
         clean_id: str = kwargs.get("clean_id", "")
 
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template  # noqa: F401
 
         template: dict[str, str] = get_wgsl_template("scan")
 
@@ -559,13 +559,13 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         return wgsl_str, f"Math.ceil({nelem} / 64)", "1", "1"
 
-    def generate(self) -> str:
+    def generate(self) -> str:  # noqa: C901, PLR0912, PLR0915
         r"""Generate WebGPU WGSL compute shader module code enclosed in a JavaScript orchestrator.
 
         Returns:
             str: Complete, executable JavaScript orchestration code wrapper around WGSL compute shader.
         """
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_global_bindings
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_global_bindings  # noqa: F401
 
         output_ids: list[str] = getattr(self.graph, "outputs", []) or []
 
@@ -901,7 +901,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         return self._get_wgsl_for_op(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", ""))
 
-    def apply_shape_telemetry(self, telemetry: dict[str, object]) -> None:
+    def apply_shape_telemetry(self, telemetry: dict[str, object]) -> None:  # noqa: C901, PLR0912
         """Update IRGraph node shape metadata and refine symbolic dimensions from client telemetry.
 
         Args:
@@ -959,7 +959,7 @@ class WebGPUCodeGenerator(BaseGenerator):
     def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: object) -> tuple[list[str], str, str, str]:
         """Emit WGSL for Conv2D."""
         shape: list[int] = kwargs.get("shape", [])
-        nelem: int = kwargs.get("nelem", 1)
+        nelem: int = kwargs.get("nelem", 1)  # noqa: F841
         clean_id: str = kwargs.get("clean_id", "")
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template

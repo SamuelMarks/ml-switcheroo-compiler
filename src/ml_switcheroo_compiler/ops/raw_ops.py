@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Raw Operations mapping strategy."""
 
 from __future__ import annotations
@@ -96,8 +96,8 @@ class RawMatMul(RawOp):
         transpose_b = kwargs.get("transpose_b", False)
 
         a_m = a[-1] if transpose_a else a[-2]
-        a_n = a[-2] if transpose_a else a[-1]
-        b_n = b[-2] if transpose_b else b[-1]
+        a_n = a[-2] if transpose_a else a[-1]  # noqa: F841
+        b_n = b[-2] if transpose_b else b[-1]  # noqa: F841
         b_p = b[-2] if transpose_b else b[-1]
 
         from ml_switcheroo_compiler.core.shape import broadcast_shapes

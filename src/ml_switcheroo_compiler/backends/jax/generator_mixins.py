@@ -1,17 +1,17 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """JAX Generator Mixins."""
 
 from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.audio_utils import (
-    extract_mel_attributes,
-    extract_stft_attributes,
+    extract_mel_attributes,  # noqa: F401
+    extract_stft_attributes,  # noqa: F401
 )
 from ml_switcheroo_compiler.backends.generator_utils import (
-    _extract_extract_boxes_attributes,
-    _extract_filter_attributes,
-    _extract_vision_transform_attributes,
+    _extract_extract_boxes_attributes,  # noqa: F401
+    _extract_filter_attributes,  # noqa: F401
+    _extract_vision_transform_attributes,  # noqa: F401
 )
 from ml_switcheroo_compiler.ir.core import IRNode
 

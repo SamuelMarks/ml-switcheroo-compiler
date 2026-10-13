@@ -1,12 +1,12 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Reverse-mode Automatic Differentiation (AD) Engine."""
 
 import typing
 import uuid
-from collections.abc import Sequence
-from typing import Any, Optional, Union
+from collections.abc import Sequence  # noqa: F401
+from typing import Any, Optional, Union  # noqa: F401
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
+from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode, topological_sort
 
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
@@ -99,11 +99,11 @@ def _get_reachable_from_output(sorted_nodes: list[LogicalNode], output_id: str) 
     return reachable_from_output
 
 
-def _load_rematerialization_rules() -> dict[str, Any]:
+def _load_rematerialization_rules() -> dict[str, AttributeValue]:
     """Load rematerialization rules from YAML config.
 
     Returns:
-        dict[str, Any]: Loaded rematerialization rules configuration.
+        dict[str, AttributeValue]: Loaded rematerialization rules configuration.
     """
     import os
 
@@ -120,12 +120,12 @@ def _load_rematerialization_rules() -> dict[str, Any]:
     return {}
 
 
-def _should_rematerialize(node: LogicalNode, rules: Optional[dict[str, Any]] = None) -> bool:
+def _should_rematerialize(node: LogicalNode, rules: Optional[dict[str, AttributeValue]] = None) -> bool:
     """Determine if a node should be rematerialized across backward boundary.
 
     Args:
         node (LogicalNode): The node to evaluate.
-        rules (Optional[dict[str, Any]]): Rematerialization rules config.
+        rules (Optional[dict[str, AttributeValue]]): Rematerialization rules config.
 
     Returns:
         bool: True if node should be rematerialized.
@@ -293,7 +293,7 @@ def _extract_gradients(
     return grad_outputs
 
 
-def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typing.Optional[str] = None) -> LogicalGraph:
+def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: typing.Optional[str] = None) -> LogicalGraph:  # noqa: C901, PLR0912
     """Evaluate grad operation.
 
     Args:

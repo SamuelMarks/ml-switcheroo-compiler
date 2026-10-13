@@ -1,19 +1,19 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """I/O and memory operations."""
 
 from __future__ import annotations
 
-import glob
-import os
-import shutil
+import glob  # noqa: F401
+import os  # noqa: F401
+import shutil  # noqa: F401
 
-from ml_switcheroo_compiler.core.config import config as core_config
+from ml_switcheroo_compiler.core.config import config as core_config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from ml_switcheroo_compiler.serialization.utils import load_npz
+from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat  # noqa: F401
+from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat  # noqa: F401
+from ml_switcheroo_compiler.serialization.utils import load_npz  # noqa: F401
 
 
 def decode_image(contents: Tensor, channels=0, dtype=DType.UInt8, name=None, expand_animations=True):
@@ -50,10 +50,10 @@ def _decode_image_with_pil(contents, channels: int = 0):
     Returns:
         Tensor: Resulting decoded image tensor.
     """
-    import io
+    import io  # noqa: F401
 
-    import numpy as np
-    from PIL import Image
+    import numpy as np  # noqa: F401
+    from PIL import Image  # noqa: F401
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -61,26 +61,16 @@ def _decode_image_with_pil(contents, channels: int = 0):
     if not data:
         return Tensor(None, TensorConfig((), None, None))
 
-    try:
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend_cls = get_active_backend()
+    if hasattr(backend_cls, "decode_image_bytes"):
         if isinstance(data, str):
             with open(data, "rb") as f:
-                img = Image.open(f)
-                img.load()
-        else:
-            img = Image.open(io.BytesIO(data))
-    except Exception as e:
-        raise ValueError(f"Failed to decode image: {e}") from e
-
-    # Convert to standard format
-    if channels == 1:
-        img = img.convert("L")
-    elif channels == 3:
-        img = img.convert("RGB")
-    elif channels == 4:
-        img = img.convert("RGBA")
-
-    arr = np.array(img)
-    return Tensor(arr, TensorConfig(arr.shape, DType.UInt8, None))
+                data = f.read()
+        img_np = backend_cls.decode_image_bytes(data, channels=channels)
+        return Tensor(img_np, TensorConfig(img_np.shape, "uint8", "cpu"))
+    raise NotImplementedError("PIL is decoupled from core. Active backend lacks decode_image_bytes.")
 
 
 def decode_jpeg(contents, channels: int = 0, ratio: int = 1):

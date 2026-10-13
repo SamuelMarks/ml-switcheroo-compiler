@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """ISO C++17 code generator and native compilation runner for CPU fallback.
 
 This backend compiles computational graphs into ISO C++17 compute kernels using
@@ -12,7 +12,7 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union  # noqa: F401
 
 AttrType = Union[int, float, str, bool, list, tuple, dict, None]
 
@@ -242,7 +242,7 @@ class CppGenerator(BaseGenerator):
         body = template["body"].format(cond_var=cond_var, then_body="\n".join(then_lines) + "\n" if then_lines else "", else_body="\n".join(else_lines) + "\n" if else_lines else "")
         self.lines.extend(body.strip().split("\n"))
 
-    def _visit_loop_op(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+    def _visit_loop_op(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:  # noqa: C901
         """Generate Loop or WhileLoop C++ code with dynamic loop options propagation.
 
         Args:
@@ -1193,7 +1193,7 @@ class CppGenerator(BaseGenerator):
         for line in body.split("\n"):
             self.lines.append(f"    {line}")
 
-    def _visit_node(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:
+    def _visit_node(self, node: IRNode, graph_to_use: IRGraph | None = None) -> None:  # noqa: C901, PLR0912, PLR0915
         """Visit a node and emit C++ code.
 
         Args:

@@ -1,12 +1,12 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
 
-import contextlib
+import contextlib  # noqa: F401
 import math
-import typing
+import typing  # noqa: F401
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: F401
 from typing import Optional, Union
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -16,11 +16,11 @@ from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-from ml_switcheroo_compiler.ops.registry import register_util
+from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
 
 from .options import GradOptions
 from .utils import _convert_to_tensors, _get_fun_primal
@@ -158,7 +158,7 @@ def custom_jvp(fun: Callable) -> CustomJVPFunction:
     return CustomJVPFunction(fun)
 
 
-def jvp(
+def jvp(  # noqa: C901, PLR0912
     fun,
     primals,
     tangents,
@@ -252,7 +252,7 @@ def jvp(
     return val, out_tan
 
 
-def vjp(
+def vjp(  # noqa: C901, PLR0915
     fun,
     *primals,
     has_aux: bool = False,
@@ -333,7 +333,7 @@ def vjp(
         cotangent_id=cotangent_mapping,
     )
 
-    def vjp_fn(cotangent):
+    def vjp_fn(cotangent):  # noqa: C901
         """Evaluate vjp_fn operation.
 
         Args:

@@ -1,9 +1,9 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """IR evaluator using the OpRegistry."""
 
 import ast
 import builtins
-from typing import Optional, Protocol, TypeVar, Union, cast, runtime_checkable
+from typing import Optional, Protocol, TypeVar, Union, cast, runtime_checkable  # noqa: F401
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -418,7 +418,7 @@ def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: "type[Base
     env.set(node.id, curr_val)
 
 
-def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]") -> None:
+def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGenerator]") -> None:  # noqa: C901, PLR0912, PLR0915
     """Execute a single logical node and update the local environment with its result.
 
     Args:
@@ -438,8 +438,10 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: "type[BaseGener
         if hasattr(backend, "execute_op"):
             try:
                 val = backend.execute_op("Identity", *in_vals)
-            except Exception:
-                pass
+            except Exception as e:
+                from ml_switcheroo_compiler.core.errors import EvaluationError
+
+                raise EvaluationError(f"Eager evaluation failed for Identity op: {e}", node_id=node.id, op_type=node.op_type) from e
         env.set(node.id, val)
     elif node.op_type == "Vmap":
         body_graph = node.attributes.get("body")

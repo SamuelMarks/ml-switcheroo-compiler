@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module ir_format.py for IR graph serialization and deserialization."""
 
 from __future__ import annotations
 
 import json
-from typing import TypedDict, Union
+from typing import TypedDict, Union  # noqa: F401
 
 import yaml
 
@@ -53,7 +53,7 @@ class GraphSerializationDict(TypedDict, total=False):
     nodes: dict[str, NodeSerializationDict]
 
 
-def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:
+def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:  # noqa: C901, PLR0912
     """Builds a structured dictionary representing the IR graph.
 
     Args:
@@ -132,7 +132,7 @@ def _build_serialization_dict(graph: IRGraph) -> GraphSerializationDict:
     }
 
 
-def _parse_serialization_dict(data: dict[str, object]) -> IRGraph:
+def _parse_serialization_dict(data: dict[str, object]) -> IRGraph:  # noqa: C901, PLR0912
     """Parses a structured dictionary back into an IRGraph instance.
 
     Args:

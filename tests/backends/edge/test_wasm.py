@@ -250,8 +250,8 @@ def test_wasm_conv2d_pool2d_norm_coverage():
     gen.sorted_nodes = [in1, in2, w, b, rm, rv, n_conv, n_pool, n_norm, n_ln]
 
     code = gen.generate()
-    assert True
-    assert "// max_pool2d" in code or "// MaxPool2D" in code
+    assert len(code) > 0
+    assert "\x00asm" in code or "module" in code or "// max_pool2d" in code or "// MaxPool2D" in code
     assert "// max_pool2d" in code or "// MaxPool2D" in code
     assert "// max_pool2d" in code or "// MaxPool2D" in code
 
@@ -275,7 +275,8 @@ def test_wasm_avgpool2d_coverage():
     gen.sorted_nodes = [in1, n_pool]
 
     code = gen.generate()
-    assert True
+    assert len(code) > 0
+    assert len(code) > 0
 
 
 def test_wasm_conv2d_fallback_coverage():
@@ -299,7 +300,8 @@ def test_wasm_conv2d_fallback_coverage():
     gen.sorted_nodes = [in1, in2, n_conv]
 
     code = gen.generate()
-    assert True
+    assert len(code) > 0
+    assert len(code) > 0
 
 
 def test_wasm_scalar_shapes3():
@@ -451,7 +453,8 @@ def test_wasm_missing_attributes_and_strides():
     gen.sorted_nodes = [in1, in2, w, b, rm, rv, n_conv, n_conv2, n_pool, n_pool2, n_norm, n_ln]
 
     code = gen.generate()
-    assert True
+    assert len(code) > 0
+    assert len(code) > 0
 
 
 def test_wasm_matmul_and_conv_tiling_and_webrtc():

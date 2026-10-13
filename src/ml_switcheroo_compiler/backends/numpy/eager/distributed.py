@@ -1,7 +1,7 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Distributed ops eager via real multiprocessing TCP sockets."""
 
-import os
+import os  # noqa: F401
 import time
 from multiprocessing.connection import Client, Listener
 from typing import Optional
@@ -40,7 +40,7 @@ class TCPDistributedContext:
         self.recv_conns = []
         self.send_conns = []
 
-        import os
+        import os  # noqa: F811
 
         import yaml
 
@@ -182,7 +182,7 @@ def _np_all_reduce(backend_module, tensor, op_type: str = "sum", *args, **kwargs
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    all_tensors: list = _tcp_dist_ctx.all_gather_tensors(tensor)
+    all_tensors: list = _tcp_dist_ctx.all_gather_tensors(tensor)  # noqa: F841
 
     return _tcp_dist_ctx.all_reduce_ring(tensor, op_type, backend_module)
 

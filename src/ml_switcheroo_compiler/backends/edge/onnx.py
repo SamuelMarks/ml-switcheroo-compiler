@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """ONNX Target Emission and Pure-Python Binary Protobuf Serialization."""
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ import os
 import struct
 import uuid
 from collections.abc import Callable, Sequence
-from typing import Optional, Protocol, TypeVar, Union
+from typing import Optional, Protocol, TypeVar, Union  # noqa: F401
 
 import yaml
 
@@ -201,7 +201,7 @@ def serialize_tensor_proto(name: str, data_type: int, dims: Sequence[int], raw_b
     return dims_bytes + encode_int(2, data_type) + encode_string(8, name) + encode_length_delimited(9, raw_bytes)
 
 
-def serialize_attribute(name: str, val: object, graph_serializer: Callable[[IRGraph, str], bytes] | None = None) -> bytes:
+def serialize_attribute(name: str, val: object, graph_serializer: Callable[[IRGraph, str], bytes] | None = None) -> bytes:  # noqa: PLR0911
     """Serialize a single node attribute into AttributeProto bytes.
 
     Args:
@@ -384,7 +384,7 @@ def decode_varint(data: bytes, offset: int = 0) -> tuple[int, int]:
     return res, offset
 
 
-def validate_onnx_model_bytes(binary_data: bytes) -> dict[str, int | str]:
+def validate_onnx_model_bytes(binary_data: bytes) -> dict[str, int | str]:  # noqa: C901, PLR0912, PLR0915
     """Validate raw ONNX ModelProto binary bytes and extract metadata without external dependencies.
 
     Args:
@@ -615,7 +615,7 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         return [self._build_single_value_info(item, dynamic_axes, TensorProto, is_output) for item in nodes_or_ids]
 
-    def _build_onnx_nodes(self, TensorProto: type[TensorProtoType]) -> list[NodeProtoType]:
+    def _build_onnx_nodes(self, TensorProto: type[TensorProtoType]) -> list[NodeProtoType]:  # noqa: C901
         """Construct all intermediate ONNX NodeProtos for the graph.
 
         Args:
@@ -705,7 +705,7 @@ class ONNXCodeGenerator(BaseGenerator):
         onnx_nodes = self._build_onnx_nodes(TensorProto)
         return helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
 
-    def serialize_model_to_bytes(
+    def serialize_model_to_bytes(  # noqa: C901, PLR0912, PLR0915
         self,
         dynamic_axes: dict[str, dict[int, str]] | None = None,
         opset_version: int = 18,
@@ -919,7 +919,7 @@ class ONNXCodeGenerator(BaseGenerator):
         meta: dict[str, int | str] = validate_onnx_model_bytes(data)
         return bool(int(meta.get("opset_version", 0)) >= 14 or int(meta.get("ir_version", 0)) > 0)
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:  # noqa: C901
         """Construct a serialized onnx.ModelProto artifact and initialize an execution session.
 
         Args:

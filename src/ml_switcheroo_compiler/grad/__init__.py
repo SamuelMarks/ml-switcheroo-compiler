@@ -1,4 +1,3 @@
-# ruff: noqa: F401
 """grad module."""
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
@@ -30,7 +29,7 @@ from .jit import (
     jit,
 )
 from .jvp_vjp import (
-    CustomJVPFunction,
+    CustomJVPFunction,  # noqa: F401
     custom_jvp,
     hessian,
     hvp,

@@ -1,4 +1,3 @@
-# ruff: noqa: D103
 """Tests for sparse and ragged extras."""
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend

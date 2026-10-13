@@ -1,4 +1,3 @@
-# ruff: noqa: F401
 """math_advanced module."""
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry

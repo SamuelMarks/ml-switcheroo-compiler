@@ -1,5 +1,5 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402, E501, F403
 """Module __init__.py."""
 
 """Eager backend utilities."""
@@ -19,8 +19,8 @@ from .core_math_ops import (
     _segment_sum,
     _true_divide,
 )
-from .optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
-from .random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
+from .optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop  # noqa: F401
+from .random_ops import prng_key, rand, randint, randn, random_fold_in, random_split  # noqa: F401
 from .signal import gaussian_blur_eager, median_filter_eager
 from .vision_filtering import _extract_volume_patches, extract_bounding_boxes_eager, iou_eager, nms_eager
 from .vision_transforms import elastic_transform_eager, perspective_transform_eager, resize_eager

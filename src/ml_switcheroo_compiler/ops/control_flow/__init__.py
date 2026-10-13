@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 
 """Control flow operators dispatcher."""
 
 
-from typing import Any, Callable
+from typing import Any, Callable  # noqa: F401
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -25,22 +25,22 @@ from ml_switcheroo_compiler.ops.vmap import vmap as vmap
 from .cond import cond as cond
 from .eager import (
     assert_value_eager,
-    cond_eager,
+    cond_eager,  # noqa: F401
     map_fn_eager,
     pmap_eager,
-    scan_eager,
+    scan_eager,  # noqa: F401
     stop_gradient_eager,
-    while_loop_eager,
+    while_loop_eager,  # noqa: F401
 )
 from .scan import scan as scan
 from .tracing import (
     assert_value_tracing,
-    cond_tracing,
+    cond_tracing,  # noqa: F401
     map_fn_tracing,
     pmap_tracing,
-    scan_tracing,
+    scan_tracing,  # noqa: F401
     stop_gradient_tracing,
-    while_loop_tracing,
+    while_loop_tracing,  # noqa: F401
 )
 from .while_loop import while_loop as while_loop
 

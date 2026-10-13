@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """WGSL AST definitions for robust code generation conforming to WebGPU specifications."""
 
 import re
@@ -163,7 +163,7 @@ class WGSLRaw(WGSLNode):
         """
         self.code = code
 
-    def validate(self) -> None:
+    def validate(self) -> None:  # noqa: C901
         """Validate raw string node against WebGPU specifications.
 
         Raises:
@@ -538,7 +538,7 @@ class WGSLEmitter:
         if isinstance(node, WGSLNode):
             node.validate()
 
-    def emit(self, node: Union[str, WGSLNode], validate: bool = True) -> str:
+    def emit(self, node: Union[str, WGSLNode], validate: bool = True) -> str:  # noqa: C901, PLR0911, PLR0912
         """Emit WGSL string for a node with specification validation.
 
         Args:

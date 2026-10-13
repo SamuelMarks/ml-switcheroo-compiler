@@ -1,13 +1,13 @@
 """aot module."""
 
-from typing import Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union  # noqa: F401
 
 T = TypeVar("T")
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Ahead-of-Time compilation hooks for frontend integrations."""
 
-from collections.abc import Callable
+from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
@@ -145,7 +145,7 @@ def _get_namespace(backend: str, generator_cls: type):
     return namespace
 
 
-def compile_function(fn, backend: str = "numpy", **kwargs):
+def compile_function(fn, backend: str = "numpy", **kwargs):  # noqa: C901, PLR0915
     """Compiles a function functionally, intended for torch.compile integrations.
 
     Args:
@@ -157,7 +157,7 @@ def compile_function(fn, backend: str = "numpy", **kwargs):
         Callable: The compiled function.
     """
 
-    def compiled_wrapper(*args, **kw):
+    def compiled_wrapper(*args, **kw):  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Wrap that traces and compiles the function on first call.
 
         Args:

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Zero-copy collective operations for distributed execution over WebRTC."""
 
 import asyncio
@@ -424,7 +424,7 @@ async def recursive_halving_doubling_all_gather(
     return np.concatenate(valid_slices, axis=axis)
 
 
-async def all_reduce(
+async def all_reduce(  # noqa: C901
     tensor: np.ndarray,
     op_type: str,
     conns: Sequence[Optional[object]],
@@ -742,7 +742,7 @@ def get_collective_backend(backend_name: str) -> Optional[object]:
     return _BACKEND_COLLECTIVE_REGISTRY.get(backend_name.lower())
 
 
-def dispatch_collective(
+def dispatch_collective(  # noqa: C901, PLR0911, PLR0912, PLR0915
     op: str,
     tensor: np.ndarray,
     backend: str = "numpy",

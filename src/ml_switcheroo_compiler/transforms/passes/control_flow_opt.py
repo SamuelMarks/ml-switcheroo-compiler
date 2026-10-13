@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Control flow optimizations: branch pruning, invariant hoisting, and symbolic predicate evaluation."""
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ def _hoist_common_invariants(
     return hoisted_nodes
 
 
-def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
+def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:  # noqa: C901
     """Run control flow optimizations on Cond/If nodes: branch pruning and invariant hoisting.
 
     Args:

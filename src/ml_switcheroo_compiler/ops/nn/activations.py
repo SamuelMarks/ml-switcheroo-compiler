@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Activations and advanced NN operations."""
 
 # Base logic implementation
@@ -233,7 +233,7 @@ class OneHot(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes  # noqa: F401
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         indices_shape = shapes[0] if shapes else ()

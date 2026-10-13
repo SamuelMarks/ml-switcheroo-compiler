@@ -1,30 +1,30 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
 
 from __future__ import annotations
 
-import contextlib
-import math
+import contextlib  # noqa: F401
+import math  # noqa: F401
 import typing
-import uuid
+import uuid  # noqa: F401
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: F401
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.core.config import config  # noqa: F401
+from ml_switcheroo_compiler.core.dtype import DType  # noqa: F401
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # noqa: F401
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
 from ml_switcheroo_compiler.ops.registry import register_util
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor  # noqa: F401
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 from .custom_vjp_ops import custom_vjp
-from .options import GradOptions, JitOptions
+from .options import GradOptions, JitOptions  # noqa: F401
 from .utils import _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
 
 
@@ -42,7 +42,7 @@ def backward(tensor, *args, **kwargs) -> None:
     """
     from ml_switcheroo_compiler.core.errors import TracingError
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F811
 
     # 1. Disallow dummy fallback; raise explicit TracingError if tracing is inactive
     if not isinstance(tensor, Tensor) or not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:

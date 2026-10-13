@@ -1,14 +1,13 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Summary generation utilities for TensorBoard integration."""
 
 from __future__ import annotations
 
-import io
+import io  # noqa: F401
 import os
 from typing import TYPE_CHECKING
 
 import numpy as np
-from PIL import Image
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -49,7 +48,17 @@ def encode_image(tensor: Tensor | np.ndarray) -> bytes:
     else:
         arr = np.clip(arr, 0, 255).astype(np.uint8)
 
-    img = Image.fromarray(arr)
-    buf: io.BytesIO = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+    # Direct PPM (Portable PixMap) serialization
+    h, w = arr.shape[:2]
+    c = arr.shape[2] if arr.ndim == 3 else 1
+
+    header = f"P6\n{w} {h}\n255\n".encode("ascii")
+    if c == 1:
+        # Convert grayscale to RGB for P6
+        arr = np.repeat(arr[:, :, np.newaxis], 3, axis=2)
+    elif c == 4:
+        # Drop alpha channel
+        arr = arr[:, :, :3]
+
+    pixels = arr.tobytes()
+    return header + pixels

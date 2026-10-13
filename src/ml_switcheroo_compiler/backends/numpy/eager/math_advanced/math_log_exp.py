@@ -1,15 +1,15 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Math Ops."""
 
-from collections.abc import Sequence
-from typing import Optional
+from collections.abc import Sequence  # noqa: F401
+from typing import Optional  # noqa: F401
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
-from .math_general import _get_np_arg, _get_sc
+from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
 
 @numpy_eager_registry.register("Xlogy")

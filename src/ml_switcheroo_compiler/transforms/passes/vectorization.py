@@ -1,28 +1,28 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Vectorization (vmap) middle-end transformation pass."""
 
 from __future__ import annotations
 
 import os
-from typing import Any, cast
+from typing import cast
 
 import yaml
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
 
-def _load_vmap_rules() -> dict[str, dict[str, Any]]:
+def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
     """Load declarative vectorization rules from YAML configuration.
 
     Returns:
-        dict[str, dict[str, Any]]: Dictionary mapping op types to their vectorization rules.
+        dict[str, dict[str, AttributeValue]]: Dictionary mapping op types to their vectorization rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "vmap_rules.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
             if isinstance(data, dict) and "rules" in data:
-                return cast(dict[str, dict[str, Any]], data["rules"])
+                return cast(dict[str, dict[str, AttributeValue]], data["rules"])
     return {}
 
 
@@ -101,7 +101,7 @@ def _broadcast_unbatched_input(
     return broadcast_id
 
 
-def vectorize_graph(
+def vectorize_graph(  # noqa: C901, PLR0912, PLR0915
     graph: IRGraph,
     in_axes: int | tuple[int | None, ...] | dict[str, int | None],
     batch_size: int,
@@ -252,7 +252,7 @@ def vectorize_graph(
     return vectorization_pass(vectorized)
 
 
-def vectorization_pass(graph: IRGraph) -> IRGraph:
+def vectorization_pass(graph: IRGraph) -> IRGraph:  # noqa: C901
     """Middle-end pass that detects Vmap nodes in an IRGraph and inlines their vectorized subgraphs.
 
     Args:
@@ -319,3 +319,6 @@ def vectorization_pass(graph: IRGraph) -> IRGraph:
         graph.nodes.update(new_nodes)
 
     return graph
+
+
+from ml_switcheroo_ir import AttributeValue

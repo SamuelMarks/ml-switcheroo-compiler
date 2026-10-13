@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module base.py."""
 
 from __future__ import annotations
@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import functools
 import uuid
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar  # noqa: F401
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -76,7 +76,7 @@ def emit_ir_node(
     op_type: str,
     inputs: list[str],
     shape_metadata: Any | None = None,
-    attributes: dict[str, Any] | None = None,
+    attributes: dict[str, AttributeValue] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Define special unary operations for the ML Switcheroo framework, including Cast,.
 
 Bitcast, and Frexp
@@ -6,7 +6,7 @@ Bitcast, and Frexp
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, Union
+from typing import TYPE_CHECKING, Protocol, Union  # noqa: F401
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 

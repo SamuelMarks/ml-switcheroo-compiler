@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 
 """Provide generic utilities."""
 
@@ -12,7 +12,7 @@ import random
 import sys
 import tarfile
 import time
-import typing
+import typing  # noqa: F401
 import urllib.request
 import zipfile
 from dataclasses import dataclass, field
@@ -368,22 +368,22 @@ class Sequence:
 
 
 from ml_switcheroo_compiler.utils.serialization_utils import (
-    CustomObjectScope,
-    custom_Any_scope,
-    custom_object_scope,
-    deserialize_keras_Any,
-    deserialize_keras_object,
-    deserialize_object,
-    get_custom_Anys,
-    get_custom_objects,
-    get_registered_Any,
-    get_registered_name,
-    get_registered_object,
-    register_keras_serializable,
-    register_serializable,
-    serialize_keras_Any,
-    serialize_keras_object,
-    serialize_object,
+    CustomObjectScope,  # noqa: F401
+    custom_Any_scope,  # noqa: F401
+    custom_object_scope,  # noqa: F401, F811
+    deserialize_keras_Any,  # noqa: F401
+    deserialize_keras_object,  # noqa: F401, F811
+    deserialize_object,  # noqa: F401
+    get_custom_Anys,  # noqa: F401
+    get_custom_objects,  # noqa: F401, F811
+    get_registered_Any,  # noqa: F401
+    get_registered_name,  # noqa: F401, F811
+    get_registered_object,  # noqa: F401, F811
+    register_keras_serializable,  # noqa: F401, F811
+    register_serializable,  # noqa: F401
+    serialize_keras_Any,  # noqa: F401
+    serialize_keras_object,  # noqa: F401, F811
+    serialize_object,  # noqa: F401
 )
 
 
@@ -457,7 +457,7 @@ def is_symbolic_tensor(*args: object, **kwargs: object) -> bool:
 is_keras_tensor = is_symbolic_tensor
 
 
-def standardize_dtype(*args: object, **kwargs: object) -> str | None:
+def standardize_dtype(*args: object, **kwargs: object) -> str | None:  # noqa: C901, PLR0911
     """Standardize a data type specification into its canonical lowercase string name.
 
     Args:
@@ -523,7 +523,7 @@ class bounding_boxes:
             raise ValueError(msg)
 
     @classmethod
-    def convert_format(
+    def convert_format(  # noqa: C901, PLR0911, PLR0912
         cls,
         boxes: object,
         source: str,

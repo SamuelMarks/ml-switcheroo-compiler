@@ -44,7 +44,26 @@ def test_tree_flatten_unflatten() -> None:
         (leaves, treedef) = tree_flatten(tree)
         assert leaves == [1, 2, 3, 4, 5]
         assert repr(treedef).startswith("TreeDef")
-        assert treedef == treedef
+        # Verify behavioral equality and hashing invariants
+        _, treedef2 = tree_flatten({"a": [1, 2], "b": {"c": 3, "d": (4, 5)}})
+        # Verify behavioral equality and hashing invariants
+        _, treedef2 = tree_flatten({"a": [1, 2], "b": {"c": 3, "d": (4, 5)}})
+        assert treedef == treedef2
+        assert hash(treedef) == hash(treedef2)
+        _, mutated_treedef = tree_flatten({"a": [1, 2], "b": {"c": 3, "d": (4, 6)}})
+        # Even with different values, structural equality holds
+        assert treedef == mutated_treedef
+
+        _, different_treedef = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
+        assert treedef != different_treedef
+        assert hash(treedef) != hash(different_treedef)
+        _, mutated_treedef = tree_flatten({"a": [1, 2], "b": {"c": 3, "d": (4, 6)}})
+        # Even with different values, structural equality holds
+        assert treedef == mutated_treedef
+
+        _, different_treedef = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
+        assert treedef != different_treedef
+        assert hash(treedef) != hash(different_treedef)
         assert treedef != TreeDef(list)
         assert treedef != "Not a TreeDef"
         tree_reconstructed = tree_unflatten(treedef, leaves)

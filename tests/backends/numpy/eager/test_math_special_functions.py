@@ -66,7 +66,8 @@ def test_math_general_coverage():
         np.testing.assert_array_equal(res2, np.array([1.0, 0.0, 0.0]))
 
     # _np_rem_3
-    assert True
+    res = misc_ext._np_descriptive_2(np, [1, 2, 3])
+    np.testing.assert_allclose(res, [2.0, 0.66666667, 0.81649658], rtol=1e-5)
 
 
 def test_math_misc_coverage():
@@ -9128,7 +9129,7 @@ def test_math_matrix_utils_distributions_success():
             except Exception:
                 pass
 
-    assert True
+    assert _np_distributions is not None
 
     assert _np_callable(np, lambda x: x) == True
     assert _np_callable(np) == False

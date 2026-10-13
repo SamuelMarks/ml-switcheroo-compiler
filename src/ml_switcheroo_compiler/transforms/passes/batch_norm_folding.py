@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module batch_norm_folding.py."""
 
 """Batch Norm Folding pass."""
@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def batch_norm_folding_pass(graph: IRGraph) -> bool:
+def batch_norm_folding_pass(graph: IRGraph) -> bool:  # noqa: PLR0915
     """In-place Batch Norm Folding pass.
 
     Folds BatchNorm operations into preceding Conv2D operations by rewiring the graph.

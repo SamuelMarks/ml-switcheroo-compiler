@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Parallel scan transformation pass converting sequential scan into parallel scan trees."""
 
 from __future__ import annotations
@@ -11,27 +11,27 @@ import yaml
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
 
-def _load_scan_rules() -> dict[str, Any]:
+def _load_scan_rules() -> dict[str, AttributeValue]:
     """Load declarative parallel scan configuration from YAML.
 
     Returns:
-        dict[str, Any]: The loaded parallel scan rules.
+        dict[str, AttributeValue]: The loaded parallel scan rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "parallel_scan_rules.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
             if isinstance(data, dict):
-                return cast(dict[str, Any], data)
+                return cast(dict[str, AttributeValue], data)
     return {}
 
 
-def detect_associative_reduction(body_graph: Any, rules: dict[str, Any]) -> tuple[str, str] | None:
+def detect_associative_reduction(body_graph: Any, rules: dict[str, AttributeValue]) -> tuple[str, str] | None:
     """Detect whether a scan body graph performs an associative reduction.
 
     Args:
         body_graph (Any): The scan body graph or block.
-        rules (dict[str, Any]): Declarative associative scan rules.
+        rules (dict[str, AttributeValue]): Declarative associative scan rules.
 
     Returns:
         Optional[tuple[str, str]]: Tuple of (detected_op_type, parallel_primitive) if associative, else None.
@@ -123,3 +123,6 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
         graph.nodes.update(new_nodes)
 
     return graph
+
+
+from ml_switcheroo_ir import AttributeValue

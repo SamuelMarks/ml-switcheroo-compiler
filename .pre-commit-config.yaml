@@ -1,105 +1,122 @@
-default_stages: [pre-commit]
+default_stages:
+- pre-commit
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v6.0.0
-  hooks:
+- hooks:
   - id: check-yaml
   - id: trailing-whitespace
-  - id: end-of-file-fixer
-    exclude: '\.pb$'
-- repo: local
-  hooks:
-  - id: ruff
-    name: ruff
+  - exclude: \.pb$
+    id: end-of-file-fixer
+  repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+- hooks:
+  - args:
+    - --config
+    - pyproject.toml
+    - --fix
     entry: ruff check
-    args: [--config, pyproject.toml, --fix]
+    id: ruff
     language: system
-    types: [python]
+    name: ruff
     require_serial: true
-  - id: ruff-format
-    name: ruff format
+    types:
+    - python
+  - args:
+    - --config
+    - pyproject.toml
     entry: ruff format
-    args: [--config, pyproject.toml]
+    id: ruff-format
     language: system
-    types: [python]
+    name: ruff format
     require_serial: true
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.19.1
-  hooks:
-  - id: mypy
-    args:
-    - --ignore-missing-imports
-    additional_dependencies:
+    types:
+    - python
+  repo: local
+- hooks:
+  - additional_dependencies:
     - types-requests
     - types-PyYAML
     - pydantic
     - libcst
+    args:
+    - --ignore-missing-imports
     files: ^src/ml_switcheroo_compiler/.*\.py$
-- repo: local
-  hooks:
-  - id: pytest-coverage
+    id: mypy
+  repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.19.1
+- hooks:
+  - entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler
+    files: \.py$
+    id: pytest-coverage
+    language: system
     name: Run Pytest and Collect Coverage
-    entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler
-    language: system
     pass_filenames: false
+    stages:
+    - pre-push
+  - entry: python3 scripts/update_badges.py
     files: \.py$
-    stages: [pre-push]
-  - id: update-badges
+    id: update-badges
+    language: system
     name: Update Badges
-    entry: python3 scripts/update_badges.py
-    language: system
     pass_filenames: false
-    files: \.py$
-    stages: [pre-push]
-  - id: generate-exports
+    stages:
+    - pre-push
+  - entry: python3 scripts/generate_exports.py
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
+    id: generate-exports
+    language: system
     name: Generate Module Exports
-    entry: python3 scripts/generate_exports.py
-    language: system
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
-  - id: numpy-leak-check
+  - entry: python3 scripts/lint_numpy_leak.py
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
+    id: numpy-leak-check
+    language: system
     name: Check for NumPy Leaks
-    entry: python3 scripts/lint_numpy_leak.py
-    language: system
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
-  - id: dynamic-numpy-import-check
+  - entry: python3 scripts/lint_dynamic_numpy.py
+    files: ^src/ml_switcheroo_compiler/.*\.py$
+    id: dynamic-numpy-import-check
+    language: system
     name: Guard Against Dynamic NumPy Imports Outside NumPy Backend
-    entry: python3 scripts/lint_dynamic_numpy.py
-    language: system
-    files: ^src/ml_switcheroo_compiler/.*\.py$
     pass_filenames: false
-  - id: dependency-isolation-check
+  - entry: python3 scripts/lint_dependencies.py
+    files: ^src/ml_switcheroo_compiler/.*\.py$
+    id: dependency-isolation-check
+    language: system
     name: Check Dependency Isolation
-    entry: python3 scripts/lint_dependencies.py
-    language: system
-    files: ^src/ml_switcheroo_compiler/.*\.py$
     pass_filenames: false
-- repo: local
-  hooks:
-  - id: check-any
-    name: Check typing.Any usage
-    entry: bash -c "rg -n 'typing\.Any' src/ml_switcheroo_compiler/ | wc -l"
-    language: system
-    pass_filenames: false
+  repo: local
+- hooks:
+  - entry: bash -c "count=$(rg 'typing\.Any' src/ml_switcheroo_compiler/ | wc -l);
+      if [ \$count -gt 0 ]; then echo \"Found \$count Any usages.\"; exit 1; fi"
     files: \.py$
-- repo: local
-  hooks:
-  - id: validate-backend-mappings
+    id: check-any
+    language: system
+    name: Check typing.Any usage
+    pass_filenames: false
+  repo: local
+- hooks:
+  - entry: python3 scripts/validate_backend_mappings.py --snapshot-dir ../ml-framework-snapshots
+    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
+    id: validate-backend-mappings
+    language: system
     name: Validate Backend Mappings
-    entry: python3 scripts/validate_backend_mappings.py
-    language: system
-    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     pass_filenames: false
-  - id: validate-parameters
-    name: Validate Zero Hallucinated Parameters
-    entry: python3 scripts/validate_parameters.py
-    language: system
+  - entry: python3 scripts/validate_parameters.py --snapshot-dir ../ml-framework-snapshots
     files: ^src/ml_switcheroo_compiler/(backends|ops)/.*\.(py|yaml)$
-    pass_filenames: false
-  - id: validate-rules
-    name: Validate Rule 4 (N-to-M utility)
-    entry: python3 scripts/validate_rules.py
+    id: validate-parameters
     language: system
-    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
+    name: Validate Zero Hallucinated Parameters
     pass_filenames: false
+  - entry: python3 scripts/validate_rules.py --snapshot-dir ../ml-framework-snapshots
+    files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
+    id: validate-rules
+    language: system
+    name: Validate Rule 4 (N-to-M utility)
+    pass_filenames: false
+  - entry: python3 scripts/check_snapshot_drift.py --old ../ml-framework-snapshots
+    files: ^src/ml_switcheroo_compiler/.*
+    id: check-snapshot-drift
+    language: system
+    name: Check Snapshot Drift
+    pass_filenames: false
+  repo: local

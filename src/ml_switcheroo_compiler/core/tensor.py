@@ -1,7 +1,7 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Define the unified backend array base class for ml-switcheroo."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence  # noqa: F401
 from dataclasses import dataclass
 from typing import Union
 

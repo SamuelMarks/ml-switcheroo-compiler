@@ -1,8 +1,8 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Autodiff rules for custom and platform-specific kernel operations."""
 
-from collections.abc import Sequence
-from typing import Any, Optional, Union
+from collections.abc import Sequence  # noqa: F401
+from typing import Any, Optional, Union  # noqa: F401
 
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import make_zero_jvp, make_zero_vjp
@@ -834,11 +834,11 @@ def log_poisson_loss_vjp(graph: IRGraph, node: Any, cotangent: str) -> tuple[str
     """
     import uuid
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import AttributeValue, LogicalNode
 
     targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
-    attrs: dict[str, Any] = getattr(node, "attributes", {}) or {}
+    attrs: dict[str, AttributeValue] = getattr(node, "attributes", {}) or {}
     log_input_flag: bool = bool(attrs.get("log_input", True))
 
     exp_id = f"exp_{uuid.uuid4().hex[:6]}"
@@ -876,13 +876,13 @@ def log_poisson_loss_jvp(graph: IRGraph, node: Any, tangents: Any) -> str:
     """
     import uuid
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import AttributeValue, LogicalNode
 
     targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
     t_tangent: str = tangents[1] if len(tangents) > 1 else tangents[0]
 
-    attrs: dict[str, Any] = getattr(node, "attributes", {}) or {}
+    attrs: dict[str, AttributeValue] = getattr(node, "attributes", {}) or {}
     log_input_flag: bool = bool(attrs.get("log_input", True))
 
     exp_id = f"exp_tan_{uuid.uuid4().hex[:6]}"

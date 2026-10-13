@@ -1,14 +1,14 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """math_string_io module."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
+from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 
 
 def _parse_scanop_args(args, kwargs):
@@ -378,21 +378,12 @@ def _np_encode_image_camel(backend_module, *args, **kwargs):
     Raises:
         RuntimeError: An exception.
     """
-    import io
-
     import numpy as np
-    from PIL import Image
 
     if len(args) == 0:
         return np.array(b"")
 
     arr = np.asarray(args[0])
-
-    formats = _load_vision_formats()
-
-    # We cheat to get the op name from kwargs or assume JPEG
-    op_name = kwargs.get("op_name", "EncodeJpeg")
-    fmt = formats.get(op_name, {}).get("format", "JPEG")
 
     try:
         if arr.ndim == 3 and arr.shape[-1] == 1:
@@ -401,10 +392,7 @@ def _np_encode_image_camel(backend_module, *args, **kwargs):
         if arr.dtype != np.uint8:
             arr = arr.astype(np.uint8)
 
-        image = Image.fromarray(arr)
-        bio = io.BytesIO()
-        image.save(bio, format=fmt)
-        return np.array(bio.getvalue())
+        raise NotImplementedError("Image encoding is decoupled in the pure numpy fallback. Use framework backends.")
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 

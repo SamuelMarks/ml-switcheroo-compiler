@@ -87,7 +87,7 @@ def test_squeeze() -> None:
     assert res.shape == (2,)
     res_args = _np_squeeze(np, x, 0)
     assert res_args.shape == (2, 1)
-    res_kwargs = _np_squeeze(np, x, dim=2)
+    res_kwargs = _np_squeeze(np, x, axis=2)
     assert res_kwargs.shape == (1, 2)
 
 
@@ -113,7 +113,7 @@ def test_gather_eager() -> None:
     res = gather_eager(np, x, 1, idx)
     expected = np.take_along_axis(x, idx, axis=1)
     np.testing.assert_allclose(res, expected)
-    res_kwargs = gather_eager(np, x, dim=1, index=idx)
+    res_kwargs = gather_eager(np, x, axis=1, index=idx)
     np.testing.assert_allclose(res_kwargs, expected)
 
     class MockTensor:

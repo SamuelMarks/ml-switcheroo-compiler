@@ -1,12 +1,13 @@
 """Module graph_scheduling.py."""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-
-"""Graph scheduling logic for memory-aware and compute-aware execution order."""
+# ruff: noqa: E402, E501, F403
 
 
+import os
+import yaml
+from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
 from typing import Protocol
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -47,13 +48,6 @@ class CostModel(Protocol):
             int: Result.
         """
         ...
-
-
-import os
-
-import yaml
-
-from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
 
 
 class DefaultCostModel:

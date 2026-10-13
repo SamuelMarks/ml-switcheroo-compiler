@@ -1,9 +1,9 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Convolution operations."""
 
 import typing
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any, Union  # noqa: F401
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config

@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """math_general module."""
 
 from __future__ import annotations
 
-import builtins
-import typing
+import builtins  # noqa: F401
+import typing  # noqa: F401
 from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -991,7 +991,7 @@ def _np_switch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "switch", getattr(backend_module, "switch", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
+    import numpy as np  # noqa: F401
 
     return args[1] if args[0] else args[2]
 
@@ -1133,7 +1133,7 @@ def _np_wrapkeydata(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "wrapkeydata", getattr(backend_module, "wrapkeydata", None))
     if func is not None:
         return func(*args, **kwargs)
-    import numpy as np
+    import numpy as np  # noqa: F401
 
     return args[0]
 

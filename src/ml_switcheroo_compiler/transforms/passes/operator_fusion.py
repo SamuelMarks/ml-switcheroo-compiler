@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import glob
 import os
 from typing import Union
@@ -219,7 +219,7 @@ class PatternMatchingEngine:
                     return True
         return False
 
-    def apply_passes(self, graph: IRGraph) -> bool:
+    def apply_passes(self, graph: IRGraph) -> bool:  # noqa: C901, PLR0912
         """Apply the pattern matching rules to the graph.
 
         Args:
@@ -290,7 +290,7 @@ def _load_pass_config() -> PassConfig:
     )
 
 
-def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:
+def _discover_fusion_patterns(patterns_dir: str | None = None) -> list[FusionRule]:  # noqa: C901, PLR0912
     """Automatically discover and load all fusion pattern YAMLs from fusion_patterns directory.
 
     Args:
@@ -514,7 +514,7 @@ ELEMENTWISE_OPS: set[str] = {
 }
 
 
-def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:
+def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:  # noqa: C901, PLR0911, PLR0912
     """Generate scalar expression snippet for an elementwise op.
 
     Args:
@@ -563,7 +563,7 @@ def _get_scalar_expression_snippet(op_type: str, args: list[str]) -> str:
     return a
 
 
-def _fuse_single_edge(
+def _fuse_single_edge(  # noqa: PLR0912
     graph: IRGraph,
     node: IRNode,
     inp_id: str,
@@ -632,7 +632,7 @@ def _fuse_single_edge(
     graph.nodes[node.id] = fused_node
 
 
-def fuse_elementwise_clusters(graph: IRGraph) -> bool:
+def fuse_elementwise_clusters(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
     """Fuse elementwise DAG clusters into composite FusedElementwise IR nodes.
 
     Args:
@@ -685,7 +685,7 @@ def fuse_elementwise_clusters(graph: IRGraph) -> bool:
     return modified
 
 
-def fuse_conv_bias_relu(graph: IRGraph) -> bool:
+def fuse_conv_bias_relu(graph: IRGraph) -> bool:  # noqa: C901, PLR0912
     """Fuse Conv2D/Conv + Add/BiasAdd + Relu/Activation sequences into FusedConv2DBiasRelu nodes.
 
     Args:
@@ -764,7 +764,7 @@ def fuse_conv_bias_relu(graph: IRGraph) -> bool:
     return modified
 
 
-def fuse_elementwise_activation(graph: IRGraph) -> bool:
+def fuse_elementwise_activation(graph: IRGraph) -> bool:  # noqa: C901
     """Fuse elementwise operations followed by single-consumer activations into fused nodes.
 
     Args:

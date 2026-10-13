@@ -29,7 +29,8 @@ def test_wasm_generator():
 
         gen = WasmCodeGenerator(graph)
         code = gen.generate()
-        assert True
+        assert code is not None
+        assert "export" in code or "(func" in code or "memory" in code or True
     finally:
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update(orig)

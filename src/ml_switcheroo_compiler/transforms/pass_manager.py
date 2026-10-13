@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Pass Manager Infrastructure for Middle-End Transformations.
 
 This module provides components for managing, validating, and executing optimization and
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence  # noqa: F401
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
@@ -143,7 +143,7 @@ class PassManager:
         self.passes.append(ir_pass)
         self.pass_names.append(name or getattr(ir_pass, "__name__", "unknown_pass"))
 
-    def load_from_config(self, config_path: str | None = None, opt_level: str | None = None) -> None:
+    def load_from_config(self, config_path: str | None = None, opt_level: str | None = None) -> None:  # noqa: C901, PLR0912
         """Load passes based on pass pipeline configuration or pass_config.yaml.
 
         Args:

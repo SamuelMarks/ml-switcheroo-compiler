@@ -1,8 +1,8 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """WASM Target Emission with Native v128 SIMD Intrinsics and Remainder Loop Peeling."""
 
 import os
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast  # noqa: F401
 
 import yaml
 
@@ -154,7 +154,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         return getattr(node, "id", "")
 
-    def visit_Conv2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+    def visit_Conv2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:  # noqa: C901, PLR0912, PLR0915
         """Generate Conv2D WASM."""
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
@@ -235,7 +235,7 @@ class WasmCodeGenerator(BaseGenerator):
         for line in lines:
             self.add_line(line)
 
-    def visit_Conv3D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+    def visit_Conv3D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:  # noqa: C901, PLR0912, PLR0915
         """Generate Conv3D WASM SIMD.
 
         Args:
@@ -1082,7 +1082,7 @@ class WasmCodeGenerator(BaseGenerator):
             self.add_line(f"      buf_{clean_id}[i_{clean_id}] = {scalar_expr};")
             self.add_line("  }")
 
-    def _generate_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+    def _generate_op(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:  # noqa: C901, PLR0912
         """_generate_op function.
 
         Args:
@@ -1171,7 +1171,7 @@ class WasmCodeGenerator(BaseGenerator):
                 if line.strip():
                     self.add_line(f"  {line}")
 
-    def generate(self) -> str:
+    def generate(self) -> str:  # noqa: C901, PLR0912, PLR0915
         """Generate WASM-compatible, highly optimized C++ source code with WASM v128 SIMD and scalar peeling.
 
         Returns:
@@ -1378,7 +1378,7 @@ class WasmCodeGenerator(BaseGenerator):
             "nodes": nodes_list,
         }
 
-    def apply_shape_telemetry(self, telemetry: dict[str, object]) -> None:
+    def apply_shape_telemetry(self, telemetry: dict[str, object]) -> None:  # noqa: C901, PLR0912
         """Update IRGraph node shape metadata and refine symbolic dimensions from client telemetry.
 
         Args:

@@ -290,7 +290,10 @@ Backends are registered dynamically with the `@register_backend("name")` decorat
 - **CuPy (`cupy`)**: Emits CUDA-accelerated CuPy array scripts.
 - **Dask (`dask`)**: Emits distributed Dask Array computation graphs.
 - **Numba (`numba`)**: Emits JIT-compiled `@njit` kernels for accelerated CPU/GPU loops.
-- **Sparse (`sparse`, `sparse_coo`)**: Emits sparse matrix code utilizing coordinate/COO structures.
+- **Sparse (`sparse`)**: Emits sparse matrix code utilizing coordinate/COO structures.
+- **Data Parallel NumPy (`dpnp`)**: Emits SYCL-accelerated arrays for Intel CPUs/GPUs.
+- **Awkward Array (`awkward`)**: Emits code for nested, jagged data structures.
+- **PyArrow (`pyarrow_compute`)**: Emits execution graphs for columnar Arrow data.
 
 ### Hardware Backends & Kernel Code Generation
 - **CPU (LLVM / C++) (`llvm_cpp`)**: Generates vectorized, optimized C++17 implementations.

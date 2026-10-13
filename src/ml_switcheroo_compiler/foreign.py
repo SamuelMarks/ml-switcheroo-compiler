@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Foreign module integration."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class ForeignCall(OpDef):
     """Universal ForeignCall op for external graphs/modules."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:
+    def infer_shape(self, *args, **kwargs) -> tuple[int, ...]:  # noqa: C901, PLR0911, PLR0912, PLR0915
         """Infer the shape of the output for ForeignCall via introspection.
 
         Args:
@@ -48,15 +48,19 @@ class ForeignCall(OpDef):
                         args_tuple = typing.get_args(ret_type)
                         if args_tuple and all(isinstance(x, int) or x is int for x in args_tuple):
                             return tuple(args_tuple)
-                except Exception:
-                    pass
+                except (TypeError, NameError) as e:
+                    import logging
+
+                    logging.getLogger(__name__).warning("Failed to infer return type hints for %s: %s", first, e)
                 try:
                     sig = inspect.signature(first)
                     ret_anno = sig.return_annotation
                     if hasattr(ret_anno, "__args__") and all(isinstance(x, int) or x is int for x in ret_anno.__args__):
                         return tuple(ret_anno.__args__)
-                except Exception:
-                    pass
+                except (ValueError, TypeError) as e:
+                    from ml_switcheroo_compiler.core.errors import ShapeInferenceError
+
+                    raise ShapeInferenceError(f"Failed to infer shape from signature for {first}: {e}") from e
 
                 try:
                     import ast
@@ -77,8 +81,10 @@ class ForeignCall(OpDef):
                                         dims.append(elt.value)
                                 if dims and len(dims) == len(n.value.elts):
                                     return tuple(dims)
-                except Exception:
-                    pass
+                except (OSError, TypeError, SyntaxError) as e:
+                    import logging
+
+                    logging.getLogger(__name__).debug("AST introspection failed for %s: %s", first, e)
 
             if len(args) > 1 and hasattr(args[1], "shape"):
                 return tuple(args[1].shape)

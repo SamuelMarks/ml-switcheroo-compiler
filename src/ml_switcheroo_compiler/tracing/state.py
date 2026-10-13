@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Global tracing state."""
 
 import sys
@@ -52,7 +52,7 @@ class TracingState:
         self._enrich_ast_and_domain(node)
         self._enrich_stream(node)
 
-    def add_node(self, node) -> None:
+    def add_node(self, node) -> None:  # noqa: C901
         """Register a node into the currently active trace graph.
 
         Args:
@@ -62,7 +62,7 @@ class TracingState:
             RuntimeError: If tracing is not currently active.
         """
         if not self.is_tracing or self.active_graph is None:
-            msg = "Cannot add node: not currently tracing."
+            msg = "Cannot add node: not currently tracing."  # noqa: F841
             return
 
         self._enrich_node(node)

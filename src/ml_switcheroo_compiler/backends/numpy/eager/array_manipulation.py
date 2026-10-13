@@ -4,7 +4,7 @@ import threading
 
 import numpy as np
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 
@@ -107,7 +107,7 @@ def _np_squeeze(backend_module, x, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: int = kwargs.get("dim", args[0] if len(args) > 0 else None)
+    axis: int = kwargs.get("axis", args[0] if len(args) > 0 else None)
     return backend_module.squeeze(x, axis=axis)
 
 
@@ -124,7 +124,7 @@ def _np_transpose(backend_module, x, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: list = kwargs.get("axes", kwargs.get("dims", args[0] if len(args) > 0 else None))
+    axes: list = kwargs.get("axes", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=axes)
 
 
@@ -156,13 +156,13 @@ def gather_eager(np_mod, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     t: threading.Thread = args[0]
-    dim: int = args[1] if len(args) > 1 else kwargs.get("dim")
+    axis: int = args[1] if len(args) > 1 else kwargs.get("axis")
     index: np.ndarray = args[2] if len(args) > 2 else kwargs.get("index")
     if hasattr(t, "numpy"):
         t: threading.Thread = t.numpy()
     if hasattr(index, "numpy"):
         index: np.ndarray = index.numpy()
-    return np_mod.take_along_axis(t, index, axis=dim)
+    return np_mod.take_along_axis(t, index, axis=axis)
 
 
 @numpy_eager_registry.register("Stack")
@@ -178,11 +178,9 @@ def stack_eager(np_mod, *args, **kwargs):
             tuple[int, ...]: Result.
     """
     tensors: list = args[0] if len(args) > 0 else kwargs.get("tensors")
-    dim: int = args[1] if len(args) > 1 else kwargs.get("dim", 0)
-    if "axis" in kwargs:
-        dim: int = kwargs["axis"]
+    axis: int = args[1] if len(args) > 1 else kwargs.get("axis", 0)
     arrays: list = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
-    return np_mod.stack(arrays, axis=dim)
+    return np_mod.stack(arrays, axis=axis)
 
 
 @numpy_eager_registry.register("Tile")
@@ -215,7 +213,7 @@ def _np_permute(backend_module, x, *args, **kwargs):
     Returns:
             tuple[int, ...]: Result.
     """
-    dims: list = kwargs.get("dims", args[0] if len(args) > 0 else None)
+    dims = kwargs.get("dims", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=dims)
 
 

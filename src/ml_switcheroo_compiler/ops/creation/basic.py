@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Define tensor creation operations for the ML Switcheroo framework.
 
 This module contains operations that generate new tensors, such as zeros, ones, full,
@@ -128,7 +128,7 @@ class Arange(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer the output shape of the operation.
 
         Args:
@@ -164,7 +164,7 @@ class Rand(CreationOp):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer the output shape of the operation.
 
         Args:
@@ -211,7 +211,7 @@ class Randint(CreationOp):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer the output shape of the operation.
 
         Args:
@@ -390,7 +390,7 @@ class TrilIndices(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:
@@ -425,7 +425,7 @@ class TrilIndicesFrom(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:
@@ -460,7 +460,7 @@ class TriuIndices(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:
@@ -495,7 +495,7 @@ class TriuIndicesFrom(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:
@@ -530,7 +530,7 @@ class Logspace(CreationOp):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:
@@ -564,7 +564,7 @@ class Frombuffer(OpDef):
         Returns:
         Any: Result.
         """
-        shape = args[0] if len(args) > 0 else kwargs.get("shape")
+        shape = args[0] if len(args) > 0 else kwargs.get("shape")  # noqa: F841
         """Infer shape.
 
         Args:

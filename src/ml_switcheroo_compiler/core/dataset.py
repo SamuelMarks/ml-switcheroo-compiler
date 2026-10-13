@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
+# ruff: noqa: E402, E501, F403
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 
 import math
 import random
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator  # noqa: F401
 from enum import Enum
 from typing import Optional, Union
 
@@ -455,7 +455,7 @@ class ArrayIterator:
 class CsvDataset(Dataset):
     """File-backed dataset for CSV format."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         filenames: Union[str, list[str]],
         record_defaults=None,

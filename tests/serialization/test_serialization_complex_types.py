@@ -1,4 +1,3 @@
-# ruff: noqa: D103
 """Tests for serialization extras."""
 
 from pathlib import Path

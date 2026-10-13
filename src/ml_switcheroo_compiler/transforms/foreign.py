@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Foreign architecture bridging.
 
 Tools for ingesting external graphs like Torch FX and JAX jaxpr.
@@ -46,8 +46,6 @@ def _handle_fx_call_method(node, graph: LogicalGraph, node_map: dict[str, str], 
     l_node = LogicalNode(
         id=node.name,
         op_type=op_type,
-        domain="ai.onnx",
-        version=1,
         attributes=attributes,
         inputs=inputs,
         shape_metadata=(),
@@ -56,7 +54,7 @@ def _handle_fx_call_method(node, graph: LogicalGraph, node_map: dict[str, str], 
     node_map[node.name] = node.name
 
 
-def _handle_fx_call_module(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:
+def _handle_fx_call_module(node, graph: LogicalGraph, node_map: dict[str, str], modules: dict = None) -> None:  # noqa: C901, PLR0912
     target_name = str(node.target)
     op_type = "CallModule"
 
@@ -100,8 +98,6 @@ def _handle_fx_call_module(node, graph: LogicalGraph, node_map: dict[str, str], 
     l_node = LogicalNode(
         id=node.name,
         op_type=op_type,
-        domain="ai.onnx",
-        version=1,
         attributes=attributes,
         inputs=inputs,
         shape_metadata=(),
@@ -114,8 +110,6 @@ def _handle_fx_get_attr(node, graph: LogicalGraph, node_map: dict[str, str], mod
     l_node = LogicalNode(
         id=node.name,
         op_type="Constant",
-        domain="ai.onnx",
-        version=1,
         attributes={"target": str(node.target)},
         inputs=[],
         shape_metadata=(),
@@ -198,8 +192,6 @@ def _handle_fx_call_function(node, graph: LogicalGraph, node_map: dict[str, str]
     l_node = LogicalNode(
         id=node.name,
         op_type=op_type,
-        domain="ai.onnx",
-        version=1,
         attributes=attributes,
         inputs=inputs,
         shape_metadata=(),
@@ -301,8 +293,6 @@ def _translate_jax_equation(eqn, graph: LogicalGraph) -> None:
     l_node = LogicalNode(
         id=out_id,
         op_type=op_type,
-        domain="ai.onnx",
-        version=1,
         attributes=attributes,
         inputs=inputs,
         shape_metadata=shape_metadata,

@@ -1,8 +1,8 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """JAX/Flax Target Emission."""
 
 import os
-from typing import Optional
+from typing import Optional  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -217,12 +217,12 @@ class JAXCodeGenerator(BaseGenerator):
 
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
-        self.indent_level
+        self.indent_level  # noqa: B018
         self.indent_level = 0
         self.add_line("def apply_model(params, *args, **kwargs) -> object:")
         self.indent_level = self.indent_level + 1
 
-    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:
+    def _compile_aot_impl(self, graph: IRGraph, **kwargs: object) -> object:  # noqa: C901
         """Compile IRGraph into an ahead-of-time (AOT) compiled executable using JAX JIT and XLA lowering.
 
         Args:

@@ -1,8 +1,9 @@
-# ruff: noqa: C901, PLR0911, PLR0912, PLR0915
 """Autodiff Provider for Data-Driven Rules."""
 
 import re
 from typing import Any, Optional
+
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -40,7 +41,7 @@ def _parse_args_and_attrs(
     node: Any,
     cotangent: Optional[str] = None,
     tangents: Optional[list[str]] = None,
-) -> tuple[list[str], dict[str, Any]]:
+) -> tuple[list[str], dict[str, AttributeValue]]:
     """Parse positional input expressions and keyword attribute definitions.
 
     Args:
@@ -51,10 +52,10 @@ def _parse_args_and_attrs(
         tangents (Optional[list[str]]): Tangent identifiers.
 
     Returns:
-        tuple[list[str], dict[str, Any]]: Parsed input identifiers and keyword attributes.
+        tuple[list[str], dict[str, AttributeValue]]: Parsed input identifiers and keyword attributes.
     """
     parsed_inputs: list[str] = []
-    parsed_attrs: dict[str, Any] = {}
+    parsed_attrs: dict[str, AttributeValue] = {}
     for arg in args:
         if "=" in arg and not arg.startswith("("):
             k, v = arg.split("=", 1)
@@ -135,7 +136,7 @@ def _build_parsed_call(
     return emit_ir_node(graph, op, parsed_inputs, shape_meta, attributes=attrs or None)
 
 
-def _parse_expression(
+def _parse_expression(  # noqa: PLR0911
     graph: Any,
     expr: str,
     node: Any,
@@ -219,7 +220,7 @@ def _fallback_finite_difference_jvp(graph, node, tangents) -> str:
 
 
 _MANIFEST_MODEL_CACHE: Optional[Any] = None
-_MODULAR_RULES_CACHE: Optional[dict[str, dict[str, Any]]] = None
+_MODULAR_RULES_CACHE: Optional[dict[str, dict[str, AttributeValue]]] = None
 
 
 def _get_autodiff_manifest() -> Optional[Any]:
@@ -250,11 +251,11 @@ def _get_autodiff_manifest() -> Optional[Any]:
     return None
 
 
-def _get_modular_rules() -> dict[str, dict[str, Any]]:
+def _get_modular_rules() -> dict[str, dict[str, AttributeValue]]:
     """Load and cache modular derivative YAML schemas.
 
     Returns:
-        dict[str, dict[str, Any]]: Dictionary containing parsed jvp_rules and vjp_rules.
+        dict[str, dict[str, AttributeValue]]: Dictionary containing parsed jvp_rules and vjp_rules.
     """
     global _MODULAR_RULES_CACHE
     if _MODULAR_RULES_CACHE is not None:
@@ -264,7 +265,7 @@ def _get_modular_rules() -> dict[str, dict[str, Any]]:
 
     import yaml
 
-    combined: dict[str, dict[str, Any]] = {"jvp_rules": {}, "vjp_rules": {}}
+    combined: dict[str, dict[str, AttributeValue]] = {"jvp_rules": {}, "vjp_rules": {}}
     dir_path = os.path.dirname(__file__)
     for filename in (
         "linalg_derivatives.yaml",
@@ -288,7 +289,7 @@ def _get_modular_rules() -> dict[str, dict[str, Any]]:
     return combined
 
 
-def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]]:
+def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, AttributeValue]]:  # noqa: C901, PLR0911, PLR0912
     """Load autodiff rule from typed manifest model, modular files, registry or YAML files.
 
     Args:
@@ -296,7 +297,7 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]
         rule_type (str): 'vjp' or 'jvp'.
 
     Returns:
-        Optional[dict[str, Any]]: Rule dictionary if found, else None.
+        Optional[dict[str, AttributeValue]]: Rule dictionary if found, else None.
     """
     # 1. Primary: Strongly typed AutodiffRulesManifestModel
     manifest = _get_autodiff_manifest()
@@ -345,7 +346,7 @@ def _load_autodiff_rule(op_type: str, rule_type: str) -> Optional[dict[str, Any]
     return _load_rule_from_yaml_files(op_type, rule_type)
 
 
-def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[str, Any]]:
+def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[str, AttributeValue]]:  # noqa: C901, PLR0912
     """Load autodiff rule from fallback filesystem YAML files.
 
     Args:
@@ -353,7 +354,7 @@ def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> Optional[dict[st
         rule_type (str): 'vjp' or 'jvp'.
 
     Returns:
-        Optional[dict[str, Any]]: Rule dictionary if found, else None.
+        Optional[dict[str, AttributeValue]]: Rule dictionary if found, else None.
     """
     import os
 

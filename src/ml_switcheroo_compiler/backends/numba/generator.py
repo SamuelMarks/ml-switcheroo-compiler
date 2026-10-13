@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -601,12 +602,10 @@ class NumbaGenerator(PythonStringGenerator):
         Returns:
             object: Executable compiled artifact.
         """
-        from typing import Any
-
         from ml_switcheroo_compiler.backends.base_generator import CompiledArtifact
 
         source_code = self.generate()
-        scope: dict[str, Any] = {}
+        scope: dict[str, AttributeValue] = {}
         try:
             exec(source_code, scope)
             compiled_fn = scope.get(self._func_name)

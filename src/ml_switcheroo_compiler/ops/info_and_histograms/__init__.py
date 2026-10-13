@@ -1,4 +1,3 @@
-# ruff: noqa: F401
 """info_and_histograms module."""
 
 from .grid_and_indices import (

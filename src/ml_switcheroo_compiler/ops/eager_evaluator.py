@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Eager evaluation logic."""
 
 import abc
-import typing
+import typing  # noqa: F401
 from dataclasses import dataclass
-from typing import Any
+from typing import Any  # noqa: F401
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype

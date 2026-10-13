@@ -1,4 +1,3 @@
-# ruff: noqa: F401
 """signal module."""
 
 from .common_ops import (

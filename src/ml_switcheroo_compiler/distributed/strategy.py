@@ -1,9 +1,9 @@
 """Distributed training strategies for ML Switcheroo Compiler."""
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import logging
 import os
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast  # noqa: F401
 
 AttrType = Union[int, float, str, bool, list, tuple, dict, None]
 
@@ -67,7 +67,7 @@ class ParameterServerStrategy(Distribution):
         self.ps_mesh = self.device_mesh.get("cluster_meshes", {}).get("default", {})
 
     @staticmethod
-    def _is_parameter_node(node: IRNode) -> bool:
+    def _is_parameter_node(node: IRNode) -> bool:  # noqa: PLR0911
         """Explicitly identify whether an IRNode represents a trainable model parameter.
 
         Args:
@@ -457,7 +457,7 @@ class Server:
         self._thread = threading.Thread(target=self._run_server, daemon=True)
         self._thread.start()
 
-    def _run_server(self) -> None:
+    def _run_server(self) -> None:  # noqa: C901, PLR0912, PLR0915
         """Run the server."""
         import io
         import json
@@ -496,7 +496,7 @@ class Server:
                                 data = bio.getvalue()
                                 conn.sendall(len(data).to_bytes(8, "big"))
                                 conn.sendall(data)
-                            except Exception as e:
+                            except Exception as e:  # noqa: F841
                                 logging.getLogger(__name__).debug("Failed to pull weight", exc_info=True)
 
                         elif action in ("push", "send"):
@@ -785,7 +785,7 @@ class PipelineParallelStrategy(Distribution):
                 new_outputs.append(concat_id)
             graph.outputs = new_outputs
 
-    def generate_schedule(self, graph: IRGraph) -> list[tuple[str, int]]:
+    def generate_schedule(self, graph: IRGraph) -> list[tuple[str, int]]:  # noqa: C901, PLR0912
         """Generate schedule based on YAML configuration.
 
         Args:

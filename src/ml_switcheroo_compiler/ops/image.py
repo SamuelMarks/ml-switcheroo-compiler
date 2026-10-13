@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module image.py."""
 
 """Image processing operations (alias for vision module)."""
 
 from ml_switcheroo_compiler.ops.vision import (
-    adjust_brightness,
+    adjust_brightness,  # noqa: F401
     adjust_contrast,
     adjust_hue,
     adjust_saturation,

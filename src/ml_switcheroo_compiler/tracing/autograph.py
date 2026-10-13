@@ -1,7 +1,7 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Graph Compilation and AST Processing for AutoGraph capabilities."""
 
-import functools
+import functools  # noqa: F401
 from types import TracebackType
 from typing import Callable, Optional, TypeVar, Union
 

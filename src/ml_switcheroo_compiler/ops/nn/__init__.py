@@ -1,10 +1,10 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module __init__.py."""
 
 # auto-generate-all
 """Neural network operations and layers for the ML Switcheroo compiler."""
 
-from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
+from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d  # noqa: F401
 
 from .attention import scaled_dot_product_attention as scaled_dot_product_attention
 from .conv_lstm import conv1d_lstm_cell as conv1d_lstm_cell

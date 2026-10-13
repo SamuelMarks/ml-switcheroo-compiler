@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Distributed operations."""
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -313,7 +313,7 @@ class ReduceScatter(OpDef):
         """
         shape = list(getattr(tensor, "shape", ()))
         world_size = int(kwargs.get("world_size", kwargs.get("num_shards", 1)))
-        axis = int(kwargs.get("axis", kwargs.get("scatter_dim", 0)))
+        axis = int(kwargs.get("axis", 0))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] // world_size
         return tuple(shape)

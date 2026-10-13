@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 # auto-generate-all
 # exclude_exports: OpDef, register_op
 
@@ -192,128 +192,128 @@ class CustomRoot(OpDef):
             return tuple(args[0].shape)
         return ()
 
-    ("ConvGeneralDilated",)
-    ("ConvGeneralDilatedLocal",)
-    ("ConvGeneralDilatedPatches",)
-    ("ConvTranspose",)
-    ("ConvWithGeneralPadding",)
-    ("CustomLinearSolve",)
-    ("CustomRoot",)
-    ("Dot",)
-    ("DotGeneral",)
-    ("Einsum",)
-    ("LinearOperator",)
-    ("LinearOperatorAdjoint",)
-    ("LinearOperatorBlockDiag",)
-    ("LinearOperatorBlockLowerTriangular",)
-    ("LinearOperatorCirculant",)
-    ("LinearOperatorCirculant2D",)
-    ("LinearOperatorCirculant3D",)
-    ("LinearOperatorComposition",)
-    ("LinearOperatorDiag",)
-    ("LinearOperatorFullMatrix",)
-    ("LinearOperatorHouseholder",)
-    ("LinearOperatorIdentity",)
-    ("LinearOperatorInversion",)
-    ("LinearOperatorKronecker",)
-    ("LinearOperatorLowRankUpdate",)
-    ("LinearOperatorLowerTriangular",)
-    ("LinearOperatorPermutation",)
-    ("LinearOperatorScaledIdentity",)
-    ("LinearOperatorToeplitz",)
-    ("LinearOperatorTridiag",)
-    ("LinearOperatorZeros",)
-    ("Matmul",)
-    ("MatrixRank",)
-    ("MatrixTranspose",)
-    ("Sqrtm",)
-    ("Trace",)
-    ("Vecdot",)
-    ("addmm",)
-    ("adjoint",)
-    ("band_part",)
-    ("banded_triangular_solve",)
-    ("block_masked_mm",)
-    ("cholesky",)
-    ("cholesky_ex",)
-    ("cholesky_solve",)
-    ("cond",)
-    ("conjugate_gradient",)
-    ("conv_general_dilated",)
-    ("conv_general_dilated_local",)
-    ("conv_general_dilated_patches",)
-    ("conv_with_general_padding",)
-    ("convolve",)
-    ("cross",)
-    ("det",)
-    ("diag_part",)
-    ("diagonal",)
-    ("dot",)
-    ("dot_general",)
-    ("eig",)
-    ("eigh",)
-    ("eigh_tridiagonal",)
-    ("eigvals",)
-    ("eigvalsh",)
-    ("einsum",)
-    ("expm",)
-    ("gather_mm",)
-    ("global_norm",)
-    ("hadamard_transform",)
-    ("hessenberg",)
-    ("householder_product",)
-    ("inner",)
-    ("inv",)
-    ("inv_ex",)
-    ("logdet",)
-    ("logm",)
-    ("lstsq",)
-    ("lu",)
-    ("lu_factor",)
-    ("lu_matrix_inverse",)
-    ("lu_pivots_to_permutation",)
-    ("lu_reconstruct",)
-    ("lu_solve",)
-    ("matmul",)
-    ("matrix_exp",)
-    ("matrix_exponential",)
-    ("matrix_norm",)
-    ("matrix_power",)
-    ("matrix_rank",)
-    ("matrix_transpose",)
-    ("matvec",)
-    ("multi_dot",)
-    ("norm",)
-    ("normalize",)
-    ("outer",)
-    ("pinv",)
-    ("power_iteration",)
-    ("qdwh",)
-    ("qr",)
-    ("schur",)
-    ("segmented_mm",)
-    ("set_diag",)
-    ("slogdet",)
-    ("solve",)
-    ("solve_ex",)
-    ("solve_triangular",)
-    ("sqrtm",)
-    ("svd",)
-    ("svdvals",)
-    ("tensor_diag",)
-    ("tensor_diag_part",)
-    ("tensordot",)
-    ("tensorinv",)
-    ("tensorsolve",)
-    ("trace",)
-    ("tri_inv",)
-    ("triangular_solve",)
-    ("tridiagonal",)
-    ("tridiagonal_matmul",)
-    ("tridiagonal_solve",)
-    ("vdot",)
-    ("vecdot",)
-    ("vector_norm",)
+    ("ConvGeneralDilated",)  # noqa: B018
+    ("ConvGeneralDilatedLocal",)  # noqa: B018
+    ("ConvGeneralDilatedPatches",)  # noqa: B018
+    ("ConvTranspose",)  # noqa: B018
+    ("ConvWithGeneralPadding",)  # noqa: B018
+    ("CustomLinearSolve",)  # noqa: B018
+    ("CustomRoot",)  # noqa: B018
+    ("Dot",)  # noqa: B018
+    ("DotGeneral",)  # noqa: B018
+    ("Einsum",)  # noqa: B018
+    ("LinearOperator",)  # noqa: B018
+    ("LinearOperatorAdjoint",)  # noqa: B018
+    ("LinearOperatorBlockDiag",)  # noqa: B018
+    ("LinearOperatorBlockLowerTriangular",)  # noqa: B018
+    ("LinearOperatorCirculant",)  # noqa: B018
+    ("LinearOperatorCirculant2D",)  # noqa: B018
+    ("LinearOperatorCirculant3D",)  # noqa: B018
+    ("LinearOperatorComposition",)  # noqa: B018
+    ("LinearOperatorDiag",)  # noqa: B018
+    ("LinearOperatorFullMatrix",)  # noqa: B018
+    ("LinearOperatorHouseholder",)  # noqa: B018
+    ("LinearOperatorIdentity",)  # noqa: B018
+    ("LinearOperatorInversion",)  # noqa: B018
+    ("LinearOperatorKronecker",)  # noqa: B018
+    ("LinearOperatorLowRankUpdate",)  # noqa: B018
+    ("LinearOperatorLowerTriangular",)  # noqa: B018
+    ("LinearOperatorPermutation",)  # noqa: B018
+    ("LinearOperatorScaledIdentity",)  # noqa: B018
+    ("LinearOperatorToeplitz",)  # noqa: B018
+    ("LinearOperatorTridiag",)  # noqa: B018
+    ("LinearOperatorZeros",)  # noqa: B018
+    ("Matmul",)  # noqa: B018
+    ("MatrixRank",)  # noqa: B018
+    ("MatrixTranspose",)  # noqa: B018
+    ("Sqrtm",)  # noqa: B018
+    ("Trace",)  # noqa: B018
+    ("Vecdot",)  # noqa: B018
+    ("addmm",)  # noqa: B018
+    ("adjoint",)  # noqa: B018
+    ("band_part",)  # noqa: B018
+    ("banded_triangular_solve",)  # noqa: B018
+    ("block_masked_mm",)  # noqa: B018
+    ("cholesky",)  # noqa: B018
+    ("cholesky_ex",)  # noqa: B018
+    ("cholesky_solve",)  # noqa: B018
+    ("cond",)  # noqa: B018
+    ("conjugate_gradient",)  # noqa: B018
+    ("conv_general_dilated",)  # noqa: B018
+    ("conv_general_dilated_local",)  # noqa: B018
+    ("conv_general_dilated_patches",)  # noqa: B018
+    ("conv_with_general_padding",)  # noqa: B018
+    ("convolve",)  # noqa: B018
+    ("cross",)  # noqa: B018
+    ("det",)  # noqa: B018
+    ("diag_part",)  # noqa: B018
+    ("diagonal",)  # noqa: B018
+    ("dot",)  # noqa: B018
+    ("dot_general",)  # noqa: B018
+    ("eig",)  # noqa: B018
+    ("eigh",)  # noqa: B018
+    ("eigh_tridiagonal",)  # noqa: B018
+    ("eigvals",)  # noqa: B018
+    ("eigvalsh",)  # noqa: B018
+    ("einsum",)  # noqa: B018
+    ("expm",)  # noqa: B018
+    ("gather_mm",)  # noqa: B018
+    ("global_norm",)  # noqa: B018
+    ("hadamard_transform",)  # noqa: B018
+    ("hessenberg",)  # noqa: B018
+    ("householder_product",)  # noqa: B018
+    ("inner",)  # noqa: B018
+    ("inv",)  # noqa: B018
+    ("inv_ex",)  # noqa: B018
+    ("logdet",)  # noqa: B018
+    ("logm",)  # noqa: B018
+    ("lstsq",)  # noqa: B018
+    ("lu",)  # noqa: B018
+    ("lu_factor",)  # noqa: B018
+    ("lu_matrix_inverse",)  # noqa: B018
+    ("lu_pivots_to_permutation",)  # noqa: B018
+    ("lu_reconstruct",)  # noqa: B018
+    ("lu_solve",)  # noqa: B018
+    ("matmul",)  # noqa: B018
+    ("matrix_exp",)  # noqa: B018
+    ("matrix_exponential",)  # noqa: B018
+    ("matrix_norm",)  # noqa: B018
+    ("matrix_power",)  # noqa: B018
+    ("matrix_rank",)  # noqa: B018
+    ("matrix_transpose",)  # noqa: B018
+    ("matvec",)  # noqa: B018
+    ("multi_dot",)  # noqa: B018
+    ("norm",)  # noqa: B018
+    ("normalize",)  # noqa: B018
+    ("outer",)  # noqa: B018
+    ("pinv",)  # noqa: B018
+    ("power_iteration",)  # noqa: B018
+    ("qdwh",)  # noqa: B018
+    ("qr",)  # noqa: B018
+    ("schur",)  # noqa: B018
+    ("segmented_mm",)  # noqa: B018
+    ("set_diag",)  # noqa: B018
+    ("slogdet",)  # noqa: B018
+    ("solve",)  # noqa: B018
+    ("solve_ex",)  # noqa: B018
+    ("solve_triangular",)  # noqa: B018
+    ("sqrtm",)  # noqa: B018
+    ("svd",)  # noqa: B018
+    ("svdvals",)  # noqa: B018
+    ("tensor_diag",)  # noqa: B018
+    ("tensor_diag_part",)  # noqa: B018
+    ("tensordot",)  # noqa: B018
+    ("tensorinv",)  # noqa: B018
+    ("tensorsolve",)  # noqa: B018
+    ("trace",)  # noqa: B018
+    ("tri_inv",)  # noqa: B018
+    ("triangular_solve",)  # noqa: B018
+    ("tridiagonal",)  # noqa: B018
+    ("tridiagonal_matmul",)  # noqa: B018
+    ("tridiagonal_solve",)  # noqa: B018
+    ("vdot",)  # noqa: B018
+    ("vecdot",)  # noqa: B018
+    ("vector_norm",)  # noqa: B018
 
 
 from .dot import Pdot as Pdot

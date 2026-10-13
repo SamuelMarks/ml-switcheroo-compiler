@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Serialization package and checkpoint management."""
 
 from __future__ import annotations
@@ -7,10 +7,10 @@ import json
 import os
 import pickle
 import tempfile
-import typing
+import typing  # noqa: F401
 import zipfile
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar  # noqa: F401
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 
@@ -388,16 +388,16 @@ class LoadedModel:
 
     def __init__(
         self,
-        config: dict[str, Any],
-        metadata: dict[str, Any] | None = None,
-        weights: dict[str, Any] | None = None,
+        config: dict[str, AttributeValue],
+        metadata: dict[str, AttributeValue] | None = None,
+        weights: dict[str, AttributeValue] | None = None,
     ) -> None:
         """Initialize LoadedModel instance.
 
         Args:
-            config (dict[str, Any]): Model architecture configuration dictionary.
-            metadata (Optional[dict[str, Any]]): Model serialization metadata dictionary.
-            weights (Optional[dict[str, Any]]): Restored model weights dictionary.
+            config (dict[str, AttributeValue]): Model architecture configuration dictionary.
+            metadata (Optional[dict[str, AttributeValue]]): Model serialization metadata dictionary.
+            weights (Optional[dict[str, AttributeValue]]): Restored model weights dictionary.
         """
         self.config = config
         self.metadata = metadata or {}
@@ -406,7 +406,7 @@ class LoadedModel:
 
 def load_model(
     filepath: str,
-    custom_objects: dict[str, Any] | None = None,
+    custom_objects: dict[str, AttributeValue] | None = None,
     compile: bool = True,
     safe_mode: bool = True,
     **kwargs: Any,
@@ -415,7 +415,7 @@ def load_model(
 
     Args:
         filepath (str): Path to the model archive file.
-        custom_objects (Optional[dict[str, Any]]): Mapping of custom classes or functions.
+        custom_objects (Optional[dict[str, AttributeValue]]): Mapping of custom classes or functions.
         compile (bool): Whether to compile the model after loading.
         safe_mode (bool): Whether to disallow arbitrary code execution.
         **kwargs (Any): Additional keyword arguments.
@@ -442,11 +442,11 @@ def load_model(
                 raise ValueError(f"Model archive '{filepath}' is missing 'config.json'")
             config = json.loads(zf.read("config.json").decode("utf-8"))
 
-            metadata: dict[str, Any] = {}
+            metadata: dict[str, AttributeValue] = {}
             if "metadata.json" in zf.namelist():
                 metadata = json.loads(zf.read("metadata.json").decode("utf-8"))
 
-            weights: dict[str, Any] = {}
+            weights: dict[str, AttributeValue] = {}
             if "model.weights.h5" in zf.namelist():
                 tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
                 os.close(tmp_fd)
@@ -508,7 +508,7 @@ class custom_object_scope:
             **kwargs (Any): Custom objects as keyword arguments.
         """
         self.custom_objects = args[0] if args and isinstance(args[0], dict) else kwargs
-        self._backup: dict[str, Any] = {}
+        self._backup: dict[str, AttributeValue] = {}
 
     def __enter__(self) -> custom_object_scope:
         """Enter scope and register custom objects.
@@ -549,10 +549,10 @@ class KerasFileEditor:
         self.filepath = filepath
 
 
-_CUSTOM_OBJECTS: dict[str, Any] = {}
+_CUSTOM_OBJECTS: dict[str, AttributeValue] = {}
 
 
-def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
+def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, AttributeValue]:
     """Get the dictionary of currently registered custom objects.
 
     Args:
@@ -560,7 +560,7 @@ def get_custom_objects(*args: Any, **kwargs: Any) -> dict[str, Any]:
         **kwargs (Any): Arbitrary keyword arguments.
 
     Returns:
-        dict[str, Any]: Mapping of registered names to custom classes/functions.
+        dict[str, AttributeValue]: Mapping of registered names to custom classes/functions.
     """
     return _CUSTOM_OBJECTS
 
@@ -662,16 +662,16 @@ def serialize_keras_object(instance: Any = None, **kwargs: Any) -> Any:
     return {}
 
 
-def deserialize_keras_object(
+def deserialize_keras_object(  # noqa: PLR0911
     config: Any = None,
-    custom_objects: dict[str, Any] | None = None,
+    custom_objects: dict[str, AttributeValue] | None = None,
     **kwargs: Any,
 ) -> Any:
     """Deserialize a Keras object or compiler config from its dictionary representation.
 
     Args:
         config (Any): Serialized configuration dictionary.
-        custom_objects (Optional[dict[str, Any]]): Optional dictionary of registered custom classes.
+        custom_objects (Optional[dict[str, AttributeValue]]): Optional dictionary of registered custom classes.
         **kwargs (Any): Arbitrary keyword arguments.
 
     Returns:
@@ -779,7 +779,7 @@ class PythonState:
 
     def __init__(self) -> None:
         """Initialize PythonState."""
-        self.state: dict[str, Any] = {}
+        self.state: dict[str, AttributeValue] = {}
 
 
 class MaxShardSizePolicy:
@@ -805,16 +805,16 @@ class ShardByTaskPolicy:
 class SavedModel:
     """SavedModel proto serialization/deserialization and asset bundle manager."""
 
-    def __init__(self, model: Any = None, signatures: dict[str, Any] | None = None) -> None:
+    def __init__(self, model: Any = None, signatures: dict[str, AttributeValue] | None = None) -> None:
         """Initialize SavedModel instance.
 
         Args:
             model (Any): Model or graph structure to encapsulate.
-            signatures (Optional[dict[str, Any]]): Mapping of endpoint names to signatures.
+            signatures (Optional[dict[str, AttributeValue]]): Mapping of endpoint names to signatures.
         """
         self.model = model
         self.signatures = signatures or {}
-        self.assets: dict[str, Any] = {}
+        self.assets: dict[str, AttributeValue] = {}
 
     def save(self, path: str) -> None:
         """Serialize model manifest, topology, fingerprint, and assets to directory.
@@ -826,7 +826,7 @@ class SavedModel:
         import json
 
         os.makedirs(path, exist_ok=True)
-        graph_def: dict[str, Any] = {}
+        graph_def: dict[str, AttributeValue] = {}
         if self.model is not None:
             if hasattr(self.model, "graph"):
                 graph_def = json.loads(graph_to_json(self.model.graph))
@@ -876,7 +876,7 @@ class SavedModel:
             raw_bytes = f.read()
 
         if len(raw_bytes) == 0:
-            manifest: dict[str, Any] = {
+            manifest: dict[str, AttributeValue] = {
                 "format": "SavedModel",
                 "version": "2.0",
                 "graph_def": {},
@@ -960,7 +960,7 @@ def load_variable(path: str, name: str) -> Tensor:
     return Tensor(data, TensorConfig(data.shape, str(getattr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
 
 
-def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) -> dict[str, Any]:
+def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) -> dict[str, AttributeValue]:  # noqa: C901, PLR0912
     """Run restore ops for checkpoint directory or weight archive.
 
     Args:
@@ -969,7 +969,7 @@ def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) 
         variables (Any): Optional dictionary or list of target variables.
 
     Returns:
-        dict[str, Any]: Restored variable mapping name -> array.
+        dict[str, AttributeValue]: Restored variable mapping name -> array.
 
     Raises:
         FileNotFoundError: If checkpoint path does not exist.
@@ -980,7 +980,7 @@ def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) 
 
     import numpy as np
 
-    restored_weights: dict[str, Any] = {}
+    restored_weights: dict[str, AttributeValue] = {}
     if os.path.isdir(path):
         # 1. Safetensors
         st_files = [f for f in os.listdir(path) if f.endswith(".safetensors")]
@@ -1026,3 +1026,6 @@ def run_restore_ops(path: str, target_model: Any = None, variables: Any = None) 
                     raise ValueError(f"Shape mismatch restoring variable '{name}': expected {var_shape} but got {restored_arr.shape}")
 
     return restored_weights
+
+
+from ml_switcheroo_ir import AttributeValue

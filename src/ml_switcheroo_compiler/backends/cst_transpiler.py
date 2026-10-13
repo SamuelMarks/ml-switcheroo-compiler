@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 import os
 from typing import cast
 
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
 
 import libcst as cst
-import libcst.matchers as m
+import libcst.matchers as m  # noqa: F401
 
 from ml_switcheroo_compiler.backends.transpiler_config_models import (
     ArgumentRewritesConfig,
@@ -94,7 +94,7 @@ class ASTPatternMatcher:
                     return node.with_changes(func=new_func, args=transformed_args)
         return None
 
-    def transform_args(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:
+    def transform_args(self, op_name: str, args: list[cst.Arg], target_framework: str) -> list[cst.Arg]:  # noqa: C901, PLR0912
         """Apply argument reordering, default insertion, and keyword transformations.
 
         Args:
@@ -330,7 +330,7 @@ class CSTTransformer(cst.CSTTransformer):
             return updated_node.with_changes(names=new_names)
         return updated_node
 
-    def leave_Call(
+    def leave_Call(  # noqa: C901, PLR0911, PLR0912
         self,
         original_node: cst.Call,
         updated_node: cst.Call,
@@ -436,7 +436,7 @@ class CSTTransformer(cst.CSTTransformer):
 
         return final_node
 
-    def leave_ClassDef(
+    def leave_ClassDef(  # noqa: C901
         self,
         original_node: cst.ClassDef,
         updated_node: cst.ClassDef,

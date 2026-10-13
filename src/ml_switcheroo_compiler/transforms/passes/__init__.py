@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Passes package exposing middle-end graph transformation passes."""
 
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
@@ -44,8 +44,8 @@ from ml_switcheroo_compiler.transforms.passes.state_lowering import (
     state_lowering_pass,
 )
 from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import (
-    OFFLINE_DIAGNOSTIC_OPS,
-    export_graph_to_dot_string,
+    OFFLINE_DIAGNOSTIC_OPS,  # noqa: F401
+    export_graph_to_dot_string,  # noqa: F401
     strip_offline_diagnostic_nodes_pass,
 )
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import type_promotion_explicitizer_pass
@@ -86,4 +86,4 @@ __all__ = [
     "type_promotion_explicitizer_pass",
     "vectorization_pass",
 ]
-from .poly_lower import polyfill_lowering_pass
+from .poly_lower import polyfill_lowering_pass  # noqa: F401

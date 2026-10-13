@@ -1,4 +1,4 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Module dtype.py."""
 
 from __future__ import annotations
@@ -116,8 +116,10 @@ def validate_dtype_for_op(op_name: str, dtype: DType | str) -> tuple[bool, str |
         if fn is not None:
             res: tuple[bool, str | None] = fn(op_name, dtype_str)
             return res
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as e:
+        import logging
+
+        logging.getLogger(__name__).debug("Framework dtype resolution failed: %s", e)
 
     clean_op: str = op_name.lower().split(".")[-1]
     transcendental_ops: tuple[str, ...] = (

@@ -1,11 +1,11 @@
-# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, E501, F403
 """Gradient computation and autodiff utilities."""
 
-import contextlib
-import math
-import uuid
+import contextlib  # noqa: F401
+import math  # noqa: F401
+import uuid  # noqa: F401
 from collections.abc import Callable, Sequence
-from typing import Protocol, TypeVar, Union, cast, runtime_checkable
+from typing import Protocol, TypeVar, Union, cast, runtime_checkable  # noqa: F401
 
 from ml_switcheroo_compiler.core.tensor import Tensor, Variable
 
@@ -43,20 +43,20 @@ BackendArray = GradTensorProtocol
 GradValue = Union[int, float, str, bool, list, tuple, dict, None, Tensor, Variable, GradTensorProtocol]
 
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # noqa: F401
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: F401
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import config  # noqa: F401
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-from ml_switcheroo_compiler.ops.registry import register_util
-from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function  # noqa: F401
+from ml_switcheroo_compiler.ops.registry import register_util  # noqa: F401
+from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients  # noqa: F401
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp  # noqa: F401
 
 from .options import GradOptions
 
@@ -132,7 +132,7 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
         try:
             if isinstance(obj, Tensor):
                 all_tensors.append(obj)
-        except ReferenceError:
+        except (ReferenceError, KeyError):
             pass
     wrt_tensors: list[GradValue] = []
     wrt_ids: list[str] = []
@@ -163,7 +163,7 @@ def _get_concrete_val(t: GradValue) -> GradValue:
     return val
 
 
-def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
+def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:  # noqa: C901
     """Map input node IDs to their concrete values for evaluate_graph.
 
     Args:
@@ -181,8 +181,10 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
         try:
             if isinstance(obj, Tensor):
                 all_tensors.append(obj)
-        except ReferenceError:
-            pass
+        except (ReferenceError, KeyError) as e:
+            from ml_switcheroo_compiler.core.errors import AutodiffLinkageError
+
+            raise AutodiffLinkageError(f"Failed to extract VJP node link: {e}") from e
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
         if hasattr(t, "data") and hasattr(t.data, "id"):
@@ -197,7 +199,7 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
             if inp_id not in inputs_dict:
                 raise ValueError(f"Missing input value for node '{inp_id}'.")
 
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph  # noqa: F401
 
     return inputs_dict
 
@@ -275,13 +277,13 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
         return val
 
     if isinstance(orig, Tensor):
-        import uuid
+        import uuid  # noqa: F401
 
-        from ml_switcheroo_ir import LogicalNode
+        from ml_switcheroo_ir import LogicalNode  # noqa: F401
 
         from ml_switcheroo_compiler.core.device import Device
-        from ml_switcheroo_compiler.tracing.state import global_tracing_state
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+        from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F401
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor  # noqa: F401
 
         arr = cast(BackendArray, get_active_backend().asarray(val))
         dt = DType.Float32
@@ -311,12 +313,12 @@ def _compute_grad_and_value(
     Returns:
         tuple: Result.
     """
-    import uuid
+    import uuid  # noqa: F811
 
-    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_ir import LogicalNode  # noqa: F811
 
     from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state  # noqa: F811
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
     from .jvp_vjp import vjp
